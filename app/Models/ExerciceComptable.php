@@ -1,0 +1,77 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use App\Models\JournalSaisi;
+
+
+class ExerciceComptable extends Model
+{
+    use HasFactory;
+    protected $table = 'exercices_comptables';
+
+    protected $fillable = [
+        'date_debut',
+        'date_fin',
+        'intitule',
+        'nombre_journaux_saisis',
+        'cloturer',
+        'user_id',
+        'company_id',
+    ];
+
+    public function syncJournaux()
+    {
+        $companyId = $this->company_id;
+        $userId = $this->user_id;
+
+        $start = \Carbon\Carbon::parse($this->date_debut)->startOfMonth();
+        $end = \Carbon\Carbon::parse($this->date_fin)->startOfMonth();
+
+        $codeJournals = CodeJournal::where('company_id', $companyId)->get();
+
+        while ($start->lte($end)) {
+            foreach ($codeJournals as $codeJournal) {
+                // Vérifie si le journal existe déjà pour éviter doublons
+                $exists = JournalSaisi::where('exercices_comptables_id', $this->id)
+                    ->where('annee', $start->year)
+                    ->where('mois', $start->month)
+                    ->where('code_journals_id', $codeJournal->id)
+                    ->exists();
+
+                if (!$exists) {
+                    JournalSaisi::create([
+                        'annee' => $start->year,
+                        'mois' => $start->month,
+                        'exercices_comptables_id' => $this->id,
+                        'code_journals_id' => $codeJournal->id,
+                        'user_id' => $userId,
+                        'company_id' => $companyId,
+                    ]);
+                }
+            }
+            $start->addMonth();
+        }
+
+        // Mise à jour du nombre total de journaux
+        $this->update([
+            'nombre_journaux_saisis' => JournalSaisi::where('exercices_comptables_id', $this->id)->count()
+        ]);
+    }
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+
+
+
+}
