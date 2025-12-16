@@ -606,6 +606,131 @@
 
                                                         <script>
                                                             document.addEventListener('DOMContentLoaded', function() {
+                                                                console.log('=== Script de filtrage des comptes chargé ===');
+                                                                
+                                                                // Variable pour éviter d'attacher plusieurs fois les événements
+                                                                let eventsAttached = false;
+
+                                                                // Attendre que le modal soit complètement affiché avant d'initialiser
+                                                                $('#modalCenterCreate').on('shown.bs.modal', function () {
+                                                                    console.log('🔔 Modal ouvert - Initialisation du filtrage des comptes');
+                                                                    
+                                                                    // Éviter d'attacher les événements plusieurs fois
+                                                                    if (eventsAttached) {
+                                                                        console.log('⚠️ Événements déjà attachés, skip');
+                                                                        return;
+                                                                    }
+                                                                    
+                                                                    const compteTresorerieField = document.getElementById('compteTresorerieField');
+                                                                    const compteGeneralSelect = document.getElementById('compte_general');
+                                                                    const $compteGeneralSelect = $(compteGeneralSelect);
+                                                                    const $compteTresorerieField = $(compteTresorerieField);
+                                                                    const labelCompteGeneral = document.querySelector('label[for="compte_general"]');
+
+                                                                    console.log('compteTresorerieField:', compteTresorerieField);
+                                                                    console.log('compteGeneralSelect:', compteGeneralSelect);
+
+                                                                    // URL de l'API
+                                                                    const apiAccountsUrl = "{{ route('api.comptes_par_flux') }}";
+
+                                                                    // Fonction pour charger les comptes via AJAX
+                                                                    function loadAccountsByFlow() {
+                                                                        const selectedOption = compteTresorerieField.options[compteTresorerieField.selectedIndex];
+                                                                        let flowType = '';
+                                                                        if (selectedOption) {
+                                                                            flowType = selectedOption.getAttribute('data-type') || '';
+                                                                        }
+                                                                        
+                                                                        console.log('=== loadAccountsByFlow appelée ===');
+                                                                        console.log('Selected option:', selectedOption);
+                                                                        console.log('Flow type:', flowType);
+                                                                        
+                                                                        // Feedback visuel
+                                                                        if(labelCompteGeneral) {
+                                                                            labelCompteGeneral.textContent = "Compte Général (Chargement...)";
+                                                                            labelCompteGeneral.style.color = "red";
+                                                                        }
+                                                                        
+                                                                        // Désactiver le select pendant le chargement
+                                                                        $compteGeneralSelect.prop('disabled', true);
+                                                                        $compteGeneralSelect.selectpicker('refresh');
+
+                                                                        console.log(`Chargement des comptes pour le flux: "${flowType}" depuis ${apiAccountsUrl}`);
+
+                                                                        fetch(`${apiAccountsUrl}?type=${encodeURIComponent(flowType)}`)
+                                                                            .then(response => {
+                                                                                console.log('Réponse reçue:', response.status);
+                                                                                if (!response.ok) {
+                                                                                    throw new Error('Network response was not ok');
+                                                                                }
+                                                                                return response.json();
+                                                                            })
+                                                                            .then(data => {
+                                                                                console.log(`✅ ${data.length} comptes reçus`);
+                                                                                console.log('Premiers comptes:', data.slice(0, 5));
+                                                                                
+                                                                                // Vider les options actuelles
+                                                                                $compteGeneralSelect.empty();
+                                                                                
+                                                                                // Remplir avec les nouvelles données
+                                                                                const fragment = document.createDocumentFragment();
+                                                                                data.forEach(account => {
+                                                                                    const option = document.createElement('option');
+                                                                                    option.value = account.id;
+                                                                                    option.text = `${account.numero_de_compte} - ${account.intitule}`;
+                                                                                    option.setAttribute('data-intitule_compte_general', account.numero_de_compte);
+                                                                                    fragment.appendChild(option);
+                                                                                });
+                                                                                compteGeneralSelect.appendChild(fragment);
+
+                                                                                // IMPORTANT: Réactiver et rafraîchir selectpicker
+                                                                                $compteGeneralSelect.prop('disabled', false);
+                                                                                $compteGeneralSelect.selectpicker('destroy'); // Détruire l'ancienne instance
+                                                                                $compteGeneralSelect.selectpicker(); // Réinitialiser
+                                                                                $compteGeneralSelect.selectpicker('refresh'); // Rafraîchir
+                                                                                
+                                                                                // Reset UI Feedback
+                                                                                if(labelCompteGeneral) {
+                                                                                    labelCompteGeneral.textContent = "Compte Général";
+                                                                                    labelCompteGeneral.style.color = "";
+                                                                                }
+                                                                                
+                                                                                console.log('✅ Comptes chargés et affichés avec succès');
+                                                                            })
+                                                                            .catch(error => {
+                                                                                console.error('❌ Erreur lors du chargement des comptes:', error);
+                                                                                alert("Erreur de chargement des comptes: " + error.message);
+                                                                                
+                                                                                $compteGeneralSelect.prop('disabled', false);
+                                                                                $compteGeneralSelect.selectpicker('refresh');
+                                                                                
+                                                                                if(labelCompteGeneral) {
+                                                                                    labelCompteGeneral.textContent = "Compte Général (Erreur)";
+                                                                                }
+                                                                            });
+                                                                    }
+
+                                                                    // Attacher les événements
+                                                                    if (compteTresorerieField) {
+                                                                        console.log('Attachement des événements au champ de trésorerie...');
+                                                                        
+                                                                        // Événement Bootstrap Select (le plus fiable pour selectpicker)
+                                                                        $compteTresorerieField.on('changed.bs.select', function(e, clickedIndex, isSelected, previousValue) {
+                                                                            console.log('🔔 Événement CHANGED.BS.SELECT déclenché');
+                                                                            loadAccountsByFlow();
+                                                                        });
+                                                                        
+                                                                        console.log('✅ Événements attachés avec succès');
+                                                                        eventsAttached = true;
+                                                                    } else {
+                                                                        console.error('❌ CompteTresorerieField introuvable!');
+                                                                    }
+                                                                });
+
+                                                            });
+                                                        </script>
+                                                        <script>
+                                                            document.addEventListener('DOMContentLoaded', function() {
                                                                 const compteGeneral = document.getElementById('compte_general');
                                                                 const compteTiersWrapper = document.getElementById('compte_tiers_wrapper');
                                                                 const compteTiers = $('#compte_tiers'); // jQuery pour bootstrap-select
@@ -672,6 +797,74 @@
                                                             });
                                                         </script> --}}
 
+                                                        <!-- Script pour gérer l'exclusion mutuelle Débit/Crédit selon le Type de Flux -->
+                                                        <script>
+                                                            document.addEventListener('DOMContentLoaded', function() {
+                                                                console.log('=== Script d\'exclusion mutuelle Débit/Crédit chargé ===');
+                                                                
+                                                                // Variable pour éviter d'attacher plusieurs fois les événements
+                                                                let fluxEventsAttached = false;
+
+                                                                // Attendre que le modal soit complètement affiché
+                                                                $('#modalCenterCreate').on('shown.bs.modal', function () {
+                                                                    console.log('🔔 Modal ouvert - Initialisation de l\'exclusion mutuelle Débit/Crédit');
+                                                                    
+                                                                    // Éviter d'attacher les événements plusieurs fois
+                                                                    if (fluxEventsAttached) {
+                                                                        console.log('⚠️ Événements flux déjà attachés, skip');
+                                                                        return;
+                                                                    }
+                                                                    
+                                                                    const typeFluxSelect = document.getElementById('typeFlux');
+                                                                    const debitInput = document.getElementById('debit');
+                                                                    const creditInput = document.getElementById('credit');
+                                                                    
+                                                                    console.log('typeFluxSelect:', typeFluxSelect);
+                                                                    console.log('debitInput:', debitInput);
+                                                                    console.log('creditInput:', creditInput);
+                                                                    
+                                                                    // Fonction pour gérer l'exclusion mutuelle
+                                                                    function handleFluxTypeChange() {
+                                                                        const selectedType = typeFluxSelect.value;
+                                                                        console.log('🔄 Type de flux sélectionné:', selectedType);
+                                                                        
+                                                                        if (selectedType === 'debit') {
+                                                                            // Décaissement : activer Débit, désactiver Crédit
+                                                                            debitInput.disabled = false;
+                                                                            creditInput.disabled = true;
+                                                                            creditInput.value = ''; // Vider le champ Crédit
+                                                                            console.log('✅ Débit activé, Crédit désactivé');
+                                                                        } else if (selectedType === 'credit') {
+                                                                            // Encaissement : activer Crédit, désactiver Débit
+                                                                            creditInput.disabled = false;
+                                                                            debitInput.disabled = true;
+                                                                            debitInput.value = ''; // Vider le champ Débit
+                                                                            console.log('✅ Crédit activé, Débit désactivé');
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    // Attacher l'événement
+                                                                    if (typeFluxSelect) {
+                                                                        console.log('Attachement de l\'événement au champ Type de Flux...');
+                                                                        
+                                                                        // Événement Bootstrap Select
+                                                                        $(typeFluxSelect).on('changed.bs.select', function(e) {
+                                                                            console.log('🔔 Événement changed.bs.select déclenché');
+                                                                            handleFluxTypeChange();
+                                                                        });
+                                                                        
+                                                                        // Initialiser au chargement du modal
+                                                                        handleFluxTypeChange();
+                                                                        
+                                                                        console.log('✅ Événement Type de Flux attaché avec succès');
+                                                                        fluxEventsAttached = true;
+                                                                    } else {
+                                                                        console.error('❌ typeFluxSelect introuvable!');
+                                                                    }
+                                                                });
+                                                            });
+                                                        </script>
+
 
 
 
@@ -703,7 +896,7 @@
                                                                             <option value="">(Pas un flux spécifique)</option>
 
                                                                             @foreach($comptesTresorerie as $compteTresorerie)
-                                                                                <option value="{{ $compteTresorerie->id }}" data-subtext="{{ $compteTresorerie->type }}">
+                                                                                <option value="{{ $compteTresorerie->id }}" data-type="{{ $compteTresorerie->type }}" data-subtext="{{ $compteTresorerie->type }}">
                                                                                     {{ $compteTresorerie->name }}
                                                                                 </option>
                                                                             @endforeach

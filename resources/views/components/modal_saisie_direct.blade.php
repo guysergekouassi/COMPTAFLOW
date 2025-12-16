@@ -31,13 +31,42 @@
                         <select class="selectpicker w-100" data-live-search="true" id="code_journal" name="code_journal"
                             required>
                             <option value="" disabled selected hidden>-- Sélectionner un journal --</option>
-                            @foreach ($code_journaux as $code_j)
-                                <option value="{{ $code_j->id }}" data-code_journal_j="{{ $code_j->code_journal }}"
-                                    data-intitule_j="{{ $code_j->intitule }}" data-type_j="{{ $code_j->type }}">
+                            
+                            @if(isset($journaux_saisie) && isset($journaux_tresorerie))
+                                {{-- Journaux de Saisie --}}
+                                @if($journaux_saisie->count() > 0)
+                                    <optgroup label="📝 Journaux de Saisie">
+                                        @foreach ($journaux_saisie as $code_j)
+                                            <option value="{{ $code_j->id }}" data-code_journal_j="{{ $code_j->code_journal }}"
+                                                data-intitule_j="{{ $code_j->intitule }}" data-type_j="{{ $code_j->type }}">
 
-                                    {{ $code_j->code_journal }} - {{ $code_j->intitule }}
-                                </option>
-                            @endforeach
+                                                {{ $code_j->code_journal }} - {{ $code_j->intitule }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                                
+                                {{-- Journaux de Trésorerie (fusionnés : code_journals + tresoreries) --}}
+                                @if($journaux_tresorerie->count() > 0)
+                                    <optgroup label="💰 Journaux de Trésorerie">
+                                        @foreach ($journaux_tresorerie as $code_j)
+                                            <option value="{{ $code_j->id }}" data-code_journal_j="{{ $code_j->code_journal }}"
+                                                data-intitule_j="{{ $code_j->intitule }}" data-type_j="{{ $code_j->type ?? 'tresorerie' }}">
+
+                                                {{ $code_j->code_journal }} - {{ $code_j->intitule }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                            @elseif(isset($code_journaux))
+                                {{-- Fallback : affichage simple si les variables séparées ne sont pas disponibles --}}
+                                @foreach ($code_journaux as $code_j)
+                                    <option value="{{ $code_j->id }}" data-code_journal_j="{{ $code_j->code_journal }}"
+                                        data-intitule_j="{{ $code_j->intitule }}" data-type_j="{{ $code_j->type }}">
+                                        {{ $code_j->code_journal }} - {{ $code_j->intitule }}
+                                    </option>
+                                @endforeach
+                            @endif
                         </select>
                     </div>
 
@@ -96,6 +125,31 @@
         </div>
     </div>
 </div>
+
+{{-- Script pour éviter les doublons Bootstrap Select --}}
+<script>
+$(document).ready(function() {
+    $('#saisieRedirectModal').on('shown.bs.modal', function () {
+        console.log('🔧 Réinitialisation Bootstrap Select pour éviter les doublons');
+        
+        // Détruire complètement l'instance Bootstrap Select du champ Journal
+        $('#code_journal').selectpicker('destroy');
+        
+        // Réinitialiser avec les options
+        $('#code_journal').selectpicker({
+            liveSearch: true,
+            style: 'btn-default',
+            size: 10,
+            noneSelectedText: '-- Sélectionner un journal --'
+        });
+        
+        // Forcer le refresh
+        $('#code_journal').selectpicker('refresh');
+        
+        console.log('✅ Bootstrap Select réinitialisé');
+    });
+});
+</script>
 
 {{-- <script>
     //Réinitialise le formulaire de création quand le modal se ferme

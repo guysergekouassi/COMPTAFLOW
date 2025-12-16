@@ -66,6 +66,20 @@ Route::get('/login', function () {
 })->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
+// DEBUG ROUTE - TO DELETE LATER
+Route::get('/debug-comptes', function () {
+    $user = auth()->user();
+    if (!$user) return 'Not logged in';
+    
+    $counts = \App\Models\PlanComptable::where('company_id', $user->company_id)
+        ->selectRaw('LEFT(numero_de_compte, 1) as classe, count(*) as count')
+        ->groupBy('classe')
+        ->orderBy('classe')
+        ->get();
+        
+    return response()->json($counts);
+});
+
 // Redirection vers le dashboard selon rôle après login
 Route::get('/dashboard', function () {
     $user = auth()->user();
@@ -139,6 +153,7 @@ Route::middleware('auth')->group(function () {
 
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE
     Route::get('/accounting_entry_real', [EcritureComptableController::class, 'index'])->name('accounting_entry_real');
+    Route::get('/api/comptes-par-flux', [EcritureComptableController::class, 'getComptesParFlux'])->name('api.comptes_par_flux'); // NEW AJAX ROUTE
     Route::post('/accounting_entry_real', [EcritureComptableController::class, 'storeMultiple'])->name('storeMultiple.storeMultiple');
     Route::get('/saisie-directe-modal', [EcritureComptableController::class, 'showSaisieModal'])->name('modal_saisie_direct');
 

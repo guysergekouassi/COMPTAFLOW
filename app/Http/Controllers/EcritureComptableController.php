@@ -13,6 +13,7 @@ use App\Models\PlanComptable;
 use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
+use Illuminate\Support\Facades\Log;
 
 
 
@@ -161,12 +162,31 @@ class EcritureComptableController extends Controller
         $exercices = ExerciceComptable::orderBy('date_debut', 'desc')->get();
 
 
-        $code_journaux = CodeJournal::orderBy('code_journal', 'asc')->get();
+        // Journaux de Saisie : tous SAUF ceux de type Trésorerie (incluant les NULL)
+        $journaux_saisie = CodeJournal::where('company_id', Auth::user()->company_id)
+            ->where(function($query) {
+                $query->where(function($q) {
+                    $q->where('type', '!=', 'Trésorerie')
+                      ->where('type', '!=', 'tresorerie');
+                })->orWhereNull('type');
+            })
+            ->orderBy('code_journal', 'asc')
+            ->get();
+        
+        // Récupérer les journaux de trésorerie (CodeJournal uniquement)
+        $journaux_tresorerie = CodeJournal::where('company_id', Auth::user()->company_id)
+            ->where(function($query) {
+                $query->where('type', 'Trésorerie')
+                      ->orWhere('type', 'tresorerie');
+            })
+            ->orderBy('code_journal', 'asc')
+            ->get();
 
 
         return view('components.modal_saisie_direct', [
             'exercices' => $exercices,
-            'code_journaux' => $code_journaux,
+            'journaux_saisie' => $journaux_saisie,
+            'journaux_tresorerie' => $journaux_tresorerie,
         ]);
     }
 
@@ -232,5 +252,53 @@ class EcritureComptableController extends Controller
 
 
 
+
+    public function getComptesParFlux(Request $request) {
+        $user = Auth::user();
+        $typeFlux = $request->query('type');
+        
+        Log::info("AJAX getComptesParFlux called. TypeFlux received: '" . $typeFlux . "'");
+        
+        $query = PlanComptable::where('company_id', $user->company_id)
+            ->select('id', 'numero_de_compte', 'intitule');
+
+        // Filtrage selon la logique comptable des flux de trésorerie
+        if ($typeFlux && stripos($typeFlux, 'Operationnelles') !== false) {
+             Log::info("Matched: Operationnelles - Classes 4, 5, 6, 7");
+            $query->where(function($q) {
+                // Flux opérationnels : Tiers (4), Trésorerie (5), Charges (6), Produits (7)
+                $q->where('numero_de_compte', 'like', '4%')
+                  ->orWhere('numero_de_compte', 'like', '5%')
+                  ->orWhere('numero_de_compte', 'like', '6%')
+                  ->orWhere('numero_de_compte', 'like', '7%');
+            });
+        } elseif ($typeFlux && stripos($typeFlux, 'Investissement') !== false) {
+             Log::info("Matched: Investissement - Classes 2, 4, 5");
+             // Flux d'investissement : Immobilisations (2), Tiers (4), Trésorerie (5)
+            $query->where(function($q) {
+                $q->where('numero_de_compte', 'like', '2%')
+                  ->orWhere('numero_de_compte', 'like', '4%')
+                  ->orWhere('numero_de_compte', 'like', '5%');
+            });
+        } elseif ($typeFlux && stripos($typeFlux, 'Financement') !== false) {
+             Log::info("Matched: Financement - Classes 1, 4, 5");
+             // Flux de financement : Capitaux (1), Tiers (4), Trésorerie (5)
+            $query->where(function($q) {
+                $q->where('numero_de_compte', 'like', '1%')
+                  ->orWhere('numero_de_compte', 'like', '4%')
+                  ->orWhere('numero_de_compte', 'like', '5%');
+            });
+        }
+        // Cas par défaut : si aucun flux reconnu, on limite pour la performance
+        else {
+             Log::info("No match found. Returning default limit 500.");
+             $query->limit(500); 
+        }
+
+        $comptes = $query->orderBy('numero_de_compte', 'asc')->get();
+        Log::info("Returning " . $comptes->count() . " accounts.");
+
+        return response()->json($comptes);
+    }
 
 }
