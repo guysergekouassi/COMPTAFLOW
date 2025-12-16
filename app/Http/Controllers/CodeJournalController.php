@@ -22,17 +22,6 @@ public function index()
     $user = Auth::user();
     $currentCompanyId = $user->company_id;
 
-     // --- BLOC DE TEST : Ceci doit arrêter l'exécution et afficher des données ---
-    // Récupérer une seule entrée de trésorerie pour le test
-    $tresorerieTest = \App\Models\tresoreries\Tresoreries::where('company_id', $currentCompanyId)->first();
-
-    // Si $tresorerieTest est null, c'est que la compagnie n'a pas de données de trésorerie.
-    // Sinon, dd() affichera l'objet Tresoreries.
-
-    // 🛑 VÉRIFIEZ LE RÉSULTAT DE CE DD() 🛑
-    dd($tresorerieTest ? $tresorerieTest->toArray() : 'AUCUNE ENTREE DE TRESORERIE TROUVÉE POUR CETTE COMPAGNIE');
-
-    // --- FIN DU BLOC DE TEST : Le code ci-dessous doit être ignoré ---
     // 1. DÉTERMINATION DES IDs DE COMPAGNIE À VISUALISER
     if ($user->role === 'admin') {
         $companyIdsToView = $this->getManagedCompanyIds();
@@ -50,6 +39,7 @@ public function index()
     }
 
     // 4. Exécution de la requête pour obtenir la collection de journaux
+    // 🔑 FIX MAJEUR: On utilise $code_journaux et on exécute le get() ici.
     $code_journaux = $query->get();
 
 
@@ -60,12 +50,10 @@ public function index()
     // A. Récupérer les données de Trésorerie
     $tresoreriesData = Tresoreries::whereIn('company_id', $companyIdsToView)
         ->get()
-        // 🔑 CORRECTION CRUCIALE : Mettre la clé en MAJUSCULES
-        ->keyBy(function ($item) {
-            return strtoupper($item->code_journal);
-        });
+        ->keyBy('code_journal');
 
     // B. Récupérer les comptes du Plan Comptable
+    // NOTE : On utilise la collection $code_journaux ici.
     $planComptableIds = $code_journaux->pluck('compte_de_tresorerie')->filter()->unique();
     $planComptableAccounts = PlanComptable::whereIn('id', $planComptableIds)
         ->get()
@@ -75,17 +63,9 @@ public function index()
     $code_journaux->map(function ($journal) use ($tresoreriesData, $planComptableAccounts) {
         $codeTresorerie = null;
 
-        // Mettre le code journal en MAJUSCULES pour la comparaison
-        $journalCodeUpper = strtoupper($journal->code_journal);
-
-        // PRIORITÉ 1 : Le journal est un journal de Trésorerie (lien direct par code_journal)
-        // 🔑 CORRECTION CRUCIALE : Utiliser le code en MAJUSCULES pour vérifier l'existence
-        if ($tresoreriesData->has($journalCodeUpper)) {
-            $codeTresorerie = $tresoreriesData[$journalCodeUpper]->compte_de_contrepartie;
-        }
-
-        // PRIORITÉ 2 : Le journal est lié via l'ID de Plan Comptable
-        elseif ($journal->compte_de_tresorerie && $planComptableAccounts->has($journal->compte_de_tresorerie)) {
+        if ($tresoreriesData->has($journal->code_journal)) {
+            $codeTresorerie = $tresoreriesData[$journal->code_journal]->compte_de_contrepartie;
+        } elseif ($journal->compte_de_tresorerie && $planComptableAccounts->has($journal->compte_de_tresorerie)) {
             $compte = $planComptableAccounts[$journal->compte_de_tresorerie];
             $codeTresorerie = $compte->numero_de_compte ?? null;
         }
@@ -94,7 +74,7 @@ public function index()
         return $journal;
     });
 
-    // 5. Calculs statistiques (le reste de votre code)
+    // 5. Calculs statistiques
     $allJournauxForStats = CodeJournal::whereIn('company_id', $companyIdsToView)->get();
     $totalJournauxCompany = $allJournauxForStats->count();
 
@@ -109,18 +89,9 @@ public function index()
 
 
     // 7. On passe la variable ENRICHIE ($code_journaux) à la vue.
+    // 🔑 FIX : Utilisez $code_journaux dans compact()
     return view('accounting_journals', compact('code_journaux', 'totalJournauxCompany', 'userCreatedJournaux', 'comptesTresorerie'));
 }
-
-
-
-
-
-
-
-
-
-
 
     public function store(Request $request)
     {

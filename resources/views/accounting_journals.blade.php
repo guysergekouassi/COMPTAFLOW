@@ -151,7 +151,7 @@
                                     <table class="table" id="JournalTable">
                                         <thead>
                                             <tr>
-                                                
+
                                                 <th>Code</th>
                                                 <th>Type</th>
                                                 <th>Intitulé</th>
@@ -159,7 +159,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($codeJournaux as $journal)
+                                            @foreach ($code_journaux as $journal)
                                                 <tr>
                                                     <!-- <td>{{ $journal->annee }}</td>
                                                   <td>{{ \Carbon\Carbon::createFromDate(null, $journal->mois)->locale('fr')->monthName }}</td> -->

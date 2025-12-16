@@ -227,36 +227,56 @@ class EcritureComptableController extends Controller
     }
 }
 
-public function determineFluxClasse(string $numeroCompte){
-    //on prends le premier chiffre pour eterminer la classe
-    $classe = substr($numeroCompte, 0, 1);
-
-    switch($classe){
-        case '1':
-        case '3':
-        case '4':
-        case '6':
-        case '7':
-          return 'Operation';
-
-        case '2':
-            return 'investissement';
-
-        case '1':
-            if(strpos($numeroCompte, '16') === 0 || strpos($numeroCompte, '10') === 0){
-                return 'financement';
-            }
-            return 'Exploitation'; //pour les 1x
-
-            case '5':
-                return null;
-
-                default:
-                 return null;
 
 
+public function getComptesParFlux(Request $request) {
+    $user = Auth::user();
+    $typeFlux = $request->query('type');
+
+    Log::info("AJAX getComptesParFlux called. TypeFlux received: '" . $typeFlux . "'");
+
+    $query = PlanComptable::where('company_id', $user->company_id)
+        ->select('id', 'numero_de_compte', 'intitule');
+
+    // Filtrage selon la logique comptable des flux de trésorerie
+    if ($typeFlux && stripos($typeFlux, 'Operationnelles') !== false) {
+         Log::info("Matched: Operationnelles - Classes 4, 5, 6, 7");
+        $query->where(function($q) {
+            // ✅ AJOUT : Classes 4 et 5
+            $q->where('numero_de_compte', 'like', '4%')
+              ->orWhere('numero_de_compte', 'like', '5%')
+              ->orWhere('numero_de_compte', 'like', '6%')
+              ->orWhere('numero_de_compte', 'like', '7%');
+        });
+    } elseif ($typeFlux && stripos($typeFlux, 'Investissement') !== false) {
+         Log::info("Matched: Investissement - Classes 2, 4, 5");
+        $query->where(function($q) {
+            // ✅ AJOUT : Classes 4 et 5
+            $q->where('numero_de_compte', 'like', '2%')
+              ->orWhere('numero_de_compte', 'like', '4%')
+              ->orWhere('numero_de_compte', 'like', '5%');
+        });
+    } elseif ($typeFlux && stripos($typeFlux, 'Financement') !== false) {
+         Log::info("Matched: Financement - Classes 1, 4, 5");
+        $query->where(function($q) {
+            // ✅ AJOUT : Classes 4 et 5
+            $q->where('numero_de_compte', 'like', '1%')
+              ->orWhere('numero_de_compte', 'like', '4%')
+              ->orWhere('numero_de_compte', 'like', '5%');
+        });
     }
+    else {
+         Log::info("No match found. Returning default limit 500.");
+         $query->limit(500);
+    }
+
+    $comptes = $query->orderBy('numero_de_compte', 'asc')->get();
+    Log::info("Returning " . $comptes->count() . " accounts.");
+
+    return response()->json($comptes);
 }
+
+
 
 
 
