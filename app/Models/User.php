@@ -18,8 +18,7 @@ class User extends Authenticatable
         'role',
         'is_online',
         'company_id',
-        'habilitations',
-        'profile_photo_path',
+        'habilitations'
     ];
 
     protected $casts = [

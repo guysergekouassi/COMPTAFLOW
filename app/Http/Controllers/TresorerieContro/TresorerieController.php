@@ -19,14 +19,7 @@ class TresorerieController extends Controller
 {
 
     use ManagesCompany;
-    // Affiche la liste des trésoreries
 
-    /**
-     * Méthode utilitaire pour récupérer les données de base (liste des journaux et comptes classe 5).
-     */
-   /**
-     * Méthode utilitaire pour récupérer les données de base (liste des journaux et comptes classe 5).
-     */
     private function getBaseTreasuryData()
     {
         $user = Auth::user();
@@ -129,55 +122,6 @@ public function generateCashFlowPlan(Request $request)
     return view('Tresor.journaltresorerie', array_merge($baseData, $reportData));
 }
 
-//   public function index()
-//     {
-//         $user = Auth::user();
-
-
-//         $companyIdsToView = collect();
-
-//         if ($user->role === 'admin') {
-
-//             $companyIdsToView = $this->getManagedCompanyIds();
-//         } elseif ($user->role === 'super_admin') {
-
-//             $activeId = session('active_company_id');
-//             if ($activeId) {
-//                 $companyIdsToView = [$activeId];
-//             }
-//         } else {
-
-//             $companyIdsToView = [$user->company_id];
-//         }
-
-//         if (empty($companyIdsToView)) {
-//              $tresoreries = collect();
-//              $companyIdForPlanComptable = null;
-//         } else {
-
-//             $query = Tresoreries::whereIn('company_id', $companyIdsToView);
-//             $companyIdForPlanComptable = $user->company_id;
-
-
-//             if ($user->role !== 'admin' && $user->role !== 'super_admin') {
-//                 $query->where('user_id', $user->id);
-//             }
-
-//             $tresoreries = $query->get();
-//         }
-
-//         if (is_null($companyIdForPlanComptable)) {
-//              $comptesCinq = collect();
-//         } else {
-//              $comptesCinq = PlanComptable::where('company_id', $companyIdForPlanComptable)
-//                 ->where('numero_de_compte', 'like', '5%')
-//                 ->orderBy('numero_de_compte')
-//                 ->get();
-//         }
-
-//         return view('Tresor.journaltresorerie', compact('tresoreries', 'comptesCinq'));
-//     }
-    // Affiche le formulaire pour créer une nouvelle trésorerie
     public function create()
     {
         $user = Auth::user();
@@ -331,17 +275,13 @@ public function generateCashFlowPlan(Request $request)
     public function destroy($id)
     {
         $user = Auth::user();
-        // 🛑 AJOUT DE LA VÉRIFICATION D'AUTORISATION 🛑
-    // Seuls les utilisateurs 'admin' ou 'super_admin' sont autorisés à supprimer.
+
     if ($user->role !== 'admin' && $user->role !== 'super_admin') {
         // Option 1 : Rediriger avec un message d'erreur clair
         return redirect()->route('indextresorerie')->with('error', 'Vous n\'êtes pas autorisé à supprimer une trésorerie.');
     }
         $tresorerie = Tresoreries::findOrFail($id);
-        // Vous pourriez également ajouter une vérification si la trésorerie est liée à des écritures (comme dans votre CodeJournalController)
-    // if ($tresorerieEstUtilisee) {
-    //     return redirect()->route('indextresorerie')->with('error', 'Cette trésorerie est utilisée dans des transactions et ne peut pas être supprimée.');
-    // }
+
         $tresorerie->delete();
 
         return redirect()->route('indextresorerie')->with('success', 'Trésorerie supprimée avec succès');
@@ -358,16 +298,10 @@ public function exportCashFlowCsv(Request $request)
         return back()->with('error', 'Veuillez sélectionner une compagnie active avant d\'exporter.');
     }
 
-    // --- Répétez ou Extrayez la Logique de Calcul ici ---
 
-    // Pour l'exemple, supposons que vous avez extrait la logique de calcul dans une méthode
-    // pour obtenir les données formatées et les totaux
     list($cashFlowData, $totals) = $this->getCashFlowCalculation($companyId, $request);
 
 
-    // ----------------------------------------------------
-
-    // 2. Préparation du contenu CSV
     $headers = [
         'Compte Trésorerie', 'Solde Initial', 'Encaissements (Débit)', 'Décaissements (Crédit)', 'Solde Final'
     ];

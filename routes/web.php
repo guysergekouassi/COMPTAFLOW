@@ -66,20 +66,6 @@ Route::get('/login', function () {
 })->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
-// DEBUG ROUTE - TO DELETE LATER
-Route::get('/debug-comptes', function () {
-    $user = auth()->user();
-    if (!$user) return 'Not logged in';
-    
-    $counts = \App\Models\PlanComptable::where('company_id', $user->company_id)
-        ->selectRaw('LEFT(numero_de_compte, 1) as classe, count(*) as count')
-        ->groupBy('classe')
-        ->orderBy('classe')
-        ->get();
-        
-    return response()->json($counts);
-});
-
 // Redirection vers le dashboard selon rôle après login
 Route::get('/dashboard', function () {
     $user = auth()->user();
@@ -153,7 +139,6 @@ Route::middleware('auth')->group(function () {
 
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE
     Route::get('/accounting_entry_real', [EcritureComptableController::class, 'index'])->name('accounting_entry_real');
-    Route::get('/api/comptes-par-flux', [EcritureComptableController::class, 'getComptesParFlux'])->name('api.comptes_par_flux'); // NEW AJAX ROUTE
     Route::post('/accounting_entry_real', [EcritureComptableController::class, 'storeMultiple'])->name('storeMultiple.storeMultiple');
     Route::get('/saisie-directe-modal', [EcritureComptableController::class, 'showSaisieModal'])->name('modal_saisie_direct');
 
@@ -241,14 +226,6 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
     // *****************ROUTE FLUX DE TRESORERIE
     Route::get('/flux_tresorerie', [FluxTresorerieController::class, 'index'])->name('flux_tresorerie');
 
-    // *****************ROUTES PROFIL ET PARAMÈTRES UTILISATEUR
-    Route::get('/profile', [UserController::class, 'showProfile'])->name('profile');
-    Route::get('/settings', [UserController::class, 'settings'])->name('settings');
-    Route::put('/settings/account', [UserController::class, 'updateAccount'])->name('settings.account');
-    Route::put('/settings/password', [UserController::class, 'updatePassword'])->name('settings.password');
-    Route::post('/settings/avatar', [UserController::class, 'updateAvatar'])->name('settings.avatar');
-    Route::get('/my-dashboard', [UserController::class, 'personalDashboard'])->name('personal.dashboard');
-
     // Dashboard Admin
     Route::get('/admin/dashboards', [UserController::class, 'dashboardStats'])->name('admin.dashboard');
 
@@ -270,15 +247,14 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
         // Routes Tresorerie (ressource complète)
 // 1. Routes Statiques Spécifiques (ex: /tresorerie/plan, /tresorerie/create, /tresorerie/store, /journal-tresorerie/defaut)
 
-Route::get('/tresorerie/plan', [TresorerieController::class, 'generateCashFlowPlan'])->name('generate_cash_flow_plan');
-Route::get('/tresorerie/previsualisation', [TresorerieController::class, 'previewCashFlowPdf'])->name('preview_cash_flow_pdf');
-Route::get('/tresorerie/pdf', [TresorerieController::class, 'generatePdf'])
+Route::get('/plan/poste', [PosteTresorController::class, 'generateCashFlowPlan'])->name('generate_cash_flow_plan');
+Route::get('/previsualisation/poste', [PosteTresorController::class, 'previewCashFlowPdf'])->name('preview_cash_flow_pdf');
+Route::get('/pdf/poste', [PosteTresorController::class, 'generatePdf'])
     ->name('generate_cash_flow_pdf');
 Route::get('/tresorerie/create', [TresorerieController::class, 'create'])->name('createtresorerie');
 Route::post('/tresorerie/store', [TresorerieController::class, 'store'])->name('storetresorerie');
 Route::post('/journal-tresorerie/defaut', [TresorerieController::class, 'loadDefaultTresorerie'])->name('journal_tresorerie.defaut');
-Route::get('/tresorerie/plan', [TresorerieController::class, 'generateCashFlowPlan'])
-    ->name('generate_cash_flow_plan');
+Route::put('/postetresorerie/{id}', [PosteTresorController::class, 'update'])->name('postetresorerie.update');
 
 
 

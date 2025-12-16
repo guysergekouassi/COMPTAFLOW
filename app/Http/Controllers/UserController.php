@@ -408,7 +408,6 @@ public function impersonate(User $user)
             return redirect('/login')->with('error', "Compte administrateur original introuvable ou supprimé.");
         }
 
-
         // 2. Déconnecter l'utilisateur actuel et reconnecter l'administrateur
         Auth::logout();
         Auth::login($originalAdmin);
@@ -416,128 +415,6 @@ public function impersonate(User $user)
         // 3. Rediriger l'administrateur vers la page de gestion des utilisateurs
         return redirect()->route('user_management')->with('success',
             "Vous êtes revenu à votre compte d'administrateur.");
-    }
-
-    /**
-     * Affiche le profil de l'utilisateur connecté
-     */
-    public function showProfile()
-    {
-        $user = Auth::user();
-        $company = $user->company;
-        $habilitations = $user->habilitations ?? [];
-        
-        // Statistiques personnelles
-        $stats = [
-            'total_connections' => 0, // À implémenter avec un système de logs
-            'last_activity' => $user->updated_at,
-            'member_since' => $user->created_at,
-            'habilitations_count' => count(array_filter($habilitations)),
-        ];
-        
-        return view('user.profile', compact('user', 'company', 'habilitations', 'stats'));
-    }
-
-    /**
-     * Affiche la page des paramètres
-     */
-    public function settings()
-    {
-        $user = Auth::user();
-        $habilitations = $user->habilitations ?? [];
-        
-        return view('user.settings', compact('user', 'habilitations'));
-    }
-
-    /**
-     * Met à jour les informations du compte
-     */
-    public function updateAccount(Request $request)
-    {
-        $user = Auth::user();
-        
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email_adresse' => 'required|email|unique:users,email_adresse,' . $user->id,
-        ]);
-        
-        $user->update($validated);
-        
-        return redirect()->route('settings')->with('success', 'Informations mises à jour avec succès.');
-    }
-
-    /**
-     * Met à jour le mot de passe
-     */
-    public function updatePassword(Request $request)
-    {
-        $user = Auth::user();
-        
-        $validated = $request->validate([
-            'current_password' => 'required',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-        
-        // Vérifier l'ancien mot de passe
-        if (!Hash::check($validated['current_password'], $user->password)) {
-            return back()->withErrors(['current_password' => 'Le mot de passe actuel est incorrect.']);
-        }
-        
-        $user->update([
-            'password' => Hash::make($validated['password'])
-        ]);
-        
-        return redirect()->route('settings')->with('success', 'Mot de passe modifié avec succès.');
-    }
-
-    /**
-     * Met à jour l'avatar (future implémentation)
-     */
-    public function updateAvatar(Request $request)
-    {
-        $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB Max
-        ]);
-
-        $user = Auth::user();
-
-        if ($request->hasFile('avatar')) {
-            // Supprimer l'ancienne photo si elle existe (Optionnel mais recommandé)
-            if ($user->profile_photo_path) {
-                // \Illuminate\Support\Facades\Storage::disk('public')->delete($user->profile_photo_path);
-            }
-
-            $path = $request->file('avatar')->store('avatars', 'public');
-
-            $user->update([
-                'profile_photo_path' => $path,
-            ]);
-
-            return back()->with('success', 'Photo de profil mise à jour avec succès.');
-        }
-
-        return back()->with('error', 'Aucun fichier sélectionné.');
-    }
-
-    /**
-     * Affiche le dashboard personnel de l'utilisateur
-     */
-    public function personalDashboard()
-    {
-        $user = Auth::user();
-        $company = $user->company;
-        $habilitations = $user->habilitations ?? [];
-        
-        // Statistiques personnelles
-        $stats = [
-            'total_logins' => 0, // À implémenter
-            'last_login' => $user->updated_at,
-            'account_age_days' => $user->created_at->diffInDays(now()),
-            'active_sessions' => 1, // À implémenter
-        ];
-        
-        return view('user.personal-dashboard', compact('user', 'company', 'habilitations', 'stats'));
     }
 }
 

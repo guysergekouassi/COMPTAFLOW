@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 use App\Models\JournalSaisi;
-
+use App\Models\CodeJournal; // CLASSE À AJOUTER
+use App\Models\PlanComptable; // CLASSE À AJOUTER
+use App\Models\tresoreries\Tresoreries; // CLASSE À AJOUTER
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 

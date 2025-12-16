@@ -26,151 +26,82 @@
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
-                        <!-- Page Header -->
-                        <div class="text-center mb-5">
-                            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 70px; height: 70px; border-radius: 20px; box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);">
-                                <i class="bx bx-list-ul text-white" style="font-size: 32px;"></i>
-                            </div>
-                            <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Liste des Écritures</h1>
-                            <p class="text-muted mb-0" style="font-size: 1.1rem;"><i class="bx bx-info-circle me-1"></i>Consultez et gérez toutes vos écritures comptables</p>
-                        </div>
-
-
+                        <div class="row g-6 mb-6">
 
                             <div class="mb-3">
-                                <a href="javascript:history.back()" class="btn btn-sm" style="background: linear-gradient(135deg, #90a4ae 0%, #607d8b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(96, 125, 139, 0.3);">
-                                    <i class='bx bx-arrow-back me-1'></i> Retour
+                                <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
+                                    <i class='bx  bx-reply-stroke'></i>
                                 </a>
                             </div>
 
-                            <!-- Information Bar -->
-                            <div class="card mb-4 border-0 shadow-sm" style="border-radius: 16px; background: #fff;">
-                                <div class="card-body p-4">
-                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
-                                        
-                                        <!-- Année -->
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="d-flex align-items-center justify-content-center rounded-3 bg-label-primary p-2" style="width: 48px; height: 48px; min-width: 48px;">
-                                                <i class="bx bx-calendar fs-4 text-primary"></i>
-                                            </div>
-                                            <div>
-                                                <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">Année</div>
-                                                <div class="fs-5 fw-bold text-dark">{{ $data['annee'] ?? '-' }}</div>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-none d-md-block border-end" style="height: 40px;"></div>
-
-                                        <!-- Mois -->
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="d-flex align-items-center justify-content-center rounded-3 bg-label-info p-2" style="width: 48px; height: 48px; min-width: 48px;">
-                                                <i class="bx bx-calendar-event fs-4 text-info"></i>
-                                            </div>
-                                            <div>
-                                                <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">Mois</div>
-                                                <div class="fs-5 fw-bold text-dark text-capitalize">
-                                                    {{ \Carbon\Carbon::createFromDate(null, $data['mois'] ?? 1)->locale('fr')->monthName }}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-none d-md-block border-end" style="height: 40px;"></div>
-
-                                        <!-- Code Journal -->
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="d-flex align-items-center justify-content-center rounded-3 bg-label-success p-2" style="width: 48px; height: 48px; min-width: 48px;">
-                                                <i class="bx bx-hash fs-4 text-success"></i>
-                                            </div>
-                                            <div>
-                                                <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">Code</div>
-                                                <div class="fs-5 fw-bold text-dark">{{ $data['code'] ?? '-' }}</div>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-none d-md-block border-end" style="height: 40px;"></div>
-
-                                        <!-- Type -->
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="d-flex align-items-center justify-content-center rounded-3 bg-label-warning p-2" style="width: 48px; height: 48px; min-width: 48px;">
-                                                <i class="bx bx-category fs-4 text-warning"></i>
-                                            </div>
-                                            <div>
-                                                <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">Type</div>
-                                                <div class="fs-5 fw-bold text-dark">{{ $data['type'] ?? '-' }}</div>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-none d-md-block border-end" style="height: 40px;"></div>
-
-                                        <!-- Intitulé -->
-                                        <div class="d-flex align-items-center gap-3 flex-grow-1">
-                                            <div class="d-flex align-items-center justify-content-center rounded-3 bg-label-secondary p-2" style="width: 48px; height: 48px; min-width: 48px;">
-                                                <i class="bx bx-file fs-4 text-secondary"></i>
-                                            </div>
-                                            <div>
-                                                <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">Intitulé</div>
-                                                <div class="fs-5 fw-bold text-dark text-truncate" style="max-width: 250px;">{{ $data['intitule'] ?? '-' }}</div>
-                                            </div>
-                                        </div>
-
-                                    </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="badge bg-primary text-white px-3 py-2 rounded">{{ $data['annee'] ?? 'N/A' }}
                                 </div>
-                            </div>
+                                <div class="badge bg-secondary text-white px-3 py-2 rounded">
+                                    {{ \Carbon\Carbon::createFromDate(null, $data['mois'] ?? 1)->locale('fr')->monthName }}
+                                </div>
+                                <div class="badge bg-info text-dark px-3 py-2 rounded">{{ $data['code'] ?? 'N/A' }}
+                                </div>
+                                <div class="badge bg-success text-white px-3 py-2 rounded">{{ $data['type'] ?? 'N/A' }}
+                                </div>
+                                <div class="badge bg-warning text-dark px-3 py-2 rounded">
+                                    {{ $data['intitule'] ?? 'N/A' }}</div>
 
-
+                                {{-- <div class="badge bg-primary text-white px-3 py-2 rounded">
+                                    Période d'exercice : {{ $exercice->date_debut ?? 'N/A' }} au
+                                    {{ $exercice->date_fin ?? 'N/A' }}
+                                </div> --}}
 
                             </div>
 
 
 
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none; transition: transform 0.3s, box-shadow 0.3s;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'">
-                                        <div class="card-body">
-                                            <div class="d-flex align-items-start justify-content-between">
-                                                <div class="content-left">
-                                                    <span class="text-heading" style="font-weight: 600; color: #566a7f;">Total débit</span>
-                                                    <div class="d-flex align-items-center my-1">
-                                                        <h4 class="mb-0 me-2" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 700;">
-                                                            {{ rtrim(rtrim(number_format($totalDebit, 2, ',', ' '), '0'), ',') }}
-                                                        </h4>
+                            <div class="col-sm-6 col-xl-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div class="content-left">
+                                                <span class="text-heading">Total débit</span>
+                                                <div class="d-flex align-items-center my-1">
+                                                    <h4 class="mb-0 me-2">
+                                                        {{ rtrim(rtrim(number_format($totalDebit, 2, ',', ' '), '0'), ',') }}
+                                                    </h4>
 
-                                                    </div>
-                                                    <!-- <small class="mb-0">Total Users</small> -->
                                                 </div>
-                                                <div class="avatar">
-                                                    <span class="avatar-initial rounded" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                                                        <i class="icon-base bx bx-arrow-up icon-lg text-white"></i>
-                                                    </span>
-                                                </div>
+                                                <!-- <small class="mb-0">Total Users</small> -->
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none; transition: transform 0.3s, box-shadow 0.3s;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'">
-                                        <div class="card-body">
-                                            <div class="d-flex align-items-start justify-content-between">
-                                                <div class="content-left">
-                                                    <span class="text-heading" style="font-weight: 600; color: #566a7f;">Total crédit</span>
-                                                    <div class="d-flex align-items-center my-1">
-                                                        <h4 class="mb-0 me-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 700;">
-                                                            {{ rtrim(rtrim(number_format($totalCredit, 2, ',', ' '), '0'), ',') }}
-                                                        </h4>
-
-                                                    </div>
-                                                </div>
-                                                <div class="avatar">
-                                                    <span class="avatar-initial rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                                        <i class="icon-base bx bx-arrow-down icon-lg text-white"></i>
-                                                    </span>
-                                                </div>
+                                            <div class="avatar">
+                                                <span class="avatar-initial rounded bg-label-danger">
+                                                    <i class="icon-base bx bx-arrow-up icon-lg"></i>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-sm-6 col-xl-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div class="content-left">
+                                                <span class="text-heading">Total crédit</span>
+                                                <div class="d-flex align-items-center my-1">
+                                                    <h4 class="mb-0 me-2">
+                                                        {{ rtrim(rtrim(number_format($totalCredit, 2, ',', ' '), '0'), ',') }}
+                                                    </h4>
 
+                                                </div>
+                                                <!-- <small class="mb-0">Last week analytics </small> -->
+                                            </div>
+                                            <div class="avatar">
+                                                <span class="avatar-initial rounded bg-label-primary">
+                                                    <i class="icon-base bx bx-arrow-down icon-lg"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             @if (session('success'))
                                 <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
@@ -199,24 +130,24 @@
 
 
                             <!-- Section table -->
-                            <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
-                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-bottom: 2px solid #e7e9ed; padding: 1.5rem;">
-                                    <h5 class="mb-0" style="font-weight: 700; color: #566a7f; font-size: 1.25rem;"><i class="bx bx-list-ul me-2"></i>Listing des écritures du journal</h5>
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Listing des ecritures du journal</h5>
                                     <div>
-                                        <button class="btn btn-sm me-2" data-bs-toggle="collapse"
-                                            data-bs-target="#filterPanel" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(79, 172, 254, 0.3);">
+                                        <button class="btn btn-outline-primary me-2 btn-sm" data-bs-toggle="collapse"
+                                            data-bs-target="#filterPanel">
                                             <i class="bx bx-filter-alt me-1"></i> Filtrer
                                         </button>
 
 
                                         @if ($exercice->cloturer == 0)
-                                            <button type="button" class="btn btn-sm" data-bs-toggle="modal"
-                                                data-bs-target="#modalCenterCreate" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">
-                                                <i class="bx bx-plus me-1"></i> Nouvelle écriture
+                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                                data-bs-target="#modalCenterCreate">
+                                                Nouvelle écriture
                                             </button>
                                         @else
-                                            <button type="button" class="btn btn-sm" disabled style="background: linear-gradient(135deg, #90a4ae 0%, #607d8b 100%); color: white; border: none; border-radius: 8px; opacity: 0.7; cursor: not-allowed;">
-                                                <i class="bx bx-lock me-1"></i> Exercice clôturé
+                                            <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                                Exercice clôturé
                                             </button>
                                         @endif
                                     </div>
@@ -327,16 +258,16 @@
 
                                                 <tr class="clickable-row {{ $rowClass }} saisie-groupes"
                                                     data-n_saisie="{{ $ecriture->n_saisie }}"
-                                                    data-id="{{ $data['id_journal'] ?? '' }}"
-                                                    data-annee="{{ $data['annee'] ?? '' }}"
-                                                    data-mois="{{ $data['mois'] ?? '' }}"
-                                                    data-exercices_comptables_id="{{ $data['id_exercice'] ?? '' }}"
-                                                    data-code_journals_id="{{ $data['id_code'] ?? '' }}"
-                                                    data-code_journal="{{ $data['code'] ?? '' }}" {{-- data-compte_de_contrepartie="{{ $data['compte_de_contrepartie'] }}"
+                                                    data-id="{{ $data['id_journal'] }}"
+                                                    data-annee="{{ $data['annee'] }}"
+                                                    data-mois="{{ $data['mois'] }}"
+                                                    data-exercices_comptables_id="{{ $data['id_exercice'] }}"
+                                                    data-code_journals_id="{{ $data['id_code'] }}"
+                                                    data-code_journal="{{ $data['code'] }}" {{-- data-compte_de_contrepartie="{{ $data['compte_de_contrepartie'] }}"
                                                     data-compte_de_tresorerie="{{ $data['compte_de_tresorerie'] }}"
                                                     data-rapprochement_sur="{{ $data['rapprochement_sur'] }}" --}}
-                                                    data-intitule="{{ $data['intitule'] ?? '' }}"
-                                                    data-type="{{ $data['type'] ?? '' }} ">
+                                                    data-intitule="{{ $data['intitule'] }}"
+                                                    data-type="{{ $data['type'] }} ">
 
 
                                                     <td>{{ $ecriture->date }}</td>
@@ -356,18 +287,7 @@
                                                     <td>
                                                         {{ fmod($ecriture->credit, 1) == 0 ? number_format($ecriture->credit, 0, ',', ' ') : number_format($ecriture->credit, 2, ',', ' ') }}
                                                     </td>
-                                                    <td>
-                                                        {{ $ecriture->compteTresorerie ? $ecriture->compteTresorerie->name : '-' }}
-                                                    </td>
-                                                    <td>
-                                                        @if($ecriture->type_flux == 'debit')
-                                                            Décaissement (Débit)
-                                                        @elseif($ecriture->type_flux == 'credit')
-                                                            Encaissement (Crédit)
-                                                        @else
-                                                            -
-                                                        @endif
-                                                    </td>
+
                                                     <td class="text-center">
                                                         @if ($ecriture->piece_justificatif)
                                                             <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}"
@@ -387,6 +307,7 @@
                                                                 title="Aucune pièce justificative disponible"></i>
                                                         @endif
                                                     </td>
+
                                                 </tr>
                                             @endforeach
                                         </tbody>
@@ -533,7 +454,7 @@
                                                         <input type="hidden" id="imputation" name="code_journal_id"
                                                             value="{{ $data['id_code'] ?? 'N/A' }}"
                                                             class="form-control"
-                                                            data-code_imputation="{{ $data['code'] ?? '' }}" />
+                                                            data-code_imputation="{{ $data['code'] }}" />
 
 
                                                         <!-- <div class="invalid-feedback">Veuillez sélectionner une imputation.</div> -->
@@ -606,131 +527,6 @@
 
                                                         <script>
                                                             document.addEventListener('DOMContentLoaded', function() {
-                                                                console.log('=== Script de filtrage des comptes chargé ===');
-                                                                
-                                                                // Variable pour éviter d'attacher plusieurs fois les événements
-                                                                let eventsAttached = false;
-
-                                                                // Attendre que le modal soit complètement affiché avant d'initialiser
-                                                                $('#modalCenterCreate').on('shown.bs.modal', function () {
-                                                                    console.log('🔔 Modal ouvert - Initialisation du filtrage des comptes');
-                                                                    
-                                                                    // Éviter d'attacher les événements plusieurs fois
-                                                                    if (eventsAttached) {
-                                                                        console.log('⚠️ Événements déjà attachés, skip');
-                                                                        return;
-                                                                    }
-                                                                    
-                                                                    const compteTresorerieField = document.getElementById('compteTresorerieField');
-                                                                    const compteGeneralSelect = document.getElementById('compte_general');
-                                                                    const $compteGeneralSelect = $(compteGeneralSelect);
-                                                                    const $compteTresorerieField = $(compteTresorerieField);
-                                                                    const labelCompteGeneral = document.querySelector('label[for="compte_general"]');
-
-                                                                    console.log('compteTresorerieField:', compteTresorerieField);
-                                                                    console.log('compteGeneralSelect:', compteGeneralSelect);
-
-                                                                    // URL de l'API
-                                                                    const apiAccountsUrl = "{{ route('api.comptes_par_flux') }}";
-
-                                                                    // Fonction pour charger les comptes via AJAX
-                                                                    function loadAccountsByFlow() {
-                                                                        const selectedOption = compteTresorerieField.options[compteTresorerieField.selectedIndex];
-                                                                        let flowType = '';
-                                                                        if (selectedOption) {
-                                                                            flowType = selectedOption.getAttribute('data-type') || '';
-                                                                        }
-                                                                        
-                                                                        console.log('=== loadAccountsByFlow appelée ===');
-                                                                        console.log('Selected option:', selectedOption);
-                                                                        console.log('Flow type:', flowType);
-                                                                        
-                                                                        // Feedback visuel
-                                                                        if(labelCompteGeneral) {
-                                                                            labelCompteGeneral.textContent = "Compte Général (Chargement...)";
-                                                                            labelCompteGeneral.style.color = "red";
-                                                                        }
-                                                                        
-                                                                        // Désactiver le select pendant le chargement
-                                                                        $compteGeneralSelect.prop('disabled', true);
-                                                                        $compteGeneralSelect.selectpicker('refresh');
-
-                                                                        console.log(`Chargement des comptes pour le flux: "${flowType}" depuis ${apiAccountsUrl}`);
-
-                                                                        fetch(`${apiAccountsUrl}?type=${encodeURIComponent(flowType)}`)
-                                                                            .then(response => {
-                                                                                console.log('Réponse reçue:', response.status);
-                                                                                if (!response.ok) {
-                                                                                    throw new Error('Network response was not ok');
-                                                                                }
-                                                                                return response.json();
-                                                                            })
-                                                                            .then(data => {
-                                                                                console.log(`✅ ${data.length} comptes reçus`);
-                                                                                console.log('Premiers comptes:', data.slice(0, 5));
-                                                                                
-                                                                                // Vider les options actuelles
-                                                                                $compteGeneralSelect.empty();
-                                                                                
-                                                                                // Remplir avec les nouvelles données
-                                                                                const fragment = document.createDocumentFragment();
-                                                                                data.forEach(account => {
-                                                                                    const option = document.createElement('option');
-                                                                                    option.value = account.id;
-                                                                                    option.text = `${account.numero_de_compte} - ${account.intitule}`;
-                                                                                    option.setAttribute('data-intitule_compte_general', account.numero_de_compte);
-                                                                                    fragment.appendChild(option);
-                                                                                });
-                                                                                compteGeneralSelect.appendChild(fragment);
-
-                                                                                // IMPORTANT: Réactiver et rafraîchir selectpicker
-                                                                                $compteGeneralSelect.prop('disabled', false);
-                                                                                $compteGeneralSelect.selectpicker('destroy'); // Détruire l'ancienne instance
-                                                                                $compteGeneralSelect.selectpicker(); // Réinitialiser
-                                                                                $compteGeneralSelect.selectpicker('refresh'); // Rafraîchir
-                                                                                
-                                                                                // Reset UI Feedback
-                                                                                if(labelCompteGeneral) {
-                                                                                    labelCompteGeneral.textContent = "Compte Général";
-                                                                                    labelCompteGeneral.style.color = "";
-                                                                                }
-                                                                                
-                                                                                console.log('✅ Comptes chargés et affichés avec succès');
-                                                                            })
-                                                                            .catch(error => {
-                                                                                console.error('❌ Erreur lors du chargement des comptes:', error);
-                                                                                alert("Erreur de chargement des comptes: " + error.message);
-                                                                                
-                                                                                $compteGeneralSelect.prop('disabled', false);
-                                                                                $compteGeneralSelect.selectpicker('refresh');
-                                                                                
-                                                                                if(labelCompteGeneral) {
-                                                                                    labelCompteGeneral.textContent = "Compte Général (Erreur)";
-                                                                                }
-                                                                            });
-                                                                    }
-
-                                                                    // Attacher les événements
-                                                                    if (compteTresorerieField) {
-                                                                        console.log('Attachement des événements au champ de trésorerie...');
-                                                                        
-                                                                        // Événement Bootstrap Select (le plus fiable pour selectpicker)
-                                                                        $compteTresorerieField.on('changed.bs.select', function(e, clickedIndex, isSelected, previousValue) {
-                                                                            console.log('🔔 Événement CHANGED.BS.SELECT déclenché');
-                                                                            loadAccountsByFlow();
-                                                                        });
-                                                                        
-                                                                        console.log('✅ Événements attachés avec succès');
-                                                                        eventsAttached = true;
-                                                                    } else {
-                                                                        console.error('❌ CompteTresorerieField introuvable!');
-                                                                    }
-                                                                });
-
-                                                            });
-                                                        </script>
-                                                        <script>
-                                                            document.addEventListener('DOMContentLoaded', function() {
                                                                 const compteGeneral = document.getElementById('compte_general');
                                                                 const compteTiersWrapper = document.getElementById('compte_tiers_wrapper');
                                                                 const compteTiers = $('#compte_tiers'); // jQuery pour bootstrap-select
@@ -754,116 +550,6 @@
                                                             });
                                                         </script>
 
-                                                        {{-- <script>
-                                                            document.addEventListener('DOMContentLoaded', function() {
-                                                                const compteGeneral = document.getElementById('compte_general');
-                                                                const compteTiersWrapper = document.getElementById('compte_tiers_wrapper');
-                                                                const compteTiers = $('#compte_tiers'); // jQuery pour bootstrap-select
-
-                                                                // Stocker toutes les options de tiers pour le filtrage
-                                                                const allTiersOptions = $('#compte_tiers option').clone();
-
-                                                                compteGeneral.addEventListener('change', function() {
-                                                                    const selectedOption = compteGeneral.options[compteGeneral.selectedIndex];
-                                                                    const numeroCompte = selectedOption.getAttribute('data-intitule_compte_general');
-
-                                                                    if (numeroCompte) {
-                                                                        // Récupérer les 4 premiers chiffres
-                                                                        const prefix4 = numeroCompte.substring(0, 4);
-
-                                                                        // Filtrer les options de tiers
-                                                                        const filteredOptions = allTiersOptions.filter(function() {
-                                                                            const numeroTiers = $(this).data('intitule_tiers');
-                                                                            return numeroTiers && numeroTiers.startsWith(prefix4);
-                                                                        });
-
-                                                                        if (filteredOptions.length > 0) {
-                                                                            // Afficher le wrapper et les options filtrées
-                                                                            compteTiersWrapper.style.display = 'block';
-                                                                            compteTiers.html(filteredOptions); // remplacer les options
-                                                                            compteTiers.selectpicker('refresh');
-                                                                            compteTiers.selectpicker('val', '');
-                                                                        } else {
-                                                                            // Masquer si aucun tiers correspondant
-                                                                            compteTiersWrapper.style.display = 'none';
-                                                                            compteTiers.selectpicker('val', '').selectpicker('refresh');
-                                                                        }
-                                                                    } else {
-                                                                        // Masquer si aucun compte général sélectionné
-                                                                        compteTiersWrapper.style.display = 'none';
-                                                                        compteTiers.selectpicker('val', '').selectpicker('refresh');
-                                                                    }
-                                                                });
-                                                            });
-                                                        </script> --}}
-
-                                                        <!-- Script pour gérer l'exclusion mutuelle Débit/Crédit selon le Type de Flux -->
-                                                        <script>
-                                                            document.addEventListener('DOMContentLoaded', function() {
-                                                                console.log('=== Script d\'exclusion mutuelle Débit/Crédit chargé ===');
-                                                                
-                                                                // Variable pour éviter d'attacher plusieurs fois les événements
-                                                                let fluxEventsAttached = false;
-
-                                                                // Attendre que le modal soit complètement affiché
-                                                                $('#modalCenterCreate').on('shown.bs.modal', function () {
-                                                                    console.log('🔔 Modal ouvert - Initialisation de l\'exclusion mutuelle Débit/Crédit');
-                                                                    
-                                                                    // Éviter d'attacher les événements plusieurs fois
-                                                                    if (fluxEventsAttached) {
-                                                                        console.log('⚠️ Événements flux déjà attachés, skip');
-                                                                        return;
-                                                                    }
-                                                                    
-                                                                    const typeFluxSelect = document.getElementById('typeFlux');
-                                                                    const debitInput = document.getElementById('debit');
-                                                                    const creditInput = document.getElementById('credit');
-                                                                    
-                                                                    console.log('typeFluxSelect:', typeFluxSelect);
-                                                                    console.log('debitInput:', debitInput);
-                                                                    console.log('creditInput:', creditInput);
-                                                                    
-                                                                    // Fonction pour gérer l'exclusion mutuelle
-                                                                    function handleFluxTypeChange() {
-                                                                        const selectedType = typeFluxSelect.value;
-                                                                        console.log('🔄 Type de flux sélectionné:', selectedType);
-                                                                        
-                                                                        if (selectedType === 'debit') {
-                                                                            // Décaissement : activer Débit, désactiver Crédit
-                                                                            debitInput.disabled = false;
-                                                                            creditInput.disabled = true;
-                                                                            creditInput.value = ''; // Vider le champ Crédit
-                                                                            console.log('✅ Débit activé, Crédit désactivé');
-                                                                        } else if (selectedType === 'credit') {
-                                                                            // Encaissement : activer Crédit, désactiver Débit
-                                                                            creditInput.disabled = false;
-                                                                            debitInput.disabled = true;
-                                                                            debitInput.value = ''; // Vider le champ Débit
-                                                                            console.log('✅ Crédit activé, Débit désactivé');
-                                                                        }
-                                                                    }
-                                                                    
-                                                                    // Attacher l'événement
-                                                                    if (typeFluxSelect) {
-                                                                        console.log('Attachement de l\'événement au champ Type de Flux...');
-                                                                        
-                                                                        // Événement Bootstrap Select
-                                                                        $(typeFluxSelect).on('changed.bs.select', function(e) {
-                                                                            console.log('🔔 Événement changed.bs.select déclenché');
-                                                                            handleFluxTypeChange();
-                                                                        });
-                                                                        
-                                                                        // Initialiser au chargement du modal
-                                                                        handleFluxTypeChange();
-                                                                        
-                                                                        console.log('✅ Événement Type de Flux attaché avec succès');
-                                                                        fluxEventsAttached = true;
-                                                                    } else {
-                                                                        console.error('❌ typeFluxSelect introuvable!');
-                                                                    }
-                                                                });
-                                                            });
-                                                        </script>
 
 
 
@@ -886,17 +572,17 @@
 
 
 
-
-
                                                                   <div class="col-md-3">
                                                                         <label for="compteTresorerieField" class="form-label">Poste de tresorerie</label>
+                                                                        {{-- Changement : Utiliser un ID simple pour JS --}}
                                                                         <select id="compteTresorerieField"
+                                                                                {{-- Enlever le name pour éviter les soumissions classiques. L'envoi se fera par JS --}}
                                                                                 class="selectpicker w-100"
                                                                                 data-live-search="true">
                                                                             <option value="">(Pas un flux spécifique)</option>
 
                                                                             @foreach($comptesTresorerie as $compteTresorerie)
-                                                                                <option value="{{ $compteTresorerie->id }}" data-type="{{ $compteTresorerie->type }}" data-subtext="{{ $compteTresorerie->type }}">
+                                                                                <option value="{{ $compteTresorerie->id }}" data-subtext="{{ $compteTresorerie->type }}">
                                                                                     {{ $compteTresorerie->name }}
                                                                                 </option>
                                                                             @endforeach
@@ -904,49 +590,22 @@
                                                                         <div class="invalid-feedback">Veuillez sélectionner une option.</div>
                                                                     </div>
 
-
-
-                                                             <div class="col-md-3">
-                                                            <label for="typeFlux" class="form-label">Type de Flux
-                                                                de tresorerie</label>
-                                                            <select id="typeFlux" name="typeFlux"
-                                                                class="selectpicker w-100" data-live-search="false"
+                                                      <div class="col-md-3">
+                                                        <label for="typeFluxField" class="form-label">Type de Flux de tresorerie</label>
+                                                        {{-- ID simplifié pour être lu par JS. Le 'name' est retiré. --}}
+                                                        <select id="typeFluxField"
+                                                                class="selectpicker w-100"
+                                                                data-live-search="false"
                                                                 required>
-                                                                 <option value="debit">Décaissement (Débit)</option>
-                                                                 <option value="credit">Encaissement (Crédit)</option>
-                                                            </select>
-                                                            <div class="invalid-feedback">Veuillez sélectionner une
-                                                                option.</div>
-                                                        </div>
+                                                            <option value="decaissement">Décaissement (Débit)</option>
+                                                            <option value="encaissement">Encaissement (Crédit)</option>
+                                                        </select>
+                                                        <div class="invalid-feedback">Veuillez sélectionner une option.</div>
+                                                    </div>
 
 
-                                                        {{-- <div class="col-md-3">
-                                                            <label for="plan_analytique" class="form-label">Plan
-                                                                Analytique</label>
-                                                            <select id="plan_analytique" name="plan_analytique"
-                                                                class="form-select" required>
-                                                                <option value="" selected disabled>Sélectionner
-                                                                </option>
-                                                                <option value="1">Oui</option>
-                                                                <option value="0">Non</option>
-                                                            </select>
-                                                            <div class="invalid-feedback">Veuillez sélectionner une
-                                                                option.</div>
-                                                        </div> --}}
 
 
-                                                        {{-- <div class="col-md-3">
-                                                            <label for="" class="form-label">Flux de
-                                                                Tresorerie</label>
-                                                            <select id="" name=""
-                                                                class="selectpicker w-100" data-live-search="false"
-                                                                title="Sélectionner">
-                                                                <option value="1">Oui</option>
-                                                                <option value="0">Non</option>
-                                                            </select>
-                                                            <div class="invalid-feedback">Veuillez sélectionner une
-                                                                option.</div>
-                                                        </div> --}}
                                                     </div>
 
                                                     <div class="col-md-4">
@@ -1005,12 +664,14 @@
                                                             <th>Cpte Tiers</th>
                                                             <th>Débit</th>
                                                             <th>Crédit</th>
-                                                            <th>Piece justificatif</th>
-                                                            <th>Analytique</th>
                                                             <th>Poste de trésorerie</th>
                                                             <th>Type de Flux</th>
+                                                            <th>Piece justificatif</th>
+                                                            <th>ANALYTIQUE</th>
+
                                                             <th>Modifier</th>
                                                             <th>Supprimer</th>
+
                                                         </tr>
                                                     </thead>
                                                     <tbody></tbody>
@@ -1151,7 +812,7 @@
                                     </div>
                                 </div>
                             </div>
-
+                        </div>
                     </div>
                     <!-- Content wrapper -->
                 </div>

@@ -6,6 +6,7 @@ use App\Models\CodeJournal;
 use App\Models\PlanComptable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\tresoreries\Tresoreries;
 use App\Traits\ManagesCompany;
 class CodeJournalController extends Controller
 {
@@ -17,54 +18,109 @@ use ManagesCompany;
 // Dans votre CodeJournalController ou similaire...
 
 public function index()
-    {
-        $user = Auth::user();
-        $currentCompanyId = $user->company_id;
+{
+    $user = Auth::user();
+    $currentCompanyId = $user->company_id;
 
-        // 1. DÉTERMINATION DES IDs DE COMPAGNIE À VISUALISER
-        if ($user->role === 'admin') {
-            // L'Admin voit toutes les compagnies gérées (mère + enfants)
-            $companyIdsToView = $this->getManagedCompanyIds();
-        } else {
-            // Un comptable/utilisateur voit les données de sa propre compagnie
-            $companyIdsToView = [$currentCompanyId];
-        }
+     // --- BLOC DE TEST : Ceci doit arrêter l'exécution et afficher des données ---
+    // Récupérer une seule entrée de trésorerie pour le test
+    $tresorerieTest = \App\Models\tresoreries\Tresoreries::where('company_id', $currentCompanyId)->first();
 
-        // 2. Requête de base pour la collection principale de la vue
-        $query = CodeJournal::whereIn('company_id', $companyIdsToView) // 🔑 CORRECTION : Utilisation de whereIn
-            ->orderByDesc('created_at');
+    // Si $tresorerieTest est null, c'est que la compagnie n'a pas de données de trésorerie.
+    // Sinon, dd() affichera l'objet Tresoreries.
 
-        // 3. FILTRAGE PAR RÔLE (Ajuster si vous voulez que les comptables voient TOUS les journaux de leur compagnie)
-        if ($user->role !== 'admin' && $user->role !== 'super_admin') {
-            // Si l'utilisateur n'est ni admin ni super_admin, il ne voit que ses créations
-            // Si votre comptable doit voir tous les journaux de sa compagnie, supprimez cette ligne.
-            $query->where('user_id', $user->id);
-        }
+    // 🛑 VÉRIFIEZ LE RÉSULTAT DE CE DD() 🛑
+    dd($tresorerieTest ? $tresorerieTest->toArray() : 'AUCUNE ENTREE DE TRESORERIE TROUVÉE POUR CETTE COMPAGNIE');
 
-        // 4. Exécution de la requête pour la vue principale (la liste)
-        $codeJournaux = $query->get();
-
-        // 5. Calculs statistiques
-        // Pour les stats, nous comptons sur toute la portée de visibilité.
-        $allJournauxForStats = CodeJournal::whereIn('company_id', $companyIdsToView)->get();
-
-        $totalJournauxCompany = $allJournauxForStats->count();
-
-        // Le nombre de journaux créés par ce user (compter uniquement dans sa compagnie actuelle est plus logique)
-        $userCreatedJournaux = CodeJournal::where('company_id', $currentCompanyId)
-                                            ->where('user_id', $user->id)
-                                            ->count();
-
-        // 6. Comptes de Trésorerie
-        // Cette requête doit se baser sur la compagnie actuelle (celle de l'utilisateur)
-        $comptesTresorerie = PlanComptable::where('company_id', $currentCompanyId)
-            ->where('numero_de_compte', 'like', '5%')
-            ->get();
-
-
-        // On passe $codeJournaux pour que la boucle @foreach fonctionne
-        return view('accounting_journals', compact('codeJournaux', 'totalJournauxCompany', 'userCreatedJournaux', 'comptesTresorerie'));
+    // --- FIN DU BLOC DE TEST : Le code ci-dessous doit être ignoré ---
+    // 1. DÉTERMINATION DES IDs DE COMPAGNIE À VISUALISER
+    if ($user->role === 'admin') {
+        $companyIdsToView = $this->getManagedCompanyIds();
+    } else {
+        $companyIdsToView = [$currentCompanyId];
     }
+
+    // 2. Requête de base pour la collection principale
+    $query = CodeJournal::whereIn('company_id', $companyIdsToView)
+        ->orderByDesc('created_at');
+
+    // 3. FILTRAGE PAR RÔLE
+    if ($user->role !== 'admin' && $user->role !== 'super_admin') {
+        $query->where('user_id', $user->id);
+    }
+
+    // 4. Exécution de la requête pour obtenir la collection de journaux
+    $code_journaux = $query->get();
+
+
+    // =============================================================
+    // LOGIQUE POUR ENRICHIR LES CODES JOURNAUX AVEC LA TRÉSORERIE
+    // =============================================================
+
+    // A. Récupérer les données de Trésorerie
+    $tresoreriesData = Tresoreries::whereIn('company_id', $companyIdsToView)
+        ->get()
+        // 🔑 CORRECTION CRUCIALE : Mettre la clé en MAJUSCULES
+        ->keyBy(function ($item) {
+            return strtoupper($item->code_journal);
+        });
+
+    // B. Récupérer les comptes du Plan Comptable
+    $planComptableIds = $code_journaux->pluck('compte_de_tresorerie')->filter()->unique();
+    $planComptableAccounts = PlanComptable::whereIn('id', $planComptableIds)
+        ->get()
+        ->keyBy('id');
+
+    // C. Parcourir et enrichir la collection $code_journaux
+    $code_journaux->map(function ($journal) use ($tresoreriesData, $planComptableAccounts) {
+        $codeTresorerie = null;
+
+        // Mettre le code journal en MAJUSCULES pour la comparaison
+        $journalCodeUpper = strtoupper($journal->code_journal);
+
+        // PRIORITÉ 1 : Le journal est un journal de Trésorerie (lien direct par code_journal)
+        // 🔑 CORRECTION CRUCIALE : Utiliser le code en MAJUSCULES pour vérifier l'existence
+        if ($tresoreriesData->has($journalCodeUpper)) {
+            $codeTresorerie = $tresoreriesData[$journalCodeUpper]->compte_de_contrepartie;
+        }
+
+        // PRIORITÉ 2 : Le journal est lié via l'ID de Plan Comptable
+        elseif ($journal->compte_de_tresorerie && $planComptableAccounts->has($journal->compte_de_tresorerie)) {
+            $compte = $planComptableAccounts[$journal->compte_de_tresorerie];
+            $codeTresorerie = $compte->numero_de_compte ?? null;
+        }
+
+        $journal->code_tresorerie_display = $codeTresorerie;
+        return $journal;
+    });
+
+    // 5. Calculs statistiques (le reste de votre code)
+    $allJournauxForStats = CodeJournal::whereIn('company_id', $companyIdsToView)->get();
+    $totalJournauxCompany = $allJournauxForStats->count();
+
+    $userCreatedJournaux = CodeJournal::where('company_id', $currentCompanyId)
+        ->where('user_id', $user->id)
+        ->count();
+
+    // 6. Comptes de Trésorerie
+    $comptesTresorerie = PlanComptable::where('company_id', $currentCompanyId)
+        ->where('numero_de_compte', 'like', '5%')
+        ->get();
+
+
+    // 7. On passe la variable ENRICHIE ($code_journaux) à la vue.
+    return view('accounting_journals', compact('code_journaux', 'totalJournauxCompany', 'userCreatedJournaux', 'comptesTresorerie'));
+}
+
+
+
+
+
+
+
+
+
+
 
     public function store(Request $request)
     {

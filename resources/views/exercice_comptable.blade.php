@@ -26,15 +26,6 @@
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
-                        <!-- Page Header -->
-                        <div class="text-center mb-5">
-                            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 70px; height: 70px; border-radius: 20px; box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);">
-                                <i class="bx bx-calendar-event text-white" style="font-size: 32px;"></i>
-                            </div>
-                            <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Exercice Comptable</h1>
-                            <p class="text-muted mb-0" style="font-size: 1.1rem;"><i class="bx bx-info-circle me-1"></i>Gérez vos exercices comptables et leurs périodes</p>
-                        </div>
-
                         <div class="row g-6 mb-6">
 
                             @if (session('success'))
@@ -55,17 +46,17 @@
 
 
                             <!-- Section table -->
-                            <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
-                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-bottom: 2px solid #e7e9ed; padding: 1.5rem;">
-                                    <h5 class="mb-0" style="font-weight: 700; color: #566a7f; font-size: 1.25rem;"><i class="bx bx-list-ul me-2"></i>Liste des Exercices</h5>
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Exercice comptable</h5>
                                     <div>
-                                        <button class="btn btn-sm me-2" data-bs-toggle="collapse"
-                                            data-bs-target="#filterPanel" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(79, 172, 254, 0.3);">
+                                        <button class="btn btn-outline-primary me-2 btn-sm" data-bs-toggle="collapse"
+                                            data-bs-target="#filterPanel">
                                             <i class="bx bx-filter-alt me-1"></i> Filtrer
                                         </button>
-                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#modalCenterCreate" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">
-                                            <i class="bx bx-plus me-1"></i> Nouvel exercice
+                                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#modalCenterCreate">
+                                            Nouvel exercice
                                         </button>
                                     </div>
                                 </div>
@@ -122,26 +113,26 @@
                                         });
                                     });
                                 </script>
-                                <div class="table-responsive text-nowrap" style="padding: 1.5rem;">
-                                    <table class="table table-hover align-middle" id="exerciceTable" style="border-radius: 8px; overflow: hidden;">
+                                <div class="table-responsive text-nowrap">
+                                    <table class="table" id="exerciceTable">
 
-                                        <thead style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                                        <thead>
                                             <tr>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-calendar me-1"></i>Date de début</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-calendar-check me-1"></i>Date de fin</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-time me-1"></i>Nombre de mois</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-book me-1"></i>Nombre de journaux</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem; text-align: center;"><i class="bx bx-slider me-1"></i>Actions</th>
+                                                <th>Date de debut</th>
+                                                <th>Date de fin</th>
+                                                <th>Nombre de mois</th>
+                                                <th>Nombre de journaux</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($exercices as $exercice)
                                                 <tr>
-                                                    <td style="padding: 1rem; color: #566a7f;">{{ \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') }}
+                                                    <td>{{ \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') }}
                                                     </td>
-                                                    <td style="padding: 1rem; color: #566a7f;">{{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}
+                                                    <td>{{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}
                                                     </td>
-                                                    <td style="padding: 1rem; font-weight: 600; color: #667eea;">
+                                                    <td>
                                                         {{ $exercice->nb_mois }}
                                                     </td>
 
@@ -149,31 +140,36 @@
 
 
 
-                                                    <td style="padding: 1rem; color: #566a7f;">{{ $exercice->nombre_journaux_saisis }}</td>
-                                                    <td style="padding: 1rem; text-align: center;">
-                                                        <div class="d-flex gap-3 justify-content-center">
+                                                    <td>{{ $exercice->nombre_journaux_saisis }}</td>
+                                                    <td>
+                                                        <div class="d-flex gap-2">
 
-                                                            <!-- Bouton Modifier -->
+
+                                                            <!-- Bouton Supprimer -->
                                                             <button type="button"
-                                                                class="btn btn-sm btn-icon show-accounting-entries"
-                                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);"
-                                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(102, 126, 234, 0.4)'"
-                                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(102, 126, 234, 0.3)'"
+                                                                class="btn p-0 border-0 bg-transparent text-danger"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#deleteConfirmationModal"
+                                                                data-id="{{ $exercice->id }}"
+                                                                data-label="{{ $exercice->intitule }}">
+                                                                <i class="bx bx-trash fs-5"></i>
+                                                            </button>
+
+                                                            <!-- Bouton envoi de données -->
+                                                            <button type="button"
+                                                                class="btn p-0 border-0 bg-transparent text-success show-accounting-entries"
                                                                 data-bs-placement="top" title="Afficher les journaux"
                                                                 data-id="{{ $exercice->id }}"
                                                                 data-date_debut="{{ $exercice->date_debut }}"
                                                                 data-date_fin="{{ $exercice->date_fin }}"
                                                                 data-intitule="{{ $exercice->intitule }}">
-                                                                <i class='bx bx-pencil' style="font-size: 18px;"></i>
+                                                                <i class='bx  bx-pencil'></i>
                                                             </button>
 
                                                             @if ($exercice->cloturer == 0)
                                                                 <!-- Bouton pour afficher les journaux (non clôturé) -->
                                                                 <button type="button"
-                                                                    class="btn btn-sm btn-icon open-cloture-modal"
-                                                                    style="background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(255, 167, 38, 0.3);"
-                                                                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(255, 167, 38, 0.4)'"
-                                                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(255, 167, 38, 0.3)'"
+                                                                    class="btn p-0 border-0 bg-transparent text-danger open-cloture-modal"
                                                                     data-bs-target="#clotureConfirmationModal"
                                                                     data-bs-toggle="modal" data-bs-placement="top"
                                                                     title="Cloturer l'exercice"
@@ -181,16 +177,14 @@
                                                                     data-date_debut="{{ $exercice->date_debut }}"
                                                                     data-date_fin="{{ $exercice->date_fin }}"
                                                                     data-intitule="{{ $exercice->intitule }}">
-                                                                    <i class='bx bx-lock-open-alt' style="font-size: 18px;"></i>
+                                                                    <i class='bx bx-lock-open-alt'></i>
                                                                 </button>
                                                             @else
                                                                 <!-- Bouton pour afficher les journaux (clôturé) -->
                                                                 <button type="button"
-                                                                    class="btn btn-sm btn-icon"
-                                                                    style="background: linear-gradient(135deg, #90a4ae 0%, #607d8b 100%); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; cursor: not-allowed; opacity: 0.7;"
-                                                                    title="Exercice cloturer"
-                                                                    disabled>
-                                                                    <i class='bx bx-lock' style="font-size: 18px;"></i>
+                                                                    class="btn p-0 border-0 bg-transparent text-danger"
+                                                                    title="Exercice cloturer">
+                                                                    <i class='bx bx-lock'></i>
                                                                 </button>
                                                             @endif
 
@@ -213,11 +207,11 @@
                                         action="{{ route('exercice_comptable.store') }}">
                                         @csrf
                                         <div class="modal-content">
-                                            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom: none;">
-                                                <h5 class="modal-title text-white" id="modalCenterTitle" style="font-weight: 700;">
-                                                    <i class="bx bx-plus-circle me-2"></i>Créer un nouvel exercice comptable
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="modalCenterTitle">
+                                                    Créer un nouvel exercice comptable
                                                 </h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                     aria-label="Fermer"></button>
                                             </div>
                                             <div class="modal-body">

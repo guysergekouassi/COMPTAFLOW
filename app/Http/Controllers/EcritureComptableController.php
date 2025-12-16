@@ -14,7 +14,7 @@ use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\Log;
-
+use App\Models\tresoreries\Tresoreries;
 
 
 class EcritureComptableController extends Controller
@@ -24,33 +24,6 @@ class EcritureComptableController extends Controller
     {
         $user = Auth::user();
         $data = $request->all();
-
-        // Initialisation des valeurs par défaut si manquantes
-        if (!isset($data['annee'])) {
-            $data['annee'] = Carbon::now()->year;
-        }
-
-        if (!isset($data['mois'])) {
-            $data['mois'] = Carbon::now()->month;
-        }
-
-        if (!isset($data['id_exercice'])) {
-            $dernierExercice = ExerciceComptable::where('company_id', $user->company_id)
-                ->orderBy('date_debut', 'desc')
-                ->first();
-            
-            if ($dernierExercice) {
-                $data['id_exercice'] = $dernierExercice->id;
-            }
-        }
-
-        if (!isset($data['id_journal'])) {
-            $data['id_journal'] = null;
-        }
-
-        if (!isset($data['id_code'])) {
-            $data['id_code'] = null;
-        }
 
         $plansComptables = PlanComptable::where('company_id', $user->company_id)
             ->select('id', 'numero_de_compte', 'intitule')
@@ -65,11 +38,13 @@ class EcritureComptableController extends Controller
             ->orderBy('numero_de_tiers', 'asc')
             ->get();
 
-            // Récupération des postes de trésorerie (TOUS les postes, pas filtrés par company)
-         $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
+            // Récupération des postes de trésorerie
+        //  $comptesTresorerie = CompteTresorerie::where('company_id', $user->company_id)
+        // ->select('id', 'name', 'type')
+        // ->get();
+        $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
         ->orderBy('name', 'asc')
         ->get();
-
 
 
         $query = EcritureComptable::where('company_id', $user->company_id)
@@ -99,38 +74,6 @@ class EcritureComptableController extends Controller
         $totalDebit = $queryForSum->sum('debit');
         $totalCredit = $queryForSum->sum('credit');
 
-        // --- FIX ANTI-GRAVITY: Remplissage automatique des données manquantes (N/A) ---
-        // 1. Essayer de récupérer les infos depuis le JournalSaisi (Si filtré par journal)
-        if (!empty($data['id_journal'])) {
-             $journalSaisi = \App\Models\JournalSaisi::with('codeJournal')->find($data['id_journal']);
-             if ($journalSaisi && $journalSaisi->codeJournal) {
-                 if (empty($data['code'])) $data['code'] = $journalSaisi->codeJournal->code_journal;
-                 if (empty($data['type'])) $data['type'] = $journalSaisi->codeJournal->type;
-                 if (empty($data['intitule'])) $data['intitule'] = $journalSaisi->codeJournal->intitule;
-             }
-        }
-
-        // 2. Fallback sur la première écriture (si pas de filtre journal explicite mais qu'on a des données)
-        if ($ecritures->isNotEmpty()) {
-            $first = $ecritures->first();
-            
-            // Récupération via la relation CodeJournal (si disponible sur le modèle EcritureComptable)
-            if ($first->codeJournal) {
-                if (empty($data['code'])) $data['code'] = $first->codeJournal->code_journal;
-                if (empty($data['type'])) $data['type'] = $first->codeJournal->type;
-                if (empty($data['intitule'])) $data['intitule'] = $first->codeJournal->intitule;
-            }
-
-            // Récupération de la date si l'année/mois par défaut semblent incorrects ou manquants pour l'affichage
-            if ($first->date) {
-                try {
-                    $dateObj = \Carbon\Carbon::parse($first->date);
-                    if (empty($data['annee'])) $data['annee'] = $dateObj->year;
-                } catch (\Exception $e) { }
-            }
-        }
-        // -----------------------------------------------------------------------------
-
         // Génération automatique du n° de saisie (12 chiffres, unique)
         $lastSaisie = EcritureComptable::where('company_id', $user->company_id)
             ->max('n_saisie');
@@ -148,7 +91,7 @@ class EcritureComptableController extends Controller
             'ecritures',
             'totalDebit',
             'totalCredit',
-            'nextSaisieNumber', // on l’envoie à la vue
+            'nextSaisieNumber',
             'exercice',
             'dateDebut',
             'dateFin',
@@ -162,61 +105,84 @@ class EcritureComptableController extends Controller
         $exercices = ExerciceComptable::orderBy('date_debut', 'desc')->get();
 
 
-        // Journaux de Saisie : tous SAUF ceux de type Trésorerie (incluant les NULL)
-        $journaux_saisie = CodeJournal::where('company_id', Auth::user()->company_id)
-            ->where(function($query) {
-                $query->where(function($q) {
-                    $q->where('type', '!=', 'Trésorerie')
-                      ->where('type', '!=', 'tresorerie');
-                })->orWhereNull('type');
-            })
-            ->orderBy('code_journal', 'asc')
-            ->get();
-        
-        // Récupérer les journaux de trésorerie (CodeJournal uniquement)
-        $journaux_tresorerie = CodeJournal::where('company_id', Auth::user()->company_id)
-            ->where(function($query) {
-                $query->where('type', 'Trésorerie')
-                      ->orWhere('type', 'tresorerie');
-            })
-            ->orderBy('code_journal', 'asc')
-            ->get();
+        $code_journaux = CodeJournal::orderBy('code_journal', 'asc')->get();
+
 
 
         return view('components.modal_saisie_direct', [
             'exercices' => $exercices,
-            'journaux_saisie' => $journaux_saisie,
-            'journaux_tresorerie' => $journaux_tresorerie,
+            'code_journaux' => $code_journaux,
         ]);
     }
 
-    public function storeMultiple(Request $request)
-    {
+ public function storeMultiple(Request $request)
+{
+    Log::info('Données d\'écritures reçues:', $request->ecritures);
 
-        // dd($request->ecritures);
-        try {
-            foreach ($request->ecritures as $index => $ecriture) {
-                $pieceJustificatifName = null;
+    // Initialiser une liste d'erreurs pour le retour
+    $errors = [];
 
-                if ($request->hasFile("ecritures.$index.piece_justificatif")) {
-                    $file = $request->file("ecritures.$index.piece_justificatif");
-                    $pieceJustificatifName = time() . '_' . $file->getClientOriginalName();
-                    $file->move(public_path('justificatifs'), $pieceJustificatifName);
+    try {
+        foreach ($request->ecritures as $index => $ecriture) {
+            $pieceJustificatifName = null;
+
+            // ... (GESTION FICHIER)
+
+            // 1. Gestion du Fichier Justificatif
+            if ($request->hasFile("ecritures.$index.piece_justificatif")) {
+                $file = $request->file("ecritures.$index.piece_justificatif");
+                $pieceJustificatifName = time() . '_' . $file->getClientOriginalName();
+                $file->move(public_path('justificatifs'), $pieceJustificatifName);
+            }
+
+
+            // 2. Préparation et Sécurisation des variables (LE CODE QUE VOUS AVEZ DÉJÀ)
+            $debit = (float)($ecriture['debit'] ?? 0);
+            $credit = (float)($ecriture['credit'] ?? 0);
+
+            $compteTresorerieId = $ecriture['tresorerieFields'] ?? null;
+            if ($compteTresorerieId === "" || is_null($compteTresorerieId)) {
+                $compteTresorerieId = null;
+            }
+
+            $typeFlux = $ecriture['typeFlux'] ?? null;
+            if ($typeFlux === "" || is_null($typeFlux)) {
+                $typeFlux = null;
+            }
+
+            // 3. LOGIQUE DE DÉDUCTION DU TYPE DE FLUX (inchangée)
+            if (!is_null($compteTresorerieId) && is_null($typeFlux)) {
+
+                if ($debit > 0) {
+                    $typeFlux = 'encaissement';
                 }
+                elseif ($credit > 0) {
+                    $typeFlux = 'decaissement';
+                }
+            }
 
-                 $compteTresorerieId = $ecriture['tresorerieFields'] ?? null;
+            //NOUVELLE LOGIQUE
+            $compteGeneralId = $ecriture['compte_general'] ?? null;
 
-                 if($compteTresorerieId == ""){
-                    $compteTresorerieId = null;
-                 }
+            if (is_null($typeFlux) && $compteGeneralId) {
+                // Récupérer le numéro de compte général
+                $planComptable = PlanComptable::find($compteGeneralId);
 
-                 $typeFlux = $ecriture['typeFlux'] ?? null;
+                if ($planComptable) {
+                    $classeFluxDeterminee = $this->determineFluxClasse($planComptable->numero_de_compte);
 
-                 if($typeFlux == ""){
-                    $typeFlux = null;
-                 }
 
-                EcritureComptable::create([
+                    if (is_null($compteTresorerieId)) {
+                        $typeFlux = $classeFluxDeterminee;
+                    }
+                }
+            }
+
+
+
+            // 4. Insertion de l'écriture complète
+            try {
+                 EcritureComptable::create([
                     'date' => $ecriture['date'],
                     'n_saisie' => $ecriture['n_saisie'],
                     'description_operation' => ucfirst(strtolower($ecriture['description'])),
@@ -224,81 +190,74 @@ class EcritureComptableController extends Controller
                     'plan_comptable_id' => $ecriture['compte_general'],
                     'plan_tiers_id' => $ecriture['compte_tiers'] ?? null,
 
-                    // AJOUT CRUCIAL: Mappage vers la colonne de la DB
+                    // 'compte_tresorerie_id' => $compteTresorerieId,
                     'compte_tresorerie_id' => $compteTresorerieId,
                     'type_flux' => $typeFlux,
+
+                    'debit' => $debit,
+                    'credit' => $credit,
 
                     'plan_analytique' => $ecriture['analytique'] === 'Oui' ? 1 : 0,
                     'code_journal_id' => $ecriture['journal'] ?? null,
                     'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? null,
                     'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? null,
-                    'debit' => $ecriture['debit'],
-                    'credit' => $ecriture['credit'],
                     'piece_justificatif' => $pieceJustificatifName,
                     'user_id' => Auth::id(),
                     'company_id' => Auth::user()->company_id,
                 ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // CAPTURE DE L'ERREUR SPÉCIFIQUE À LA LIGNE
+                $errorMessage = "Erreur à la ligne " . ($index + 1) . " (Compte " . $ecriture['compte_general'] . "): " . $e->getMessage();
+                Log::error($errorMessage);
+                // Si une ligne échoue, nous arrêtons et renvoyons l'erreur
+                return response()->json([
+                    'error' => 'Échec de l\'enregistrement de la saisie batch.',
+                    'details' => $errorMessage
+                ], 500);
             }
-
-            return response()->json(['message' => 'Toutes les écritures ont été enregistrées avec succès.']);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Une erreur est survenue lors de l\'enregistrement.',
-                'details' => $e->getMessage()
-            ], 500);
         }
+
+        return response()->json(['message' => 'Toutes les écritures ont été enregistrées avec succès.']);
+    } catch (\Exception $e) {
+        // Erreur inattendue (non liée à la base de données)
+        return response()->json([
+            'error' => 'Une erreur générale est survenue lors de l\'enregistrement.',
+            'details' => $e->getMessage()
+        ], 500);
     }
+}
+
+public function determineFluxClasse(string $numeroCompte){
+    //on prends le premier chiffre pour eterminer la classe
+    $classe = substr($numeroCompte, 0, 1);
+
+    switch($classe){
+        case '1':
+        case '3':
+        case '4':
+        case '6':
+        case '7':
+          return 'Operation';
+
+        case '2':
+            return 'investissement';
+
+        case '1':
+            if(strpos($numeroCompte, '16') === 0 || strpos($numeroCompte, '10') === 0){
+                return 'financement';
+            }
+            return 'Exploitation'; //pour les 1x
+
+            case '5':
+                return null;
+
+                default:
+                 return null;
 
 
-
-
-
-    public function getComptesParFlux(Request $request) {
-        $user = Auth::user();
-        $typeFlux = $request->query('type');
-        
-        Log::info("AJAX getComptesParFlux called. TypeFlux received: '" . $typeFlux . "'");
-        
-        $query = PlanComptable::where('company_id', $user->company_id)
-            ->select('id', 'numero_de_compte', 'intitule');
-
-        // Filtrage selon la logique comptable des flux de trésorerie
-        if ($typeFlux && stripos($typeFlux, 'Operationnelles') !== false) {
-             Log::info("Matched: Operationnelles - Classes 4, 5, 6, 7");
-            $query->where(function($q) {
-                // Flux opérationnels : Tiers (4), Trésorerie (5), Charges (6), Produits (7)
-                $q->where('numero_de_compte', 'like', '4%')
-                  ->orWhere('numero_de_compte', 'like', '5%')
-                  ->orWhere('numero_de_compte', 'like', '6%')
-                  ->orWhere('numero_de_compte', 'like', '7%');
-            });
-        } elseif ($typeFlux && stripos($typeFlux, 'Investissement') !== false) {
-             Log::info("Matched: Investissement - Classes 2, 4, 5");
-             // Flux d'investissement : Immobilisations (2), Tiers (4), Trésorerie (5)
-            $query->where(function($q) {
-                $q->where('numero_de_compte', 'like', '2%')
-                  ->orWhere('numero_de_compte', 'like', '4%')
-                  ->orWhere('numero_de_compte', 'like', '5%');
-            });
-        } elseif ($typeFlux && stripos($typeFlux, 'Financement') !== false) {
-             Log::info("Matched: Financement - Classes 1, 4, 5");
-             // Flux de financement : Capitaux (1), Tiers (4), Trésorerie (5)
-            $query->where(function($q) {
-                $q->where('numero_de_compte', 'like', '1%')
-                  ->orWhere('numero_de_compte', 'like', '4%')
-                  ->orWhere('numero_de_compte', 'like', '5%');
-            });
-        }
-        // Cas par défaut : si aucun flux reconnu, on limite pour la performance
-        else {
-             Log::info("No match found. Returning default limit 500.");
-             $query->limit(500); 
-        }
-
-        $comptes = $query->orderBy('numero_de_compte', 'asc')->get();
-        Log::info("Returning " . $comptes->count() . " accounts.");
-
-        return response()->json($comptes);
     }
+}
+
+
 
 }

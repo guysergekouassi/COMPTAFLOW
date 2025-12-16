@@ -57,37 +57,7 @@
         ->where('company_id', $currentCompanyId)
         ->orderBy('mois', 'asc')
         ->get();
-    
-    // Journaux de Saisie : tous SAUF ceux de type Trésorerie (incluant les NULL)
-    $journaux_saisie = CodeJournal::where('company_id', $currentCompanyId)
-        ->where(function($query) {
-            $query->where(function($q) {
-                $q->where('type', '!=', 'Trésorerie')
-                  ->where('type', '!=', 'tresorerie');
-            })->orWhereNull('type');
-        })
-        ->orderBy('code_journal', 'asc')
-        ->get();
-    
-    // Récupérer les journaux de trésorerie depuis code_journals
-    $journaux_tresorerie_code = CodeJournal::where('company_id', $currentCompanyId)
-        ->where(function($query) {
-            $query->where('type', 'Trésorerie')
-                  ->orWhere('type', 'tresorerie');
-        })
-        ->orderBy('code_journal', 'asc')
-        ->get();
-    
-    // Récupérer les journaux de trésorerie depuis la table tresoreries
-    $journaux_tresorerie_table = \App\Models\tresoreries\Tresoreries::where('company_id', $currentCompanyId)
-        ->orderBy('code_journal', 'asc')
-        ->get();
-    
-    // Fusionner et éliminer les doublons basés sur code_journal
-    $journaux_tresorerie = $journaux_tresorerie_code->merge($journaux_tresorerie_table)
-        ->unique('code_journal')
-        ->sortBy('code_journal')
-        ->values();
+    $code_journaux = CodeJournal::where('company_id', $currentCompanyId)->get();
 
     $companies = Company::where('id', $user->company_id)->get();
 
@@ -109,8 +79,8 @@ if ($user->role === 'super_admin') {
 
 @include('components.modal_saisie_direct', [
     'exercices' => $exercices,
-    'journaux_saisie' => $journaux_saisie,
-    'journaux_tresorerie' => $journaux_tresorerie,
+    // 'journaux' => $journaux,
+    'code_journaux' => $code_journaux,
     'companies' => $companies,
 ])
 
@@ -258,7 +228,7 @@ if ($user->role === 'super_admin') {
        @if (auth()->user()->isSuperAdmin())
         <li class="menu-item menu-param {{ request()->routeIs('plan_tiers*') ? 'active' : '' }}">
             <a href="{{ route('plan_tiers') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-group"></i>
+                <i class="menu-icon tf-icons bx bx-widget"></i>
                 <div class="text-truncate" data-i18n="Email">Plan tiers</div>
             </a>
         </li>
@@ -378,7 +348,7 @@ if ($user->role === 'super_admin') {
         @if(in_array('plan_tiers', $habilitations))
         <li class="menu-item menu-param {{ request()->routeIs('plan_tiers*') ? 'active' : '' }}">
             <a href="{{ route('plan_tiers') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-group"></i>
+                <i class="menu-icon tf-icons bx bx-widget"></i>
                 <div class="text-truncate" data-i18n="Email">Plan tiers</div>
             </a>
         </li>
@@ -430,15 +400,6 @@ if ($user->role === 'super_admin') {
             <a href="{{ route('modal_saisie_direct') }}" class="menu-link" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal">
                 <i class="menu-icon tf-icons bx bx-calculator"></i>
                 <div class="text-truncate" data-i18n="Email">Nouvelle Saisie</div>
-            </a>
-        </li>
-        @endif
-
-        @if(in_array('modal_saisie_direct', $habilitations))
-        <li class="menu-item menu-trait {{ request()->routeIs('accounting_entry_real') ? 'active' : '' }}">
-            <a href="{{ route('accounting_entry_real') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-list-ul"></i>
-                <div class="text-truncate" data-i18n="Email">Liste des écritures</div>
             </a>
         </li>
         @endif

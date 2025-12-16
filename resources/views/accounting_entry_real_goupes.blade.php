@@ -28,53 +28,50 @@
                     <div class="container-xxl flex-grow-1 container-p-y">
                         <div class="row g-6 mb-6">
 
-                            <!-- Page Header -->
-                            <div class="text-center mb-5">
-                                <div class="d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 70px; height: 70px; border-radius: 20px; box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);">
-                                    <i class="bx bx-detail text-white" style="font-size: 32px;"></i>
-                                </div>
-                                <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Détails de la Saisie</h1>
-                                <p class="text-muted mb-0" style="font-size: 1.1rem;"><i class="bx bx-hash me-1"></i>Saisie Numéro : <strong>{{ $data['n_saisie'] ?? 'N/A' }}</strong></p>
-                            </div>
-
-                            <div class="mb-4">
-                                <a href="javascript:history.back()" class="btn btn-sm" style="background: linear-gradient(135deg, #90a4ae 0%, #607d8b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(96, 125, 139, 0.3);">
-                                    <i class='bx bx-arrow-back me-1'></i> Retour
+                            <div class="mb-3">
+                                <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
+                                    <i class='bx  bx-reply-stroke'></i>
                                 </a>
                             </div>
 
-                            <div class="d-flex flex-wrap gap-2 mb-4">
-                                <div class="badge px-3 py-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 0.9rem; font-weight: 600;">{{ $data['annee'] ?? '-' }}
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="badge bg-primary text-white px-3 py-2 rounded">{{ $data['annee'] ?? 'N/A' }}
                                 </div>
-                                <div class="badge px-3 py-2 rounded" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; font-size: 0.9rem; font-weight: 600;">
+                                <div class="badge bg-secondary text-white px-3 py-2 rounded">
                                     {{ \Carbon\Carbon::createFromDate(null, $data['mois'] ?? 1)->locale('fr')->monthName }}
                                 </div>
-                                <div class="badge px-3 py-2 rounded" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; font-size: 0.9rem; font-weight: 600;">{{ $data['code'] ?? '-' }}
+                                <div class="badge bg-info text-dark px-3 py-2 rounded">{{ $data['code'] ?? 'N/A' }}
                                 </div>
-                                <div class="badge px-3 py-2 rounded" style="background: linear-gradient(135deg, #96fbc4 0%, #f9f586 100%); color: #333; font-size: 0.9rem; font-weight: 600;">{{ $data['type'] ?? '-' }}
+                                <div class="badge bg-success text-white px-3 py-2 rounded">{{ $data['type'] ?? 'N/A' }}
                                 </div>
-                                <div class="badge px-3 py-2 rounded" style="background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); color: white; font-size: 0.9rem; font-weight: 600;">
-                                    {{ $data['intitule'] ?? '-' }}</div>
+                                <div class="badge bg-warning text-dark px-3 py-2 rounded">
+                                    {{ $data['intitule'] ?? 'N/A' }}</div>
+
+                                {{-- <div class="badge bg-primary text-white px-3 py-2 rounded">
+                                    Période d'exercice : {{ $exercice->date_debut ?? 'N/A' }} au
+                                    {{ $exercice->date_fin ?? 'N/A' }}
+                                </div> --}}
+
                             </div>
 
 
 
                             <div class="col-sm-6 col-xl-3">
-                                <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none; transition: transform 0.3s, box-shadow 0.3s;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'">
+                                <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex align-items-start justify-content-between">
                                             <div class="content-left">
-                                                <span class="text-heading" style="font-weight: 600; color: #566a7f;">Total débit</span>
+                                                <span class="text-heading">Total débit</span>
                                                 <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 700;">{{ rtrim(rtrim(number_format($totalDebit, 2, ',', ' '), '0'), ',') }}
+                                                    <h4 class="mb-0 me-2">{{ rtrim(rtrim(number_format($totalDebit, 2, ',', ' '), '0'), ',') }}
                                                     </h4>
 
                                                 </div>
                                                 <!-- <small class="mb-0">Total Users</small> -->
                                             </div>
                                             <div class="avatar">
-                                                <span class="avatar-initial rounded" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                                                    <i class="icon-base bx bx-arrow-up icon-lg text-white"></i>
+                                                <span class="avatar-initial rounded bg-label-danger">
+                                                    <i class="icon-base bx bx-arrow-up icon-lg"></i>
                                                 </span>
                                             </div>
                                         </div>
@@ -82,21 +79,21 @@
                                 </div>
                             </div>
                             <div class="col-sm-6 col-xl-3">
-                                <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none; transition: transform 0.3s, box-shadow 0.3s;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'">
+                                <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex align-items-start justify-content-between">
                                             <div class="content-left">
-                                                <span class="text-heading" style="font-weight: 600; color: #566a7f;">Total crédit</span>
+                                                <span class="text-heading">Total crédit</span>
                                                 <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 700;">{{ rtrim(rtrim(number_format($totalCredit, 2, ',', ' '), '0'), ',') }}
+                                                    <h4 class="mb-0 me-2">{{ rtrim(rtrim(number_format($totalCredit, 2, ',', ' '), '0'), ',') }}
                                                     </h4>
 
                                                 </div>
                                                 <!-- <small class="mb-0">Last week analytics </small> -->
                                             </div>
                                             <div class="avatar">
-                                                <span class="avatar-initial rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                                    <i class="icon-base bx bx-arrow-down icon-lg text-white"></i>
+                                                <span class="avatar-initial rounded bg-label-primary">
+                                                    <i class="icon-base bx bx-arrow-down icon-lg"></i>
                                                 </span>
                                             </div>
                                         </div>
@@ -142,23 +139,23 @@
 
 
                             <!-- Section table -->
-                            <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
-                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-bottom: 2px solid #e7e9ed; padding: 1.5rem;">
-                                    <h5 class="mb-0" style="font-weight: 700; color: #566a7f; font-size: 1.25rem;"><i class="bx bx-list-ul me-2"></i>Listing des ecritures du N°{{ $data['n_saisie'] ?? 'N/A' }}</h5>
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Listing des ecritures du N°{{ $data['n_saisie'] }}</h5>
                                     <div>
-                                        <button class="btn btn-sm me-2" data-bs-toggle="collapse"
-                                            data-bs-target="#filterPanel" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(79, 172, 254, 0.3);">
+                                        <button class="btn btn-outline-primary me-2 btn-sm" data-bs-toggle="collapse"
+                                            data-bs-target="#filterPanel">
                                             <i class="bx bx-filter-alt me-1"></i> Filtrer
                                         </button>
 
 
                                         @if ($exercice->cloturer == 0)
-                                            <button type="button" class="btn btn-sm" data-bs-toggle="modal"
-                                                data-bs-target="#modalTableauStatique" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">
-                                                <i class="bx bx-edit me-1"></i> Modifier les écritures
+                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                                data-bs-target="#modalTableauStatique">
+                                                Modifier les écritures
                                             </button>
                                         @else
-                                            <button type="button" class="btn btn-secondary btn-sm" disabled style="background: linear-gradient(135deg, #90a4ae 0%, #607d8b 100%); color: white; border: none; border-radius: 8px; opacity: 0.7; cursor: not-allowed;">
+                                            <button type="button" class="btn btn-secondary btn-sm" disabled>
                                                 Exercice clôturé
                                             </button>
                                         @endif
@@ -234,19 +231,22 @@
 
                                 </style>
                                 <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
-                                    <table class="table table-hover align-middle" id="table-ecritures" style="border-radius: 8px; overflow: hidden;">
-                                        <thead style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                                    <table class="table table-striped table-bordered" id="table-ecritures">
+                                        <thead>
                                             <tr>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Date</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">N° Saisie</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Référence Pièce</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Description</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Compte Général</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Compte Tiers</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Plan Analytique</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Débit</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Crédit</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Pièce justificatif</th>
+                                                <th>Date</th>
+                                                <th>N° Saisie</th>
+
+                                                <th>Référence Pièce</th>
+
+                                                <th>Description</th>
+
+                                                <th>Compte Général</th>
+                                                <th>Compte Tiers</th>
+                                                <th>Plan Analytique</th>
+                                                <th>Débit</th>
+                                                <th>Crédit</th>
+                                                <th>Pièce justificatif</th>
                                             </tr>
                                         </thead>
 
@@ -347,9 +347,9 @@
                                 aria-labelledby="modalTableauStatiqueLabel" aria-hidden="true">
                                 <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                                     <div class="modal-content position-relative">
-                                        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                            <h5 class="modal-title text-white"><i class="bx bx-table me-2"></i>Aperçu du tableau statique</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Aperçu du tableau statique</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                 aria-label="Fermer"></button>
                                         </div>
                                         <div class="modal-body">
@@ -483,8 +483,8 @@
 
                             {{-- alerte --}}
                             <script>
-                                const totalDebit = {{ $totalDebit ?? 0 }};
-                                const totalCredit = {{ $totalCredit ?? 0 }};
+                                const totalDebit = {{ $totalDebit }};
+                                const totalCredit = {{ $totalCredit }};
                             </script>
 
 
@@ -493,8 +493,8 @@
                                 aria-labelledby="modalMismatchLabel" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content text-center">
-                                        <div class="modal-header" style="background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); color: white; justify-content: center;">
-                                            <h5 class="modal-title text-white" id="modalMismatchLabel"><i class="bx bx-error me-2"></i>Alerte</h5>
+                                        <div class="modal-header bg-warning">
+                                            <h5 class="modal-title" id="modalMismatchLabel">Alerte</h5>
                                         </div>
                                         <div class="modal-body">
                                             Le total du débit est différent du total du crédit. Veuillez vérifier vos
@@ -517,8 +517,8 @@
                                 aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content text-center">
-                                        <div class="modal-header" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333; justify-content: center;">
-                                            <h5 class="modal-title w-100" id="alertModalLabel"><i class="bx bx-error-circle me-2"></i>Erreur de validation
+                                        <div class="modal-header">
+                                            <h5 class="modal-title w-100" id="alertModalLabel">Erreur de validation
                                             </h5>
                                         </div>
                                         <div class="modal-body">
@@ -538,8 +538,8 @@
                                 aria-labelledby="deleteModalLabel" aria-hidden="true">
                                 <div class="modal-dialog modal-sm">
                                     <div class="modal-content border-0 shadow">
-                                        <div class="modal-header text-white justify-content-center" style="background: linear-gradient(135deg, #ff5252 0%, #b33939 100%);">
-                                            <h5 class="modal-title text-white" id="deleteModalLabel">
+                                        <div class="modal-header text-white justify-content-center">
+                                            <h5 class="modal-title" id="deleteModalLabel">
                                                 <i class="bx bx-error-circle me-2"></i>Confirmer la
                                                 suppression
                                             </h5>

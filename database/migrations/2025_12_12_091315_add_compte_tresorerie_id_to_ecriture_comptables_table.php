@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-   
+
    public function up(): void
 {
     Schema::table('ecriture_comptables', function (Blueprint $table) {
         $table->foreignId('compte_tresorerie_id')
               ->nullable()
-              ->after('plan_tiers_id') // Pour le placer logiquement
+              ->after('plan_tiers_id') 
               ->constrained('compte_tresoreries')
               ->onDelete('set null');
     });

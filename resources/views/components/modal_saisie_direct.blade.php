@@ -27,69 +27,33 @@
 
 
                     <div class="mb-2">
-                        <label for="code_journal" class="form-label">Journal</label>
+                        <label for="code_journal" class="form-label">Journals</label>
                         <select class="selectpicker w-100" data-live-search="true" id="code_journal" name="code_journal"
                             required>
                             <option value="" disabled selected hidden>-- Sélectionner un journal --</option>
-                            
-                            @if(isset($journaux_saisie) && isset($journaux_tresorerie))
-                                {{-- Journaux de Saisie --}}
-                                @if($journaux_saisie->count() > 0)
-                                    <optgroup label="📝 Journaux de Saisie">
-                                        @foreach ($journaux_saisie as $code_j)
-                                            <option value="{{ $code_j->id }}" data-code_journal_j="{{ $code_j->code_journal }}"
-                                                data-intitule_j="{{ $code_j->intitule }}" data-type_j="{{ $code_j->type }}">
+                            @foreach ($code_journaux as $code_j)
+                                @php
+                                    $codeTresorerie = $code_j->code_tresorerie_display ?? null; // Utilise la nouvelle propriété
+                                    $displayCode = $code_j->code_journal;
 
-                                                {{ $code_j->code_journal }} - {{ $code_j->intitule }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endif
-                                
-                                {{-- Journaux de Trésorerie (fusionnés : code_journals + tresoreries) --}}
-                                @if($journaux_tresorerie->count() > 0)
-                                    <optgroup label="💰 Journaux de Trésorerie">
-                                        @foreach ($journaux_tresorerie as $code_j)
-                                            <option value="{{ $code_j->id }}" data-code_journal_j="{{ $code_j->code_journal }}"
-                                                data-intitule_j="{{ $code_j->intitule }}" data-type_j="{{ $code_j->type ?? 'tresorerie' }}">
+                                    if (!empty($codeTresorerie)) {
+                                        $displayCode .= ' (Trésor: ' . $codeTresorerie . ')';
+                                    }
+                                @endphp
+                                <option value="{{ $code_j->id }}"
+                                    data-code_journal_j="{{ $code_j->code_journal }}"
+                                    data-intitule_j="{{ $code_j->intitule }}"
+                                    data-type_j="{{ $code_j->type }}"
+                                    data-code_tresorerie_j="{{ $codeTresorerie ?? '' }}">
 
-                                                {{ $code_j->code_journal }} - {{ $code_j->intitule }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endif
-                            @elseif(isset($code_journaux))
-                                {{-- Fallback : affichage simple si les variables séparées ne sont pas disponibles --}}
-                                @foreach ($code_journaux as $code_j)
-                                    <option value="{{ $code_j->id }}" data-code_journal_j="{{ $code_j->code_journal }}"
-                                        data-intitule_j="{{ $code_j->intitule }}" data-type_j="{{ $code_j->type }}">
-                                        {{ $code_j->code_journal }} - {{ $code_j->intitule }}
-                                    </option>
-                                @endforeach
-                            @endif
+                                    {{ $displayCode }} - {{ $code_j->intitule }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
 
 
-                    {{-- <div class="mb-2">
-                        <label for="code_journal" class="form-label">Journal</label>
-                        <select class="selectpicker w-100" data-live-search="true" id="code_journal" name="code_journal"
-                            required>
-                            @foreach ($journaux as $journal)
-                                <option value="{{ $journal->id }}"
-                                    data-exercice-id="{{ $journal->exercices_comptables_id }}"
-                                    data-mois="{{ $journal->mois }}" data-annee="{{ $journal->annee }}"
-                                    data-code="{{ $journal->codeJournal?->code_journal }}"
-                                    data-intitule="{{ $journal->codeJournal?->intitule }}"
-                                    data-type="{{ $journal->codeJournal?->type }}"
-                                    data-id_code="{{ $journal->codeJournal?->id }}">
 
-                                    {{ $journal->codeJournal?->code_journal }} -
-                                    {{ \Carbon\Carbon::createFromDate(null, $journal->mois ?? 1)->locale('fr')->monthName }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div> --}}
 
                     <div class="mb-2">
                         <label for="mois" class="form-label">Mois</label>
@@ -126,75 +90,8 @@
     </div>
 </div>
 
-{{-- Script pour éviter les doublons Bootstrap Select --}}
-<script>
-$(document).ready(function() {
-    $('#saisieRedirectModal').on('shown.bs.modal', function () {
-        console.log('🔧 Réinitialisation Bootstrap Select pour éviter les doublons');
-        
-        // Détruire complètement l'instance Bootstrap Select du champ Journal
-        $('#code_journal').selectpicker('destroy');
-        
-        // Réinitialiser avec les options
-        $('#code_journal').selectpicker({
-            liveSearch: true,
-            style: 'btn-default',
-            size: 10,
-            noneSelectedText: '-- Sélectionner un journal --'
-        });
-        
-        // Forcer le refresh
-        $('#code_journal').selectpicker('refresh');
-        
-        console.log('✅ Bootstrap Select réinitialisé');
-    });
-});
-</script>
-
-{{-- <script>
-    //Réinitialise le formulaire de création quand le modal se ferme
-    const modalCreate = document.getElementById("saisieRedirectModal");
-    modalCreate?.addEventListener("hidden.bs.modal", function() {
-        const form = modalCreate.querySelector("form");
-        if (form) {
-            form.reset();
-        }
-    });
-</script> --}}
 
 
-{{-- <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const exerciceSelect = document.getElementById('exercice_id');
-        const journalSelect = document.getElementById('code_journal');
-        const allJournalOptions = Array.from(journalSelect.options);
-
-        function filterJournalsByExercice(exerciceId) {
-            journalSelect.innerHTML = ''; // Clear all options
-
-            allJournalOptions.forEach(option => {
-                if (option.dataset.exerciceId === exerciceId) {
-                    journalSelect.appendChild(option);
-                }
-            });
-
-            if (journalSelect.options.length === 0) {
-                const emptyOption = document.createElement('option');
-                emptyOption.text = 'Aucun journal pour cet exercice';
-                emptyOption.disabled = true;
-                journalSelect.appendChild(emptyOption);
-            }
-        }
-
-        exerciceSelect.addEventListener('change', function() {
-            const selectedExerciceId = this.value;
-            filterJournalsByExercice(selectedExerciceId);
-        });
-
-        // Initial filter on load
-        filterJournalsByExercice(exerciceSelect.value);
-    });
-</script> --}}
 
 
 
@@ -243,13 +140,7 @@ $(document).ready(function() {
         }
 
         (async () => {
-            // console.log("Exercice :", selectedOptionA.value);
-            // console.log("Année :", anneeValue);
-            // console.log("Code journal id :", selectedOption.value);
-            // console.log("Code journal code :", selectedOption.dataset.code_journal_j);
-            // console.log("Code journal intitule :", selectedOption.dataset.intitule_j);
-            // console.log("Code journal type :", selectedOption.dataset.type_j);
-            // console.log("Mois :", moisValeur);
+
 
             const idSaisi = await getJournalId();
             if (!idSaisi) return; // stop si aucun ID récupéré
@@ -260,6 +151,7 @@ $(document).ready(function() {
                 annee: anneeValue,
                 mois: moisValeur,
                 code: selectedOption.dataset.code_journal_j,
+
                 type: selectedOption.dataset.type_j,
                 intitule: selectedOption.dataset.intitule_j,
                 id_code: selectedOption.value,

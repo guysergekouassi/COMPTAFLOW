@@ -26,127 +26,14 @@ class ComptaDashboardController extends Controller
 
         $habilitations = $this->getUserHabilitations($user, $currentCompanyId);
 
-        // Statistiques utilisateur
-        $userStats = $this->getUserStats($user);
-        
-        // Statistiques comptables
-        $comptaStats = $this->getComptaStats($currentCompanyId);
 
         return view('comptable.comptdashboard',[
             'currentCompany'=> $currentCompany,
-            'habilitations'=> $habilitations,
-            'user' => $user,
-            'userStats' => $userStats,
-            'comptaStats' => $comptaStats,
+            'habilitations'=> $habilitations
         ]);
     }
 
 
-
-
-
-    protected function getUserStats($user)
-    {
-        return [
-            'total_logins' => $user->total_logins ?? 0,
-            'last_login' => $user->last_login_at ?? now(),
-            'account_age_days' => $user->created_at ? $user->created_at->diffInDays(now()) : 0,
-            'ecritures_mois' => \App\Models\EcritureComptable::where('user_id', $user->id)
-                ->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
-                ->count(),
-        ];
-    }
-
-    protected function getComptaStats($companyId)
-    {
-        if (!$companyId) {
-            return $this->getEmptyStats();
-        }
-
-        $revenusMois = \App\Models\EcritureComptable::where('company_id', $companyId)
-            ->whereMonth('date', now()->month)
-            ->whereYear('date', now()->year)
-            ->sum('credit');
-
-        $depensesMois = \App\Models\EcritureComptable::where('company_id', $companyId)
-            ->whereMonth('date', now()->month)
-            ->whereYear('date', now()->year)
-            ->sum('debit');
-
-        $revenusAnnee = \App\Models\EcritureComptable::where('company_id', $companyId)
-            ->whereYear('date', now()->year)
-            ->sum('credit');
-
-        $depensesAnnee = \App\Models\EcritureComptable::where('company_id', $companyId)
-            ->whereYear('date', now()->year)
-            ->sum('debit');
-
-        return [
-            'solde_tresorerie' => \App\Models\CompteTresorerie::sum('solde_actuel') ?? 0,
-            'tresorerie_variation' => '+14.8%',
-            'revenus_mois' => $revenusMois,
-            'revenus_variation' => '+8.2%',
-            'depenses_mois' => $depensesMois,
-            'depenses_variation' => '-5.1%',
-            'pieces_saisies_mois' => \App\Models\EcritureComptable::where('company_id', $companyId)
-                ->whereMonth('date', now()->month)
-                ->whereYear('date', now()->year)
-                ->count(),
-            'total_tiers' => \App\Models\PlanTiers::where('company_id', $companyId)->count(),
-            'exercice_actuel' => \App\Models\ExerciceComptable::where('company_id', $companyId)
-                ->where('is_active', true)
-                ->first(),
-            'jours_restants' => $this->getJoursRestants($companyId),
-            'revenus_annee' => $revenusAnnee,
-            'depenses_annee' => $depensesAnnee,
-            'revenus_mensuels' => $this->getRevenusMensuels($companyId),
-        ];
-    }
-
-    protected function getEmptyStats()
-    {
-        return [
-            'solde_tresorerie' => 0,
-            'tresorerie_variation' => '0%',
-            'revenus_mois' => 0,
-            'revenus_variation' => '0%',
-            'depenses_mois' => 0,
-            'depenses_variation' => '0%',
-            'pieces_saisies_mois' => 0,
-            'total_tiers' => 0,
-            'exercice_actuel' => null,
-            'jours_restants' => 0,
-            'revenus_annee' => 0,
-            'depenses_annee' => 0,
-            'revenus_mensuels' => array_fill(0, 12, 0),
-        ];
-    }
-
-    protected function getJoursRestants($companyId)
-    {
-        $exercice = \App\Models\ExerciceComptable::where('company_id', $companyId)
-            ->where('is_active', true)
-            ->first();
-
-        if ($exercice && $exercice->date_fin) {
-            return now()->diffInDays($exercice->date_fin, false);
-        }
-
-        return 0;
-    }
-
-    protected function getRevenusMensuels($companyId)
-    {
-        $revenus = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $revenus[] = \App\Models\EcritureComptable::where('company_id', $companyId)
-                ->whereMonth('date', $i)
-                ->whereYear('date', now()->year)
-                ->sum('credit');
-        }
-        return $revenus;
-    }
 
     protected function getUserHabilitations($user, $companyId)
     {

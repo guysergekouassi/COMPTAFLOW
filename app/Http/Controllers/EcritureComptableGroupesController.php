@@ -21,25 +21,6 @@ class EcritureComptableGroupesController extends Controller
             $user = Auth::user();
             $data = $request->all();
 
-            // Initialisation des valeurs par défaut pour éviter les erreurs "Undefined array key"
-            if (!isset($data['annee'])) $data['annee'] = \Carbon\Carbon::now()->year;
-            if (!isset($data['mois'])) $data['mois'] = \Carbon\Carbon::now()->month;
-            if (!isset($data['n_saisie'])) $data['n_saisie'] = null;
-            if (!isset($data['id_journal'])) $data['id_journal'] = null;
-            if (!isset($data['code'])) $data['code'] = null;
-            if (!isset($data['type'])) $data['type'] = null;
-            if (!isset($data['intitule'])) $data['intitule'] = null;
-
-            if (!isset($data['id_exercice'])) {
-                $dernierExercice = ExerciceComptable::where('company_id', $user->company_id)
-                    ->orderBy('date_debut', 'desc')
-                    ->first();
-                
-                if ($dernierExercice) {
-                    $data['id_exercice'] = $dernierExercice->id;
-                }
-            }
-
             $plansComptables = PlanComptable::where('company_id', $user->company_id)
                 ->select('id', 'numero_de_compte', 'intitule')
                 ->get();
@@ -69,42 +50,6 @@ class EcritureComptableGroupesController extends Controller
             $ecritures = $query->with(['planComptable', 'planTiers', 'codeJournal', 'compteTresorerie'])->get();
             $totalDebit = $queryForSum->sum('debit');
             $totalCredit = $queryForSum->sum('credit');
-
-            // --- FIX ANTI-GRAVITY: Remplissage automatique des données manquantes (N/A) ---
-            // 1. Essayer de récupérer les infos depuis le JournalSaisi (Si filtré par journal)
-            if (!empty($data['id_journal'])) {
-                 $journalSaisi = \App\Models\JournalSaisi::with('codeJournal')->find($data['id_journal']);
-                 if ($journalSaisi && $journalSaisi->codeJournal) {
-                     if (empty($data['code'])) $data['code'] = $journalSaisi->codeJournal->code_journal;
-                     if (empty($data['type'])) $data['type'] = $journalSaisi->codeJournal->type;
-                     if (empty($data['intitule'])) $data['intitule'] = $journalSaisi->codeJournal->intitule;
-                 }
-            }
-
-            if ($ecritures->isNotEmpty()) {
-                $first = $ecritures->first();
-                
-                // Récupération via la relation CodeJournal
-                if ($first->codeJournal) {
-                    if (empty($data['code'])) $data['code'] = $first->codeJournal->code_journal;
-                    if (empty($data['type'])) $data['type'] = $first->codeJournal->type;
-                    if (empty($data['intitule'])) $data['intitule'] = $first->codeJournal->intitule;
-                }
-
-                // Récupération de la date si l'année/mois par défaut ne correspondent pas (ou pour être plus précis)
-                if ($first->date) {
-                    try {
-                        $dateObj = \Carbon\Carbon::parse($first->date);
-                        // On écrase les valeurs par défaut (now()) si elles n'étaient pas dans la requête explicite
-                        // Astuce: on verifie si 'annee' est present dans $request->all() original, sinon on prend celui de l'écriture
-                        if (!$request->has('annee')) $data['annee'] = $dateObj->year;
-                        if (!$request->has('mois')) $data['mois'] = $dateObj->month;
-                    } catch (\Exception $e) { 
-                        // silent fail 
-                    }
-                }
-            }
-            // -----------------------------------------------------------------------------
 
             $lastSaisie = EcritureComptable::where('company_id', $user->company_id)
                 ->max('n_saisie');

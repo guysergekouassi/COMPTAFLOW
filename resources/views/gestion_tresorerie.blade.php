@@ -28,15 +28,6 @@
                     <div class="container-xxl flex-grow-1 container-p-y">
                         <div class="row g-6 mb-6">
 
-                            <!-- Page Header -->
-                            <div class="text-center mb-5">
-                                <div class="d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 70px; height: 70px; border-radius: 20px; box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);">
-                                    <i class="bx bx-money text-white" style="font-size: 32px;"></i>
-                                </div>
-                                <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Gestion de Trésorerie</h1>
-                                <p class="text-muted mb-0" style="font-size: 1.1rem;"><i class="bx bx-info-circle me-1"></i>Gérez vos flux de trésorerie et configurations</p>
-                            </div>
-
                             <!-- Section table -->
                             @if (session('success'))
                                 <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
@@ -55,17 +46,17 @@
                             @endif
 
 
-                            <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
-                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-bottom: 2px solid #e7e9ed; padding: 1.5rem;">
-                                    <h5 class="mb-0" style="font-weight: 700; color: #566a7f; font-size: 1.25rem;"><i class="bx bx-list-ul me-2"></i>Gestion des flux de trésorerie</h5>
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Gestion des flux de tresorerie</h5>
                                     <div>
-                                        <button class="btn btn-sm me-2" data-bs-toggle="collapse"
-                                            data-bs-target="#filterPanel" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(79, 172, 254, 0.3);">
+                                        <button class="btn btn-outline-primary me-2 btn-sm" data-bs-toggle="collapse"
+                                            data-bs-target="#filterPanel">
                                             <i class="bx bx-filter-alt me-1"></i> Filtrer
                                         </button>
-                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#modalCenterCreate" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">
-                                            <i class="bx bx-plus me-1"></i> Ajouter
+                                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#modalCenterCreate">
+                                            Ajouter
                                         </button>
                                     </div>
                                 </div>
@@ -127,55 +118,49 @@
                                 </script>
 
                                 <div class="table-responsive text-nowrap">
-                                    <table class="table table-hover align-middle" id="FluxTable" style="border-radius: 8px; overflow: hidden;">
-                                        <thead style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                                    <table class="table" id="FluxTable">
+                                        <thead>
                                             <tr>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Categorie</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">Nature</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">De</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;">A</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem; text-align: center;">Actions</th>
+                                                <th>Categorie</th>
+                                                <th>Nature</th>
+                                                <th>De </th>
+                                                <th>A </th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($flux_types as $flux_type)
                                                 <tr>
-                                                    <td style="padding: 1rem; font-weight: 600; color: #667eea;">{{ $flux_type->categorie }}</td>
-                                                    <td style="padding: 1rem; color: #566a7f;">{{ $flux_type->nature }}</td>
-                                                    <td style="padding: 1rem; color: #566a7f;">{{ $flux_type->PlanComptable1->numero_de_compte ?? 'N/A' }}
+                                                    <td>{{ $flux_type->categorie }}</td>
+                                                    <td>{{ $flux_type->nature }}</td>
+                                                    <td>{{ $flux_type->PlanComptable1->numero_de_compte ?? 'N/A' }}
                                                     </td>
 
-                                                    <td style="padding: 1rem; color: #566a7f;">{{ $flux_type->PlanComptable2->numero_de_compte ?? 'N/A' }}
+                                                    <td>{{ $flux_type->PlanComptable2->numero_de_compte ?? 'N/A' }}
                                                     </td>
-                                                    <td style="padding: 1rem; text-align: center;">
-                                                        <div class="d-flex gap-2 justify-content-center">
+                                                    <td>
+                                                        <div class="d-flex gap-2">
 
                                                             <!-- Bouton Modifier -->
                                                             <button type="button"
-                                                                class="btn btn-sm btn-icon"
-                                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);"
-                                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(102, 126, 234, 0.4)'"
-                                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(102, 126, 234, 0.3)'"
+                                                                class="btn p-0 border-0 bg-transparent text-primary"
                                                                 data-bs-toggle="modal"
                                                                 data-bs-target="#modalCenterUpdate"
                                                                 data-id="{{ $flux_type->id }}"
                                                                 data-categorie="{{ $flux_type->categorie }}"
                                                                 data-nature="{{ $flux_type->nature }}"
-                                                                data-plan-comptable1="{{ optional($flux_type->PlanComptable1)->id }}"
-                                                                data-plan-comptable2="{{ optional($flux_type->PlanComptable2)->id }}">
-                                                                <i class="bx bx-edit-alt" style="font-size: 16px;"></i>
+                                                                data-plan-comptable1="{{ $flux_type->PlanComptable1->id }}"
+                                                                data-plan-comptable2="{{ $flux_type->PlanComptable2->id }}">
+                                                                <i class="bx bx-edit-alt fs-5"></i>
                                                             </button>
 
                                                             <!-- Bouton Supprimer -->
                                                             <button type="button"
-                                                                class="btn btn-sm btn-icon"
-                                                                style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: white; border: none; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(255, 154, 158, 0.3);"
-                                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(255, 154, 158, 0.4)'"
-                                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(255, 154, 158, 0.3)'"
+                                                                class="btn p-0 border-0 bg-transparent text-danger"
                                                                 data-bs-toggle="modal" data-bs-target="#modalDeleteFlux"
                                                                 data-id="{{ $flux_type->id }}"
                                                                 data-label="{{ $flux_type->categorie }}">
-                                                                <i class="bx bx-trash" style="font-size: 16px;"></i>
+                                                                <i class="bx bx-trash fs-5"></i>
                                                             </button>
 
                                                         </div>
@@ -197,11 +182,11 @@
                                         action="{{ route('gestion_tresorerie.store') }}">
                                         @csrf
                                         <div class="modal-content">
-                                            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                                <h5 class="modal-title text-white" id="modalCenterTitle">
-                                                    <i class="bx bx-plus-circle me-2"></i>Créer un Type de Flux
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="modalCenterTitle">
+                                                    Créer un Type de Flux
                                                 </h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                     aria-label="Fermer"></button>
                                             </div>
                                             <div class="modal-body">
@@ -289,9 +274,9 @@
                                         @method('PUT')
                                         <input type="hidden" id="update_id" name="id">
                                         <div class="modal-content">
-                                            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                                <h5 class="modal-title text-white"><i class="bx bx-edit-alt me-2"></i>Modifier le Type de Flux</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Modifier le Type de Flux</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                     aria-label="Fermer"></button>
                                             </div>
                                             <div class="modal-body">

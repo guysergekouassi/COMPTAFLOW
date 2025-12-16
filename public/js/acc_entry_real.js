@@ -166,9 +166,10 @@ function ajouterEcriture() {
     const form = document.getElementById("formEcriture");
     const debit = document.getElementById("debit");
     const credit = document.getElementById("credit");
-    // Récupère l'ID du poste de trésorerie et le type de flux
+    // AJOUTER CETTE LIGNE : Récupère l'ID du poste de trésorerie
     const tresorerieId = $('#compteTresorerieField').val();
     const typeFlux = $('#typeFlux').val();
+    const typeFluxValue = $('#typeFluxField').val();
 
     const debitVal = parseFloat(debit.value) || 0;
     const creditVal = parseFloat(credit.value) || 0;
@@ -189,6 +190,7 @@ function ajouterEcriture() {
     const nSaisieValue = form.n_saisie.value;
     const descriptionValue = form.description_operation.value;
     const referencePieceValue = form.reference_piece.value;
+// AJOUTER CES DEUX LIGNES
 
     // const selectedOption = form.compte_general.options[form.compte_general.selectedIndex];
     // const selectedOption2 = form.compte_tiers.options[form.compte_tiers.selectedIndex];
@@ -200,7 +202,8 @@ function ajouterEcriture() {
 
         journal: form.imputation.value,
         journal_code: form.imputation.getAttribute("data-code_imputation"),
-
+        typeFlux: typeFlux,
+        tresorerieFields: tresorerieId,
         exercices_comptables_id: form.exercices_comptables_id.value,
         journaux_saisis_id: form.journaux_saisis_id.value,
         description: descriptionValue,
@@ -220,11 +223,11 @@ function ajouterEcriture() {
         credit: parseFloat(form.credit.value) || 0,
         piece_justificatif: form.piece_justificatif.files[0] || null,
         analytique: form.plan_analytique.value === "1" ? "Oui" : "Non",
-
         // AJOUT : Poste de trésorerie et type de flux
         tresorerieFields: tresorerieId || null,
         tresorerieNom: tresorerieId ? $('#compteTresorerieField option:selected').text() : '-',
         typeFlux: typeFlux || null,
+        typeFlux: typeFluxValue || null,
         typeFluxNom: typeFlux ? $('#typeFlux option:selected').text() : '-',
     };
 
@@ -289,10 +292,10 @@ function afficherTableau() {
       <td>${e.compte_tiers_intitule}</td>
       <td>${e.debit.toFixed(2)}</td>
       <td>${e.credit.toFixed(2)}</td>
-      <td>${e.piece_justificatif}</td>
-      <td>${e.analytique}</td>
       <td>${e.tresorerieNom || '-'}</td>
       <td>${e.typeFluxNom || '-'}</td>
+      <td>${e.piece_justificatif}</td>
+      <td>${e.analytique}</td>
       <td><button class="btn btn-success" style="padding: 0.2rem 0.4rem; font-size: 0.75rem;" onclick="rechargerEcriture(${index})">Modifier</button></td>
       <td><button class="btn btn-danger" style="padding: 0.2rem 0.4rem; font-size: 0.75rem;" onclick="supprimerEcriture(${index})">Supprimer</button></td>
     </tr>`;
@@ -534,7 +537,6 @@ function enregistrerEcritures() {
         formData.append(`ecritures[${index}][debit]`, e.debit);
         formData.append(`ecritures[${index}][credit]`, e.credit);
         formData.append(`ecritures[${index}][analytique]`, e.analytique);
-
         // AJOUT : Poste de trésorerie et type de flux
         if (e.tresorerieFields) {
             formData.append(`ecritures[${index}][tresorerieFields]`, e.tresorerieFields);
@@ -543,7 +545,7 @@ function enregistrerEcritures() {
             formData.append(`ecritures[${index}][typeFlux]`, e.typeFlux);
         }
 
-        // Ajouter le fichier s'il existe
+        // Ajouter le fichier s’il existe
         if (e.piece_justificatif instanceof File) {
             formData.append(
                 `ecritures[${index}][piece_justificatif]`,
@@ -551,7 +553,6 @@ function enregistrerEcritures() {
             );
         }
     });
-
 
     // // 🔍 Affichage des données contenues dans formData
     // console.log("=== Données envoyées ===");

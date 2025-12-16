@@ -13,15 +13,6 @@
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
 
-                        <!-- Page Header -->
-                        <div class="text-center mb-5">
-                            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 70px; height: 70px; border-radius: 20px; box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);">
-                                <i class="bx bx-wallet text-white" style="font-size: 32px;"></i>
-                            </div>
-                            <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Journal de Trésorerie</h1>
-                            <p class="text-muted mb-0" style="font-size: 1.1rem;"><i class="bx bx-info-circle me-1"></i>Gérez vos journaux de trésorerie (Banque, Caisse, etc.)</p>
-                        </div>
-
                         {{-- Alerts --}}
                         @if (session('success'))
                             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -36,57 +27,53 @@
                             </div>
                         @endif
 
-                        <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
-                            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-bottom: 2px solid #e7e9ed; padding: 1.5rem;">
-                                <h5 class="mb-0" style="font-weight: 700; color: #566a7f; font-size: 1.25rem;"><i class="bx bx-list-ul me-2"></i>Liste des Journaux</h5>
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Journal de Trésorerie</h5>
                                 <div class="d-flex gap-2">
-                                    <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#periodSelectionModal" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(79, 172, 254, 0.3);">
-                                        <i class="bx bx-file me-1"></i> Générer Solde Trésor
-                                    </button>
+                                    {{-- <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#periodSelectionModal">
+                                        <i class="bx bx-file"></i> Générer Solde Trésor
+                                    </button> --}}
 
-                                    <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#createModal" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">
-                                        <i class="bx bx-plus me-1"></i> Ajouter
+                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+                                        <i class="bx bx-plus"></i> Ajouter
                                     </button>
                                 </div>
                             </div>
 
                             <div class="table-responsive text-nowrap p-3">
-                                <table class="table table-hover align-middle" id="journalTable" style="border-radius: 8px; overflow: hidden;">
-                                    <thead style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                                <table class="table table-hover table-striped table-bordered align-middle" id="journalTable">
+                                    <thead>
                                         <tr>
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-code-alt me-1"></i>Code journal</th>
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-text me-1"></i>Intitulé</th>
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-cog me-1"></i>Traitement analytique</th>
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-book me-1"></i>Compte</th>
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-link me-1"></i>Rapprochement sur</th>
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem; text-align: center;"><i class="bx bx-slider me-1"></i>Actions</th>
+                                            <th>Code journal</th>
+                                            <th>Intitulé</th>
+                                            <th>Traitement analytique</th>
+                                            <th>Compte</th>
+                                            <th>Rapprochement sur</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @forelse($tresoreries as $journal)
                                             <tr>
-                                                <td style="padding: 1rem; font-weight: 600; color: #667eea;">{{ $journal->code_journal }}</td>
-                                                <td style="padding: 1rem; color: #566a7f;">{{ $journal->intitule }}</td>
-                                                <td style="padding: 1rem;"><span class="badge" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: white;">{{ $journal->traitement_analytique }}</span></td>
-                                                <td style="padding: 1rem; color: #566a7f;">{{ $journal->compte_de_contrepartie }}</td>
-                                                <td style="padding: 1rem; color: #566a7f;">{{ $journal->rapprochement_sur }}</td>
-                                                <td class="d-flex gap-3 justify-content-center" style="padding: 1rem;">
-                                                    <button class="btn btn-sm btn-icon" data-bs-toggle="modal" data-bs-target="#editModal{{ $journal->id }}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(102, 126, 234, 0.3)'" title="Modifier">
-                                                        <i class="bx bx-edit-alt" style="font-size: 18px;"></i>
+                                                <td>{{ $journal->code_journal }}</td>
+                                                <td>{{ $journal->intitule }}</td>
+                                                <td>{{ $journal->traitement_analytique }}</td>
+                                                <td>{{ $journal->compte_de_contrepartie }}</td>
+                                                <td>{{ $journal->rapprochement_sur }}</td>
+                                                <td class="d-flex gap-2">
+                                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $journal->id }}">
+                                                        <i class="bx bx-edit-alt"></i>
                                                     </button>
 
                                                     <button type="button"
-                                                            class="btn btn-sm btn-icon"
-                                                            style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(245, 87, 108, 0.3);"
-                                                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(245, 87, 108, 0.4)'"
-                                                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(245, 87, 108, 0.3)'"
+                                                            class="btn btn-sm btn-danger"
                                                             data-bs-toggle="modal"
                                                             data-bs-target="#deleteConfirmationModal"
                                                             data-id="{{ $journal->id }}"
                                                             data-code-journal="{{ $journal->code_journal }}"
-                                                            onclick="setDeleteAction(this)"
-                                                            title="Supprimer">
-                                                        <i class="bx bx-trash" style="font-size: 18px;"></i>
+                                                            onclick="setDeleteAction(this)">
+                                                        <i class="bx bx-trash"></i>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -162,9 +149,9 @@
                                 <div class="modal-content">
                                     <form action="{{ route('storetresorerie') }}" method="POST">
                                         @csrf
-                                        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom: none;">
-                                            <h5 class="modal-title text-white" style="font-weight: 700;"><i class="bx bx-plus-circle me-2"></i>Ajouter un Journal</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Ajouter un Journal</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
                                             <div class="mb-3">
@@ -217,9 +204,9 @@
                                             </div>
                                         </div>
 
-                                        <div class="modal-footer" style="border-top: 1px solid #e7e9ed; padding: 1.25rem;">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Fermer</button>
-                                            <button type="submit" class="btn btn-primary" style="border-radius: 8px; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">Enregistrer</button>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                            <button type="submit" class="btn btn-primary">Enregistrer</button>
                                         </div>
                                     </form>
                                 </div>
@@ -284,9 +271,9 @@
                                         <form action="{{ route('update_tresorerie', $journal->id) }}" method="POST">
                                             @csrf
                                             @method('PUT')
-                                            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom: none;">
-                                                <h5 class="modal-title text-white" style="font-weight: 700;"><i class="bx bx-edit-alt me-2"></i>Modifier le Journal</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Modifier le Journal</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
                                                 <div class="mb-3">
@@ -337,9 +324,9 @@
                                                 </div>
                                             </div>
 
-                                            <div class="modal-footer" style="border-top: 1px solid #e7e9ed; padding: 1.25rem;">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Fermer</button>
-                                                <button type="submit" class="btn" style="border-radius: 8px; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">Modifier</button>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                                <button type="submit" class="btn btn-warning">Modifier</button>
                                             </div>
                                         </form>
                                     </div>

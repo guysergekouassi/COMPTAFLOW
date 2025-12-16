@@ -26,103 +26,107 @@
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
-                        <!-- Page Header -->
-                        <div class="text-center mb-4">
-                            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 60px; height: 60px; border-radius: 16px; box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);">
-                                <i class="bx bx-detail text-white" style="font-size: 28px;"></i>
-                            </div>
-                            <h2 class="mb-2" style="font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Détails du Compte</h2>
-                            <p class="text-muted mb-0"><i class="bx bx-info-circle me-1"></i>Consultez les écritures et statistiques du compte</p>
-                        </div>
-
-                        <!-- Back Button -->
-                        <div class="mb-4">
-                            <a href="javascript:history.back()" class="btn btn-outline-secondary" style="border-radius: 8px; font-weight: 600; transition: all 0.3s;">
-                                <i class='bx bx-arrow-back me-1'></i> Retour
-                            </a>
-                        </div>
-
-                        <!-- Account Info Badges -->
-                        <div class="d-flex flex-wrap align-items-center justify-content-center gap-3 mb-5">
-                            <div class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0.75rem 1.5rem; border-radius: 12px; font-size: 1rem; font-weight: 600; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">
-                                <i class="bx bx-hash me-1"></i>{{ $data['numero_de_compte'] ?? 'N/A' }}
-                            </div>
-                            <div class="badge" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 0.75rem 1.5rem; border-radius: 12px; font-size: 1rem; font-weight: 600; box-shadow: 0 4px 8px rgba(245, 87, 108, 0.3);">
-                                <i class="bx bx-text me-1"></i>{{ $data['intitule'] ?? 'N/A' }}
-                            </div>
-
-                            @if ($debutExercice && $finExercice)
-                                <form method="GET" action="{{ route('plan_comptable_ecritures') }}"
-                                    class="d-flex align-items-center gap-2 flex-wrap m-0">
-                                    <input type="date" name="date_debut"
-                                        class="form-control form-control-sm" value="{{ $debutExercice }}" style="border-radius: 8px; max-width: 160px;">
-                                    <input type="date" name="date_fin"
-                                        class="form-control form-control-sm" value="{{ $finExercice }}" style="border-radius: 8px; max-width: 160px;">
-
-                                    <!-- Champs cachés pour conserver le contexte -->
-                                    <input type="hidden" name="numero_de_compte"
-                                        value="{{ $data['numero_de_compte'] ?? '' }}">
-                                    <input type="hidden" name="intitule" value="{{ $data['intitule'] ?? '' }}">
-
-                                    <button type="submit" class="btn btn-sm btn-primary" style="border-radius: 8px; font-weight: 600;"><i class="bx bx-filter-alt me-1"></i>Filtrer</button>
-                                </form>
-                            @endif
-                        </div>
-
                         <div class="row g-6 mb-6">
 
-                            <!-- Statistics Cards -->
-                            <div class="col-sm-6 col-xl-4">
-                                <div class="card stats-card" style="transition: all 0.3s ease; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: default;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'">
-                                    <div class="card-body" style="padding: 1.5rem;">
+                            <div class="mb-3">
+                                <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
+                                    <i class='bx  bx-reply-stroke'></i>
+                                </a>
+                            </div>
+
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+
+                                <div class="badge bg-primary text-white px-3 py-2 rounded">
+                                    {{ $data['numero_de_compte'] ?? 'N/A' }}
+                                </div>
+                                <div class="badge bg-primary text-white px-3 py-2 rounded">
+                                    {{ $data['intitule'] ?? 'N/A' }}
+                                </div>
+
+                                @if ($debutExercice && $finExercice)
+                                    <form method="GET" action="{{ route('plan_comptable_ecritures') }}"
+                                        class="d-flex align-items-center gap-2 flex-wrap m-0">
+                                        <input type="date" name="date_debut"
+                                            class="form-control form-control-sm w-auto" value="{{ $debutExercice }}">
+                                        <input type="date" name="date_fin"
+                                            class="form-control form-control-sm w-auto" value="{{ $finExercice }}">
+
+                                        <!-- Champs cachés pour conserver le contexte -->
+                                        <input type="hidden" name="numero_de_compte"
+                                            value="{{ $data['numero_de_compte'] ?? '' }}">
+                                        <input type="hidden" name="intitule" value="{{ $data['intitule'] ?? '' }}">
+
+                                        <button type="submit" class="btn btn-sm btn-primary">Filtrer</button>
+                                    </form>
+                                @endif
+
+                            </div>
+
+
+
+
+
+                            <div class="col-sm-6 col-xl-3">
+                                <div class="card">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-start justify-content-between">
                                             <div class="content-left">
-                                                <span class="text-heading" style="font-size: 0.875rem; font-weight: 600; color: #697a8d; text-transform: uppercase; letter-spacing: 0.5px;">Total débit</span>
+                                                <span class="text-heading">Total débit</span>
                                                 <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2" style="font-size: 2rem; font-weight: 700;">{{ rtrim(rtrim(number_format($totalDebit, 2, ',', ' '), '0'), ',') }}</h4>
+                                                    <h4 class="mb-0 me-2">{{ rtrim(rtrim(number_format($totalDebit, 2, ',', ' '), '0'), ',') }}
+
+                                                    </h4>
+
                                                 </div>
+                                                <!-- <small class="mb-0">Total Users</small> -->
                                             </div>
-                                            <div class="avatar" style="width: 56px; height: 56px;">
-                                                <span class="avatar-initial rounded bg-label-danger" style="font-size: 28px;">
-                                                    <i class="icon-base bx bx-trending-up icon-lg"></i>
+                                            <div class="avatar">
+                                                <span class="avatar-initial rounded bg-label-danger">
+                                                    <i class="icon-base bx bx-arrow-up icon-lg"></i>
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-sm-6 col-xl-4">
-                                <div class="card stats-card" style="transition: all 0.3s ease; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: default;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'">
-                                    <div class="card-body" style="padding: 1.5rem;">
+                            <div class="col-sm-6 col-xl-3">
+                                <div class="card">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-start justify-content-between">
                                             <div class="content-left">
-                                                <span class="text-heading" style="font-size: 0.875rem; font-weight: 600; color: #697a8d; text-transform: uppercase; letter-spacing: 0.5px;">Total crédit</span>
+                                                <span class="text-heading">Total crédit</span>
                                                 <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2" style="font-size: 2rem; font-weight: 700;">{{ rtrim(rtrim(number_format($totalCredit, 2, ',', ' '), '0'), ',') }}</h4>
+                                                    <h4 class="mb-0 me-2">{{ rtrim(rtrim(number_format($totalCredit, 2, ',', ' '), '0'), ',') }}
+                                                    </h4>
+
                                                 </div>
+                                                <!-- <small class="mb-0">Last week analytics </small> -->
                                             </div>
-                                            <div class="avatar" style="width: 56px; height: 56px;">
-                                                <span class="avatar-initial rounded bg-label-primary" style="font-size: 28px;">
-                                                    <i class="icon-base bx bx-trending-down icon-lg"></i>
+                                            <div class="avatar">
+                                                <span class="avatar-initial rounded bg-label-primary">
+                                                    <i class="icon-base bx bx-arrow-down icon-lg"></i>
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-sm-6 col-xl-4">
-                                <div class="card stats-card" style="transition: all 0.3s ease; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: default;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'">
-                                    <div class="card-body" style="padding: 1.5rem;">
+                            <div class="col-sm-6 col-xl-3">
+                                <div class="card">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-start justify-content-between">
                                             <div class="content-left">
-                                                <span class="text-heading" style="font-size: 0.875rem; font-weight: 600; color: #697a8d; text-transform: uppercase; letter-spacing: 0.5px;">Solde</span>
+                                                <span class="text-heading">Solde</span>
                                                 <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2" style="font-size: 2rem; font-weight: 700; color: {{ $solde >= 0 ? '#28a745' : '#dc3545' }};">{{ rtrim(rtrim(number_format($solde, 2, ',', ' '), '0'), ',') }}</h4>
+                                                    <h4 class="mb-0 me-2">{{ rtrim(rtrim(number_format($solde, 2, ',', ' '), '0'), ',') }}
+                                                    </h4>
+
                                                 </div>
+                                                <!-- <small class="mb-0">Last week analytics </small> -->
                                             </div>
-                                            <div class="avatar" style="width: 56px; height: 56px;">
-                                                <span class="avatar-initial rounded" style="background: {{ $solde >= 0 ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}; font-size: 28px;">
-                                                    <i class="icon-base bx {{ $solde >= 0 ? 'bx-wallet' : 'bx-error-circle' }} icon-lg text-white"></i>
+                                            <div class="avatar">
+                                                <span class="avatar-initial rounded bg-label-primary">
+                                                    <i class="icon-base bx bx-arrow-down icon-lg"></i>
                                                 </span>
                                             </div>
                                         </div>
@@ -149,7 +153,7 @@
 
 
                             <!-- Section table -->
-                            <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
+                            <div class="card">
                                 {{-- <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0">Listing des ecritures du journal</h5>
                                     <div>
@@ -238,19 +242,23 @@
                                         /* blanc */
                                     }
                                 </style>
-                                <div class="table-responsive" style="max-height: 600px; overflow-y: auto; padding: 1.5rem;">
-                                    <table class="table table-hover align-middle" id="table-ecritures" style="border-radius: 8px; overflow: hidden;">
-                                        <thead style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                                <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                                    <table class="table table-striped table-bordered" id="table-ecritures">
+                                        <thead>
                                             <tr>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-calendar me-1"></i>Date</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-hash me-1"></i>N° Saisie</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-file me-1"></i>Référence</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-text me-1"></i>Description</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-book me-1"></i>Compte Général</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-user me-1"></i>Compte Tiers</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-trending-up me-1"></i>Débit</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-trending-down me-1"></i>Crédit</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem; text-align: center;"><i class="bx bx-paperclip me-1"></i>Pièce</th>
+                                                <th>Date</th>
+                                                <th>N° Saisie</th>
+
+                                                <th>Référence Pièce</th>
+
+                                                <th>Description</th>
+
+                                                <th>Compte Général</th>
+                                                <th>Compte Tiers</th>
+                                                <th>Débit</th>
+                                                <th>Crédit</th>
+                                                <th>Pièce justificatif</th>
+                                                {{-- <th>Action</th> --}}
                                             </tr>
                                         </thead>
 
@@ -301,29 +309,24 @@
 
 
                                                     <!-- Bouton pour afficher la pièce justificative -->
-                                                    <td class="text-center" style="padding: 1rem;">
+                                                    <td class="text-center">
                                                         @if ($ecriture->piece_justificatif)
                                                             <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}"
                                                                 target="_blank"
-                                                                class="btn btn-sm btn-icon me-1"
-                                                                style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(79, 172, 254, 0.3);"
-                                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(79, 172, 254, 0.4)'"
-                                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(79, 172, 254, 0.3)'"
+                                                                class="btn p-0 border-0 bg-transparent text-danger"
                                                                 title="Afficher la pièce justificative">
-                                                                <i class='bx bx-show' style="font-size: 16px;"></i>
+                                                                <i class='bx bx-eye-alt fs-5'></i>
                                                             </a>
 
                                                             <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}"
                                                                 download
-                                                                class="btn btn-sm btn-icon"
-                                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);"
-                                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(102, 126, 234, 0.4)'"
-                                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(102, 126, 234, 0.3)'"
+                                                                class="btn p-0 border-0 bg-transparent text-danger"
                                                                 title="Télécharger la pièce justificative">
-                                                                <i class='bx bx-download' style="font-size: 16px;"></i>
+                                                                <i class='bx bx-file-plus fs-5'></i>
                                                             </a>
                                                         @else
-                                                            <span class="badge bg-secondary" style="padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.75rem;">Aucune</span>
+                                                            <i class='bx bx-x-circle text-muted fs-5'
+                                                                title="Aucune pièce justificative disponible"></i>
                                                         @endif
 
 

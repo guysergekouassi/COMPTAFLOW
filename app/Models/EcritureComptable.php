@@ -26,9 +26,9 @@ class EcritureComptable extends Model
         'journaux_saisis_id',    // imputation
         'piece_justificatif', // chemin du fichier uploadé (nullable)
         'debit',
-        'compte_tresorerie_id',
-        'type_flux',          // type de flux (debit/credit)
         'credit',
+        'compte_tresorerie_id',
+        'type_flux',
         'user_id',
         'company_id',
     ];

@@ -16,15 +16,6 @@
             <div class="content-wrapper">
                 <div class="container-xxl flex-grow-1 container-p-y">
 
-                    <!-- Page Header -->
-                    <div class="text-center mb-5">
-                        <div class="d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 70px; height: 70px; border-radius: 20px; box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);">
-                            <i class="bx bx-bank text-white" style="font-size: 32px;"></i>
-                        </div>
-                        <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Postes de Trésorerie</h1>
-                        <p class="text-muted mb-0" style="font-size: 1.1rem;"><i class="bx bx-info-circle me-1"></i>Gérez vos postes de trésorerie par catégorie</p>
-                    </div>
-
                     {{-- FLASH SUCCESS --}}
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -34,30 +25,33 @@
                     @endif
 
                     {{-- ********** LISTE DES COMPTES DE TRÉSORERIE ********** --}}
-                    <div class="card mb-4" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
-                        <div class="card-header d-flex justify-content-between" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-bottom: 2px solid #e7e9ed; padding: 1.5rem;">
-                            <h5 class="mb-0" style="font-weight: 700; color: #566a7f; font-size: 1.25rem;"><i class="bx bx-list-ul me-2"></i>Liste des Postes</h5>
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between">
+                            <h5 class="mb-0">Postes de trésorerie</h5>
 
                             <div>
                                 {{-- Bouton pour créer un NOUVEAU POSTE DE TRÉSORERIE (OUVRE LA MODAL) --}}
-                                <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreatePoste" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">
-                                     <i class="bx bx-plus me-1"></i> Créer un Poste
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreatePoste">
+                                     <i class="bx bx-bank"></i> Créer un Poste
                                 </button>
-
+                                {{-- Bouton pour GENERER un RAPPORT POSTE DE TRÉSORERIE (OUVRE LA MODAL) --}}
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#periodSelectionModal">
+                                     <i class="bx bx-file"></i> Generer un plan
+                                </button>
                             </div>
                         </div>
 
                         <div class="card-body">
 
-                            <div class="table-responsive" style="padding: 1.5rem;">
-                                <table class="table table-hover align-middle" style="border-radius: 8px; overflow: hidden;">
-                                    <thead style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    <thead>
                                         <tr>
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-text me-1"></i>Nom du poste</th>
+                                            <th>Nom du poste</th>
 
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-category me-1"></i>Catégorie</th>
+                                            <th>Categorie </th>
 
-                                            <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem; text-align: center;"><i class="bx bx-slider me-1"></i>Actions</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -146,6 +140,51 @@
 
     <div class="layout-overlay layout-menu-toggle"></div>
 </div>
+{{-- modal de previsualisation  --}}
+
+
+{{-- ********** MODAL SÉLECTION DE PÉRIODE POUR GÉNÉRATION (Rapport Trésorerie) ********** --}}
+<div class="modal fade" id="periodSelectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Générer un Plan de Trésorerie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label" for="start_date">Date de Début</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="end_date">Date de Fin</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                {{-- Bouton pour prévisualiser le PDF --}}
+                <button type="button" class="btn btn-primary" id="previewPdfButton">
+                    <i class="bx bx-file"></i> Prévisualiser / Télécharger
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{--  fin modal de previsualisation  --}}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 {{-- ********** MODAL AJOUT NOUVEAU POSTE (Déplacé de createPoste.blade.php) ********** --}}
@@ -202,9 +241,9 @@
                 @csrf
                 @method('PUT')
 
-                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom: none;">
-                    <h5 class="modal-title text-white" style="font-weight: 700;"><i class="bx bx-edit-alt me-2"></i>Modifier le Poste de Trésorerie: <span id="posteNameTitle"></span></h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifier le Poste de Trésorerie: <span id="posteNameTitle"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
@@ -230,41 +269,154 @@
 
                 </div>
 
-                <div class="modal-footer" style="border-top: 1px solid #e7e9ed; padding: 1.25rem;">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Annuler</button>
-                    <button type="submit" class="btn" style="border-radius: 8px; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);">Sauvegarder les modifications</button>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">Sauvegarder les modifications</button>
                 </div>
 
             </form>
         </div>
     </div>
 </div>
+
+{{-- ********** MODAL PRÉVISUALISATION ET TÉLÉCHARGEMENT PDF ********** --}}
+<div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-labelledby="modalPreviewPDFLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPreviewPDFLabel">Plan de Trésorerie - Prévisualisation PDF</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 80vh;">
+                {{-- L'iframe chargera le PDF en streaming/URL --}}
+                <iframe id="pdfPreviewFrame" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                {{-- Le lien sera mis à jour dynamiquement par le JS pour l'export CSV --}}
+                <a href="#" id="exportCsvLink" class="btn btn-success" target="_blank">
+                    <i class="bx bx-download"></i> Exporter CSV
+                </a>
+                {{-- Le lien sera mis à jour dynamiquement par le JS pour le téléchargement PDF --}}
+                <a href="#" id="downloadPdfLink" class="btn btn-primary" target="_blank" data-bs-dismiss="modal">
+                    <i class="bx bx-printer"></i> Télécharger PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const updateModal = document.getElementById('modalUpdatePoste');
+        // Elements
+        const previewPdfButton = document.getElementById('previewPdfButton');
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        const periodSelectionModalEl = document.getElementById('periodSelectionModal');
+        const exportCsvLink = document.getElementById('exportCsvLink');
+        const downloadPdfLink = document.getElementById('downloadPdfLink'); // NOUVEL ÉLÉMENT
+        const modalPreviewPDFEl = document.getElementById('modalPreviewPDF');
+        const modalUpdatePosteEl = document.getElementById('modalUpdatePoste'); // OK, ciblé ici
 
-        // Écoute l'événement d'ouverture du modal Bootstrap (show.bs.modal)
-        updateModal.addEventListener('show.bs.modal', function (event) {
+        // Ensure periodSelectionModal exists
+        let periodSelectionModal = null;
+        if (periodSelectionModalEl) {
+            periodSelectionModal = new bootstrap.Modal(periodSelectionModalEl);
+        }
 
-            // Le bouton qui a déclenché le modal
-            const button = event.relatedTarget;
+        // ===================================================================
+        // 1. Logique de Génération / Prévisualisation du PDF (Déjà existante)
+        // ===================================================================
 
-            // Récupération des données via les attributs data- (ce sont des chaînes de caractères)
-            const posteId = button.getAttribute('data-id');
-            const posteName = button.getAttribute('data-name');
-            const posteType = button.getAttribute('data-type');
+        if (previewPdfButton) {
+            previewPdfButton.addEventListener('click', function(e) {
+                e.preventDefault();
 
-            // 1. Mise à jour de l'URL du formulaire pour pointer vers la route PUT/PATCH
-            const form = document.getElementById('updatePosteForm');
-            // L'URL doit correspondre à votre route Laravel : /poste/{id}
-            form.action = `/poste/${posteId}`;
+                if (!startDateInput || !endDateInput) {
+                    alert('Les champs de date sont introuvables.');
+                    return;
+                }
 
-            // 2. Remplissage des champs du formulaire
-            document.getElementById('posteNameTitle').textContent = posteName;
-            document.getElementById('update_name').value = posteName;
-            document.getElementById('update_type').value = posteType; // Définit l'option sélectionnée
-        });
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+
+                if (!startDate || !endDate) {
+                    alert('Veuillez sélectionner les dates de début et de fin pour le plan.');
+                    return;
+                }
+
+                const pdfStreamingUrl = "{{ route('generate_cash_flow_pdf') }}" + `?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
+                const exportCsvBaseUrl = "{{ route('export_cash_flow_csv') }}";
+                const csvUrl = `${exportCsvBaseUrl}?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
+
+                if (modalPreviewPDFEl) {
+                    const iframe = document.getElementById('pdfPreviewFrame');
+                    if (iframe) {
+                        iframe.src = pdfStreamingUrl;
+                    }
+                    const previewModal = new bootstrap.Modal(modalPreviewPDFEl);
+                    previewModal.show();
+                } else {
+                    window.open(pdfStreamingUrl, '_blank');
+                }
+
+                if (exportCsvLink) {
+                    exportCsvLink.href = csvUrl;
+                }
+
+                if (downloadPdfLink) {
+                    downloadPdfLink.href = pdfStreamingUrl;
+                }
+
+                if (periodSelectionModal) {
+                    periodSelectionModal.hide();
+                }
+            });
+        }
+
+        // ===================================================================
+        // 2. Logique de Remplissage du Modal de Modification (Relocalisée)
+        // C'EST CETTE PARTIE QUI ÉTAIT MAL PLACÉE DANS VOTRE CODE ORIGINAL
+        // ===================================================================
+        if (modalUpdatePosteEl) {
+            // Écouter l'événement 'show.bs.modal' de Bootstrap, qui se déclenche juste avant l'ouverture du modal.
+            modalUpdatePosteEl.addEventListener('show.bs.modal', function (event) {
+                // Le bouton qui a déclenché l'ouverture est dans event.relatedTarget
+                const button = event.relatedTarget;
+
+                // Récupération des données via les data-attributes du bouton
+                const posteId = button.getAttribute('data-id');
+                const posteName = button.getAttribute('data-name');
+                const posteType = button.getAttribute('data-type');
+
+                // Cibler les éléments du formulaire à mettre à jour
+                const form = modalUpdatePosteEl.querySelector('#updatePosteForm');
+                const nameInput = modalUpdatePosteEl.querySelector('#update_name');
+                const typeSelect = modalUpdatePosteEl.querySelector('#update_type');
+                const titleSpan = modalUpdatePosteEl.querySelector('#posteNameTitle');
+
+                if (form) {
+                    // 1. Mise à jour de l'action du formulaire (route de mise à jour)
+                    // !!! ASSUREZ-VOUS QUE LA ROUTE SUIVANTE EST CORRECTE DANS VOTRE CONFIGURATION LARAVEL !!!
+                    const updateUrl = `/postetresorerie/${posteId}`; // Remplacer par la bonne route si différente
+                    form.setAttribute('action', updateUrl);
+                }
+
+                // 2. Pré-remplissage des champs du modal
+                if (titleSpan) {
+                    titleSpan.textContent = posteName;
+                }
+                if (nameInput) {
+                    nameInput.value = posteName;
+                }
+                if (typeSelect) {
+                    // Sélectionner l'option correspondante dans le <select>
+                    typeSelect.value = posteType;
+                }
+            });
+        }
     });
 </script>
+
+
 </body>
 </html>

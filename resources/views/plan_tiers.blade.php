@@ -27,54 +27,10 @@
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
-                        <!-- Page Header -->
-                        <div class="text-center mb-5">
-                            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 70px; height: 70px; border-radius: 20px; box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);">
-                                <i class="bx bx-group text-white" style="font-size: 32px;"></i>
-                            </div>
-                            <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Plan Tiers</h1>
-                            <p class="text-muted mb-0" style="font-size: 1.1rem;"><i class="bx bx-info-circle me-1"></i>Gérez vos comptes tiers (Clients, Fournisseurs, Personnel, etc.)</p>
-                        </div>
-
                         <div class="row g-6 mb-6">
-                            <style>
-                                .stats-card {
-                                    transition: all 0.3s ease;
-                                    border: none;
-                                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                                    cursor: pointer;
-                                }
-                                
-                                .stats-card:hover {
-                                    transform: translateY(-5px);
-                                    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-                                }
-                                
-                                .stats-card .avatar {
-                                    width: 56px;
-                                    height: 56px;
-                                }
-                                
-                                .stats-card .avatar-initial {
-                                    font-size: 28px;
-                                }
-                                
-                                .stats-card h4 {
-                                    font-size: 2rem;
-                                    font-weight: 700;
-                                }
-                                
-                                .stats-card .text-heading {
-                                    font-size: 0.875rem;
-                                    font-weight: 600;
-                                    color: #697a8d;
-                                    text-transform: uppercase;
-                                    letter-spacing: 0.5px;
-                                }
-                            </style>
-                            <div class="col-sm-6 col-xl-4">
-                                <div class="card filtre-tiers stats-card" data-type="all">
-                                    <div class="card-body" style="padding: 1.5rem;">
+                            <div class="col-sm-6 col-xl-3">
+                                <div class="card filtre-tiers" data-type="all" style="cursor: pointer;">
+                                    <div class="card-body">
                                         <div class="d-flex align-items-start justify-content-between">
                                             <div class="content-left">
                                                 <span class="text-heading">Nombre de tiers</span>
@@ -93,19 +49,21 @@
                             </div>
 
                             @foreach ($tiersParType as $type => $count)
-                                <div class="col-sm-6 col-xl-4">
-                                    <div class="card filtre-tiers stats-card" data-type="{{ $type }}">
-                                        <div class="card-body" style="padding: 1.5rem;">
+                                <div class="col-sm-6 col-xl-3">
+                                    <div class="card filtre-tiers" data-type="{{ $type }}"
+                                        style="cursor: pointer;">
+
+                                        <div class="card-body">
                                             <div class="d-flex align-items-start justify-content-between">
                                                 <div class="content-left">
-                                                    <span class="text-heading">{{ $type }}s</span>
+                                                    <span class="text-heading"> Tiers : {{ $type . 's' }}</span>
                                                     <div class="d-flex align-items-center my-1">
                                                         <h4 class="mb-0 me-2">{{ $count }}</h4>
                                                     </div>
                                                 </div>
                                                 <div class="avatar">
-                                                    <span class="avatar-initial rounded bg-label-success">
-                                                        <i class="icon-base bx bx-user icon-lg"></i>
+                                                    <span class="avatar-initial rounded bg-label-primary">
+                                                        <i class="icon-base bx bx-group icon-lg"></i>
                                                     </span>
                                                 </div>
                                             </div>
@@ -131,19 +89,19 @@
                                         aria-label="Fermer"></button>
                                 </div>
                             @endif
-                            <div class="card" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
+                            <div class="card">
                                 <!-- En-tête avec bouton Filtrer -->
-                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-bottom: 2px solid #e7e9ed; padding: 1.5rem;">
-                                    <h5 class="mb-0" style="font-weight: 700; color: #566a7f; font-size: 1.25rem;"><i class="bx bx-list-ul me-2"></i>Liste des Tiers</h5>
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Liste des Tiers</h5>
                                     <div>
                                         <button class="btn btn-outline-primary me-2 btn-sm" data-bs-toggle="collapse"
                                             data-bs-target="#filterPanel" aria-expanded="false"
-                                            aria-controls="filterPanel" style="border-radius: 8px; font-weight: 600; transition: all 0.3s;">
+                                            aria-controls="filterPanel">
                                             <i class="bx bx-filter-alt me-1"></i> Filtrer
                                         </button>
                                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#modalCenterCreate" style="border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(105, 108, 255, 0.3); transition: all 0.3s;">
-                                            <i class="bx bx-plus-circle me-1"></i> Nouveau Tiers
+                                            data-bs-target="#modalCenterCreate">
+                                            Nouveau Tiers
                                         </button>
                                     </div>
                                 </div>
@@ -151,26 +109,25 @@
 
 
                                 <!-- Panneau de filtre -->
-                                <div class="collapse px-3 pt-2 pb-3" id="filterPanel" style="background: #f8f9fa; border-radius: 8px; margin: 0 1rem 1rem 1rem;">
+                                <div class="collapse px-3 pt-2" id="filterPanel">
                                     <div class="row g-2">
-                                        <div class="col-md-5">
-                                            <label class="form-label text-muted small mb-1"><i class="bx bx-text"></i> Intitulé</label>
+                                        <div class="col-md-6">
                                             <input type="text" id="filter-intitule" class="form-control"
-                                                placeholder="Filtrer par intitulé" style="border-radius: 8px;">
+                                                placeholder="Filtrer par intitulé">
                                         </div>
-                                        <div class="col-md-5">
-                                            <label class="form-label text-muted small mb-1"><i class="bx bx-category"></i> Type</label>
+                                        <div class="col-md-6">
                                             <input type="text" id="filter-type" class="form-control"
-                                                placeholder="Filtrer par type (ex: Client)" style="border-radius: 8px;">
+                                                placeholder="Filtrer par type (ex: Client)">
                                         </div>
-                                        <div class="col-md-1">
-                                            <label class="form-label text-muted small mb-1">&nbsp;</label>
-                                            <button class="btn btn-primary w-100" id="apply-filters" style="border-radius: 8px; font-weight: 600;"><i class="bx bx-search-alt"></i></button>
+                                    </div>
+
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <button class="btn btn-primary w-100" id="apply-filters">Appliquer</button>
                                         </div>
-                                        <div class="col-md-1">
-                                            <label class="form-label text-muted small mb-1">&nbsp;</label>
+                                        <div class="col-md-6">
                                             <button class="btn btn-secondary w-100"
-                                                id="reset-filters" style="border-radius: 8px; font-weight: 600;"><i class="bx bx-reset"></i></button>
+                                                id="reset-filters">Réinitialiser</button>
                                         </div>
                                     </div>
                                 </div>
@@ -181,8 +138,9 @@
                                 <style>
                                     .card.filtre-tiers.selected {
                                         border: 2px solid #696cff;
+                                        /* violet par défaut Bootstrap */
                                         box-shadow: 0 0 15px rgba(105, 108, 255, 0.4);
-                                        transition: all 0.3s ease;
+                                        /* belle ombre */
                                     }
                                 </style>
 
@@ -229,39 +187,37 @@
                                 </script>
 
 
-                                <div class="table-responsive text-nowrap" style="padding: 1.5rem;">
-                                    <table class="table table-hover align-middle" id="tiersTable" style="border-radius: 8px; overflow: hidden;">
-                                        <thead style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                                <div class="table-responsive text-nowrap">
+                                    <table class="table" id="tiersTable">
+                                        <thead>
                                             <tr>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-hash me-1"></i>Numéro Tiers</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-text me-1"></i>Intitulé</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-category me-1"></i>Type</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem;"><i class="bx bx-book me-1"></i>Compte Général</th>
-                                                <th style="font-weight: 700; color: #566a7f; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 1rem; text-align: center;"><i class="bx bx-slider me-1"></i>Actions</th>
+                                                <th>Numéro Tiers</th>
+                                                <th>Intitulé</th>
+                                                <th>Type</th>
+                                                <th>Compte Général</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @forelse($tiers as $tier)
-                                                <tr style="transition: all 0.2s ease;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor=''">
-                                                    <td style="padding: 1rem; font-weight: 600; color: #667eea;">
+                                                <tr>
+                                                    <td>
                                                         <i class="icon-base bx bxs-user icon-md text-info me-2"></i>
                                                         {{ $tier->numero_de_tiers }}
                                                     </td>
-                                                    <td style="padding: 1rem; color: #566a7f;">{{ $tier->intitule }}</td>
-                                                    <td style="padding: 1rem;">
-                                                        <span class="badge" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: white;">{{ $tier->type_de_tiers }}</span>
+                                                    <td>{{ $tier->intitule }}</td>
+                                                    <td>
+                                                        <span
+                                                            class="badge bg-label-secondary">{{ $tier->type_de_tiers }}</span>
                                                     </td>
-                                                    <td style="padding: 1rem; color: #566a7f;">
+                                                    <td>
                                                         {{ $tier->compte?->numero_de_compte }} -
                                                         {{ $tier->compte?->intitule }}
                                                     </td>
-                                                    <td style="padding: 1rem;">
-                                                        <div class="d-flex gap-3 justify-content-center">
+                                                    <td>
+                                                        <div class="d-flex gap-2">
                                                             <button type="button"
-                                                                class="btn btn-sm btn-icon"
-                                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);"
-                                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(102, 126, 234, 0.4)'"
-                                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(102, 126, 234, 0.3)'"
+                                                                class="btn p-0 border-0 bg-transparent text-primary"
                                                                 title="Modifier" data-bs-toggle="modal"
                                                                 data-bs-target="#modalCenterUpdate"
                                                                 data-id="{{ $tier->id }}"
@@ -269,32 +225,24 @@
                                                                 data-intitule="{{ $tier->intitule }}"
                                                                 data-type="{{ $tier->type_de_tiers }}"
                                                                 data-compte="{{ $tier->compte_general }}">
-                                                                <i class="bx bx-edit-alt" style="font-size: 18px;"></i>
+                                                                <i class="bx bx-edit-alt fs-5"></i>
                                                             </button>
 
                                                             <button type="button"
-                                                                class="btn btn-sm btn-icon"
-                                                                style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(245, 87, 108, 0.3);"
-                                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(245, 87, 108, 0.4)'"
-                                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(245, 87, 108, 0.3)'"
+                                                                class="btn p-0 border-0 bg-transparent text-danger"
                                                                 data-bs-toggle="modal"
                                                                 data-bs-target="#deleteConfirmationModalTiers"
                                                                 data-id="{{ $tier->id }}"
-                                                                data-name="{{ $tier->intitule }}"
-                                                                title="Supprimer">
-                                                                <i class="bx bx-trash" style="font-size: 18px;"></i>
+                                                                data-name="{{ $tier->intitule }}">
+                                                                <i class="bx bx-trash fs-5"></i>
                                                             </button>
 
                                                             <button type="button"
-                                                                class="btn btn-sm btn-icon donnees-plan-tiers"
-                                                                style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 4px rgba(79, 172, 254, 0.3);"
-                                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(79, 172, 254, 0.4)'"
-                                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(79, 172, 254, 0.3)'"
+                                                                class="btn p-0 border-0 bg-transparent text-danger donnees-plan-tiers"
                                                                 data-id="{{ $tier->id }}"
                                                                 data-intitule="{{ $tier->intitule }}"
-                                                                data-numero_de_tiers="{{ $tier->numero_de_tiers }}"
-                                                                title="Voir les détails">
-                                                                <i class='bx bx-show' style="font-size: 18px;"></i>
+                                                                data-numero_de_tiers="{{ $tier->numero_de_tiers }}">
+                                                                <i class='bx bx-eye fs-5'></i>
                                                             </button>
                                                         </div>
                                                     </td>
@@ -322,10 +270,11 @@
                                             action="{{ route('plan_tiers.store') }}">
                                             @csrf
                                             <div class="modal-content">
-                                                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom: none;">
-                                                    <h5 class="modal-title text-white" style="font-weight: 700;" id="modalCenterTitle"><i class="bx bx-plus-circle me-2"></i>Créer un compte tiers
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="modalCenterTitle">Créer un compte
+                                                        tiers
                                                     </h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                         aria-label="Fermer"></button>
                                                 </div>
 
@@ -400,11 +349,11 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="modal-footer" style="border-top: 1px solid #e7e9ed; padding: 1.25rem;">
-                                                    <button type="button" class="btn btn-label-secondary" style="border-radius: 8px;"
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-label-secondary"
                                                         data-bs-dismiss="modal">Fermer</button>
                                                     <button type="submit"
-                                                        class="btn btn-primary" style="border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(105, 108, 255, 0.3);">Enregistrer</button>
+                                                        class="btn btn-primary">Enregistrer</button>
                                                 </div>
                                             </div>
 
@@ -501,9 +450,9 @@
                                             <input type="hidden" id="update_id" name="id">
 
                                             <div class="modal-content">
-                                                <div class="modal-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-bottom: none;">
-                                                    <h5 class="modal-title text-white" style="font-weight: 700;"><i class="bx bx-edit-alt me-2"></i>Modifier le plan tiers</h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Modifier le plan tiers</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                         aria-label="Fermer"></button>
                                                 </div>
 
@@ -551,12 +500,12 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="modal-footer" style="border-top: 1px solid #e7e9ed; padding: 1.25rem;">
-                                                    <button type="button" class="btn btn-label-secondary" style="border-radius: 8px;"
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-label-secondary"
                                                         data-bs-dismiss="modal">
                                                         Fermer
                                                     </button>
-                                                    <button type="submit" class="btn btn-primary" style="border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(245, 87, 108, 0.3);">Mettre à
+                                                    <button type="submit" class="btn btn-primary">Mettre à
                                                         jour</button>
                                                 </div>
                                             </div>
@@ -571,8 +520,8 @@
                                     aria-labelledby="deleteModalLabel" aria-hidden="true">
                                     <div class="modal-dialog modal-sm">
                                         <div class="modal-content border-0 shadow">
-                                            <div class="modal-header text-white justify-content-center" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-bottom: none;">
-                                                <h5 class="modal-title" id="deleteModalLabel" style="font-weight: 700;">
+                                            <div class="modal-header text-white justify-content-center">
+                                                <h5 class="modal-title" id="deleteModalLabel">
                                                     <i class="bx bx-error-circle me-2"></i>Confirmer la suppression
                                                 </h5>
                                                 <button type="button" class="btn-close btn-close-white"
@@ -586,15 +535,15 @@
                                                 </p>
                                                 <p class="fw-bold text-danger mt-2" id="planToDeleteNameTiers"></p>
                                             </div>
-                                            <div class="modal-footer justify-content-center" style="border-top: 1px solid #e7e9ed; padding: 1.25rem;">
-                                                <button type="button" class="btn btn-secondary" style="border-radius: 8px;"
+                                            <div class="modal-footer justify-content-center">
+                                                <button type="button" class="btn btn-secondary"
                                                     data-bs-dismiss="modal">Annuler</button>
 
                                                 <form method="POST" id="deletePlanFormTiers"
                                                     style="display:inline;">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger" style="border-radius: 8px; font-weight: 600; box-shadow: 0 4px 8px rgba(234, 84, 85, 0.3);"
+                                                    <button type="submit" class="btn btn-danger"
                                                         id="confirmDeleteBtn">Supprimer</button>
                                                 </form>
                                             </div>
