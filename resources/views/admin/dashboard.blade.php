@@ -81,7 +81,10 @@
                             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div class="d-flex justify-content-between align-items-center mb-6">
                                     <h5 class="text-lg fw-semibold text-gray-900 mb-0">Liste des Comptes Comptabilités</h5>
-                                    <a href="{{ route('compta_accounts.index') }}" class="text-primary text-decoration-none fw-medium">Voir tout</a>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="window.location.href='{{ route('compta_accounts.index') }}'">Créer un Compte</button>
+                                        <a href="{{ route('compta_accounts.index') }}" class="text-primary text-decoration-none fw-medium">Voir tout</a>
+                                    </div>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
