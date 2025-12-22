@@ -204,7 +204,7 @@
                         </form>
                         <a class="dropdown-item" href="javascript:void(0);"
                             data-bs-toggle="modal"
-                            data-bs-target="#editCompanyModal{{ $company->id }}">
+                            data-bs-target="#editCompanyModal{{ $company->id }}" onclick="event.stopPropagation();">
                                 <i class="bx bx-edit-alt me-1"></i> Modifier Infos
                         </a>
 
@@ -250,7 +250,7 @@
             </td>
         </tr>
      <div class="modal fade" id="editCompanyModal{{ $company->id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Modifier : {{ $company->company_name }}</h5>
@@ -509,7 +509,7 @@
 
 
                    <div class="modal fade" id="createCompanyModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="createCompanyModalTitle">
