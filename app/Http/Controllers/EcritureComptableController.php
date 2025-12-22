@@ -112,17 +112,26 @@ class EcritureComptableController extends Controller
 
     public function showSaisieModal()
     {
+        $user = Auth::user();
 
-        $exercices = ExerciceComptable::orderBy('date_debut', 'desc')->get();
+        $exercices = ExerciceComptable::where('company_id', $user->company_id)
+            ->orderBy('date_debut', 'desc')
+            ->get();
 
+        // Récupérer l'exercice actif (non clôturé) pour pré-sélection
+        $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+            ->where('cloturer', 0)
+            ->orderBy('date_debut', 'desc')
+            ->first();
 
-        $code_journaux = CodeJournal::orderBy('code_journal', 'asc')->get();
-
-
+        $code_journaux = CodeJournal::where('company_id', $user->company_id)
+            ->orderBy('code_journal', 'asc')
+            ->get();
 
         return view('components.modal_saisie_direct', [
             'exercices' => $exercices,
             'code_journaux' => $code_journaux,
+            'exerciceActif' => $exerciceActif,
         ]);
     }
 
