@@ -72,38 +72,7 @@
                         </div>
                     </div>
 
-                    <!-- Charts Section -->
-                    <div id="charts-section" class="row g-4 mb-8">
-                        <!-- Chart 1: Performance des Revenus -->
-                        <div class="col-md-7">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div class="d-flex justify-content-between align-items-center mb-6">
-                                    <h5 class="text-lg fw-semibold text-gray-900 mb-0">Performance des Revenus (Annuel)</h5>
-                                    <div class="dropdown">
-                                        <button class="btn p-0" type="button" data-bs-toggle="dropdown">
-                                            <i class="bx bx-dots-vertical-rounded"></i>
-                                        </button>
-                                        <div class="dropdown-menu dropdown-menu-end">
-                                            <a class="dropdown-item" href="javascript:void(0);">Exporter</a>
-                                            <a class="dropdown-item" href="javascript:void(0);">Filtrer</a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="revenueChart" style="height: 300px;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Chart 2: Répartition des Dépenses -->
-                        <div class="col-md-5">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div class="d-flex justify-content-between align-items-center mb-6">
-                                    <h5 class="text-lg fw-semibold text-gray-900 mb-0">Répartition des Dépenses (Mois)</h5>
-                                    <small class="text-muted">Total: € 5,200</small>
-                                </div>
-                                <div id="expensesChart" style="height: 300px;"></div>
-                            </div>
-                        </div>
-                    </div>
+                    
 
                     <!-- Tables Section -->
                     <div id="tables-section" class="row g-4 mb-8">
