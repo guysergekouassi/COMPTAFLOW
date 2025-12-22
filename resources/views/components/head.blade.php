@@ -9,10 +9,10 @@
 
     <!-- Font Awesome pour le nouveau design -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Police Inter pour le nouveau design -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Bootstrap (conservé pour compatibilité) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
@@ -40,25 +40,8 @@
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
     <script src="{{ asset('assets/js/config.js') }}"></script>
-    
-    <!-- Configuration Tailwind pour le nouveau design -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['Inter', 'sans-serif']
-                    },
-                    colors: {
-                        'primary': '#1e40af',
-                        'primary-dark': '#1e3a8a',
-                        'primary-light': '#3b82f6'
-                    }
-                }
-            }
-        }
-    </script>
+
+    @vite(['resources/css/app.css'])
 
     <style>
         /* Styles globaux pour le nouveau design */
@@ -68,7 +51,7 @@
         }
 
         /* Masquer la barre de défilement */
-        ::-webkit-scrollbar { 
+        ::-webkit-scrollbar {
             display: none;
         }
 
@@ -226,7 +209,7 @@
         .bg-purple-100 { background-color: #f3e8ff !important; }
         .bg-green-100 { background-color: #d1fae5 !important; }
         .bg-orange-100 { background-color: #fed7aa !important; }
-        
+
         .text-primary { color: #3b82f6 !important; }
         .text-purple-600 { color: #9333ea !important; }
         .text-success { color: #10b981 !important; }

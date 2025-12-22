@@ -3,23 +3,6 @@
 
 @include('components.head')
 
-<!-- Tailwind CDN for the new design -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    navy: {
-                        900: '#1e3a8a',
-                        800: '#1e40af',
-                    }
-                }
-            }
-        }
-    }
-</script>
-
 <style>
     body {
         background-color: #f8fafc;
@@ -58,7 +41,7 @@
         0% { box-shadow: 0 0 0 0px rgba(30, 64, 175, 0.2); }
         100% { box-shadow: 0 0 0 10px rgba(30, 64, 175, 0); }
     }
-    
+
     /* Layout adjustments to match the theme */
     .layout-page {
         background-color: #f8fafc !important;
@@ -78,7 +61,7 @@
 
                 <div class="content-wrapper">
                     <div class="max-w-7xl mx-auto">
-                        
+
                         <!-- En-tête Centré Dynamique -->
                         <div class="text-center mb-12">
                             <div class="flex items-center justify-center gap-2 mb-4">
@@ -155,14 +138,14 @@
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            
+
                             <!-- Section Actions Rapides (Modules) -->
                             <div class="lg:col-span-2 space-y-8">
                                 <div class="glass-card p-8">
                                     <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                                         <i class="fas fa-th-large text-blue-700"></i> Vos Modules de Travail
                                     </h2>
-                                    
+
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                         <!-- Traitement -->
                                         <div class="space-y-3">
@@ -272,7 +255,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                         </div>
                     </div>
 

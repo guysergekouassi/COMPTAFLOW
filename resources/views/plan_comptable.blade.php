@@ -4,16 +4,6 @@
 
 @include('components.head')
 
-<!-- Tailwind Integration (Preflight disabled to protect Bootstrap) -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-    tailwind.config = {
-        corePlugins: {
-            preflight: false,
-        }
-    }
-</script>
-
 <style>
     /* Custom styles for the new design */
     .bg-slate-50\/50 { background-color: rgb(248 250 252 / 0.5); }
@@ -42,7 +32,7 @@
         background-color: #f1f5f9;
         cursor: pointer;
     }
-    
+
     /* Active state for filter cards */
     .filter-card.filter-active {
         border: 2px solid #1e40af; /* Blue-700 */
@@ -57,7 +47,7 @@
     }
 
     /* DataTable Customization to hide default elements */
-    .dataTables_wrapper .dataTables_filter, 
+    .dataTables_wrapper .dataTables_filter,
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_info,
     .dataTables_wrapper .dataTables_paginate {
@@ -81,10 +71,10 @@
 
                 <!-- Content wrapper -->
                 <div class="content-wrapper">
-                    
+
                     <!-- Main Container from User Design (Adapted) -->
                     <div class="container-xxl flex-grow-1 container-p-y">
-                        
+
                         <!-- Badge Section -->
                         <div class="text-center mb-8 -mt-4">
                             <span class="inline-block px-4 py-1.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full mb-3">
@@ -122,7 +112,7 @@
                                     <i class="bx bx-book-content text-2xl"></i>
                                 </div>
                             </div>
-                            
+
                             <!-- Manuel -->
                             <div class="glass-card p-6 filter-card flex items-center justify-between" id="filter-manuel">
                                 <div>
@@ -156,7 +146,7 @@
                                     Filtrer
                                 </button>
                             </div>
-                            
+
                             <!-- Right Group: Actions -->
                             <div class="flex flex-wrap items-center justify-end gap-3">
                                 @if ($hasAutoStrategy == false)
@@ -181,19 +171,19 @@
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <!-- Filter Numéro -->
                                     <div class="relative w-full">
-                                        <input type="text" id="filterNumero" placeholder="Filtrer par Numéro..." 
+                                        <input type="text" id="filterNumero" placeholder="Filtrer par Numéro..."
                                             class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
                                         <i class="fas fa-hashtag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                     </div>
                                     <!-- Filter Intitulé -->
                                     <div class="relative w-full">
-                                        <input type="text" id="filterIntitule" placeholder="Filtrer par Intitulé..." 
+                                        <input type="text" id="filterIntitule" placeholder="Filtrer par Intitulé..."
                                             class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
                                         <i class="fas fa-font absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                     </div>
                                     <!-- Filter Classe -->
                                     <div class="relative w-full">
-                                        <input type="text" id="filterClasse" placeholder="Filtrer par Classe (ex: 1, 6)..." 
+                                        <input type="text" id="filterClasse" placeholder="Filtrer par Classe (ex: 1, 6)..."
                                             class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
                                         <i class="fas fa-layer-group absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                     </div>
@@ -255,7 +245,7 @@
                                             </td>
                                             <td class="px-8 py-6 text-right">
                                                 <div class="flex justify-end gap-2 transition-opacity">
-                                                    <button type="button" 
+                                                    <button type="button"
                                                         class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm"
                                                         data-bs-toggle="modal" data-bs-target="#modalCenterUpdate"
                                                         data-id="{{ $plan->id }}"
@@ -443,14 +433,14 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 SCRIPT PLAN COMPTABLE INITIALISÉ");
-            
+
             // On s'assure que jQuery est dispo avant d'initier DataTables
             const initDataTable = () => {
                 if (typeof $ !== 'undefined' && $.fn.dataTable) {
                     console.log("✅ DataTables chargé et prêt !");
-                    
+
                     const table = $('#planComptableTable').DataTable({
-                        dom: 't', 
+                        dom: 't',
                         pageLength: 5,
                         destroy: true,
                         stateSave: false,
@@ -510,10 +500,10 @@
                     function updatePagination() {
                         const info = table.page.info();
                         console.log("📊 Mise à jour pagination:", info);
-                        
+
                         if (info.recordsDisplay > 0) {
                             $('#tableInfo').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
-                            
+
                             let paginationHtml = '';
                             paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
                             paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
@@ -524,16 +514,16 @@
                             $('#customPagination').empty();
                         }
                     }
-                    
+
                     // On attache l'event AVANT tout draw potentiel
                     table.on('draw', function() {
                         console.log("🎨 Event draw déclenché");
                         updatePagination();
                     });
-                    
+
                     $(document).on('click', '#prevPage', function() { table.page('previous').draw('page'); });
                     $(document).on('click', '#nextPage', function() { table.page('next').draw('page'); });
-                    
+
                     // Initial call
                     updatePagination();
                     activateCard('#filter-all');
