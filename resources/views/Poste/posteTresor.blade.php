@@ -173,14 +173,11 @@
                         @endif
 
                         <!-- En-tête -->
-                        <div class="mb-12">
-                            <div class="flex items-center gap-3 mb-2 flex-nowrap">
-                                <div class="w-2.5 h-2.5 bg-blue-700 rounded-full shadow-[0_0_10px_rgba(29,78,216,0.3)] shrink-0"></div>
-                                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-                                    Poste de <span class="text-blue-gradient">Trésorerie</span>
-                                </h1>
-                            </div>
-                            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] ml-6">Configuration des rubriques budgétaires et flux</p>
+                        <div class="text-center mb-12">
+                            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">
+                                Poste de <span class="text-blue-gradient">Trésorerie</span>
+                            </h1>
+                            <p class="text-slate-400 font-bold mt-3 uppercase text-[11px] tracking-[0.3em]">Configuration des rubriques budgétaires et flux</p>
                         </div>
 
                         <!-- Actions & Filtres -->
@@ -197,16 +194,16 @@
                                 </button>
                             </div>
 
-                            <!-- Panneau de Filtres (Compact) -->
-                            <div id="filterPanel" class="hidden mt-4 p-6 bg-white border border-slate-200 rounded-[24px] shadow-2xl max-w-3xl ml-auto">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Panneau de Filtres -->
+                            <div id="filterPanel" class="hidden mt-4 p-8 bg-white border border-slate-200 rounded-[24px] shadow-2xl">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="space-y-2">
                                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Intitulé</label>
-                                        <input type="text" id="filterIntitule" placeholder="Rechercher par intitulé..." class="filter-input w-full p-3 rounded-xl text-xs font-bold text-slate-700 bg-slate-50">
+                                        <input type="text" id="filterIntitule" placeholder="Rechercher par intitulé..." class="filter-input w-full p-4 rounded-xl text-xs font-bold text-slate-700 bg-slate-50">
                                     </div>
                                     <div class="space-y-2">
                                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Catégorie</label>
-                                        <select id="filterCategorie" class="filter-input w-full p-3 rounded-xl text-xs font-bold text-slate-700 bg-slate-50">
+                                        <select id="filterCategorie" class="filter-input w-full p-4 rounded-xl text-xs font-bold text-slate-700 bg-slate-50">
                                             <option value="">Toutes les catégories</option>
                                             <option value="OPÉRATIONNEL">OPÉRATIONNEL</option>
                                             <option value="FINANCEMENT">FINANCEMENT</option>
@@ -215,11 +212,8 @@
                                     </div>
                                 </div>
 
-                                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
-                                    <button onclick="resetFilters()" class="px-5 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition">Réinitialiser</button>
-                                    <button onclick="applyFilters()" class="px-6 py-2.5 bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-800 transition shadow-lg shadow-blue-100 flex items-center gap-2">
-                                        <i class="fas fa-search text-[9px]"></i> Rechercher
-                                    </button>
+                                <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
+                                    <button onclick="resetFilters()" class="px-6 py-3 bg-slate-100 text-slate-500 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition">Réinitialiser</button>
                                 </div>
                             </div>
                         </div>
@@ -497,12 +491,6 @@
             $('#filterCategorie').val('');
             if (window.posteTable) {
                 window.posteTable.columns().search('').draw();
-            }
-        }
-
-        function applyFilters() {
-            if (window.posteTable) {
-                window.posteTable.draw();
             }
         }
 
