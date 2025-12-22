@@ -81,10 +81,7 @@
                             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div class="d-flex justify-content-between align-items-center mb-6">
                                     <h5 class="text-lg fw-semibold text-gray-900 mb-0">Liste des Comptes Comptabilités</h5>
-                                    <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="window.location.href='{{ route('compta_accounts.index') }}'">Créer un Compte</button>
-                                        <a href="{{ route('compta_accounts.index') }}" class="text-primary text-decoration-none fw-medium">Voir tout</a>
-                                    </div>
+                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreateComptaAccount">Créer un Compte</button>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
@@ -127,6 +124,85 @@
                         </div>
                     </div>
 
+                </div>
+
+                <!-- Modal for creating compta account -->
+                <div class="modal fade" id="modalCreateComptaAccount" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Créer un nouveau Compte Comptabilité</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="createAccountForm" method="POST" action="{{ route('compta_accounts.store') }}">
+                                    @csrf
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="company_name" class="form-label">Nom de la Société <span class="text-danger">*</span></label>
+                                            <input type="text" id="company_name" name="company_name" class="form-control" value="{{ old('company_name') }}" required />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="activity" class="form-label">Secteur d'activité</label>
+                                            <input type="text" id="activity" name="activity" class="form-control" value="{{ old('activity') }}" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="juridique_form" class="form-label">Forme Juridique</label>
+                                            <input type="text" id="juridique_form" name="juridique_form" class="form-control" value="{{ old('juridique_form') }}" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="social_capital" class="form-label">Capital Social</label>
+                                            <input type="number" step="0.01" id="social_capital" name="social_capital" class="form-control" value="{{ old('social_capital') }}" />
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="adresse" class="form-label">Adresse Complète</label>
+                                            <input type="text" id="adresse" name="adresse" class="form-control" value="{{ old('adresse') }}" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="code_postal" class="form-label">Code Postal</label>
+                                            <input type="text" id="code_postal" name="code_postal" class="form-control" value="{{ old('code_postal') }}" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="city" class="form-label">Ville</label>
+                                            <input type="text" id="city" name="city" class="form-control" value="{{ old('city') }}" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="country" class="form-label">Pays</label>
+                                            <input type="text" id="country" name="country" class="form-control" value="{{ old('country') }}" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="email_adresse_create" class="form-label">Email de contact <span class="text-danger">*</span></label>
+                                            <input type="email" id="email_adresse_create" name="email_adresse" class="form-control" value="{{ old('email_adresse') }}" required />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="phone_number" class="form-label">Numéro de Téléphone</label>
+                                            <input type="text" id="phone_number" name="phone_number" class="form-control" value="{{ old('phone_number') }}" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="identification_TVA" class="form-label">Identification TVA</label>
+                                            <input type="text" id="identification_TVA" name="identification_TVA" class="form-control" value="{{ old('identification_TVA') }}" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="is_active_create" class="form-label">Statut</label>
+                                            <select id="is_active_create" name="is_active" class="form-select">
+                                                <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Actif</option>
+                                                <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Inactif</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer justify-content-end mt-4">
+                                        <button type="button" class="btn btn-label-secondary"
+                                            data-bs-dismiss="modal">Fermer</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            Enregistrer le Compte
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                     @include('components.footer')
