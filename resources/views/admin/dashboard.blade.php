@@ -72,46 +72,51 @@
                         </div>
                     </div>
 
-                    
+
 
                     <!-- Tables Section -->
                     <div id="tables-section" class="row g-4 mb-8">
-                        <!-- Table 1: Alertes Comptables -->
+                        <!-- Table 1: Comptes Comptabilités -->
                         <div class="col-12">
                             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div class="d-flex justify-content-between align-items-center mb-6">
-                                    <h5 class="text-lg fw-semibold text-gray-900 mb-0">Alertes Comptables Récentes</h5>
-                                    <a href="#" class="text-primary text-decoration-none fw-medium">Voir tout</a>
+                                    <h5 class="text-lg fw-semibold text-gray-900 mb-0">Liste des Comptes Comptabilités</h5>
+                                    <a href="{{ route('compta_accounts.index') }}" class="text-primary text-decoration-none fw-medium">Voir tout</a>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
                                         <thead>
                                             <tr>
-                                                <th>Type d'Alerte</th>
-                                                <th>Description</th>
-                                                <th>Date</th>
+                                                <th>Nom de l'Entreprise</th>
+                                                <th>Forme Juridique</th>
+                                                <th>Activité</th>
+                                                <th>Ville</th>
                                                 <th>Statut</th>
                                             </tr>
                                         </thead>
                                         <tbody class="table-border-bottom-0">
-                                            <tr>
-                                                <td><span class="badge bg-danger me-1">Écart</span></td>
-                                                <td>Décalage de 45 jours sur le Paiement Fournisseur #2034.</td>
-                                                <td>15 Nov 2025</td>
-                                                <td><span class="badge bg-danger">Urgent</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td><span class="badge bg-warning me-1">Erreur</span></td>
-                                                <td>Pièce comptable manquante pour la facture A23-90.</td>
-                                                <td>18 Nov 2025</td>
-                                                <td><span class="badge bg-warning">À Traiter</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td><span class="badge bg-info me-1">Rappel</span></td>
-                                                <td>Clôture de l'exercice dans 30 jours.</td>
-                                                <td>19 Nov 2025</td>
-                                                <td><span class="badge bg-info">Planifié</span></td>
-                                            </tr>
+                                            @forelse ($comptaAccounts ?? [] as $comptaAccount)
+                                                <tr class="clickable-row" data-href="{{ route('compta_accounts.access', ['companyId' => $comptaAccount->id]) }}" style="cursor: pointer;">
+                                                    <td>
+                                                        <i class="bx bx-buildings me-2"></i>
+                                                        <strong>{{ $comptaAccount->company_name }}</strong>
+                                                    </td>
+                                                    <td>{{ $comptaAccount->juridique_form ?? 'N/A' }}</td>
+                                                    <td>{{ $comptaAccount->activity ?? 'N/A' }}</td>
+                                                    <td>{{ $comptaAccount->city ?? 'N/A' }}</td>
+                                                    <td>
+                                                        @if ($comptaAccount->is_active)
+                                                            <span class="badge bg-label-success me-1">Actif</span>
+                                                        @else
+                                                            <span class="badge bg-label-danger me-1">Inactif</span>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="5" class="text-center">Aucun compte comptabilité trouvé.</td>
+                                                </tr>
+                                            @endforelse
                                         </tbody>
                                     </table>
                                 </div>
@@ -246,6 +251,23 @@
                 const expensesChart = new ApexCharts(expensesChartEl, expensesChartOptions);
                 expensesChart.render();
             }
+
+            // --- Logique pour la LIGNE CLICABLE ---
+             document.querySelectorAll('.clickable-row').forEach(row => {
+                const rowDataHref = row.getAttribute('data-href');
+
+                // Gérer le clic sur la ligne entière (y compris les cellules TD)
+                row.addEventListener('click', function(e) {
+                    // Clic sur un bouton d'action ou un lien dans la dernière colonne (Actions)
+                    if (e.target.closest('.dropdown') || e.target.closest('a')) {
+                        // Ne rien faire si l'utilisateur clique sur le menu déroulant ou une action
+                        return;
+                    }
+                    if (rowDataHref) {
+                        window.location.href = rowDataHref;
+                    }
+                });
+            });
         });
     </script>
 </body>
