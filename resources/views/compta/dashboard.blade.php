@@ -14,184 +14,172 @@
             <div class="layout-page">
                 @include('components.header')
 
-                <div class="content-wrapper">
-                    <div class="container-xxl flex-grow-1 container-p-y">
-                        <h4 class="py-3 mb-4">
-                            Tableau de Bord Comptable
-                        </h4>
-
-                           @if($currentCompany)
-                                <div class="alert alert-success">
-                                    Bienvenue sur le dashboard du compte : <strong>{{ $currentCompany->company_name }}</strong>.
+<!-- Nouveau contenu du dashboard selon source_design.html -->
+                    <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
+                        <!-- Stats Section -->
+                        <div id="stats-section" class="row g-4 mb-8">
+                            <!-- KPI 1: Chiffre d'affaires -->
+                            <div class="col-md-3">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                        <div class="w-12 h-12 bg-blue-100 rounded-lg d-flex align-items-center justify-content-center">
+                                            <i class="fa-solid fa-coins text-primary fs-4"></i>
+                                        </div>
+                                        <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded fw-medium">+12.5%</span>
+                                    </div>
+                                    <h6 class="text-gray-500 fw-medium mb-2">Chiffre d'affaires</h6>
+                                    <h3 class="h2 text-gray-900 mb-0">{{ number_format($totalRevenue ?? 245680, 0, ',', ' ') }} €</h3>
                                 </div>
-                            @else
-                                {{-- Ce cas ne devrait plus arriver avec la redirection de sécurité dans le contrôleur --}}
-                                {{-- <div class="alert alert-warning">
-                                    Aucun compte comptabilité actif sélectionné.
-                                </div> --}}
-                            @endif
-                        {{-- Ici ira le contenu spécifique au dashboard comptable (graphiques, résumés, etc.) --}}
+                            </div>
 
- <!-- K.P.I. (STATISTIQUES CLÉS) -->
-                        <div class="row g-4 mb-5">
-                            <!-- KPI 1: Chiffre d'Affaires Net -->
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-success">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-dollar-circle bx-lg text-success"></i>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-success small fw-medium">↑ 14.8%</span>
-                                            </div>
+                            <!-- KPI 2: Charges -->
+                            <div class="col-md-3">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                        <div class="w-12 h-12 bg-purple-100 rounded-lg d-flex align-items-center justify-content-center">
+                                            <i class="fa-solid fa-receipt text-purple-600 fs-4"></i>
                                         </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Chiffre d'Affaires </small>
-                                            <h4 class="mb-0"> 84,567.89</h4>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger px-2 py-1 rounded fw-medium">-3.2%</span>
+                                    </div>
+                                    <h6 class="text-gray-500 fw-medium mb-2">Charges</h6>
+                                    <h3 class="h2 text-gray-900 mb-0">{{ number_format($totalExpenses ?? 128450, 0, ',', ' ') }} €</h3>
+                                </div>
+                            </div>
+
+                            <!-- KPI 3: Résultat net -->
+                            <div class="col-md-3">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                        <div class="w-12 h-12 bg-green-100 rounded-lg d-flex align-items-center justify-content-center">
+                                            <i class="fa-solid fa-chart-line text-success fs-4"></i>
                                         </div>
+                                        <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded fw-medium">+18.7%</span>
+                                    </div>
+                                    <h6 class="text-gray-500 fw-medium mb-2">Résultat net</h6>
+                                    <h3 class="h2 text-gray-900 mb-0">{{ number_format($netResult ?? 117230, 0, ',', ' ') }} €</h3>
+                                </div>
+                            </div>
+
+                            <!-- KPI 4: Écritures du mois -->
+                            <div class="col-md-3">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                        <div class="w-12 h-12 bg-orange-100 rounded-lg d-flex align-items-center justify-content-center">
+                                            <i class="fa-solid fa-file-invoice text-orange-600 fs-4"></i>
+                                        </div>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded fw-medium">{{ $monthlyEntries ?? 89 }} total</span>
+                                    </div>
+                                    <h6 class="text-gray-500 fw-medium mb-2">Écritures du mois</h6>
+                                    <h3 class="h2 text-gray-900 mb-0">{{ $monthlyEntries ?? 89 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Section -->
+                        <div id="charts-section" class="row g-4 mb-8">
+                            <!-- Chart 1: Évolution du chiffre d'affaires -->
+                            <div class="col-md-6">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-6">
+                                        <h5 class="text-lg fw-semibold text-gray-900 mb-0">Évolution du chiffre d'affaires</h5>
+                                        <select class="form-select form-select-sm" style="width: auto;">
+                                            <option>6 derniers mois</option>
+                                            <option>12 derniers mois</option>
+                                            <option>Année en cours</option>
+                                        </select>
+                                    </div>
+                                    <div id="revenueChart" style="height: 300px;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Chart 2: Répartition des charges -->
+                            <div class="col-md-6">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-6">
+                                        <h5 class="text-lg fw-semibold text-gray-900 mb-0">Répartition des charges</h5>
+                                        <button class="btn btn-sm btn-link text-primary text-decoration-none fw-medium">Voir détails</button>
+                                    </div>
+                                    <div id="expensesChart" style="height: 300px;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tables Section -->
+                        <div id="tables-section" class="row g-4 mb-8">
+                            <!-- Table 1: Dernières écritures -->
+                            <div class="col-md-6">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-6">
+                                        <h5 class="text-lg fw-semibold text-gray-900 mb-0">Dernières écritures</h5>
+                                        <a href="#" class="text-primary text-decoration-none fw-medium">Voir tout</a>
+                                    </div>
+                                    <div class="space-y-4">
+                                        @forelse($recentEntries ?? [] as $entry)
+                                        <div class="d-flex justify-content-between align-items-center pb-4 border-bottom border-gray-100">
+                                            <div class="d-flex align-items-center">
+                                                <div class="w-10 h-10 bg-{{ $entry['type'] == 'income' ? 'blue' : 'red' }}-100 rounded-lg d-flex align-items-center justify-content-center">
+                                                    <i class="fa-solid fa-arrow-{{ $entry['type'] == 'income' ? 'down' : 'up' }} text-{{ $entry['type'] == 'income' ? 'blue' : 'red' }}-600"></i>
+                                                </div>
+                                                <div class="ms-3">
+                                                    <p class="text-sm fw-medium text-gray-900 mb-0">{{ $entry['description'] ?? 'Écriture comptable' }}</p>
+                                                    <p class="text-xs text-gray-500 mb-0">{{ $entry['date'] ?? date('d M Y') }} • {{ $entry['journal'] ?? 'Journal' }}</p>
+                                                </div>
+                                            </div>
+                                            <span class="text-sm fw-semibold text-{{ $entry['type'] == 'income' ? 'success' : 'danger' }}">
+                                                {{ $entry['type'] == 'income' ? '+' : '-' }}{{ number_format($entry['amount'] ?? 0, 0, ',', ' ') }} €
+                                            </span>
+                                        </div>
+                                        @empty
+                                        <div class="text-center py-4 text-muted">
+                                            <i class="fa-solid fa-pen-to-square fa-2x mb-2"></i>
+                                            <p class="mb-0">Aucune écriture récente</p>
+                                        </div>
+                                        @endforelse
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- KPI 2: Dépenses Totales -->
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-danger">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-wallet bx-lg text-danger"></i>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-danger small fw-medium">↓ 5.2%</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Dépenses Totales</small>
-                                            <h4 class="mb-0">€ 21,345.00</h4>
-                                        </div>
+                            <!-- Table 2: Alertes comptables -->
+                            <div class="col-md-6">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-6">
+                                        <h5 class="text-lg fw-semibold text-gray-900 mb-0">Alertes comptables</h5>
+                                        <a href="#" class="text-primary text-decoration-none fw-medium">Voir tout</a>
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- KPI 3: Nombre de Pièces Saisies -->
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-info">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-file bx-lg text-info"></i>
+                                    <div class="space-y-4">
+                                        @forelse($alerts ?? [] as $alert)
+                                        <div class="d-flex align-items-center pb-4 border-bottom border-gray-100">
+                                            <div class="w-10 h-10 bg-{{ $alert['priority'] == 'high' ? 'red' : ($alert['priority'] == 'medium' ? 'yellow' : 'blue') }}-100 rounded-lg d-flex align-items-center justify-content-center">
+                                                <i class="fa-solid fa-{{ $alert['icon'] ?? 'exclamation-triangle' }} text-{{ $alert['priority'] == 'high' ? 'red' : ($alert['priority'] == 'medium' ? 'yellow' : 'blue') }}-600"></i>
                                             </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-info small fw-medium">↑ 32%</span>
+                                            <div class="ms-3 flex-grow-1">
+                                                <p class="text-sm fw-medium text-gray-900 mb-0">{{ $alert['title'] ?? 'Alerte comptable' }}</p>
+                                                <p class="text-xs text-gray-500 mb-0">{{ $alert['description'] ?? 'Description non disponible' }}</p>
                                             </div>
+                                            <span class="badge bg-{{ $alert['priority'] == 'high' ? 'danger' : ($alert['priority'] == 'medium' ? 'warning' : 'info') }} ms-2">
+                                                {{ $alert['priority'] == 'high' ? 'Urgent' : ($alert['priority'] == 'medium' ? 'Moyen' : 'Info') }}
+                                            </span>
                                         </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Pièces Saisies (Mois)</small>
-                                            <h4 class="mb-0">124</h4>
+                                        @empty
+                                        <div class="text-center py-4 text-muted">
+                                            <i class="fa-solid fa-check-circle fa-2x mb-2"></i>
+                                            <p class="mb-0">Aucune alerte active</p>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- KPI 4: Solde Bancaire / Trésorerie -->
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-warning">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-trending-up bx-lg text-warning"></i>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-secondary small fw-medium">0.0%</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Solde Trésorerie Actuel</small>
-                                            <h4 class="mb-0">€ 63,222.89</h4>
-                                        </div>
+                                        @endforelse
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- GRAPHIQUES ET ANALYTIQUES -->
-                        <div class="row g-4">
-                            <!-- Graphique 1: Revenus Mensuels (Chart.js) -->
-                            <div class="col-xl-7 col-lg-7 col-md-12">
-                                <div class="card shadow-lg">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="card-title m-0">Performance des Revenus (Annuel)</h5>
-                                        <div class="dropdown">
-                                            <button class="btn p-0" type="button" data-bs-toggle="dropdown">
-                                                <i class="bx bx-dots-vertical-rounded"></i>
-                                            </button>
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="javascript:void(0);">Exporter</a>
-                                                <a class="dropdown-item" href="javascript:void(0);">Filtrer</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <!-- Le graphique Chart.js est rendu ici -->
-                                        <canvas id="revenueChart" class="w-100" height="300"></canvas>
-                                    </div>
+                        @if($currentCompany)
+                            <div class="alert alert-success d-flex align-items-center">
+                                <i class="fa-solid fa-check-circle me-3"></i>
+                                <div>
+                                    <strong>Bienvenue sur le tableau de bord</strong>
+                                    <p class="mb-0">Vous êtes connecté au compte : <strong>{{ $currentCompany->company_name }}</strong></p>
                                 </div>
                             </div>
-
-                            <!-- Graphique 2: Répartition des Dépenses (ApexCharts - Donut) -->
-                            <div class="col-xl-5 col-lg-5 col-md-12">
-                                <div class="card shadow-lg">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="card-title m-0">Répartition des Dépenses (Mois)</h5>
-                                        <small class="text-muted">Total: € 5,200</small>
-                                    </div>
-                                    <div class="card-body pt-0">
-                                        <!-- Le graphique ApexCharts est rendu ici -->
-                                        <div id="expensesChart"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Exemple de Tableau/Liste d'Alertes -->
-                            <div class="col-12 mt-5">
-                                <div class="card shadow">
-                                    <h5 class="card-header">Alertes Comptables Récentes</h5>
-                                    <div class="table-responsive text-nowrap">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Type d'Alerte</th>
-                                                    <th>Description</th>
-                                                    <th>Date</th>
-                                                    <th>Statut</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="table-border-bottom-0">
-                                                <tr>
-                                                    <td><span class="badge bg-label-danger me-1">Écart</span></td>
-                                                    <td>Décalage de 45 jours sur le Paiement Fournisseur #2034.</td>
-                                                    <td>15 Nov 2025</td>
-                                                    <td><span class="badge bg-danger">Urgent</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td><span class="badge bg-label-warning me-1">Erreur</span></td>
-                                                    <td>Pièce comptable manquante pour la facture A23-90.</td>
-                                                    <td>18 Nov 2025</td>
-                                                    <td><span class="badge bg-warning">À Traiter</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td><span class="badge bg-label-info me-1">Rappel</span></td>
-                                                    <td>Clôture de l'exercice dans 30 jours.</td>
-                                                    <td>19 Nov 2025</td>
-                                                    <td><span class="badge bg-info">Planifié</span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        @endif
 
                     </div>
 

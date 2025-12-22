@@ -119,7 +119,7 @@
                 </td>
             </tr>
             <tr>
-                <td class="left">© Flow Compta</td>
+                <td class="left"></td>
                 <td class="right">Page : 1</td>
             </tr>
         </table>
@@ -233,7 +233,7 @@
         <div
             style="width: 100%; display: flex; justify-content: space-between; font-size: 10px; border-top: 1px solid #000; padding-top: 5px;">
             <div style="text-align: center">
-                © Flow Compta — Impression générée par {{ $user->name ?? 'Utilisateur inconnu' }}
+                Impression générée par {{ $user->name ?? 'Utilisateur inconnu' }}
                 le {{ \Carbon\Carbon::now()->format('d/m/Y à H:i') }}
             </div>
             <div id="pagination" style="text-align: center"></div>

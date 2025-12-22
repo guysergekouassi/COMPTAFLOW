@@ -152,7 +152,7 @@
     </table>
 
     <div style="margin-top: 10px; text-align: center; font-size: 9px; border-top: 1px solid #000; padding-top: 5px;">
-        © Flow Compta — Généré par {{ $user->name ?? 'Utilisateur inconnu' }} le {{ \Carbon\Carbon::now()->format('d/m/Y à H:i') }}
+        Généré par {{ $user->name ?? 'Utilisateur inconnu' }} le {{ \Carbon\Carbon::now()->format('d/m/Y à H:i') }}
     </div>
 
     <script type="text/php">
