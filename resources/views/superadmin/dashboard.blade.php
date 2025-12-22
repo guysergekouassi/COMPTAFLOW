@@ -11,129 +11,103 @@
             <div class="layout-page">
                 @include('components.header')
 
-                <div class="content-wrapper">
-                    <div class="container-xxl flex-grow-1 container-p-y">
-                        <h4 class="fw-bold py-3 mb-4">
-                            <span class="text-muted fw-light">Super Admin /</span> Tableau de Bord Global
-                        </h4>
+                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <!-- Welcome Section -->
+                    <div class="mb-8">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h1 class="text-3xl font-bold text-white mb-2">Tableau de Bord Super Administrateur</h1>
+                                    <p class="text-white/80">Contrôle global des entités et des utilisateurs de votre plateforme.</p>
+                                </div>
+                                <div class="hidden md:block">
+                                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                                        <i class="fa-solid fa-crown text-white text-2xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {{-- BLOC DE MESSAGE DE SUCCÈS À AJOUTER ICI --}}
                     @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert" id="successAlert">
-                            {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl mb-6" role="alert" id="successAlert">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-check-circle mr-2"></i>
+                                {{ session('success') }}
+                            </div>
                         </div>
                         <script>
-                            // Script pour masquer l'alerte automatiquement après 5 secondes
                             document.addEventListener('DOMContentLoaded', function() {
                                 const successAlert = document.getElementById('successAlert');
                                 if (successAlert) {
                                     setTimeout(() => {
-                                        const alert = bootstrap.Alert.getInstance(successAlert) || new bootstrap.Alert(successAlert);
-                                        alert.close();
-                                    }, 5000); // 5000 ms = 5 secondes
+                                        successAlert.style.display = 'none';
+                                    }, 5000);
                                 }
                             });
                         </script>
                     @endif
                     {{-- FIN BLOC DE MESSAGE DE SUCCÈS --}}
-                @if (session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>Erreur :</strong> {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    @if (session('error'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-6" role="alert">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-exclamation-triangle mr-2"></i>
+                                <strong>Erreur :</strong> {{ session('error') }}
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Stats Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        {{-- KPI 1: Total Compagnies --}}
+                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                                    <i class="fa-solid fa-building text-white text-xl"></i>
+                                </div>
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">Total</span>
+                            </div>
+                            <h6 class="text-gray-600 font-medium mb-2">Compagnies</h6>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($totalCompanies ?? 0) }}</h3>
+                        </div>
+
+                        {{-- KPI 2: Compagnies Actives --}}
+                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                                    <i class="fa-solid fa-check-circle text-white text-xl"></i>
+                                </div>
+                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">Actives</span>
+                            </div>
+                            <h6 class="text-gray-600 font-medium mb-2">Compagnies Actives</h6>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($activeCompanies ?? 0) }}</h3>
+                        </div>
+
+                        {{-- KPI 3: Total Admins de Compagnies --}}
+                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                    <i class="fa-solid fa-user-tie text-white text-xl"></i>
+                                </div>
+                                <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-semibold">Admins</span>
+                            </div>
+                            <h6 class="text-gray-600 font-medium mb-2">Admins de Compagnie</h6>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($totalAdmins ?? 0) }}</h3>
+                        </div>
+
+                        {{-- KPI 4: Total Utilisateurs Comptables --}}
+                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                                    <i class="fa-solid fa-users text-white text-xl"></i>
+                                </div>
+                                <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-semibold">Total</span>
+                            </div>
+                            <h6 class="text-gray-600 font-medium mb-2">Utilisateurs Comptables</h6>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($totalUsers ?? 0) }}</h3>
+                        </div>
                     </div>
-                @endif
-                    <div class="row mb-5">
-                    {{-- ... le reste de votre contenu ... --}}
-                        <div class="row mb-5">
-                            <div class="col-12">
-                                <div class="card bg-primary text-white shadow-lg">
-                                    <div class="d-flex align-items-center row">
-                                        <div class="col-sm-7">
-                                            <div class="card-body">
-                                                <h5 class="card-title text-white mb-3">Tableau de Bord Super Administrateur</h5>
-                                                <p class="mb-4 text-white-50">
-                                                    Contrôle global des entités et des utilisateurs.
-                                                </p>
-                                                {{-- Nous retirons le bouton de lien ici car la liste est directement en dessous --}}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-5 text-center text-sm-end">
-                                            <div class="card-body pb-0 px-0 px-md-4">
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row g-4 mb-2">
-
-                            {{-- KPI 1: Total Compagnies --}}
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-success">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0"><i class="bx bx-building bx-lg text-success"></i></div>
-                                            <div class="d-flex align-items-center gap-1"><span class="text-success small fw-medium">Total</span></div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Nombre total de Compagnies</small>
-                                            <h4 class="mb-0">{{ number_format($totalCompanies ?? 0) }}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- KPI 2: Compagnies Actives --}}
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-danger">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0"><i class="bx bx-check-shield bx-lg text-danger"></i></div>
-                                            <div class="d-flex align-items-center gap-1"><span class="text-danger small fw-medium">Actives</span></div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Compagnies Actives</small>
-                                            <h4 class="mb-0">{{ number_format($activeCompanies ?? 0) }}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- KPI 3: Total Admins de Compagnies --}}
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-info">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0"><i class="bx bx-user-check bx-lg text-info"></i></div>
-                                            <div class="d-flex align-items-center gap-1"><span class="text-info small fw-medium">Admins</span></div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Admins de Compagnie</small>
-                                            <h4 class="mb-0">{{ number_format($totalAdmins ?? 0) }}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- KPI 4: Total Utilisateurs Comptables (Example) --}}
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-warning">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0"><i class="bx bx-group bx-lg text-warning"></i></div>
-                                            <div class="d-flex align-items-center gap-1"><span class="text-warning small fw-medium">Total</span></div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Total Utilisateurs </small>
-                                            <h4 class="mb-0">{{ number_format($totalUsers ?? 0) }}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                             <hr class="my-3 ">
                         <div class="container-xxl flex-grow-1 container-p-y">
                             <div class="row g-3">
