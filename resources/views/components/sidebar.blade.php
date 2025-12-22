@@ -269,6 +269,12 @@
         ->get();
     $code_journaux = CodeJournal::where('company_id', $currentCompanyId)->get();
 
+    // Récupérer l'exercice actif (non clôturé) pour pré-sélection
+    $exerciceActif = ExerciceComptable::where('company_id', $currentCompanyId)
+        ->where('cloturer', 0)
+        ->orderBy('date_debut', 'desc')
+        ->first();
+
     $companies = Company::where('id', $user->company_id)->get();
 
     // 3. Récupération des compagnies pour le menu de bascule
@@ -292,6 +298,7 @@ if ($user->role === 'super_admin') {
     // 'journaux' => $journaux,
     'code_journaux' => $code_journaux,
     'companies' => $companies,
+    'exerciceActif' => $exerciceActif,
 ])
 
 
