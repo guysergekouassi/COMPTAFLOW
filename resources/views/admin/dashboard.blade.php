@@ -11,188 +11,146 @@
             <div class="layout-page">
                 @include('components.header')
 
-                <div class="content-wrapper">
-                    <div class="container-xxl flex-grow-1 container-p-y">
-                        <!-- BIENVENUE & INTRO -->
-                        <div class="row mb-5">
-                            <div class="col-12">
-                                <div class="card bg-primary text-white shadow-lg">
-                                    <div class="d-flex align-items-center row">
-                                        <div class="col-sm-7">
-                                            <div class="card-body">
-                                                <h5 class="card-title text-white mb-3">Tableau de Bord</h5>
-                                                <p class="mb-4 text-white-50">
-                                                    Bienvenue sur votre espace d'administration. Consultez les indicateurs clés de performance (KPI) de l'exercice en cours.
-                                                </p>
-                                                <a href="javascript:void(0);" class="btn btn-sm btn-light">Voir le Grand Livre</a>
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-5 text-center text-sm-end">
-                                            <div class="card-body pb-0 px-0 px-md-4">
-                                                <!-- Image de Man With Laptop - Assurez-vous que le chemin est correct -->
-                                                <img src="../assets/img/illustrations/man-with-laptop.png" height="140" alt="Illustration de Bienvenue" style="transform: scaleX(-1);" />
-                                            </div>
-                                        </div>
+                <!-- Nouveau contenu du dashboard selon source_design.html -->
+                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
+                    <!-- Stats Section -->
+                    <div id="stats-section" class="row g-4 mb-8">
+                        <!-- KPI 1: Nombre total d'utilisateurs -->
+                        <div class="col-md-3">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div class="w-12 h-12 bg-blue-100 rounded-lg d-flex align-items-center justify-content-center">
+                                        <i class="fa-solid fa-users text-primary fs-4"></i>
                                     </div>
+                                    <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded fw-medium">+12.5%</span>
                                 </div>
+                                <h6 class="text-gray-500 fw-medium mb-2">Nombre total d'utilisateurs</h6>
+                                <h3 class="h2 text-gray-900 mb-0">{{ number_format($totalUsers ?? 0) }}</h3>
                             </div>
                         </div>
 
-                                                <!-- K.P.I. (STATISTIQUES CLÉS) -->
-                                                <div class="row g-4 mb-5">
-                                                    <!-- KPI 1: total compte creer par l'admin -->
-                                                <div class="row g-4 mb-5">
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-success">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-group bx-lg text-success"></i> </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-success small fw-medium">N/A</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Nombre total d'utilisateurs</small>
-                                            <h4 class="mb-0">{{ number_format($totalUsers) }}</h4> </div>
+                        <!-- KPI 2: Comptes Connectés -->
+                        <div class="col-md-3">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div class="w-12 h-12 bg-purple-100 rounded-lg d-flex align-items-center justify-content-center">
+                                        <i class="fa-solid fa-user-check text-purple-600 fs-4"></i>
                                     </div>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger px-2 py-1 rounded fw-medium">-3.2%</span>
                                 </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-danger">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-user-check bx-lg text-danger"></i> </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-danger small fw-medium">N/A</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Comptes Connectés</small>
-                                            <h4 class="mb-0">{{ number_format($connectedUsers) }}</h4> </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-info">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-file bx-lg text-info"></i>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-info small fw-medium">N/A</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Plans Comptables créés</small>
-                                            <h4 class="mb-0">{{ number_format($plansToday) }}</h4> </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-warning">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-calendar-event bx-lg text-warning"></i> </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-secondary small fw-medium">N/A</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Exercices comptables créés </small>
-                                            <h4 class="mb-0">{{ number_format($exercicesToday) }}</h4> </div>
-                                    </div>
-                                </div>
+                                <h6 class="text-gray-500 fw-medium mb-2">Comptes Connectés</h6>
+                                <h3 class="h2 text-gray-900 mb-0">{{ number_format($connectedUsers ?? 0) }}</h3>
                             </div>
                         </div>
 
-                        <!-- GRAPHIQUES ET ANALYTIQUES -->
-                        <div class="row g-4">
-                            <!-- Graphique 1: Revenus Mensuels (Chart.js) -->
-                            <div class="col-xl-7 col-lg-7 col-md-12">
-                                <div class="card shadow-lg">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="card-title m-0">Performance des Revenus (Annuel)</h5>
-                                        <div class="dropdown">
-                                            <button class="btn p-0" type="button" data-bs-toggle="dropdown">
-                                                <i class="bx bx-dots-vertical-rounded"></i>
-                                            </button>
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="javascript:void(0);">Exporter</a>
-                                                <a class="dropdown-item" href="javascript:void(0);">Filtrer</a>
-                                            </div>
-                                        </div>
+                        <!-- KPI 3: Plans Comptables créés -->
+                        <div class="col-md-3">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div class="w-12 h-12 bg-green-100 rounded-lg d-flex align-items-center justify-content-center">
+                                        <i class="fa-solid fa-file-lines text-success fs-4"></i>
                                     </div>
-                                    <div class="card-body">
-                                        <!-- Le graphique Chart.js est rendu ici -->
-                                        <canvas id="revenueChart" class="w-100" height="300"></canvas>
-                                    </div>
+                                    <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded fw-medium">+18.7%</span>
                                 </div>
-                            </div>
-
-
-                            <!-- Graphique 2: Répartition des Dépenses (ApexCharts - Donut) -->
-                            <div class="col-xl-5 col-lg-5 col-md-12">
-                                <div class="card shadow-lg">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="card-title m-0">Répartition des Dépenses (Mois)</h5>
-                                        <small class="text-muted">Total: € 5,200</small>
-                                    </div>
-                                    <div class="card-body pt-0">
-                                        <!-- Le graphique ApexCharts est rendu ici -->
-                                        <div id="expensesChart"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Exemple de Tableau/Liste d'Alertes -->
-                            <div class="col-12 mt-5">
-                                <div class="card shadow">
-                                    <h5 class="card-header">Alertes Comptables Récentes</h5>
-                                    <div class="table-responsive text-nowrap">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Type d'Alerte</th>
-                                                    <th>Description</th>
-                                                    <th>Date</th>
-                                                    <th>Statut</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="table-border-bottom-0">
-                                                <tr>
-                                                    <td><span class="badge bg-label-danger me-1">Écart</span></td>
-                                                    <td>Décalage de 45 jours sur le Paiement Fournisseur #2034.</td>
-                                                    <td>15 Nov 2025</td>
-                                                    <td><span class="badge bg-danger">Urgent</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td><span class="badge bg-label-warning me-1">Erreur</span></td>
-                                                    <td>Pièce comptable manquante pour la facture A23-90.</td>
-                                                    <td>18 Nov 2025</td>
-                                                    <td><span class="badge bg-warning">À Traiter</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td><span class="badge bg-label-info me-1">Rappel</span></td>
-                                                    <td>Clôture de l'exercice dans 30 jours.</td>
-                                                    <td>19 Nov 2025</td>
-                                                    <td><span class="badge bg-info">Planifié</span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                <h6 class="text-gray-500 fw-medium mb-2">Plans Comptables créés</h6>
+                                <h3 class="h2 text-gray-900 mb-0">{{ number_format($plansToday ?? 0) }}</h3>
                             </div>
                         </div>
 
+                        <!-- KPI 4: Exercices comptables créés -->
+                        <div class="col-md-3">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div class="w-12 h-12 bg-orange-100 rounded-lg d-flex align-items-center justify-content-center">
+                                        <i class="fa-solid fa-calendar-days text-orange-600 fs-4"></i>
+                                    </div>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded fw-medium">{{ number_format($exercicesToday ?? 0) }} total</span>
+                                </div>
+                                <h6 class="text-gray-500 fw-medium mb-2">Exercices comptables créés</h6>
+                                <h3 class="h2 text-gray-900 mb-0">{{ number_format($exercicesToday ?? 0) }}</h3>
+                            </div>
+                        </div>
                     </div>
-                    <!-- / Contenu du Dashboard -->
+
+                    <!-- Charts Section -->
+                    <div id="charts-section" class="row g-4 mb-8">
+                        <!-- Chart 1: Performance des Revenus -->
+                        <div class="col-md-7">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div class="d-flex justify-content-between align-items-center mb-6">
+                                    <h5 class="text-lg fw-semibold text-gray-900 mb-0">Performance des Revenus (Annuel)</h5>
+                                    <div class="dropdown">
+                                        <button class="btn p-0" type="button" data-bs-toggle="dropdown">
+                                            <i class="bx bx-dots-vertical-rounded"></i>
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <a class="dropdown-item" href="javascript:void(0);">Exporter</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Filtrer</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="revenueChart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Répartition des Dépenses -->
+                        <div class="col-md-5">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div class="d-flex justify-content-between align-items-center mb-6">
+                                    <h5 class="text-lg fw-semibold text-gray-900 mb-0">Répartition des Dépenses (Mois)</h5>
+                                    <small class="text-muted">Total: € 5,200</small>
+                                </div>
+                                <div id="expensesChart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tables Section -->
+                    <div id="tables-section" class="row g-4 mb-8">
+                        <!-- Table 1: Alertes Comptables -->
+                        <div class="col-12">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div class="d-flex justify-content-between align-items-center mb-6">
+                                    <h5 class="text-lg fw-semibold text-gray-900 mb-0">Alertes Comptables Récentes</h5>
+                                    <a href="#" class="text-primary text-decoration-none fw-medium">Voir tout</a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Type d'Alerte</th>
+                                                <th>Description</th>
+                                                <th>Date</th>
+                                                <th>Statut</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="table-border-bottom-0">
+                                            <tr>
+                                                <td><span class="badge bg-danger me-1">Écart</span></td>
+                                                <td>Décalage de 45 jours sur le Paiement Fournisseur #2034.</td>
+                                                <td>15 Nov 2025</td>
+                                                <td><span class="badge bg-danger">Urgent</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge bg-warning me-1">Erreur</span></td>
+                                                <td>Pièce comptable manquante pour la facture A23-90.</td>
+                                                <td>18 Nov 2025</td>
+                                                <td><span class="badge bg-warning">À Traiter</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge bg-info me-1">Rappel</span></td>
+                                                <td>Clôture de l'exercice dans 30 jours.</td>
+                                                <td>19 Nov 2025</td>
+                                                <td><span class="badge bg-info">Planifié</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
 
                     @include('components.footer')
                 </div>

@@ -24,6 +24,19 @@ class EcritureComptableController extends Controller
     {
         $user = Auth::user();
         $data = $request->all();
+        
+        // Vérifier si des exercices existent pour cette entreprise
+        $exercicesCount = ExerciceComptable::where('company_id', $user->company_id)->count();
+        
+        // Si aucun exercice n'existe, rediriger vers la page de création
+        if ($exercicesCount == 0) {
+            return redirect()->route('exercice_comptable')->with('info', 'Veuillez créer un exercice comptable avant de pouvoir gérer les écritures.');
+        }
+        
+        // Valeurs par défaut si non fournies
+        $data['annee'] = $data['annee'] ?? date('Y');
+        $data['mois'] = $data['mois'] ?? date('n'); // mois sans leading zero
+        $data['id_exercice'] = $data['id_exercice'] ?? null;
 
         $plansComptables = PlanComptable::where('company_id', $user->company_id)
             ->select('id', 'numero_de_compte', 'intitule')
@@ -80,7 +93,7 @@ class EcritureComptableController extends Controller
 
         $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
 
-        $exercice = ExerciceComptable::findOrFail($data['id_exercice']);
+        $exercice = $data['id_exercice'] ? ExerciceComptable::findOrFail($data['id_exercice']) : null;
 
         // dd($dateDebut . '' . $dateFin);
 
@@ -279,5 +292,67 @@ public function getComptesParFlux(Request $request) {
 
 
 
+
+    public function list(Request $request)
+    {
+        $user = Auth::user();
+        $data = $request->all();
+        
+        // Récupérer les données de base
+        $exercices = ExerciceComptable::where('company_id', $user->company_id)->get();
+        $code_journaux = CodeJournal::where('company_id', $user->company_id)->get();
+        
+        // Construire la requête pour les écritures
+        $query = EcritureComptable::where('company_id', $user->company_id);
+        
+        // Appliquer les filtres
+        if (!empty($data['exercice_id'])) {
+            $query->where('exercice_id', $data['exercice_id']);
+        }
+        
+        if (!empty($data['mois'])) {
+            $query->whereMonth('date', $data['mois']);
+        }
+        
+        if (!empty($data['journal_id'])) {
+            $query->where('code_journal_id', $data['journal_id']);
+        }
+        
+        // Récupérer les écritures
+        $ecritures = $query->orderBy('date', 'desc')->orderBy('n_saisie', 'desc')->get();
+        
+        // Calculer les totaux
+        $totalDebit = $ecritures->sum('debit');
+        $totalCredit = $ecritures->sum('credit');
+        
+        // Récupérer les données pour les formulaires
+        $plansComptables = PlanComptable::where('company_id', $user->company_id)
+            ->select('id', 'numero_de_compte', 'intitule')
+            ->orderByRaw("LEFT(numero_de_compte, 1) ASC")
+            ->orderBy('numero_de_compte', 'asc')
+            ->get();
+            
+        $tiers = PlanTiers::where('company_id', $user->company_id)
+            ->select('id', 'numero_de_tiers', 'intitule')
+            ->orderByRaw("LEFT(numero_de_tiers, 1) ASC")
+            ->orderBy('numero_de_tiers', 'asc')
+            ->get();
+            
+        $postesTresorerie = CompteTresorerie::where('company_id', $user->company_id)
+            ->orderBy('name', 'asc')
+            ->get();
+        
+        return view('accounting_entry_list', compact(
+            'exercices', 
+            'code_journaux', 
+            'ecritures', 
+            'totalDebit', 
+            'totalCredit',
+            'plansComptables',
+            'tiers',
+            'postesTresorerie',
+            'data'
+        ));
+    }
 
 }

@@ -96,7 +96,7 @@
 
 
 <script>
-    const accounting_entry_realSaisisUrl = "{{ route('accounting_entry_real') }}";
+    const accounting_entry_realSaisisUrl = "{{ route('accounting_entry_list') }}";
     const journaux_saisisfindSaisisUrl = "{{ route('journaux_saisis.find') }}";
     // const journaux_saisisfindSaisisUrl = "{{ url('journaux_saisis/find') }}";
 

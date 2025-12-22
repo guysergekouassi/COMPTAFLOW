@@ -3,215 +3,278 @@
 
 @include('components.head')
 
+<!-- Tailwind CDN for the new design -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    navy: {
+                        900: '#1e3a8a',
+                        800: '#1e40af',
+                    }
+                }
+            }
+        }
+    }
+</script>
+
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: 'Inter', sans-serif;
+        color: #1a1a1a;
+    }
+    .glass-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .glass-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    .text-gradient {
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .nav-button {
+        transition: all 0.2s;
+        border: 1px solid #e2e8f0;
+    }
+    .nav-button:hover {
+        border-color: #1e40af;
+        background-color: #eff6ff;
+        color: #1e40af;
+    }
+    .pulse {
+        animation: pulse-animation 2s infinite;
+    }
+    @keyframes pulse-animation {
+        0% { box-shadow: 0 0 0 0px rgba(30, 64, 175, 0.2); }
+        100% { box-shadow: 0 0 0 10px rgba(30, 64, 175, 0); }
+    }
+    
+    /* Layout adjustments to match the theme */
+    .layout-page {
+        background-color: #f8fafc !important;
+    }
+    .content-wrapper {
+        padding: 2rem !important;
+    }
+</style>
+
 <body>
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header')
+                @include('components.header', ['page_title' => 'Tableau de <span class="text-gradient">Bord</span>'])
 
                 <div class="content-wrapper">
-                    <div class="container-xxl flex-grow-1 container-p-y">
-                        <!-- BIENVENUE & INTRO -->
-                        <div class="row mb-5">
-                            <div class="col-12">
-                                <div class="card bg-primary text-white shadow-lg">
-                                    <div class="d-flex align-items-center row">
-                                        <div class="col-sm-7">
-                                            <div class="card-body">
-                                                <h5 class="card-title text-white mb-3">Tableau de Bord Comptable </h5>
-                                                <p class="mb-4 text-white-50">
-                                                    Bienvenue sur votre espace d'administration. Consultez les indicateurs clés de performance (KPI) de l'exercice en cours.
+                    <div class="max-w-7xl mx-auto">
+                        
+                        <!-- En-tête Centré Dynamique -->
+                        <div class="text-center mb-12">
+                            <div class="flex items-center justify-center gap-2 mb-4">
+                                <span class="h-1 w-8 bg-blue-700 rounded-full"></span>
+                                <span class="text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 px-3 py-1 rounded-full">
+                                    {{ $currentCompany->company_name ?? 'Espace Comptable' }}
+                                </span>
+                                <span class="h-1 w-8 bg-blue-700 rounded-full"></span>
+                            </div>
+                            <p class="text-slate-500 font-medium">Bienvenue, voici l'état actuel de votre exercice comptable.</p>
+                        </div>
+
+                        <!-- Section Statistiques (KPIs) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                            <div class="glass-card p-6 border-l-4 border-l-blue-700">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Écritures du mois</p>
+                                        <h3 class="text-3xl font-black text-slate-800 mt-1">{{ number_format($monthlyEntries ?? 0, 0, ',', ' ') }}</h3>
+                                    </div>
+                                    <div class="p-3 bg-blue-50 text-blue-700 rounded-2xl">
+                                        <i class="fas fa-pen-nib text-xl"></i>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-green-600 mt-4 font-bold">
+                                    <i class="fas fa-arrow-up mr-1"></i> Synthèse mensuelle
+                                </p>
+                            </div>
+
+                            <div class="glass-card p-6 border-l-4 border-l-indigo-600">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Solde Trésorerie</p>
+                                        <h3 class="text-3xl font-black text-slate-800 mt-1">
+                                            {{ number_format($cashBalance ?? 0, 0, ',', ' ') }} <span class="text-sm font-medium">FCFA</span>
+                                        </h3>
+                                    </div>
+                                    <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                                        <i class="fas fa-wallet text-xl"></i>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-4 italic">Mise à jour en temps réel</p>
+                            </div>
+
+                            <div class="glass-card p-6 border-l-4 border-l-emerald-500">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tiers Actifs</p>
+                                        <h3 class="text-3xl font-black text-slate-800 mt-1">{{ ($clientCount ?? 0) + ($supplierCount ?? 0) }}</h3>
+                                    </div>
+                                    <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                                        <i class="fas fa-users text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 mt-4 text-[10px] font-bold uppercase">
+                                    <span class="text-blue-600">{{ $clientCount ?? 0 }} Clients</span>
+                                    <span class="text-slate-300">|</span>
+                                    <span class="text-orange-600">{{ $supplierCount ?? 0 }} Fourn.</span>
+                                </div>
+                            </div>
+
+                            <div class="glass-card p-6 border-l-4 border-l-slate-800">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Exercice en cours</p>
+                                        <h3 class="text-3xl font-black text-slate-800 mt-1">{{ $exerciceYear ?? date('Y') }}</h3>
+                                    </div>
+                                    <div class="p-3 bg-slate-100 text-slate-800 rounded-2xl">
+                                        <i class="fas fa-calendar-check text-xl"></i>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-blue-700 mt-4 font-bold italic underline">Période : {{ \Carbon\Carbon::now()->translatedFormat('F') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            
+                            <!-- Section Actions Rapides (Modules) -->
+                            <div class="lg:col-span-2 space-y-8">
+                                <div class="glass-card p-8">
+                                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                        <i class="fas fa-th-large text-blue-700"></i> Vos Modules de Travail
+                                    </h2>
+                                    
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                        <!-- Traitement -->
+                                        <div class="space-y-3">
+                                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Traitement</h4>
+                                            <a href="{{ route('accounting_entry_real') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold pulse bg-blue-700 text-white border-none transition-all hover:bg-blue-800">
+                                                <i class="fas fa-keyboard w-5"></i> Nouvelle Saisie
+                                            </a>
+                                            <a href="{{ route('accounting_entry_list') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-list-ul w-5"></i> Écritures
+                                            </a>
+                                            <a href="{{ route('exercice_comptable') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-history w-5"></i> Exercice
+                                            </a>
+                                        </div>
+
+                                        <!-- Paramétrage -->
+                                        <div class="space-y-3">
+                                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Paramétrage</h4>
+                                            <a href="{{ route('plan_comptable') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-book w-5"></i> Plan Comptable
+                                            </a>
+                                            <a href="{{ route('plan_tiers') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-address-book w-5"></i> Plan Tiers
+                                            </a>
+                                            <a href="{{ route('accounting_journals') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-journal-whills w-5"></i> Journaux
+                                            </a>
+                                        </div>
+
+                                        <!-- Rapports -->
+                                        <div class="space-y-3">
+                                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Rapports</h4>
+                                            <a href="{{ route('accounting_ledger') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-file-invoice w-5"></i> Grand Livre
+                                            </a>
+                                            <a href="{{ route('accounting_balance') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-balance-scale w-5"></i> Balance
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Activité Récente / Journaux de Trésorerie -->
+                                <div class="glass-card p-8">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 class="text-xl font-bold text-slate-800">Derniers Journaux de Trésorerie</h2>
+                                        <button class="text-sm text-blue-700 font-bold hover:underline">Voir tout</button>
+                                    </div>
+                                    <div class="space-y-4">
+                                        @forelse($recentTreasuryEntries ?? [] as $entry)
+                                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 transition-hover hover:bg-slate-100">
+                                            <div class="flex items-center gap-4">
+                                                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-700 shadow-sm">
+                                                    <i class="fas fa-{{ $entry['icon'] ?? 'university' }}"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-slate-800">{{ $entry['title'] }}</p>
+                                                    <p class="text-xs text-slate-500">Poste : {{ $entry['poste'] }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="font-black {{ $entry['amount'] > 0 ? 'text-slate-800' : 'text-red-600' }}">
+                                                    {{ $entry['amount'] > 0 ? '+' : '' }} {{ number_format($entry['amount'], 0, ',', ' ') }}
                                                 </p>
-                                                <a href="javascript:void(0);" class="btn btn-sm btn-light">Voir le Grand Livre</a>
+                                                <p class="text-[10px] text-slate-400">{{ $entry['date'] }}</p>
                                             </div>
                                         </div>
-                                        <div class="col-sm-5 text-center text-sm-end">
-                                            <div class="card-body pb-0 px-0 px-md-4">
-                                                <!-- Image de Man With Laptop - Assurez-vous que le chemin est correct -->
-                                                <img src="../assets/img/illustrations/man-with-laptop.png" height="140" alt="Illustration de Bienvenue" style="transform: scaleX(-1);" />
-                                            </div>
+                                        @empty
+                                        <div class="text-center py-6 text-slate-400 italic">
+                                            Aucune opération de trésorerie récente.
                                         </div>
+                                        @endforelse
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Barre Latérale Droite : Alertes & Statut -->
+                            <div class="space-y-8">
+                                <div class="glass-card p-8 bg-slate-900 text-white border-none shadow-xl shadow-blue-900/20">
+                                    <h2 class="text-lg font-bold mb-4">Statut Clôture</h2>
+                                    <div class="w-full bg-slate-800 rounded-full h-2 mb-2">
+                                        <div class="bg-blue-500 h-2 rounded-full transition-all duration-1000" style="width: {{ $exerciceProgress ?? 0 }}%"></div>
+                                    </div>
+                                    <p class="text-xs text-slate-400">Exercice {{ $exerciceYear ?? date('Y') }} complété à {{ $exerciceProgress ?? 0 }}%</p>
+                                    <button class="w-full mt-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-bold transition">
+                                        Générer Pré-Bilan
+                                    </button>
+                                </div>
+
+                                <div class="glass-card p-8">
+                                    <h2 class="text-lg font-bold text-slate-800 mb-4">Notifications</h2>
+                                    <div class="space-y-6">
+                                        @forelse($alerts ?? [] as $alert)
+                                        <div class="flex gap-4">
+                                            <div class="mt-1">
+                                                <span class="flex h-2 w-2 rounded-full bg-{{ $alert['priority'] == 'high' ? 'red' : 'blue' }}-600"></span>
+                                            </div>
+                                            <p class="text-xs text-slate-600 leading-relaxed">
+                                                <span class="font-bold text-slate-900">{{ $alert['title'] }} :</span> {{ $alert['description'] }}
+                                            </p>
+                                        </div>
+                                        @empty
+                                        <div class="text-xs text-slate-500 italic">
+                                            Aucune notification pour le moment.
+                                        </div>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            </div>
+                            
                         </div>
-
-                          @if($currentCompany)
-                                <div class="alert alert-success">
-                                    Bienvenue sur le dashboard du compte : <strong>{{ $currentCompany->company_name }}</strong>.
-                                </div>
-                            @else
-                                {{-- Ce cas ne devrait plus arriver avec la redirection de sécurité dans le contrôleur --}}
-                                <div class="alert alert-success">
-                                     comptabilité actif sélectionné.
-                                </div>
-                            @endif
-
-                        <!-- K.P.I. (STATISTIQUES CLÉS) -->
-                        <div class="row g-4 mb-5">
-                            <!-- KPI 1: Chiffre d'Affaires Net -->
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-success">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-dollar-circle bx-lg text-success"></i>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-success small fw-medium">↑ 14.8%</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">TRESORERIE ANNUELLE</small>
-                                            <h4 class="mb-0">...</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- KPI 2: Dépenses Totales -->
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-danger">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-wallet bx-lg text-danger"></i>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-danger small fw-medium">↓ 5.2%</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Dépenses Totales</small>
-                                            <h4 class="mb-0">...</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- KPI 3: Nombre de Pièces Saisies -->
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-info">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-file bx-lg text-info"></i>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-info small fw-medium">↑ 32%</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Pièces Saisies (Mois)</small>
-                                            <h4 class="mb-0">...</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- KPI 4: Solde Bancaire / Trésorerie -->
-                            <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                                <div class="card shadow-sm border border-warning">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="avatar flex-shrink-0">
-                                                <i class="bx bx-trending-up bx-lg text-warning"></i>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="text-secondary small fw-medium">0.0%</span>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3">
-                                            <small class="text-muted fw-semibold">Solde Trésorerie Actuel</small>
-                                            <h4 class="mb-0">...</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- GRAPHIQUES ET ANALYTIQUES -->
-                        <div class="row g-4">
-                            <!-- Graphique 1: Revenus Mensuels (Chart.js) -->
-                            <div class="col-xl-7 col-lg-7 col-md-12">
-                                <div class="card shadow-lg">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="card-title m-0">Performance Exercice (Annuel)</h5>
-                                        <div class="dropdown">
-                                            <button class="btn p-0" type="button" data-bs-toggle="dropdown">
-                                                <i class="bx bx-dots-vertical-rounded"></i>
-                                            </button>
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="javascript:void(0);">Exporter</a>
-                                                <a class="dropdown-item" href="javascript:void(0);">Filtrer</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <!-- Le graphique Chart.js est rendu ici -->
-                                        <canvas id="revenueChart" class="w-100" height="300"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Graphique 2: Répartition des Dépenses (ApexCharts - Donut) -->
-                           <div class="col-xl-5 col-lg-5 col-md-12">
-                            <div class="card shadow-lg">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="card-title m-0">Répartition plan tiers</h5>
-                                    {{-- Utilisation du total dynamique --}}
-                                    <small class="text-muted">Total: € {{ $totalTiersSolde ?? '0,00' }}</small>
-                                </div>
-                                <div class="card-body pt-0">
-                                    <!-- Le graphique ApexCharts est rendu ici -->
-                                    <div id="expensesChart"></div>
-                                </div>
-                            </div>
-                        </div>
-                            <!-- Exemple de Tableau/Liste d'Alertes -->
-                            <div class="col-12 mt-5">
-                                <div class="card shadow">
-                                    <h5 class="card-header">Alertes Comptables Récentes</h5>
-                                    <div class="table-responsive text-nowrap">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Type d'Alerte</th>
-                                                    <th>Description</th>
-                                                    <th>Date</th>
-                                                    <th>Statut</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="table-border-bottom-0">
-                                                <tr>
-                                                    <td><span class="badge bg-label-danger me-1">Écart</span></td>
-                                                    <td>Décalage de 45 jours sur le Paiement Fournisseur #2034.</td>
-                                                    <td>15 Nov 2025</td>
-                                                    <td><span class="badge bg-danger">Urgent</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td><span class="badge bg-label-warning me-1">Erreur</span></td>
-                                                    <td>Pièce comptable manquante pour la facture A23-90.</td>
-                                                    <td>18 Nov 2025</td>
-                                                    <td><span class="badge bg-warning">À Traiter</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td><span class="badge bg-label-info me-1">Rappel</span></td>
-                                                    <td>Clôture de l'exercice dans 30 jours.</td>
-                                                    <td>19 Nov 2025</td>
-                                                    <td><span class="badge bg-info">Planifié</span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
-                    <!-- / Contenu du Dashboard -->
 
                     @include('components.footer')
                 </div>
@@ -220,125 +283,5 @@
         <!-- Overlay -->
         <div class="layout-overlay layout-menu-toggle"></div>
     </div>
-
-    <!-- Scripts pour les graphiques (doivent être après les éléments Canvas/Div) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // ===================================
-            // CHART 1: Performance des Revenus (Ligne - Chart.js)
-            // ===================================
-            const ctxRevenue = document.getElementById('revenueChart');
-            if (ctxRevenue) {
-                new Chart(ctxRevenue, {
-                    type: 'line',
-                    data: {
-                        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
-                        datasets: [{
-                            label: 'Revenus Mensuels (€)',
-                            data: [12000, 15000, 18000, 22000, 25000, 28000, 26000, 31000, 35000, 32000, 38000, 42000],
-                            borderColor: 'rgb(0, 192, 192)',
-                            backgroundColor: 'rgba(0, 192, 192, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            pointRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.dataset.label + ': ' + context.formattedValue + ' €';
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    drawBorder: false
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            // ===================================
-            // CHART 2: Répartition des Dépenses (Donut - ApexCharts)
-            // ===================================
-            // NOTE: ApexCharts est inclus dans votre fichier footer.blade.php
-            const expensesChartEl = document.querySelector('#expensesChart');
-            if (expensesChartEl) {
-                const expensesChartOptions = {
-                    series: [45, 25, 15, 10, 5], // Pourcentages de dépenses
-                    labels: ['Fournisseurs', 'Salaires', 'Marketing', 'Loyer/Frais fixes', 'Autres'],
-                    chart: {
-                        height: 300,
-                        type: 'donut',
-                        toolbar: {
-                            show: false
-                        }
-                    },
-                    legend: {
-                        position: 'bottom'
-                    },
-                    plotOptions: {
-                        pie: {
-                            donut: {
-                                size: '70%',
-                                labels: {
-                                    show: true,
-                                    name: {
-                                        show: true,
-                                        fontSize: '1rem',
-                                        color: '#adb5bd',
-                                        offsetY: -10
-                                    },
-                                    value: {
-                                        show: true,
-                                        fontSize: '1.5rem',
-                                        fontWeight: 'bold',
-                                        color: '#344050',
-                                        offsetY: 10,
-                                        formatter: function(val) {
-                                            return val + '%'
-                                        }
-                                    },
-                                    total: {
-                                        show: true,
-                                        label: 'Total',
-                                        formatter: function(w) {
-                                            // Afficher le total des pourcentages
-                                            return w.globals.seriesTotals.reduce((a, b) => a + b, 0) + '%';
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    colors: ['#00a76f', '#1890ff', '#ffc107', '#ff4d4f', '#72e128'],
-                    dataLabels: {
-                        enabled: false,
-                    }
-                };
-
-                const expensesChart = new ApexCharts(expensesChartEl, expensesChartOptions);
-                expensesChart.render();
-            }
-        });
-    </script>
 </body>
 </html>

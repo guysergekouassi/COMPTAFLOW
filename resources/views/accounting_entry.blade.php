@@ -170,7 +170,7 @@
 
               <!-- Modal Creation Ecriture-->
               <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-dialog modal-dialog-centered modal-fullscreen" role="document">
                   <div class="modal-content">
                     <div class="modal-header">
                       <h5 class="modal-title" id="modalCenterTitle">
@@ -180,11 +180,11 @@
                     </div>
                     <div class="modal-body">
                       <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                           <label for="dateEcriture" class="form-label">Date</label>
                           <input type="date" id="dateEcriture" class="form-control" required />
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                           <label for="journal" class="form-label">Journal</label>
                           <select id="journal" class="form-select" required>
                             <option value="">Sélectionner</option>
@@ -194,10 +194,14 @@
                             <option value="OD">Opérations diverses</option>
                           </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                           <label for="referencePiece" class="form-label">Pièce justificative</label>
                           <input type="text" id="referencePiece" class="form-control"
                             placeholder="FAC001, RECU045..." />
+                        </div>
+                        <div class="col-md-3">
+                          <label for="pieceFile" class="form-label">Fichier pièce</label>
+                          <input type="file" id="pieceFile" class="form-control" accept="image/*,.pdf" />
                         </div>
                         <div class="col-12">
                           <label for="libelleEcriture" class="form-label">Libellé</label>
@@ -207,16 +211,14 @@
 
                         <div class="col-12" id="tresorerieFields" >
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label for="posteTresorerie" class="form-label">Poste de Trésorerie</label>
                                     <select id="posteTresorerie" class="form-select">
                                         <option value=""> (Pas un flux spécifique)</option>
                                         </select>
-
-
                                 </div>
 
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label for="typeFlux" class="form-label">Type de Flux</label>
                                     <select id="typeFlux" class="form-select">
                                         <option value="">Sélectionner le type de flux</option>
@@ -224,37 +226,61 @@
                                         <option value="credit">Encaissement (Crédit)</option>
                                     </select>
                                 </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="compteGeneral" class="form-label">Compte général</label>
+                                    <select id="compteGeneral" class="form-select">
+                                        <option value="">Sélectionner un compte</option>
+                                        </select>
+                                </div>
                             </div>
                         </div>
                              <div class="col-12">
-                          <label class="form-label">Lignes d’écriture</label>
-                          <div id="lignesEcriture">
-                            <div class="row g-2 mb-2 ligne-ecriture">
-                              <div class="col-md-3">
-                                <input type="text" class="form-control" placeholder="N° de compte (ex: 401)" required />
-                              </div>
-                              <div class="col-md-3">
-                                <input type="text" class="form-control" placeholder="Intitulé compte" />
-                              </div>
-                              <div class="col-md-3">
-                                <input type="number" class="form-control" placeholder="Débit" step="0.01" />
-                              </div>
-                              <div class="col-md-3">
-                                <input type="number" class="form-control" placeholder="Crédit" step="0.01" />
-                              </div>
-                            </div>
+                          <label class="form-label">Lignes d'écriture</label>
+                          <div class="table-responsive">
+                            <table class="table table-bordered" id="lignesEcritureTable">
+                              <thead class="table-light">
+                                <tr>
+                                  <th style="width: 15%">N° Compte</th>
+                                  <th style="width: 25%">Intitulé</th>
+                                  <th style="width: 15%">Débit</th>
+                                  <th style="width: 15%">Crédit</th>
+                                  <th style="width: 10%">Type Flux</th>
+                                  <th style="width: 10%">Pièce</th>
+                                  <th style="width: 10%">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr class="ligne-ecriture">
+                                  <td><input type="text" class="form-control compte-input" placeholder="ex: 401" required /></td>
+                                  <td><input type="text" class="form-control intitule-input" placeholder="Intitulé compte" readonly /></td>
+                                  <td><input type="number" class="form-control debit-input" placeholder="0.00" step="0.01" /></td>
+                                  <td><input type="number" class="form-control credit-input" placeholder="0.00" step="0.01" /></td>
+                                  <td><span class="type-flux-display">-</span></td>
+                                  <td><span class="piece-display">-</span></td>
+                                  <td>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="supprimerLigne(this)">
+                                      <i class="bx bx-trash"></i>
+                                    </button>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
                           </div>
-                          <button type="button" class="btn btn-sm btn-secondary mt-1" onclick="ajouterLigne()">+ Ajouter
-                            une ligne</button>
+                          <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="ajouterLigne()">
+                            <i class="bx bx-plus me-1"></i>Ajouter une ligne
+                          </button>
+                          <button type="button" class="btn btn-sm btn-info mt-2" onclick="alert('Test JavaScript fonctionne');">
+                           Test JS
+                          </button>
                         </div>
-                      </div>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
                         Fermer
                       </button>
                       <button type="button" class="btn btn-primary" onclick="validerEcriture()">
-                        Enregistrer
+                        <i class="bx bx-save me-1"></i>Enregistrer
                       </button>
                     </div>
                   </div>
@@ -347,86 +373,293 @@
     @include('components.footer')
 
     <script>
+      // Variables globales
+      let comptesGeneraux = [];
+      let postesTresorerie = [];
+      let fichierSelectionne = null;
+
+      // Initialisation au chargement de la page
+      document.addEventListener('DOMContentLoaded', function() {
+        chargerPostesTresorerie();
+        chargerComptesGeneraux();
+        setupEventListeners();
+      });
+
+      function chargerPostesTresorerie() {
+        // Simulation de chargement des postes de trésorerie
+        postesTresorerie = [
+          { id: 1, nom: 'Banque ABC', type_flux: 'debit', comptes: ['512000', '521000'] },
+          { id: 2, nom: 'Caisse', type_flux: 'credit', comptes: ['530000', '531000'] },
+          { id: 3, nom: 'CCP', type_flux: 'debit', comptes: ['514000'] }
+        ];
+        
+        const select = document.getElementById('posteTresorerie');
+        select.innerHTML = '<option value=""> (Pas un flux spécifique)</option>';
+        postesTresorerie.forEach(poste => {
+          select.innerHTML += `<option value="${poste.id}">${poste.nom}</option>`;
+        });
+      }
+
+      function chargerComptesGeneraux() {
+        // Simulation de chargement des comptes généraux (10110000 à 27210000)
+        comptesGeneraux = [
+          { numero: '10110000', intitule: 'Capital social', type: 'passif' },
+          { numero: '40100000', intitule: 'Fournisseurs', type: 'passif' },
+          { numero: '41100000', intitule: 'Clients', type: 'actif' },
+          { numero: '51200000', intitule: 'Banque', type: 'actif' },
+          { numero: '52100000', intitule: 'CCP', type: 'actif' },
+          { numero: '53000000', intitule: 'Caisse', type: 'actif' },
+          { numero: '60100000', intitule: 'Achats de matières premières', type: 'charge' },
+          { numero: '60700000', intitule: 'Achats de marchandises', type: 'charge' },
+          { numero: '64100000', intitule: 'Salaires', type: 'charge' },
+          { numero: '70100000', intitule: 'Ventes de produits', type: 'produit' },
+          { numero: '70700000', intitule: 'Ventes de marchandises', type: 'produit' },
+          { numero: '27210000', intitule: 'Autres créances', type: 'actif' }
+        ];
+        
+        mettreAJourSelectComptes();
+      }
+
+      function mettreAJourSelectComptes(filtreType = null) {
+        const select = document.getElementById('compteGeneral');
+        select.innerHTML = '<option value="">Sélectionner un compte</option>';
+        
+        let comptesFiltres = comptesGeneraux;
+        if (filtreType) {
+          comptesFiltres = comptesGeneraux.filter(compte => {
+            if (filtreType === 'debit') return compte.type === 'actif' || compte.type === 'charge';
+            if (filtreType === 'credit') return compte.type === 'actif' || compte.type === 'produit';
+            return true;
+          });
+        }
+        
+        comptesFiltres.forEach(compte => {
+          select.innerHTML += `<option value="${compte.numero}">${compte.numero} - ${compte.intitule}</option>`;
+        });
+      }
+
+      function setupEventListeners() {
+        // Gestion du type de flux
+        document.getElementById('typeFlux').addEventListener('change', function() {
+          const typeFlux = this.value;
+          const debitInputs = document.querySelectorAll('.debit-input');
+          const creditInputs = document.querySelectorAll('.credit-input');
+          
+          debitInputs.forEach(input => {
+            input.disabled = typeFlux === 'credit';
+            if (typeFlux === 'credit') input.value = '';
+          });
+          
+          creditInputs.forEach(input => {
+            input.disabled = typeFlux === 'debit';
+            if (typeFlux === 'debit') input.value = '';
+          });
+
+          // Mettre à jour les comptes généraux selon le type de flux
+          mettreAJourSelectComptes(typeFlux);
+        });
+
+        // Gestion du poste de trésorerie
+        document.getElementById('posteTresorerie').addEventListener('change', function() {
+          const posteId = this.value;
+          if (posteId) {
+            const poste = postesTresorerie.find(p => p.id == posteId);
+            if (poste) {
+              document.getElementById('typeFlux').value = poste.type_flux;
+              document.getElementById('typeFlux').dispatchEvent(new Event('change'));
+              
+              // Pré-remplir les comptes liés
+              const selectCompte = document.getElementById('compteGeneral');
+              poste.comptes.forEach(numero => {
+                const compte = comptesGeneraux.find(c => c.numero.startsWith(numero));
+                if (compte) {
+                  selectCompte.value = compte.numero;
+                }
+              });
+            }
+          }
+        });
+
+        // Gestion du fichier
+        document.getElementById('pieceFile').addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (file) {
+            fichierSelectionne = file;
+            // Mettre à jour l'affichage dans le tableau
+            document.querySelectorAll('.piece-display').forEach(display => {
+              display.textContent = file.name;
+            });
+          }
+        });
+
+        // Gestion de la saisie des numéros de compte
+        document.addEventListener('input', function(e) {
+          if (e.target.classList.contains('compte-input')) {
+            const numero = e.target.value;
+            const compte = comptesGeneraux.find(c => c.numero === numero);
+            const row = e.target.closest('tr');
+            const intituleInput = row.querySelector('.intitule-input');
+            
+            if (compte) {
+              intituleInput.value = compte.intitule;
+            } else {
+              intituleInput.value = '';
+            }
+          }
+        });
+      }
+
       function ajouterLigne() {
-        const lignesEcriture = document.getElementById("lignesEcriture");
-        const ligne = document.createElement("div");
-        ligne.className = "row g-2 mb-2 ligne-ecriture";
-        ligne.innerHTML = `
-    <div class="col-md-3">
-      <input type="text" class="form-control" placeholder="N° de compte" required />
-    </div>
-    <div class="col-md-3">
-      <input type="text" class="form-control" placeholder="Intitulé compte" />
-    </div>
-    <div class="col-md-3">
-      <input type="number" class="form-control" placeholder="Débit" step="0.01" />
-    </div>
-    <div class="col-md-3">
-      <input type="number" class="form-control" placeholder="Crédit" step="0.01" />
-    </div>
-  `;
-        lignesEcriture.appendChild(ligne);
+        console.log('Fonction ajouterLigne appelée');
+        const tbody = document.querySelector("#lignesEcritureTable tbody");
+        console.log('tbody trouvé:', tbody);
+        
+        if (!tbody) {
+          console.error('Tableau #lignesEcritureTable tbody non trouvé');
+          return;
+        }
+        
+        const typeFlux = document.getElementById('typeFlux').value;
+        const fichierInput = document.getElementById('pieceFile');
+        const fichierNom = fichierInput && fichierInput.files[0] ? fichierInput.files[0].name : '-';
+        
+        console.log('Ajout d\'une ligne avec typeFlux:', typeFlux, 'fichierNom:', fichierNom);
+        
+        const newRow = document.createElement('tr');
+        newRow.className = 'ligne-ecriture';
+        newRow.innerHTML = `
+          <td><input type="text" class="form-control compte-input" placeholder="ex: 401" required /></td>
+          <td><input type="text" class="form-control intitule-input" placeholder="Intitulé compte" readonly /></td>
+          <td><input type="number" class="form-control debit-input" placeholder="0.00" step="0.01" ${typeFlux === 'credit' ? 'disabled' : ''} /></td>
+          <td><input type="number" class="form-control credit-input" placeholder="0.00" step="0.01" ${typeFlux === 'debit' ? 'disabled' : ''} /></td>
+          <td><span class="type-flux-display">${typeFlux ? (typeFlux === 'debit' ? 'Décaissement' : 'Encaissement') : '-'}</span></td>
+          <td><span class="piece-display">${fichierNom}</span></td>
+          <td>
+            <button type="button" class="btn btn-sm btn-danger" onclick="supprimerLigne(this)">
+              <i class="bx bx-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(newRow);
+        console.log('Ligne ajoutée avec succès');
+      }
+
+      function supprimerLigne(btn) {
+        const row = btn.closest('tr');
+        row.remove();
       }
 
       function validerEcriture() {
-        // Exemple basique de validation
         const lignes = document.querySelectorAll(".ligne-ecriture");
         let totalDebit = 0;
         let totalCredit = 0;
+        let erreurs = [];
 
-        lignes.forEach(l => {
-          const debit = parseFloat(l.children[2].children[0].value) || 0;
-          const credit = parseFloat(l.children[3].children[0].value) || 0;
+        // Validation des lignes
+        lignes.forEach((ligne, index) => {
+          const debit = parseFloat(ligne.querySelector('.debit-input').value) || 0;
+          const credit = parseFloat(ligne.querySelector('.credit-input').value) || 0;
+          const compte = ligne.querySelector('.compte-input').value;
+          
+          if (!compte) {
+            erreurs.push(`Ligne ${index + 1}: Le numéro de compte est requis`);
+          }
+          
           totalDebit += debit;
           totalCredit += credit;
         });
 
-        if (totalDebit !== totalCredit) {
-          alert("Le total des débits doit être égal au total des crédits !");
+        // Vérification de l'équilibre débit/crédit
+        if (Math.abs(totalDebit - totalCredit) > 0.01) {
+          erreurs.push(`L'équilibre débit/crédit n'est pas respecté: Débit=${totalDebit.toFixed(2)}, Crédit=${totalCredit.toFixed(2)}`);
+        }
+
+        if (erreurs.length > 0) {
+          alert('Erreurs de validation:\n' + erreurs.join('\n'));
           return;
         }
 
-        alert("Écriture comptable valide et prête à être enregistrée !");
-        // Ici, tu pourrais envoyer les données via AJAX ou soumettre un formulaire
-      }
-    </script>
-<script>
-    // ... (vos fonctions ajouterLigne() et validerEcriture() existantes) ...
+        // Simulation d'enregistrement
+        const ecriture = {
+          date: document.getElementById('dateEcriture').value,
+          journal: document.getElementById('journal').value,
+          reference: document.getElementById('referencePiece').value,
+          libelle: document.getElementById('libelleEcriture').value,
+          posteTresorerie: document.getElementById('posteTresorerie').value,
+          typeFlux: document.getElementById('typeFlux').value,
+          fichier: fichierSelectionne,
+          lignes: Array.from(lignes).map(ligne => ({
+            compte: ligne.querySelector('.compte-input').value,
+            intitule: ligne.querySelector('.intitule-input').value,
+            debit: parseFloat(ligne.querySelector('.debit-input').value) || 0,
+            credit: parseFloat(ligne.querySelector('.credit-input').value) || 0
+          }))
+        };
 
-    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Écriture à enregistrer:', ecriture);
+        
+        // Fermer le modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalCenterCreate'));
+        modal.hide();
+        
+        // Réinitialiser le formulaire
+        document.getElementById('dateEcriture').value = '';
+        document.getElementById('journal').value = '';
+        document.getElementById('referencePiece').value = '';
+        document.getElementById('libelleEcriture').value = '';
+        document.getElementById('posteTresorerie').value = '';
+        document.getElementById('typeFlux').value = '';
+        document.getElementById('compteGeneral').value = '';
+        document.getElementById('pieceFile').value = '';
+        fichierSelectionne = null;
+        
+        // Réinitialiser le tableau
+        const tbody = document.querySelector("#lignesEcritureTable tbody");
+        tbody.innerHTML = `
+          <tr class="ligne-ecriture">
+            <td><input type="text" class="form-control compte-input" placeholder="ex: 401" required /></td>
+            <td><input type="text" class="form-control intitule-input" placeholder="Intitulé compte" readonly /></td>
+            <td><input type="number" class="form-control debit-input" placeholder="0.00" step="0.01" /></td>
+            <td><input type="number" class="form-control credit-input" placeholder="0.00" step="0.01" /></td>
+            <td><span class="type-flux-display">-</span></td>
+            <td><span class="piece-display">-</span></td>
+            <td>
+              <button type="button" class="btn btn-sm btn-danger" onclick="supprimerLigne(this)">
+                <i class="bx bx-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+        
+        alert('Écriture enregistrée avec succès!');
+      }
+
+      // Gestion de l'affichage des champs de trésorerie selon le journal
+      document.addEventListener('DOMContentLoaded', function() {
         const journalSelect = document.getElementById('journal');
         const tresorerieFields = document.getElementById('tresorerieFields');
 
         // Définir les codes des journaux qui impliquent des flux de trésorerie
-        // 'BAN' pour Banque, 'CAI' pour Caisse (à ajuster si vos codes sont différents)
         const tresorerieJournals = ['BAN', 'CAI'];
 
-        // Fonction pour gérer l'affichage/masquage
         function toggleTresorerieFields() {
-            if (journalSelect && tresorerieFields) {
-                // Vérifie si la valeur sélectionnée correspond à un journal de trésorerie
-                if (tresorerieJournals.includes(journalSelect.value)) {
-                    tresorerieFields.style.display = 'block';
-                } else {
-                    tresorerieFields.style.display = 'none';
-                    // Optionnel : Réinitialiser les champs quand ils sont masqués
-                    document.getElementById('posteTresorerie').value = '';
-                    document.getElementById('typeFlux').value = '';
-                }
+          if (journalSelect && tresorerieFields) {
+            if (tresorerieJournals.includes(journalSelect.value)) {
+              tresorerieFields.style.display = 'block';
+            } else {
+              tresorerieFields.style.display = 'none';
+              document.getElementById('posteTresorerie').value = '';
+              document.getElementById('typeFlux').value = '';
             }
+          }
         }
 
-        // 1. Écouter le changement de sélection dans le champ Journal
         if (journalSelect) {
-            journalSelect.addEventListener('change', toggleTresorerieFields);
+          journalSelect.addEventListener('change', toggleTresorerieFields);
         }
-
-        // 2. Exécuter au chargement pour le cas où le champ aurait une valeur par défaut
         toggleTresorerieFields();
-    });
+      });
+    </script>
 
-    // ... (fin de votre balise script) ...
-</script>
-</body>
-
+  </body>
 </html>

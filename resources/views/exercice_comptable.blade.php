@@ -18,7 +18,7 @@
             <div class="layout-page">
                 <!-- Navbar -->
 
-                @include('components.header')
+                @include('components.header', ['page_title' => 'EXERCICE <span class="text-gradient">COMPTABLE</span>'])
 
                 <!-- / Navbar -->
 
