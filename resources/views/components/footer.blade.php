@@ -46,6 +46,14 @@
                 // Rafraîchir le selectpicker après que le modal soit complètement visible
                 modal.addEventListener('shown.bs.modal', function () {
                     $('.selectpicker').selectpicker('refresh');
+
+                    // Pré-sélectionner l'exercice actif si disponible
+                    const exerciceSelect = $('#exercice_id');
+                    const exerciceActifId = exerciceSelect.data('exercice-actif');
+                    if (exerciceActifId) {
+                        exerciceSelect.val(exerciceActifId);
+                        exerciceSelect.selectpicker('refresh');
+                    }
                 });
             }
         } else {

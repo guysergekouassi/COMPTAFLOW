@@ -92,8 +92,8 @@
                                     <h5 class="text-xl font-semibold text-gray-900 mb-1">Comptes Comptabilités</h5>
                                     <p class="text-gray-600 text-sm">Gérez vos comptes d'entreprise</p>
                                 </div>
-                                <button type="button" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:shadow-lg" data-bs-toggle="modal" data-bs-target="#modalCreateComptaAccount">
-                                    <i class="fa-solid fa-plus mr-2"></i>Créer un Compte
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateComptaAccount">
+                                    <i class="fa-solid fa-plus me-2"></i>Créer un Compte
                                 </button>
                             </div>
                             <div class="overflow-x-auto">
@@ -131,6 +131,9 @@
                                                 </td>
                                                 <td class="py-4 px-4">
                                                     <div class="flex items-center space-x-2">
+                                                        <a href="{{ route('compta.switch', $comptaAccount->id) }}" class="text-purple-600 hover:text-purple-800 p-1 rounded-lg hover:bg-purple-50 transition-colors duration-200" title="Accéder au compte">
+                                                            <i class="fa-solid fa-sign-in-alt"></i>
+                                                        </a>
                                                         <button class="text-blue-600 hover:text-blue-800 p-1 rounded-lg hover:bg-blue-50 transition-colors duration-200" title="Détails">
                                                             <i class="fa-solid fa-eye"></i>
                                                         </button>
