@@ -92,6 +92,7 @@
                                                 <th>Activité</th>
                                                 <th>Ville</th>
                                                 <th>Statut</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody class="table-border-bottom-0">
@@ -111,10 +112,28 @@
                                                             <span class="badge bg-label-danger me-1">Inactif</span>
                                                         @endif
                                                     </td>
+                                                    <td>
+                                                        <div class="dropdown">
+                                                            <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                                                <i class="bx bx-dots-vertical-rounded"></i>
+                                                            </button>
+                                                            <div class="dropdown-menu">
+                                                                <a class="dropdown-item" href="{{ route('compta_accounts.index') }}">
+                                                                    <i class="bx bx-show me-1"></i> Détails
+                                                                </a>
+                                                                <a class="dropdown-item" href="{{ route('compta_accounts.index') }}">
+                                                                    <i class="bx bx-edit-alt me-1"></i> Éditer
+                                                                </a>
+                                                                <a class="dropdown-item text-danger" href="#" onclick="confirmDelete({{ $comptaAccount->id }})">
+                                                                    <i class="bx bx-trash me-1"></i> Supprimer
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="5" class="text-center">Aucun compte comptabilité trouvé.</td>
+                                                    <td colspan="6" class="text-center">Aucun compte comptabilité trouvé.</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
@@ -347,6 +366,27 @@
                     }
                 });
             });
+
+            // Function for delete confirmation
+            window.confirmDelete = function(id) {
+                if (confirm('Êtes-vous sûr de vouloir supprimer ce compte ?')) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/compta-accounts/${id}`;
+                    const csrf = document.createElement('input');
+                    csrf.type = 'hidden';
+                    csrf.name = '_token';
+                    csrf.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    form.appendChild(csrf);
+                    const method = document.createElement('input');
+                    method.type = 'hidden';
+                    method.name = '_method';
+                    method.value = 'DELETE';
+                    form.appendChild(method);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            };
         });
     </script>
 </body>

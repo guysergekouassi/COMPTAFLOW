@@ -76,7 +76,7 @@ class ComptaAccountController extends Controller
             Company::create($validatedData);
             DB::commit();
 
-            return redirect()->route('compta_accounts.index')->with('success', 'Le compte comptabilité a été créé avec succès.');
+            return redirect()->route('admin.dashboard')->with('success', 'Le compte comptabilité a été créé avec succès.');
         } catch (\Exception $e) {
             DB::rollBack();
             // Ajouter un log d'erreur si nécessaire pour le debug
@@ -140,6 +140,6 @@ class ComptaAccountController extends Controller
         // 1. Suppression
         $company->delete();
 
-        return redirect()->route('compta_accounts.index')->with('success', "Le compte comptabilité '{$companyName}' a été supprimé.");
+        return redirect()->route('admin.dashboard')->with('success', "Le compte comptabilité '{$companyName}' a été supprimé.");
     }
 }
