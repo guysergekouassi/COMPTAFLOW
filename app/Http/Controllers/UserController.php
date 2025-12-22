@@ -43,6 +43,7 @@ class UserController extends Controller
         'gestion_stocks',
         'grand_livre_tiers',
         'poste',
+        'Balance_Tiers',
 
 
 
@@ -114,9 +115,13 @@ class UserController extends Controller
 
 public function stat_online()
     {
+
+        $authUser = auth()->user();
         $allHabilitations = $this->allHabilitations;
         $user = Auth::user();
         $userCompanyId = $user->company_id;
+
+        $currentContextId = session('current_company_id', $authUser->company_id);
 
         // 1. Déterminer la liste des IDs de TOUTES les compagnies gérées (mère + enfants)
         // Ceci inclut la compagnie principale de l'Admin ET toutes les sous-compagnies qu'il a créées.
@@ -129,28 +134,36 @@ public function stat_online()
         // 2. Récupérer les objets Company pour le sélecteur dans la vue (la liste des comptabilités)
         $managedCompanies = Company::whereIn('id', $managedCompanyIds)->get();
 
+        $filteredUsers = User::with('company')
+        ->where('company_id', $currentContextId) // C'est ici que la magie opère
+        ->where('id', '!=', $authUser->id)
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-         $users = User::with('company')
-                    ->whereIn('company_id', $managedCompanyIds)
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+
+        //  $users = User::with('company')
+        //             ->whereIn('company_id', $managedCompanyIds)
+        //             ->where('id', '!=', $authUser->id)
+        //             ->orderBy('created_at', 'desc')
+        //             ->get();
 
         // 3. Récupérer TOUS les utilisateurs de CES compagnies gérées pour les tableaux
         // C'est ici que l'utilisateur nouvellement créé est inclus.
-        $allUsers = User::with('company')
-            ->whereIn('company_id', $managedCompanyIds)
-            ->get();
+        // $allUsers = User::with('company')
+        //     ->where('company_id', $managedCompanyIds)
+        //     ->where('id', '!=', $authUser->id)
+        //     ->get();
 
         // 4. Filtrer les collections pour les Admins et les Comptables
-        $adminUsers =$allUsers->where('role', 'admin');
-        $comptableUsers = $allUsers->where('role', 'comptable');
+        $adminUsers =$filteredUsers->where('role', 'admin');
+        $comptableUsers = $filteredUsers->where('role', 'comptable');
 
         // 5. Récupérer les habilitations de l'utilisateur connecté
         $habilitations = $user->habilitations ?? [];
 
         // 6. Statistiques :
-        $totalUsers = $allUsers->count();
-        $connectedUsers = $allUsers->where('is_online', true)->count();
+        $totalUsers = $filteredUsers->count();
+        $connectedUsers = $filteredUsers->where('is_online', true)->count();
         $offlineUsers = $totalUsers - $connectedUsers;
         // La variable $companies = Company::all(); est retirée car $managedCompanies est la source correcte.
 
@@ -160,9 +173,9 @@ public function stat_online()
         // 7. Retourner la vue en passant toutes les variables nécessaires.
         return view('user_management', [
             // Variables principales de la vue :
-            'users' => $allUsers,
+            'users' => $filteredUsers,
             'totalUsers' => $totalUsers,
-            'user' => $users,
+            // 'user' => $users,
             'connectedUsers' => $connectedUsers,
             'offlineUsers' => $offlineUsers,
             'habilitations' => $habilitations,

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Traits\ManagesCompany;
 use Carbon\Carbon;
 use App\Models\EcritureComptable;
+use App\Models\CompteTresorerie;
 
 use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -73,7 +74,14 @@ class TresorerieController extends Controller
                 ->get();
         }
 
-        return compact('tresoreries', 'comptesCinq');
+        // Récupération des comptes de trésorerie
+        if ($companyIdsToView->isEmpty()) {
+             $comptesTresorerie = collect();
+        } else {
+             $comptesTresorerie = CompteTresorerie::whereIn('company_id', $companyIdsToView->toArray())->get();
+        }
+
+        return compact('tresoreries', 'comptesCinq', 'comptesTresorerie');
     }
 
 
@@ -102,24 +110,23 @@ public function generateCashFlowPlan(Request $request)
 
     // Récupérer les données calculées
     // CORRECTION APPORTÉE ICI : Ajout de l'objet $request
-    list($cashFlowData, $totals) = $this->getCashFlowCalculation($companyId, $request);
+    // list($cashFlowData, $totals) = $this->getCashFlowCalculation($companyId, $request);
     // --------------------------------------------------------------------------
 
     // Récupérer les données de base pour la vue (liste des journaux)
     $baseData = $this->getBaseTreasuryData();
 
     // Fusionner avec les données du rapport
-    $reportData = [
-        'cashFlowData' => $cashFlowData,
-        'cashFlowTotals' => $totals,
-        'reportGenerated' => true, // Indicateur pour afficher la section du rapport
-        // Optionnel : ajouter les dates pour les afficher dans la vue
-        'startDate' => $request->input('start_date'),
-        'endDate' => $request->input('end_date'),
-    ];
+    // $reportData = [
+    //     'cashFlowData' => $cashFlowData,
+    //     'cashFlowTotals' => $totals,
+    //     'reportGenerated' => true,
+    //     'startDate' => $request->input('start_date'),
+    //     'endDate' => $request->input('end_date'),
+    // ];
 
     // Retourner la vue unique avec toutes les données
-    return view('Tresor.journaltresorerie', array_merge($baseData, $reportData));
+    return view('Tresor.journaltresorerie', array_merge($baseData, ));
 }
 
     public function create()
@@ -152,6 +159,8 @@ public function generateCashFlowPlan(Request $request)
             'traitement_analytique' => 'nullable|in:oui,non',
             'compte_de_contrepartie' => 'required|exists:plan_comptables,numero_de_compte',
             'rapprochement_sur' => 'nullable|in:automatique,manuel',
+            'poste_tresorerie' => 'nullable|string',
+            'type_flux' => 'nullable|string',
         ]);
 
         $user = Auth::user();
@@ -212,6 +221,8 @@ public function generateCashFlowPlan(Request $request)
             'traitement_analytique' => 'nullable|in:oui,non',
             'compte_de_contrepartie' => 'required|exists:plan_comptables,numero_de_compte',
             'rapprochement_sur' => 'nullable|in:automatique,manuel',
+            'poste_tresorerie' => 'nullable|string',
+            'type_flux' => 'nullable|string',
         ]);
 
         // $user = Auth::user();

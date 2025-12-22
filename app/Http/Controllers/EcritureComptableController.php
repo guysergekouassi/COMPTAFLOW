@@ -33,15 +33,13 @@ class EcritureComptableController extends Controller
 
 
         $plansTiers = PlanTiers::where('company_id', $user->company_id)
-            ->select('id', 'numero_de_tiers', 'intitule')
+            ->select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+            ->with('compte')
             ->orderByRaw("LEFT(numero_de_tiers, 1) ASC")
             ->orderBy('numero_de_tiers', 'asc')
             ->get();
 
-            // Récupération des postes de trésorerie
-        //  $comptesTresorerie = CompteTresorerie::where('company_id', $user->company_id)
-        // ->select('id', 'name', 'type')
-        // ->get();
+          
         $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
         ->orderBy('name', 'asc')
         ->get();

@@ -1,152 +1,162 @@
-// 🔁 Réinitialise le formulaire de création quand le modal se ferme
-const modalCreate = document.getElementById("modalCenterCreate");
-modalCreate?.addEventListener("hidden.bs.modal", function () {
-    const form = modalCreate.querySelector("form");
-    if (form) {
-        form.reset();
-        form.querySelectorAll(".is-invalid").forEach((el) => {
-            el.classList.remove("is-invalid");
+/**
+ * Plan Tiers JS - Gestion complète sans jQuery
+ */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // --- 1. RÉCUPÉRATION AUTOMATIQUE DU NUMÉRO DE TIERS ---
+    const compteGeneralSelect = document.getElementById("compte_general");
+    const numeroTiersInput = document.getElementById("numero_de_tiers");
+
+    if (compteGeneralSelect && numeroTiersInput) {
+        compteGeneralSelect.addEventListener("change", function () {
+            // On récupère le texte de l'option sélectionnée (ex: "40110000 - FOURNISSEURS")
+            const selectedOption = this.options[this.selectedIndex];
+            if (!selectedOption.value) return;
+
+            const numeroCompte = selectedOption.text.split(' - ')[0]; // On extrait "40110000"
+
+            // Appel API pour obtenir le prochain numéro disponible
+            fetch(`/get-dernier-numero/${numeroCompte}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Erreur réseau');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.numero) {
+                        numeroTiersInput.value = data.numero;
+                    }
+                })
+                .catch(error => {
+                    console.error("Erreur lors de la récupération du numéro:", error);
+                });
         });
     }
-});
 
-// Gère le formulaire de mise à jour
-document.addEventListener("DOMContentLoaded", function () {
+    // --- 2. GESTION DU MODAL DE CRÉATION (Réinitialisation) ---
+    const modalCreate = document.getElementById("modalCenterCreate");
+    if (modalCreate) {
+        modalCreate.addEventListener("hidden.bs.modal", function () {
+            const form = modalCreate.querySelector("form");
+            if (form) {
+                form.reset();
+                form.querySelectorAll(".is-invalid").forEach((el) => {
+                    el.classList.remove("is-invalid");
+                });
+            }
+        });
+    }
+
+    // --- 3. GESTION DU MODAL DE MISE À JOUR (Remplissage) ---
     const updateModal = document.getElementById("modalCenterUpdate");
     const updateForm = document.getElementById("updateTiersForm");
 
-    // Quand le modal s'ouvre, remplir les champs avec les données
-    updateModal.addEventListener("show.bs.modal", function (event) {
-        const button = event.relatedTarget;
+    if (updateModal && updateForm) {
+        updateModal.addEventListener("show.bs.modal", function (event) {
+            const button = event.relatedTarget; // Bouton qui a ouvert le modal
 
-        const id = button.getAttribute("data-id");
-        const numero = button.getAttribute("data-numero");
-        const intitule = button.getAttribute("data-intitule");
-        const type = button.getAttribute("data-type");
-        const compte = button.getAttribute("data-compte");
+            // Extraction des données des attributs data-
+            const id = button.getAttribute("data-id");
+            const numero = button.getAttribute("data-numero");
+            const intitule = button.getAttribute("data-intitule");
+            const type = button.getAttribute("data-type");
+            const compte = button.getAttribute("data-compte");
 
-        document.getElementById("update_id").value = id;
-        document.getElementById("update_numero").value = numero;
-        document.getElementById("update_intitule").value = intitule;
-        document.getElementById("update_type_de_tiers").value = type;
-        document.getElementById("update_compte").value = compte;
-        // console.log(compte);
+            // Remplissage des champs
+            document.getElementById("update_id").value = id;
+            document.getElementById("update_numero").value = numero;
+            document.getElementById("update_intitule").value = intitule;
+            document.getElementById("update_type_de_tiers").value = type;
+            document.getElementById("update_compte").value = compte;
 
-        // Mise à jour de l'action du formulaire
+            // Mise à jour de l'URL d'action (plan_tiersUpdateBaseUrl est défini dans le Blade)
+            if (typeof plan_tiersUpdateBaseUrl !== 'undefined') {
+                updateForm.action = plan_tiersUpdateBaseUrl.replace('__ID__', id);
+            }
+        });
 
-        const updateUrl = plan_tiersUpdateBaseUrl.replace('__ID__', id);
-        updateForm.action = updateUrl;
+        // Validation simple avant envoi
+        updateForm.addEventListener("submit", function (e) {
+            const fields = ["update_numero", "update_intitule", "update_type_de_tiers", "update_compte"];
+            let isValid = true;
 
-        // updateForm.action = `/plan_tiers/${id}`;
-    });
+            fields.forEach(fieldId => {
+                const el = document.getElementById(fieldId);
+                if (!el.value.trim()) {
+                    el.classList.add("is-invalid");
+                    isValid = false;
+                } else {
+                    el.classList.remove("is-invalid");
+                }
+            });
 
-    // Validation JS avant l'envoi du formulaire
-    updateForm.addEventListener("submit", function (e) {
-        const numero = document.getElementById("update_numero").value.trim();
-        const intitule = document
-            .getElementById("update_intitule")
-            .value.trim();
-        const type = document.getElementById("update_type_de_tiers").value;
-        const compte = document.getElementById("update_compte").value;
+            if (!isValid) e.preventDefault();
+        });
+    }
 
-        if (!numero || !intitule || !type || !compte) {
-            e.preventDefault();
-        }
-    });
-
-    //Réinitialisation du formulaire à la fermeture du modal
-    updateModal.addEventListener("hidden.bs.modal", function () {
-        updateForm.reset();
-    });
-});
-
-// suppression
-
-document.addEventListener("DOMContentLoaded", function () {
+    // --- 4. GESTION DE LA SUPPRESSION ---
     const deleteModal = document.getElementById("deleteConfirmationModalTiers");
     const planNameDisplay = document.getElementById("planToDeleteNameTiers");
     const deleteForm = document.getElementById("deletePlanFormTiers");
 
-    deleteModal.addEventListener("show.bs.modal", function (event) {
-        const button = event.relatedTarget;
-        const tierId = button.getAttribute("data-id");
-        const tierName = button.getAttribute("data-name");
+    if (deleteModal && deleteForm) {
+        deleteModal.addEventListener("show.bs.modal", function (event) {
+            const button = event.relatedTarget;
+            const tierId = button.getAttribute("data-id");
+            const tierName = button.getAttribute("data-name");
 
-        // Met à jour le texte affiché
-        planNameDisplay.textContent = tierName;
+            if (planNameDisplay) planNameDisplay.textContent = tierName;
 
-        // Met à jour l’action du formulaire
+            if (typeof plan_tiersDeleteUrl !== 'undefined') {
+                deleteForm.action = plan_tiersDeleteUrl.replace('__ID__', tierId);
+            }
+        });
+    }
 
-        const DeleteUrl = plan_tiersDeleteUrl.replace('__ID__', tierId);
-        deleteForm.action = DeleteUrl;
-
-        // deleteForm.action = `/plan_tiers/${tierId}`;
-    });
-});
-
-// filtre
-
-document.addEventListener("DOMContentLoaded", function () {
+    // --- 5. SYSTÈME DE FILTRES ---
     const applyBtn = document.getElementById("apply-filters");
     const resetBtn = document.getElementById("reset-filters");
-
-    const intituleInput = document.getElementById("filter-intitule");
-    const typeInput = document.getElementById("filter-type");
-
     const rows = document.querySelectorAll("#tiersTable tbody tr");
 
-    applyBtn.addEventListener("click", function () {
-        const intituleVal = intituleInput.value.toLowerCase().trim();
-        const typeVal = typeInput.value.toLowerCase().trim();
+    if (applyBtn && resetBtn) {
+        applyBtn.addEventListener("click", function () {
+            const intituleVal = document.getElementById("filter-intitule").value.toLowerCase().trim();
+            const typeVal = document.getElementById("filter-type").value.toLowerCase().trim();
 
-        rows.forEach((row) => {
-            const [_, intituleCell, typeCell] = row.querySelectorAll("td");
+            rows.forEach((row) => {
+                // On suppose : Col 0: Numéro, Col 1: Intitulé, Col 2: Type
+                const cells = row.querySelectorAll("td");
+                if (cells.length < 3) return;
 
-            const matchIntitule = intituleCell.textContent
-                .toLowerCase()
-                .includes(intituleVal);
-            const matchType = typeCell.textContent
-                .toLowerCase()
-                .includes(typeVal);
+                const txtIntitule = cells[1].textContent.toLowerCase();
+                const txtType = cells[2].textContent.toLowerCase();
 
-            row.style.display = matchIntitule && matchType ? "" : "none";
+                const matches = txtIntitule.includes(intituleVal) && txtType.includes(typeVal);
+                row.style.display = matches ? "" : "none";
+            });
         });
-    });
 
-    resetBtn.addEventListener("click", function () {
-        intituleInput.value = "";
-        typeInput.value = "";
+        resetBtn.addEventListener("click", function () {
+            document.getElementById("filter-intitule").value = "";
+            document.getElementById("filter-type").value = "";
+            rows.forEach(row => row.style.display = "");
+        });
+    }
 
-        rows.forEach((row) => (row.style.display = ""));
-    });
-});
-
-// envoi données
-document.addEventListener("DOMContentLoaded", function () {
-    const buttons = document.querySelectorAll(".donnees-plan-tiers");
-
-    buttons.forEach((button) => {
-        button.addEventListener("click", () => {
-
-            // console.log("URL générée :", plan_tiers_ecrituresSaisisUrl);
-
+    // --- 6. REDIRECTION VERS ÉCRITURES ---
+    const actionButtons = document.querySelectorAll(".donnees-plan-tiers");
+    actionButtons.forEach((button) => {
+        button.addEventListener("click", function() {
             const params = {
-                id_plan_tiers: button.getAttribute("data-id"),
-                intitule: button.getAttribute("data-intitule"),
-                numero_de_tiers: button.getAttribute("data-numero_de_tiers"),
+                id_plan_tiers: this.getAttribute("data-id"),
+                intitule: this.getAttribute("data-intitule"),
+                numero_de_tiers: this.getAttribute("data-numero_de_tiers"),
             };
 
-            // // Affichage propre des données dans une alerte
-            // let message = "Données récupérées :\n";
-            // for (const [key, value] of Object.entries(params)) {
-            //     message += `${key} : ${value}\n`;
-            // }
-
-            // alert(message);
-
-            // Pour redirection plus tard
-            const queryString = new URLSearchParams(params).toString();
-            window.location.href = plan_tiers_ecrituresSaisisUrl + "?" + queryString;
+            if (typeof plan_tiers_ecrituresSaisisUrl !== 'undefined') {
+                const queryString = new URLSearchParams(params).toString();
+                window.location.href = plan_tiers_ecrituresSaisisUrl + "?" + queryString;
+            }
         });
     });
 });

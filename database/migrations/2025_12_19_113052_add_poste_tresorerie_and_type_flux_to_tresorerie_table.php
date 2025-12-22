@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-       if (!Schema::hasColumn('ecriture_comptables', 'type_flux')) {
-        Schema::table('ecriture_comptables', function (Blueprint $table) {
-            $table->enum('type_flux', ['debit', 'credit'])->null()->after('compte_tresorerie_id');
+        Schema::table('tresorerie', function (Blueprint $table) {
+            $table->string('poste_tresorerie')->nullable()->after('rapprochement_sur');
+            $table->string('type_flux')->nullable()->after('poste_tresorerie');
         });
-    }
     }
 
     /**
@@ -23,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('ecriture_comptables', function (Blueprint $table) {
-            $table->dropColumn('type_flux');
+        Schema::table('tresorerie', function (Blueprint $table) {
+            $table->dropColumn(['poste_tresorerie', 'type_flux']);
         });
     }
 };

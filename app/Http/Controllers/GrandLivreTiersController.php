@@ -32,83 +32,7 @@ class GrandLivreTiersController extends Controller
         return view('accounting_ledger_tiers', compact('PlanTiers', 'grandLivre'));
     }
 
-    // public function generateGrandLivre(Request $request)
-    // {
-    //     try {
-    //         $request->validate([
-    //             'date_debut' => 'required|date',
-    //             'date_fin' => 'required|date|after_or_equal:date_debut',
-    //             'plan_tiers_id_1' => 'required|exists:plan_tiers,id',
-    //             'plan_tiers_id_2' => 'required|exists:plan_tiers,id',
-    //         ]);
-
-    //         $user = Auth::user();
-
-    //         $compte1 = PlanTiers::findOrFail($request->plan_tiers_id_1);
-    //         $compte2 = PlanTiers::findOrFail($request->plan_tiers_id_2);
-
-    //         $min = min($compte1->numero_de_tiers, $compte2->numero_de_tiers);
-    //         $max = max($compte1->numero_de_tiers, $compte2->numero_de_tiers);
-
-    //         $comptesIds = PlanTiers::where('company_id', $user->company_id)
-    //             ->whereBetween('numero_de_tiers', [$min, $max])
-    //             ->pluck('id');
-
-    //         $ecritures = EcritureComptable::with([
-    //             'PlanTiers',
-    //             'planTiers',
-    //             'codeJournal',
-    //             'JournauxSaisis',
-    //             'ExerciceComptable',
-    //             'user',
-    //             'company'
-    //         ])
-    //             ->where('company_id', $user->company_id)
-    //             ->whereIn('plan_tiers_id', $comptesIds)
-    //             ->whereBetween('date', [$request->date_debut, $request->date_fin])
-    //             ->get();
-
-    //         $count = $ecritures->count();
-    //         if ($count === 0) {
-    //             return back()->with('error', 'Aucune écriture trouvée pour cette période.');
-    //         }
-
-    //         $filename = 'grand_livre_tiers_' . $compte1->numero_de_tiers . '_' . $compte2->numero_de_tiers . '_' . now()->format('YmdHis') . '.pdf';
-
-    //         $titre = "Grand-livre des Tiers";
-
-    //         $pdf = app('dompdf.wrapper');
-    //         $pdf->loadView('grand_livre', [
-    //             'company_name' => $user->company->company_name ?? 'Non défini',
-    //             'ecritures' => $ecritures,
-    //             'date_debut' => $request->date_debut,
-    //             'date_fin' => $request->date_fin,
-    //             'compte' => $compte1->numero_de_tiers,
-    //             'compte_2' => $compte2->numero_de_tiers,
-    //             'user' => $user,
-    //             'titre' => $titre,
-    //         ]);
-
-
-    //         $pdf->save(public_path('grand_livres_tiers/' . $filename));
-
-
-    //         GrandLivreTiers::create([
-    //             'date_debut' => $request->date_debut,
-    //             'date_fin' => $request->date_fin,
-    //             'plan_tiers_id_1' => $request->plan_tiers_id_1,
-    //             'plan_tiers_id_2' => $request->plan_tiers_id_2,
-    //             'grand_livre_tiers' => $filename,
-    //             'user_id' => $user->id,
-    //             'company_id' => $user->company_id,
-    //         ]);
-
-    //         return back()->with('success', "PDF Grand Livre des Tiers généré avec succès ! ($count écritures)");
-    //     } catch (\Exception $e) {
-    //         Log::error('Erreur lors de la génération du grand livre des Tiers : ' . $e->getMessage());
-    //         return back()->with('error', 'Une erreur est survenue lors de la génération du grand livre des Tiers.' . $e->getMessage());
-    //     }
-    // }
+    
 
 
     public function generateGrandLivre(Request $request)
@@ -201,7 +125,7 @@ class GrandLivreTiersController extends Controller
             $titre = "Grand-livre des Tiers";
 
             $pdf = app('dompdf.wrapper');
-            $pdf->loadView('grand_livre', [ 
+            $pdf->loadView('grand_livre', [
                 'company_name' => $user->company->company_name ?? 'Non défini',
                 'ecritures' => $ecritures,
                 'date_debut' => $request->date_debut,

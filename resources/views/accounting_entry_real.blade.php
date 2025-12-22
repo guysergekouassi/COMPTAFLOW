@@ -423,8 +423,7 @@
                                                         <label for="date" class="form-label">Date</label>
                                                         <input type="date" id="date" name="date"
                                                             class="form-control" required min="{{ $dateDebut }}"
-                                                            max="{{ $dateFin }}" {{-- min="{{ $exercice->date_debut }}"
-                                                            max="{{ $exercice->date_fin }}"  --}} />
+                                                            max="{{ $dateFin }}" value="{{ now()->format('Y-m-d') }}" />
 
 
                                                         <input type="hidden" id="date_debut_exercice"
@@ -476,6 +475,24 @@
                                                         <input type="text" id="reference_piece"
                                                             name="reference_piece" class="form-control"
                                                             placeholder="FAC001, RECU045..." />
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label for="plan_tiers_select" class="form-label">Plan Tiers</label>
+                                                        <select id="plan_tiers_select" class="form-control">
+                                                            <option value="">Sélectionner un tiers</option>
+                                                            @foreach ($plansTiers as $plantiers)
+                                                                <option value="{{ $plantiers->id }}" data-intitule="{{ $plantiers->intitule }}" data-numero="{{ $plantiers->numero_de_tiers }}" data-compte-general="{{ $plantiers->compte->id ?? '' }}">
+                                                                    {{ $plantiers->numero_de_tiers }} - {{ $plantiers->intitule }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                        <div class="form-check mt-2">
+                                                            <input class="form-check-input" type="checkbox" id="auto_add_entry">
+                                                            <label class="form-check-label" for="auto_add_entry">
+                                                                Auto-ajouter à la liste
+                                                            </label>
+                                                        </div>
                                                     </div>
 
                                                     <input type="hidden" name="exercices_comptables_id"
@@ -572,36 +589,7 @@
 
 
 
-                                                                  <div class="col-md-3">
-                                                                        <label for="compteTresorerieField" class="form-label">Poste de tresorerie</label>
-                                                                        {{-- Changement : Utiliser un ID simple pour JS --}}
-                                                                        <select id="compteTresorerieField"
-                                                                                {{-- Enlever le name pour éviter les soumissions classiques. L'envoi se fera par JS --}}
-                                                                                class="selectpicker w-100"
-                                                                                data-live-search="true">
-                                                                            <option value="">(Pas un flux spécifique)</option>
 
-                                                                            @foreach($comptesTresorerie as $compteTresorerie)
-                                                                                <option value="{{ $compteTresorerie->id }}" data-subtext="{{ $compteTresorerie->type }}">
-                                                                                    {{ $compteTresorerie->name }}
-                                                                                </option>
-                                                                            @endforeach
-                                                                        </select>
-                                                                        <div class="invalid-feedback">Veuillez sélectionner une option.</div>
-                                                                    </div>
-
-                                                      <div class="col-md-3">
-                                                        <label for="typeFluxField" class="form-label">Type de Flux de tresorerie</label>
-                                                        {{-- ID simplifié pour être lu par JS. Le 'name' est retiré. --}}
-                                                        <select id="typeFluxField"
-                                                                class="selectpicker w-100"
-                                                                data-live-search="false"
-                                                                required>
-                                                            <option value="decaissement">Décaissement (Débit)</option>
-                                                            <option value="encaissement">Encaissement (Crédit)</option>
-                                                        </select>
-                                                        <div class="invalid-feedback">Veuillez sélectionner une option.</div>
-                                                    </div>
 
 
 
@@ -833,6 +821,41 @@
         <script>
             $(document).ready(function() {
                 $('.selectpicker').selectpicker();
+
+                const planTiersSelect = document.getElementById('plan_tiers_select');
+                const descriptionOperation = document.getElementById('description_operation');
+                const compteTiers = document.getElementById('compte_tiers');
+                const autoAddEntry = document.getElementById('auto_add_entry');
+
+                planTiersSelect.addEventListener('change', function() {
+                    const selectedOption = planTiersSelect.options[planTiersSelect.selectedIndex];
+                    const intitule = selectedOption.getAttribute('data-intitule');
+                    const numero = selectedOption.getAttribute('data-numero');
+                    const compteGeneral = selectedOption.getAttribute('data-compte-general');
+
+                    if (intitule) {
+                        descriptionOperation.value = intitule;
+                    }
+
+                    if (compteGeneral) {
+                        $('#compte_general').selectpicker('val', compteGeneral);
+                    }
+
+                    if (numero && compteTiers) {
+                        // Set the compte_tiers select to the selected value
+                        $('#compte_tiers').selectpicker('val', selectedOption.value);
+                        // Show the compte_tiers_wrapper if hidden
+                        document.getElementById('compte_tiers_wrapper').style.display = 'block';
+                    }
+
+                    // If auto-add is checked, add to list
+                    if (autoAddEntry.checked) {
+                        // Delay to allow fields to fill
+                        setTimeout(() => {
+                            ajouterEcriture();
+                        }, 100);
+                    }
+                });
             });
         </script>
 
