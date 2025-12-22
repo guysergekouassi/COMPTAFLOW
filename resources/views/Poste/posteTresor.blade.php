@@ -174,9 +174,9 @@
 
                         <!-- En-tête -->
                         <div class="mb-12">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="w-2.5 h-2.5 bg-blue-700 rounded-full shadow-[0_0_10px_rgba(29,78,216,0.3)]"></div>
-                                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
+                            <div class="flex items-center gap-3 mb-2 flex-nowrap">
+                                <div class="w-2.5 h-2.5 bg-blue-700 rounded-full shadow-[0_0_10px_rgba(29,78,216,0.3)] shrink-0"></div>
+                                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
                                     Poste de <span class="text-blue-gradient">Trésorerie</span>
                                 </h1>
                             </div>

@@ -15,10 +15,13 @@
                         <label for="exercice_id" class="form-label">Exercice</label>
                         <select class="selectpicker w-100" data-live-search="false" id="exercice_id" name="exercice_id"
                             required>
-                            <option value="" disabled selected hidden>-- Sélectionnez un exercice --</option>
+                            <option value="" disabled {{ isset($exerciceActif) ? '' : 'selected' }} hidden>
+                                {{ isset($exerciceActif) ? '-- Sélectionnez un exercice --' : 'Aucun exercice actif trouvé' }}
+                            </option>
                             @foreach ($exercices as $exercice)
                                 <option value="{{ $exercice->id }}"
-                                    data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}">
+                                    data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}"
+                                    {{ isset($exerciceActif) && $exerciceActif->id == $exercice->id ? 'selected' : '' }}>
                                     {{ $exercice->intitule }}
                                 </option>
                             @endforeach

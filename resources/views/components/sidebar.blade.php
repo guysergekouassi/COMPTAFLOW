@@ -260,6 +260,8 @@
     // Vérifie si un compte comptable est actif
     $isComptaAccountActive = session('plan_comptable', true) && session('current_compta_account_id', true);
 
+    $show_all = $user->isAdmin() && !$user->isSuperAdmin();
+
     $exercices = ExerciceComptable::where('company_id', $currentCompanyId)->orderBy('date_debut', 'desc')->get();
     $journaux = JournalSaisi::with('codeJournal')
         ->where('company_id', $currentCompanyId)
@@ -327,37 +329,37 @@ if ($user->role === 'super_admin') {
             {{-- Section Paramétrage --}}
             @php
                 $parametrage_permissions = ['plan_comptable', 'plan_tiers', 'accounting_journals', 'indextresorerie','postetresorerie.index'];
-                $show_parametrage_header = count(array_intersect($parametrage_permissions, $habilitations)) > 0;
+                $show_parametrage_header = $show_all || count(array_intersect($parametrage_permissions, $habilitations)) > 0;
             @endphp
 
             @if ($show_parametrage_header)
             <div class="menu-section">
                 <div class="menu-section-header">Paramétrage</div>
-                @if(in_array('plan_comptable', $habilitations))
+                @if($show_all || in_array('plan_comptable', $habilitations))
                 <a href="{{ route('plan_comptable') }}" class="menu-link-new {{ request()->routeIs('plan_comptable*') ? 'active' : '' }}">
                     <i class="fa-solid fa-book"></i>
                     <span>Plan comptable</span>
                 </a>
                 @endif
-                @if(in_array('plan_tiers', $habilitations))
+                @if($show_all || in_array('plan_tiers', $habilitations))
                 <a href="{{ route('plan_tiers') }}" class="menu-link-new {{ request()->routeIs('plan_tiers*') ? 'active' : '' }}">
                     <i class="fa-solid fa-users"></i>
                     <span>Plan tiers</span>
                 </a>
                 @endif
-                @if(in_array('journaux', $habilitations))
+                @if($show_all || in_array('journaux', $habilitations))
                 <a href="{{ route('accounting_journals') }}" class="menu-link-new {{ request()->routeIs('accounting_journals') ? 'active' : '' }}">
                     <i class="fa-solid fa-book-open"></i>
                     <span>Journaux</span>
                 </a>
                 @endif
-                @if(in_array('tresorerie', $habilitations))
+                @if($show_all || in_array('tresorerie', $habilitations))
                 <a href="{{ route('indextresorerie') }}" class="menu-link-new {{ request()->routeIs('indextresorerie') ? 'active' : '' }}">
                     <i class="fa-solid fa-money-bill-wave"></i>
                     <span>Journal Trésorerie</span>
                 </a>
                 @endif
-                @if(in_array('tresorerie', $habilitations))
+                @if($show_all || in_array('tresorerie', $habilitations))
                 <a href="{{ route('postetresorerie.index') }}" class="menu-link-new {{ request()->routeIs('postetresorerie.index') ? 'active' : '' }}">
                     <i class="fa-solid fa-wallet"></i>
                     <span>Poste Trésorerie</span>
@@ -373,27 +375,27 @@ if ($user->role === 'super_admin') {
                     'gestion_comptes', 'gestion_tiers', 'gestion_analytique', 'gestion_immobilisations',
                     'gestion_stocks', 'gestion_reportings'
                 ];
-                $show_traitement_header = count(array_intersect($traitement_permissions, $habilitations)) > 0;
+                $show_traitement_header = $show_all || count(array_intersect($traitement_permissions, $habilitations)) > 0;
             @endphp
 
             @if ($show_traitement_header)
             <div class="menu-section">
                 <div class="menu-section-header">Traitement</div>
-                @if(in_array('modal_saisie_direct', $habilitations))
+                @if($show_all || in_array('modal_saisie_direct', $habilitations))
                 <a href="{{ route('modal_saisie_direct') }}" class="menu-link-new {{ request()->routeIs('modal_saisie_direct') ? 'active' : '' }}" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal">
                     <i class="fa-solid fa-plus-circle"></i>
                     <span>Nouvelle saisie</span>
                 </a>
                 @endif
-                
+
                 <!-- Afficher le bouton Liste des écritures si l'utilisateur a modal_saisie_direct -->
-                @if(in_array('modal_saisie_direct', $habilitations))
+                @if($show_all || in_array('modal_saisie_direct', $habilitations))
                 <a href="{{ route('accounting_entry_list') }}" class="menu-link-new {{ request()->routeIs('accounting_entry_list') ? 'active' : '' }}">
                     <i class="fa-solid fa-list"></i>
                     <span>Liste des écritures</span>
                 </a>
                 @endif
-                @if(in_array('exercice_comptable', $habilitations))
+                @if($show_all || in_array('exercice_comptable', $habilitations))
                 <a href="{{ route('exercice_comptable') }}" class="menu-link-new {{ request()->routeIs('exercice_comptable') ? 'active' : '' }}">
                     <i class="fa-solid fa-calendar-alt"></i>
                     <span>Exercice comptable</span>
@@ -415,19 +417,19 @@ if ($user->role === 'super_admin') {
                     'compte_exploitation', 'flux_tresorerie', 'tableau_amortissements',
                     'etat_tiers', 'compte_resultat', 'bilan', 'etats_analytiques', 'etats_previsionnels'
                 ];
-                $show_rapports_header = count(array_intersect($rapports_permissions, $habilitations)) > 0;
+                $show_rapports_header = $show_all || count(array_intersect($rapports_permissions, $habilitations)) > 0;
             @endphp
 
             @if ($show_rapports_header)
             <div class="menu-section">
                 <div class="menu-section-header">Rapports Comptables</div>
-                @if(in_array('grand_livre', $habilitations))
+                @if($show_all || in_array('grand_livre', $habilitations))
                 <a href="{{ route('accounting_ledger') }}" class="menu-link-new {{ request()->is('accounting_ledger') ? 'active' : '' }}">
                     <i class="fa-solid fa-book-open"></i>
                     <span>Grand livre</span>
                 </a>
                 @endif
-                @if(in_array('balance', $habilitations))
+                @if($show_all || in_array('balance', $habilitations))
                 <a href="{{ route('accounting_balance') }}" class="menu-link-new {{ request()->is('accounting_balance') ? 'active' : '' }}">
                     <i class="fa-solid fa-balance-scale"></i>
                     <span>Balance</span>
@@ -435,8 +437,40 @@ if ($user->role === 'super_admin') {
                 @endif
             </div>
             @endif
+
+            {{-- Section Paramètres pour Admin --}}
+            @if (Auth::check() && Auth::user()->role === 'admin')
+            <div class="menu-section">
+                <div class="menu-section-header">Paramètres</div>
+                @if($show_all || in_array('user_management', $habilitations))
+                <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
+                    <i class="fa-solid fa-users-cog"></i>
+                    <span>Gestion des utilisateurs</span>
+                </a>
+                @endif
+                @if($show_all || in_array('compagny_information', $habilitations))
+                <a href="{{ route('compagny_information') }}" class="menu-link-new {{ request()->routeIs('compagny_information') ? 'active' : '' }}">
+                    <i class="fa-solid fa-building"></i>
+                    <span>Information de l'entreprise</span>
+                </a>
+                @endif
+            </div>
+            @endif
         @else
             {{-- Menu pour Super Admin et autres rôles sans compte comptable actif --}}
+            @if (auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin() && !session('current_compta_account_id'))
+            <div class="menu-section">
+                <div class="menu-section-header">Compta Accounts</div>
+                <a href="{{ route('compta_accounts.index') }}" class="menu-link-new {{ request()->routeIs('compta_accounts.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Créer compte-comptabilité</span>
+                </a>
+                <a href="{{ route('compta_accounts.index') }}" class="menu-link-new {{ request()->routeIs('compta_accounts.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-list"></i>
+                    <span>Liste/Modifier compte-comptabilité</span>
+                </a>
+            </div>
+            @endif
             @if (auth()->user()->isSuperAdmin())
                 <div class="menu-section">
                     <div class="menu-section-header">Paramétrage</div>
@@ -461,7 +495,7 @@ if ($user->role === 'super_admin') {
                         <span>Poste Trésorerie</span>
                     </a>
                 </div>
-                
+
                 <div class="menu-section">
                     <div class="menu-section-header">Traitement</div>
                     <a href="{{ route('modal_saisie_direct') }}" class="menu-link-new {{ request()->routeIs('modal_saisie_direct') ? 'active' : '' }}" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal">
@@ -473,7 +507,7 @@ if ($user->role === 'super_admin') {
                         <span>Exercice comptable</span>
                     </a>
                 </div>
-                
+
                 <div class="menu-section">
                     <div class="menu-section-header">Rapports Comptables</div>
                     <a href="{{ route('accounting_ledger') }}" class="menu-link-new {{ request()->is('accounting_ledger') ? 'active' : '' }}">
@@ -886,7 +920,7 @@ if ($user->role === 'super_admin') {
         </li>
         @endif
 
-      
+
 
         @if(in_array('balance', $habilitations))
         <li class="menu-item menu-rapport {{ request()->is('accounting_balance') ? 'active' : '' }}">
@@ -984,7 +1018,7 @@ if ($user->role === 'super_admin') {
             $has_parametre_access = count(array_intersect($parametre_permissions, $habilitations)) > 0;
         @endphp
 
-        @if (Auth::check() && Auth::user()->role === 'admin' && $has_parametre_access)
+        @if (Auth::check() && Auth::user()->role === 'admin')
         <li
             class="menu-item {{ request()->routeIs('user_management') || request()->routeIs('compagny_information') ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">

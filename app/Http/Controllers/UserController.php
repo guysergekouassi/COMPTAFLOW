@@ -98,7 +98,14 @@ class UserController extends Controller
                                          ->count();
 
         // Récupérer les habilitations de l'utilisateur connecté (pour le menu latéral)
-        $habilitations = $adminUser->habilitations ?? [];
+        if ($adminUser->role === 'admin') {
+            $habilitations = array_fill_keys($this->allHabilitations, true);
+        } else {
+            $habilitations = $adminUser->habilitations ?? [];
+        }
+
+        // Récupérer les comptes comptabilité de l'admin
+        $comptaAccounts = Company::where('user_id', $adminUser->id)->get();
 
         // Retourner la vue du tableau de bord avec les KPI
         return view('admin.dashboard', compact(
@@ -106,7 +113,8 @@ class UserController extends Controller
             'connectedUsers',
             'plansToday',
             'exercicesToday',
-            'habilitations'
+            'habilitations',
+            'comptaAccounts'
         ));
     }
 
