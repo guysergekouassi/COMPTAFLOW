@@ -117,7 +117,7 @@ class ComptaAccountController extends Controller
         // 2. Mise à jour
         $company->update($validatedData);
 
-        return redirect()->route('compta_accounts.index')->with('success', 'Le compte comptabilité a été mis à jour.');
+        return redirect()->route('admin.dashboard')->with('success', 'Le compte comptabilité a été mis à jour.');
     }
 
     /**

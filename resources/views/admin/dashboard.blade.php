@@ -121,7 +121,21 @@
                                                                 <a class="dropdown-item" href="{{ route('compta_accounts.index') }}">
                                                                     <i class="bx bx-show me-1"></i> Détails
                                                                 </a>
-                                                                <a class="dropdown-item" href="{{ route('compta_accounts.index') }}">
+                                                                <a class="dropdown-item edit-btn" href="javascript:void(0);"
+                                                                    data-bs-toggle="modal" data-bs-target="#modalUpdateComptaAccount"
+                                                                    data-account-id="{{ $comptaAccount->id }}"
+                                                                    data-company-name="{{ $comptaAccount->company_name }}"
+                                                                    data-activity="{{ $comptaAccount->activity }}"
+                                                                    data-juridique-form="{{ $comptaAccount->juridique_form }}"
+                                                                    data-social-capital="{{ $comptaAccount->social_capital }}"
+                                                                    data-adresse="{{ $comptaAccount->adresse }}"
+                                                                    data-code-postal="{{ $comptaAccount->code_postal }}"
+                                                                    data-city="{{ $comptaAccount->city }}"
+                                                                    data-country="{{ $comptaAccount->country }}"
+                                                                    data-phone-number="{{ $comptaAccount->phone_number }}"
+                                                                    data-email-adresse="{{ $comptaAccount->email_adresse }}"
+                                                                    data-identification-tva="{{ $comptaAccount->identification_TVA }}"
+                                                                    data-is-active="{{ $comptaAccount->is_active }}">
                                                                     <i class="bx bx-edit-alt me-1"></i> Éditer
                                                                 </a>
                                                                 <a class="dropdown-item text-danger" href="#" onclick="confirmDelete({{ $comptaAccount->id }})">
@@ -238,6 +252,88 @@
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Supprimer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal for updating compta account -->
+                <div class="modal fade" id="modalUpdateComptaAccount" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Modifier le Compte Comptabilité</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="updateAccountForm" method="POST" action="">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="id" id="updateAccountId" />
+
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="update_company_name" class="form-label">Nom de la Société <span class="text-danger">*</span></label>
+                                            <input type="text" id="update_company_name" name="company_name" class="form-control" required />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="update_activity" class="form-label">Secteur d'activité</label>
+                                            <input type="text" id="update_activity" name="activity" class="form-control" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="update_juridique_form" class="form-label">Forme Juridique</label>
+                                            <input type="text" id="update_juridique_form" name="juridique_form" class="form-control" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="update_social_capital" class="form-label">Capital Social</label>
+                                            <input type="number" step="0.01" id="update_social_capital" name="social_capital" class="form-control" />
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="update_adresse" class="form-label">Adresse Complète</label>
+                                            <input type="text" id="update_adresse" name="adresse" class="form-control" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="update_code_postal" class="form-label">Code Postal</label>
+                                            <input type="text" id="update_code_postal" name="code_postal" class="form-control" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="update_city" class="form-label">Ville</label>
+                                            <input type="text" id="update_city" name="city" class="form-control" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="update_country" class="form-label">Pays</label>
+                                            <input type="text" id="update_country" name="country" class="form-control" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="update_email_adresse" class="form-label">Email de contact <span class="text-danger">*</span></label>
+                                            <input type="email" id="update_email_adresse" name="email_adresse" class="form-control" required />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="update_phone_number" class="form-label">Numéro de Téléphone</label>
+                                            <input type="text" id="update_phone_number" name="phone_number" class="form-control" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="update_identification_TVA" class="form-label">Identification TVA</label>
+                                            <input type="text" id="update_identification_TVA" name="identification_TVA" class="form-control" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="update_is_active" class="form-label">Statut</label>
+                                            <select id="update_is_active" name="is_active" class="form-select">
+                                                <option value="1">Actif</option>
+                                                <option value="0">Inactif</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer justify-content-end mt-4">
+                                        <button type="button" class="btn btn-label-secondary"
+                                            data-bs-dismiss="modal">Fermer</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            Enregistrer les modifications
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -386,36 +482,40 @@
                 });
             });
 
-            // Function for delete confirmation
-            let deleteId = null;
-            window.confirmDelete = function(id) {
-                deleteId = id;
-                const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-                deleteModal.show();
-            };
+            // Handle edit button
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const accountId = this.getAttribute('data-account-id');
+                    const companyName = this.getAttribute('data-company-name');
+                    const activity = this.getAttribute('data-activity');
+                    const juridiqueForm = this.getAttribute('data-juridique-form');
+                    const socialCapital = this.getAttribute('data-social-capital');
+                    const adresse = this.getAttribute('data-adresse');
+                    const codePostal = this.getAttribute('data-code-postal');
+                    const city = this.getAttribute('data-city');
+                    const country = this.getAttribute('data-country');
+                    const phoneNumber = this.getAttribute('data-phone-number');
+                    const emailAdresse = this.getAttribute('data-email-adresse');
+                    const identificationTva = this.getAttribute('data-identification-tva');
+                    const isActive = this.getAttribute('data-is-active');
 
-            // Handle confirm delete button
-            document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-                if (deleteId) {
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `/compta-accounts/${deleteId}`;
-                    const csrf = document.createElement('input');
-                    csrf.type = 'hidden';
-                    csrf.name = '_token';
-                    csrf.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                    form.appendChild(csrf);
-                    const method = document.createElement('input');
-                    method.type = 'hidden';
-                    method.name = '_method';
-                    method.value = 'DELETE';
-                    form.appendChild(method);
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-                // Hide modal
-                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
-                deleteModal.hide();
+                    document.getElementById('updateAccountId').value = accountId;
+                    document.getElementById('update_company_name').value = companyName;
+                    document.getElementById('update_activity').value = activity;
+                    document.getElementById('update_juridique_form').value = juridiqueForm;
+                    document.getElementById('update_social_capital').value = socialCapital;
+                    document.getElementById('update_adresse').value = adresse;
+                    document.getElementById('update_code_postal').value = codePostal;
+                    document.getElementById('update_city').value = city;
+                    document.getElementById('update_country').value = country;
+                    document.getElementById('update_phone_number').value = phoneNumber;
+                    document.getElementById('update_email_adresse').value = emailAdresse;
+                    document.getElementById('update_identification_TVA').value = identificationTva;
+                    document.getElementById('update_is_active').value = isActive;
+
+                    // Set the form action
+                    document.getElementById('updateAccountForm').action = `/compta-accounts/${accountId}`;
+                });
             });
         });
     </script>
