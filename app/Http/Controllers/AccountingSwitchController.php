@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
-use App\Models\ComptaAccount; // Assurez-vous que le nom du modèle est correct
+use App\Models\Company; // Utiliser le modèle Company au lieu de ComptaAccount
 
 class AccountingSwitchController extends Controller
 {
@@ -14,15 +14,17 @@ class AccountingSwitchController extends Controller
     {
         $user = Auth::user();
 
-        // 1. Vérification de l'existence du compte de comptabilité
-        $comptaAccount = ComptaAccount::find($comptaAccountId);
+        // 1. Vérification de l'existence du compte de comptabilité et que l'utilisateur y a accès
+        $comptaAccount = Company::where('id', $comptaAccountId)
+            ->where('user_id', $user->id)
+            ->first();
 
         if (!$comptaAccount) {
-            return back()->with('error', 'Le compte de comptabilité sélectionné est introuvable.');
+            return back()->with('error', 'Le compte de comptabilité sélectionné est introuvable ou vous n\'y avez pas accès.');
         }
 
-        
-        Session::put('current_company_id', $comptaAccount->company_id);
+
+        Session::put('current_company_id', $comptaAccount->id);
 
         // 3. Stocker l'ID du compte comptable dans la session
         Session::put('current_compta_account_id', $comptaAccountId);
