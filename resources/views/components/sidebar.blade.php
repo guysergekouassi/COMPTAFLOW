@@ -385,7 +385,7 @@ if ($user->role === 'super_admin') {
                     <span>Nouvelle saisie</span>
                 </a>
                 @endif
-                
+
                 <!-- Afficher le bouton Liste des écritures si l'utilisateur a modal_saisie_direct -->
                 @if(in_array('modal_saisie_direct', $habilitations))
                 <a href="{{ route('accounting_entry_list') }}" class="menu-link-new {{ request()->routeIs('accounting_entry_list') ? 'active' : '' }}">
@@ -437,6 +437,19 @@ if ($user->role === 'super_admin') {
             @endif
         @else
             {{-- Menu pour Super Admin et autres rôles sans compte comptable actif --}}
+            @if (auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin() && !session('current_compta_account_id'))
+            <div class="menu-section">
+                <div class="menu-section-header">Compta Accounts</div>
+                <a href="{{ route('compta_accounts.index') }}" class="menu-link-new {{ request()->routeIs('compta_accounts.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Créer compte-comptabilité</span>
+                </a>
+                <a href="{{ route('compta_accounts.index') }}" class="menu-link-new {{ request()->routeIs('compta_accounts.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-list"></i>
+                    <span>Liste/Modifier compte-comptabilité</span>
+                </a>
+            </div>
+            @endif
             @if (auth()->user()->isSuperAdmin())
                 <div class="menu-section">
                     <div class="menu-section-header">Paramétrage</div>
@@ -461,7 +474,7 @@ if ($user->role === 'super_admin') {
                         <span>Poste Trésorerie</span>
                     </a>
                 </div>
-                
+
                 <div class="menu-section">
                     <div class="menu-section-header">Traitement</div>
                     <a href="{{ route('modal_saisie_direct') }}" class="menu-link-new {{ request()->routeIs('modal_saisie_direct') ? 'active' : '' }}" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal">
@@ -473,7 +486,7 @@ if ($user->role === 'super_admin') {
                         <span>Exercice comptable</span>
                     </a>
                 </div>
-                
+
                 <div class="menu-section">
                     <div class="menu-section-header">Rapports Comptables</div>
                     <a href="{{ route('accounting_ledger') }}" class="menu-link-new {{ request()->is('accounting_ledger') ? 'active' : '' }}">
@@ -886,7 +899,7 @@ if ($user->role === 'super_admin') {
         </li>
         @endif
 
-      
+
 
         @if(in_array('balance', $habilitations))
         <li class="menu-item menu-rapport {{ request()->is('accounting_balance') ? 'active' : '' }}">
