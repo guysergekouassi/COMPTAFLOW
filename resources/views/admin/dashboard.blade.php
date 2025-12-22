@@ -224,6 +224,25 @@
                     </div>
                 </div>
 
+                <!-- Modal for delete confirmation -->
+                <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Confirmer la suppression</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Êtes-vous sûr de vouloir supprimer ce compte comptabilité ? Cette action est irréversible.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Supprimer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                     @include('components.footer')
                 </div>
             </div>
@@ -368,11 +387,19 @@
             });
 
             // Function for delete confirmation
+            let deleteId = null;
             window.confirmDelete = function(id) {
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce compte ?')) {
+                deleteId = id;
+                const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                deleteModal.show();
+            };
+
+            // Handle confirm delete button
+            document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+                if (deleteId) {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = `/compta-accounts/${id}`;
+                    form.action = `/compta-accounts/${deleteId}`;
                     const csrf = document.createElement('input');
                     csrf.type = 'hidden';
                     csrf.name = '_token';
@@ -386,7 +413,10 @@
                     document.body.appendChild(form);
                     form.submit();
                 }
-            };
+                // Hide modal
+                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                deleteModal.hide();
+            });
         });
     </script>
 </body>

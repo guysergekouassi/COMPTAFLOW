@@ -206,8 +206,8 @@ Route::middleware('auth')->group(function () {
     // *****************ROUTE COMPTE-COMPTA
     Route::get('/compta-accounts', [ComptaAccountController::class, 'index'])->name('compta_accounts.index');
     Route::post('/compta-accounts', [ComptaAccountController::class, 'store'])->name('compta_accounts.store');
-    Route::put('/{id},compta-accounts', [ComptaAccountController::class,'update'])->name('compta_accounts.update');
-    Route::delete('/{id},compta-accounts', [ComptaAccountController::class, 'destroy'])->name('compta_accounts.destroy');
+    Route::put('/compta-accounts/{id}', [ComptaAccountController::class,'update'])->name('compta_accounts.update');
+    Route::delete('/compta-accounts/{id}', [ComptaAccountController::class, 'destroy'])->name('compta_accounts.destroy');
     Route::get('/access/company/{companyId}', [CompanyAccessController::class, 'accessCompany'])
         ->name('compta_accounts.access');
     Route::post('/leave/company', [CompanyAccessController::class, 'leaveCompany'])
