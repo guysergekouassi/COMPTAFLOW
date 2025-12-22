@@ -16,9 +16,7 @@ class PlanTiersController extends Controller
 
             $currentCompanyId = session('current_company_id', $user->company_id);
 
-            // Récupère les comptes comptables liés à la même company, triés par numéro
-            // Comptes généraux commençant par 4 uniquement
-            $comptesGeneraux = PlanComptable::where('company_id', $user->company_id)
+            $comptesGeneraux = PlanComptable::where('company_id', $currentCompanyId)
                 ->where('numero_de_compte', 'LIKE', '4%')
                 ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
                 ->get();
@@ -49,7 +47,7 @@ class PlanTiersController extends Controller
                 'Personnel' => '42',
                 'CNPS' => '43',
                 'Impots' => '44',
-                'Associé' => '46',
+                'Associé' => '45',
             ];
 
             $autres = []; // Pour Divers Tiers
@@ -102,11 +100,12 @@ class PlanTiersController extends Controller
 {
     try {
         $user = Auth::user();
+        $currentCompanyId = session('current_company_id', $user->company_id);
         $longueurTotal = 8;
 
         // Récupérer le dernier tiers existant pour ce compte général
         $dernierTiers = PlanTiers::where('numero_de_tiers', 'like', $racine . '%')
-            ->where('company_id', $user->company_id)
+            ->where('company_id', $currentCompanyId)
             ->orderBy('numero_de_tiers', 'desc')
             ->first();
 

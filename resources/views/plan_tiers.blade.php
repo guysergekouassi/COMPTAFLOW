@@ -76,19 +76,22 @@
                                 background: rgba(255, 255, 255, 0.98);
                                 backdrop-filter: blur(15px);
                                 border: 1px solid rgba(255, 255, 255, 1);
-                                border-radius: 32px;
-                                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+                                border-radius: 20px;
+                                box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
                                 font-family: 'Plus Jakarta Sans', sans-serif;
+                                max-width: 400px;
+                                margin: auto;
+                                padding: 1.25rem !important;
                             }
 
                             .input-field-premium {
                                 transition: all 0.2s ease;
                                 border: 2px solid #f1f5f9 !important;
                                 background-color: #f8fafc !important;
-                                border-radius: 16px !important;
-                                padding: 1rem !important;
-                                font-size: 0.875rem !important;
-                                font-weight: 700 !important;
+                                border-radius: 12px !important;
+                                padding: 0.75rem 1rem !important;
+                                font-size: 0.8rem !important;
+                                font-weight: 600 !important;
                                 color: #0f172a !important;
                                 width: 100%;
                             }
@@ -108,26 +111,26 @@
                             }
 
                             .input-label-premium {
-                                font-size: 0.75rem !important;
+                                font-size: 0.7rem !important;
                                 font-weight: 800 !important;
-                                color: #475569 !important;
+                                color: #64748b !important;
                                 text-transform: uppercase !important;
-                                letter-spacing: 0.1em !important;
-                                margin-left: 0.25rem !important;
-                                margin-bottom: 0.5rem !important;
+                                letter-spacing: 0.05em !important;
+                                margin-left: 0.1rem !important;
+                                margin-bottom: 0.35rem !important;
                                 display: block !important;
                             }
 
                             .btn-save-premium {
-                                padding: 1rem !important;
-                                border-radius: 16px !important;
+                                padding: 0.75rem 1rem !important;
+                                border-radius: 12px !important;
                                 background-color: #1e40af !important;
                                 color: white !important;
-                                font-weight: 900 !important;
-                                font-size: 0.75rem !important;
+                                font-weight: 800 !important;
+                                font-size: 0.7rem !important;
                                 text-transform: uppercase !important;
-                                letter-spacing: 0.1em !important;
-                                box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.2) !important;
+                                letter-spacing: 0.05em !important;
+                                box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1) !important;
                                 transition: all 0.2s ease !important;
                                 border: none !important;
                             }
@@ -138,13 +141,13 @@
                             }
 
                             .btn-cancel-premium {
-                                padding: 1rem !important;
-                                border-radius: 16px !important;
+                                padding: 0.75rem 1rem !important;
+                                border-radius: 12px !important;
                                 color: #94a3b8 !important;
                                 font-weight: 700 !important;
-                                font-size: 0.75rem !important;
+                                font-size: 0.7rem !important;
                                 text-transform: uppercase !important;
-                                letter-spacing: 0.1em !important;
+                                letter-spacing: 0.05em !important;
                                 transition: all 0.2s ease !important;
                                 border: none !important;
                                 background: transparent !important;
@@ -161,6 +164,11 @@
                                 background-repeat: no-repeat !important;
                                 background-position: right 1rem center !important;
                                 background-size: 1.2em !important;
+                            }
+
+                            .header-dynamic-title h1 {
+                                font-size: 3.5rem !important; /* Augmenté de 2.5rem à 3.5rem */
+                                letter-spacing: -0.04em !important;
                             }
                         </style>
 
@@ -303,7 +311,7 @@
                                         @forelse($tiers as $tier)
                                             <tr class="table-row">
                                                 <td class="px-8 py-6">
-                                                    <span class="font-mono text-base font-bold text-blue-700">#{{ $tier->id }}</span>
+                                                    <span class="font-mono text-base font-bold text-blue-700">{{ $tier->numero_de_tiers }}</span>
                                                 </td>
                                                 <td class="px-8 py-6">
                                                     <p class="font-semibold text-slate-800">{{ $tier->intitule }}</p>
@@ -385,18 +393,18 @@
                                     <div class="modal-dialog modal-dialog-centered" role="document">
                                         <form id="planTiersForm" method="POST" action="{{ route('plan_tiers.store') }}" class="w-full">
                                             @csrf
-                                            <div class="modal-content premium-modal-content p-8">
+                                            <div class="modal-content premium-modal-content">
                                                 
                                                 <!-- En-tête -->
-                                                <div class="text-center mb-8 position-relative">
+                                                <div class="text-center mb-6 position-relative">
                                                     <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
+                                                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
                                                         Nouveau <span class="text-blue-gradient-premium">Tiers</span>
                                                     </h1>
-                                                    <div class="h-1 w-12 bg-blue-700 mx-auto mt-4 rounded-full"></div>
+                                                    <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
                                                 </div>
 
-                                                <div class="space-y-4">
+                                                <div class="space-y-3">
                                                     
                                                     <!-- Catégorie (Type de tiers) -->
                                                     <div class="space-y-1">
@@ -418,9 +426,9 @@
                                                         </select>
                                                     </div>
 
-                                                    <!-- Identifiant (Numéro de tiers) -->
+                                                    <!-- Numéro de tiers -->
                                                     <div class="space-y-1">
-                                                        <label class="input-label-premium">Identifiant</label>
+                                                        <label class="input-label-premium">Numéro de tiers</label>
                                                         <input type="text" id="numero_de_tiers" name="numero_de_tiers" 
                                                             class="input-field-premium opacity-75" placeholder="Généré automatiquement" required readonly>
                                                     </div>
@@ -449,87 +457,6 @@
                                     </div>
                                 </div>
 
-                                            <script>
-                                                const getDernierNumeroUrl = "{{ url('/plan_tiers') }}"; // ou route() avec JS dynamique si besoin
-                                            </script>
-
-
-                                            <script>
-                                                document.addEventListener('DOMContentLoaded', function() {
-                                                    const correspondances =
-                                                    @json($correspondances); // format : { "Client": [{id, numero, intitule}, ...], ... }
-                                                    const compteGeneralSelect = document.getElementById('compte_general');
-                                                    const typeTiers = document.getElementById('type_de_tiers');
-                                                    const numeroTiers = document.getElementById('numero_de_tiers');
-
-                                                    // Générer un numéro de tiers
-                                                    const genererNumero = (numeroCompte) => {
-                                                        const racine = numeroCompte.replace(/0+$/, '');
-                                                        fetch(`${getDernierNumeroUrl}/${racine}`)
-                                                            .then(response => response.json())
-                                                            .then(data => {
-                                                                if (data.numero) {
-                                                                    numeroTiers.value = data.numero;
-                                                                    console.log("[INFO] Nouveau numéro généré :", data.numero);
-                                                                } else {
-                                                                    numeroTiers.value = '';
-                                                                    console.warn("[WARN] Aucun numéro généré.");
-                                                                }
-                                                            })
-                                                            .catch(error => {
-                                                                numeroTiers.value = '';
-                                                                console.error("[ERREUR] lors de la récupération du numéro :", error);
-                                                            });
-                                                    };
-
-                                                    // Quand on change le type de tiers
-                                                    typeTiers.addEventListener('change', function() {
-                                                        const selectedType = this.value;
-                                                        const comptes = correspondances[selectedType] || [];
-
-                                                        // Réinitialiser les options du select compte général
-                                                        compteGeneralSelect.innerHTML = `<option value="">-- Sélectionnez un compte --</option>`;
-
-                                                        comptes.forEach(compte => {
-                                                            const option = document.createElement('option');
-                                                            option.value = compte.id;
-                                                            option.setAttribute('data-numero', compte.numero);
-                                                            option.textContent = `${compte.numero} - ${compte.intitule}`;
-                                                            compteGeneralSelect.appendChild(option);
-                                                        });
-
-                                                        // Si au moins un compte trouvé, le sélectionner automatiquement
-                                                        if (comptes.length > 0) {
-                                                            compteGeneralSelect.selectedIndex = 1;
-                                                            // console.log(comptes[0].numero)
-                                                            genererNumero(comptes[0].numero);
-                                                        } else {
-                                                            numeroTiers.value = '';
-                                                            console.warn(`[INFO] Aucun compte associé au type "${selectedType}".`);
-                                                        }
-                                                    });
-
-                                                    // Quand on change le compte général manuellement
-                                                    compteGeneralSelect.addEventListener('change', function() {
-                                                        const selectedOption = this.options[this.selectedIndex];
-                                                        const numeroCompte = selectedOption.getAttribute('data-numero');
-
-                                                        if (numeroCompte) {
-                                                            // console.log(numeroCompte)
-                                                            genererNumero(numeroCompte);
-                                                        } else {
-                                                            numeroTiers.value = '';
-                                                        }
-                                                    });
-                                                });
-                                            </script>
-
-
-
-                                        </form>
-                                    </div>
-                                </div>
-
                                 <!-- Modal Modification Plan Tiers (Premium Redesign) -->
                                 <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -538,17 +465,17 @@
                                             @method('PUT')
                                             <input type="hidden" id="update_id" name="id">
                                             
-                                            <div class="modal-content premium-modal-content p-8">
+                                            <div class="modal-content premium-modal-content">
                                                 <!-- En-tête -->
-                                                <div class="text-center mb-8 position-relative">
+                                                <div class="text-center mb-6 position-relative">
                                                     <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
+                                                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
                                                         Modifier <span class="text-blue-gradient-premium">Tiers</span>
                                                     </h1>
-                                                    <div class="h-1 w-12 bg-blue-700 mx-auto mt-4 rounded-full"></div>
+                                                    <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
                                                 </div>
 
-                                                <div class="space-y-4">
+                                                <div class="space-y-3">
                                                     <!-- Catégorie (Type de tiers) -->
                                                     <div class="space-y-1">
                                                         <label class="input-label-premium">Catégorie</label>
@@ -566,18 +493,18 @@
                                                         <select id="update_compte" name="compte_general" class="input-field-premium" required>
                                                             <option value="" disabled selected>-- Sélectionnez un compte --</option>
                                                             @foreach ($comptesGeneraux as $compte)
-                                                                <option value="{{ $compte->id }}">
+                                                                <option value="{{ $compte->id }}" data-numero="{{ $compte->numero_de_compte }}">
                                                                     {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
 
-                                                    <!-- Identifiant (Numéro de tiers) -->
+                                                    <!-- Numéro de tiers -->
                                                     <div class="space-y-1">
-                                                        <label class="input-label-premium">Identifiant</label>
+                                                        <label class="input-label-premium">Numéro de tiers</label>
                                                         <input type="text" id="update_numero" name="numero_de_tiers" 
-                                                            class="input-field-premium" required>
+                                                            class="input-field-premium opacity-75" placeholder="Généré automatiquement" required readonly>
                                                     </div>
 
                                                     <!-- Nom / Raison Sociale (Intitulé) -->
@@ -602,78 +529,165 @@
                                     </div>
                                 </div>
 
-
-
                                 <!-- Modal de confirmation de suppression -->
-                                <div class="modal fade" id="deleteConfirmationModalTiers" tabindex="-1"
-                                    aria-labelledby="deleteModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-sm">
-                                        <div class="modal-content border-0 shadow">
-                                            <div class="modal-header text-white justify-content-center">
-                                                <h5 class="modal-title" id="deleteModalLabel">
-                                                    <i class="bx bx-error-circle me-2"></i>Confirmer la suppression
-                                                </h5>
-                                                <button type="button" class="btn-close btn-close-white"
-                                                    data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                            </div>
-                                            <div class="modal-body text-center">
-                                                <p class="mb-0">
-                                                    Êtes-vous sûr de vouloir supprimer ce plan de tiers ? Cette action
-                                                    est
-                                                    <strong>irréversible</strong>.
+                                <div class="modal fade" id="deleteConfirmationModalTiers" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-sm">
+                                        <div class="modal-content premium-modal-content">
+                                            <div class="text-center">
+                                                <div class="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                                                </div>
+                                                <h3 class="text-lg font-bold text-slate-900 mb-2">Supprimer ce tiers ?</h3>
+                                                <p class="text-sm text-slate-500 mb-6">
+                                                    Êtes-vous sûr de vouloir supprimer <span id="planToDeleteNameTiers" class="font-bold text-slate-900"></span> ?
                                                 </p>
-                                                <p class="fw-bold text-danger mt-2" id="planToDeleteNameTiers"></p>
-                                            </div>
-                                            <div class="modal-footer justify-content-center">
-                                                <button type="button" class="btn btn-secondary"
-                                                    data-bs-dismiss="modal">Annuler</button>
-
-                                                <form method="POST" id="deletePlanFormTiers"
-                                                    style="display:inline;">
+                                                
+                                                <form method="POST" id="deletePlanFormTiers" class="grid grid-cols-2 gap-3">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger"
-                                                        id="confirmDeleteBtn">Supprimer</button>
+                                                    <button type="button" class="btn-cancel-premium !p-3" data-bs-dismiss="modal">Annuler</button>
+                                                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-2xl transition shadow-lg shadow-red-100">
+                                                        Supprimer
+                                                    </button>
                                                 </form>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-
-
                             </div>
+                            <!-- Content wrapper -->
                         </div>
-                        <!-- Content wrapper -->
+                        <!-- / Layout page -->
                     </div>
-                    <!-- / Layout page -->
+
+                    <!-- Overlay -->
+                    <div class="layout-overlay layout-menu-toggle"></div>
                 </div>
-
-                <!-- Overlay -->
-                <div class="layout-overlay layout-menu-toggle"></div>
-            </div>
-            <!-- / Layout wrapper -->
-
-            <!-- Core JS -->
-
-            <script>
-                const plan_tiers_ecrituresSaisisUrl = "{{ route('plan_tiers_ecritures') }}";
-                const plan_tiersUpdateBaseUrl = "{{ route('plan_tiers.update', ['id' => '__ID__']) }}";
-                const plan_tiersDeleteUrl = "{{ route('plan_tiers.destroy', ['id' => '__ID__']) }}";
-            </script>
+                <!-- / Layout wrapper -->
 
             @include('components.footer')
 
-            <!-- Plugins JS -->
-            <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-            <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-
+            <!-- Core JS Interactivity -->
             <script>
-                document.addEventListener("DOMContentLoaded", function() {
+                document.addEventListener('DOMContentLoaded', function() {
+                    // --- 1. CONFIGURATION & DATA ---
+                    const correspondances = @json($correspondances);
+                    const getDernierNumeroUrl = "{{ url('/plan_tiers') }}";
+                    const updateBaseUrl = "{{ route('plan_tiers.update', ['id' => '__ID__']) }}";
+                    const deleteBaseUrl = "{{ route('plan_tiers.destroy', ['id' => '__ID__']) }}";
+
+                    // --- 2. MODAL HELPER FUNCTIONS ---
+                    const genererNumero = (numeroCompte, targetInput) => {
+                        if (!numeroCompte) {
+                            targetInput.value = '';
+                            return;
+                        }
+                        targetInput.value = 'Calcul...';
+                        const racine = numeroCompte.replace(/0+$/, '');
+                        fetch(`${getDernierNumeroUrl}/${racine}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.numero) {
+                                    targetInput.value = data.numero;
+                                } else {
+                                    targetInput.value = '';
+                                }
+                            })
+                            .catch(error => {
+                                console.error("[ERREUR] génération numéro:", error);
+                                targetInput.value = '';
+                            });
+                    };
+
+                    const updateAccountOptions = (typeSelect, accountSelect, targetNumeroInput, autoSelect = true) => {
+                        const selectedType = typeSelect.value;
+                        const comptes = correspondances[selectedType] || [];
+                        
+                        accountSelect.innerHTML = `<option value="" disabled selected>-- Sélectionnez un compte --</option>`;
+                        comptes.forEach(compte => {
+                            const option = document.createElement('option');
+                            option.value = compte.id;
+                            option.setAttribute('data-numero', compte.numero);
+                            option.textContent = `${compte.numero} - ${compte.intitule}`;
+                            accountSelect.appendChild(option);
+                        });
+
+                        if (autoSelect && comptes.length > 0) {
+                            accountSelect.selectedIndex = 1;
+                            genererNumero(comptes[0].numero, targetNumeroInput);
+                        }
+                    };
+
+                    // --- 3. CREATE MODAL LOGIC ---
+                    const createTypeTiers = document.getElementById('type_de_tiers');
+                    const createCompteGeneral = document.getElementById('compte_general');
+                    const createNumeroTiers = document.getElementById('numero_de_tiers');
+
+                    createTypeTiers?.addEventListener('change', () => {
+                        updateAccountOptions(createTypeTiers, createCompteGeneral, createNumeroTiers);
+                    });
+
+                    createCompteGeneral?.addEventListener('change', function() {
+                        const numeroCompte = this.options[this.selectedIndex].getAttribute('data-numero');
+                        if (numeroCompte) genererNumero(numeroCompte, createNumeroTiers);
+                    });
+
+                    // --- 4. UPDATE MODAL LOGIC ---
+                    const updateModal = document.getElementById('modalCenterUpdate');
+                    const updateForm = document.getElementById('updateTiersForm');
+                    const updateTypeTiers = document.getElementById('update_type_de_tiers');
+                    const updateCompteGeneral = document.getElementById('update_compte');
+                    const updateNumeroTiers = document.getElementById('update_numero');
+
+                    updateModal?.addEventListener('show.bs.modal', function(event) {
+                        const btn = event.relatedTarget;
+                        const id = btn.getAttribute('data-id');
+                        const numero = btn.getAttribute('data-numero');
+                        const intitule = btn.getAttribute('data-intitule');
+                        const type = btn.getAttribute('data-type');
+                        const compteId = btn.getAttribute('data-compte');
+
+                        // Fill basic fields
+                        document.getElementById('update_id').value = id;
+                        document.getElementById('update_intitule').value = intitule;
+                        updateNumeroTiers.value = numero;
+                        updateTypeTiers.value = type;
+
+                        // Update account list based on type
+                        updateAccountOptions(updateTypeTiers, updateCompteGeneral, updateNumeroTiers, false);
+                        updateCompteGeneral.value = compteId;
+
+                        // Set form action
+                        updateForm.action = updateBaseUrl.replace('__ID__', id);
+                    });
+
+                    updateTypeTiers?.addEventListener('change', () => {
+                        updateAccountOptions(updateTypeTiers, updateCompteGeneral, updateNumeroTiers);
+                    });
+
+                    updateCompteGeneral?.addEventListener('change', function() {
+                        const numeroCompte = this.options[this.selectedIndex].getAttribute('data-numero');
+                        if (numeroCompte) genererNumero(numeroCompte, updateNumeroTiers);
+                    });
+
+                    // --- 5. DELETE MODAL LOGIC ---
+                    const deleteModal = document.getElementById('deleteConfirmationModalTiers');
+                    const deleteForm = document.getElementById('deletePlanFormTiers');
+                    const deleteNameDisplay = document.getElementById('planToDeleteNameTiers');
+
+                    deleteModal?.addEventListener('show.bs.modal', function(event) {
+                        const btn = event.relatedTarget;
+                        const id = btn.getAttribute('data-id');
+                        const name = btn.getAttribute('data-name');
+                        
+                        deleteNameDisplay.textContent = name;
+                        deleteForm.action = deleteBaseUrl.replace('__ID__', id);
+                    });
+
+                    // --- 6. DATATABLES INITIALIZATION ---
                     const initDataTable = () => {
                         if (typeof $ !== 'undefined' && $.fn.dataTable) {
-                            console.log("✅ DataTables chargé pour Plan Tiers");
-                            
                             window.tiersTable = $('#tiersTable').DataTable({
                                 pageLength: 5,
                                 lengthMenu: [5, 10, 25, 50],
@@ -681,12 +695,7 @@
                                     search: "Rechercher :",
                                     lengthMenu: "_MENU_",
                                     info: "Affichage de _START_ à _END_ sur _TOTAL_ tiers",
-                                    paginate: {
-                                        first: "Premier",
-                                        last: "Dernier",
-                                        next: "Suivant",
-                                        previous: "Précédent"
-                                    },
+                                    paginate: { first: "Premier", last: "Dernier", next: "Suivant", previous: "Précédent" },
                                 },
                                 dom: '<"top">rt<"bottom"ip><"clear">',
                                 drawCallback: function() {
@@ -695,17 +704,10 @@
                                 }
                             });
 
-                            // Custom Global Search
-                            $('#customSearch').on('keyup', function() {
-                                window.tiersTable.search(this.value).draw();
-                            });
-
-                            // KPI Card Filtering
                             $('.filtre-tiers').on('click', function() {
                                 const type = $(this).data('type');
                                 $('.filtre-tiers').removeClass('ring-2 ring-blue-500 bg-blue-50/50');
                                 $(this).addClass('ring-2 ring-blue-500 bg-blue-50/50');
-
                                 if (type === 'all') {
                                     window.tiersTable.column(2).search('').draw();
                                 } else {
@@ -713,7 +715,6 @@
                                 }
                             });
 
-                            // Eye Icon (View) Redirection
                             $(document).on('click', '.donnees-plan-tiers', function() {
                                 const params = {
                                     id_plan_tiers: $(this).data('id'),
@@ -721,64 +722,47 @@
                                     numero_de_tiers: $(this).data('numero_de_tiers'),
                                 };
                                 const queryString = new URLSearchParams(params).toString();
-                                window.location.href = plan_tiers_ecrituresSaisisUrl + "?" + queryString;
+                                window.location.href = "{{ route('plan_tiers_ecritures') }}?" + queryString;
                             });
                         } else {
-                            console.log("⏳ Plan Tiers: En attente de librairies...");
                             setTimeout(initDataTable, 100);
                         }
                     };
 
                     initDataTable();
-                });
-            </script>
 
-            {{-- <script src="{{ asset('js/plan_tiers.js') }}"></script> --}}
-
-            <script>
-                window.applyAdvancedFilters = function() {
-                    console.log('Applying filters v1.0.5');
-                    const idVal = document.getElementById('filter-id').value;
-                    const intituleVal = document.getElementById('filter-intitule').value;
-                    const typeVal = document.getElementById('filter-type').value;
-
-                    if (window.tiersTable) {
-                        window.tiersTable.column(0).search(idVal);
-                        window.tiersTable.column(1).search(intituleVal);
-                        window.tiersTable.column(2).search(typeVal);
-                        window.tiersTable.draw();
-                    } else {
-                        console.error('tiersTable is not initialized');
-                    }
-                };
-
-                window.resetAdvancedFilters = function() {
-                    console.log('Resetting filters v1.0.5');
-                    document.getElementById('filter-id').value = '';
-                    document.getElementById('filter-intitule').value = '';
-                    document.getElementById('filter-type').value = '';
-                    
-                    if (window.tiersTable) {
-                        window.tiersTable.column(0).search('');
-                        window.tiersTable.column(1).search('');
-                        window.tiersTable.column(2).search('');
-                        window.tiersTable.draw();
-                    }
-                };
-
-                window.toggleAdvancedFilter = function() {
-                    console.log('Toggle function called v1.0.5');
-                    const panel = document.getElementById('advancedFilterPanel');
-                    if (panel) {
-                        if (panel.style.display === 'none' || panel.style.display === '') {
-                            panel.style.display = 'block';
-                        } else {
-                            panel.style.display = 'none';
+                    // --- 7. ADVANCED FILTERS ---
+                    window.applyAdvancedFilters = function() {
+                        const idVal = document.getElementById('filter-id').value;
+                        const intituleVal = document.getElementById('filter-intitule').value;
+                        const typeVal = document.getElementById('filter-type').value;
+                        if (window.tiersTable) {
+                            window.tiersTable.column(0).search(idVal);
+                            window.tiersTable.column(1).search(intituleVal);
+                            window.tiersTable.column(2).search(typeVal);
+                            window.tiersTable.draw();
                         }
-                    } else {
-                        console.error('Advanced filter panel not found');
-                    }
-                };
+                    };
+
+                    window.resetAdvancedFilters = function() {
+                        document.getElementById('filter-id').value = '';
+                        document.getElementById('filter-intitule').value = '';
+                        document.getElementById('filter-type').value = '';
+                        if (window.tiersTable) {
+                            window.tiersTable.column(0).search('');
+                            window.tiersTable.column(1).search('');
+                            window.tiersTable.column(2).search('');
+                            window.tiersTable.draw();
+                        }
+                    };
+
+                    window.toggleAdvancedFilter = function() {
+                        const panel = document.getElementById('advancedFilterPanel');
+                        if (panel) {
+                            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+                        }
+                    };
+                });
             </script>
         </div>
     </div>
