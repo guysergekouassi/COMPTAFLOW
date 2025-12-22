@@ -380,99 +380,74 @@
 
                     </div>
 
-                                <!-- Modal Creation Plan Tiers -->
+                                <!-- Nouveau Tiers (Premium Redesign) -->
                                 <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered" role="document">
-                                        <form id="planTiersForm" method="POST"
-                                            action="{{ route('plan_tiers.store') }}">
+                                        <form id="planTiersForm" method="POST" action="{{ route('plan_tiers.store') }}" class="w-full">
                                             @csrf
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="modalCenterTitle">Créer un compte
-                                                        tiers
-                                                    </h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                        aria-label="Fermer"></button>
+                                            <div class="modal-content premium-modal-content p-8">
+                                                
+                                                <!-- En-tête -->
+                                                <div class="text-center mb-8 position-relative">
+                                                    <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
+                                                        Nouveau <span class="text-blue-gradient-premium">Tiers</span>
+                                                    </h1>
+                                                    <div class="h-1 w-12 bg-blue-700 mx-auto mt-4 rounded-full"></div>
                                                 </div>
 
-                                                <div class="modal-body">
-                                                    <div class="row g-3">
-
-                                                        <div class="col-12">
-                                                            <label for="type_de_tiers" class="form-label">Type de
-                                                                tiers</label>
-                                                            <select id="type_de_tiers" name="type_de_tiers"
-                                                                class="form-select" required>
-                                                                <option value="">-- Sélectionnez un type --
-                                                                </option>
-                                                                @foreach (['Fournisseur', 'Client', 'Personnel', 'Impots', 'CNPS', 'Associé', 'Divers Tiers'] as $type)
-                                                                    <option value="{{ $type }}">
-                                                                        {{ $type }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                            <div class="invalid-feedback">Veuillez sélectionner un type
-                                                                de
-                                                                tiers.</div>
-                                                        </div>
-
-
-
-                                                        <div class="col-12">
-                                                            <label for="compte_general" class="form-label">Compte
-                                                                général associé</label>
-                                                            <select id="compte_general" name="compte_general"
-                                                                class="form-select" required>
-
-                                                                <option value="">-- Sélectionnez un compte --
-                                                                </option>
-                                                                @foreach ($comptesGeneraux as $compte)
-                                                                    <option value="{{ $compte->id }}"
-                                                                        data-numero="{{ $compte->numero_de_compte }}">
-                                                                        {{ $compte->numero_de_compte }} -
-                                                                        {{ $compte->intitule }}
-                                                                    </option>
-                                                                @endforeach
-
-                                                            </select>
-                                                            <div class="invalid-feedback">Veuillez sélectionner un
-                                                                compte
-                                                                général.</div>
-                                                        </div>
-
-
-                                                        <div class="col-12">
-                                                            <label for="numero_de_tiers" class="form-label">Numéro de
-                                                                tiers</label>
-                                                            <input type="text" id="numero_de_tiers"
-                                                                name="numero_de_tiers" class="form-control"
-                                                                placeholder="Entrer le numéro de tiers" required
-                                                                readonly />
-                                                            <div class="invalid-feedback">Veuillez entrer un numéro de
-                                                                tiers
-                                                                valide.</div>
-                                                        </div>
-
-
-
-                                                        <div class="col-12">
-                                                            <label for="intitule" class="form-label">Intitulé</label>
-                                                            <input type="text" id="intitule" name="intitule"
-                                                                class="form-control" placeholder="Entrer l'intitulé"
-                                                                required />
-                                                            <div class="invalid-feedback">Veuillez entrer un intitulé.
-                                                            </div>
-                                                        </div>
-
+                                                <div class="space-y-4">
+                                                    
+                                                    <!-- Catégorie (Type de tiers) -->
+                                                    <div class="space-y-1">
+                                                        <label class="input-label-premium">Catégorie</label>
+                                                        <select id="type_de_tiers" name="type_de_tiers" class="input-field-premium" required>
+                                                            <option value="" disabled selected>Sélectionner une catégorie</option>
+                                                            @foreach (['Fournisseur', 'Client', 'Personnel', 'Impots', 'CNPS', 'Associé', 'Divers Tiers'] as $type)
+                                                                <option value="{{ $type }}">{{ $type }}</option>
+                                                            @endforeach
+                                                        </select>
                                                     </div>
+
+                                                    <!-- Compte de Rattachement (Compte général associé) -->
+                                                    <div class="space-y-1">
+                                                        <label class="input-label-premium">Compte de Rattachement</label>
+                                                        <select id="compte_general" name="compte_general" class="input-field-premium" required>
+                                                            <option value="" disabled selected>-- Sélectionnez un compte --</option>
+                                                            {{-- Injecté par JS --}}
+                                                        </select>
+                                                    </div>
+
+                                                    <!-- Identifiant (Numéro de tiers) -->
+                                                    <div class="space-y-1">
+                                                        <label class="input-label-premium">Identifiant</label>
+                                                        <input type="text" id="numero_de_tiers" name="numero_de_tiers" 
+                                                            class="input-field-premium opacity-75" placeholder="Généré automatiquement" required readonly>
+                                                    </div>
+
+                                                    <!-- Nom / Raison Sociale (Intitulé) -->
+                                                    <div class="space-y-1">
+                                                        <label class="input-label-premium">Nom / Raison Sociale</label>
+                                                        <input type="text" id="intitule" name="intitule" 
+                                                            class="input-field-premium" placeholder="Entrez le nom de l'entité" required>
+                                                    </div>
+
                                                 </div>
 
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-label-secondary"
-                                                        data-bs-dismiss="modal">Fermer</button>
-                                                    <button type="submit"
-                                                        class="btn btn-primary">Enregistrer</button>
+                                                <!-- Actions -->
+                                                <div class="grid grid-cols-2 gap-4 pt-8">
+                                                    <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                                                        Annuler
+                                                    </button>
+                                                    <button type="submit" class="btn-save-premium">
+                                                        Enregistrer
+                                                    </button>
                                                 </div>
+
                                             </div>
+                                        </form>
+                                    </div>
+                                </div>
 
                                             <script>
                                                 const getDernierNumeroUrl = "{{ url('/plan_tiers') }}"; // ou route() avec JS dynamique si besoin
