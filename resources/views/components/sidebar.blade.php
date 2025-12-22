@@ -437,6 +437,25 @@ if ($user->role === 'super_admin') {
                 @endif
             </div>
             @endif
+
+            {{-- Section Paramètres pour Admin --}}
+            @if (Auth::check() && Auth::user()->role === 'admin')
+            <div class="menu-section">
+                <div class="menu-section-header">Paramètres</div>
+                @if($show_all || in_array('user_management', $habilitations))
+                <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
+                    <i class="fa-solid fa-users-cog"></i>
+                    <span>Gestion des utilisateurs</span>
+                </a>
+                @endif
+                @if($show_all || in_array('compagny_information', $habilitations))
+                <a href="{{ route('compagny_information') }}" class="menu-link-new {{ request()->routeIs('compagny_information') ? 'active' : '' }}">
+                    <i class="fa-solid fa-building"></i>
+                    <span>Information de l'entreprise</span>
+                </a>
+                @endif
+            </div>
+            @endif
         @else
             {{-- Menu pour Super Admin et autres rôles sans compte comptable actif --}}
             @if (auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin() && !session('current_compta_account_id'))
