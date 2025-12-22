@@ -49,6 +49,8 @@
                                             <th>Intitulé</th>
                                             <th>Traitement analytique</th>
                                             <th>Compte</th>
+                                            <th>Poste de Tresorerie </th>
+                                            <th>Type flux</th>
                                             <th>Rapprochement sur</th>
                                             <th>Actions</th>
                                         </tr>
@@ -60,6 +62,8 @@
                                                 <td>{{ $journal->intitule }}</td>
                                                 <td>{{ $journal->traitement_analytique }}</td>
                                                 <td>{{ $journal->compte_de_contrepartie }}</td>
+                                                <td>{{ $journal->poste_tresorerie }}</td>
+                                                <td>{{ $journal->type_flux }}</td>
                                                 <td>{{ $journal->rapprochement_sur }}</td>
                                                 <td class="d-flex gap-2">
                                                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $journal->id }}">
@@ -79,7 +83,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="6" class="text-center">Aucune donnée trouvée</td>
+                                                <td colspan="8" class="text-center">Aucune donnée trouvée</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -145,7 +149,7 @@
 
                         {{-- Modal : Create --}}
                         <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
+                            <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
                                     <form action="{{ route('storetresorerie') }}" method="POST">
                                         @csrf
@@ -154,53 +158,85 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <div class="mb-3">
-                                                <label for="code_journal" class="form-label">Code journal</label>
-                                                <input type="text" name="code_journal" class="form-control" required>
-                                                @error('code_journal') <small class="text-danger">{{ $message }}</small> @enderror
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="code_journal" class="form-label">Code journal</label>
+                                                    <input type="text" name="code_journal" class="form-control form-control-sm" required>
+                                                    @error('code_journal') <small class="text-danger">{{ $message }}</small> @enderror
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="intitule" class="form-label">Intitulé</label>
+                                                    <input type="text" name="intitule" class="form-control form-control-sm" required>
+                                                    @error('intitule') <small class="text-danger">{{ $message }}</small> @enderror
+                                                </div>
                                             </div>
 
-                                            <div class="mb-3">
-                                                <label for="intitule" class="form-label">Intitulé</label>
-                                                <input type="text" name="intitule" class="form-control" required>
-                                                @error('intitule') <small class="text-danger">{{ $message }}</small> @enderror
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="traitement_analytique" class="form-label">Traitement analytique</label>
+                                                    <select name="traitement_analytique" id="traitement_analytique" class="form-control form-control-sm" required>
+                                                        <option value="">-- Sélectionnez --</option>
+                                                        <option value="oui" {{ old('traitement_analytique') == 'oui' ? 'selected' : '' }}>Oui</option>
+                                                        <option value="non" {{ old('traitement_analytique') == 'non' ? 'selected' : '' }}>Non</option>
+                                                    </select>
+                                                    @error('traitement_analytique') <small class="text-danger">{{ $message }}</small> @enderror
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="compte_de_contrepartie" class="form-label">Comptes</label>
+                                                    <select name="compte_de_contrepartie" id="compte_de_contrepartie" class="form-control form-control-sm" required>
+                                                        <option value="">-- Sélectionner un compte --</option>
+                                                        @if(isset($comptesCinq) && $comptesCinq->count() > 0)
+                                                            @foreach($comptesCinq as $compte)
+                                                                <option value="{{ $compte->numero_de_compte }}" {{ old('compte_de_contrepartie') == $compte->numero_de_compte ? 'selected' : '' }}>
+                                                                    {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
+                                                                </option>
+                                                            @endforeach
+                                                        @else
+                                                            <option disabled>Aucun compte disponible</option>
+                                                        @endif
+                                                    </select>
+                                                    @error('compte_de_contrepartie') <small class="text-danger">{{ $message }}</small> @enderror
+                                                </div>
                                             </div>
 
-                                            <div class="mb-3">
-                                                <label for="traitement_analytique" class="form-label">Traitement analytique</label>
-                                                <select name="traitement_analytique" id="traitement_analytique" class="form-control" required>
-                                                    <option value="">-- Sélectionnez --</option>
-                                                    <option value="oui" {{ old('traitement_analytique') == 'oui' ? 'selected' : '' }}>Oui</option>
-                                                    <option value="non" {{ old('traitement_analytique') == 'non' ? 'selected' : '' }}>Non</option>
-                                                </select>
-                                                @error('traitement_analytique') <small class="text-danger">{{ $message }}</small> @enderror
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="rapprochement_sur" class="form-label">Rapprochement sur</label>
+                                                    <select name="rapprochement_sur" id="rapprochement_sur" class="form-control form-control-sm" required>
+                                                        <option value="">-- Sélectionnez --</option>
+                                                        <option value="automatique" {{ old('rapprochement_sur') == 'automatique' ? 'selected' : '' }}>Automatique</option>
+                                                        <option value="manuel" {{ old('rapprochement_sur') == 'manuel' ? 'selected' : '' }}>Manuel</option>
+                                                    </select>
+                                                    @error('rapprochement_sur') <small class="text-danger">{{ $message }}</small> @enderror
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="Poste" class="form-label">Poste de tresorerie</label>
+                                                    <select name="poste_tresorerie" id="Poste" class="form-control form-control-sm" required>
+                                                        <option value="">-- Sélectionnez --</option>
+                                                        @if(isset($comptesTresorerie) && $comptesTresorerie->count() > 0)
+                                                            @foreach($comptesTresorerie as $compte)
+                                                                <option value="{{ $compte->name }}" {{ old('poste_tresorerie') == $compte->name ? 'selected' : '' }}>
+                                                                    {{ $compte->name }} ({{ $compte->type }})
+                                                                </option>
+                                                            @endforeach
+                                                        @else
+                                                            <option disabled>Aucun poste disponible</option>
+                                                        @endif
+                                                    </select>
+                                                    @error('poste_tresorerie') <small class="text-danger">{{ $message }}</small> @enderror
+                                                </div>
                                             </div>
 
-                                            <div class="mb-3">
-                                                <label for="compte_de_contrepartie" class="form-label">Comptes</label>
-                                                <select name="compte_de_contrepartie" id="compte_de_contrepartie" class="form-control" required>
-                                                    <option value="">-- Sélectionner un compte --</option>
-                                                    @if(isset($comptesCinq) && $comptesCinq->count() > 0)
-                                                        @foreach($comptesCinq as $compte)
-                                                            <option value="{{ $compte->numero_de_compte }}" {{ old('compte_de_contrepartie') == $compte->numero_de_compte ? 'selected' : '' }}>
-                                                                {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
-                                                            </option>
-                                                        @endforeach
-                                                    @else
-                                                        <option disabled>Aucun compte disponible</option>
-                                                    @endif
-                                                </select>
-                                                @error('compte_de_contrepartie') <small class="text-danger">{{ $message }}</small> @enderror
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label for="rapprochement_sur" class="form-label">Rapprochement sur</label>
-                                                <select name="rapprochement_sur" id="rapprochement_sur" class="form-control" required>
-                                                    <option value="">-- Sélectionnez --</option>
-                                                    <option value="automatique" {{ old('rapprochement_sur') == 'automatique' ? 'selected' : '' }}>Automatique</option>
-                                                    <option value="manuel" {{ old('rapprochement_sur') == 'manuel' ? 'selected' : '' }}>Manuel</option>
-                                                </select>
-                                                @error('rapprochement_sur') <small class="text-danger">{{ $message }}</small> @enderror
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="flux" class="form-label">Type de flux</label>
+                                                    <select name="type_flux" id="flux" class="form-control form-control-sm" required>
+                                                        <option value="">-- Sélectionnez --</option>
+                                                        <option value="Crédit">Encaissement</option>
+                                                        <option value="Débit">Decaissement</option>
+                                                    </select>
+                                                    @error('type_flux') <small class="text-danger">{{ $message }}</small> @enderror
+                                                </div>
                                             </div>
                                         </div>
 
@@ -266,7 +302,7 @@
                         {{-- Modals d'édition : placés après le tableau pour éviter l'imbrication dans le <table> --}}
                         @foreach($tresoreries as $journal)
                             <div class="modal fade" id="editModal{{ $journal->id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
+                                <div class="modal-dialog modal-lg">
                                     <div class="modal-content">
                                         <form action="{{ route('update_tresorerie', $journal->id) }}" method="POST">
                                             @csrf
@@ -276,51 +312,83 @@
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label for="code_journal_{{ $journal->id }}" class="form-label">Code journal</label>
-                                                    <input type="text" id="code_journal_{{ $journal->id }}" name="code_journal" class="form-control" value="{{ $journal->code_journal }}" required>
-                                                    @error('code_journal') <small class="text-danger">{{ $message }}</small> @enderror
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="code_journal_{{ $journal->id }}" class="form-label">Code journal</label>
+                                                        <input type="text" id="code_journal_{{ $journal->id }}" name="code_journal" class="form-control form-control-sm" value="{{ $journal->code_journal }}" required>
+                                                        @error('code_journal') <small class="text-danger">{{ $message }}</small> @enderror
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="intitule_{{ $journal->id }}" class="form-label">Intitulé</label>
+                                                        <input type="text" id="intitule_{{ $journal->id }}" name="intitule" class="form-control form-control-sm" value="{{ $journal->intitule }}" required>
+                                                        @error('intitule') <small class="text-danger">{{ $message }}</small> @enderror
+                                                    </div>
                                                 </div>
 
-                                                <div class="mb-3">
-                                                    <label for="intitule_{{ $journal->id }}" class="form-label">Intitulé</label>
-                                                    <input type="text" id="intitule_{{ $journal->id }}" name="intitule" class="form-control" value="{{ $journal->intitule }}" required>
-                                                    @error('intitule') <small class="text-danger">{{ $message }}</small> @enderror
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="traitement_analytique_{{ $journal->id }}" class="form-label">Traitement analytique</label>
+                                                        <select name="traitement_analytique" id="traitement_analytique_{{ $journal->id }}" class="form-control form-control-sm" required>
+                                                            <option value="">-- Sélectionnez --</option>
+                                                            <option value="oui" {{ $journal->traitement_analytique == 'oui' ? 'selected' : '' }}>Oui</option>
+                                                            <option value="non" {{ $journal->traitement_analytique == 'non' ? 'selected' : '' }}>Non</option>
+                                                        </select>
+                                                        @error('traitement_analytique') <small class="text-danger">{{ $message }}</small> @enderror
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="compte_de_contrepartie_{{ $journal->id }}" class="form-label">Compte</label>
+                                                        <select name="compte_de_contrepartie" id="compte_de_contrepartie_{{ $journal->id }}" class="form-control form-control-sm" required>
+                                                            <option value="">-- Sélectionner un compte --</option>
+                                                            @if(isset($comptesCinq))
+                                                                @foreach($comptesCinq as $compte)
+                                                                    <option value="{{ $compte->numero_de_compte }}" {{ $journal->compte_de_contrepartie == $compte->numero_de_compte ? 'selected' : '' }}>
+                                                                        {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
+                                                                    </option>
+                                                                @endforeach
+                                                            @endif
+                                                        </select>
+                                                        @error('compte_de_contrepartie') <small class="text-danger">{{ $message }}</small> @enderror
+                                                    </div>
                                                 </div>
 
-                                                <div class="mb-3">
-                                                    <label for="traitement_analytique_{{ $journal->id }}" class="form-label">Traitement analytique</label>
-                                                    <select name="traitement_analytique" id="traitement_analytique_{{ $journal->id }}" class="form-control" required>
-                                                        <option value="">-- Sélectionnez --</option>
-                                                        <option value="oui" {{ $journal->traitement_analytique == 'oui' ? 'selected' : '' }}>Oui</option>
-                                                        <option value="non" {{ $journal->traitement_analytique == 'non' ? 'selected' : '' }}>Non</option>
-                                                    </select>
-                                                    @error('traitement_analytique') <small class="text-danger">{{ $message }}</small> @enderror
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="rapprochement_sur_{{ $journal->id }}" class="form-label">Rapprochement sur</label>
+                                                        <select name="rapprochement_sur" id="rapprochement_sur_{{ $journal->id }}" class="form-control form-control-sm" required>
+                                                            <option value="">-- Sélectionnez --</option>
+                                                            <option value="automatique" {{ $journal->rapprochement_sur == 'automatique' ? 'selected' : '' }}>Automatique</option>
+                                                            <option value="manuel" {{ $journal->rapprochement_sur == 'manuel' ? 'selected' : '' }}>Manuel</option>
+                                                        </select>
+                                                        @error('rapprochement_sur') <small class="text-danger">{{ $message }}</small> @enderror
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="poste_tresorerie_{{ $journal->id }}" class="form-label">Poste de tresorerie</label>
+                                                        <select name="poste_tresorerie" id="poste_tresorerie_{{ $journal->id }}" class="form-control form-control-sm" required>
+                                                            <option value="">-- Sélectionnez --</option>
+                                                            @if(isset($comptesTresorerie) && $comptesTresorerie->count() > 0)
+                                                                @foreach($comptesTresorerie as $compte)
+                                                                    <option value="{{ $compte->name }}" {{ $journal->poste_tresorerie == $compte->name ? 'selected' : '' }}>
+                                                                        {{ $compte->name }} ({{ $compte->type }})
+                                                                    </option>
+                                                                @endforeach
+                                                            @else
+                                                                <option disabled>Aucun poste disponible</option>
+                                                            @endif
+                                                        </select>
+                                                        @error('poste_tresorerie') <small class="text-danger">{{ $message }}</small> @enderror
+                                                    </div>
                                                 </div>
 
-                                                <div class="mb-3">
-                                                    <label for="compte_de_contrepartie_{{ $journal->id }}" class="form-label">Compte</label>
-                                                    <select name="compte_de_contrepartie" id="compte_de_contrepartie_{{ $journal->id }}" class="form-control" required>
-                                                        <option value="">-- Sélectionner un compte --</option>
-                                                        @if(isset($comptesCinq))
-                                                            @foreach($comptesCinq as $compte)
-                                                                <option value="{{ $compte->numero_de_compte }}" {{ $journal->compte_de_contrepartie == $compte->numero_de_compte ? 'selected' : '' }}>
-                                                                    {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
-                                                                </option>
-                                                            @endforeach
-                                                        @endif
-                                                    </select>
-                                                    @error('compte_de_contrepartie') <small class="text-danger">{{ $message }}</small> @enderror
-                                                </div>
-
-                                                <div class="mb-3">
-                                                    <label for="rapprochement_sur_{{ $journal->id }}" class="form-label">Rapprochement sur</label>
-                                                    <select name="rapprochement_sur" id="rapprochement_sur_{{ $journal->id }}" class="form-control" required>
-                                                        <option value="">-- Sélectionnez --</option>
-                                                        <option value="automatique" {{ $journal->rapprochement_sur == 'automatique' ? 'selected' : '' }}>Automatique</option>
-                                                        <option value="manuel" {{ $journal->rapprochement_sur == 'manuel' ? 'selected' : '' }}>Manuel</option>
-                                                    </select>
-                                                    @error('rapprochement_sur') <small class="text-danger">{{ $message }}</small> @enderror
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="type_flux_{{ $journal->id }}" class="form-label">Type de flux</label>
+                                                        <select name="type_flux" id="type_flux_{{ $journal->id }}" class="form-control form-control-sm" required>
+                                                            <option value="">-- Sélectionnez --</option>
+                                                            <option value="Entrée" {{ $journal->type_flux == 'Entrée' ? 'selected' : '' }}>Entrée</option>
+                                                            <option value="Sortie" {{ $journal->type_flux == 'Sortie' ? 'selected' : '' }}>Sortie</option>
+                                                        </select>
+                                                        @error('type_flux') <small class="text-danger">{{ $message }}</small> @enderror
+                                                    </div>
                                                 </div>
                                             </div>
 

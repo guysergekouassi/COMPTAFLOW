@@ -490,7 +490,27 @@
                                                                 for="hab_exercice_comptable">Exercice comptable</label>
                                                         </div>
                                                     </div>
+                                                     <div class="col-md-4">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                name="habilitations[]" value="Balance_Tiers"
+                                                                id="hab_Balance_Tiers">
+                                                            <label class="form-check-label"
+                                                                for="hab_Balance_Tiers">Balance Des Tiers</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                name="habilitations[]" value="grand_livre_tiers"
+                                                                id="hab_grand_livre_tiers">
+                                                            <label class="form-check-label"
+                                                                for="hab_grand_livre_tiers">Grand Livre Tiers</label>
+                                                        </div>
+                                                    </div>
                                                 </div>
+                                                </div>
+
 
 
                                             </div>
@@ -607,7 +627,8 @@
                                     'modal_saisie_direct',
                                     'nouvelle_saisie',
                                     'grand_livre_tiers',
-                                    'poste'
+                                    'poste',
+                                    'Balance_Tiers'
 
                                 ];
                             @endphp
@@ -717,7 +738,8 @@
                                         'modal_saisie_direct',
                                         'nouvelle_saisie',
                                         'grand_livre_tiers',
-                                        'poste'
+                                        'poste',
+                                        'Balance_Tiers',
                             ];
                         @endphp
 

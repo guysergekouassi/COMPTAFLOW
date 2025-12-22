@@ -14,6 +14,8 @@ class PlanTiersController extends Controller
         try {
             $user = Auth::user();
 
+            $currentCompanyId = session('current_company_id', $user->company_id);
+
             // Récupère les comptes comptables liés à la même company, triés par numéro
             // Comptes généraux commençant par 4 uniquement
             $comptesGeneraux = PlanComptable::where('company_id', $user->company_id)
@@ -22,10 +24,15 @@ class PlanTiersController extends Controller
                 ->get();
 
             // Récupère les plans tiers avec leurs comptes associés, triés par numero_de_tiers
+            // $tiers = PlanTiers::with('compte')
+            //     ->where('company_id', $user->company_id)
+            //     ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
+            //     ->get();
+
             $tiers = PlanTiers::with('compte')
-                ->where('company_id', $user->company_id)
-                ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
-                ->get();
+            ->where('company_id', $currentCompanyId)
+            ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
+            ->get();
 
             // Statistiques
             $totalPlanTiers = $tiers->count();
@@ -90,27 +97,6 @@ class PlanTiersController extends Controller
         }
     }
 
-    // public function getDernierNumero($racine)
-    // {
-    //     try {
-    //         $user = Auth::user();
-
-    //         $dernierTiers = PlanTiers::where('numero_de_tiers', 'like', $racine . '%')
-    //             ->where('company_id', $user->company_id)
-    //             ->orderBy('numero_de_tiers', 'desc')
-    //             ->first();
-
-    //         if ($dernierTiers) {
-    //             $nouveauNumero = str_pad((int) $dernierTiers->numero_de_tiers + 1, 8, '0', STR_PAD_LEFT);
-    //         } else {
-    //             $nouveauNumero = $racine . '0001';
-    //         }
-
-    //         return response()->json(['numero' => $nouveauNumero]);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Erreur lors de la récupération du dernier numéro : ' . $e->getMessage()], 500);
-    //     }
-    // }
 
     public function getDernierNumero($racine)
 {
@@ -144,6 +130,9 @@ class PlanTiersController extends Controller
     public function store(Request $request)
     {
         try {
+
+            $user = Auth::user();
+           $currentCompanyId = session('current_company_id', $user->company_id);
             $request->validate([
                 'numero_de_tiers' => 'required|string',
                 'compte_general' => 'required|exists:plan_comptables,id',
@@ -151,7 +140,11 @@ class PlanTiersController extends Controller
                 'type_de_tiers' => 'required',
             ]);
 
-            $numeroExiste = PlanTiers::where('numero_de_tiers', $request->numero_de_tiers)->exists();
+            $numeroExiste = PlanTiers::where('numero_de_tiers', $request->numero_de_tiers)
+            ->where('company_id', $currentCompanyId)
+            ->exists();
+
+            // $numeroExiste = PlanTiers::where('numero_de_tiers', $request->numero_de_tiers)->exists();
 
             if ($numeroExiste) {
                 return redirect()->back()->with('error', 'Ce numéro de tiers existe déjà.');
@@ -165,7 +158,8 @@ class PlanTiersController extends Controller
                 'intitule' => $intitule_formate,
                 'type_de_tiers' => $request->type_de_tiers,
                 'user_id' => Auth::id(),
-                'company_id' => Auth::user()->company_id,
+                // 'company_id' => Auth::user()->company_id,
+                'company_id' => $currentCompanyId,
             ]);
 
             return redirect()->back()->with('success', 'Plan Tiers créé avec succès');

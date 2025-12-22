@@ -732,13 +732,12 @@ if ($user->role === 'super_admin') {
         </li>
         @endif
 
-{{-- FIN DE BLOC SUPER_ADMIN --}}
+        {{-- FIN BLOC SUPER ADMIN --}}
 
-        <!-- LOGIQUE D'AFFICHAGE DE TOUT LE MENU DE COMPTABILITÉ -->
-        {{-- La condition utilise la variable $isComptaAccountActive pour l'affichage conditionnel --}}
+
         @if ($isComptaAccountActive && !auth()->user()->isSuperAdmin())
 
-        {{-- Tableau de bord Comptabilité. --}}
+
         <li class="menu-item {{ request()->routeIs('compta.dashboard') ? 'active' : '' }}">
             <a href="{{ route('compta.dashboard') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
@@ -841,7 +840,7 @@ if ($user->role === 'super_admin') {
         <li class="menu-item menu-trait {{ request()->routeIs('accounting_entry_real') ? 'active' : '' }}">
             <a href="#" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-transfer-alt"></i> {{-- Changement d'icône pour rapprochement --}}
-                <div class="text-truncate" data-i18n="Email">Etat de rapprochement bancaire</div>
+                <div class="text-truncate" data-i18n="Email">Rapprochement bancaire</div>
             </a>
         </li>
         @endif
@@ -887,14 +886,7 @@ if ($user->role === 'super_admin') {
         </li>
         @endif
 
-         {{-- @if(in_array('gestion_reportings', $habilitations))
-        <li class="menu-item menu-rapport {{ request()->is('accounting_ledger_tiers') ? 'active' : '' }}">
-            <a href="{{ route('accounting_ledger_tiers') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-user-pin"></i>
-                <div class="text-truncate" data-i18n="Basic">Gestion des reportings</div>
-            </a>
-        </li>
-        @endif --}}
+      
 
         @if(in_array('balance', $habilitations))
         <li class="menu-item menu-rapport {{ request()->is('accounting_balance') ? 'active' : '' }}">
@@ -905,7 +897,7 @@ if ($user->role === 'super_admin') {
         </li>
         @endif
 
-        @if(in_array('accounting_balance_tiers', $habilitations))
+        @if(in_array('Balance_Tiers', $habilitations))
         <li class="menu-item menu-rapport {{ request()->is('accounting_balance_tiers') ? 'active' : '' }}">
             <a href="{{ route('accounting_balance_tiers') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-user-pin"></i> {{-- Icône spécifique pour les tiers --}}

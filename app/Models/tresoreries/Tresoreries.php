@@ -18,6 +18,8 @@ use HasFactory;
         'traitement_analytique',
         'compte_de_contrepartie',
         'rapprochement_sur',
+        'poste_tresorerie',
+        'type_flux',
         'user_id',
         'company_id',
     ];

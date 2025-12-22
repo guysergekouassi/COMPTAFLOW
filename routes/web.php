@@ -1,5 +1,10 @@
 <?php
-
+// use Illuminate\Support\Facades\Artisan;
+// Route::get('/config-clear', function() {
+//     Artisan::call('config:clear');
+//     Artisan::call('cache:clear');
+//     return "Configuration videe !";
+// });
 use App\Http\Middleware\authSuperAdminMiddleware;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BalanceController;
@@ -23,7 +28,7 @@ use App\Http\Controllers\GrandLivreTiersController;
 use App\Http\Controllers\GestionTresorerieController;
 use App\Http\Controllers\FluxTresorerieController;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Http\Controllers\Tresoreriecontro\TresorerieController;
+use App\Http\Controllers\TresorerieContro\TresorerieController;
 use App\Http\Controllers\compteController;
 // Contrôleurs Super Admin (l'import était correct, mais la duplication posait problème)
 use App\Http\Controllers\Super\SuperAdminSetupController;
@@ -125,8 +130,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/plan_tiers_ecritures/{id}', [PlanTiersEcritureController::class, 'update'])->name('plan_tiers_ecritures.update');
 
     // *****************ROUTE GESTION DES PLAN TIERS
-    Route::get('/plan_tiers', [PlanTiersController::class, 'index'])->name('plan_tiers');
     Route::get('/plan_tiers/{racine}', [PlanTiersController::class, 'getDernierNumero'])->name('getDernierNumero');
+    Route::get('/plan_tiers', [PlanTiersController::class, 'index'])->name('plan_tiers');
     Route::post('/plan_tiers', [PlanTiersController::class, 'store'])->name('plan_tiers.store');
     Route::put('/plan_tiers/{id}', [PlanTiersController::class, 'update'])->name('plan_tiers.update');
     Route::delete('/plan_tiers/{id}', [PlanTiersController::class, 'destroy'])->name('plan_tiers.destroy');
@@ -271,7 +276,7 @@ Route::get('/tresorerie/plan/export-csv', [TresorerieController::class, 'exportC
 
 // 2. Route Index (Racine)
 
-Route::get('/tresorerie', [TresorerieController::class, 'index'])->name('indextresorerie');
+Route::get('/tresorerie', [\App\Http\Controllers\TresorerieContro\TresorerieController::class, 'index'])->name('indextresorerie');
 
 // 3. Routes Paramétrées (celles qui ont /{id}) - DOIVENT être à la fin
 Route::get('/tresorerie/{id}', [TresorerieController::class, 'show'])->name('showtresorerie');
@@ -329,11 +334,13 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
 
 
      Route::put('/{company}/toggle', [SuperAdminCompanyController::class, 'toggleStatus'])->name('toggle');
-
+     Route::put('/companies/{company}/update', [SuperAdminCompanyController::class, 'update'])->name('superadmin.companies.update');
 
     // Route::resource('companies', SuperAdminCompanyController::class)->except(['index', 'show']);
     Route::resource('companies', SuperAdminCompanyController::class);
-    // Page de configuration avancée
+    // Page de configuration avancée*
+
+
     Route::get('/advanced-settings', [SuperAdminSetupController::class, 'index'])->name('settings');
 
     // Route pour la création de sous-compagnies par l'Admin

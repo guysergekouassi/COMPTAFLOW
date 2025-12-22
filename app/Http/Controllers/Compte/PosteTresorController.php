@@ -554,8 +554,6 @@ public function generatePdf(Request $request)
         }
     }
 
-    // NOUVELLE MÉTHODE DE PRÉPARATION DES DONNÉES POUR LE NOUVEAU BLADE
-    // ... (commenté)
 
 
 private function getMonthlyCashFlowData($companyId, $startDate, $endDate)
@@ -625,27 +623,30 @@ private function getMonthlyCashFlowData($companyId, $startDate, $endDate)
             $monthlyTotals = array_fill(0, $numPeriods, 0.0);
             $detailsList = []; // Liste pour stocker les transactions détaillées
             $totalCompte = 0.0;
+foreach ($entries as $entry) {
+    $periodName = Carbon::parse($entry->date)->isoFormat('MMM-YY');
+    $periodKey = $periodMap[$periodName] ?? null;
 
-            foreach ($entries as $entry) {
-                $periodName = Carbon::parse($entry->date)->isoFormat('MMM-YY');
-                $periodKey = $periodMap[$periodName] ?? null;
+    if (is_int($periodKey)) {
+        // RÉPARATION : On extrait le montant positif peu importe la colonne (débit ou crédit)
+        $debitVal = (float) $entry->debit;
+        $creditVal = (float) $entry->credit;
 
-                if (is_int($periodKey)) {
-                    // FIX 1: Extraction correcte du montant basé sur la convention Encaissement=Débit, Décaissement=Crédit
-                    $value = (float) ($isIncome ? $entry->debit : $entry->credit);
+        // On prend la valeur qui n'est pas nulle
+        $value = ($debitVal > 0) ? $debitVal : $creditVal;
 
-                    $monthlyTotals[$periodKey] += $value;
-                    $totalCompte += $value;
+        $monthlyTotals[$periodKey] += $value;
+        $totalCompte += $value;
 
-                    // AJOUT CRUCIAL : Détails de la transaction
-                    $detailsList[] = [
-                        'date' => Carbon::parse($entry->date)->format('d/m'),
-                        'description' => $entry->description_operation,
-                        'reference' => $entry->reference_piece,
-                        // FIX 2: Affichage correct de la valeur dans la colonne Débit ou Crédit
-                        'debit' => $isIncome ? number_format($value, 2, ',', ' ') : '—',
-                        'credit' => $isIncome ? '—' : number_format($value, 2, ',', ' '),
-                    ];
+        // Structure pour le tableau de détails
+        $detailsList[] = [
+            'date' => Carbon::parse($entry->date)->format('d/m'),
+            'description' => $entry->description_operation,
+            'reference' => $entry->reference_piece,
+            // On affiche fidèlement ce qui est en base pour le débit/crédit
+            'debit' => $debitVal > 0 ? number_format($debitVal, 2, ',', ' ') : '0,00',
+            'credit' => $creditVal > 0 ? number_format($creditVal, 2, ',', ' ') : '0,00',
+        ];
 
                     // Mise à jour des totaux généraux
                     if ($isIncome) {
@@ -698,7 +699,27 @@ private function getMonthlyCashFlowData($companyId, $startDate, $endDate)
         $netCashFlowByPeriod = $this->calculateAndFormatNet($totalEncaissementsByPeriod, $totalDecaissementsByPeriod, $numPeriods);
         $grandNetCashFlow = number_format($grandTotalEncaissements - $grandTotalDecaissements, 2, ',', ' ');
 
-        // 7. FORMATAGE DES TOTAUX RESTANTS (Encaissements et Décaissements Totaux)
+        // 7. CALCULER LES SOLDES NETS ET LA VARIATION TOTALE
+     $variationGlobaleByPeriod = array_fill(0, $numPeriods, 0.0);
+
+        for ($i = 0; $i < $numPeriods; $i++) {
+    // Récupération des valeurs brutes (raw) pour les calculs mathématiques
+    $opNet = ($operationalFlow['totalEncaissementsRaw'][$i] ?? 0) - ($operationalFlow['totalDecaissementsRaw'][$i] ?? 0);
+    $invNet = $investmentTotals['raw_net_by_period'][$i] ?? 0;
+    $finNet = $financingTotals['raw_net_by_period'][$i] ?? 0;
+
+    // Variation mensuelle globale
+    $variationGlobaleByPeriod[$i] = $opNet + $invNet + $finNet;
+}
+
+// 7. FORMATAGE POUR LA VUE PDF
+$grandVariationGlobale = array_sum($variationGlobaleByPeriod);
+$formattedVariationGlobale = $this->formatTotals($variationGlobaleByPeriod);
+
+
+
+
+        // 8. FORMATAGE DES TOTAUX RESTANTS (Encaissements et Décaissements Totaux)
         $totalEncaissementsByPeriod = $this->formatTotals($totalEncaissementsByPeriod);
         $totalDecaissementsByPeriod = $this->formatTotals($totalDecaissementsByPeriod);
         $grandTotalEncaissements = number_format($grandTotalEncaissements, 2, ',', ' ');
@@ -728,11 +749,11 @@ private function getMonthlyCashFlowData($companyId, $startDate, $endDate)
         // Flux de Financement
         'financingFlow',
         'financingTotals', // NOUVEAU
+        'formattedVariationGlobale', // La variation totale de la période
+        'grandVariationGlobale'      // Total global de la variation
     );
 }
-    /**
-     * Méthode utilitaire pour formater les montants mensuels.
-     */
+
     protected function formatMonthlyData($monthlyData)
     {
         $formatted = [];

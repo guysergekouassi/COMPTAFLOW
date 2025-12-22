@@ -164,30 +164,7 @@
                 @endforeach
                 <td>{{ $flow['total'] }}</td>
             </tr>
-            {{-- BLOC AJOUTÉ : Détails des transactions (Débit/Crédit) --}}
-            {{-- @if(!empty($flow['details']))
-            <tr>
-                <td colspan="{{ $totalColumns }}" style="padding: 0;">
-                    <table class="detail-table">
-                        <tr class="detail-row">
-                            <td class="detail-description" style="font-weight: bold; color: #343a40;">Date / Description (Réf.)</td>
-                            <td class="detail-amount" style="font-weight: bold; text-align: right; color: #343a40;">Débit</td>
-                            <td class="detail-amount" style="font-weight: bold; text-align: right; color: #343a40;">Crédit</td>
-                        </tr>
-                        @foreach($flow['details'] as $detail)
-                        <tr class="detail-row">
-                            <td class="detail-description">
-                                {{ $detail['date'] }} : {{ $detail['description'] }} (Réf: {{ $detail['reference'] }})
-                            </td>
-                            <td class="detail-amount">{{ $detail['debit'] }}</td>
-                            <td class="detail-amount">{{ $detail['credit'] }}</td>
-                        </tr>
-                        @endforeach
-                    </table>
-                </td>
-            </tr>
-            @endif --}}
-            {{-- FIN BLOC AJOUTÉ --}}
+            
             @endforeach
 
             {{-- Ligne Total des Encaissements Opérationnels --}}
@@ -216,25 +193,7 @@
                 @endforeach
                 <td>{{ $flow['total'] }}</td>
             </tr>
-            {{-- BLOC AJOUTÉ : Détails des transactions (Débit/Crédit) --}}
-            {{-- @if(!empty($flow['details']))
-            <tr>
-                <td colspan="{{ $totalColumns }}" style="padding: 0;">
-                    <table class="detail-table">
-                        @foreach($flow['details'] as $detail)
-                        <tr class="detail-row">
-                            <td class="detail-description">
-                                {{ $detail['date'] }} : {{ $detail['description'] }} (Réf: {{ $detail['reference'] }})
-                            </td>
-                            <td class="detail-amount">{{ $detail['debit'] }}</td>
-                            <td class="detail-amount">{{ $detail['credit'] }}</td>
-                        </tr>
-                        @endforeach
-                    </table>
-                </td>
-            </tr>
-            @endif --}}
-            {{-- FIN BLOC AJOUTÉ --}}
+
             @endforeach
 
             {{-- Autres Achats / Dépenses --}}
@@ -249,25 +208,7 @@
                 @endforeach
                 <td>{{ $flow['total'] }}</td>
             </tr>
-            {{-- BLOC AJOUTÉ : Détails des transactions (Débit/Crédit) --}}
-            {{-- @if(!empty($flow['details']))
-            <tr>
-                <td colspan="{{ $totalColumns }}" style="padding: 0;">
-                    <table class="detail-table">
-                        @foreach($flow['details'] as $detail)
-                        <tr class="detail-row">
-                            <td class="detail-description">
-                                {{ $detail['date'] }} : {{ $detail['description'] }} (Réf: {{ $detail['reference'] }})
-                            </td>
-                            <td class="detail-amount">{{ $detail['debit'] }}</td>
-                            <td class="detail-amount">{{ $detail['credit'] }}</td>
-                        </tr>
-                        @endforeach
-                    </table>
-                </td>
-            </tr>
-            @endif --}}
-            {{-- FIN BLOC AJOUTÉ --}}
+
             @endforeach
 
             {{-- Ligne Total des Décaissements Opérationnels --}}
@@ -304,25 +245,7 @@
                 @endforeach
                 <td>{{ $flow['total'] }}</td>
             </tr>
-            {{-- BLOC AJOUTÉ : Détails des transactions (Débit/Crédit) --}}
-            {{-- @if(!empty($flow['details']))
-            <tr>
-                <td colspan="{{ $totalColumns }}" style="padding: 0;">
-                    <table class="detail-table">
-                        @foreach($flow['details'] as $detail)
-                        <tr class="detail-row">
-                            <td class="detail-description">
-                                {{ $detail['date'] }} : {{ $detail['description'] }} (Réf: {{ $detail['reference'] }})
-                            </td>
-                            <td class="detail-amount">{{ $detail['debit'] }}</td>
-                            <td class="detail-amount">{{ $detail['credit'] }}</td>
-                        </tr>
-                        @endforeach
-                    </table>
-                </td>
-            </tr>
-            @endif --}}
-            {{-- FIN BLOC AJOUTÉ --}}
+
             @endforeach
 
             <tr>
@@ -336,25 +259,7 @@
                 @endforeach
                 <td>{{ $flow['total'] }}</td>
             </tr>
-            {{-- BLOC AJOUTÉ : Détails des transactions (Débit/Crédit) --}}
-            {{-- @if(!empty($flow['details']))
-            <tr>
-                <td colspan="{{ $totalColumns }}" style="padding: 0;">
-                    <table class="detail-table">
-                        @foreach($flow['details'] as $detail)
-                        <tr class="detail-row">
-                            <td class="detail-description">
-                                {{ $detail['date'] }} : {{ $detail['description'] }} (Réf: {{ $detail['reference'] }})
-                            </td>
-                            <td class="detail-amount">{{ $detail['debit'] }}</td>
-                            <td class="detail-amount">{{ $detail['credit'] }}</td>
-                        </tr>
-                        @endforeach
-                    </table>
-                </td>
-            </tr>
-            @endif --}}
-            {{-- FIN BLOC AJOUTÉ --}}
+
             @endforeach
 
             {{-- Lignes Totaux et Solde Net Investissement --}}
@@ -399,25 +304,7 @@
                 @endforeach
                 <td>{{ $flow['total'] }}</td>
             </tr>
-            {{-- BLOC AJOUTÉ : Détails des transactions (Débit/Crédit) --}}
-            {{-- @if(!empty($flow['details']))
-            <tr>
-                <td colspan="{{ $totalColumns }}" style="padding: 0;">
-                    <table class="detail-table">
-                        @foreach($flow['details'] as $detail)
-                        <tr class="detail-row">
-                            <td class="detail-description">
-                                {{ $detail['date'] }} : {{ $detail['description'] }} (Réf: {{ $detail['reference'] }})
-                            </td>
-                            <td class="detail-amount">{{ $detail['debit'] }}</td>
-                            <td class="detail-amount">{{ $detail['credit'] }}</td>
-                        </tr>
-                        @endforeach
-                    </table>
-                </td>
-            </tr>
-            @endif --}}
-            {{-- FIN BLOC AJOUTÉ --}}
+
             @endforeach
 
             <tr>
@@ -433,21 +320,7 @@
             </tr>
             {{-- BLOC AJOUTÉ : Détails des transactions (Débit/Crédit) --}}
             @if(!empty($flow['details']))
-            {{-- <tr>
-                <td colspan="{{ $totalColumns }}" style="padding: 0;">
-                    <table class="detail-table">
-                        @foreach($flow['details'] as $detail)
-                        <tr class="detail-row">
-                            <td class="detail-description">
-                                {{ $detail['date'] }} : {{ $detail['description'] }} (Réf: {{ $detail['reference'] }})
-                            </td>
-                            <td class="detail-amount">{{ $detail['debit'] }}</td>
-                            <td class="detail-amount">{{ $detail['credit'] }}</td>
-                        </tr>
-                        @endforeach
-                    </table>
-                </td>
-            </tr> --}}
+
             @endif
             {{-- FIN BLOC AJOUTÉ --}}
             @endforeach
@@ -477,7 +350,19 @@
                 <td>{{ $financingTotals['grandNet'] ?? '—' }}</td>
             </tr>
 
+
         </tbody>
     </table>
+    <table class="table-flux">
+    <tbody>
+        <tr class="grand-total-line" style="background-color: #0d6efd; color: white;">
+            <td class="description-column">VARIATION NETTE DE TRÉSORERIE (1+2+3)</td>
+            @foreach($periods as $key => $period)
+                <td>{{ $formattedVariationGlobale[$key] }}</td>
+            @endforeach
+            <td>{{ number_format($grandVariationGlobale, 2, ',', ' ') }}</td>
+        </tr>
+    </tbody>
+</table>
 </body>
 </html>
