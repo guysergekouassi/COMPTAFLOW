@@ -46,19 +46,18 @@
     .global-header-minimal {
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: space-between;
         padding: 20px 40px;
-        background: transparent;
         position: relative;
         z-index: 1001;
     }
 
     .header-dynamic-title {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
         white-space: nowrap;
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
 
     .text-gradient {
@@ -374,6 +373,11 @@
         <h1 class="text-slate-900 font-extrabold tracking-tight m-0">
             {!! $page_title ?? '' !!}
         </h1>
+        @if(isset($company_name))
+            <span class="text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 px-3 py-1 rounded-full">
+                {{ $company_name }}
+            </span>
+        @endif
     </div>
     
     <div class="flex items-center gap-4">

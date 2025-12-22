@@ -63,6 +63,96 @@
     .dataTables_wrapper .dataTables_paginate {
         display: none;
     }
+
+    /* Nouveau Design Premium pour les Modaux */
+    .premium-modal-content {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 1);
+        border-radius: 20px;
+        box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        max-width: 400px;
+        margin: auto;
+        padding: 1.25rem !important;
+    }
+
+    .input-field-premium {
+        transition: all 0.2s ease;
+        border: 2px solid #f1f5f9 !important;
+        background-color: #f8fafc !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        color: #0f172a !important;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .input-field-premium:focus {
+        border-color: #1e40af !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.05) !important;
+        outline: none !important;
+    }
+
+    .text-blue-gradient-premium {
+        background: linear-gradient(to right, #1e40af, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+    }
+
+    .input-label-premium {
+        font-size: 0.7rem !important;
+        font-weight: 800 !important;
+        color: #64748b !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        margin-left: 0.1rem !important;
+        margin-bottom: 0.35rem !important;
+        display: block !important;
+    }
+
+    .btn-save-premium {
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        background-color: #1e40af !important;
+        color: white !important;
+        font-weight: 800 !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1) !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+        width: 100%;
+    }
+
+    .btn-save-premium:hover {
+        background-color: #1e3a8a !important;
+        transform: translateY(-2px) !important;
+    }
+
+    .btn-cancel-premium {
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        color: #94a3b8 !important;
+        font-weight: 700 !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+        background: transparent !important;
+        width: 100%;
+    }
+
+    .btn-cancel-premium:hover {
+        background-color: #f8fafc !important;
+        color: #475569 !important;
+    }
 </style>
 
 <body>
@@ -76,7 +166,7 @@
             <!-- Layout container -->
             <div class="layout-page">
                 <!-- Navbar -->
-                @include('components.header', ['page_title' => 'Plan <span class="text-gradient">Comptable</span>'])
+                @include('components.header', ['page_title' => 'Plan <span class="text-gradient">Comptable</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Gestion des comptes</span>'])
                 <!-- / Navbar -->
 
                 <!-- Content wrapper -->
@@ -87,9 +177,6 @@
                         
                         <!-- Badge Section -->
                         <div class="text-center mb-8 -mt-4">
-                            <span class="inline-block px-4 py-1.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full mb-3">
-                                Gestion des comptes
-                            </span>
                             <p class="text-slate-500 font-medium max-w-xl mx-auto">
                                 Organisez et structurez votre comptabilité avec la nomenclature officielle de COMPTAFLOW.
                             </p>
@@ -317,86 +404,130 @@
     <!-- Modal Creation -->
     <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <form action="{{ route('plan_comptable.store') }}" method="POST" id="planComptableForm">
-                    @csrf
-                    <div class="modal-header">
-                        <h5 class="modal-title">Créer un compte général</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            <form action="{{ route('plan_comptable.store') }}" method="POST" id="planComptableForm" class="w-full">
+                @csrf
+                <div class="modal-content premium-modal-content">
+                    
+                    <!-- Header -->
+                    <div class="text-center mb-6 position-relative">
+                        <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                            Nouveau <span class="text-blue-gradient-premium">Compte</span>
+                        </h1>
+                        <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
                     </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label for="numero_de_compte" class="form-label">Numéro de compte</label>
-                                <input type="text" class="form-control" id="numero_de_compte" name="numero_de_compte" maxlength="8" required>
-                                <span id="numero_compte_feedback" class="text-danger small mt-1 d-block"></span>
-                            </div>
-                            <div class="col-6">
-                                <label for="intitule" class="form-label">Intitulé</label>
-                                <input type="text" class="form-control" id="intitule" name="intitule" required>
-                            </div>
+
+                    <div class="space-y-4">
+                        <!-- Numéro de compte -->
+                        <div class="space-y-1">
+                            <label for="numero_de_compte" class="input-label-premium">Numéro de compte</label>
+                            <input type="text" class="input-field-premium" id="numero_de_compte" name="numero_de_compte" 
+                                maxlength="8" placeholder="Ex: 41110000" required>
+                            <span id="numero_compte_feedback" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <!-- Intitulé -->
+                        <div class="space-y-1">
+                            <label for="intitule" class="input-label-premium">Intitulé du compte</label>
+                            <input type="text" class="input-field-premium" id="intitule" name="intitule" 
+                                placeholder="Entrez l'intitulé du compte" required>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
-                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+
+                    <!-- Actions -->
+                    <div class="grid grid-cols-2 gap-4 pt-8">
+                        <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                            Annuler
+                        </button>
+                        <button type="submit" class="btn-save-premium">
+                            Enregistrer
+                        </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Modal Update -->
     <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <form id="updatePlanForm" method="POST" action="{{ route('plan_comptable.update', ['id' => '__ID__']) }}">
-                    @csrf
-                    @method('PUT')
-                    <div class="modal-header">
-                        <h5 class="modal-title">Modifier un plan comptable</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            <form id="updatePlanForm" method="POST" action="{{ route('plan_comptable.update', ['id' => '__ID__']) }}" class="w-full">
+                @csrf
+                @method('PUT')
+                <div class="modal-content premium-modal-content">
+                    
+                    <!-- Header -->
+                    <div class="text-center mb-6 position-relative">
+                        <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                            Modifier <span class="text-blue-gradient-premium">Compte</span>
+                        </h1>
+                        <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
                     </div>
-                    <div class="modal-body">
+
+                    <div class="space-y-4">
                         <input type="hidden" id="update_planId" name="id" />
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label for="update_numero_de_compte" class="form-label">Numéro de compte</label>
-                                <input type="text" class="form-control" id="update_numero_de_compte" name="numero_de_compte" required>
-                            </div>
-                            <div class="col-6">
-                                <label for="update_intitule" class="form-label">Intitulé</label>
-                                <input type="text" class="form-control" id="update_intitule" name="intitule" required>
-                            </div>
+                        
+                        <!-- Numéro de compte -->
+                        <div class="space-y-1">
+                            <label for="update_numero_de_compte" class="input-label-premium">Numéro de compte</label>
+                            <input type="text" class="input-field-premium" id="update_numero_de_compte" name="numero_de_compte" required>
+                        </div>
+
+                        <!-- Intitulé -->
+                        <div class="space-y-1">
+                            <label for="update_intitule" class="input-label-premium">Intitulé du compte</label>
+                            <input type="text" class="input-field-premium" id="update_intitule" name="intitule" required>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
-                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+
+                    <!-- Actions -->
+                    <div class="grid grid-cols-2 gap-4 pt-8">
+                        <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                            Annuler
+                        </button>
+                        <button type="submit" class="btn-save-premium">
+                            Enregistrer
+                        </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Modal Delete -->
     <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header text-white justify-content-center bg-danger">
-                    <h5 class="modal-title text-white" id="deleteModalLabel"><i class="bx bx-error-circle me-2"></i>Confirmer</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content premium-modal-content">
+                <!-- Header -->
+                <div class="text-center mb-6 position-relative">
+                    <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                        Confirmer la <span class="text-red-600">Suppression</span>
+                    </h1>
                 </div>
-                <div class="modal-body text-center">
-                    <p class="mb-0">Êtes-vous sûr ? Cette action est <strong>irréversible</strong>.</p>
-                    <p class="fw-bold text-danger mt-2" id="planToDeleteName"></p>
+
+                <div class="text-center space-y-3 mb-8">
+                    <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                        Êtes-vous sûr de vouloir supprimer ce compte ? Cette action est irréversible.
+                    </p>
+                    <p class="text-slate-900 font-bold" id="planToDeleteName"></p>
                 </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <form method="POST" id="deletePlanForm" style="display:inline;">
+
+                <!-- Actions -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <form method="POST" id="deletePlanForm" class="w-full">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Supprimer</button>
+                        <button type="submit" class="btn-save-premium !bg-red-600 hover:!bg-red-700 shadow-red-200">
+                            Supprimer
+                        </button>
                     </form>
                 </div>
             </div>
@@ -406,19 +537,38 @@
     <!-- Modal Defaut -->
     <div class="modal fade" id="Plan_defaut" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <form id="Plandefaut" method="POST" action="{{ route('plan_comptable.defaut') }}">
-                    @csrf
-                    <div class="modal-body">
-                        <p>Voulez-vous charger le plan comptable par défaut ?</p>
+            <form id="Plandefaut" method="POST" action="{{ route('plan_comptable.defaut') }}" class="w-full">
+                @csrf
+                <div class="modal-content premium-modal-content">
+                    <!-- Header -->
+                    <div class="text-center mb-6 position-relative">
+                        <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-magic text-blue-600 text-xl"></i>
+                        </div>
+                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                            Plan par <span class="text-blue-600">Défaut</span>
+                        </h1>
+                    </div>
+
+                    <div class="text-center mb-8">
+                        <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                            Souhaitez-vous charger le plan comptable standard ? Cela facilitera la configuration initiale.
+                        </p>
                         <input type="hidden" name="use_default" value="true">
                     </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Confirmer</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+
+                    <!-- Actions -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                            Annuler
+                        </button>
+                        <button type="submit" class="btn-save-premium">
+                            Confirmer
+                        </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 

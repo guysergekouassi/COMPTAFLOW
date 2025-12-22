@@ -76,9 +76,12 @@ class TresorerieController extends Controller
 
         // Récupération des comptes de trésorerie
         if ($companyIdsToView->isEmpty()) {
-             $comptesTresorerie = collect();
+             $comptesTresorerie = CompteTresorerie::whereNull('company_id')->get();
         } else {
-             $comptesTresorerie = CompteTresorerie::whereIn('company_id', $companyIdsToView->toArray())->get();
+             $comptesTresorerie = CompteTresorerie::whereIn('company_id', $companyIdsToView->toArray())
+                ->orWhereNull('company_id')
+                ->get()
+                ->unique('name');
         }
 
         return compact('tresoreries', 'comptesCinq', 'comptesTresorerie');

@@ -15,7 +15,7 @@
                 <div class="layout-page">
                     <!-- Navbar -->
 
-                    @include('components.header', ['page_title' => 'Plan <span class="text-gradient">Tiers</span>'])
+                    @include('components.header', ['page_title' => 'Plan <span class="text-gradient">Tiers</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Gestion des tiers</span>'])
 
                     <!-- / Navbar -->
 
@@ -176,10 +176,6 @@
 
                         <!-- Badge Section -->
                         <div class="text-center mb-8 -mt-4">
-                            <span
-                                class="inline-block px-4 py-1.5 mb-3 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full">
-                                Gestion des tiers
-                            </span>
                             <p class="text-slate-500 font-medium max-w-xl mx-auto">
                                 Organisez et gérez vos partenaires commerciaux (clients, fournisseurs) avec la structure COMPTAFLOW.
                             </p>
