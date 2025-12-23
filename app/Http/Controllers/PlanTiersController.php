@@ -12,12 +12,7 @@ class PlanTiersController extends Controller
     public function index()
     {
         try {
-            $user = Auth::user();
-
-            $currentCompanyId = session('current_company_id', $user->company_id);
-
-            $comptesGeneraux = PlanComptable::where('company_id', $currentCompanyId)
-                ->where('numero_de_compte', 'LIKE', '4%')
+            $comptesGeneraux = PlanComptable::where('numero_de_compte', 'LIKE', '4%')
                 ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
                 ->get();
 
@@ -28,9 +23,8 @@ class PlanTiersController extends Controller
             //     ->get();
 
             $tiers = PlanTiers::with('compte')
-            ->where('company_id', $currentCompanyId)
-            ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
-            ->get();
+                ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
+                ->get();
 
             // Statistiques
             $totalPlanTiers = $tiers->count();
@@ -99,13 +93,10 @@ class PlanTiersController extends Controller
     public function getDernierNumero($racine)
 {
     try {
-        $user = Auth::user();
-        $currentCompanyId = session('current_company_id', $user->company_id);
         $longueurTotal = 8;
 
-        // Récupérer le dernier tiers existant pour ce compte général
+        // Récupérer le dernier tiers existant (filtré auto)
         $dernierTiers = PlanTiers::where('numero_de_tiers', 'like', $racine . '%')
-            ->where('company_id', $currentCompanyId)
             ->orderBy('numero_de_tiers', 'desc')
             ->first();
 
@@ -140,10 +131,7 @@ class PlanTiersController extends Controller
             ]);
 
             $numeroExiste = PlanTiers::where('numero_de_tiers', $request->numero_de_tiers)
-            ->where('company_id', $currentCompanyId)
-            ->exists();
-
-            // $numeroExiste = PlanTiers::where('numero_de_tiers', $request->numero_de_tiers)->exists();
+                ->exists();
 
             if ($numeroExiste) {
                 return redirect()->back()->with('error', 'Ce numéro de tiers existe déjà.');
@@ -156,9 +144,7 @@ class PlanTiersController extends Controller
                 'compte_general' => $request->compte_general,
                 'intitule' => $intitule_formate,
                 'type_de_tiers' => $request->type_de_tiers,
-                'user_id' => Auth::id(),
-                // 'company_id' => Auth::user()->company_id,
-                'company_id' => $currentCompanyId,
+                // user_id et company_id auto
             ]);
 
             return redirect()->back()->with('success', 'Plan Tiers créé avec succès');

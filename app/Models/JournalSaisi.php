@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
  use App\Models\tresoreries\Tresoreries;
  use Illuminate\Support\Facades\Auth;
+use App\Traits\BelongsToTenant;
+
 class JournalSaisi extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $table = 'journaux_saisis';
 

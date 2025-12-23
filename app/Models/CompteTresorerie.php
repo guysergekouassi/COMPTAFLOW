@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToTenant;
+
 class CompteTresorerie extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
 
     protected $fillable = [
@@ -17,6 +19,7 @@ class CompteTresorerie extends Model
         'solde_initial',
         'solde_actuel', // Maintenu par les mouvements
         'plan_comptable_id',
+        'company_id',
     ];
 
 

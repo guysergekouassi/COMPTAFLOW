@@ -26,7 +26,7 @@ class EcritureComptableController extends Controller
         $data = $request->all();
 
         // Vérifier si des exercices existent pour cette entreprise
-        $exercicesCount = ExerciceComptable::where('company_id', $user->company_id)->count();
+        $exercicesCount = ExerciceComptable::count();
 
         // Si aucun exercice n'existe, rediriger vers la page de création
         if ($exercicesCount == 0) {
@@ -38,15 +38,13 @@ class EcritureComptableController extends Controller
         $data['mois'] = $data['mois'] ?? date('n'); // mois sans leading zero
         $data['id_exercice'] = $data['id_exercice'] ?? null;
 
-        $plansComptables = PlanComptable::where('company_id', $user->company_id)
-            ->select('id', 'numero_de_compte', 'intitule')
+        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
             ->orderByRaw("LEFT(numero_de_compte, 1) ASC")  // trie par classe
             ->orderBy('numero_de_compte', 'asc')           // trie par compte
             ->get();
 
 
-        $plansTiers = PlanTiers::where('company_id', $user->company_id)
-            ->select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')
             ->with('compte')
             ->orderByRaw("LEFT(numero_de_tiers, 1) ASC")
             ->orderBy('numero_de_tiers', 'asc')
@@ -86,8 +84,7 @@ class EcritureComptableController extends Controller
         $totalCredit = $queryForSum->sum('credit');
 
         // Génération automatique du n° de saisie (12 chiffres, unique)
-        $lastSaisie = EcritureComptable::where('company_id', $user->company_id)
-            ->max('n_saisie');
+        $lastSaisie = EcritureComptable::max('n_saisie');
 
         $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
 
@@ -224,8 +221,7 @@ class EcritureComptableController extends Controller
                     'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? null,
                     'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? null,
                     'piece_justificatif' => $pieceJustificatifName,
-                    'user_id' => Auth::id(),
-                    'company_id' => Auth::user()->company_id,
+                    // 'user_id' et 'company_id' sont maintenant gérés par BelongsToTenant
                 ]);
             } catch (\Illuminate\Database\QueryException $e) {
                 // CAPTURE DE L'ERREUR SPÉCIFIQUE À LA LIGNE
@@ -257,8 +253,7 @@ public function getComptesParFlux(Request $request) {
 
     Log::info("AJAX getComptesParFlux called. TypeFlux received: '" . $typeFlux . "'");
 
-    $query = PlanComptable::where('company_id', $user->company_id)
-        ->select('id', 'numero_de_compte', 'intitule');
+    $query = PlanComptable::select('id', 'numero_de_compte', 'intitule');
 
     // Filtrage selon la logique comptable des flux de trésorerie
     if ($typeFlux && stripos($typeFlux, 'Operationnelles') !== false) {
@@ -308,11 +303,11 @@ public function getComptesParFlux(Request $request) {
         $data = $request->all();
 
         // Récupérer les données de base
-        $exercices = ExerciceComptable::where('company_id', $user->company_id)->get()->unique('intitule');
-        $code_journaux = CodeJournal::where('company_id', $user->company_id)->get()->unique('code_journal');
+        $exercices = ExerciceComptable::get()->unique('intitule');
+        $code_journaux = CodeJournal::get()->unique('code_journal');
 
         // Construire la requête pour les écritures
-        $query = EcritureComptable::where('company_id', $user->company_id);
+        $query = EcritureComptable::query();
 
         // Appliquer les filtres
         if (!empty($data['exercice_id'])) {
@@ -335,20 +330,17 @@ public function getComptesParFlux(Request $request) {
         $totalCredit = $ecritures->sum('credit');
 
         // Récupérer les données pour les formulaires
-        $plansComptables = PlanComptable::where('company_id', $user->company_id)
-            ->select('id', 'numero_de_compte', 'intitule')
+        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
             ->orderByRaw("LEFT(numero_de_compte, 1) ASC")
             ->orderBy('numero_de_compte', 'asc')
             ->get();
 
-        $tiers = PlanTiers::where('company_id', $user->company_id)
-            ->select('id', 'numero_de_tiers', 'intitule')
+        $tiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule')
             ->orderByRaw("LEFT(numero_de_tiers, 1) ASC")
             ->orderBy('numero_de_tiers', 'asc')
             ->get();
 
-        $postesTresorerie = CompteTresorerie::where('company_id', $user->company_id)
-            ->orderBy('name', 'asc')
+        $postesTresorerie = CompteTresorerie::orderBy('name', 'asc')
             ->get();
 
         return view('accounting_entry_list', compact(

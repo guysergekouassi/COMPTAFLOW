@@ -18,21 +18,9 @@ class ExerciceComptableController extends Controller
 public function index()
 {
     $user = Auth::user();
-    $companyId = $user->company_id ?? session('company_id') ?? 1;
 
-    $companyId = $user->company_id;
-    $allCompanyIds = [$companyId];
-
-    $childIds = Company::where('parent_company_id', $companyId)
-                       ->pluck('id')
-                       ->toArray();
-
-    $allCompanyIds = array_merge($allCompanyIds, $childIds);
-
-
-    $exercices = ExerciceComptable::whereIn('company_id', $allCompanyIds)
-        
-        ->orderBy('date_debut', 'desc')
+    // La requête est automatiquement filtrée par TenantScope (Session active)
+    $exercices = ExerciceComptable::orderBy('date_debut', 'desc')
         ->get()
         ->map(function ($exercice) {
             $dateDebut = Carbon::parse($exercice->date_debut);
@@ -47,7 +35,7 @@ public function index()
             return $exercice;
         });
 
-        $code_journaux = CodeJournal::where('company_id', $companyId)->get();
+        $code_journaux = CodeJournal::get();
 // dd('Company ID:', $companyId, 'Nombre d\'exercices trouvés:', $exercices->count(), $exercices);
     return view('exercice_comptable', compact('exercices','code_journaux'));
 }
@@ -65,12 +53,8 @@ public function index()
                 'intitule' => 'nullable|string|max:255',
             ]);
 
-            $userId = Auth::id();
-            $companyId = Auth::user()->company_id;
-
-            // 2️⃣ Vérification du chevauchement
-            $overlap = ExerciceComptable::where('company_id', $companyId)
-                ->where(function ($query) use ($request) {
+            // 2️⃣ Vérification du chevauchement (filtré auto par scope)
+            $overlap = ExerciceComptable::where(function ($query) use ($request) {
                     $query->whereBetween('date_debut', [$request->date_debut, $request->date_fin])
                         ->orWhereBetween('date_fin', [$request->date_debut, $request->date_fin])
                         ->orWhere(function ($query) use ($request) {
@@ -84,13 +68,11 @@ public function index()
                 return redirect()->back()->with('error', 'Les dates de l\'exercice se chevauchent avec un autre exercice.');
             }
 
-            // 3️⃣ Création de l'exercice
+            // 3️⃣ Création de l'exercice (compagny_id et user_id auto)
             $exercice = ExerciceComptable::create([
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
                 'intitule' => $request->intitule,
-                'user_id' => $userId,
-                'company_id' => $companyId,
             ]);
 
             // 4️⃣ Génération automatique des journaux pour cet exercice

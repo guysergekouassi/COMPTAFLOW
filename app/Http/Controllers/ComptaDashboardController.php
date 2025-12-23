@@ -37,15 +37,13 @@ class ComptaDashboardController extends Controller
 
     private function getDashboardData($companyId)
     {
-        $currentExercice = ExerciceComptable::where('company_id', $companyId)
-            ->where('cloturer', 0)
+        $currentExercice = ExerciceComptable::where('cloturer', 0)
             ->first();
 
         $exerciceId = $currentExercice ? $currentExercice->id : null;
 
         // KPI 1: Total des revenus (classes 7)
-        $totalRevenue = EcritureComptable::where('company_id', $companyId)
-            ->when($exerciceId, function($query) use ($exerciceId) {
+        $totalRevenue = EcritureComptable::when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
             ->whereHas('planComptable', function($query) {
@@ -67,14 +65,12 @@ class ComptaDashboardController extends Controller
         $netResult = $totalRevenue - $totalExpenses;
 
         // KPI 4: Écritures du mois (Nombre d'écritures pour le mois en cours)
-        $monthlyEntries = EcritureComptable::where('company_id', $companyId)
-            ->whereMonth('date', Carbon::now()->month)
+        $monthlyEntries = EcritureComptable::whereMonth('date', Carbon::now()->month)
             ->whereYear('date', Carbon::now()->year)
             ->count();
 
         // KPI 5: Solde Trésorerie (Somme des comptes classe 5)
-        $cashBalance = EcritureComptable::where('company_id', $companyId)
-            ->whereHas('planComptable', function($query) {
+        $cashBalance = EcritureComptable::whereHas('planComptable', function($query) {
                 $query->where('numero_de_compte', 'like', '5%');
             })
             ->selectRaw('SUM(debit) - SUM(credit) as balance')
@@ -114,7 +110,6 @@ class ComptaDashboardController extends Controller
 
         // Dernières écritures
         $recentEntries = EcritureComptable::with(['planComptable', 'planTiers'])
-            ->where('company_id', $companyId)
             ->orderBy('date', 'desc')
             ->limit(5)
             ->get()

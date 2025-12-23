@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\ExerciceComptable;
 
 
+use App\Traits\BelongsToTenant;
+
+
 class CodeJournal extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         // 'annee',

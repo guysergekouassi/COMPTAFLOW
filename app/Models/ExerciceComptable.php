@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\JournalSaisi;
 
 
+use App\Traits\BelongsToTenant;
+
+
 class ExerciceComptable extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
     protected $table = 'exercices_comptables';
 
     protected $fillable = [

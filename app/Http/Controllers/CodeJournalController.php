@@ -20,26 +20,15 @@ use ManagesCompany;
 public function index()
 {
     $user = Auth::user();
-    $currentCompanyId = $user->company_id;
 
-    // 1. DÉTERMINATION DES IDs DE COMPAGNIE À VISUALISER
-    if ($user->role === 'admin') {
-        $companyIdsToView = $this->getManagedCompanyIds();
-    } else {
-        $companyIdsToView = [$currentCompanyId];
-    }
+    // La requête est maintenant automatiquement filtrée par TenantScope (Session current_company_id ou User company_id)
+    $query = CodeJournal::orderByDesc('created_at');
 
-    // 2. Requête de base pour la collection principale
-    $query = CodeJournal::whereIn('company_id', $companyIdsToView)
-        ->orderByDesc('created_at');
-
-    // 3. FILTRAGE PAR RÔLE
+    // FILTRAGE PAR RÔLE
     if ($user->role !== 'admin' && $user->role !== 'super_admin') {
         $query->where('user_id', $user->id);
     }
 
-    // 4. Exécution de la requête pour obtenir la collection de journaux
-    // 🔑 FIX MAJEUR: On utilise $code_journaux et on exécute le get() ici.
     $code_journaux = $query->get();
 
 
@@ -47,9 +36,8 @@ public function index()
     // LOGIQUE POUR ENRICHIR LES CODES JOURNAUX AVEC LA TRÉSORERIE
     // =============================================================
 
-    // A. Récupérer les données de Trésorerie
-    $tresoreriesData = Tresoreries::whereIn('company_id', $companyIdsToView)
-        ->get()
+    // A. Récupérer les données de Trésorerie (filtrées par scope)
+    $tresoreriesData = Tresoreries::get()
         ->keyBy('code_journal');
 
     // B. Récupérer les comptes du Plan Comptable
@@ -75,16 +63,14 @@ public function index()
     });
 
     // 5. Calculs statistiques
-    $allJournauxForStats = CodeJournal::whereIn('company_id', $companyIdsToView)->get();
+    $allJournauxForStats = CodeJournal::get();
     $totalJournauxCompany = $allJournauxForStats->count();
 
-    $userCreatedJournaux = CodeJournal::where('company_id', $currentCompanyId)
-        ->where('user_id', $user->id)
+    $userCreatedJournaux = CodeJournal::where('user_id', $user->id)
         ->count();
 
     // 6. Comptes de Trésorerie
-    $comptesTresorerie = PlanComptable::where('company_id', $currentCompanyId)
-        ->where('numero_de_compte', 'like', '5%')
+    $comptesTresorerie = PlanComptable::where('numero_de_compte', 'like', '5%')
         ->get();
 
 
@@ -107,7 +93,6 @@ public function index()
 
         try {
             $existing = CodeJournal::where('code_journal', strtoupper($request->code_journal))
-                ->where('company_id', Auth::user()->company_id)
                 ->first();
 
             if ($existing) {
@@ -126,8 +111,7 @@ public function index()
                 'compte_de_contrepartie' => $request->compte_de_contrepartie,
                 'compte_de_tresorerie' => $request->compte_de_tresorerie,
                 'rapprochement_sur' => $request->rapprochement_sur,
-                'user_id' => Auth::id(),
-                'company_id' => Auth::user()->company_id,
+                // user_id et company_id gérés auto
             ]);
 
             return redirect()->back()->with('success', 'Code journal créé avec succès.');
