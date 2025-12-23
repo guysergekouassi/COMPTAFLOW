@@ -189,7 +189,7 @@
                       <form id="formNouvelleEcriture">
                           <input type="hidden" id="hiddenNumeroSaisie" name="numero_saisie" />
                           <input type="hidden" id="hiddenCodeJournal" name="code_journal" />
-                          
+
                           <div class="row g-3">
                               <div class="col-md-2">
                                   <label for="dateEcriture" class="form-label">Date</label>
@@ -242,24 +242,6 @@
                                   <input type="number" id="creditEcriture" name="credit" class="form-control" step="0.01" min="0" />
                               </div>
                               <div class="col-md-3">
-                                  <label for="posteTresorerieEcriture" class="form-label">Poste de trésorerie</label>
-                                  <select id="posteTresorerieEcriture" name="poste_tresorerie" class="form-select">
-                                      <option value="">Aucun</option>
-                                      @if(isset($postesTresorerie))
-                                          @foreach ($postesTresorerie as $poste)
-                                              <option value="{{ $poste->id }}">{{ $poste->intitule }}</option>
-                                          @endforeach
-                                      @endif
-                                  </select>
-                              </div>
-                              <div class="col-md-3">
-                                  <label for="typeFluxEcriture" class="form-label">Type de flux</label>
-                                  <select id="typeFluxEcriture" name="type_flux" class="form-select">
-                                      <option value="decaissement">Décaissement</option>
-                                      <option value="encaissement">Encaissement</option>
-                                  </select>
-                              </div>
-                              <div class="col-md-3">
                                   <label for="planAnalytiqueEcriture" class="form-label">Plan analytique</label>
                                   <select id="planAnalytiqueEcriture" name="plan_analytique" class="form-select">
                                       <option value="0">Non</option>
@@ -290,18 +272,18 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Récupérer les paramètres de l'URL
         const urlParams = new URLSearchParams(window.location.search);
-        
+
         // Remplir les champs si les paramètres existent
         if (urlParams.has('numero_saisie')) {
             document.getElementById('numeroSaisie').value = urlParams.get('numero_saisie');
             document.getElementById('hiddenNumeroSaisie').value = urlParams.get('numero_saisie');
         }
-        
+
         if (urlParams.has('code')) {
             document.getElementById('journalEcriture').value = urlParams.get('code');
             document.getElementById('hiddenCodeJournal').value = urlParams.get('code');
         }
-        
+
         if (urlParams.has('id_journal')) {
             document.getElementById('hiddenCodeJournal').value = urlParams.get('id_journal');
         }
@@ -311,28 +293,28 @@
     function ajouterEcritureModal() {
         const form = document.getElementById('formNouvelleEcriture');
         const formData = new FormData(form);
-        
+
         // Validation basique
         const date = document.getElementById('dateEcriture').value;
         const libelle = document.getElementById('libelleEcriture').value;
         const compteGeneral = document.getElementById('compteGeneralEcriture').value;
         const debit = parseFloat(document.getElementById('debitEcriture').value) || 0;
         const credit = parseFloat(document.getElementById('creditEcriture').value) || 0;
-        
+
         if (!date || !libelle || !compteGeneral) {
             alert('Veuillez remplir les champs obligatoires (Date, Libellé, Compte Général).');
             return;
         }
-        
+
         if (debit === 0 && credit === 0) {
             alert('Veuillez saisir un montant au débit ou au crédit.');
             return;
         }
-        
+
         // Ajouter la ligne au tableau (simulation)
         const table = document.getElementById('tableEcrituresList').getElementsByTagName('tbody')[0];
         const newRow = table.insertRow();
-        
+
         newRow.innerHTML = `
             <td>${date}</td>
             <td>${document.getElementById('numeroSaisie').value}</td>
@@ -353,12 +335,12 @@
                 </button>
             </td>
         `;
-        
+
         // Fermer le modal et réinitialiser le formulaire
         const modal = bootstrap.Modal.getInstance(document.getElementById('nouvelleEcritureModal'));
         modal.hide();
         form.reset();
-        
+
         alert('Écriture ajoutée avec succès !');
     }
 
@@ -367,13 +349,13 @@
         const exercice = document.getElementById('filterExercice').value;
         const mois = document.getElementById('filterMois').value;
         const journal = document.getElementById('filterJournal').value;
-        
+
         // Construire l'URL avec les filtres
         const params = new URLSearchParams();
         if (exercice) params.append('exercice_id', exercice);
         if (mois) params.append('mois', mois);
         if (journal) params.append('journal_id', journal);
-        
+
         // Recharger la page avec les filtres
         window.location.href = window.location.pathname + '?' + params.toString();
     }
