@@ -115,12 +115,13 @@ class SuperAdminCompanyController extends Controller
     }
 public function update(Request $request, Company $company)
 {
-    // 1. Validation des données (admin_password retiré)
+    // 1. Validation des données
     $request->validate([
         'company_name' => 'required|string|max:255|unique:companies,company_name,' . $company->id,
         'admin_name' => 'required|string|max:255',
         'admin_last_name' => 'required|string|max:255',
         'admin_email_adresse' => 'required|email|unique:users,email_adresse,' . $company->user_id,
+        'admin_password' => 'nullable|string|min:8|confirmed',
         'juridique_form' => 'required|string|max:255',
         'activity' => 'required|string|max:255',
         'social_capital' => 'required|numeric|min:0',
@@ -152,14 +153,18 @@ public function update(Request $request, Company $company)
         $adminUser = User::find($company->user_id);
 
         if ($adminUser) {
-            // Préparation des données de base
             $userData = [
                 'name' => $request->admin_name,
                 'last_name' => $request->admin_last_name,
                 'email_adresse' => $request->admin_email_adresse,
             ];
 
-            // Traitement des habilitations
+            // Mise à jour du mot de passe si fourni
+            if ($request->filled('admin_password')) {
+                $userData['password'] = Hash::make($request->admin_password);
+            }
+
+            // Traitement des habilitations (on synchronise pour permettre le retrait)
             $requestedHabilitations = $request->input('habilitations', []);
             $formattedHabilitations = [];
             foreach ($requestedHabilitations as $key => $value) {
@@ -167,12 +172,11 @@ public function update(Request $request, Company $company)
             }
             $userData['habilitations'] = $formattedHabilitations;
 
-            // Le mot de passe n'est jamais ajouté ici, donc il ne sera jamais modifié
             $adminUser->update($userData);
         }
 
         DB::commit();
-        return redirect()->route('superadmin.dashboard')->with('success', 'Compagnie et Admin mis à jour avec succès (hors mot de passe).');
+        return redirect()->route('superadmin.dashboard')->with('success', 'La compagnie et son administrateur ont été mis à jour avec succès.');
 
     } catch (\Exception $e) {
         DB::rollBack();

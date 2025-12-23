@@ -8,6 +8,7 @@
         height: 100vh;
         background: white;
         border-right: 1px solid #e5e7eb;
+        display: flex;
         flex-direction: column;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
         z-index: 1000;
@@ -262,7 +263,13 @@
 
     $show_all = $user->isAdmin() && !$user->isSuperAdmin();
 
-    $exercices = ExerciceComptable::where('company_id', $currentCompanyId)->orderBy('date_debut', 'desc')->get()->unique('intitule');
+    // Récupération unique par intitulé pour éviter les doublons visuels
+    $exercices = ExerciceComptable::where('company_id', $currentCompanyId)
+        ->orderBy('date_debut', 'desc')
+        ->get()
+        ->unique(function ($item) {
+            return trim($item->intitule);
+        });
     $journaux = JournalSaisi::with('codeJournal')
         ->where('company_id', $currentCompanyId)
         ->orderBy('mois', 'asc')

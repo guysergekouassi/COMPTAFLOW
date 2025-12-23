@@ -18,23 +18,8 @@ class PlanComptableController extends Controller
 
     try {
 
-        $user = Auth::user();
-        $companyId = $user->company_id;
-        $currentCompanyId = $user->company_id;
-        
-        // --- DÉBUT DE LA LOGIQUE DE FILTRAGE ---
-        // LOGIQUE AJOUTE
-        if ($user->role === 'admin'){
-                // L'Admin voit toutes les compagnies gérées (mère + enfants)
-                $companyIdsToView = $this->getManagedCompanyIds();
-            } else {
-                // Un simple utilisateur/comptable ne voit que sa propre compagnie
-                $companyIdsToView = [$currentCompanyId];
-            }
-
-
-        // Requête de base pour la compagnie
-        $query = PlanComptable::whereIn('company_id', $companyIdsToView);
+        // Requête de base (filtrée auto par scope)
+        $query = PlanComptable::query();
 
         // Appliquer la restriction si l'utilisateur n'est PAS un admin
         // Note : Assurez-vous que la colonne 'role' et le rôle 'admin' existent sur le modèle User.
@@ -50,8 +35,8 @@ class PlanComptableController extends Controller
         // --- FIN DE LA LOGIQUE DE FILTRAGE ---
 
 
-        // Pour que les stats reflètent le total réel de la compagnie (si l'admin peut tout voir) :
-        $allPlans = PlanComptable::where('company_id', $companyId)->get();
+        // Pour que les stats reflètent le total réel (filtré par scope) 
+        $allPlans = PlanComptable::get();
 
         $totalPlans = $allPlans->count();
 
@@ -106,8 +91,7 @@ class PlanComptableController extends Controller
             $numero_formate = str_pad($request->numero_de_compte, 8, '0', STR_PAD_RIGHT);
             $intitule_formate = ucfirst(strtolower($request->intitule));
 
-            $exists = PlanComptable::where('company_id', Auth::user()->company_id)
-                ->where(function ($query) use ($numero_formate, $intitule_formate) {
+            $exists = PlanComptable::where(function ($query) use ($numero_formate, $intitule_formate) {
                     $query->where('numero_de_compte', $numero_formate)
                         ->orWhere('intitule', $intitule_formate);
                 })
@@ -121,8 +105,7 @@ class PlanComptableController extends Controller
                 'numero_de_compte' => $numero_formate,
                 'intitule' => $intitule_formate,
                 'adding_strategy' => 'manuel',
-                'user_id' => Auth::id(),
-                'company_id' => Auth::user()->company_id,
+                // user_id et company_id auto
             ]);
 
             return redirect()->back()->with('success', 'Plan comptable ajouté avec succès.');

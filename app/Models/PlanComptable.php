@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToTenant;
+
 class PlanComptable extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 protected $table = 'plan_comptables';
     protected $fillable = [
         'numero_de_compte',

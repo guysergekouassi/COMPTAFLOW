@@ -16,12 +16,10 @@ class GestionTresorerieController extends Controller
         $user = Auth::user();
         $companyId = Auth::user()->company_id;
 
-        $flux_types = FluxType::where('company_id', $companyId)
-            ->orderByDesc('created_at')
+        $flux_types = FluxType::orderByDesc('created_at')
             ->get();
 
-        $PlanComptable = PlanComptable::where('company_id', $user->company_id)
-            ->orderByRaw('LEFT(numero_de_compte, 1) ASC')
+        $PlanComptable = PlanComptable::orderByRaw('LEFT(numero_de_compte, 1) ASC')
             ->orderBy('numero_de_compte')
             ->get();
 
@@ -45,14 +43,12 @@ class GestionTresorerieController extends Controller
             $userId = Auth::id();
             $companyId = Auth::user()->company_id;
 
-            // Création de l'exercice
+            // Création de l'exercice (user_id et company_id auto)
             $exercice = FluxType::create([
                 'categorie' => $request->categorie,
                 'nature' => $request->nature,
                 'plan_comptable_id_1' => $request->plan_comptable_id_1,
                 'plan_comptable_id_2' => $request->plan_comptable_id_2,
-                'user_id' => $userId,
-                'company_id' => $companyId,
             ]);
 
 

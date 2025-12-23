@@ -437,5 +437,81 @@ public function impersonate(User $user)
         return redirect()->route('user_management')->with('success',
             "Vous êtes revenu à votre compte d'administrateur.");
     }
-}
+    
+    public function profile()
+    {
+        $user = Auth::user();
+        $company = $user->company; // Assuming relation exists
+        
+        $stats = [
+            'member_since' => $user->created_at,
+            'last_activity' => $user->updated_at, // Or tracking column if available
+            // Add other stats as needed
+        ];
 
+        if ($user->role === 'comptable') {
+             $stats['habilitations_count'] = count(array_filter($user->habilitations ?? []));
+        }
+
+        $habilitations = $user->habilitations ?? [];
+
+        return view('user.profile', compact('user', 'company', 'stats', 'habilitations'));
+    }
+
+    public function settings()
+    {
+        $user = Auth::user();
+        $habilitations = $user->habilitations ?? [];
+        return view('user.settings', compact('user', 'habilitations'));
+    }
+
+    public function updateAccount(Request $request)
+    {
+        $user = Auth::user();
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email_adresse' => 'required|email|unique:users,email_adresse,' . $user->id,
+        ]);
+
+        $user->update($validated);
+
+        return back()->with('success', 'Informations mises à jour avec succès.');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'current_password' => 'required|current_password',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return back()->with('success', 'Mot de passe modifié avec succès.');
+    }
+
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = Auth::user();
+
+        if ($request->hasFile('avatar')) {
+            $path = $request->file('avatar')->store('avatars', 'public');
+            
+            // Delete old avatar if exists (optional)
+            
+            $user->update(['profile_photo_path' => $path]);
+        }
+
+        return back()->with('success', 'Avatar mis à jour.');
+    }
+}

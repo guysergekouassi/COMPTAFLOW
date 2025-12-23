@@ -71,20 +71,19 @@ Route::get('/login', function () {
 })->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
-// Redirection vers le dashboard selon rôle après login
-Route::get('/dashboard', function () {
-    $user = auth()->user();
-    if ($user->isSuperAdmin()) {
-        return redirect()->route('superadmin.dashboard');
-    } elseif ($user->isAdmin()) {
-        return redirect()->route('admin.dashboard');
-    } elseif ($user->isComptable()) {
-        return redirect()->route('comptable.comptdashboard');
-    }
-    return redirect('/unauthorized');
-})->name('dashboard');
+    // Redirection vers le dashboard selon rôle après login
+    Route::get('/dashboard', function () {
+        $user = auth()->user();
+        if ($user->isSuperAdmin()) {
+            return redirect()->route('superadmin.dashboard');
+        } elseif ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->isComptable()) {
+            return redirect()->route('comptable.comptdashboard');
+        }
+        return redirect('/unauthorized');
+    })->name('app.dashboard');
 
-// require __DIR__ . '/super_admin.php';
 // **********************************************
 // ROUTES PROTÉGÉES (MIDDLEWARE 'auth')
 // **********************************************
@@ -100,6 +99,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/accounting_entry', function () { return view('accounting_entry'); })->name('accounting_entry');
     Route::get('/file_management', function () { return view('file_management'); })->name('file_management');
     Route::get('/financial_statements', function () { return view('financial_statements'); })->name('financial_statements');
+
+    // ***************** ROUTES PROFIL & PARAMETRES *****************
+    Route::get('/profile', [UserController::class, 'profile'])->name('user.profile');
+    Route::get('/settings', [UserController::class, 'settings'])->name('user.settings');
+    Route::put('/settings/account', [UserController::class, 'updateAccount'])->name('user.settings.account');
+    Route::put('/settings/password', [UserController::class, 'updatePassword'])->name('user.settings.password');
+    Route::post('/settings/avatar', [UserController::class, 'updateAvatar'])->name('user.settings.avatar');
 
     // *****************ROUTE GESTION DE COMPANY
     Route::get('/compagny_information', [CompanyController::class, 'index'])->name('compagny_information');
@@ -305,7 +311,9 @@ Route::put('/poste/{compte}', [PosteTresorController::class, 'update'])->name('p
 
 
 
-});
+
+
+
 
     // Route compte
     Route::get('/comptes/creer', [compteController::class, 'index'])->name('creer_compte.index');
@@ -316,6 +324,8 @@ Route::put('/poste/{compte}', [PosteTresorController::class, 'update'])->name('p
     Route::get('/companies', [CompanyController::class, 'index'])->name('companies');
     // Route::post('/companies/store', [CompanyController::class, 'store'])->name('companies.store');
 
+
+});
 
 Route::middleware(['auth'])->group(function () {
     // Laissez votre route d'impersonation ici (avec son nom existant)

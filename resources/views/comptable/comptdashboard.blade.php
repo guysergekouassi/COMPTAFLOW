@@ -66,14 +66,8 @@
                     <div class="max-w-7xl mx-auto">
 
                         <!-- En-tête Centré Dynamique -->
+                        <!-- En-tête Centré Dynamique -->
                         <div class="text-center mb-12">
-                            <div class="flex items-center justify-center gap-2 mb-4">
-                                <span class="h-1 w-8 bg-blue-700 rounded-full"></span>
-                                <span class="text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 px-3 py-1 rounded-full">
-                                    {{ $currentCompany->company_name ?? 'Espace Comptable' }}
-                                </span>
-                                <span class="h-1 w-8 bg-blue-700 rounded-full"></span>
-                            </div>
                             <p class="text-slate-500 font-medium">Bienvenue, voici l'état actuel de votre exercice comptable.</p>
                         </div>
 

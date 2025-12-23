@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToTenant;
+
 class EcritureComptable extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     // Nom de la table (optionnel si la table s'appelle "ecriture_comptables" par convention)
     protected $table = 'ecriture_comptables';

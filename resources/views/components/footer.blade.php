@@ -34,26 +34,19 @@
     // Vous aurez peut-être besoin d'inclure jQuery si ce n'est pas déjà fait.
     document.addEventListener('DOMContentLoaded', function() {
 
-        // Vérifie si la fonction selectpicker existe avant de l'appeler
-        if (typeof $('.selectpicker').selectpicker === 'function') {
-
-            // 1. Initialisation générale du plugin
+        if (typeof $.fn.selectpicker === 'function') {
             $('.selectpicker').selectpicker();
 
             // 2. Événement de rafraîchissement pour le modal
             const modal = document.getElementById('saisieRedirectModal');
             if (modal) {
-                // Rafraîchir le selectpicker après que le modal soit complètement visible
                 modal.addEventListener('shown.bs.modal', function () {
-                    $('.selectpicker').selectpicker('refresh');
-
-                    // Pré-sélectionner l'exercice actif si disponible
                     const exerciceSelect = $('#exercice_id');
                     const exerciceActifId = exerciceSelect.data('exercice-actif');
                     if (exerciceActifId) {
                         exerciceSelect.val(exerciceActifId);
-                        exerciceSelect.selectpicker('refresh');
                     }
+                    $('.selectpicker').selectpicker('refresh');
                 });
             }
         } else {

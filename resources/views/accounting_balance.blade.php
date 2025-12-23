@@ -164,234 +164,7 @@
 
                         </div>
 
-                        <!-- Modal Creation Ecriture-->
-                        <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                                <form method="POST" action="{{ route('accounting_balance.generateBalance') }}"
-                                    id="grandLivreForm">
-                                    @csrf
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Générer une Balance</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Fermer"></button>
-                                        </div>
 
-                                        <div class="modal-body">
-                                            <div class="row g-3 align-items-end">
-                                                <div class="col-md-2">
-                                                    <label class="form-label">Période</label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <label for="date_debut" class="form-label">Du</label>
-                                                    <input type="date" id="date_debut" name="date_debut"
-                                                        class="form-control" required />
-                                                    <div class="invalid-feedback">Veuillez renseigner la date de début.
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <label for="date_fin" class="form-label">Au</label>
-                                                    <input type="date" id="date_fin" name="date_fin"
-                                                        class="form-control" required />
-                                                    <div class="invalid-feedback">Veuillez renseigner la date de fin.
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="row g-3 align-items-end mt-2">
-                                                <div class="col-md-2">
-                                                    <label class="form-label">Comptes généraux</label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <label for="plan_comptable_id_1" class="form-label">Du</label>
-                                                    <select id="plan_comptable_id_1" name="plan_comptable_id_1"
-                                                        class="selectpicker w-100" data-width="auto"
-                                                        data-live-search="true" required>
-                                                        <option value="">-- Sélectionnez un compte --</option>
-                                                        @foreach ($PlanComptable as $plan)
-                                                            <option value="{{ $plan->id }}">
-                                                                {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <div class="invalid-feedback">Veuillez sélectionner un compte.
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <label for="plan_comptable_id_2" class="form-label">Au</label>
-                                                    <select id="plan_comptable_id_2" name="plan_comptable_id_2"
-                                                        class="selectpicker w-100" data-width="auto"
-                                                        data-live-search="true" required>
-                                                        <option value="">-- Sélectionnez un compte --</option>
-                                                        @foreach ($PlanComptable as $plan)
-                                                            <option value="{{ $plan->id }}">
-                                                                {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <div class="invalid-feedback" id="compte2-error">Veuillez
-                                                        sélectionner un compte.</div>
-                                                </div>
-                                            </div>
-
-                                            <div class="row g-3 align-items-end mt-2">
-                                                <div class="col-md-2">
-                                                    <label class="form-label">Format & Type</label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <select id="format_fichier" name="format_fichier"
-                                                        class="selectpicker w-100" data-live-search="false" required>
-                                                        <option value="pdf" selected>PDF</option>
-                                                        <option value="excel">EXCEL</option>
-                                                        <option value="csv">CSV</option>
-                                                    </select>
-                                                    <div class="invalid-feedback">Veuillez sélectionner une
-                                                        option.</div>
-                                                </div>
-
-                                                <div class="col-md-5">
-                                                    <select id="type" name="type"
-                                                        class="selectpicker w-100" data-live-search="false" required>
-                                                        <option value="4" selected>4 Colonnes</option>
-                                                        <option value="6">6 Colonnes</option>
-                                                        <option value="8">8 Colonnes</option>
-                                                    </select>
-                                                    <div class="invalid-feedback">Veuillez sélectionner une
-                                                        option.</div>
-                                                </div>
-
-                                            </div>
-                                        </div>
-
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-label-secondary"
-                                                data-bs-dismiss="modal" id="btnCloseModal">
-                                                Fermer
-                                            </button>
-                                            <button type="button" class="btn btn-info" id="btnPreview">
-                                                Prévisualiser
-                                            </button>
-                                            <button type="submit" class="btn btn-primary" id="btnSaveModal">
-                                                Enregistrer
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        {{-- previsualisation avant sauvegarde --}}
-                        <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-xl" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Prévisualisation du Grand Livre</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Fermer"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <iframe id="pdfPreviewFrame" style="width:100%;height:80vh;"
-                                            frameborder="0"></iframe>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-                        {{-- modal pdf --}}
-                        <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfModalLabel"
-                            aria-hidden="true">
-                            <div class="modal-dialog modal-xl" style="max-width:90%;">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="pdfModalLabel">Prévisualisation du PDF</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Fermer"></button>
-                                    </div>
-                                    <div class="modal-body" style="height: 80vh;">
-                                        <iframe id="pdfViewer" src="" frameborder="0"
-                                            style="width: 100%; height: 100%;"></iframe>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-
-
-                        <!-- Modal Creation plan update-->
-                        <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="modalCenterTitle">
-                                            Créer un plan
-                                        </h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Fermer"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="row g-3">
-                                            <div class="col-12">
-                                                <label for="nameWithTitle" class="form-label">Nom</label>
-                                                <input type="text" id="nameWithTitle" class="form-control"
-                                                    placeholder="Entrer le nom" />
-                                            </div>
-                                            <div class="col-6">
-                                                <label for="emailWithTitle" class="form-label">Email</label>
-                                                <input type="email" id="emailWithTitle" class="form-control"
-                                                    placeholder="xxx@xxx.xx" />
-                                            </div>
-                                            <div class="col-6">
-                                                <label for="dobWithTitle" class="form-label">Date de naissance</label>
-                                                <input type="date" id="dobWithTitle" class="form-control" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-label-secondary"
-                                            data-bs-dismiss="modal">
-                                            Fermer
-                                        </button>
-                                        <button type="button" class="btn btn-primary">
-                                            Enregistrer
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Modal Confirmation de suppression -->
-                        <div class="modal fade" id="deleteConfirmationModal" tabindex="-1"
-                            aria-labelledby="deleteModalLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-sm">
-                                <div class="modal-content border-0 shadow">
-                                    <div class="modal-header bg-danger text-white justify-content-center">
-                                        <h5 class="modal-title" id="deleteModalLabel">
-                                            <i class="bx bx-error-circle me-2"></i>Confirmer la suppression
-                                        </h5>
-                                        <button type="button" class="btn-close btn-close-white"
-                                            data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                    </div>
-                                    <div class="modal-body text-center">
-                                        <p class="mb-0">
-                                            Êtes-vous sûr de vouloir supprimer cette Balance?<br>
-                                            Cette action est <strong>irréversible</strong>.
-                                        </p>
-                                        <p class="fw-bold text-danger mt-2" id="fileNameToDelete"></p>
-                                    </div>
-                                    <div class="modal-footer justify-content-center">
-                                        <form id="deleteForm" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">Annuler</button>
-                                            <button type="submit" class="btn btn-danger">Supprimer</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                     </div>
                 </div>
@@ -408,6 +181,216 @@
     <!-- Core JS -->
 
     @include('components.footer')
+
+    <!-- Modals moved to body end for better positioning -->
+    <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <form method="POST" action="{{ route('accounting_balance.generateBalance') }}" id="grandLivreForm">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Générer une Balance</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <!-- Période -->
+                        <div class="row">
+                            <div class="col-12 mb-2 text-center">
+                                <h6 class="text-muted fw-bold text-uppercase">Période</h6>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-4 justify-content-center">
+                            <div class="col-md-5">
+                                <label for="date_debut" class="form-label">Du</label>
+                                <input type="date" id="date_debut" name="date_debut" class="form-control" required />
+                                <div class="invalid-feedback">Veuillez renseigner la date de début.</div>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="date_fin" class="form-label">Au</label>
+                                <input type="date" id="date_fin" name="date_fin" class="form-control" required />
+                                <div class="invalid-feedback">Veuillez renseigner la date de fin.</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3 text-light">
+
+                        <!-- Comptes Généraux -->
+                        <div class="row">
+                            <div class="col-12 mb-2 text-center">
+                                <h6 class="text-muted fw-bold text-uppercase">Comptes Généraux</h6>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-4 justify-content-center">
+                            <div class="col-md-5">
+                                <label for="plan_comptable_id_1" class="form-label">Du</label>
+                                <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="selectpicker w-100" data-width="100%" data-live-search="true" required>
+                                    <option value="">-- Sélectionnez un compte --</option>
+                                    @foreach ($PlanComptable as $plan)
+                                        <option value="{{ $plan->id }}">
+                                            {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="invalid-feedback">Veuillez sélectionner un compte.</div>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="plan_comptable_id_2" class="form-label">Au</label>
+                                <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="selectpicker w-100" data-width="100%" data-live-search="true" required>
+                                    <option value="">-- Sélectionnez un compte --</option>
+                                    @foreach ($PlanComptable as $plan)
+                                        <option value="{{ $plan->id }}">
+                                            {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="invalid-feedback" id="compte2-error">Veuillez sélectionner un compte.</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3 text-light">
+
+                        <!-- Format & Type -->
+                        <div class="row">
+                            <div class="col-12 mb-2 text-center">
+                                <h6 class="text-muted fw-bold text-uppercase">Format & Type</h6>
+                            </div>
+                        </div>
+                        <div class="row g-3 justify-content-center">
+                            <div class="col-md-5">
+                                <label for="format_fichier" class="form-label">Format de sortie</label>
+                                <select id="format_fichier" name="format_fichier" class="selectpicker w-100" data-width="100%" data-live-search="false" required>
+                                    <option value="pdf" selected>PDF</option>
+                                    <option value="excel">EXCEL</option>
+                                    <option value="csv">CSV</option>
+                                </select>
+                                <div class="invalid-feedback">Veuillez sélectionner une option.</div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <label for="type" class="form-label">Type de balance</label>
+                                <select id="type" name="type" class="selectpicker w-100" data-width="100%" data-live-search="false" required>
+                                    <option value="4" selected>4 Colonnes</option>
+                                    <option value="6">6 Colonnes</option>
+                                    <option value="8">8 Colonnes</option>
+                                </select>
+                                <div class="invalid-feedback">Veuillez sélectionner une option.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal" id="btnCloseModal">
+                            Fermer
+                        </button>
+                        <button type="button" class="btn btn-info" id="btnPreview">
+                            Prévisualiser
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="btnSaveModal">
+                            Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- previsualisation avant sauvegarde --}}
+    <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Prévisualisation du Grand Livre</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="pdfPreviewFrame" style="width:100%;height:80vh;" frameborder="0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- modal pdf --}}
+    <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" style="max-width:90%;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pdfModalLabel">Prévisualisation du PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body" style="height: 80vh;">
+                    <iframe id="pdfViewer" src="" frameborder="0" style="width: 100%; height: 100%;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Creation plan update-->
+    <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCenterTitle">
+                        Créer un plan
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="nameWithTitle" class="form-label">Nom</label>
+                            <input type="text" id="nameWithTitle" class="form-control" placeholder="Entrer le nom" />
+                        </div>
+                        <div class="col-6">
+                            <label for="emailWithTitle" class="form-label">Email</label>
+                            <input type="email" id="emailWithTitle" class="form-control" placeholder="xxx@xxx.xx" />
+                        </div>
+                        <div class="col-6">
+                            <label for="dobWithTitle" class="form-label">Date de naissance</label>
+                            <input type="date" id="dobWithTitle" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                        Fermer
+                    </button>
+                    <button type="button" class="btn btn-primary">
+                        Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmation de suppression -->
+    <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white justify-content-center">
+                    <h5 class="modal-title" id="deleteModalLabel">
+                        <i class="bx bx-error-circle me-2"></i>Confirmer la suppression
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-0">
+                        Êtes-vous sûr de vouloir supprimer cette Balance?<br>
+                        Cette action est <strong>irréversible</strong>.
+                    </p>
+                    <p class="fw-bold text-danger mt-2" id="fileNameToDelete"></p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <form id="deleteForm" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-danger">Supprimer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const accounting_balanceDeleteUrl = "{{ route('accounting_balance.destroy', ['id' => '__ID__']) }}";
