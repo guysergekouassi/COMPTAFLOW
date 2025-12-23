@@ -116,7 +116,8 @@ class EcritureComptableController extends Controller
 
         $exercices = ExerciceComptable::where('company_id', $user->company_id)
             ->orderBy('date_debut', 'desc')
-            ->get();
+            ->get()
+            ->unique('intitule');
 
         // Récupérer l'exercice actif (non clôturé) pour pré-sélection
         $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
@@ -126,7 +127,8 @@ class EcritureComptableController extends Controller
 
         $code_journaux = CodeJournal::where('company_id', $user->company_id)
             ->orderBy('code_journal', 'asc')
-            ->get();
+            ->get()
+            ->unique('code_journal');
 
         return view('components.modal_saisie_direct', [
             'exercices' => $exercices,
@@ -306,8 +308,8 @@ public function getComptesParFlux(Request $request) {
         $data = $request->all();
 
         // Récupérer les données de base
-        $exercices = ExerciceComptable::where('company_id', $user->company_id)->get();
-        $code_journaux = CodeJournal::where('company_id', $user->company_id)->get();
+        $exercices = ExerciceComptable::where('company_id', $user->company_id)->get()->unique('intitule');
+        $code_journaux = CodeJournal::where('company_id', $user->company_id)->get()->unique('code_journal');
 
         // Construire la requête pour les écritures
         $query = EcritureComptable::where('company_id', $user->company_id);

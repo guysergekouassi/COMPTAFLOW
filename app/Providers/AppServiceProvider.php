@@ -103,9 +103,10 @@ View::composer('components.modal_saisie_direct', function ($view) {
             // Récupère les données
             $exercices = ExerciceComptable::where('company_id', $companyId)
                 ->orderBy('date_debut', 'desc')
-                ->get();
+                ->get()
+                ->unique('intitule');
 
-            $code_journaux = CodeJournal::where('company_id', $companyId)->get();
+            $code_journaux = CodeJournal::where('company_id', $companyId)->get()->unique('code_journal');
 
             // Partage les variables avec la vue du modal
             $view->with('exercices', $exercices)

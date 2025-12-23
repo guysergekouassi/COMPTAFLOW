@@ -179,7 +179,7 @@
 
       <!-- Modal Nouvelle écriture -->
       <div class="modal fade" id="nouvelleEcritureModal" tabindex="-1" aria-labelledby="nouvelleEcritureModalLabel" aria-hidden="true">
-          <div class="modal-dialog modal-xl">
+          <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
               <div class="modal-content">
                   <div class="modal-header">
                       <h5 class="modal-title" id="nouvelleEcritureModalLabel">Nouvelle écriture</h5>
@@ -189,7 +189,7 @@
                       <form id="formNouvelleEcriture">
                           <input type="hidden" id="hiddenNumeroSaisie" name="numero_saisie" />
                           <input type="hidden" id="hiddenCodeJournal" name="code_journal" />
-                          
+
                           <div class="row g-3">
                               <div class="col-md-2">
                                   <label for="dateEcriture" class="form-label">Date</label>
@@ -212,26 +212,58 @@
                                   <input type="text" id="referencePieceEcriture" name="reference_piece" class="form-control" />
                               </div>
                               <div class="col-md-3">
-                                  <label for="compteGeneralEcriture" class="form-label">Compte Général</label>
-                                  <select id="compteGeneralEcriture" name="compte_general" class="form-select" required>
-                                      <option value="">Sélectionner...</option>
-                                      @if(isset($plansComptables))
-                                          @foreach ($plansComptables as $plan)
-                                              <option value="{{ $plan->id }}">{{ $plan->numero_de_compte }} - {{ $plan->intitule }}</option>
-                                          @endforeach
-                                      @endif
-                                  </select>
+                                  <label for="compteGeneralSearch" class="form-label">Compte Général</label>
+                                  <div class="search-select-container">
+                                      <div class="input-group">
+                                          <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                          <input type="text" id="compteGeneralSearch" class="form-control" placeholder="Rechercher un compte..." autocomplete="off">
+                                          <input type="hidden" id="compteGeneralEcriture" name="compte_general" required>
+                                      </div>
+                                      <div class="search-select-dropdown" id="compteGeneralDropdown" style="display: none;">
+                                          <div class="list-group">
+                                              @if(isset($plansComptables))
+                                                  @foreach ($plansComptables as $plan)
+                                                      <a href="#" class="list-group-item list-group-item-action option-compte" 
+                                                         data-value="{{ $plan->id }}" 
+                                                         data-numero="{{ $plan->numero_de_compte }}">
+                                                          <strong>{{ $plan->numero_de_compte }}</strong> - {{ $plan->intitule }}
+                                                      </a>
+                                                  @endforeach
+                                              @endif
+                                          </div>
+                                      </div>
+                                  </div>
                               </div>
                               <div class="col-md-3">
-                                  <label for="compteTiersEcriture" class="form-label">Compte Tiers</label>
-                                  <select id="compteTiersEcriture" name="compte_tiers" class="form-select">
-                                      <option value="">Aucun</option>
-                                      @if(isset($tiers))
-                                          @foreach ($tiers as $tier)
-                                              <option value="{{ $tier->id }}">{{ $tier->intitule }}</option>
-                                          @endforeach
-                                      @endif
-                                  </select>
+                                  <label for="compteTiersSearch" class="form-label">Compte Tiers</label>
+                                  <div class="search-select-container">
+                                      <div class="input-group">
+                                          <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                          <input type="text" id="compteTiersSearch" class="form-control" placeholder="Rechercher un tiers..." autocomplete="off">
+                                          <input type="hidden" id="compteTiersEcriture" name="compte_tiers">
+                                      </div>
+                                      <div class="search-select-dropdown" id="compteTiersDropdown" style="display: none;">
+                                          <div class="list-group">
+                                              @if(isset($tiers))
+                                                  @foreach ($tiers as $tier)
+                                                      <a href="#" class="list-group-item list-group-item-action option-tier"
+                                                         data-value="{{ $tier->id }}"
+                                                         data-compte-general="{{ $tier->compte_general_id ?? '' }}"
+                                                         data-numero-compte="{{ $tier->numero_compte ?? '' }}"
+                                                         data-libelle="{{ $tier->intitule ?? '' }}"
+                                                         data-adresse="{{ $tier->adresse ?? '' }}"
+                                                         data-telephone="{{ $tier->telephone ?? '' }}"
+                                                         data-email="{{ $tier->email ?? '' }}">
+                                                          @if(!empty($tier->code_tiers))
+                                                              <strong>{{ $tier->code_tiers }}</strong> - 
+                                                          @endif
+                                                          {{ $tier->intitule }}
+                                                      </a>
+                                                  @endforeach
+                                              @endif
+                                          </div>
+                                      </div>
+                                  </div>
                               </div>
                               <div class="col-md-2">
                                   <label for="debitEcriture" class="form-label">Débit</label>
@@ -240,24 +272,6 @@
                               <div class="col-md-2">
                                   <label for="creditEcriture" class="form-label">Crédit</label>
                                   <input type="number" id="creditEcriture" name="credit" class="form-control" step="0.01" min="0" />
-                              </div>
-                              <div class="col-md-3">
-                                  <label for="posteTresorerieEcriture" class="form-label">Poste de trésorerie</label>
-                                  <select id="posteTresorerieEcriture" name="poste_tresorerie" class="form-select">
-                                      <option value="">Aucun</option>
-                                      @if(isset($postesTresorerie))
-                                          @foreach ($postesTresorerie as $poste)
-                                              <option value="{{ $poste->id }}">{{ $poste->intitule }}</option>
-                                          @endforeach
-                                      @endif
-                                  </select>
-                              </div>
-                              <div class="col-md-3">
-                                  <label for="typeFluxEcriture" class="form-label">Type de flux</label>
-                                  <select id="typeFluxEcriture" name="type_flux" class="form-select">
-                                      <option value="decaissement">Décaissement</option>
-                                      <option value="encaissement">Encaissement</option>
-                                  </select>
                               </div>
                               <div class="col-md-3">
                                   <label for="planAnalytiqueEcriture" class="form-label">Plan analytique</label>
@@ -288,20 +302,24 @@
 <script>
     // Fonction pour remplir automatiquement les champs du modal
     document.addEventListener('DOMContentLoaded', function() {
+        // Remplir automatiquement la date du jour
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dateEcriture').value = today;
+
         // Récupérer les paramètres de l'URL
         const urlParams = new URLSearchParams(window.location.search);
-        
+
         // Remplir les champs si les paramètres existent
         if (urlParams.has('numero_saisie')) {
             document.getElementById('numeroSaisie').value = urlParams.get('numero_saisie');
             document.getElementById('hiddenNumeroSaisie').value = urlParams.get('numero_saisie');
         }
-        
+
         if (urlParams.has('code')) {
             document.getElementById('journalEcriture').value = urlParams.get('code');
             document.getElementById('hiddenCodeJournal').value = urlParams.get('code');
         }
-        
+
         if (urlParams.has('id_journal')) {
             document.getElementById('hiddenCodeJournal').value = urlParams.get('id_journal');
         }
@@ -311,28 +329,28 @@
     function ajouterEcritureModal() {
         const form = document.getElementById('formNouvelleEcriture');
         const formData = new FormData(form);
-        
+
         // Validation basique
         const date = document.getElementById('dateEcriture').value;
         const libelle = document.getElementById('libelleEcriture').value;
         const compteGeneral = document.getElementById('compteGeneralEcriture').value;
         const debit = parseFloat(document.getElementById('debitEcriture').value) || 0;
         const credit = parseFloat(document.getElementById('creditEcriture').value) || 0;
-        
+
         if (!date || !libelle || !compteGeneral) {
             alert('Veuillez remplir les champs obligatoires (Date, Libellé, Compte Général).');
             return;
         }
-        
+
         if (debit === 0 && credit === 0) {
             alert('Veuillez saisir un montant au débit ou au crédit.');
             return;
         }
-        
+
         // Ajouter la ligne au tableau (simulation)
         const table = document.getElementById('tableEcrituresList').getElementsByTagName('tbody')[0];
         const newRow = table.insertRow();
-        
+
         newRow.innerHTML = `
             <td>${date}</td>
             <td>${document.getElementById('numeroSaisie').value}</td>
@@ -353,12 +371,12 @@
                 </button>
             </td>
         `;
-        
+
         // Fermer le modal et réinitialiser le formulaire
         const modal = bootstrap.Modal.getInstance(document.getElementById('nouvelleEcritureModal'));
         modal.hide();
         form.reset();
-        
+
         alert('Écriture ajoutée avec succès !');
     }
 
@@ -367,13 +385,13 @@
         const exercice = document.getElementById('filterExercice').value;
         const mois = document.getElementById('filterMois').value;
         const journal = document.getElementById('filterJournal').value;
-        
+
         // Construire l'URL avec les filtres
         const params = new URLSearchParams();
         if (exercice) params.append('exercice_id', exercice);
         if (mois) params.append('mois', mois);
         if (journal) params.append('journal_id', journal);
-        
+
         // Recharger la page avec les filtres
         window.location.href = window.location.pathname + '?' + params.toString();
     }
@@ -388,4 +406,304 @@
             alert('Fonction de suppression à implémenter pour l\'écriture ID: ' + id);
         }
     }
+
+    // Fonction pour filtrer les options d'un menu déroulant de recherche
+    function filtrerOptions(searchInputId, dropdownId) {
+        const searchText = document.getElementById(searchInputId).value.toLowerCase();
+        const dropdown = document.getElementById(dropdownId);
+        const items = dropdown.getElementsByClassName('list-group-item');
+        let hasVisibleItems = false;
+        
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const text = item.textContent.toLowerCase();
+            
+            if (text.includes(searchText)) {
+                item.style.display = '';
+                hasVisibleItems = true;
+            } else {
+                item.style.display = 'none';
+            }
+        }
+        
+        // Afficher/masquer le dropdown
+        if (searchText.length > 0) {
+            dropdown.style.display = hasVisibleItems ? 'block' : 'none';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    }
+
+    // Fonction pour ajuster dynamiquement la taille du modal
+    function ajusterTailleModal() {
+        const modal = document.querySelector('#nouvelleEcritureModal .modal-dialog');
+        if (!modal) return;
+        
+        // Réinitialiser la taille
+        modal.style.maxWidth = '90%';
+        modal.style.margin = '1.75rem auto';
+        
+        // Ajuster en fonction du contenu
+        const windowHeight = window.innerHeight;
+        const modalContent = modal.querySelector('.modal-content');
+        
+        if (modalContent.scrollHeight > windowHeight * 0.8) {
+            modal.style.maxHeight = '90vh';
+            modalContent.style.maxHeight = 'calc(90vh - 3.5rem)';
+            modalContent.style.overflowY = 'auto';
+        } else {
+            modal.style.maxHeight = '';
+            modalContent.style.maxHeight = '';
+            modalContent.style.overflowY = '';
+        }
+    }
+
+    // Mettre à jour l'affichage des sélecteurs au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ajouter des styles pour les menus de recherche
+        const style = document.createElement('style');
+        style.textContent = `
+            /* Taille du modal */
+            #nouvelleEcritureModal .modal-dialog {
+                max-width: 90%;
+                width: 95%;
+                max-height: 90vh;
+                margin: 1.75rem auto;
+            }
+            
+            #nouvelleEcritureModal .modal-content {
+                min-height: 80vh;
+                max-height: 90vh;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            #nouvelleEcritureModal .modal-body {
+                overflow-y: auto;
+                flex: 1;
+            }
+            
+            /* Ajustements pour les champs du formulaire */
+            #nouvelleEcritureModal .form-control,
+            #nouvelleEcritureModal .form-select {
+                padding: 0.5rem 0.75rem;
+                font-size: 1rem;
+            }
+            
+            #nouvelleEcritureModal .form-label {
+                font-weight: 500;
+                margin-bottom: 0.3rem;
+            }
+            /* Styles pour les menus de recherche */
+            .search-select-container { 
+                position: relative;
+                margin-bottom: 1rem;
+            }
+            .search-select-dropdown {
+                position: absolute;
+                width: 100%;
+                max-height: 300px;
+                overflow-y: auto;
+                z-index: 1000;
+                background: white;
+                border: 1px solid #dee2e6;
+                border-top: none;
+                border-radius: 0 0 0.375rem 0.375rem;
+                box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
+            }
+            .search-select-dropdown .list-group-item {
+                border-left: none;
+                border-right: none;
+                border-radius: 0;
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+            .search-select-dropdown .list-group-item:hover {
+                background-color: #f8f9fa;
+            }
+            .search-select-dropdown .list-group-item.active {
+                background-color: #e9ecef;
+                color: #212529;
+                border-color: #dee2e6;
+            }
+            .option-compte strong { color: #566a7f; }
+            .option-tier strong { color: #5f3dc4; }
+            
+            /* Styles pour les champs de recherche */
+            .input-group-text { background-color: #f8f9fa; }
+            .form-control:focus { box-shadow: none; border-color: #86b7fe; }
+            
+            /* Ajustements pour le modal */
+            .modal-dialog { transition: all 0.3s ease; }
+            .modal-content { max-height: 90vh; overflow-y: auto; }
+            @media (min-width: 992px) {
+                .modal-xl { max-width: 1140px; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Initialiser les champs de recherche
+        initSearchSelect('compteGeneralSearch', 'compteGeneralDropdown', 'compteGeneralEcriture');
+        initSearchSelect('compteTiersSearch', 'compteTiersDropdown', 'compteTiersEcriture');
+        
+        // Ajouter un écouteur pour le redimensionnement de la fenêtre
+        window.addEventListener('resize', ajusterTailleModal);
+        
+        // Ajuster la taille du modal après son affichage
+        const modal = document.getElementById('nouvelleEcritureModal');
+        if (modal) {
+            modal.addEventListener('shown.bs.modal', ajusterTailleModal);
+        }
+    });
+    
+    // Fonction pour initialiser les champs de recherche
+    function initSearchSelect(inputId, dropdownId, hiddenInputId) {
+        const input = document.getElementById(inputId);
+        const dropdown = document.getElementById(dropdownId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        
+        if (!input || !dropdown) return;
+        
+        // Gérer le focus et le clic en dehors
+        input.addEventListener('focus', function() {
+            if (this.value) {
+                dropdown.style.display = 'block';
+            }
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+        
+        // Gérer la recherche
+        input.addEventListener('input', function() {
+            const searchText = this.value.toLowerCase();
+            const items = dropdown.getElementsByClassName('list-group-item');
+            let hasVisibleItems = false;
+            
+            for (let item of items) {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchText)) {
+                    item.style.display = '';
+                    hasVisibleItems = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+            
+            dropdown.style.display = hasVisibleItems ? 'block' : 'none';
+        });
+        
+        // Gérer la sélection d'un élément
+        dropdown.addEventListener('click', function(e) {
+            e.preventDefault();
+            const item = e.target.closest('.list-group-item');
+            if (!item) return;
+            
+            input.value = item.textContent.trim();
+            hiddenInput.value = item.dataset.value;
+            dropdown.style.display = 'none';
+            
+            // Déclencher l'événement de changement si c'est un compte tiers
+            if (hiddenInputId === 'compteTiersEcriture') {
+                remplirChampsPlanTiers(item);
+            }
+        });
+    }
+    
+    // Fonction pour sélectionner automatiquement le compte général correspondant
+    function selectionnerCompteGeneralParNumero(numeroCompte) {
+        const compteGeneralSelect = document.getElementById('compteGeneralEcriture');
+        if (!compteGeneralSelect) return false;
+        
+        // Rechercher le compte par son numéro
+        for (let i = 0; i < compteGeneralSelect.options.length; i++) {
+            const option = compteGeneralSelect.options[i];
+            if (option.dataset.numero === numeroCompte) {
+                compteGeneralSelect.value = option.value;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Fonction pour remplir automatiquement les champs lors de la sélection d'un plan tiers
+    function remplirChampsPlanTiers(selectedItem) {
+        if (!selectedItem.dataset) {
+            // Si c'est un élément select (pour la rétrocompatibilité)
+            if (selectedItem.options) {
+                selectedItem = selectedItem.options[selectedItem.selectedIndex];
+            } else {
+                return;
+            }
+        }
+        
+        // Remplir le libellé en priorité
+        if (selectedItem.dataset.libelle) {
+            document.getElementById('libelleEcriture').value = selectedItem.dataset.libelle;
+        }
+        
+        // Si un numéro de compte est fourni, essayer de sélectionner le compte général correspondant
+        if (selectedItem.dataset.numeroCompte) {
+            const numeroCompte = selectedItem.dataset.numeroCompte;
+            const compteTrouve = selectionnerCompteGeneralParNumero(numeroCompte);
+            
+            if (!compteTrouve) {
+                console.warn('Aucun compte général trouvé pour le numéro:', numeroCompte);
+                // Si aucun compte n'est trouvé, utiliser le compte général fourni en fallback
+                if (selectedItem.dataset.compteGeneral) {
+                    document.getElementById('compteGeneralEcriture').value = selectedItem.dataset.compteGeneral;
+                    // Mettre à jour le champ de recherche du compte général
+                    const compteGeneralSearch = document.getElementById('compteGeneralSearch');
+                    if (compteGeneralSearch) {
+                        // Trouver le libellé du compte général
+                        const compteGeneralSelect = document.getElementById('compteGeneralEcriture');
+                        if (compteGeneralSelect) {
+                            const selectedOption = Array.from(compteGeneralSelect.options).find(
+                                opt => opt.value === selectedItem.dataset.compteGeneral
+                            );
+                            if (selectedOption) {
+                                compteGeneralSearch.value = selectedOption.text.trim();
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (selectedItem.dataset.compteGeneral) {
+            // Fallback si seul compte_general_id est fourni
+            document.getElementById('compteGeneralEcriture').value = selectedItem.dataset.compteGeneral;
+        }
+        
+        // Remplir les autres champs si disponibles
+        const fields = ['adresse', 'telephone', 'email'];
+        fields.forEach(field => {
+            const element = document.getElementById(field + 'Ecriture');
+            if (element && selectedItem.dataset[field]) {
+                element.value = selectedItem.dataset[field];
+            }
+        });
+        
+        // Ajuster la taille du modal si nécessaire
+        ajusterTailleModal();
+    }
+    
+    // Gérer la suppression de la sélection
+    document.addEventListener('click', function(e) {
+        // Si on clique sur la croix dans le champ de recherche
+        if (e.target.matches('.search-clear') || e.target.closest('.search-clear')) {
+            const input = e.target.closest('.input-group').querySelector('input[type="text"]');
+            const hiddenInput = e.target.closest('.input-group').querySelector('input[type="hidden"]');
+            if (input && hiddenInput) {
+                input.value = '';
+                hiddenInput.value = '';
+                
+                // Si c'est le champ des tiers, vider aussi le libellé
+                if (hiddenInput.id === 'compteTiersEcriture') {
+                    document.getElementById('libelleEcriture').value = '';
+                }
+            }
+        }
+    });
 </script>
