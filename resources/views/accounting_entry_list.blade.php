@@ -436,6 +436,30 @@
         }
     }
 
+    // Fonction pour ajuster dynamiquement la taille du modal
+    function ajusterTailleModal() {
+        const modal = document.querySelector('#nouvelleEcritureModal .modal-dialog');
+        if (!modal) return;
+        
+        // Réinitialiser la taille
+        modal.style.maxWidth = '90%';
+        modal.style.margin = '1.75rem auto';
+        
+        // Ajuster en fonction du contenu
+        const windowHeight = window.innerHeight;
+        const modalContent = modal.querySelector('.modal-content');
+        
+        if (modalContent.scrollHeight > windowHeight * 0.8) {
+            modal.style.maxHeight = '90vh';
+            modalContent.style.maxHeight = 'calc(90vh - 3.5rem)';
+            modalContent.style.overflowY = 'auto';
+        } else {
+            modal.style.maxHeight = '';
+            modalContent.style.maxHeight = '';
+            modalContent.style.overflowY = '';
+        }
+    }
+
     // Mettre à jour l'affichage des sélecteurs au chargement
     document.addEventListener('DOMContentLoaded', function() {
         // Ajouter des styles pour les options
@@ -446,44 +470,84 @@
             select option { padding: 0.5rem; border-bottom: 1px solid #f0f0f0; }
             select option:hover { background-color: #f8f9fa; }
             select option:checked { background-color: #e7f1ff; }
+            
+            /* Styles pour les champs de recherche */
+            .input-group-text { background-color: #f8f9fa; }
+            .form-control:focus { box-shadow: none; border-color: #86b7fe; }
+            
+            /* Ajustements pour le modal */
+            .modal-dialog { transition: all 0.3s ease; }
+            .modal-content { max-height: 90vh; overflow-y: auto; }
+            @media (min-width: 992px) {
+                .modal-xl { max-width: 1140px; }
+            }
         `;
         document.head.appendChild(style);
+        
+        // Ajouter un écouteur pour le redimensionnement de la fenêtre
+        window.addEventListener('resize', ajusterTailleModal);
+        
+        // Ajuster la taille du modal après son affichage
+        const modal = document.getElementById('nouvelleEcritureModal');
+        if (modal) {
+            modal.addEventListener('shown.bs.modal', ajusterTailleModal);
+        }
     });
     
+    // Fonction pour sélectionner automatiquement le compte général correspondant
+    function selectionnerCompteGeneralParNumero(numeroCompte) {
+        const compteGeneralSelect = document.getElementById('compteGeneralEcriture');
+        if (!compteGeneralSelect) return false;
+        
+        // Rechercher le compte par son numéro
+        for (let i = 0; i < compteGeneralSelect.options.length; i++) {
+            const option = compteGeneralSelect.options[i];
+            if (option.dataset.numero === numeroCompte) {
+                compteGeneralSelect.value = option.value;
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Fonction pour remplir automatiquement les champs lors de la sélection d'un plan tiers
     function remplirChampsPlanTiers(select) {
         const selectedOption = select.options[select.selectedIndex];
-        if (selectedOption.dataset) {
-            // Remplir le compte général
-            if (selectedOption.dataset.compteGeneral) {
-                document.getElementById('compteGeneralEcriture').value = selectedOption.dataset.compteGeneral;
-            }
-            
-            // Remplir le libellé
-            if (selectedOption.dataset.libelle) {
-                document.getElementById('libelleEcriture').value = selectedOption.dataset.libelle;
-            }
-            
-            // Remplir les autres champs si disponibles
-            const fields = ['numero_compte', 'adresse', 'telephone', 'email'];
-            fields.forEach(field => {
-                const element = document.getElementById(field + 'Ecriture');
-                if (element && selectedOption.dataset[field]) {
-                    element.value = selectedOption.dataset[field];
-                }
-            });
-            
-            // Si un numéro de compte est disponible, essayer de le sélectionner dans la liste déroulante
-            if (selectedOption.dataset.numeroCompte) {
-                const compteGeneralSelect = document.getElementById('compteGeneralEcriture');
-                for (let i = 0; i < compteGeneralSelect.options.length; i++) {
-                    if (compteGeneralSelect.options[i].dataset.numero === selectedOption.dataset.numeroCompte) {
-                        compteGeneralSelect.value = compteGeneralSelect.options[i].value;
-                        break;
-                    }
-                }
-            }
+        if (!selectedOption.dataset) return;
+        
+        // Remplir le libellé en priorité
+        if (selectedOption.dataset.libelle) {
+            document.getElementById('libelleEcriture').value = selectedOption.dataset.libelle;
         }
+        
+        // Si un numéro de compte est fourni, essayer de sélectionner le compte général correspondant
+        if (selectedOption.dataset.numeroCompte) {
+            const numeroCompte = selectedOption.dataset.numeroCompte;
+            const compteTrouve = selectionnerCompteGeneralParNumero(numeroCompte);
+            
+            if (!compteTrouve) {
+                console.warn('Aucun compte général trouvé pour le numéro:', numeroCompte);
+                // Si aucun compte n'est trouvé, utiliser le compte général fourni en fallback
+                if (selectedOption.dataset.compteGeneral) {
+                    document.getElementById('compteGeneralEcriture').value = selectedOption.dataset.compteGeneral;
+                }
+            }
+        } else if (selectedOption.dataset.compteGeneral) {
+            // Fallback si seul compte_general_id est fourni
+            document.getElementById('compteGeneralEcriture').value = selectedOption.dataset.compteGeneral;
+        }
+        
+        // Remplir les autres champs si disponibles
+        const fields = ['adresse', 'telephone', 'email'];
+        fields.forEach(field => {
+            const element = document.getElementById(field + 'Ecriture');
+            if (element && selectedOption.dataset[field]) {
+                element.value = selectedOption.dataset[field];
+            }
+        });
+        
+        // Ajuster la taille du modal si nécessaire
+        ajusterTailleModal();
     }
     
     // Ajouter un événement pour vider les champs lorsque 'Aucun' est sélectionné
