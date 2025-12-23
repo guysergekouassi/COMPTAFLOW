@@ -213,41 +213,52 @@
                               </div>
                               <div class="col-md-3">
                                   <label for="compteGeneralEcriture" class="form-label">Compte Général</label>
-                                  <div class="input-group">
+                                  <div class="input-group mb-2">
+                                      <span class="input-group-text"><i class="bx bx-search"></i></span>
                                       <input type="text" id="rechercheCompteGeneral" class="form-control" placeholder="Rechercher un compte..." onkeyup="filtrerOptions('compteGeneralEcriture', this.value)">
                                   </div>
-                                  <select id="compteGeneralEcriture" name="compte_general" class="form-select mt-2" size="5" required>
-                                      <option value="">Sélectionner un compte...</option>
-                                      @if(isset($plansComptables))
-                                          @foreach ($plansComptables as $plan)
-                                              <option value="{{ $plan->id }}" data-numero="{{ $plan->numero_de_compte }}">
-                                                  {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
-                                              </option>
-                                          @endforeach
-                                      @endif
-                                  </select>
+                                  <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem;">
+                                      <select id="compteGeneralEcriture" name="compte_general" class="form-select" style="border: none;" required>
+                                          <option value="">Sélectionner un compte...</option>
+                                          @if(isset($plansComptables))
+                                              @foreach ($plansComptables as $plan)
+                                                  <option value="{{ $plan->id }}" data-numero="{{ $plan->numero_de_compte }}" class="option-compte">
+                                                      <strong>{{ $plan->numero_de_compte }}</strong> - {{ $plan->intitule }}
+                                                  </option>
+                                              @endforeach
+                                          @endif
+                                      </select>
+                                  </div>
+                                  <div class="mt-1 text-muted small" id="compteGeneralInfo"></div>
                               </div>
                               <div class="col-md-3">
                                   <label for="compteTiersEcriture" class="form-label">Compte Tiers</label>
-                                  <div class="input-group">
+                                  <div class="input-group mb-2">
+                                      <span class="input-group-text"><i class="bx bx-search"></i></span>
                                       <input type="text" id="rechercheTiers" class="form-control" placeholder="Rechercher un tiers..." onkeyup="filtrerOptions('compteTiersEcriture', this.value)">
                                   </div>
-                                  <select id="compteTiersEcriture" name="compte_tiers" class="form-select mt-2" size="5" onchange="remplirChampsPlanTiers(this)">
-                                      <option value="">Sélectionner un tiers...</option>
-                                      @if(isset($tiers))
-                                          @foreach ($tiers as $tier)
-                                              <option value="{{ $tier->id }}" 
-                                                      data-compte-general="{{ $tier->compte_general_id ?? '' }}"
-                                                      data-numero-compte="{{ $tier->numero_compte ?? '' }}"
-                                                      data-libelle="{{ $tier->intitule ?? '' }}"
-                                                      data-adresse="{{ $tier->adresse ?? '' }}"
-                                                      data-telephone="{{ $tier->telephone ?? '' }}"
-                                                      data-email="{{ $tier->email ?? '' }}">
-                                                  {{ $tier->code_tiers ?? '' }} - {{ $tier->intitule }}
-                                              </option>
-                                          @endforeach
-                                      @endif
-                                  </select>
+                                  <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem;">
+                                      <select id="compteTiersEcriture" name="compte_tiers" class="form-select" style="border: none;" onchange="remplirChampsPlanTiers(this)">
+                                          <option value="">Sélectionner un tiers...</option>
+                                          @if(isset($tiers))
+                                              @foreach ($tiers as $tier)
+                                                  <option value="{{ $tier->id }}" 
+                                                          data-compte-general="{{ $tier->compte_general_id ?? '' }}"
+                                                          data-numero-compte="{{ $tier->numero_compte ?? '' }}"
+                                                          data-libelle="{{ $tier->intitule ?? '' }}"
+                                                          data-adresse="{{ $tier->adresse ?? '' }}"
+                                                          data-telephone="{{ $tier->telephone ?? '' }}"
+                                                          data-email="{{ $tier->email ?? '' }}"
+                                                          class="option-tier">
+                                                      @if(!empty($tier->code_tiers))
+                                                          <strong>{{ $tier->code_tiers }}</strong> - 
+                                                      @endif
+                                                      {{ $tier->intitule }}
+                                                  </option>
+                                              @endforeach
+                                          @endif
+                                      </select>
+                                  </div>
                               </div>
                               <div class="col-md-2">
                                   <label for="debitEcriture" class="form-label">Débit</label>
@@ -395,18 +406,50 @@
     function filtrerOptions(selectId, searchText) {
         const select = document.getElementById(selectId);
         const options = select.getElementsByTagName('option');
-        const search = searchText.toLowerCase();
+        const search = searchText.toLowerCase().trim();
+        let hasVisibleOptions = false;
         
         for (let i = 0; i < options.length; i++) {
-            const optionText = options[i].text.toLowerCase();
-            if (optionText.includes(search) || options[i].value === '') {
-                options[i].style.display = '';
+            const option = options[i];
+            if (option.value === '') {
+                option.style.display = ''; // Toujours afficher l'option vide
+                continue;
+            }
+            
+            const optionText = option.text.toLowerCase();
+            if (search === '' || optionText.includes(search)) {
+                option.style.display = '';
+                hasVisibleOptions = true;
             } else {
-                options[i].style.display = 'none';
+                option.style.display = 'none';
+            }
+        }
+        
+        // Afficher un message si aucune option ne correspond à la recherche
+        const infoElement = document.getElementById(selectId + 'Info');
+        if (infoElement) {
+            if (search !== '' && !hasVisibleOptions) {
+                infoElement.textContent = 'Aucun résultat trouvé';
+            } else {
+                infoElement.textContent = '';
             }
         }
     }
 
+    // Mettre à jour l'affichage des sélecteurs au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ajouter des styles pour les options
+        const style = document.createElement('style');
+        style.textContent = `
+            .option-compte strong { color: #566a7f; }
+            .option-tier strong { color: #5f3dc4; }
+            select option { padding: 0.5rem; border-bottom: 1px solid #f0f0f0; }
+            select option:hover { background-color: #f8f9fa; }
+            select option:checked { background-color: #e7f1ff; }
+        `;
+        document.head.appendChild(style);
+    });
+    
     // Fonction pour remplir automatiquement les champs lors de la sélection d'un plan tiers
     function remplirChampsPlanTiers(select) {
         const selectedOption = select.options[select.selectedIndex];
