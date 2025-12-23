@@ -478,7 +478,7 @@
             erreurs.push(`Ligne ${index + 1}: Le numéro de compte est requis`);
           }
 
-          totalDebit += debit;
+          totalDebit += debit;n
           totalCredit += credit;
         });
 
@@ -487,7 +487,7 @@
           erreurs.push(`L'équilibre débit/crédit n'est pas respecté: Débit=${totalDebit.toFixed(2)}, Crédit=${totalCredit.toFixed(2)}`);
         }
 
-        if (erreurs.length > 0) {
+        if ( erreurs.length > 0) {
           alert('Erreurs de validation:\n' + erreurs.join('\n'));
           return;
         }
