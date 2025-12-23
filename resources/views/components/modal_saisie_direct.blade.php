@@ -86,7 +86,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
-                    <button type="button" id="btnRedirectToSaisie" class="btn btn-primary">Aller à la saisie</button>
+                    <button type="button" id="btnRedirectToSaisie" class="btn btn-success">Aller à la saisie</button>
 
                 </div>
             </form>

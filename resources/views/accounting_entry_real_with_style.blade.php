@@ -192,27 +192,6 @@
                                 min="0" />
                         </div>
 
-                        <!-- Poste de trésorerie -->
-                        <div class="col-md-3">
-                            <label for="compteTresorerieField" class="form-label">Poste de trésorerie</label>
-                            <select id="compteTresorerieField" name="compte_tresorerie"
-                                class="form-control w-100" data-live-search="true">
-                                <option value="">Sélectionner un poste</option>
-                                @foreach ($postesTresorerie as $poste)
-                                    <option value="{{ $poste->id }}">{{ $poste->intitule }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <!-- Type de Flux -->
-                        <div class="col-md-3">
-                            <label for="typeFluxField" class="form-label">Type de Flux de tresorerie</label>
-                            <select id="typeFluxField" name="type_flux" class="form-control w-100" required>
-                                <option value="decaissement">Décaissement (Débit)</option>
-                                <option value="encaissement">Encaissement (Crédit)</option>
-                            </select>
-                        </div>
-
                         <!-- Plan Analytique -->
                         <div class="col-md-3">
                             <label for="plan_analytique" class="form-label">Plan Analytique</label>
@@ -254,8 +233,6 @@
                                 <th>Cpte Tiers</th>
                                 <th>Débit</th>
                                 <th>Crédit</th>
-                                <th>Poste de trésorerie</th>
-                                <th>Type de Flux</th>
                                 <th>Piece justificatif</th>
                                 <th>ANALYTIQUE</th>
 
@@ -372,8 +349,6 @@
                         <th>Plan Analytique</th>
                         <th>Débit</th>
                         <th>Crédit</th>
-                        <th>Poste de trésorerie</th>
-                        <th>Type de Flux</th>
                         <th>Pièce justificatif</th>
                     </tr>
                 </thead>
@@ -391,7 +366,7 @@
                         @php
                             $totalDebit += $ecriture->debit;
                             $totalCredit += $ecriture->credit;
-                            
+
                             // Changer de couleur tous les 3 écritures
                             if ($ecriture->n_saisie != $previous_saisie) {
                                 $currentColor = ($currentColor + 1) % count($colors);
@@ -481,46 +456,42 @@
             const libelle = document.getElementById('description_operation');
             const debit = document.getElementById('debit');
             const credit = document.getElementById('credit');
-            const posteTresorerie = document.getElementById('compteTresorerieField');
-            const typeFlux = document.getElementById('typeFluxField');
             const compteGeneral = document.getElementById('compte_general');
             const referencePiece = document.getElementById('reference_piece');
             const compteTiers = document.getElementById('compte_tiers');
             const pieceFile = document.getElementById('piece_justificatif');
             const imputationInput = document.querySelector('input[readonly][placeholder*="N/A"]');
             const planAnalytique = document.getElementById('plan_analytique');
-            
+
             if (!date || !libelle || !compteGeneral) {
                 alert('Champs du formulaire introuvables.');
                 return;
             }
-            
+
             if (!date.value || !libelle.value || !compteGeneral.value || compteGeneral.value === '') {
                 alert('Veuillez remplir tous les champs obligatoires (Date, Description, Compte Général).');
                 return;
             }
-            
+
             if (!debit.value && !credit.value) {
                 alert('Veuillez saisir un montant au débit ou au crédit.');
                 return;
             }
-            
+
             const tbody = document.querySelector('#tableEcritures tbody');
             if (!tbody) {
                 alert('Tableau des écritures introuvable.');
                 return;
             }
-            
+
             const newRow = tbody.insertRow();
-            
+
             const imputationValue = imputationInput ? imputationInput.value : '';
             const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? 'Oui' : 'Non') : '';
             const compteText = compteGeneral.options[compteGeneral.selectedIndex].text;
             const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
-            const posteText = posteTresorerie ? posteTresorerie.options[posteTresorerie.selectedIndex].text : '';
-            const fluxText = typeFlux ? typeFlux.options[typeFlux.selectedIndex].text : '';
             const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
-            
+
             newRow.innerHTML = `
                 <td>${date.value}</td>
                 <td>${nSaisie ? nSaisie.value : ''}</td>
@@ -531,12 +502,10 @@
                 <td>${compteTiersValue}</td>
                 <td>${debit.value || ''}</td>
                 <td>${credit.value || ''}</td>
-                <td>${posteText}</td>
-                <td>${fluxText}</td>
                 <td>${pieceFileName}</td>
                 <td>${analytiqueValue}</td>
             `;
-            
+
             const modifierCell = document.createElement('td');
             modifierCell.innerHTML = `
                 <button class="btn btn-sm btn-warning" onclick="modifierEcriture(this.closest('tr'));">
@@ -544,7 +513,7 @@
                 </button>
             `;
             newRow.appendChild(modifierCell);
-            
+
             const supprimerCell = document.createElement('td');
             supprimerCell.innerHTML = `
                 <button class="btn btn-sm btn-danger" onclick="supprimerEcriture(this.closest('tr'));">
@@ -552,38 +521,38 @@
                 </button>
             `;
             newRow.appendChild(supprimerCell);
-            
+
             // Réinitialisation du formulaire
             libelle.value = '';
             debit.value = '';
             credit.value = '';
             if (referencePiece) referencePiece.value = '';
             if (pieceFile) pieceFile.value = '';
-            
+
             // Mise à jour des totaux
             updateTotals();
-            
+
             alert('Écriture ajoutée avec succès !');
-            
+
         } catch (error) {
             console.error('Erreur lors de l\'ajout de l\'écriture:', error);
             alert('Une erreur est survenue: ' + error.message);
         }
     }
-    
+
     // Fonction pour mettre à jour les totaux
     function updateTotals() {
         const tbody = document.querySelector('#tableEcritures tbody');
         if (!tbody) return;
-        
+
         let totalDebit = 0;
         let totalCredit = 0;
-        
+
         const rows = tbody.getElementsByTagName('tr');
         for (let row of rows) {
             const debitCell = row.cells[7]; // Colonne Débit
             const creditCell = row.cells[8]; // Colonne Crédit
-            
+
             if (debitCell && debitCell.textContent) {
                 totalDebit += parseFloat(debitCell.textContent.replace(/\s/g, '').replace(',', '.') || 0);
             }
@@ -591,10 +560,10 @@
                 totalCredit += parseFloat(creditCell.textContent.replace(/\s/g, '').replace(',', '.') || 0);
             }
         }
-        
+
         const totalDebitElement = document.getElementById('totalDebit');
         const totalCreditElement = document.getElementById('totalCredit');
-        
+
         if (totalDebitElement) {
             totalDebitElement.textContent = totalDebit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         }
@@ -602,79 +571,38 @@
             totalCreditElement.textContent = totalCredit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         }
     }
-    
+
     // Fonction pour enregistrer les écritures
     function enregistrerEcritures() {
         const tbody = document.querySelector('#tableEcritures tbody');
         if (tbody) {
             const rows = tbody.getElementsByTagName('tr');
-            
+
             if (rows.length === 0) {
                 alert('Aucune écriture à enregistrer.');
                 return;
             }
-            
+
             alert('Écritures enregistrées avec succès !');
-            
+
             setTimeout(() => {
                 tbody.innerHTML = '';
                 updateTotals();
             }, 2000);
         }
     }
-    
+
     // Fonction pour modifier une écriture
     function modifierEcriture(row) {
         alert('Fonction de modification à implémenter');
     }
-    
+
     // Fonction pour supprimer une écriture
     function supprimerEcriture(row) {
         if (confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')) {
             row.remove();
             updateTotals();
             alert('Écriture supprimée avec succès !');
-        }
-    }
-    
-    // Gestion du type de flux pour activer/désactiver les champs
-    document.addEventListener('DOMContentLoaded', function() {
-        const typeFlux = document.getElementById('typeFluxField');
-        const debit = document.getElementById('debit');
-        const credit = document.getElementById('credit');
-        
-        if (typeFlux && debit && credit) {
-            function updateFields() {
-                if (typeFlux.value === 'decaissement') {
-                    credit.disabled = false;
-                    debit.disabled = false;
-                    credit.style.backgroundColor = '';
-                    credit.style.cursor = 'text';
-                    debit.style.backgroundColor = '#f8f9fa';
-                    debit.style.boxShadow = '0 0 8px rgba(108, 117, 125, 0.4), inset 0 0 4px rgba(108, 117, 125, 0.2)';
-                    debit.style.border = '1px solid #ced4da';
-                    debit.style.cursor = 'not-allowed';
-                } else if (typeFlux.value === 'encaissement') {
-                    debit.disabled = false;
-                    credit.disabled = false;
-                    debit.style.backgroundColor = '';
-                    debit.style.cursor = 'text';
-                    credit.style.backgroundColor = '#f8f9fa';
-                    credit.style.boxShadow = '0 0 8px rgba(108, 117, 125, 0.4), inset 0 0 4px rgba(108, 117, 125, 0.2)';
-                    credit.style.border = '1px solid #ced4da';
-                    credit.style.cursor = 'not-allowed';
-                } else {
-                    debit.disabled = false;
-                    credit.disabled = false;
-                    debit.style.backgroundColor = '';
-                    credit.style.backgroundColor = '';
-                    debit.style.cursor = 'text';
-                    credit.style.cursor = 'text';
-                }
-            }
-            
-            typeFlux.addEventListener('change', updateFields);
-            updateFields();
         }
     });
 </script>
