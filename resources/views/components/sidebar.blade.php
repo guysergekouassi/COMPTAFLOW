@@ -262,12 +262,12 @@
 
     $show_all = $user->isAdmin() && !$user->isSuperAdmin();
 
-    $exercices = ExerciceComptable::where('company_id', $currentCompanyId)->orderBy('date_debut', 'desc')->get();
+    $exercices = ExerciceComptable::where('company_id', $currentCompanyId)->orderBy('date_debut', 'desc')->get()->unique('intitule');
     $journaux = JournalSaisi::with('codeJournal')
         ->where('company_id', $currentCompanyId)
         ->orderBy('mois', 'asc')
         ->get();
-    $code_journaux = CodeJournal::where('company_id', $currentCompanyId)->get();
+    $code_journaux = CodeJournal::where('company_id', $currentCompanyId)->get()->unique('code_journal');
 
     // Récupérer l'exercice actif (non clôturé) pour pré-sélection
     $exerciceActif = ExerciceComptable::where('company_id', $currentCompanyId)
