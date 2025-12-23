@@ -248,7 +248,7 @@
 
                         {{-- Boutons d'action --}}
                         <div class="mt-4 d-flex gap-2">
-                            <a href="{{ route('settings') }}" class="btn btn-primary">
+                            <a href="{{ route('user.settings') }}" class="btn btn-primary">
                                 <i class="bx bx-cog me-2"></i>Paramètres
                             </a>
 

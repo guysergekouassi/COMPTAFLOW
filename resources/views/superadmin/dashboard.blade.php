@@ -11,18 +11,18 @@
             <div class="layout-page">
                 @include('components.header')
 
-                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
                     <!-- Welcome Section -->
                     <div class="mb-8">
-                        <div class="bg-white/10 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <h1 class="text-3xl font-bold text-white mb-2">Tableau de Bord Super Administrateur</h1>
-                                    <p class="text-white/80">Contrôle global des entités et des utilisateurs de votre plateforme.</p>
+                                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Tableau de Bord Super Administrateur</h1>
+                                    <p class="text-gray-600">Contrôle global des entités et des utilisateurs de votre plateforme.</p>
                                 </div>
                                 <div class="hidden md:block">
-                                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                                        <i class="fa-solid fa-crown text-white text-2xl"></i>
+                                    <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-crown text-primary text-2xl"></i>
                                     </div>
                                 </div>
                             </div>
@@ -223,139 +223,11 @@
                 </div>
             </td>
         </tr>
-     <div class="modal fade" id="editCompanyModal{{ $company->id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Modifier : {{ $company->company_name }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('superadmin.companies.update', $company->id) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="modal-body">
-                    <div class="row g-4">
-                        {{-- SECTION COMPAGNIE --}}
-                        <div class="col-12"><h6 class="border-bottom pb-2 text-primary"><i class="bx bx-buildings me-2"></i>Infos Compagnie</h6></div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Nom de l'entreprise</label>
-                            <input type="text" name="company_name" class="form-control" value="{{ $company->company_name }}" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Forme Juridique</label>
-                            <input type="text" name="juridique_form" class="form-control" value="{{ $company->juridique_form }}" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Activité</label>
-                            <input type="text" name="activity" class="form-control" value="{{ $company->activity }}" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Capital Social</label>
-                            <input type="number" name="social_capital" class="form-control" value="{{ $company->social_capital }}" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Ville</label>
-                            <input type="text" name="city" class="form-control" value="{{ $company->city }}" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Identification TVA</label>
-                            <input type="text" name="identification_TVA" class="form-control" value="{{ $company->identification_TVA }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Adresse</label>
-                            <input type="text" name="adresse" class="form-control" value="{{ $company->adresse }}" required>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Code Postal</label>
-                            <input type="text" name="code_postal" class="form-control" value="{{ $company->code_postal }}" required>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Pays</label>
-                            <input type="text" name="country" class="form-control" value="{{ $company->country }}" required>
-                        </div>
-
-                        {{-- SECTION ADMIN --}}
-                        <div class="col-12 mt-4"><h6 class="border-bottom pb-2 text-primary"><i class="bx bx-user me-2"></i>Infos Administrateur</h6></div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Nom (Admin)</label>
-                            <input type="text" name="admin_name" class="form-control" value="{{ $company->admin->name ?? '' }}" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Prénom (Admin)</label>
-                            <input type="text" name="admin_last_name" class="form-control" value="{{ $company->admin->last_name ?? '' }}" required>
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label">Email (Admin)</label>
-                            <input type="email" name="admin_email_adresse" class="form-control" value="{{ $company->admin->email_adresse ?? '' }}" required>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Nouveau mot de passe <small class="text-muted">(Laisser vide si inchangé)</small></label>
-                            <input type="password" name="admin_password" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Confirmer mot de passe</label>
-                            <input type="password" name="admin_password_confirmation" class="form-control">
-                        </div>
-
-                        {{-- SECTION HABILITATIONS --}}
-                        <div class="col-12 mt-4">
-                            <h6 class="border-bottom pb-2 text-primary"><i class="bx bx-shield-quarter me-2"></i>Habilitations de l'Administrateur</h6>
-                        </div>
-
-                        <div class="col-12">
-                            <div class="row">
-                                @php
-                                    $habilitations = [
-                                        'dashboard', 'plan_comptable', 'plan_tiers', 'journaux', 'tresorerie',
-                                        'grand_livre','balance','etats_financiers', 'fichier_joindre',
-                                        'parametre','accounting_journals','exercice_comptable',
-                                        'Etat de rapprochement bancaire', 'Gestion de la trésorerie',
-                                        'gestion_analytique', 'gestion_tiers','user_management',
-                                        'gestion_immobilisations','gestion_reportings','gestion_stocks','grand_livre_tiers',
-                                        'poste','Balance_Tiers','modal_saisie_direct'
-                                    ];
-
-                                    // Récupération des habilitations actuelles de l'admin
-                                    $currentHabilitations = $company->admin && is_array($company->admin->habilitations)
-                                        ? $company->admin->habilitations
-                                        : [];
-                                @endphp
-
-                                @foreach ($habilitations as $habilitation)
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            @php
-                                                // Remplacez cette ligne dans votre boucle d'habilitations
-                                                $uniqueId = 'hab_' . $company->id . '_' . \Illuminate\Support\Str::slug($habilitation);
-                                            @endphp
-                                            <input class="form-check-input" type="checkbox"
-                                                id="{{ $uniqueId }}"
-                                                name="habilitations[{{ $habilitation }}]"
-                                                value="1"
-                                                {{ (isset($currentHabilitations[$habilitation]) && $currentHabilitations[$habilitation]) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="{{ $uniqueId }}">
-                                                {{ ucfirst(str_replace('_', ' ', $habilitation)) }}
-                                            </label>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+@php
+    // Collection des modals pour les déplacer hors du tbody
+    if(!isset($companyModals)) $companyModals = [];
+    $companyModals[] = $company;
+@endphp
     @empty
         <tr>
             <td colspan="5" class="text-center">Aucune compagnie principale n'a encore été créée.</td>
@@ -375,10 +247,143 @@
                        {{-- ///////////// --}}
 
 
-                            <hr>
-
-
                     </div>
+                    @if(isset($companyModals))
+                        @foreach ($companyModals as $company)
+                            <div class="modal fade" id="editCompanyModal{{ $company->id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Modifier : {{ $company->company_name }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form action="{{ route('superadmin.companies.update', $company->id) }}" method="POST">
+                                            @csrf
+                                            @method('PUT')
+                                            <div class="modal-body">
+                                                <div class="row g-4">
+                                                    {{-- SECTION COMPAGNIE --}}
+                                                    <div class="col-12"><h6 class="border-bottom pb-2 text-primary"><i class="bx bx-buildings me-2"></i>Infos Compagnie</h6></div>
+
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Nom de l'entreprise</label>
+                                                        <input type="text" name="company_name" class="form-control" value="{{ $company->company_name }}" required>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Forme Juridique</label>
+                                                        <input type="text" name="juridique_form" class="form-control" value="{{ $company->juridique_form }}" required>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Activité</label>
+                                                        <input type="text" name="activity" class="form-control" value="{{ $company->activity }}" required>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Capital Social</label>
+                                                        <input type="number" name="social_capital" class="form-control" value="{{ $company->social_capital }}" required>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Ville</label>
+                                                        <input type="text" name="city" class="form-control" value="{{ $company->city }}" required>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Identification TVA</label>
+                                                        <input type="text" name="identification_TVA" class="form-control" value="{{ $company->identification_TVA }}">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Adresse</label>
+                                                        <input type="text" name="adresse" class="form-control" value="{{ $company->adresse }}" required>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Code Postal</label>
+                                                        <input type="text" name="code_postal" class="form-control" value="{{ $company->code_postal }}" required>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Pays</label>
+                                                        <input type="text" name="country" class="form-control" value="{{ $company->country }}" required>
+                                                    </div>
+
+                                                    {{-- SECTION ADMIN --}}
+                                                    <div class="col-12 mt-4"><h6 class="border-bottom pb-2 text-primary"><i class="bx bx-user me-2"></i>Infos Administrateur</h6></div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Nom (Admin)</label>
+                                                        <input type="text" name="admin_name" class="form-control" value="{{ $company->admin->name ?? '' }}" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Prénom (Admin)</label>
+                                                        <input type="text" name="admin_last_name" class="form-control" value="{{ $company->admin->last_name ?? '' }}" required>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <label class="form-label">Email (Admin)</label>
+                                                        <input type="email" name="admin_email_adresse" class="form-control" value="{{ $company->admin->email_adresse ?? '' }}" required>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Nouveau mot de passe <small class="text-muted">(Laisser vide si inchangé)</small></label>
+                                                        <input type="password" name="admin_password" class="form-control">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Confirmer mot de passe</label>
+                                                        <input type="password" name="admin_password_confirmation" class="form-control">
+                                                    </div>
+
+                                                    {{-- SECTION HABILITATIONS --}}
+                                                    <div class="col-12 mt-4">
+                                                        <h6 class="border-bottom pb-2 text-primary"><i class="bx bx-shield-quarter me-2"></i>Habilitations de l'Administrateur</h6>
+                                                    </div>
+
+                                                    <div class="col-12">
+                                                        <div class="row">
+                                                            @php
+                                                                $habilitations = [
+                                                                    'dashboard', 'plan_comptable', 'plan_tiers', 'journaux', 'tresorerie',
+                                                                    'grand_livre','balance','etats_financiers', 'fichier_joindre',
+                                                                    'parametre','accounting_journals','exercice_comptable',
+                                                                    'Etat de rapprochement bancaire', 'Gestion de la trésorerie',
+                                                                    'gestion_analytique', 'gestion_tiers','user_management',
+                                                                    'gestion_immobilisations','gestion_reportings','gestion_stocks','grand_livre_tiers',
+                                                                    'poste','Balance_Tiers','modal_saisie_direct'
+                                                                ];
+
+                                                                // Récupération des habilitations actuelles de l'admin
+                                                                $currentHabilitations = $company->admin && is_array($company->admin->habilitations)
+                                                                    ? $company->admin->habilitations
+                                                                    : [];
+                                                            @endphp
+
+                                                            @foreach ($habilitations as $habilitation)
+                                                                <div class="col-md-4 mb-2">
+                                                                    <div class="form-check">
+                                                                        @php
+                                                                            $uniqueId = 'hab_' . $company->id . '_' . \Illuminate\Support\Str::slug($habilitation);
+                                                                        @endphp
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                            id="{{ $uniqueId }}"
+                                                                            name="habilitations[{{ $habilitation }}]"
+                                                                            value="1"
+                                                                            {{ (isset($currentHabilitations[$habilitation]) && $currentHabilitations[$habilitation]) ? 'checked' : '' }}>
+                                                                        <label class="form-check-label" for="{{ $uniqueId }}">
+                                                                            {{ ucfirst(str_replace('_', ' ', $habilitation)) }}
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
                     @include('components.footer')
                 </div>
             </div>

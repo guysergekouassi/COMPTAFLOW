@@ -175,9 +175,10 @@
 
                         {{-- Retour au profil --}}
                         <div class="mt-4">
-                            <a href="{{ route('profile') }}" class="btn btn-outline-primary">
+                            <a href="{{ route('user.profile') }}" class="btn btn-outline-primary">
                                 <i class="bx bx-arrow-back me-2"></i>Retour au profil
                             </a>
+
                         </div>
 
                     </div>

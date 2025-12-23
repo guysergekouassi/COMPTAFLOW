@@ -393,11 +393,11 @@
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0">Compte</p>
                     <p class="text-sm font-semibold text-slate-700 truncate mb-0">{{ auth()->user()->name }}</p>
                 </div>
-                <a href="#" class="dropdown-link">
+                <a href="{{ route('user.profile') }}" class="dropdown-link">
                     <i class="fa-solid fa-user"></i>
                     <span>Mon profil</span>
                 </a>
-                <a href="#" class="dropdown-link">
+                <a href="{{ route('user.settings') }}" class="dropdown-link">
                     <i class="fa-solid fa-user-gear"></i>
                     <span>Paramètres</span>
                 </a>
