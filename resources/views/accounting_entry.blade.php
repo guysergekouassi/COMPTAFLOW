@@ -209,24 +209,8 @@
                             placeholder="Ex : Règlement facture client X" />
                         </div>
 
-                        <div class="col-12" id="tresorerieFields" >
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label for="posteTresorerie" class="form-label">Poste de Trésorerie</label>
-                                    <select id="posteTresorerie" class="form-select">
-                                        <option value=""> (Pas un flux spécifique)</option>
-                                        </select>
-                                </div>
+                       
 
-                                <div class="col-md-4">
-                                    <label for="typeFlux" class="form-label">Type de Flux</label>
-                                    <select id="typeFlux" class="form-select">
-                                        <option value="">Sélectionner le type de flux</option>
-                                        <option value="debit">Décaissement (Débit)</option>
-                                        <option value="credit">Encaissement (Crédit)</option>
-                                    </select>
-                                </div>
-                                
                                 <div class="col-md-4">
                                     <label for="compteGeneral" class="form-label">Compte général</label>
                                     <select id="compteGeneral" class="form-select">
@@ -392,7 +376,7 @@
           { id: 2, nom: 'Caisse', type_flux: 'credit', comptes: ['530000', '531000'] },
           { id: 3, nom: 'CCP', type_flux: 'debit', comptes: ['514000'] }
         ];
-        
+
         const select = document.getElementById('posteTresorerie');
         select.innerHTML = '<option value=""> (Pas un flux spécifique)</option>';
         postesTresorerie.forEach(poste => {
@@ -416,14 +400,14 @@
           { numero: '70700000', intitule: 'Ventes de marchandises', type: 'produit' },
           { numero: '27210000', intitule: 'Autres créances', type: 'actif' }
         ];
-        
+
         mettreAJourSelectComptes();
       }
 
       function mettreAJourSelectComptes(filtreType = null) {
         const select = document.getElementById('compteGeneral');
         select.innerHTML = '<option value="">Sélectionner un compte</option>';
-        
+
         let comptesFiltres = comptesGeneraux;
         if (filtreType) {
           comptesFiltres = comptesGeneraux.filter(compte => {
@@ -432,7 +416,7 @@
             return true;
           });
         }
-        
+
         comptesFiltres.forEach(compte => {
           select.innerHTML += `<option value="${compte.numero}">${compte.numero} - ${compte.intitule}</option>`;
         });
@@ -444,12 +428,12 @@
           const typeFlux = this.value;
           const debitInputs = document.querySelectorAll('.debit-input');
           const creditInputs = document.querySelectorAll('.credit-input');
-          
+
           debitInputs.forEach(input => {
             input.disabled = typeFlux === 'credit';
             if (typeFlux === 'credit') input.value = '';
           });
-          
+
           creditInputs.forEach(input => {
             input.disabled = typeFlux === 'debit';
             if (typeFlux === 'debit') input.value = '';
@@ -467,7 +451,7 @@
             if (poste) {
               document.getElementById('typeFlux').value = poste.type_flux;
               document.getElementById('typeFlux').dispatchEvent(new Event('change'));
-              
+
               // Pré-remplir les comptes liés
               const selectCompte = document.getElementById('compteGeneral');
               poste.comptes.forEach(numero => {
@@ -499,7 +483,7 @@
             const compte = comptesGeneraux.find(c => c.numero === numero);
             const row = e.target.closest('tr');
             const intituleInput = row.querySelector('.intitule-input');
-            
+
             if (compte) {
               intituleInput.value = compte.intitule;
             } else {
@@ -513,18 +497,18 @@
         console.log('Fonction ajouterLigne appelée');
         const tbody = document.querySelector("#lignesEcritureTable tbody");
         console.log('tbody trouvé:', tbody);
-        
+
         if (!tbody) {
           console.error('Tableau #lignesEcritureTable tbody non trouvé');
           return;
         }
-        
+
         const typeFlux = document.getElementById('typeFlux').value;
         const fichierInput = document.getElementById('pieceFile');
         const fichierNom = fichierInput && fichierInput.files[0] ? fichierInput.files[0].name : '-';
-        
+
         console.log('Ajout d\'une ligne avec typeFlux:', typeFlux, 'fichierNom:', fichierNom);
-        
+
         const newRow = document.createElement('tr');
         newRow.className = 'ligne-ecriture';
         newRow.innerHTML = `
@@ -560,11 +544,11 @@
           const debit = parseFloat(ligne.querySelector('.debit-input').value) || 0;
           const credit = parseFloat(ligne.querySelector('.credit-input').value) || 0;
           const compte = ligne.querySelector('.compte-input').value;
-          
+
           if (!compte) {
             erreurs.push(`Ligne ${index + 1}: Le numéro de compte est requis`);
           }
-          
+
           totalDebit += debit;
           totalCredit += credit;
         });
@@ -597,11 +581,11 @@
         };
 
         console.log('Écriture à enregistrer:', ecriture);
-        
+
         // Fermer le modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('modalCenterCreate'));
         modal.hide();
-        
+
         // Réinitialiser le formulaire
         document.getElementById('dateEcriture').value = '';
         document.getElementById('journal').value = '';
@@ -612,7 +596,7 @@
         document.getElementById('compteGeneral').value = '';
         document.getElementById('pieceFile').value = '';
         fichierSelectionne = null;
-        
+
         // Réinitialiser le tableau
         const tbody = document.querySelector("#lignesEcritureTable tbody");
         tbody.innerHTML = `
@@ -630,7 +614,7 @@
             </td>
           </tr>
         `;
-        
+
         alert('Écriture enregistrée avec succès!');
       }
 
