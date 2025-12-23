@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\JournalSaisi;
-
+use App\Models\CodeJournal;
 
 use App\Traits\BelongsToTenant;
 
@@ -25,6 +25,17 @@ class ExerciceComptable extends Model
         'company_id',
     ];
 
+    /**
+     * Relation avec les journaux saisis
+     */
+    public function journauxSaisis()
+    {
+        return $this->hasMany(JournalSaisi::class, 'exercices_comptables_id');
+    }
+
+    /**
+     * Synchronise les journaux pour cet exercice
+     */
     public function syncJournaux()
     {
         $companyId = $this->company_id;
