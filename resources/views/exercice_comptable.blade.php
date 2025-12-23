@@ -458,19 +458,39 @@
             formExercice.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                // Afficher un indicateur de chargement
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enregistrement...';
+                
+                // Créer un objet FormData à partir du formulaire
                 const formData = new FormData(this);
                 const url = this.action;
                 
+                // Convertir FormData en objet simple
+                const formDataObj = {};
+                formData.forEach((value, key) => {
+                    formDataObj[key] = value;
+                });
+                
+                // Envoyer la requête
                 fetch(url, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify(Object.fromEntries(formData))
+                    body: JSON.stringify(formDataObj)
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw err; });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         // Ajouter la nouvelle ligne au DataTable
@@ -488,7 +508,13 @@
                 })
                 .catch(error => {
                     console.error('Erreur:', error);
-                    showAlert('error', 'Une erreur est survenue lors de la création de l\'exercice');
+                    const errorMessage = error.message || 'Une erreur est survenue lors de la création de l\'exercice';
+                    showAlert('error', errorMessage);
+                })
+                .finally(() => {
+                    // Réactiver le bouton de soumission
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
                 });
             });
         }
