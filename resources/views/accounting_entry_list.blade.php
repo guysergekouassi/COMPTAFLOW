@@ -224,11 +224,15 @@
                               </div>
                               <div class="col-md-3">
                                   <label for="compteTiersEcriture" class="form-label">Compte Tiers</label>
-                                  <select id="compteTiersEcriture" name="compte_tiers" class="form-select">
+                                  <select id="compteTiersEcriture" name="compte_tiers" class="form-select" onchange="remplirChampsPlanTiers(this)">
                                       <option value="">Aucun</option>
                                       @if(isset($tiers))
                                           @foreach ($tiers as $tier)
-                                              <option value="{{ $tier->id }}">{{ $tier->intitule }}</option>
+                                              <option value="{{ $tier->id }}" 
+                                                      data-compte-general="{{ $tier->compte_general_id ?? '' }}"
+                                                      data-libelle="{{ $tier->intitule ?? '' }}">
+                                                  {{ $tier->intitule }}
+                                              </option>
                                           @endforeach
                                       @endif
                                   </select>
@@ -270,6 +274,10 @@
 <script>
     // Fonction pour remplir automatiquement les champs du modal
     document.addEventListener('DOMContentLoaded', function() {
+        // Remplir automatiquement la date du jour
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dateEcriture').value = today;
+
         // Récupérer les paramètres de l'URL
         const urlParams = new URLSearchParams(window.location.search);
 
@@ -368,6 +376,23 @@
     function deleteEcriture(id) {
         if (confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')) {
             alert('Fonction de suppression à implémenter pour l\'écriture ID: ' + id);
+        }
+    }
+
+    // Fonction pour remplir automatiquement les champs lors de la sélection d'un plan tiers
+    function remplirChampsPlanTiers(select) {
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption.dataset) {
+            // Remplir les champs avec les données du plan tiers
+            if (selectedOption.dataset.compteGeneral) {
+                document.getElementById('compteGeneralEcriture').value = selectedOption.dataset.compteGeneral;
+            }
+            if (selectedOption.dataset.libelle) {
+                document.getElementById('libelleEcriture').value = selectedOption.dataset.libelle;
+            }
+            if (selectedOption.dataset.adresse) {
+                document.getElementById('adresseEcriture').value = selectedOption.dataset.adresse || '';
+            }
         }
     }
 </script>
