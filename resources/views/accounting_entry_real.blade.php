@@ -4,6 +4,94 @@
   data-template="vertical-menu-template-free" data-bs-theme="light">
 
 @include('components.head')
+<style>
+    /* Design Premium pour la Saisie d'Écritures */
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    }
+    .card-header {
+        background: transparent;
+        border-bottom: 1px solid #f0f2f4;
+        padding: 1.5rem 2rem;
+    }
+    .card-title {
+        font-weight: 700;
+        color: #32475c;
+        margin: 0;
+    }
+    .card-body {
+        padding: 2rem;
+    }
+
+    /* Labels et Contrôles */
+    .form-label {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.82rem;
+        letter-spacing: 0.5px;
+        color: #566a7f;
+        margin-bottom: 0.6rem;
+    }
+    .form-control, .form-select {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        border-radius: 10px;
+        border: 1px solid #d9dee3;
+        transition: all 0.2s ease;
+        background-color: #fff;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #696cff;
+        box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.1);
+    }
+    .form-control[readonly] {
+        background-color: #f8f9fa;
+        border-color: #e9ecef;
+    }
+
+    /* Table d'aperçu */
+    #tableEcritures {
+        margin-top: 1.5rem;
+    }
+    #tableEcritures th {
+        background-color: #f8f9fa;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #566a7f;
+        padding: 1rem;
+    }
+    #tableEcritures td {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        vertical-align: middle;
+    }
+
+    /* Totaux */
+    #totalDebit, #totalCredit {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #696cff;
+    }
+
+    /* Boutons */
+    .btn-primary, .btn-success {
+        padding: 0.7rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(105, 108, 255, 0.3);
+    }
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(113, 221, 55, 0.3);
+    }
+</style>
 
 <body>
   <!-- Layout wrapper -->
@@ -33,36 +121,33 @@
                     </div>
                     <div class="card-body">
                         <form id="formEcriture">
-                            <div class="row g-3">
-                                <div class="col-md-2">
-                                    <label for="date" class="form-label">Date</label>
+                            <div class="row g-4">
+                                <div class="col-md-3">
+                                    <label for="date" class="form-label">Date de l'écriture</label>
                                     <input type="date" id="date" name="date" class="form-control" required />
                                     <div class="invalid-feedback">Veuillez renseigner la date.</div>
                                 </div>
-                                <div class="col-md-2">
-                                    <label for="n_saisie" class="form-label">N° Saisie</label>
-                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" />
-                                    <div class="invalid-feedback">Veuillez renseigner le numéro de saisie.</div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="imputation" class="form-label">Imputation (Journal)</label>
+                                <div class="col-md-6">
+                                    <label for="imputation" class="form-label">Journal d'imputation</label>
                                     <input type="text" class="form-control" placeholder="{{ $data['code'] ?? 'N/A' }}" readonly />
                                     <input type="hidden" id="imputation" name="code_journal_id" value="{{ $data['id_code'] ?? 'N/A' }}" class="form-control" data-code_imputation="{{ $data['code'] ?? 'N/A' }}" />
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="description_operation" class="form-label">Description de l'opération</label>
-                                    <input type="text" id="description_operation" name="description_operation" class="form-control" required />
+                                <div class="col-md-3">
+                                    <label for="n_saisie" class="form-label">N° de Saisie</label>
+                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique" />
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label for="description_operation" class="form-label">Libellé / Description de l'opération</label>
+                                    <input type="text" id="description_operation" name="description_operation" class="form-control" placeholder="Saisissez le libellé de l'opération..." required />
                                     <div class="invalid-feedback">Veuillez entrer la description.</div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="reference_piece" class="form-label">Référence Pièce</label>
-                                    <input type="text" id="reference_piece" name="reference_piece" class="form-control" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="compte_general" class="form-label">Compte Général</label>
+
+                                <div class="col-md-6">
+                                    <label for="compte_general" class="form-label">Compte Général (Classe 1-7)</label>
                                     <select id="compte_general" name="compte_general"
-                                        class="form-control w-100" data-live-search="true"
-                                        title="Selectionner" required>
+                                        class="form-select select2 w-100" data-live-search="true"
+                                        title="Sélectionner un compte général" required>
                                         <option value="" selected disabled>Sélectionner un compte</option>
                                         @if(isset($plansComptables))
                                             @foreach ($plansComptables as $plan)
@@ -75,9 +160,9 @@
                                         @endif
                                     </select>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="compte_tiers" class="form-label">Compte Tiers</label>
-                                    <select id="compte_tiers" name="compte_tiers" class="form-control w-100" data-live-search="true">
+                                <div class="col-md-6">
+                                    <label for="compte_tiers" class="form-label">Compte Tiers (Le cas échéant)</label>
+                                    <select id="compte_tiers" name="compte_tiers" class="form-select select2 w-100" data-live-search="true">
                                         <option value="">Sélectionner un compte tiers</option>
                                         @if(isset($tiers))
                                             @foreach ($tiers as $tier)
@@ -86,26 +171,30 @@
                                         @endif
                                     </select>
                                 </div>
-                                <div class="col-md-2">
-                                    <label for="debit" class="form-label">Débit</label>
-                                    <input type="number" id="debit" name="debit" class="form-control" step="0.01" min="0" />
-                                </div>
-                                <div class="col-md-2">
-                                    <label for="credit" class="form-label">Crédit</label>
-                                    <input type="number" id="credit" name="credit" class="form-control" step="0.01" min="0" />
-                                </div>
-
 
                                 <div class="col-md-3">
-                                    <label for="plan_analytique" class="form-label">Plan Analytique</label>
+                                    <label for="reference_piece" class="form-label">Référence Pièce</label>
+                                    <input type="text" id="reference_piece" name="reference_piece" class="form-control" placeholder="N° Facture, Chèque..." />
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="debit" class="form-label">Montant Débit</label>
+                                    <input type="number" id="debit" name="debit" class="form-control" step="0.01" min="0" placeholder="0.00" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="credit" class="form-label">Montant Crédit</label>
+                                    <input type="number" id="credit" name="credit" class="form-control" step="0.01" min="0" placeholder="0.00" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="plan_analytique" class="form-label">Analytique</label>
                                     <select id="plan_analytique" name="plan_analytique"
-                                        class="form-control w-100" required>
+                                        class="form-select w-100" required>
                                         <option value="1">Oui</option>
                                         <option value="0" selected>Non</option>
                                     </select>
                                 </div>
+
                                 <div class="col-md-12">
-                                    <label for="piece_justificatif" class="form-label">Pièce justificative (fichier)</label>
+                                    <label for="piece_justificatif" class="form-label">Pièce justificative (PDF, Scan...)</label>
                                     <input type="file" id="piece_justificatif" name="piece_justificatif"
                                         class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
                                     <div class="invalid-feedback">Veuillez ajouter un fichier justificatif.</div>

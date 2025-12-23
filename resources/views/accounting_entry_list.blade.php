@@ -190,33 +190,31 @@
                           <input type="hidden" id="hiddenNumeroSaisie" name="numero_saisie" />
                           <input type="hidden" id="hiddenCodeJournal" name="code_journal" />
 
-                          <div class="row g-3">
-                              <div class="col-md-2">
+                          <div class="row g-4">
+                              <div class="col-md-4">
                                   <label for="dateEcriture" class="form-label">Date</label>
                                   <input type="date" id="dateEcriture" name="date" class="form-control" required />
                               </div>
-                              <div class="col-md-2">
-                                  <label for="numeroSaisie" class="form-label">N° Saisie</label>
-                                  <input type="text" id="numeroSaisie" name="numero_saisie" class="form-control" readonly />
-                              </div>
-                              <div class="col-md-3">
+                              <div class="col-md-4">
                                   <label for="journalEcriture" class="form-label">Journal</label>
                                   <input type="text" id="journalEcriture" name="journal" class="form-control" readonly />
                               </div>
-                              <div class="col-md-5">
-                                  <label for="libelleEcriture" class="form-label">Libellé</label>
-                                  <input type="text" id="libelleEcriture" name="libelle" class="form-control" required />
+                              <div class="col-md-4">
+                                  <label for="numeroSaisie" class="form-label">N° Saisie</label>
+                                  <input type="text" id="numeroSaisie" name="numero_saisie" class="form-control" readonly />
                               </div>
-                              <div class="col-md-2">
-                                  <label for="referencePieceEcriture" class="form-label">Référence Pièce</label>
-                                  <input type="text" id="referencePieceEcriture" name="reference_piece" class="form-control" />
+                              
+                              <div class="col-md-12">
+                                  <label for="libelleEcriture" class="form-label">Libellé / Intitulé de l'opération</label>
+                                  <input type="text" id="libelleEcriture" name="libelle" class="form-control" placeholder="Entrez le libellé de l'écriture..." required />
                               </div>
-                              <div class="col-md-3">
-                                  <label for="compteGeneralSearch" class="form-label">Compte Général</label>
+
+                              <div class="col-md-6">
+                                  <label for="compteGeneralSearch" class="form-label">Compte Général Search</label>
                                   <div class="search-select-container">
                                       <div class="input-group">
                                           <span class="input-group-text"><i class="bx bx-search"></i></span>
-                                          <input type="text" id="compteGeneralSearch" class="form-control" placeholder="Rechercher un compte..." autocomplete="off">
+                                          <input type="text" id="compteGeneralSearch" class="form-control" placeholder="Rechercher un compte général (ex: 701...)" autocomplete="off">
                                           <input type="hidden" id="compteGeneralEcriture" name="compte_general" required>
                                       </div>
                                       <div class="search-select-dropdown" id="compteGeneralDropdown" style="display: none;">
@@ -234,12 +232,12 @@
                                       </div>
                                   </div>
                               </div>
-                              <div class="col-md-3">
-                                  <label for="compteTiersSearch" class="form-label">Compte Tiers</label>
+                              <div class="col-md-6">
+                                  <label for="compteTiersSearch" class="form-label">Compte Tiers Search</label>
                                   <div class="search-select-container">
                                       <div class="input-group">
                                           <span class="input-group-text"><i class="bx bx-search"></i></span>
-                                          <input type="text" id="compteTiersSearch" class="form-control" placeholder="Rechercher un tiers..." autocomplete="off">
+                                          <input type="text" id="compteTiersSearch" class="form-control" placeholder="Rechercher un tiers (Client, Fournisseur...)" autocomplete="off">
                                           <input type="hidden" id="compteTiersEcriture" name="compte_tiers">
                                       </div>
                                       <div class="search-select-dropdown" id="compteTiersDropdown" style="display: none;">
@@ -265,23 +263,28 @@
                                       </div>
                                   </div>
                               </div>
-                              <div class="col-md-2">
-                                  <label for="debitEcriture" class="form-label">Débit</label>
-                                  <input type="number" id="debitEcriture" name="debit" class="form-control" step="0.01" min="0" />
-                              </div>
-                              <div class="col-md-2">
-                                  <label for="creditEcriture" class="form-label">Crédit</label>
-                                  <input type="number" id="creditEcriture" name="credit" class="form-control" step="0.01" min="0" />
+
+                              <div class="col-md-3">
+                                  <label for="referencePieceEcriture" class="form-label">Référence Pièce</label>
+                                  <input type="text" id="referencePieceEcriture" name="reference_piece" class="form-control" placeholder="N° de facture, chèque..." />
                               </div>
                               <div class="col-md-3">
-                                  <label for="planAnalytiqueEcriture" class="form-label">Plan analytique</label>
+                                  <label for="debitEcriture" class="form-label">Montant Débit</label>
+                                  <input type="number" id="debitEcriture" name="debit" class="form-control" step="0.01" min="0" placeholder="0.00" />
+                              </div>
+                              <div class="col-md-3">
+                                  <label for="creditEcriture" class="form-label">Montant Crédit</label>
+                                  <input type="number" id="creditEcriture" name="credit" class="form-control" step="0.01" min="0" placeholder="0.00" />
+                              </div>
+                              <div class="col-md-3">
+                                  <label for="planAnalytiqueEcriture" class="form-label">Analytique</label>
                                   <select id="planAnalytiqueEcriture" name="plan_analytique" class="form-select">
                                       <option value="0">Non</option>
                                       <option value="1">Oui</option>
                                   </select>
                               </div>
                               <div class="col-md-12">
-                                  <label for="pieceJustificativeEcriture" class="form-label">Pièce justificative</label>
+                                  <label for="pieceJustificativeEcriture" class="form-label">Pièce justificative (PDF, Image)</label>
                                   <input type="file" id="pieceJustificativeEcriture" name="piece_justificative" class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
                               </div>
                           </div>
@@ -465,79 +468,124 @@
         style.textContent = `
             /* Taille du modal */
             #nouvelleEcritureModal .modal-dialog {
-                max-width: 90%;
-                width: 95%;
+                max-width: 80%;
+                width: 850px;
                 max-height: 90vh;
                 margin: 1.75rem auto;
             }
             
             #nouvelleEcritureModal .modal-content {
-                min-height: 80vh;
-                max-height: 90vh;
-                display: flex;
-                flex-direction: column;
+                border: none;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             }
             
+            #nouvelleEcritureModal .modal-header {
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                border-bottom: 1px solid #dee2e6;
+                padding: 1.5rem;
+                border-radius: 12px 12px 0 0;
+            }
+
             #nouvelleEcritureModal .modal-body {
-                overflow-y: auto;
-                flex: 1;
+                padding: 2rem;
             }
             
             /* Ajustements pour les champs du formulaire */
             #nouvelleEcritureModal .form-control,
             #nouvelleEcritureModal .form-select {
-                padding: 0.5rem 0.75rem;
-                font-size: 1rem;
+                padding: 0.75rem 1rem;
+                font-size: 1.05rem;
+                border-radius: 8px;
+                border: 1px solid #ced4da;
+                transition: all 0.2s ease;
+                background-color: #fff;
+            }
+            
+            #nouvelleEcritureModal .form-control:focus,
+            #nouvelleEcritureModal .form-select:focus {
+                border-color: #696cff;
+                box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.1);
+                background-color: #fff;
+            }
+
+            #nouvelleEcritureModal input[readonly] {
+                background-color: #f8f9fa;
+                cursor: not-allowed;
+                border-color: #e9ecef;
             }
             
             #nouvelleEcritureModal .form-label {
-                font-weight: 500;
-                margin-bottom: 0.3rem;
+                font-weight: 600;
+                color: #566a7f;
+                margin-bottom: 0.5rem;
+                font-size: 0.9rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
             }
+
             /* Styles pour les menus de recherche */
             .search-select-container { 
                 position: relative;
-                margin-bottom: 1rem;
             }
+
             .search-select-dropdown {
                 position: absolute;
                 width: 100%;
-                max-height: 300px;
+                max-height: 250px;
                 overflow-y: auto;
-                z-index: 1000;
+                z-index: 1060;
                 background: white;
                 border: 1px solid #dee2e6;
-                border-top: none;
-                border-radius: 0 0 0.375rem 0.375rem;
-                box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
+                border-radius: 8px;
+                margin-top: 5px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             }
+
             .search-select-dropdown .list-group-item {
-                border-left: none;
-                border-right: none;
-                border-radius: 0;
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
+                border: none;
+                padding: 10px 15px;
+                font-size: 0.95rem;
+                transition: background 0.2s;
             }
+
             .search-select-dropdown .list-group-item:hover {
+                background-color: #f0f2ff;
+                color: #696cff;
+            }
+
+            .input-group-text {
                 background-color: #f8f9fa;
+                border-radius: 8px 0 0 8px;
+                border-right: none;
+                color: #696cff;
             }
-            .search-select-dropdown .list-group-item.active {
-                background-color: #e9ecef;
-                color: #212529;
-                border-color: #dee2e6;
+
+            .input-group .form-control {
+                border-radius: 0 8px 8px 0 !important;
             }
-            .option-compte strong { color: #566a7f; }
-            .option-tier strong { color: #5f3dc4; }
             
-            /* Styles pour les champs de recherche */
-            .input-group-text { background-color: #f8f9fa; }
-            .form-control:focus { box-shadow: none; border-color: #86b7fe; }
+            .modal-footer {
+                padding: 1.5rem;
+                border-top: 1px solid #dee2e6;
+            }
             
-            /* Ajustements pour le modal */
-            .modal-dialog { transition: all 0.3s ease; }
-            .modal-content { max-height: 90vh; overflow-y: auto; }
-            @media (min-width: 992px) {
-                .modal-xl { max-width: 1140px; }
+            .btn-primary {
+                padding: 0.75rem 2rem;
+                border-radius: 8px;
+                font-weight: 600;
+            }
+            
+            .btn-secondary {
+                padding: 0.75rem 2rem;
+                border-radius: 8px;
+            }
+
+            @media (max-width: 992px) {
+                #nouvelleEcritureModal .modal-dialog {
+                    max-width: 95%;
+                    margin: 10px auto;
+                }
             }
         `;
         document.head.appendChild(style);

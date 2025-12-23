@@ -263,7 +263,13 @@
 
     $show_all = $user->isAdmin() && !$user->isSuperAdmin();
 
-    $exercices = ExerciceComptable::where('company_id', $currentCompanyId)->orderBy('date_debut', 'desc')->get()->unique('intitule');
+    // Récupération unique par intitulé pour éviter les doublons visuels
+    $exercices = ExerciceComptable::where('company_id', $currentCompanyId)
+        ->orderBy('date_debut', 'desc')
+        ->get()
+        ->unique(function ($item) {
+            return trim($item->intitule);
+        });
     $journaux = JournalSaisi::with('codeJournal')
         ->where('company_id', $currentCompanyId)
         ->orderBy('mois', 'asc')
