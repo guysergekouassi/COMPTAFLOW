@@ -19,7 +19,7 @@
                             <option value="" disabled {{ isset($exerciceActif) ? '' : 'selected' }} hidden>
                                 {{ isset($exerciceActif) ? '-- Sélectionnez un exercice --' : 'Aucun exercice actif trouvé' }}
                             </option>
-                            @foreach ($exercices->unique('id') as $exercice)
+                            @foreach ($exercices->unique('intitule') as $exercice)
                                 <option value="{{ $exercice->id }}"
                                     data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}"
                                     {{ isset($exerciceActif) && $exerciceActif->id == $exercice->id ? 'selected' : '' }}>
