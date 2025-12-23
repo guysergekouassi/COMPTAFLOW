@@ -463,19 +463,53 @@
         // Ajouter des styles pour les menus de recherche
         const style = document.createElement('style');
         style.textContent = `
+            /* Taille du modal */
+            #nouvelleEcritureModal .modal-dialog {
+                max-width: 90%;
+                width: 95%;
+                max-height: 90vh;
+                margin: 1.75rem auto;
+            }
+            
+            #nouvelleEcritureModal .modal-content {
+                min-height: 80vh;
+                max-height: 90vh;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            #nouvelleEcritureModal .modal-body {
+                overflow-y: auto;
+                flex: 1;
+            }
+            
+            /* Ajustements pour les champs du formulaire */
+            #nouvelleEcritureModal .form-control,
+            #nouvelleEcritureModal .form-select {
+                padding: 0.5rem 0.75rem;
+                font-size: 1rem;
+            }
+            
+            #nouvelleEcritureModal .form-label {
+                font-weight: 500;
+                margin-bottom: 0.3rem;
+            }
             /* Styles pour les menus de recherche */
-            .search-select-container { position: relative; }
+            .search-select-container { 
+                position: relative;
+                margin-bottom: 1rem;
+            }
             .search-select-dropdown {
                 position: absolute;
                 width: 100%;
-                max-height: 250px;
+                max-height: 300px;
                 overflow-y: auto;
                 z-index: 1000;
                 background: white;
                 border: 1px solid #dee2e6;
                 border-top: none;
                 border-radius: 0 0 0.375rem 0.375rem;
-                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+                box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
             }
             .search-select-dropdown .list-group-item {
                 border-left: none;
