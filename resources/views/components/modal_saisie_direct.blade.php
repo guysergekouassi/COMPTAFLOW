@@ -13,13 +13,13 @@
                 <div class="modal-body">
                     <div class="mb-2">
                         <label for="exercice_id" class="form-label">Exercice</label>
-                        <select class="selectpicker w-100" data-live-search="false" id="exercice_id" name="exercice_id"
+                        <select class="selectpicker w-100" data-live-search="true" id="exercice_id" name="exercice_id"
                             data-exercice-actif="{{ isset($exerciceActif) ? $exerciceActif->id : '' }}"
                             required>
                             <option value="" disabled {{ isset($exerciceActif) ? '' : 'selected' }} hidden>
                                 {{ isset($exerciceActif) ? '-- Sélectionnez un exercice --' : 'Aucun exercice actif trouvé' }}
                             </option>
-                            @foreach ($exercices as $exercice)
+                            @foreach ($exercices->unique('id') as $exercice)
                                 <option value="{{ $exercice->id }}"
                                     data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}"
                                     {{ isset($exerciceActif) && $exerciceActif->id == $exercice->id ? 'selected' : '' }}>
@@ -35,7 +35,7 @@
                         <select class="selectpicker w-100" data-live-search="true" id="code_journal" name="code_journal"
                             required>
                             <option value="" disabled selected hidden>-- Sélectionner un journal --</option>
-                            @foreach ($code_journaux as $code_j)
+                            @foreach ($code_journaux->unique('id') as $code_j)
                                 @php
                                     $codeTresorerie = $code_j->code_tresorerie_display ?? null; // Utilise la nouvelle propriété
                                     $displayCode = $code_j->code_journal;
@@ -62,7 +62,7 @@
                     <div class="mb-2">
                         <label for="mois" class="form-label">Mois</label>
 
-                        <select class="selectpicker w-100" data-live-search="false" id="mois" name="mois"
+                        <select class="selectpicker w-100" data-live-search="true" id="mois" name="mois"
                             required>
                             <option value="" disabled selected hidden>-- Sélectionner un mois --</option>
                             <option value="1">Janvier</option>
