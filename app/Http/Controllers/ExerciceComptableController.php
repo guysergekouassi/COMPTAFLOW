@@ -47,10 +47,33 @@ public function index()
     {
         try {
             // 1️⃣ Validation
-            $request->validate([
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after_or_equal:date_debut',
+            $validated = $request->validate([
+                'date_debut' => [
+                    'required',
+                    'date',
+                    function ($attribute, $value, $fail) {
+                        if (strtotime($value) === false) {
+                            $fail('La date de début n\'est pas une date valide.');
+                        }
+                    },
+                ],
+                'date_fin' => [
+                    'required',
+                    'date',
+                    function ($attribute, $value, $fail) use ($request) {
+                        if (strtotime($value) === false) {
+                            $fail('La date de fin n\'est pas une date valide.');
+                            return;
+                        }
+                        if (strtotime($value) < strtotime($request->date_debut)) {
+                            $fail('La date de fin doit être postérieure ou égale à la date de début.');
+                        }
+                    },
+                ],
                 'intitule' => 'nullable|string|max:255',
+            ], [
+                'date_debut.required' => 'La date de début est obligatoire',
+                'date_fin.required' => 'La date de fin est obligatoire',
             ]);
 
             // 2️⃣ Vérification du chevauchement (filtré auto par scope)
