@@ -68,11 +68,13 @@ public function index()
                 return redirect()->back()->with('error', 'Les dates de l\'exercice se chevauchent avec un autre exercice.');
             }
 
-            // 3️⃣ Création de l'exercice (compagny_id et user_id auto)
+            // 3️⃣ Création de l'exercice avec user_id et company_id
             $exercice = ExerciceComptable::create([
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
                 'intitule' => $request->intitule,
+                'user_id' => Auth::id(),
+                'company_id' => Auth::user()->company_id,
             ]);
 
             // 4️⃣ Génération automatique des journaux pour cet exercice
