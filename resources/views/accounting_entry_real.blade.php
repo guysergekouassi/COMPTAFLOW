@@ -94,24 +94,8 @@
                                     <label for="credit" class="form-label">Crédit</label>
                                     <input type="number" id="credit" name="credit" class="form-control" step="0.01" min="0" />
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="compteTresorerieField" class="form-label">Poste de trésorerie</label>
-                                    <select id="compteTresorerieField" name="compte_tresorerie" class="form-control w-100" data-live-search="true">
-                                        <option value="">Sélectionner un poste</option>
-                                        @if(isset($postesTresorerie))
-                                            @foreach ($postesTresorerie as $poste)
-                                                <option value="{{ $poste->id }}">{{ $poste->intitule }}</option>
-                                            @endforeach
-                                        @endif
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="typeFluxField" class="form-label">Type de Flux de tresorerie</label>
-                                    <select id="typeFluxField" name="type_flux" class="form-control w-100" required>
-                                        <option value="decaissement">Décaissement (Débit)</option>
-                                        <option value="encaissement">Encaissement (Crédit)</option>
-                                    </select>
-                                </div>
+                               
+
                                 <div class="col-md-3">
                                     <label for="plan_analytique" class="form-label">Plan Analytique</label>
                                     <select id="plan_analytique" name="plan_analytique"
