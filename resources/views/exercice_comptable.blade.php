@@ -404,7 +404,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const dateFinInput = document.getElementById('date_fin');
         const intituleInput = document.getElementById('intitule_exercice');
-        const formExercice = document.getElementById('formExercice');
+        const formExercice = document.getElementById('formCreateExercice');
         const modalCreate = document.getElementById('modalCenterCreate');
         const modalInstance = new bootstrap.Modal(modalCreate);
         let dataTable;
