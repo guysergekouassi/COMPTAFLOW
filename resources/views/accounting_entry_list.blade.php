@@ -179,7 +179,7 @@
 
       <!-- Modal Nouvelle écriture -->
       <div class="modal fade" id="nouvelleEcritureModal" tabindex="-1" aria-labelledby="nouvelleEcritureModalLabel" aria-hidden="true">
-          <div class="modal-dialog modal-xl">
+          <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
               <div class="modal-content">
                   <div class="modal-header">
                       <h5 class="modal-title" id="nouvelleEcritureModalLabel">Nouvelle écriture</h5>
