@@ -404,6 +404,116 @@
     document.addEventListener('DOMContentLoaded', function() {
         const dateFinInput = document.getElementById('date_fin');
         const intituleInput = document.getElementById('intitule_exercice');
+        const formExercice = document.getElementById('formExercice');
+        const modalCreate = document.getElementById('modalCenterCreate');
+        const modalInstance = new bootstrap.Modal(modalCreate);
+        let dataTable;
+
+        // Initialisation du DataTable
+        function initDataTable() {
+            if ($.fn.DataTable.isDataTable('#exerciceTable')) {
+                $('#exerciceTable').DataTable().destroy();
+            }
+            
+            dataTable = $('#exerciceTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json'
+                },
+                order: [[0, 'desc']], // Tri par date de début par défaut
+                pageLength: 10,
+                responsive: true
+            });
+        }
+
+        // Fonction pour formater une date au format dd/mm/yyyy
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR');
+        }
+
+        // Fonction pour ajouter une nouvelle ligne au DataTable
+        function addRowToTable(exercice) {
+            const rowNode = dataTable.row.add([
+                formatDate(exercice.date_debut),
+                formatDate(exercice.date_fin),
+                exercice.nb_mois,
+                exercice.nombre_journaux_saisis || 0,
+                `
+                <div class="d-flex gap-2">
+                    <button class="btn p-0 border-0 bg-transparent text-danger" onclick="deleteExercice(${exercice.id})">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </div>
+                `
+            ]).draw(false).node();
+            
+            $(rowNode).css('background-color', '#e8f5e9');
+            setTimeout(() => {
+                $(rowNode).css('background-color', '');
+            }, 2000);
+        }
+
+        // Gestion de la soumission du formulaire
+        if (formExercice) {
+            formExercice.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const url = this.action;
+                
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(Object.fromEntries(formData))
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Ajouter la nouvelle ligne au DataTable
+                        addRowToTable(data.exercice);
+                        
+                        // Afficher le message de succès
+                        showAlert('success', data.message);
+                        
+                        // Fermer le modal et réinitialiser le formulaire
+                        modalInstance.hide();
+                        this.reset();
+                    } else {
+                        showAlert('error', data.message || 'Une erreur est survenue');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showAlert('error', 'Une erreur est survenue lors de la création de l\'exercice');
+                });
+            });
+        }
+
+        // Fonction pour afficher les alertes
+        function showAlert(type, message) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Ajouter l'alerte en haut du conteneur principal
+            const container = document.querySelector('.container-xxl');
+            container.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // Supprimer l'alerte après 5 secondes
+            setTimeout(() => {
+                const alert = document.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
 
         // Fonction pour générer l'intitulé
         function genererIntitule() {
@@ -411,36 +521,33 @@
 
             if (dateFinValue) {
                 try {
-                    // Crée un objet Date à partir de la valeur de l'input
                     const dateObj = new Date(dateFinValue);
-
-                    // Extrait l'année (méthode getFullYear() pour avoir les 4 chiffres)
                     const annee = dateObj.getFullYear();
-
-                    // Formate l'intitulé
                     const nouvelIntitule = 'Exercice ' + annee;
-
-                    // Met à jour le champ Intitulé
                     intituleInput.value = nouvelIntitule;
-
                 } catch (e) {
-                    // Gérer les erreurs si la date n'est pas valide
                     console.error("Erreur de formatage de la date:", e);
                 }
             } else {
-                // Si la date de fin est vide, vider aussi l'intitulé
                 intituleInput.value = '';
             }
         }
 
-        // 1. Écouter le changement sur le champ 'Date de fin'
-        dateFinInput.addEventListener('change', genererIntitule);
+        // Écouteurs d'événements
+        if (dateFinInput) {
+            dateFinInput.addEventListener('change', genererIntitule);
+            dateFinInput.addEventListener('input', genererIntitule);
+        }
 
-        // 2. Écouter la saisie clavier (utile si l'utilisateur saisit la date manuellement)
-        dateFinInput.addEventListener('input', genererIntitule);
+        // Initialiser le DataTable
+        initDataTable();
 
-        // Optionnel : Générer l'intitulé au chargement du modal si des données sont pré-remplies
-        // genererIntitule();
+        // Réinitialiser le formulaire quand le modal est fermé
+        modalCreate.addEventListener('hidden.bs.modal', function () {
+            if (formExercice) {
+                formExercice.reset();
+            }
+        });
     });
 </script>
 </body>

@@ -103,10 +103,30 @@ public function index()
             // 4️⃣ Génération automatique des journaux pour cet exercice
             $exercice->syncJournaux(); // méthode ajoutée dans ExerciceComptable
 
-            return redirect()->back()->with('success', 'Exercice comptable et journaux créés avec succès.');
+            // Préparer les données pour le DataTable
+            $dateDebut = Carbon::parse($exercice->date_debut);
+            $dateFin = Carbon::parse($exercice->date_fin);
+            $nbMois = (int) $dateDebut->diffInMonths($dateFin) + 1;
+
+            $exerciceData = [
+                'date_debut' => $exercice->date_debut,
+                'date_fin' => $exercice->date_fin,
+                'nb_mois' => $nbMois,
+                'nombre_journaux_saisis' => $exercice->journauxSaisis()->count(),
+                'id' => $exercice->id
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Exercice comptable et journaux créés avec succès.',
+                'exercice' => $exerciceData
+            ]);
 
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Une erreur est survenue : ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue : ' . $e->getMessage()
+            ], 500);
         }
     }
 
