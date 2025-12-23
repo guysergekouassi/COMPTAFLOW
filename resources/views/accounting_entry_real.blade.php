@@ -94,7 +94,7 @@
                                     <label for="credit" class="form-label">Crédit</label>
                                     <input type="number" id="credit" name="credit" class="form-control" step="0.01" min="0" />
                                 </div>
-                               
+
 
                                 <div class="col-md-3">
                                     <label for="plan_analytique" class="form-label">Plan Analytique</label>
@@ -134,8 +134,6 @@
                                         <th>Cpte Tiers</th>
                                         <th>Débit</th>
                                         <th>Crédit</th>
-                                        <th>Poste de trésorerie</th>
-                                        <th>Type de Flux</th>
                                         <th>Piece justificatif</th>
                                         <th>ANALYTIQUE</th>
                                         <th>Modifier</th>
@@ -188,8 +186,6 @@
             const libelle = document.getElementById('description_operation');
             const debit = document.getElementById('debit');
             const credit = document.getElementById('credit');
-            const posteTresorerie = document.getElementById('compteTresorerieField');
-            const typeFlux = document.getElementById('typeFluxField');
             const compteGeneral = document.getElementById('compte_general');
             const referencePiece = document.getElementById('reference_piece');
             const compteTiers = document.getElementById('compte_tiers');
@@ -224,8 +220,6 @@
             const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? 'Oui' : 'Non') : '';
             const compteText = compteGeneral.options[compteGeneral.selectedIndex].text;
             const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
-            const posteText = posteTresorerie ? posteTresorerie.options[posteTresorerie.selectedIndex].text : '';
-            const fluxText = typeFlux ? typeFlux.options[typeFlux.selectedIndex].text : '';
             const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
 
             newRow.innerHTML = `
@@ -238,8 +232,6 @@
                 <td>${compteTiersValue}</td>
                 <td>${debit.value || ''}</td>
                 <td>${credit.value || ''}</td>
-                <td>${posteText}</td>
-                <td>${fluxText}</td>
                 <td>${pieceFileName}</td>
                 <td>${analytiqueValue}</td>
             `;
@@ -343,45 +335,4 @@
             alert('Écriture supprimée avec succès !');
         }
     }
-
-    // Gestion du type de flux pour activer/désactiver les champs
-    document.addEventListener('DOMContentLoaded', function() {
-        const typeFlux = document.getElementById('typeFluxField');
-        const debit = document.getElementById('debit');
-        const credit = document.getElementById('credit');
-
-        if (typeFlux && debit && credit) {
-            function updateFields() {
-                if (typeFlux.value === 'decaissement') {
-                    credit.disabled = false;
-                    debit.disabled = false;
-                    credit.style.backgroundColor = '';
-                    credit.style.cursor = 'text';
-                    debit.style.backgroundColor = '#f8f9fa';
-                    debit.style.boxShadow = '0 0 8px rgba(108, 117, 125, 0.4), inset 0 0 4px rgba(108, 117, 125, 0.2)';
-                    debit.style.border = '1px solid #ced4da';
-                    debit.style.cursor = 'not-allowed';
-                } else if (typeFlux.value === 'encaissement') {
-                    debit.disabled = false;
-                    credit.disabled = false;
-                    debit.style.backgroundColor = '';
-                    debit.style.cursor = 'text';
-                    credit.style.backgroundColor = '#f8f9fa';
-                    credit.style.boxShadow = '0 0 8px rgba(108, 117, 125, 0.4), inset 0 0 4px rgba(108, 117, 125, 0.2)';
-                    credit.style.border = '1px solid #ced4da';
-                    credit.style.cursor = 'not-allowed';
-                } else {
-                    debit.disabled = false;
-                    credit.disabled = false;
-                    debit.style.backgroundColor = '';
-                    credit.style.backgroundColor = '';
-                    debit.style.cursor = 'text';
-                    credit.style.cursor = 'text';
-                }
-            }
-
-            typeFlux.addEventListener('change', updateFields);
-            updateFields();
-        }
-    });
 </script>
