@@ -213,25 +213,37 @@
                               </div>
                               <div class="col-md-3">
                                   <label for="compteGeneralEcriture" class="form-label">Compte Général</label>
-                                  <select id="compteGeneralEcriture" name="compte_general" class="form-select" required>
-                                      <option value="">Sélectionner...</option>
+                                  <div class="input-group">
+                                      <input type="text" id="rechercheCompteGeneral" class="form-control" placeholder="Rechercher un compte..." onkeyup="filtrerOptions('compteGeneralEcriture', this.value)">
+                                  </div>
+                                  <select id="compteGeneralEcriture" name="compte_general" class="form-select mt-2" size="5" required>
+                                      <option value="">Sélectionner un compte...</option>
                                       @if(isset($plansComptables))
                                           @foreach ($plansComptables as $plan)
-                                              <option value="{{ $plan->id }}">{{ $plan->numero_de_compte }} - {{ $plan->intitule }}</option>
+                                              <option value="{{ $plan->id }}" data-numero="{{ $plan->numero_de_compte }}">
+                                                  {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                              </option>
                                           @endforeach
                                       @endif
                                   </select>
                               </div>
                               <div class="col-md-3">
                                   <label for="compteTiersEcriture" class="form-label">Compte Tiers</label>
-                                  <select id="compteTiersEcriture" name="compte_tiers" class="form-select" onchange="remplirChampsPlanTiers(this)">
-                                      <option value="">Aucun</option>
+                                  <div class="input-group">
+                                      <input type="text" id="rechercheTiers" class="form-control" placeholder="Rechercher un tiers..." onkeyup="filtrerOptions('compteTiersEcriture', this.value)">
+                                  </div>
+                                  <select id="compteTiersEcriture" name="compte_tiers" class="form-select mt-2" size="5" onchange="remplirChampsPlanTiers(this)">
+                                      <option value="">Sélectionner un tiers...</option>
                                       @if(isset($tiers))
                                           @foreach ($tiers as $tier)
                                               <option value="{{ $tier->id }}" 
                                                       data-compte-general="{{ $tier->compte_general_id ?? '' }}"
-                                                      data-libelle="{{ $tier->intitule ?? '' }}">
-                                                  {{ $tier->intitule }}
+                                                      data-numero-compte="{{ $tier->numero_compte ?? '' }}"
+                                                      data-libelle="{{ $tier->intitule ?? '' }}"
+                                                      data-adresse="{{ $tier->adresse ?? '' }}"
+                                                      data-telephone="{{ $tier->telephone ?? '' }}"
+                                                      data-email="{{ $tier->email ?? '' }}">
+                                                  {{ $tier->code_tiers ?? '' }} - {{ $tier->intitule }}
                                               </option>
                                           @endforeach
                                       @endif
@@ -379,20 +391,63 @@
         }
     }
 
+    // Fonction pour filtrer les options d'un select
+    function filtrerOptions(selectId, searchText) {
+        const select = document.getElementById(selectId);
+        const options = select.getElementsByTagName('option');
+        const search = searchText.toLowerCase();
+        
+        for (let i = 0; i < options.length; i++) {
+            const optionText = options[i].text.toLowerCase();
+            if (optionText.includes(search) || options[i].value === '') {
+                options[i].style.display = '';
+            } else {
+                options[i].style.display = 'none';
+            }
+        }
+    }
+
     // Fonction pour remplir automatiquement les champs lors de la sélection d'un plan tiers
     function remplirChampsPlanTiers(select) {
         const selectedOption = select.options[select.selectedIndex];
         if (selectedOption.dataset) {
-            // Remplir les champs avec les données du plan tiers
+            // Remplir le compte général
             if (selectedOption.dataset.compteGeneral) {
                 document.getElementById('compteGeneralEcriture').value = selectedOption.dataset.compteGeneral;
             }
+            
+            // Remplir le libellé
             if (selectedOption.dataset.libelle) {
                 document.getElementById('libelleEcriture').value = selectedOption.dataset.libelle;
             }
-            if (selectedOption.dataset.adresse) {
-                document.getElementById('adresseEcriture').value = selectedOption.dataset.adresse || '';
+            
+            // Remplir les autres champs si disponibles
+            const fields = ['numero_compte', 'adresse', 'telephone', 'email'];
+            fields.forEach(field => {
+                const element = document.getElementById(field + 'Ecriture');
+                if (element && selectedOption.dataset[field]) {
+                    element.value = selectedOption.dataset[field];
+                }
+            });
+            
+            // Si un numéro de compte est disponible, essayer de le sélectionner dans la liste déroulante
+            if (selectedOption.dataset.numeroCompte) {
+                const compteGeneralSelect = document.getElementById('compteGeneralEcriture');
+                for (let i = 0; i < compteGeneralSelect.options.length; i++) {
+                    if (compteGeneralSelect.options[i].dataset.numero === selectedOption.dataset.numeroCompte) {
+                        compteGeneralSelect.value = compteGeneralSelect.options[i].value;
+                        break;
+                    }
+                }
             }
         }
     }
+    
+    // Ajouter un événement pour vider les champs lorsque 'Aucun' est sélectionné
+    document.getElementById('compteTiersEcriture').addEventListener('change', function() {
+        if (this.value === '') {
+            document.getElementById('libelleEcriture').value = '';
+            // Réinitialiser d'autres champs si nécessaire
+        }
+    });
 </script>
