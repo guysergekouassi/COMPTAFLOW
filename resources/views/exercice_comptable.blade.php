@@ -202,7 +202,7 @@
 
                             <!-- Modal Creation Ecriture-->
                             <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                                <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
                                     <form id="formCreateExercice" method="POST"
                                         action="{{ route('exercice_comptable.store') }}">
                                         @csrf
