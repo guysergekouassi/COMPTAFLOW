@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Company;
+use Illuminate\Support\Facades\DB;
 
 class ExerciceComptableController extends Controller
 {
@@ -89,26 +90,55 @@ class ExerciceComptableController extends Controller
                 ], 422);
             }
 
-            // Création de l'exercice
-            logger('Création de l\'exercice avec les données', [
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-                'intitule' => $request->intitule,
-                'user_id' => $user->id,
-                'company_id' => $companyId,
-            ]);
-            
-            $exercice = ExerciceComptable::create([
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-                'intitule' => $request->intitule,
-                'user_id' => $user->id,
-                'company_id' => $companyId,
-            ]);
+            // Vérification de l'existence d'un exercice avec le même intitulé
+            $existingExercice = ExerciceComptable::where('company_id', $companyId)
+                ->where('intitule', $request->intitule)
+                ->first();
+                
+            if ($existingExercice) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Un exercice avec le même intitulé existe déjà.'
+                ], 422);
+            }
 
-            // Génération des journaux si la méthode existe
-            if (method_exists($exercice, 'syncJournaux')) {
-                $exercice->syncJournaux();
+            // Création de l'exercice dans une transaction
+            DB::beginTransaction();
+            
+            try {
+                logger('Création de l\'exercice avec les données', [
+                    'date_debut' => $request->date_debut,
+                    'date_fin' => $request->date_fin,
+                    'intitule' => $request->intitule,
+                    'user_id' => $user->id,
+                    'company_id' => $companyId,
+                ]);
+                
+                $exercice = ExerciceComptable::create([
+                    'date_debut' => $request->date_debut,
+                    'date_fin' => $request->date_fin,
+                    'intitule' => $request->intitule,
+                    'user_id' => $user->id,
+                    'company_id' => $companyId,
+                    'nombre_journaux_saisis' => 0,
+                    'cloturer' => 0,
+                ]);
+
+                // Génération des journaux si la méthode existe
+                if (method_exists($exercice, 'syncJournaux')) {
+                    $exercice->syncJournaux();
+                }
+                
+                DB::commit();
+                logger('Exercice créé avec succès', ['exercice_id' => $exercice->id]);
+                
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Erreur lors de la création de l\'exercice: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de la création de l\'exercice: ' . $e->getMessage()
+                ], 500);
             }
 
             // Calcul du nombre de mois
