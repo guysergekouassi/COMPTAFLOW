@@ -311,10 +311,19 @@
                                                 </td>
                                                 <td class="px-8 py-6">
                                                     <p class="font-semibold text-slate-800">{{ $tier->intitule }}</p>
-                                                    <span class="text-xs text-slate-400 font-medium italic">
-                                                        Compte rattaché : {{ $tier->compte?->numero_de_compte ?? 'N/A' }} 
-                                                        ({{ $tier->numero_de_tiers }})
-                                                    </span>
+                                                    <div class="text-xs text-slate-600 font-medium">
+                                                        <div class="mb-1">
+                                                            <span class="font-semibold">Compte rattaché :</span> 
+                                                            @if($tier->compte)
+                                                                {{ $tier->compte->numero_de_compte }} - {{ $tier->compte->intitule }}
+                                                            @else
+                                                                <span class="text-red-500">Aucun compte associé (ID: {{ $tier->compte_general ?? 'null' }})</span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="text-slate-400 italic">
+                                                            Code tiers: {{ $tier->numero_de_tiers }}
+                                                        </div>
+                                                    </div>
                                                 </td>
                                                 <td class="px-8 py-6">
                                                     @php
