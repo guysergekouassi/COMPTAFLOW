@@ -382,6 +382,9 @@
         const dateFinInput = document.getElementById('date_fin');
         const intituleInput = document.getElementById('intitule_exercice');
         let dataTable;
+        
+        // Initialiser la DataTable
+        initDataTable();
 
         // Initialisation du DataTable
         function initDataTable() {
@@ -432,43 +435,58 @@
 
         // Ajouter une ligne au DataTable
         function addRowToTable(exercice) {
+            console.log('Ajout d\'une nouvelle ligne à la table:', exercice);
+            
             if (!dataTable) {
                 console.error('DataTable non initialisée');
                 return;
             }
             
             try {
+                // S'assurer que l'objet exercice a toutes les propriétés nécessaires
+                const exerciceData = {
+                    id: exercice.id || '',
+                    date_debut: exercice.date_debut || '',
+                    date_fin: exercice.date_fin || '',
+                    intitule: exercice.intitule || 'N/A',
+                    nb_mois: exercice.nb_mois || 0,
+                    nombre_journaux_saisis: exercice.nombre_journaux_saisis || 0,
+                    cloturer: exercice.cloturer || false
+                };
+                
+                console.log('Données formatées pour la nouvelle ligne:', exerciceData);
+                
                 // Formater le nombre de mois avec 2 décimales
-                const nbMois = exercice.nb_mois ? parseFloat(exercice.nb_mois).toFixed(2).replace(/\.?0+$/, '') : '0';
+                const nbMois = parseFloat(exerciceData.nb_mois).toFixed(2).replace(/\.?0+$/, '');
                 
                 // Créer la ligne avec toutes les colonnes nécessaires
                 const rowNode = dataTable.row.add([
-                    formatDate(exercice.date_debut),
-                    formatDate(exercice.date_fin),
-                    exercice.intitule || 'N/A',
+                    formatDate(exerciceData.date_debut),
+                    formatDate(exerciceData.date_fin),
+                    exerciceData.intitule,
                     nbMois,
-                    exercice.nombre_journaux_saisis || '0',
+                    exerciceData.nombre_journaux_saisis.toString(),
                     `
                     <div class="d-flex gap-2">
                         <button type="button"
                                 class="btn p-0 border-0 bg-transparent text-primary view-btn"
-                                data-id="${exercice.id}"
+                                data-id="${exerciceData.id}"
                                 data-bs-toggle="tooltip"
                                 title="Voir">
                             <i class="bx bx-show"></i>
                         </button>
                         <button type="button"
                                 class="btn p-0 border-0 bg-transparent text-warning edit-btn"
-                                data-id="${exercice.id}"
+                                data-id="${exerciceData.id}"
                                 data-bs-toggle="tooltip"
                                 title="Modifier">
                             <i class="bx bx-edit-alt"></i>
                         </button>
-                        ${exercice.cloturer ? '' : `
+                        ${!exerciceData.cloturer ? `
                             <button type="button"
                                     class="btn p-0 border-0 bg-transparent text-danger delete-btn"
-                                    data-id="${exercice.id}"
-                                    data-label="${exercice.intitule || 'cet exercice'}"
+                                    data-id="${exerciceData.id}"
+                                    data-label="${exerciceData.intitule}"
                                     data-type="delete"
                                     data-bs-toggle="tooltip"
                                     title="Supprimer">
@@ -476,26 +494,28 @@
                             </button>
                             <button type="button"
                                     class="btn p-0 border-0 bg-transparent text-success cloturer-btn"
-                                    data-id="${exercice.id}"
-                                    data-label="${exercice.intitule || 'cet exercice'}"
+                                    data-id="${exerciceData.id}"
+                                    data-label="${exerciceData.intitule}"
                                     data-type="cloture"
                                     data-bs-toggle="tooltip"
                                     title="Clôturer">
                                 <i class="bx bx-lock-alt"></i>
-                            </button>`
+                            </button>` : ''
                         }
-                        ${!exercice.cloturer ? '' : `
+                        ${exerciceData.cloturer ? `
                             <button type="button"
                                     class="btn p-0 border-0 bg-transparent text-secondary"
                                     disabled
                                     data-bs-toggle="tooltip"
                                     title="Exercice clôturé">
                                 <i class="bx bx-lock"></i>
-                            </button>`
+                            </button>` : ''
                         }
                     </div>
                     `
                 ]).draw(false).node();
+                
+                console.log('Nouvelle ligne ajoutée avec succès');
                 
                 // Animation de la nouvelle ligne
                 if (rowNode) {
