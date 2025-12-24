@@ -288,94 +288,109 @@
                         </div>
 
                         <!-- Main Table Card -->
-                        <div class="glass-card overflow-hidden">
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse" id="planComptableTable">
-                                    <thead>
-                                        <tr class="bg-slate-50/50 border-b border-slate-100">
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Numéro</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider hidden">Méthode</th> <!-- Hidden but used for filtering -->
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Classe</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-50">
-                                        @forelse ($plans as $plan)
-                                        <tr class="table-row group">
-                                            <td class="px-8 py-6">
-                                                <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
-                                            </td>
-                                            <td class="px-8 py-6">
-                                                <p class="font-semibold text-slate-800">{{ $plan->intitule }}</p>
-                                                <!-- Optional subtitle if data available -->
-                                                <!-- <span class="text-xs text-slate-400 font-medium">Type: {{ $plan->type_de_compte ?? 'Standard' }}</span> -->
-                                            </td>
-                                            <td class="hidden">{{ $plan->adding_strategy }}</td> <!-- Hidden column for filter -->
-                                            <td class="px-8 py-6">
-                                                @php
-                                                    $classe = substr($plan->numero_de_compte, 0, 1);
-                                                    $colors = [
-                                                        '1' => 'bg-slate-100 text-slate-600 border-slate-200',
-                                                        '2' => 'bg-amber-100 text-amber-700 border-amber-200',
-                                                        '3' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                                                        '4' => 'bg-orange-100 text-orange-700 border-orange-200',
-                                                        '5' => 'bg-blue-100 text-blue-700 border-blue-200',
-                                                        '6' => 'bg-red-100 text-red-700 border-red-200',
-                                                        '7' => 'bg-green-100 text-green-700 border-green-200',
-                                                        '8' => 'bg-purple-100 text-purple-700 border-purple-200',
-                                                        '9' => 'bg-gray-100 text-gray-700 border-gray-200',
-                                                    ];
-                                                    $badgeClass = $colors[$classe] ?? 'bg-slate-100 text-slate-600';
-                                                @endphp
-                                                <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold border whitespace-nowrap {{ $badgeClass }}">CLASSE {{ $classe }}</span>
-                                            </td>
-                                            <td class="px-8 py-6 text-right">
-                                                <div class="flex justify-end gap-2 transition-opacity">
-                                                    <button type="button"
-                                                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm"
-                                                        data-bs-toggle="modal" data-bs-target="#modalCenterUpdate"
-                                                        data-id="{{ $plan->id }}"
-                                                        data-numero_de_compte="{{ $plan->numero_de_compte }}"
-                                                        data-intitule="{{ $plan->intitule }}"
-                                                        data-type_de_compte="{{ $plan->type_de_compte }}">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button type="button"
-                                                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm"
-                                                        data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"
-                                                        data-id="{{ $plan->id }}"
-                                                        data-intitule="{{ $plan->intitule }}">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                    <!-- Read only / View button -->
-                                                    <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 text-slate-400 hover:text-gray-600 hover:bg-gray-50 transition donnees-plan-comptable"
-                                                        data-id="{{ $plan->id }}"
-                                                        data-intitule="{{ $plan->intitule }}"
-                                                        data-numero_de_compte="{{ $plan->numero_de_compte }}">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @empty
-                                        <tr>
-                                            <td colspan="5" class="text-center py-8 text-muted">Aucun compte trouvé.</td>
-                                        </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
+                        <!-- Tabs pour les différentes compagnies -->
+                        <div class="mb-6">
+                            <div class="flex space-x-2 overflow-x-auto pb-2">
+                                @foreach($companies as $company)
+                                    <button 
+                                        onclick="showCompany({{ $company->id }})" 
+                                        class="px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap {{ $company->id == $currentCompanyId ? 'bg-blue-100 text-blue-700' : 'bg-white text-slate-600 hover:bg-slate-50' }}"
+                                        data-company="{{ $company->id }}">
+                                        {{ $company->name }}
+                                        <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                            {{ $company->plansComptables->count() }}
+                                        </span>
+                                    </button>
+                                @endforeach
                             </div>
+                        </div>
 
-                            <!-- Footer / Pagination Info -->
-                            <div class="px-8 py-5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
-                                <p class="text-sm text-slate-500 font-medium italic">
-                                    <i class="fas fa-info-circle mr-1"></i> <span id="tableInfo">Calcul en cours...</span>
-                                </p>
-                                <div id="customPagination" class="flex gap-2">
-                                    <!-- Pagination injected by JS or custom -->
+                        <div class="glass-card overflow-hidden">
+                            @foreach($companies as $company)
+                            <div class="company-plans" id="company-{{ $company->id }}" style="display: {{ $company->id == $currentCompanyId ? 'block' : 'none' }};">
+                                <div class="px-6 py-4 border-b border-slate-100">
+                                    <h3 class="text-lg font-bold text-slate-800">{{ $company->name }}</h3>
+                                    <p class="text-sm text-slate-500">{{ $company->plansComptables->count() }} comptes</p>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse" id="planComptableTable-{{ $company->id }}">
+                                        <thead>
+                                            <tr class="bg-slate-50/50 border-b border-slate-100">
+                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Numéro</th>
+                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
+                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
+                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de création</th>
+                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-50">
+                                            @forelse ($company->plansComptables as $plan)
+                                            <tr class="table-row group">
+                                                <td class="px-8 py-6">
+                                                    <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
+                                                </td>
+                                                <td class="px-8 py-6">
+                                                    <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
+                                                    <p class="text-xs text-slate-400 mt-1">
+                                                        @if($plan->adding_strategy == 'auto')
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                <i class="bx bx-check-circle mr-1"></i> Système
+                                                            </span>
+                                                        @else
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                <i class="bx bx-user mr-1"></i> Personnalisé
+                                                            </span>
+                                                        @endif
+                                                    </p>
+                                                </td>
+                                                <td class="px-8 py-6">
+                                                    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $plan->type_de_compte == 'actif' ? 'bg-green-100 text-green-800' : ($plan->type_de_compte == 'passif' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800') }}">
+                                                        {{ ucfirst($plan->type_de_compte) }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-8 py-6">
+                                                    <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
+                                                </td>
+                                                <td class="px-8 py-6 text-right">
+                                                    <div class="flex justify-end gap-2 transition-opacity">
+                                                        <button type="button"
+                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm"
+                                                            data-bs-toggle="modal" data-bs-target="#modalCenterUpdate"
+                                                            data-id="{{ $plan->id }}"
+                                                            data-numero="{{ $plan->numero_de_compte }}"
+                                                            data-intitule="{{ $plan->intitule }}"
+                                                            data-type="{{ $plan->type_de_compte }}">
+                                                            <i class="bx bx-edit-alt text-lg"></i>
+                                                        </button>
+                                                        <button type="button"
+                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm"
+                                                            data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"
+                                                            data-id="{{ $plan->id }}"
+                                                            data-name="{{ $plan->intitule }}">
+                                                            <i class="bx bx-trash text-lg"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            @empty
+                                            <tr>
+                                                <td colspan="5" class="text-center py-8 text-muted">Aucun compte trouvé pour cette compagnie.</td>
+                                            </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Footer / Pagination Info -->
+                                <div class="px-8 py-5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
+                                    <p class="text-sm text-slate-500 font-medium italic">
+                                        <i class="fas fa-info-circle mr-1"></i> <span id="tableInfo-{{ $company->id }}">Calcul en cours...</span>
+                                    </p>
+                                    <div id="customPagination-{{ $company->id }}" class="flex gap-2">
+                                        <!-- Pagination injected by JS or custom -->
+                                    </div>
                                 </div>
                             </div>
+                            @endforeach
                         </div>
 
                     </div>
@@ -581,17 +596,44 @@
 
     <!-- Custom Logic for New Design -->
     <script>
+        // Fonction pour afficher les plans d'une compagnie spécifique
+        function showCompany(companyId) {
+            // Masquer tous les contenus de compagnie
+            document.querySelectorAll('.company-plans').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // Afficher uniquement la compagnie sélectionnée
+            const companyElement = document.getElementById('company-' + companyId);
+            if (companyElement) {
+                companyElement.style.display = 'block';
+            }
+            
+            // Mettre à jour les boutons actifs
+            document.querySelectorAll('[data-company]').forEach(btn => {
+                if (btn.getAttribute('data-company') == companyId) {
+                    btn.classList.add('bg-blue-100', 'text-blue-700');
+                    btn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-50');
+                } else {
+                    btn.classList.remove('bg-blue-100', 'text-blue-700');
+                    btn.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-50');
+                }
+            });
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 SCRIPT PLAN COMPTABLE INITIALISÉ");
 
-            // On s'assure que jQuery est dispo avant d'initier DataTables
-            const initDataTable = () => {
+            // Initialiser DataTables pour chaque tableau de compagnie
+            const initDataTables = () => {
                 if (typeof $ !== 'undefined' && $.fn.dataTable) {
                     console.log("✅ DataTables chargé et prêt !");
-
-                    const table = $('#planComptableTable').DataTable({
-                        dom: 't',
-                        pageLength: 5,
+                    
+                    // Initialiser un DataTable pour chaque compagnie
+                    @foreach($companies as $company)
+                        $('#planComptableTable-{{ $company->id }}').DataTable({
+                            dom: 't',
+                            pageLength: 5,
                         destroy: true,
                         stateSave: false,
                         language: {
@@ -652,16 +694,16 @@
                         console.log("📊 Mise à jour pagination:", info);
 
                         if (info.recordsDisplay > 0) {
-                            $('#tableInfo').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
+                            $('#tableInfo-{{ $company->id }}').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
 
                             let paginationHtml = '';
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage-{{ $company->id }}" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
                             paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                            $('#customPagination').html(paginationHtml);
+                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage-{{ $company->id }}" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                            $('#customPagination-{{ $company->id }}').html(paginationHtml);
                         } else {
-                            $('#tableInfo').html('Aucun compte trouvé');
-                            $('#customPagination').empty();
+                            $('#tableInfo-{{ $company->id }}').html('Aucun compte trouvé');
+                            $('#customPagination-{{ $company->id }}').empty();
                         }
                     }
 
@@ -671,19 +713,23 @@
                         updatePagination();
                     });
 
-                    $(document).on('click', '#prevPage', function() { table.page('previous').draw('page'); });
-                    $(document).on('click', '#nextPage', function() { table.page('next').draw('page'); });
-
-                    // Initial call
-                    updatePagination();
-                    activateCard('#filter-all');
+                    $(document).on('click', '#prevPage-{{ $company->id }}', function() { 
+                        table.page('previous').draw('page'); 
+                        updatePagination();
+                    });
+                    
+                    $(document).on('click', '#nextPage-{{ $company->id }}', function() { 
+                        table.page('next').draw('page');
+                        updatePagination();
+                    });
+                    @endforeach
                 } else {
                     console.log("⏳ En attente de jQuery/DataTables...");
-                    setTimeout(initDataTable, 1200);
+                    setTimeout(initDataTables, 1200);
                 }
             };
 
-            initDataTable();
+            initDataTables();
         });
     </script>
 </body>

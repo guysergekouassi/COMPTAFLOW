@@ -14,51 +14,42 @@ class PlanComptableController extends Controller
 
    use ManagesCompany;
     public function index()
-{
+    {
+        try {
+            // Récupérer l'utilisateur connecté
+            $user = Auth::user();
+            
+            // Récupérer toutes les compagnies
+            $companies = \App\Models\Company::with(['plansComptables' => function($query) {
+                $query->orderByRaw("LPAD(numero_de_compte, 20, '0')");
+            }])->get();
 
-    try {
+            // Récupérer les plans de la compagnie actuelle de l'utilisateur
+            $currentCompanyPlans = $user->company->plansComptables()
+                ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
+                ->get();
 
-        // Requête de base (filtrée auto par scope)
-        $query = PlanComptable::query();
+            // Statistiques globales
+            $totalPlans = PlanComptable::count();
+            $plansByUser = PlanComptable::where('adding_strategy', 'manuel')->count();
+            $plansSys = PlanComptable::where('adding_strategy', 'auto')->count();
+            $hasAutoStrategy = $plansSys > 0;
 
-        // Appliquer la restriction si l'utilisateur n'est PAS un admin
-        // Note : Assurez-vous que la colonne 'role' et le rôle 'admin' existent sur le modèle User.
-         // Filtre : n'affiche que les plans créés par cet utilisateur
-        // if ($user->role !== 'admin') {
+            // Charger les plans par défaut depuis le fichier JSON
+            $jsonPath = storage_path('app/plan_comptable.json');
+            $plansComptablesDefauts = file_exists($jsonPath) ? 
+                json_decode(file_get_contents($jsonPath), true) : [];
 
-        //     $query->where('user_id', $user->id);
-        // }
-
-        // Récupérer les plans triés par numéro de compte (classe 1 à 9)
-        $plans = $query->orderByRaw("LPAD(numero_de_compte, 20, '0')")->get();
-
-        // --- FIN DE LA LOGIQUE DE FILTRAGE ---
-
-
-        // Pour que les stats reflètent le total réel (filtré par scope) 
-        $allPlans = PlanComptable::get();
-
-        $totalPlans = $allPlans->count();
-
-        // Les autres calculs statistiques doivent être faits sur la collection complète si vous voulez les vrais totaux pour la vue :
-        $plansByUser = $allPlans
-            ->where('adding_strategy', 'manuel')
-            ->count();
-
-        $plansSys = $allPlans
-            ->where('adding_strategy', 'auto')
-            ->count();
-
-        // Vérifie s’il existe au moins un plan avec adding_strategy = 'auto'
-        $hasAutoStrategy = $allPlans
-            ->where('adding_strategy', 'auto')
-            ->isNotEmpty();
-
-        // --- Le reste du code est inchangé ---
-        $jsonPath = storage_path('app/plan_comptable.json');
-        $plansComptablesDefauts = json_decode(file_get_contents($jsonPath), true);
-
-        return view('plan_comptable', compact('plans', 'totalPlans', 'plansByUser', 'hasAutoStrategy', 'plansComptablesDefauts', 'plansSys'));
+            return view('plan_comptable', [
+                'companies' => $companies,
+                'currentCompanyPlans' => $currentCompanyPlans,
+                'totalPlans' => $totalPlans,
+                'plansByUser' => $plansByUser,
+                'plansSys' => $plansSys,
+                'hasAutoStrategy' => $hasAutoStrategy,
+                'plansComptablesDefauts' => $plansComptablesDefauts,
+                'currentCompanyId' => $user->company_id
+            ]);
     } catch (\Exception $e) {
         return redirect()->back()->with('error', 'Erreur lors du chargement des plans comptables : ' . $e->getMessage());
     }

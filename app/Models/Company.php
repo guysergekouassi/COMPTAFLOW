@@ -39,8 +39,15 @@ class Company extends Model
     }
 
     public function childCompanies()
-{
-   
-    return $this->hasMany(Company::class, 'parent_company_id');
-}
+    {
+        return $this->hasMany(Company::class, 'parent_company_id');
+    }
+
+    /**
+     * Get all of the plans comptables for the company.
+     */
+    public function plansComptables()
+    {
+        return $this->hasMany(PlanComptable::class, 'company_id');
+    }
 }
