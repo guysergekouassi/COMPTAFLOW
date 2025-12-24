@@ -151,7 +151,8 @@ class PlanTiersController extends Controller
                 'compte_general' => $request->compte_general,
                 'intitule' => $intitule_formate,
                 'type_de_tiers' => $request->type_de_tiers,
-                // user_id et company_id auto
+                'user_id' => $user->id,
+                'company_id' => $currentCompanyId
             ]);
 
             return redirect()->back()->with('success', 'Plan Tiers créé avec succès');
