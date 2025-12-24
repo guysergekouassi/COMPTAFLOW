@@ -26,9 +26,9 @@ class PlanTiersController extends Controller
         
         try {
             // Debug: Afficher les informations de l'utilisateur et de la société
-            \Log::info('User ID: ' . $user->id);
-            \Log::info('User Company ID: ' . $user->company_id);
-            \Log::info('Session Company ID: ' . session('current_company_id'));
+            Log::info('User ID: ' . $user->id);
+            Log::info('User Company ID: ' . $user->company_id);
+            Log::info('Session Company ID: ' . session('current_company_id'));
 
             $comptesGeneraux = PlanComptable::where('numero_de_compte', 'LIKE', '4%')
                 ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
@@ -41,8 +41,8 @@ class PlanTiersController extends Controller
                 ->get();
                 
             // Debug: Afficher le nombre de tiers trouvés
-            \Log::info('Nombre de tiers trouvés: ' . $tiers->count());
-            \Log::info('Tiers: ' . $tiers->toJson());
+            Log::info('Nombre de tiers trouvés: ' . $tiers->count());
+            Log::info('Tiers: ' . $tiers->toJson());
 
             // Statistiques
             $totalPlanTiers = $tiers->count();
@@ -141,7 +141,7 @@ class PlanTiersController extends Controller
             $user = Auth::user();
             $currentCompanyId = session('current_company_id', $user->company_id);
             
-            \Log::info('Création d\'un nouveau plan tiers - User ID: ' . $user->id . ', Company ID: ' . $currentCompanyId);
+            Log::info('Création d\'un nouveau plan tiers - User ID: ' . $user->id . ', Company ID: ' . $currentCompanyId);
             
             $request->validate([
                 'numero_de_tiers' => 'required|string',
@@ -156,13 +156,13 @@ class PlanTiersController extends Controller
                 ->exists();
 
             if ($numeroExiste) {
-                \Log::warning('Tentative de création d\'un numéro de tiers existant: ' . $request->numero_de_tiers . ' pour la société: ' . $currentCompanyId);
+                Log::warning('Tentative de création d\'un numéro de tiers existant: ' . $request->numero_de_tiers . ' pour la société: ' . $currentCompanyId);
                 return redirect()->back()->with('error', 'Ce numéro de tiers existe déjà pour cette société.');
             }
 
             $intitule_formate = ucfirst(strtolower($request->intitule));
 
-            \Log::info('Création du plan tiers avec les données:', [
+            Log::info('Création du plan tiers avec les données:', [
                 'numero_de_tiers' => $request->numero_de_tiers,
                 'compte_general' => $request->compte_general,
                 'intitule' => $intitule_formate,
@@ -180,14 +180,14 @@ class PlanTiersController extends Controller
                 'company_id' => $currentCompanyId
             ]);
 
-            \Log::info('Plan tiers créé avec succès - ID: ' . $planTiers->id);
+            Log::info('Plan tiers créé avec succès - ID: ' . $planTiers->id);
 
             return redirect()->back()->with('success', 'Plan Tiers créé avec succès')->with('reload', true);
         } catch (\Exception $e) {
-            \Log::error('Erreur lors de la création du plan tiers: ' . $e->getMessage(), [
+            logger()->error('Erreur dans PlanTiersController@store: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
-            return redirect()->back()->with('error', 'Erreur lors de la création du plan tiers : ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la création du plan tiers: ' . $e->getMessage());
         }
     }
 
