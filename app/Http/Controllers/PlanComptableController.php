@@ -101,11 +101,14 @@ class PlanComptableController extends Controller
                 return redirect()->back()->with('error', 'Ce numéro de compte ou cet intitulé existe déjà.');
             }
 
+            $user = Auth::user();
+            
             PlanComptable::create([
                 'numero_de_compte' => $numero_formate,
                 'intitule' => $intitule_formate,
                 'adding_strategy' => 'manuel',
-                // user_id et company_id auto
+                'user_id' => $user->id,
+                'company_id' => $user->company_id,
             ]);
 
             return redirect()->back()->with('success', 'Plan comptable ajouté avec succès.');
