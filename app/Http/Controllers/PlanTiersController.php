@@ -35,8 +35,9 @@ class PlanTiersController extends Controller
                 ->get();
 
             // Récupère les plans tiers avec leurs comptes associés, triés par numero_de_tiers
+            $currentCompanyId = session('current_company_id', $user->company_id);
             $tiers = PlanTiers::with('compte')
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $currentCompanyId)
                 ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
                 ->get();
                 
