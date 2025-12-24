@@ -22,7 +22,13 @@ class PlanTiersController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+        
         try {
+            // Debug: Afficher les informations de l'utilisateur et de la société
+            \Log::info('User ID: ' . $user->id);
+            \Log::info('User Company ID: ' . $user->company_id);
+            \Log::info('Session Company ID: ' . session('current_company_id'));
+
             $comptesGeneraux = PlanComptable::where('numero_de_compte', 'LIKE', '4%')
                 ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
                 ->get();
@@ -32,6 +38,10 @@ class PlanTiersController extends Controller
                 ->where('company_id', $user->company_id)
                 ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
                 ->get();
+                
+            // Debug: Afficher le nombre de tiers trouvés
+            \Log::info('Nombre de tiers trouvés: ' . $tiers->count());
+            \Log::info('Tiers: ' . $tiers->toJson());
 
             // Statistiques
             $totalPlanTiers = $tiers->count();
@@ -127,9 +137,11 @@ class PlanTiersController extends Controller
     public function store(Request $request)
     {
         try {
-
             $user = Auth::user();
-           $currentCompanyId = session('current_company_id', $user->company_id);
+            $currentCompanyId = session('current_company_id', $user->company_id);
+            
+            \Log::info('Création d\'un nouveau plan tiers - User ID: ' . $user->id . ', Company ID: ' . $currentCompanyId);
+            
             $request->validate([
                 'numero_de_tiers' => 'required|string',
                 'compte_general' => 'required|exists:plan_comptables,id',
@@ -137,16 +149,19 @@ class PlanTiersController extends Controller
                 'type_de_tiers' => 'required',
             ]);
 
-            $numeroExiste = PlanTiers::where('numero_de_tiers', $request->numero_de_tiers)
+            // Vérifier si le numéro de tiers existe déjà pour cette société
+            $numeroExiste = PlanTiers::where('company_id', $currentCompanyId)
+                ->where('numero_de_tiers', $request->numero_de_tiers)
                 ->exists();
 
             if ($numeroExiste) {
-                return redirect()->back()->with('error', 'Ce numéro de tiers existe déjà.');
+                \Log::warning('Tentative de création d\'un numéro de tiers existant: ' . $request->numero_de_tiers . ' pour la société: ' . $currentCompanyId);
+                return redirect()->back()->with('error', 'Ce numéro de tiers existe déjà pour cette société.');
             }
 
             $intitule_formate = ucfirst(strtolower($request->intitule));
 
-            PlanTiers::create([
+            \Log::info('Création du plan tiers avec les données:', [
                 'numero_de_tiers' => $request->numero_de_tiers,
                 'compte_general' => $request->compte_general,
                 'intitule' => $intitule_formate,
@@ -155,8 +170,22 @@ class PlanTiersController extends Controller
                 'company_id' => $currentCompanyId
             ]);
 
+            $planTiers = PlanTiers::create([
+                'numero_de_tiers' => $request->numero_de_tiers,
+                'compte_general' => $request->compte_general,
+                'intitule' => $intitule_formate,
+                'type_de_tiers' => $request->type_de_tiers,
+                'user_id' => $user->id,
+                'company_id' => $currentCompanyId
+            ]);
+
+            \Log::info('Plan tiers créé avec succès - ID: ' . $planTiers->id);
+
             return redirect()->back()->with('success', 'Plan Tiers créé avec succès')->with('reload', true);
         } catch (\Exception $e) {
+            \Log::error('Erreur lors de la création du plan tiers: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect()->back()->with('error', 'Erreur lors de la création du plan tiers : ' . $e->getMessage());
         }
     }
