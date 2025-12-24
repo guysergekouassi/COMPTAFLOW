@@ -81,21 +81,27 @@ class ExerciceComptableController extends Controller
             ], [
                 'date_debut.required' => 'La date de début est obligatoire',
                 'date_fin.required' => 'La date de fin est obligatoire',
+                'date_fin.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début'
             ]);
 
-            // 2️⃣ Vérification du chevauchement (filtré auto par scope)
-            $overlap = ExerciceComptable::where(function ($query) use ($request) {
+            // 2️⃣ Vérification du chevauchement (filtré par company_id)
+            $companyId = Auth::user()->company_id;
+            $overlap = ExerciceComptable::where('company_id', $companyId)
+                ->where(function ($query) use ($request) {
                     $query->whereBetween('date_debut', [$request->date_debut, $request->date_fin])
                         ->orWhereBetween('date_fin', [$request->date_debut, $request->date_fin])
-                        ->orWhere(function ($query) use ($request) {
-                            $query->where('date_debut', '<=', $request->date_debut)
-                                ->where('date_fin', '>=', $request->date_fin);
+                        ->orWhere(function ($q) use ($request) {
+                            $q->where('date_debut', '<=', $request->date_debut)
+                              ->where('date_fin', '>=', $request->date_fin);
                         });
                 })
                 ->exists();
 
             if ($overlap) {
-                return redirect()->back()->with('error', 'Les dates de l\'exercice se chevauchent avec un autre exercice.');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Les dates de l\'exercice se chevauchent avec un exercice existant.'
+                ], 422);
             }
 
             // 3️⃣ Création de l'exercice avec user_id et company_id
@@ -104,35 +110,43 @@ class ExerciceComptableController extends Controller
                 'date_fin' => $request->date_fin,
                 'intitule' => $request->intitule,
                 'user_id' => Auth::id(),
-                'company_id' => Auth::user()->company_id,
+                'company_id' => $companyId,
             ]);
 
             // 4️⃣ Génération automatique des journaux pour cet exercice
-            $exercice->syncJournaux(); // méthode ajoutée dans ExerciceComptable
+            if (method_exists($exercice, 'syncJournaux')) {
+                $exercice->syncJournaux();
+            }
 
-            // Préparer les données pour le DataTable
+            // Préparer les données pour la réponse
             $dateDebut = Carbon::parse($exercice->date_debut);
             $dateFin = Carbon::parse($exercice->date_fin);
             $nbMois = (int) $dateDebut->diffInMonths($dateFin) + 1;
 
-            $exerciceData = [
-                'date_debut' => $exercice->date_debut,
-                'date_fin' => $exercice->date_fin,
-                'nb_mois' => $nbMois,
-                'nombre_journaux_saisis' => $exercice->journauxSaisis()->count(),
-                'id' => $exercice->id
-            ];
-
             return response()->json([
                 'success' => true,
-                'message' => 'Exercice comptable et journaux créés avec succès.',
-                'exercice' => $exerciceData
+                'message' => 'Exercice comptable créé avec succès',
+                'exercice' => [
+                    'id' => $exercice->id,
+                    'date_debut' => $exercice->date_debut,
+                    'date_fin' => $exercice->date_fin,
+                    'intitule' => $exercice->intitule,
+                    'nb_mois' => $nbMois,
+                    'nombre_journaux_saisis' => 0
+                ]
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Une erreur est survenue : ' . $e->getMessage()
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Erreur création exercice: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors de la création de l\'exercice: ' . $e->getMessage()
             ], 500);
         }
     }

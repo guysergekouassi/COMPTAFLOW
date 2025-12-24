@@ -402,11 +402,12 @@
 
         <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const dateFinInput = document.getElementById('date_fin');
-        const intituleInput = document.getElementById('intitule_exercice');
+        // Éléments du DOM
         const formExercice = document.getElementById('formCreateExercice');
         const modalCreate = document.getElementById('modalCenterCreate');
-        const modalInstance = new bootstrap.Modal(modalCreate);
+        const modalInstance = modalCreate ? new bootstrap.Modal(modalCreate) : null;
+        const dateFinInput = document.getElementById('date_fin');
+        const intituleInput = document.getElementById('intitule_exercice');
         let dataTable;
 
         // Initialisation du DataTable
@@ -417,149 +418,221 @@
             
             dataTable = $('#exerciceTable').DataTable({
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json'
+                    url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json',
+                    emptyTable: 'Aucune donnée disponible dans le tableau',
+                    info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                    infoEmpty: 'Affichage de 0 à 0 sur 0 entrées',
+                    infoFiltered: '(filtré à partir de _MAX_ entrées totales)',
+                    lengthMenu: 'Afficher _MENU_ entrées',
+                    loadingRecords: 'Chargement...',
+                    processing: 'Traitement...',
+                    search: 'Rechercher :',
+                    zeroRecords: 'Aucun enregistrement trouvé',
+                    paginate: {
+                        first: 'Premier',
+                        last: 'Dernier',
+                        next: 'Suivant',
+                        previous: 'Précédent'
+                    },
+                    aria: {
+                        sortAscending: ': activer pour trier par ordre croissant',
+                        sortDescending: ': activer pour trier par ordre décroissant'
+                    }
                 },
-                order: [[0, 'desc']], // Tri par date de début par défaut
+                order: [[0, 'desc']],
                 pageLength: 10,
-                responsive: true
+                responsive: true,
+                autoWidth: false
             });
         }
 
-        // Fonction pour formater une date au format dd/mm/yyyy
+        // Formater une date au format jj/mm/aaaa
         function formatDate(dateString) {
+            if (!dateString) return '';
             const date = new Date(dateString);
             return date.toLocaleDateString('fr-FR');
         }
 
-        // Fonction pour ajouter une nouvelle ligne au DataTable
+        // Ajouter une ligne au DataTable
         function addRowToTable(exercice) {
+            if (!dataTable) return;
+            
             const rowNode = dataTable.row.add([
                 formatDate(exercice.date_debut),
                 formatDate(exercice.date_fin),
-                exercice.nb_mois,
+                exercice.intitule || 'N/A',
+                exercice.nb_mois || 0,
                 exercice.nombre_journaux_saisis || 0,
                 `
                 <div class="d-flex gap-2">
-                    <button class="btn p-0 border-0 bg-transparent text-danger" onclick="deleteExercice(${exercice.id})">
+                    <button class="btn p-0 border-0 bg-transparent text-danger" 
+                            onclick="deleteExercice(${exercice.id})"
+                            data-bs-toggle="tooltip" 
+                            title="Supprimer">
                         <i class="ti ti-trash"></i>
                     </button>
                 </div>
                 `
             ]).draw(false).node();
             
+            // Animation de la nouvelle ligne
             $(rowNode).css('background-color', '#e8f5e9');
             setTimeout(() => {
                 $(rowNode).css('background-color', '');
-            }, 2000);
+                // Activer les tooltips
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }, 100);
         }
 
-        // Gestion de la soumission du formulaire
-        if (formExercice) {
-            formExercice.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Afficher un indicateur de chargement
-                const submitButton = this.querySelector('button[type="submit"]');
-                const originalButtonText = submitButton.innerHTML;
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enregistrement...';
-                
-                // Créer un objet FormData à partir du formulaire
-                const formData = new FormData(this);
-                const url = this.action;
-                
-                // Convertir FormData en objet simple
-                const formDataObj = {};
-                formData.forEach((value, key) => {
-                    formDataObj[key] = value;
-                });
-                
-                // Envoyer la requête
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(formDataObj)
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => { throw err; });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Ajouter la nouvelle ligne au DataTable
-                        addRowToTable(data.exercice);
-                        
-                        // Afficher le message de succès
-                        showAlert('success', data.message);
-                        
-                        // Fermer le modal et réinitialiser le formulaire
-                        modalInstance.hide();
-                        this.reset();
-                    } else {
-                        showAlert('error', data.message || 'Une erreur est survenue');
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    const errorMessage = error.message || 'Une erreur est survenue lors de la création de l\'exercice';
-                    showAlert('error', errorMessage);
-                })
-                .finally(() => {
-                    // Réactiver le bouton de soumission
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalButtonText;
-                });
-            });
-        }
-
-        // Fonction pour afficher les alertes
+        // Afficher une alerte
         function showAlert(type, message) {
+            // Supprimer les anciennes alertes
+            const oldAlerts = document.querySelectorAll('.alert-dismissible');
+            oldAlerts.forEach(alert => alert.remove());
+
             const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
                     ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
             
-            // Ajouter l'alerte en haut du conteneur principal
+            // Ajouter l'alerte en haut de la page
             const container = document.querySelector('.container-xxl');
-            container.insertAdjacentHTML('afterbegin', alertHtml);
-            
-            // Supprimer l'alerte après 5 secondes
-            setTimeout(() => {
-                const alert = document.querySelector('.alert');
-                if (alert) {
-                    alert.remove();
-                }
-            }, 5000);
+            if (container) {
+                container.insertAdjacentHTML('afterbegin', alertHtml);
+                
+                // Supprimer l'alerte après 5 secondes
+                setTimeout(() => {
+                    const alert = container.querySelector('.alert');
+                    if (alert) {
+                        alert.remove();
+                    }
+                }, 5000);
+            }
         }
 
-        // Fonction pour générer l'intitulé
+        // Générer automatiquement l'intitulé à partir de la date de fin
         function genererIntitule() {
+            if (!dateFinInput || !intituleInput) return;
+            
             const dateFinValue = dateFinInput.value;
-
             if (dateFinValue) {
                 try {
                     const dateObj = new Date(dateFinValue);
                     const annee = dateObj.getFullYear();
-                    const nouvelIntitule = 'Exercice ' + annee;
-                    intituleInput.value = nouvelIntitule;
+                    // Ne générer l'intitulé que si le champ est vide ou contient un format d'exercice
+                    if (!intituleInput.value || /^Exercice \d{4}$/.test(intituleInput.value)) {
+                        intituleInput.value = `Exercice ${annee}`;
+                    }
                 } catch (e) {
                     console.error("Erreur de formatage de la date:", e);
                 }
-            } else {
-                intituleInput.value = '';
             }
         }
 
-        // Écouteurs d'événements
+        // Gestion de la soumission du formulaire
+        if (formExercice) {
+            formExercice.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                
+                try {
+                    // Désactiver le bouton pendant la soumission
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = `
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Enregistrement...
+                    `;
+                    
+                    // Récupérer le token CSRF
+                    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    
+                    // Créer un objet FormData
+                    const formData = new FormData(this);
+                    
+                    // Envoyer la requête
+                    const response = await fetch(this.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': token,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        // Gestion des erreurs de validation
+                        if (response.status === 422 && data.errors) {
+                            // Réinitialiser les états d'erreur précédents
+                            document.querySelectorAll('.is-invalid').forEach(el => {
+                                el.classList.remove('is-invalid');
+                            });
+                            document.querySelectorAll('.invalid-feedback').forEach(el => {
+                                el.remove();
+                            });
+                            
+                            // Afficher les erreurs de validation
+                            let errorMessages = [];
+                            
+                            for (const [field, messages] of Object.entries(data.errors)) {
+                                const input = document.querySelector(`[name="${field}"]`);
+                                if (input) {
+                                    input.classList.add('is-invalid');
+                                    const errorDiv = document.createElement('div');
+                                    errorDiv.className = 'invalid-feedback';
+                                    errorDiv.textContent = messages[0];
+                                    input.parentNode.appendChild(errorDiv);
+                                    errorMessages.push(messages[0]);
+                                }
+                            }
+                            
+                            if (errorMessages.length > 0) {
+                                showAlert('danger', errorMessages.join('<br>'));
+                            } else {
+                                showAlert('danger', 'Veuillez corriger les erreurs dans le formulaire.');
+                            }
+                        } else {
+                            throw new Error(data.message || 'Une erreur est survenue');
+                        }
+                        return;
+                    }
+
+                    if (data.success) {
+                        // Ajouter la nouvelle ligne au tableau
+                        addRowToTable(data.exercice);
+                        
+                        // Afficher un message de succès
+                        showAlert('success', data.message || 'Exercice enregistré avec succès');
+                        
+                        // Fermer le modal et réinitialiser le formulaire
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                        this.reset();
+                    } else {
+                        throw new Error(data.message || 'Une erreur est survenue');
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showAlert('danger', error.message || 'Une erreur est survenue lors de l\'enregistrement');
+                } finally {
+                    // Réactiver le bouton
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                }
+            });
+        }
+
+        // Gestion de la génération automatique de l'intitulé
         if (dateFinInput) {
             dateFinInput.addEventListener('change', genererIntitule);
             dateFinInput.addEventListener('input', genererIntitule);
@@ -568,12 +641,21 @@
         // Initialiser le DataTable
         initDataTable();
 
-        // Réinitialiser le formulaire quand le modal est fermé
-        modalCreate.addEventListener('hidden.bs.modal', function () {
-            if (formExercice) {
-                formExercice.reset();
-            }
-        });
+        // Gestion de la fermeture du modal
+        if (modalCreate) {
+            modalCreate.addEventListener('hidden.bs.modal', function() {
+                if (formExercice) {
+                    formExercice.reset();
+                    // Réinitialiser les messages d'erreur
+                    document.querySelectorAll('.is-invalid').forEach(el => {
+                        el.classList.remove('is-invalid');
+                    });
+                    document.querySelectorAll('.invalid-feedback').forEach(el => {
+                        el.remove();
+                    });
+                }
+            });
+        }
     });
 </script>
 </body>
