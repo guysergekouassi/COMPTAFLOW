@@ -155,7 +155,7 @@ class PlanTiersController extends Controller
                 'company_id' => $currentCompanyId
             ]);
 
-            return redirect()->back()->with('success', 'Plan Tiers créé avec succès');
+            return redirect()->back()->with('success', 'Plan Tiers créé avec succès')->with('reload', true);
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la création du plan tiers : ' . $e->getMessage());
         }

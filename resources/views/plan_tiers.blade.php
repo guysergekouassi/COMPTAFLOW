@@ -760,6 +760,15 @@
                     };
                 });
             </script>
+
+            @if(session('reload'))
+            <script>
+                // Recharger la page après 1 seconde pour s'assurer que le message de succès est affiché
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1000);
+            </script>
+            @endif
         </div>
     </div>
 </body>
