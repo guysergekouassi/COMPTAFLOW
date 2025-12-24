@@ -491,7 +491,6 @@
                                     data-bs-toggle="tooltip"
                                     title="Exercice clôturé">
                                 <i class="bx bx-lock"></i>
-                                <i class='bx bx-lock'></i>
                             </button>`
                         }
                     </div>
