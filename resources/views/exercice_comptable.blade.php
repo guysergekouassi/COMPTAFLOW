@@ -91,23 +91,7 @@
 
                                 <!-- Table -->
 
-                                <script>
-                                    // Suppression de l'initialisation en double de DataTable
-                                                lengthMenu: "Afficher _MENU_ lignes",
-                                                info: "Affichage de _START_ à _END_ sur _TOTAL_ lignes",
-                                                paginate: {
-                                                    first: "Premier",
-                                                    last: "Dernier",
-                                                    next: "Suivant",
-                                                    previous: "Précédent"
-                                                },
-                                                zeroRecords: "Aucune donnée trouvée",
-                                                infoEmpty: "Aucune donnée à afficher",
-                                                infoFiltered: "(filtré depuis _MAX_ lignes totales)"
-                                            }
-                                        });
-                                    });
-                                </script>
+                                <!-- Initialisation du DataTable déplacée dans la section script plus bas -->
                                 <div class="table-responsive text-nowrap">
                                     <table class="table" id="exerciceTable">
 
@@ -409,13 +393,13 @@
                 language: {
                     emptyTable: 'Aucune donnée disponible dans le tableau',
                     info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
-                    infoEmpty: 'Affichage de 0 à 0 sur 0 entrées',
+                    infoEmpty: 'Aucune entrée à afficher',
                     infoFiltered: '(filtré à partir de _MAX_ entrées totales)',
                     lengthMenu: 'Afficher _MENU_ entrées',
                     loadingRecords: 'Chargement...',
                     processing: 'Traitement...',
                     search: 'Rechercher :',
-                    zeroRecords: 'Aucun enregistrement trouvé',
+                    zeroRecords: 'Aucun enregistrement correspondant trouvé',
                     paginate: {
                         first: 'Premier',
                         last: 'Dernier',
@@ -423,14 +407,14 @@
                         previous: 'Précédent'
                     },
                     aria: {
-                        sortAscending: ': activer pour trier par ordre croissant',
-                        sortDescending: ': activer pour trier par ordre décroissant'
+                        sortAscending: ': activer pour trier la colonne par ordre croissant',
+                        sortDescending: ': activer pour trier la colonne par ordre décroissant'
                     }
                 },
-                order: [[0, 'desc']],
-                pageLength: 10,
                 responsive: true,
                 autoWidth: false,
+                pageLength: 10,
+                order: [[0, 'desc']], // Tri par date de début par défaut
                 dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
                      "<'row'<'col-sm-12'tr>>" +
                      "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
@@ -439,13 +423,6 @@
             return dataTable;
         }
         
-        // Initialiser le DataTable au chargement de la page
-        $(document).ready(function() {
-            // Vérifier si le tableau existe avant de l'initialiser
-            if ($('#exerciceTable').length) {
-                dataTable = initDataTable();
-            }
-
         // Formater une date au format jj/mm/aaaa
         function formatDate(dateString) {
             if (!dateString) return '';
@@ -722,11 +699,15 @@
             });
         }
         
-        // Initialiser le DataTable et les gestionnaires d'événements
-        $(document).ready(function() {
-            if ($('#exerciceTable').length) {
-                dataTable = initDataTable();
-                initializeEventHandlers();
+        // Initialiser le DataTable et les gestionnaires d'événements au chargement du DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof $ !== 'undefined' && $.fn.DataTable) {
+                if ($('#exerciceTable').length) {
+                    dataTable = initDataTable();
+                    initializeEventHandlers();
+                }
+            } else {
+                console.error('jQuery ou DataTables n\'est pas chargé correctement');
             }
         });
 
