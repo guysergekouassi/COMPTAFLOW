@@ -16,44 +16,78 @@ class PlanComptableController extends Controller
     public function index()
     {
         try {
-            // Récupérer l'utilisateur connecté
-            $user = Auth::user();
-            
-            // Récupérer toutes les compagnies
-            $companies = \App\Models\Company::with(['plansComptables' => function($query) {
-                $query->orderByRaw("LPAD(numero_de_compte, 20, '0')");
-            }])->get();
-
-            // Récupérer les plans de la compagnie actuelle de l'utilisateur
-            $currentCompanyPlans = $user->company->plansComptables()
+            // Récupérer tous les plans comptables par défaut (adding_strategy = 'auto')
+            $plansComptables = PlanComptable::where('adding_strategy', 'auto')
                 ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
                 ->get();
 
-            // Statistiques globales
-            $totalPlans = PlanComptable::count();
-            $plansByUser = PlanComptable::where('adding_strategy', 'manuel')->count();
-            $plansSys = PlanComptable::where('adding_strategy', 'auto')->count();
+            // Si aucun plan par défaut n'existe, charger depuis le fichier JSON
+            if ($plansComptables->isEmpty()) {
+                $jsonPath = storage_path('app/plan_comptable.json');
+                if (file_exists($jsonPath)) {
+                    $plansComptablesDefauts = json_decode(file_get_contents($jsonPath), true);
+                    
+                    // Créer les plans à partir du fichier JSON
+                    foreach ($plansComptablesDefauts as $numero => $intitule) {
+                        PlanComptable::firstOrCreate(
+                            ['numero_de_compte' => $numero],
+                            [
+                                'intitule' => $intitule,
+                                'adding_strategy' => 'auto',
+                                'type_de_compte' => $this->determinerTypeCompte($numero)
+                            ]
+                        );
+                    }
+                    
+                    // Recharger les plans après création
+                    $plansComptables = PlanComptable::where('adding_strategy', 'auto')
+                        ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
+                        ->get();
+                }
+            }
+
+            // Statistiques
+            $totalPlans = $plansComptables->count();
+            $plansByUser = 0; // Pas de plans manuels dans cette vue
+            $plansSys = $totalPlans;
             $hasAutoStrategy = $plansSys > 0;
 
-            // Charger les plans par défaut depuis le fichier JSON
-            $jsonPath = storage_path('app/plan_comptable.json');
-            $plansComptablesDefauts = file_exists($jsonPath) ? 
-                json_decode(file_get_contents($jsonPath), true) : [];
-
             return view('plan_comptable', [
-                'companies' => $companies,
-                'currentCompanyPlans' => $currentCompanyPlans,
+                'plansComptables' => $plansComptables,
                 'totalPlans' => $totalPlans,
                 'plansByUser' => $plansByUser,
                 'plansSys' => $plansSys,
                 'hasAutoStrategy' => $hasAutoStrategy,
-                'plansComptablesDefauts' => $plansComptablesDefauts,
-                'currentCompanyId' => $user->company_id
+                'isDefaultView' => true // Nouvelle variable pour la vue
             ]);
     } catch (\Exception $e) {
         return redirect()->back()->with('error', 'Erreur lors du chargement des plans comptables : ' . $e->getMessage());
     }
 }
+
+    /**
+     * Détermine le type de compte en fonction du numéro
+     */
+    private function determinerTypeCompte($numero) {
+        $premierChiffre = substr($numero, 0, 1);
+        
+        switch($premierChiffre) {
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+                return 'actif';
+            case '5':
+            case '6':
+                return 'passif';
+            case '7':
+                return 'produit';
+            case '8':
+                return 'charge';
+            default:
+                return 'divers';
+        }
+    }
 
     public function verifierNumeroCompte(Request $request)
     {

@@ -288,109 +288,65 @@
                         </div>
 
                         <!-- Main Table Card -->
-                        <!-- Tabs pour les différentes compagnies -->
-                        <div class="mb-6">
-                            <div class="flex space-x-2 overflow-x-auto pb-2">
-                                @foreach($companies as $company)
-                                    <button 
-                                        onclick="showCompany({{ $company->id }})" 
-                                        class="px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap {{ $company->id == $currentCompanyId ? 'bg-blue-100 text-blue-700' : 'bg-white text-slate-600 hover:bg-slate-50' }}"
-                                        data-company="{{ $company->id }}">
-                                        {{ $company->name }}
-                                        <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                                            {{ $company->plansComptables->count() }}
-                                        </span>
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-
+                        <!-- En-tête de la vue par défaut -->
                         <div class="glass-card overflow-hidden">
-                            @foreach($companies as $company)
-                            <div class="company-plans" id="company-{{ $company->id }}" style="display: {{ $company->id == $currentCompanyId ? 'block' : 'none' }};">
-                                <div class="px-6 py-4 border-b border-slate-100">
-                                    <h3 class="text-lg font-bold text-slate-800">{{ $company->name }}</h3>
-                                    <p class="text-sm text-slate-500">{{ $company->plansComptables->count() }} comptes</p>
-                                </div>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-left border-collapse" id="planComptableTable-{{ $company->id }}">
-                                        <thead>
-                                            <tr class="bg-slate-50/50 border-b border-slate-100">
-                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Numéro</th>
-                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
-                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
-                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de création</th>
-                                                <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-50">
-                                            @forelse ($company->plansComptables as $plan)
-                                            <tr class="table-row group">
-                                                <td class="px-8 py-6">
-                                                    <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
-                                                </td>
-                                                <td class="px-8 py-6">
-                                                    <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
-                                                    <p class="text-xs text-slate-400 mt-1">
-                                                        @if($plan->adding_strategy == 'auto')
-                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                <i class="bx bx-check-circle mr-1"></i> Système
-                                                            </span>
-                                                        @else
-                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                                <i class="bx bx-user mr-1"></i> Personnalisé
-                                                            </span>
-                                                        @endif
-                                                    </p>
-                                                </td>
-                                                <td class="px-8 py-6">
-                                                    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $plan->type_de_compte == 'actif' ? 'bg-green-100 text-green-800' : ($plan->type_de_compte == 'passif' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800') }}">
-                                                        {{ ucfirst($plan->type_de_compte) }}
-                                                    </span>
-                                                </td>
-                                                <td class="px-8 py-6">
-                                                    <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
-                                                </td>
-                                                <td class="px-8 py-6 text-right">
-                                                    <div class="flex justify-end gap-2 transition-opacity">
-                                                        <button type="button"
-                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm"
-                                                            data-bs-toggle="modal" data-bs-target="#modalCenterUpdate"
-                                                            data-id="{{ $plan->id }}"
-                                                            data-numero="{{ $plan->numero_de_compte }}"
-                                                            data-intitule="{{ $plan->intitule }}"
-                                                            data-type="{{ $plan->type_de_compte }}">
-                                                            <i class="bx bx-edit-alt text-lg"></i>
-                                                        </button>
-                                                        <button type="button"
-                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm"
-                                                            data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"
-                                                            data-id="{{ $plan->id }}"
-                                                            data-name="{{ $plan->intitule }}">
-                                                            <i class="bx bx-trash text-lg"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @empty
-                                            <tr>
-                                                <td colspan="5" class="text-center py-8 text-muted">Aucun compte trouvé pour cette compagnie.</td>
-                                            </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <!-- Footer / Pagination Info -->
-                                <div class="px-8 py-5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
-                                    <p class="text-sm text-slate-500 font-medium italic">
-                                        <i class="fas fa-info-circle mr-1"></i> <span id="tableInfo-{{ $company->id }}">Calcul en cours...</span>
-                                    </p>
-                                    <div id="customPagination-{{ $company->id }}" class="flex gap-2">
-                                        <!-- Pagination injected by JS or custom -->
-                                    </div>
-                                </div>
+                            <div class="px-6 py-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">Plan Comptable Général</h3>
+                                <p class="text-sm text-slate-500">Liste complète des comptes par défaut</p>
                             </div>
-                            @endforeach
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse" id="planComptableTable">
+                                    <thead>
+                                        <tr class="bg-slate-50/50 border-b border-slate-100">
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Numéro</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de création</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        @forelse ($plansComptables as $plan)
+                                        <tr class="table-row group">
+                                            <td class="px-8 py-6">
+                                                <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
+                                            </td>
+                                            <td class="px-8 py-6">
+                                                <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
+                                            </td>
+                                            <td class="px-8 py-6">
+                                                @php
+                                                    $typeClasses = [
+                                                        'actif' => 'bg-green-100 text-green-800',
+                                                        'passif' => 'bg-blue-100 text-blue-800',
+                                                        'produit' => 'bg-purple-100 text-purple-800',
+                                                        'charge' => 'bg-yellow-100 text-yellow-800',
+                                                        'divers' => 'bg-gray-100 text-gray-800'
+                                                    ];
+                                                    $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
+                                                @endphp
+                                                <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
+                                                    {{ ucfirst($plan->type_de_compte) }}
+                                                </span>
+                                            </td>
+                                            <td class="px-8 py-6">
+                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
+                                            </td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center py-8 text-muted">Aucun plan comptable par défaut trouvé.</td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Footer / Pagination Info -->
+                            <div class="px-8 py-5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
+                                <p class="text-sm text-slate-500 font-medium italic">
+                                    <i class="fas fa-info-circle mr-1"></i> 
+                                    <span id="tableInfo">{{ $plansComptables->count() }} comptes affichés</span>
+                                </p>
+                            </div>
                         </div>
 
                     </div>
@@ -596,30 +552,35 @@
 
     <!-- Custom Logic for New Design -->
     <script>
-        // Fonction pour afficher les plans d'une compagnie spécifique
-        function showCompany(companyId) {
-            // Masquer tous les contenus de compagnie
-            document.querySelectorAll('.company-plans').forEach(el => {
-                el.style.display = 'none';
-            });
-            
-            // Afficher uniquement la compagnie sélectionnée
-            const companyElement = document.getElementById('company-' + companyId);
-            if (companyElement) {
-                companyElement.style.display = 'block';
+        // Initialisation de DataTables pour la table des plans comptables
+        document.addEventListener("DOMContentLoaded", function() {
+            if (typeof $ !== 'undefined' && $.fn.DataTable) {
+                $('#planComptableTable').DataTable({
+                    dom: 't',
+                    pageLength: 25,
+                    order: [[0, 'asc']], // Trier par numéro de compte par défaut
+                    language: {
+                        search: "Rechercher:",
+                        zeroRecords: "Aucun compte trouvé",
+                        info: "Affichage de _START_ à _END_ sur _TOTAL_ comptes",
+                        infoEmpty: "Aucun compte disponible",
+                        infoFiltered: "(filtré sur _MAX_ comptes au total)",
+                        paginate: {
+                            first: "Premier",
+                            last: "Dernier",
+                            next: "Suivant",
+                            previous: "Précédent"
+                        }
+                    },
+                    columnDefs: [
+                        { width: "15%", targets: 0 }, // Numéro de compte
+                        { width: "55%", targets: 1 }, // Intitulé
+                        { width: "15%", targets: 2 }, // Type
+                        { width: "15%", targets: 3 }  // Date
+                    ]
+                });
             }
-            
-            // Mettre à jour les boutons actifs
-            document.querySelectorAll('[data-company]').forEach(btn => {
-                if (btn.getAttribute('data-company') == companyId) {
-                    btn.classList.add('bg-blue-100', 'text-blue-700');
-                    btn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-50');
-                } else {
-                    btn.classList.remove('bg-blue-100', 'text-blue-700');
-                    btn.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-50');
-                }
-            });
-        }
+        });
 
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 SCRIPT PLAN COMPTABLE INITIALISÉ");
