@@ -6,6 +6,7 @@ use App\Models\PlanTiers;
 use App\Models\PlanComptable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Controller;
 
 class PlanTiersController extends Controller
 {
