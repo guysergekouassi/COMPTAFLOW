@@ -16,6 +16,9 @@ class PlanComptableController extends Controller
     public function index()
     {
         try {
+            // Récupérer l'utilisateur connecté
+            $user = Auth::user();
+            
             // Récupérer tous les plans comptables par défaut (adding_strategy = 'auto')
             $plansComptables = PlanComptable::where('adding_strategy', 'auto')
                 ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
@@ -34,7 +37,9 @@ class PlanComptableController extends Controller
                             [
                                 'intitule' => $intitule,
                                 'adding_strategy' => 'auto',
-                                'type_de_compte' => $this->determinerTypeCompte($numero)
+                                'type_de_compte' => $this->determinerTypeCompte($numero),
+                                'user_id' => $user->id,
+                                'company_id' => $user->company_id
                             ]
                         );
                     }

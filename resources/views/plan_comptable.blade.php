@@ -190,35 +190,35 @@
                         <!-- KPI Filters Section (Preserving functionality with new Look) -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <!-- Total -->
-                            <div class="glass-card p-6 filter-card flex items-center justify-between" id="filter-all">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Comptes</p>
-                                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ $totalPlans }}</h3>
+                            <div class="glass-card !p-6 flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="bx bx-layer text-2xl"></i>
                                 </div>
-                                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
-                                    <i class="bx bx-book-content text-2xl"></i>
+                                <div>
+                                    <p class="text-sm text-slate-500">Total des plans</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlans }}</h3>
                                 </div>
                             </div>
 
                             <!-- Manuel -->
-                            <div class="glass-card p-6 filter-card flex items-center justify-between" id="filter-manuel">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Créés Manuellement</p>
-                                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ $plansByUser }}</h3>
+                            <div class="glass-card !p-6 flex items-center">
+                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                                    <i class="bx bx-user text-2xl"></i>
                                 </div>
-                                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600">
-                                    <i class="bx bx-edit text-2xl"></i>
+                                <div>
+                                    <p class="text-sm text-slate-500">Plans par utilisateur</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansByUser }}</h3>
                                 </div>
                             </div>
 
                             <!-- Auto -->
-                            <div class="glass-card p-6 filter-card flex items-center justify-between" id="filter-auto">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">SYSCOHADA (Auto)</p>
-                                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ $plansSys }}</h3>
+                            <div class="glass-card !p-6 flex items-center">
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                                    <i class="bx bx-cog text-2xl"></i>
                                 </div>
-                                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
-                                    <i class="bx bx-check-shield text-2xl"></i>
+                                <div>
+                                    <p class="text-sm text-slate-500">Plans système</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
                                 </div>
                             </div>
                         </div>
