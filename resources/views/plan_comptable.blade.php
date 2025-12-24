@@ -342,10 +342,13 @@
                             </div>
                             <!-- Footer / Pagination Info -->
                             <div class="px-8 py-5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
-                                <p class="text-sm text-slate-500 font-medium italic">
+                                <div class="flex flex-col sm:flex-row items-center justify-between w-full gap-4">
+                                <p class="text-sm text-slate-500 font-medium italic table-info">
                                     <i class="fas fa-info-circle mr-1"></i> 
-                                    <span id="tableInfo">{{ $plansComptables->count() }} comptes affichés</span>
+                                    <span>{{ $plansComptables->count() }} comptes affichés</span>
                                 </p>
+                                <div class="pagination-container flex gap-2"></div>
+                            </div>
                             </div>
                         </div>
 
@@ -672,16 +675,16 @@
                         console.log("📊 Mise à jour pagination:", info);
 
                         if (info.recordsDisplay > 0) {
-                            $('#tableInfo-{{ $company->id }}').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
+                            $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
 
                             let paginationHtml = '';
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage-{{ $company->id }}" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
                             paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage-{{ $company->id }}" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                            $('#customPagination-{{ $company->id }}').html(paginationHtml);
+                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                            $('.pagination-container').html(paginationHtml);
                         } else {
-                            $('#tableInfo-{{ $company->id }}').html('Aucun compte trouvé');
-                            $('#customPagination-{{ $company->id }}').empty();
+                            $('.table-info').html('Aucun compte trouvé');
+                            $('.pagination-container').empty();
                         }
                     }
 
@@ -691,16 +694,17 @@
                         updatePagination();
                     });
 
-                    $(document).on('click', '#prevPage-{{ $company->id }}', function() { 
-                        table.page('previous').draw('page'); 
-                        updatePagination();
-                    });
                     
-                    $(document).on('click', '#nextPage-{{ $company->id }}', function() { 
+                    // Gestion de la pagination
+                    $(document).on('click', '#nextPage', function() { 
                         table.page('next').draw('page');
                         updatePagination();
                     });
-                    @endforeach
+                    
+                    $(document).on('click', '#prevPage', function() { 
+                        table.page('previous').draw('page');
+                        updatePagination();
+                    });
                 } else {
                     console.log("⏳ En attente de jQuery/DataTables...");
                     setTimeout(initDataTables, 1200);
