@@ -8,6 +8,7 @@ use App\Models\JournalSaisi;
 use App\Models\CodeJournal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Company;
 
