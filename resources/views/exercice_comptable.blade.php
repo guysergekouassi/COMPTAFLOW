@@ -92,12 +92,7 @@
                                 <!-- Table -->
 
                                 <script>
-                                    $(document).ready(function() {
-                                        $('#exerciceTable').DataTable({
-                                            pageLength: 10,
-                                            lengthMenu: [10, 15, 20, 25],
-                                            language: {
-                                                search: "Rechercher :",
+                                    // Suppression de l'initialisation en double de DataTable
                                                 lengthMenu: "Afficher _MENU_ lignes",
                                                 info: "Affichage de _START_ à _END_ sur _TOTAL_ lignes",
                                                 paginate: {
@@ -413,12 +408,11 @@
         // Initialisation du DataTable
         function initDataTable() {
             if ($.fn.DataTable.isDataTable('#exerciceTable')) {
-                $('#exerciceTable').DataTable().destroy();
+                dataTable.destroy();
             }
             
             dataTable = $('#exerciceTable').DataTable({
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json',
                     emptyTable: 'Aucune donnée disponible dans le tableau',
                     info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
                     infoEmpty: 'Affichage de 0 à 0 sur 0 entrées',
@@ -442,9 +436,21 @@
                 order: [[0, 'desc']],
                 pageLength: 10,
                 responsive: true,
-                autoWidth: false
+                autoWidth: false,
+                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
             });
+            
+            return dataTable;
         }
+        
+        // Initialiser le DataTable au chargement de la page
+        $(document).ready(function() {
+            // Vérifier si le tableau existe avant de l'initialiser
+            if ($('#exerciceTable').length) {
+                dataTable = initDataTable();
+            }
 
         // Formater une date au format jj/mm/aaaa
         function formatDate(dateString) {
@@ -656,6 +662,7 @@
                 }
             });
         }
+        });
     });
 </script>
 </body>
