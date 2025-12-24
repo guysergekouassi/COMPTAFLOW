@@ -574,8 +574,18 @@
             formExercice.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
+                console.log('Soumission du formulaire déclenchée');
                 const submitButton = this.querySelector('button[type="submit"]');
                 const originalText = submitButton.innerHTML;
+                
+                // Créer un objet FormData pour le formulaire
+                const formData = new FormData(this);
+                
+                // Afficher les données du formulaire dans la console
+                console.log('Données du formulaire :');
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
                 
                 try {
                     // Désactiver le bouton pendant la soumission
@@ -588,10 +598,8 @@
                     // Récupérer le token CSRF
                     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                     
-                    // Créer un objet FormData
-                    const formData = new FormData(this);
-                    
-                    // Envoyer la requête
+                    // Envoyer la requête avec l'objet FormData existant
+                    console.log('Envoi de la requête à', this.action);
                     const response = await fetch(this.action, {
                         method: 'POST',
                         headers: {
@@ -601,8 +609,10 @@
                         },
                         body: formData
                     });
-
+                    
+                    console.log('Réponse reçue, statut:', response.status);
                     const data = await response.json();
+                    console.log('Données de la réponse:', data);
 
                     if (!response.ok) {
                         // Gestion des erreurs de validation

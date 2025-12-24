@@ -52,6 +52,7 @@ class ExerciceComptableController extends Controller
     // recreer
     public function store(Request $request)
     {
+        \Log::info('Début de la méthode store', ['request' => $request->all()]);
         try {
             // Validation des données
             $validated = $request->validate([
@@ -88,6 +89,14 @@ class ExerciceComptableController extends Controller
             }
 
             // Création de l'exercice
+            \Log::info('Création de l\'exercice avec les données', [
+                'date_debut' => $request->date_debut,
+                'date_fin' => $request->date_fin,
+                'intitule' => $request->intitule,
+                'user_id' => $user->id,
+                'company_id' => $companyId,
+            ]);
+            
             $exercice = ExerciceComptable::create([
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
