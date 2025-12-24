@@ -9,20 +9,26 @@ use Illuminate\Support\Facades\Auth;
 
 class PlanTiersController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login');
+        }
         try {
             $comptesGeneraux = PlanComptable::where('numero_de_compte', 'LIKE', '4%')
                 ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
                 ->get();
 
             // Récupère les plans tiers avec leurs comptes associés, triés par numero_de_tiers
-            // $tiers = PlanTiers::with('compte')
-            //     ->where('company_id', $user->company_id)
-            //     ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
-            //     ->get();
-
             $tiers = PlanTiers::with('compte')
+                ->where('company_id', $user->company_id)
                 ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
                 ->get();
 
