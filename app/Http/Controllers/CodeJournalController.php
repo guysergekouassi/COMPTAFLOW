@@ -102,6 +102,8 @@ public function index()
             }
 
             $intitule_formate = ucfirst(strtolower($request->intitule));
+            $user = Auth::user();
+            $currentCompanyId = session('current_company_id', $user->company_id);
 
             CodeJournal::create([
                 'code_journal' => strtoupper($request->code_journal),
@@ -111,7 +113,8 @@ public function index()
                 'compte_de_contrepartie' => $request->compte_de_contrepartie,
                 'compte_de_tresorerie' => $request->compte_de_tresorerie,
                 'rapprochement_sur' => $request->rapprochement_sur,
-                // user_id et company_id gérés auto
+                'user_id' => $user->id,
+                'company_id' => $currentCompanyId,
             ]);
 
             return redirect()->back()->with('success', 'Code journal créé avec succès.');
