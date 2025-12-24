@@ -117,6 +117,7 @@
                                                 <th>Date de fin</th>
                                                 <th>Intitulé</th>
                                                 <th>Nombre de mois</th>
+                                                <th>Nombre de journaux</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -456,20 +457,49 @@
         function addRowToTable(exercice) {
             if (!dataTable) return;
             
+            // Créer la ligne avec toutes les colonnes nécessaires
             const rowNode = dataTable.row.add([
                 formatDate(exercice.date_debut),
                 formatDate(exercice.date_fin),
                 exercice.intitule || 'N/A',
-                exercice.nb_mois || 0,
-                exercice.nombre_journaux_saisis || 0,
+                exercice.nb_mois ? parseFloat(exercice.nb_mois).toFixed(2).replace(/\.?0+$/, '') : '0',
+                exercice.nombre_journaux_saisis || '0',
                 `
                 <div class="d-flex gap-2">
-                    <button class="btn p-0 border-0 bg-transparent text-danger" 
-                            onclick="deleteExercice(${exercice.id})"
-                            data-bs-toggle="tooltip" 
-                            title="Supprimer">
-                        <i class="ti ti-trash"></i>
+                    <button type="button"
+                            class="btn p-0 border-0 bg-transparent text-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteConfirmationModal"
+                            data-id="${exercice.id}"
+                            data-label="${exercice.intitule || 'cet exercice'}">
+                        <i class="bx bx-trash fs-5"></i>
                     </button>
+                    
+                    <button type="button"
+                            class="btn p-0 border-0 bg-transparent text-success show-accounting-entries"
+                            data-bs-placement="top" 
+                            title="Afficher les journaux"
+                            data-id="${exercice.id}"
+                            data-date_debut="${exercice.date_debut}"
+                            data-date_fin="${exercice.date_fin}"
+                            data-intitule="${exercice.intitule || ''}">
+                        <i class='bx bx-pencil'></i>
+                    </button>
+                    
+                    ${exercice.cloturer !== undefined && exercice.cloturer === 0 ? `
+                    <button type="button"
+                            class="btn p-0 border-0 bg-transparent text-warning open-cloture-modal"
+                            data-bs-target="#clotureConfirmationModal"
+                            data-bs-toggle="modal" 
+                            data-bs-placement="top"
+                            title="Cloturer l'exercice"
+                            data-id="${exercice.id}"
+                            data-date_debut="${exercice.date_debut}"
+                            data-date_fin="${exercice.date_fin}"
+                            data-intitule="${exercice.intitule || ''}">
+                        <i class='bx bx-lock-open-alt'></i>
+                    </button>
+                    ` : ''}
                 </div>
                 `
             ]).draw(false).node();
@@ -478,12 +508,18 @@
             $(rowNode).css('background-color', '#e8f5e9');
             setTimeout(() => {
                 $(rowNode).css('background-color', '');
-                // Activer les tooltips
+                
+                // Réinitialiser les tooltips
                 const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
                 tooltipTriggerList.map(function (tooltipTriggerEl) {
                     return new bootstrap.Tooltip(tooltipTriggerEl);
                 });
+                
+                // Réinitialiser les gestionnaires d'événements pour les boutons
+                initializeEventHandlers();
             }, 100);
+            
+            return rowNode;
         }
 
         // Afficher une alerte
@@ -637,8 +673,52 @@
             dateFinInput.addEventListener('input', genererIntitule);
         }
 
-        // Initialiser le DataTable
-        initDataTable();
+        // Fonction pour initialiser les gestionnaires d'événements
+        function initializeEventHandlers() {
+            // Gestionnaire pour le bouton de suppression
+            document.querySelectorAll('[data-bs-target="#deleteConfirmationModal"]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const label = this.getAttribute('data-label') || 'cet exercice';
+                    
+                    const form = document.getElementById('deleteForm');
+                    if (form) {
+                        form.action = exercice_comptableDeleteUrl.replace('__ID__', id);
+                    }
+                    
+                    const modalLabel = document.getElementById('deleteModalLabel');
+                    if (modalLabel) {
+                        modalLabel.textContent = `Supprimer ${label}`;
+                    }
+                });
+            });
+            
+            // Gestionnaire pour le bouton de clôture
+            document.querySelectorAll('.open-cloture-modal').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const label = this.getAttribute('data-intitule') || 'cet exercice';
+                    
+                    const form = document.getElementById('clotureForm');
+                    if (form) {
+                        form.action = exercice_comptableCloturerUrl.replace('__ID__', id);
+                    }
+                    
+                    const modalLabel = document.getElementById('clotureModalLabel');
+                    if (modalLabel) {
+                        modalLabel.textContent = `Clôturer ${label}`;
+                    }
+                });
+            });
+        }
+        
+        // Initialiser le DataTable et les gestionnaires d'événements
+        $(document).ready(function() {
+            if ($('#exerciceTable').length) {
+                dataTable = initDataTable();
+                initializeEventHandlers();
+            }
+        });
 
         // Gestion de la fermeture du modal
         if (modalCreate) {

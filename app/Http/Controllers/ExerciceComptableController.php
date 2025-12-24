@@ -115,7 +115,8 @@ class ExerciceComptableController extends Controller
                     'date_fin' => $exercice->date_fin,
                     'intitule' => $exercice->intitule,
                     'nb_mois' => $nbMois,
-                    'nombre_journaux_saisis' => 0
+                    'nombre_journaux_saisis' => 0,
+                    'cloturer' => 0 // Ajout de la propriété cloturer
                 ]
             ]);
 
