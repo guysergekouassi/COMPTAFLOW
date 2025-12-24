@@ -115,8 +115,12 @@ class ExerciceComptableController extends Controller
             $dateDebut = Carbon::parse($exercice->date_debut);
             $dateFin = Carbon::parse($exercice->date_fin);
             $nbMois = $dateDebut->diffInMonths($dateFin) + 1;
-
-            return response()->json([
+            
+            // Mettre à jour l'exercice avec le nombre de mois calculé
+            $exercice->update(['nb_mois' => $nbMois]);
+            
+            // Préparer la réponse
+            $response = [
                 'success' => true,
                 'message' => 'Exercice comptable créé avec succès',
                 'exercice' => [
@@ -126,9 +130,25 @@ class ExerciceComptableController extends Controller
                     'intitule' => $exercice->intitule,
                     'nb_mois' => $nbMois,
                     'nombre_journaux_saisis' => 0,
-                    'cloturer' => 0 // Ajout de la propriété cloturer
+                    'cloturer' => 0
                 ]
-            ]);
+            ];
+            
+            // Retourner la vue avec les données mises à jour pour les requêtes non-AJAX
+            if (!$request->ajax()) {
+                $exercices = ExerciceComptable::where('company_id', $companyId)
+                    ->orderBy('date_debut', 'desc')
+                    ->get();
+                    
+                return view('exercice_comptable', [
+                    'exercices' => $exercices,
+                    'code_journaux' => CodeJournal::all(),
+                    'success' => $response['message']
+                ]);
+            }
+            
+            // Pour les requêtes AJAX, retourner la réponse JSON
+            return response()->json($response);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([

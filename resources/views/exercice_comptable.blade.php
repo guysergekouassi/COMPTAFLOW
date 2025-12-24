@@ -176,8 +176,7 @@
                             <!-- Modal Creation Ecriture-->
                             <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
-                                    <form id="formCreateExercice" method="POST"
-                                        action="{{ route('exercice_comptable.store') }}">
+                                    <form id="formCreateExercice" action="{{ route('exercice_comptable.store') }}" method="POST" class="needs-validation" novalidate>
                                         @csrf
                                         <div class="modal-content">
                                             <div class="modal-header">
@@ -451,7 +450,7 @@
                     intitule: exercice.intitule || 'N/A',
                     nb_mois: exercice.nb_mois || 0,
                     nombre_journaux_saisis: exercice.nombre_journaux_saisis || 0,
-                    cloturer: exercice.cloturer || false
+                    cloturer: exercice.cloturer !== undefined ? Boolean(exercice.cloturer) : false
                 };
                 
                 console.log('Données formatées pour la nouvelle ligne:', exerciceData);
@@ -591,107 +590,123 @@
         // Gestion de la soumission du formulaire
         if (formExercice) {
             formExercice.addEventListener('submit', async function(e) {
-                e.preventDefault();
+                // Ne pas empêcher le comportement par défaut si JavaScript est désactivé
+                const isAjax = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest();
                 
-                console.log('Soumission du formulaire déclenchée');
-                const submitButton = this.querySelector('button[type="submit"]');
-                const originalText = submitButton.innerHTML;
-                
-                // Créer un objet FormData pour le formulaire
-                const formData = new FormData(this);
-                
-                // Afficher les données du formulaire dans la console
-                console.log('Données du formulaire :');
-                for (let [key, value] of formData.entries()) {
-                    console.log(`${key}: ${value}`);
-                }
-                
-                try {
-                    // Désactiver le bouton pendant la soumission
-                    submitButton.disabled = true;
-                    submitButton.innerHTML = `
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        Enregistrement...
-                    `;
+                if (isAjax) {
+                    e.preventDefault();
                     
-                    // Récupérer le token CSRF
-                    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    console.log('Soumission AJAX du formulaire');
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const originalText = submitButton.innerHTML;
                     
-                    // Envoyer la requête avec l'objet FormData existant
-                    console.log('Envoi de la requête à', this.action);
-                    const response = await fetch(this.action, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': token,
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: formData
-                    });
+                    // Créer un objet FormData pour le formulaire
+                    const formData = new FormData(this);
+                    
+                    // Afficher les données du formulaire dans la console
+                    console.log('Données du formulaire :');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}: ${value}`);
+                    }
+                    
+                    try {
+                        // Désactiver le bouton pendant la soumission
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = `
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Enregistrement...
+                        `;
+                        
+                        // Récupérer le token CSRF
+                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                        
+                        // Envoyer la requête avec l'objet FormData existant
+                        console.log('Envoi de la requête AJAX à', this.action);
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': token,
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: formData
+                        });
                     
                     console.log('Réponse reçue, statut:', response.status);
                     const data = await response.json();
                     console.log('Données de la réponse:', data);
 
-                    if (!response.ok) {
-                        // Gestion des erreurs de validation
-                        if (response.status === 422 && data.errors) {
-                            // Réinitialiser les états d'erreur précédents
-                            document.querySelectorAll('.is-invalid').forEach(el => {
-                                el.classList.remove('is-invalid');
-                            });
-                            document.querySelectorAll('.invalid-feedback').forEach(el => {
-                                el.remove();
-                            });
-                            
-                            // Afficher les erreurs de validation
-                            let errorMessages = [];
-                            
-                            for (const [field, messages] of Object.entries(data.errors)) {
-                                const input = document.querySelector(`[name="${field}"]`);
-                                if (input) {
-                                    input.classList.add('is-invalid');
-                                    const errorDiv = document.createElement('div');
-                                    errorDiv.className = 'invalid-feedback';
-                                    errorDiv.textContent = messages[0];
-                                    input.parentNode.appendChild(errorDiv);
-                                    errorMessages.push(messages[0]);
+                        if (!response.ok) {
+                            // Gestion des erreurs de validation
+                            const data = await response.json();
+                            if (response.status === 422 && data.errors) {
+                                // Réinitialiser les états d'erreur précédents
+                                document.querySelectorAll('.is-invalid').forEach(el => {
+                                    el.classList.remove('is-invalid');
+                                });
+                                document.querySelectorAll('.invalid-feedback').forEach(el => {
+                                    el.remove();
+                                });
+                                
+                                // Afficher les erreurs de validation
+                                let errorMessages = [];
+                                
+                                for (const [field, messages] of Object.entries(data.errors)) {
+                                    const input = document.querySelector(`[name="${field}"]`);
+                                    if (input) {
+                                        input.classList.add('is-invalid');
+                                        const errorDiv = document.createElement('div');
+                                        errorDiv.className = 'invalid-feedback';
+                                        errorDiv.textContent = messages[0];
+                                        input.parentNode.appendChild(errorDiv);
+                                        errorMessages.push(messages[0]);
+                                    }
                                 }
-                            }
-                            
-                            if (errorMessages.length > 0) {
-                                showAlert('danger', errorMessages.join('<br>'));
+                                
+                                if (errorMessages.length > 0) {
+                                    showAlert('danger', errorMessages.join('<br>'));
+                                } else {
+                                    showAlert('danger', 'Veuillez corriger les erreurs dans le formulaire.');
+                                }
                             } else {
-                                showAlert('danger', 'Veuillez corriger les erreurs dans le formulaire.');
+                                throw new Error(data.message || 'Une erreur est survenue');
                             }
+                            return;
+                        }
+
+                        const data = await response.json();
+                        console.log('Réponse du serveur:', data);
+
+                        if (data.success) {
+                            // Ajouter la nouvelle ligne au tableau
+                            addRowToTable(data.exercice);
+                            
+                            // Afficher un message de succès
+                            showAlert('success', data.message || 'Exercice enregistré avec succès');
+                            
+                            // Fermer le modal et réinitialiser le formulaire
+                            if (modalInstance) {
+                                modalInstance.hide();
+                            }
+                            this.reset();
                         } else {
                             throw new Error(data.message || 'Une erreur est survenue');
                         }
-                        return;
-                    }
-
-                    if (data.success) {
-                        // Ajouter la nouvelle ligne au tableau
-                        addRowToTable(data.exercice);
-                        
-                        // Afficher un message de succès
-                        showAlert('success', data.message || 'Exercice enregistré avec succès');
-                        
-                        // Fermer le modal et réinitialiser le formulaire
-                        if (modalInstance) {
-                            modalInstance.hide();
+                    } catch (error) {
+                        console.error('Erreur:', error);
+                        showAlert('danger', error.message || 'Une erreur est survenue lors de l\'enregistrement');
+                    } finally {
+                        // Réactiver le bouton
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = originalText;
                         }
-                        this.reset();
-                    } else {
-                        throw new Error(data.message || 'Une erreur est survenue');
                     }
-                } catch (error) {
-                    console.error('Erreur:', error);
-                    showAlert('danger', error.message || 'Une erreur est survenue lors de l\'enregistrement');
-                } finally {
-                    // Réactiver le bouton
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalText;
+                } else {
+                    // Soumission normale du formulaire (sans AJAX)
+                    console.log('Soumission normale du formulaire');
+                    // La validation HTML5 s'occupera de la validation côté client
+                    // Le serveur gérera la redirection et l'affichage des messages
                 }
             });
         }
