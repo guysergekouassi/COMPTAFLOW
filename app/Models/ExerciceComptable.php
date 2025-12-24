@@ -14,7 +14,13 @@ class ExerciceComptable extends Model
 {
     use HasFactory, BelongsToTenant;
     protected $table = 'exercices_comptables';
-
+    
+    public static $rules = [
+        'date_debut' => 'required|date',
+        'date_fin' => 'required|date|after_or_equal:date_debut',
+        'intitule' => 'required|string|max:255',
+    ];
+    
     protected $fillable = [
         'date_debut',
         'date_fin',
@@ -24,6 +30,11 @@ class ExerciceComptable extends Model
         'user_id',
         'company_id',
     ];
+    
+    public function scopeForCompany($query, $companyId = null)
+    {
+        return $query->where('company_id', $companyId ?? auth()->user()->company_id);
+    }
 
     /**
      * Relation avec les journaux saisis

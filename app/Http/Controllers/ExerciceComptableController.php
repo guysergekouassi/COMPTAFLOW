@@ -55,23 +55,34 @@ class ExerciceComptableController extends Controller
     public function store(Request $request)
     {
         logger('Début de la méthode store', ['request' => $request->all()]);
+        
         try {
-            // Validation des données
-            $validated = $request->validate([
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after_or_equal:date_debut',
-                'intitule' => 'nullable|string|max:255',
-            ], [
+            // Validation des données de base
+            $validated = $request->validate(ExerciceComptable::$rules, [
                 'date_debut.required' => 'La date de début est obligatoire',
                 'date_fin.required' => 'La date de fin est obligatoire',
                 'date_fin.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début',
-                'intitule.max' => 'L\'intitulé ne doit pas dépasser 255 caractères'
+                'intitule.required' => 'L\'intitulé est obligatoire',
+                'intitule.max' => 'L\'intitulé ne doit pas dépasser 255 caractères',
+                'intitule.unique' => 'Un exercice avec cet intitulé existe déjà pour cette période'
             ]);
-
-            // Vérification des chevauchements
+            
             $user = Auth::user();
             $companyId = $user->company_id;
             
+            // Vérification de l'unicité de l'intitulé pour cette entreprise
+            $existingExercice = ExerciceComptable::where('company_id', $companyId)
+                ->where('intitule', $request->intitule)
+                ->first();
+                
+            if ($existingExercice) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Un exercice avec le même intitulé existe déjà.'
+                ], 422);
+            }
+
+            // Vérification des chevauchements de dates
             $overlap = ExerciceComptable::where('company_id', $companyId)
                 ->where(function($query) use ($request) {
                     $query->whereBetween('date_debut', [$request->date_debut, $request->date_fin])
@@ -86,7 +97,7 @@ class ExerciceComptableController extends Controller
             if ($overlap) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Les dates de l\'exercice se chevauchent avec un exercice existant.'
+                    'message' => 'Un exercice existe déjà sur cette période.'
                 ], 422);
             }
 
