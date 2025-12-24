@@ -13,11 +13,18 @@ use App\Models\Company;
 
 class ExerciceComptableController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
 
-
-public function index()
-{
-    $user = Auth::user();
+    public function index()
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
     // La requête est automatiquement filtrée par TenantScope (Session active)
     $exercices = ExerciceComptable::orderBy('date_debut', 'desc')
