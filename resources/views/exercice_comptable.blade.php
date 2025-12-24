@@ -115,8 +115,8 @@
                                             <tr>
                                                 <th>Date de debut</th>
                                                 <th>Date de fin</th>
+                                                <th>Intitulé</th>
                                                 <th>Nombre de mois</th>
-                                                <th>Nombre de journaux</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -127,15 +127,8 @@
                                                     </td>
                                                     <td>{{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}
                                                     </td>
-                                                    <td>
-                                                        {{ $exercice->nb_mois }}
-                                                    </td>
-
-
-
-
-
-                                                    <td>{{ $exercice->nombre_journaux_saisis }}</td>
+                                                    <td>{{ $exercice->intitule ?? 'N/A' }}</td>
+                                                    <td>{{ number_format($exercice->nb_mois, 2, ',', ' ') }}</td>
                                                     <td>
                                                         <div class="d-flex gap-2">
 
