@@ -554,8 +554,11 @@
     <script>
         // Initialisation de DataTables pour la table des plans comptables
         document.addEventListener("DOMContentLoaded", function() {
+            let table;
+            
             if (typeof $ !== 'undefined' && $.fn.DataTable) {
-                $('#planComptableTable').DataTable({
+                // Initialisation du DataTable
+                table = $('#planComptableTable').DataTable({
                     dom: 't',
                     pageLength: 25,
                     order: [[0, 'asc']], // Trier par numéro de compte par défaut
@@ -579,64 +582,78 @@
                         { width: "15%", targets: 3 }  // Date
                     ]
                 });
+
+                // 2. Filtres
+                function applyCustomFilters() {
+                    table.column(0).search($('#filterNumero').val()).draw();
+                    table.column(1).search($('#filterIntitule').val()).draw();
+                    table.column(3).search($('#filterClasse').val()).draw();
+                }
+
+            $('#filterNumero, #filterIntitule, #filterClasse').on('keyup', applyCustomFilters);
+
+            // Boutons
+            $('#applyFilterBtn').on('click', function(e) {
+                e.preventDefault();
+                applyCustomFilters();
+            });
+
+            $('#resetFilterBtn').on('click', function(e) {
+                e.preventDefault();
+                $('#filterNumero').val('');
+                $('#filterIntitule').val('');
+                $('#filterClasse').val('');
+                applyCustomFilters();
+            });
+
+            // 3. Toggle Button
+            $('#toggleFilterBtn').on('click', function(e) {
+                 e.preventDefault();
+                 const panel = $('#advancedFilterPanel');
+                 if(panel.hasClass('hidden')) {
+                     panel.removeClass('hidden');
+                     $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
+                 } else {
+                     panel.addClass('hidden');
+                     $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
+                 }
+            });
+
+            // 4. KPI Cards
+            function activateCard(cardId) {
+                $('.filter-card').removeClass('filter-active');
+                $(`${cardId}`).addClass('filter-active');
             }
-        });
 
-        document.addEventListener("DOMContentLoaded", function() {
-            console.log("🚀 SCRIPT PLAN COMPTABLE INITIALISÉ");
-
-            // Initialiser DataTables pour chaque tableau de compagnie
-            const initDataTables = () => {
-                if (typeof $ !== 'undefined' && $.fn.dataTable) {
-                    console.log("✅ DataTables chargé et prêt !");
-                    
-                    // Initialiser un DataTable pour chaque compagnie
-                    @foreach($companies as $company)
-                        $('#planComptableTable-{{ $company->id }}').DataTable({
-                            dom: 't',
-                            pageLength: 5,
-                        destroy: true,
-                        stateSave: false,
-                        language: {
-                            zeroRecords: "Aucune donnée trouvée",
-                            infoEmpty: "Aucune donnée à afficher"
-                        }
-                    });
-
-                    // 2. Filtres
-                    function applyCustomFilters() {
-                        table.column(0).search($('#filterNumero').val()).draw();
-                        table.column(1).search($('#filterIntitule').val()).draw();
-                        table.column(3).search($('#filterClasse').val()).draw();
-                    }
-
-                    $('#filterNumero, #filterIntitule, #filterClasse').on('keyup', applyCustomFilters);
-
-                    // Boutons
-                    $('#applyFilterBtn').on('click', function(e) {
-                        e.preventDefault();
-                        applyCustomFilters();
-                    });
-
-                    $('#resetFilterBtn').on('click', function(e) {
-                        e.preventDefault();
-                        $('#filterNumero').val('');
-                        $('#filterIntitule').val('');
-                        $('#filterClasse').val('');
-                        applyCustomFilters();
-                    });
-
-                    // 3. Toggle Button
-                    $('#toggleFilterBtn').on('click', function(e) {
-                         e.preventDefault();
-                         const panel = $('#advancedFilterPanel');
-                         if(panel.hasClass('hidden')) {
-                             panel.removeClass('hidden');
-                             $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
-                         } else {
-                             panel.addClass('hidden');
-                             $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
-                         }
+            // Gestion des filtres
+            if (table) {
+                $('#filter-all').on('click', function() { 
+                    table.column(2).search('').draw(); 
+                    activateCard('#filter-all'); 
+                });
+                
+                $('#filter-manuel').on('click', function() { 
+                    table.column(2).search('manuel').draw(); 
+                    activateCard('#filter-manuel'); 
+                });
+                
+                $('#filter-auto').on('click', function() { 
+                    table.column(2).search('auto').draw(); 
+                    activateCard('#filter-auto'); 
+                });
+            }
+            
+            // Gestion du panneau de filtre avancé
+            $('#toggleFilterBtn').on('click', function(e) {
+                e.preventDefault();
+                const panel = $('#advancedFilterPanel');
+                if(panel.hasClass('hidden')) {
+                    panel.removeClass('hidden');
+                    $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
+                } else {
+                    panel.addClass('hidden');
+                    $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
+                }
                     });
 
                     // 4. KPI Cards
