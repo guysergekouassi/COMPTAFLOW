@@ -432,71 +432,94 @@
 
         // Ajouter une ligne au DataTable
         function addRowToTable(exercice) {
-            if (!dataTable) return;
+            if (!dataTable) {
+                console.error('DataTable non initialisée');
+                return;
+            }
             
-            // Créer la ligne avec toutes les colonnes nécessaires
-            const rowNode = dataTable.row.add([
-                formatDate(exercice.date_debut),
-                formatDate(exercice.date_fin),
-                exercice.intitule || 'N/A',
-                exercice.nb_mois ? parseFloat(exercice.nb_mois).toFixed(2).replace(/\.?0+$/, '') : '0',
-                exercice.nombre_journaux_saisis || '0',
-                `
-                <div class="d-flex gap-2">
-                    <button type="button"
-                            class="btn p-0 border-0 bg-transparent text-danger"
-                            data-bs-toggle="modal"
-                            data-bs-target="#deleteConfirmationModal"
-                            data-id="${exercice.id}"
-                            data-label="${exercice.intitule || 'cet exercice'}">
-                        <i class="bx bx-trash fs-5"></i>
-                    </button>
-                    
-                    <button type="button"
-                            class="btn p-0 border-0 bg-transparent text-success show-accounting-entries"
-                            data-bs-placement="top" 
-                            title="Afficher les journaux"
-                            data-id="${exercice.id}"
-                            data-date_debut="${exercice.date_debut}"
-                            data-date_fin="${exercice.date_fin}"
-                            data-intitule="${exercice.intitule || ''}">
-                        <i class='bx bx-pencil'></i>
-                    </button>
-                    
-                    ${exercice.cloturer !== undefined && exercice.cloturer === 0 ? `
-                    <button type="button"
-                            class="btn p-0 border-0 bg-transparent text-warning open-cloture-modal"
-                            data-bs-target="#clotureConfirmationModal"
-                            data-bs-toggle="modal" 
-                            data-bs-placement="top"
-                            title="Cloturer l'exercice"
-                            data-id="${exercice.id}"
-                            data-date_debut="${exercice.date_debut}"
-                            data-date_fin="${exercice.date_fin}"
-                            data-intitule="${exercice.intitule || ''}">
-                        <i class='bx bx-lock-open-alt'></i>
-                    </button>
-                    ` : ''}
-                </div>
-                `
-            ]).draw(false).node();
-            
-            // Animation de la nouvelle ligne
-            $(rowNode).css('background-color', '#e8f5e9');
-            setTimeout(() => {
-                $(rowNode).css('background-color', '');
+            try {
+                // Formater le nombre de mois avec 2 décimales
+                const nbMois = exercice.nb_mois ? parseFloat(exercice.nb_mois).toFixed(2).replace(/\.?0+$/, '') : '0';
                 
-                // Réinitialiser les tooltips
-                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                tooltipTriggerList.map(function (tooltipTriggerEl) {
-                    return new bootstrap.Tooltip(tooltipTriggerEl);
-                });
+                // Créer la ligne avec toutes les colonnes nécessaires
+                const rowNode = dataTable.row.add([
+                    formatDate(exercice.date_debut),
+                    formatDate(exercice.date_fin),
+                    exercice.intitule || 'N/A',
+                    nbMois,
+                    exercice.nombre_journaux_saisis || '0',
+                    `
+                    <div class="d-flex gap-2">
+                        <button type="button"
+                                class="btn p-0 border-0 bg-transparent text-primary view-btn"
+                                data-id="${exercice.id}"
+                                data-bs-toggle="tooltip"
+                                title="Voir">
+                            <i class="bx bx-show"></i>
+                        </button>
+                        <button type="button"
+                                class="btn p-0 border-0 bg-transparent text-warning edit-btn"
+                                data-id="${exercice.id}"
+                                data-bs-toggle="tooltip"
+                                title="Modifier">
+                            <i class="bx bx-edit-alt"></i>
+                        </button>
+                        ${exercice.cloturer ? '' : `
+                            <button type="button"
+                                    class="btn p-0 border-0 bg-transparent text-danger delete-btn"
+                                    data-id="${exercice.id}"
+                                    data-label="${exercice.intitule || 'cet exercice'}"
+                                    data-type="delete"
+                                    data-bs-toggle="tooltip"
+                                    title="Supprimer">
+                                <i class="bx bx-trash"></i>
+                            </button>
+                            <button type="button"
+                                    class="btn p-0 border-0 bg-transparent text-success cloturer-btn"
+                                    data-id="${exercice.id}"
+                                    data-label="${exercice.intitule || 'cet exercice'}"
+                                    data-type="cloture"
+                                    data-bs-toggle="tooltip"
+                                    title="Clôturer">
+                                <i class="bx bx-lock-alt"></i>
+                            </button>`
+                        }
+                        ${!exercice.cloturer ? '' : `
+                            <button type="button"
+                                    class="btn p-0 border-0 bg-transparent text-secondary"
+                                    disabled
+                                    data-bs-toggle="tooltip"
+                                    title="Exercice clôturé">
+                                <i class="bx bx-lock"></i>
+                                <i class='bx bx-lock'></i>
+                            </button>`
+                        }
+                    </div>
+                    `
+                ]).draw(false).node();
                 
-                // Réinitialiser les gestionnaires d'événements pour les boutons
-                initializeEventHandlers();
-            }, 100);
-            
-            return rowNode;
+                // Animation de la nouvelle ligne
+                if (rowNode) {
+                    $(rowNode).css('background-color', '#e8f5e9');
+                    setTimeout(() => {
+                        $(rowNode).css('background-color', '');
+                        
+                        // Réinitialiser les tooltips
+                        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                        tooltipTriggerList.map(function (tooltipTriggerEl) {
+                            return new bootstrap.Tooltip(tooltipTriggerEl);
+                        });
+                        
+                        // Réinitialiser les gestionnaires d'événements pour les boutons
+                        initializeEventHandlers();
+                    }, 100);
+                }
+                
+                return rowNode;
+            } catch (error) {
+                console.error('Erreur lors de l\'ajout de la ligne au tableau:', error);
+                return null;
+            }
         }
 
         // Afficher une alerte
