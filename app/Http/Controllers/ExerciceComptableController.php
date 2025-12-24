@@ -53,44 +53,27 @@ class ExerciceComptableController extends Controller
     public function store(Request $request)
     {
         try {
-            // 1️⃣ Validation
+            // Validation des données
             $validated = $request->validate([
-                'date_debut' => [
-                    'required',
-                    'date',
-                    function ($attribute, $value, $fail) {
-                        if (strtotime($value) === false) {
-                            $fail('La date de début n\'est pas une date valide.');
-                        }
-                    },
-                ],
-                'date_fin' => [
-                    'required',
-                    'date',
-                    function ($attribute, $value, $fail) use ($request) {
-                        if (strtotime($value) === false) {
-                            $fail('La date de fin n\'est pas une date valide.');
-                            return;
-                        }
-                        if (strtotime($value) < strtotime($request->date_debut)) {
-                            $fail('La date de fin doit être postérieure ou égale à la date de début.');
-                        }
-                    },
-                ],
+                'date_debut' => 'required|date',
+                'date_fin' => 'required|date|after_or_equal:date_debut',
                 'intitule' => 'nullable|string|max:255',
             ], [
                 'date_debut.required' => 'La date de début est obligatoire',
                 'date_fin.required' => 'La date de fin est obligatoire',
-                'date_fin.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début'
+                'date_fin.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début',
+                'intitule.max' => 'L\'intitulé ne doit pas dépasser 255 caractères'
             ]);
 
-            // 2️⃣ Vérification du chevauchement (filtré par company_id)
-            $companyId = Auth::user()->company_id;
+            // Vérification des chevauchements
+            $user = Auth::user();
+            $companyId = $user->company_id;
+            
             $overlap = ExerciceComptable::where('company_id', $companyId)
-                ->where(function ($query) use ($request) {
+                ->where(function($query) use ($request) {
                     $query->whereBetween('date_debut', [$request->date_debut, $request->date_fin])
                         ->orWhereBetween('date_fin', [$request->date_debut, $request->date_fin])
-                        ->orWhere(function ($q) use ($request) {
+                        ->orWhere(function($q) use ($request) {
                             $q->where('date_debut', '<=', $request->date_debut)
                               ->where('date_fin', '>=', $request->date_fin);
                         });
@@ -104,24 +87,24 @@ class ExerciceComptableController extends Controller
                 ], 422);
             }
 
-            // 3️⃣ Création de l'exercice avec user_id et company_id
+            // Création de l'exercice
             $exercice = ExerciceComptable::create([
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
                 'intitule' => $request->intitule,
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
                 'company_id' => $companyId,
             ]);
 
-            // 4️⃣ Génération automatique des journaux pour cet exercice
+            // Génération des journaux si la méthode existe
             if (method_exists($exercice, 'syncJournaux')) {
                 $exercice->syncJournaux();
             }
 
-            // Préparer les données pour la réponse
+            // Calcul du nombre de mois
             $dateDebut = Carbon::parse($exercice->date_debut);
             $dateFin = Carbon::parse($exercice->date_fin);
-            $nbMois = (int) $dateDebut->diffInMonths($dateFin) + 1;
+            $nbMois = $dateDebut->diffInMonths($dateFin) + 1;
 
             return response()->json([
                 'success' => true,
