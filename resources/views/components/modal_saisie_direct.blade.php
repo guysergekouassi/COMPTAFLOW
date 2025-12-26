@@ -1,4 +1,5 @@
 
+
 {{-- modal direct --}}
 <div class="modal fade" id="saisieRedirectModal" tabindex="-1" aria-labelledby="saisieRedirectModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -12,16 +13,15 @@
                     {{-- Section Exercice --}}
                     <div class="mb-2">
                         <label for="exercice_id" class="form-label">Exercice</label>
-                        <select class="selectpicker w-100" data-live-search="true" id="exercice_id" name="exercice_id"
-                            data-exercice-actif="{{ isset($exerciceActif) ? $exerciceActif->id : '' }}" required>
-                            <option value="" disabled {{ isset($exerciceActif) ? '' : 'selected' }} hidden>
-                                {{ isset($exerciceActif) ? '-- Sélectionnez un exercice --' : 'Aucun exercice actif trouvé' }}
+                        <select class="selectpicker w-100" data-live-search="true" id="exercice_id" name="exercice_id" required>
+                            <option value="" disabled hidden>
+                                {{ $exerciceActif ? '-- Sélectionnez un exercice --' : 'Aucun exercice disponible' }}
                             </option>
                             @foreach ($exercices as $exercice)
                                 <option value="{{ $exercice->id }}"
                                     data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}"
-                                    {{ (isset($exerciceActif) && $exerciceActif->id == $exercice->id) ? 'selected' : '' }}>
-                                    {{ $exercice->intitule }}
+                                    {{ $exerciceActif && $exercice->id == $exerciceActif->id ? 'selected' : '' }}>
+                                    {{ $exercice->intitule }} ({{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }})
                                 </option>
                             @endforeach
                         </select>
@@ -81,18 +81,17 @@
     </div>
 </div>
 
-
-
-
-
-
 <script>
-    // Correction du bug d'affichage (doublons de texte)
-    // On réinitialise les selectpickers à chaque fois que le modal est affiché
-    $('#saisieRedirectModal').on('show.bs.modal', function () {
-        setTimeout(function() {
-            $('.selectpicker').selectpicker('destroy').selectpicker('render');
-        }, 200);
+    // Correction robuste contre les doublons d'affichage
+    $(document).ready(function() {
+        $('#saisieRedirectModal').on('show.bs.modal', function () {
+            // Un petit délai permet d'attendre l'animation du modal
+            setTimeout(function() {
+                $('.selectpicker').selectpicker('destroy'); // On détruit d'abord
+                $('.selectpicker').selectpicker('render');  // On reconstruit
+                $('.selectpicker').selectpicker('refresh'); // On rafraîchit les valeurs
+            }, 100);
+        });
     });
 
     const accounting_entry_realSaisisUrl = "{{ route('accounting_entry_list') }}";
@@ -100,15 +99,17 @@
 
     document.getElementById("btnRedirectToSaisie").addEventListener("click", function() {
         const journalSelect = document.getElementById("code_journal");
-        if (!journalSelect.value) return;
+        const moisSelect = document.getElementById("mois");
+        const exerciceSelect = document.getElementById("exercice_id");
+
+        // Validation rapide côté client
+        if (!journalSelect.value || !moisSelect.value || !exerciceSelect.value) {
+            alert("Veuillez remplir tous les champs.");
+            return;
+        }
 
         const selectedOption = journalSelect.options[journalSelect.selectedIndex];
-
-        const moisSelect = document.getElementById("mois");
-        const selectedOptionM = moisSelect.options[moisSelect.selectedIndex];
-        const moisValeur = selectedOptionM.value;
-
-        const exerciceSelect = document.getElementById("exercice_id");
+        const moisValeur = moisSelect.value;
         const selectedOptionA = exerciceSelect.options[exerciceSelect.selectedIndex];
         const anneeValue = selectedOptionA.dataset.annee;
 
@@ -133,7 +134,7 @@
         (async () => {
             const idSaisi = await getJournalId();
             if (!idSaisi) {
-                alert("Aucun journal de saisie trouvé pour cette période.");
+                alert("Aucun journal trouvé pour les critères sélectionnés.");
                 return;
             }
 

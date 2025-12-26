@@ -139,17 +139,16 @@ class EcritureComptableController extends Controller
     public function showSaisieModal()
     {
         $user = Auth::user();
-
+        
+        // Récupérer les exercices uniques par intitulé, triés par date de début décroissante
         $exercices = ExerciceComptable::where('company_id', $user->company_id)
             ->orderBy('date_debut', 'desc')
             ->get()
-            ->unique('intitule');
+            ->unique('intitule')
+            ->values();
 
-        // Récupérer l'exercice actif (non clôturé) pour pré-sélection
-        $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
-            ->where('cloturer', 0)
-            ->orderBy('date_debut', 'desc')
-            ->first();
+        // Récupérer l'exercice actif (non clôturé) ou le premier disponible
+        $exerciceActif = $exercices->firstWhere('cloturer', 0) ?? $exercices->first();
 
         $code_journaux = CodeJournal::where('company_id', $user->company_id)
             ->orderBy('code_journal', 'asc')
