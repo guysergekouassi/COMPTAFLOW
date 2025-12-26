@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\JournalSaisi;
+use App\Models\ExerciceComptable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,6 +21,14 @@ class JournauxSaisisController extends Controller
 
         $companyId = Auth::user()->company_id;
         $data = $request->all();
+
+        // Récupérer l'exercice sélectionné
+        $exercice = ExerciceComptable::findOrFail($request->id_exercice);
+        
+        // Ajouter les informations de l'exercice aux données
+        $data['date_debut'] = \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y');
+        $data['date_fin'] = \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y');
+        $data['intitule'] = $exercice->intitule;
 
         // Récupérer les journaux saisis avec relation
         $journaux = JournalSaisi::with('codeJournal')
