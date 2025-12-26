@@ -80,7 +80,34 @@
         </div>
     </div>
 </div>
-
+<style>
+    /* Design spécifique pour uniformiser avec votre capture d'écran 2 */
+    #saisieRedirectModal .modal-content {
+        border-radius: 15px;
+    }
+    #saisieRedirectModal .form-label {
+        letter-spacing: 0.5px;
+    }
+    /* Style pour le bootstrap-select pour qu'il ressemble à un input standard propre */
+    #saisieRedirectModal .bootstrap-select > .dropdown-toggle {
+        padding: 0.6rem 1rem;
+        border-radius: 8px !important;
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+    }
+    #saisieRedirectModal .bootstrap-select > .dropdown-toggle:focus {
+        background-color: #fff;
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    #saisieRedirectModal .btn-success {
+        border-radius: 8px;
+        transition: transform 0.2s;
+    }
+    #saisieRedirectModal .btn-success:hover {
+        transform: translateY(-2px);
+    }
+</style>
 <!-- Ajout de jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -155,4 +182,5 @@
         })();
     });
 </script>
+
 
