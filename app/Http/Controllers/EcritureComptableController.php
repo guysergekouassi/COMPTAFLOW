@@ -36,7 +36,20 @@ class EcritureComptableController extends Controller
         // Valeurs par défaut si non fournies
         $data['annee'] = $data['annee'] ?? date('Y');
         $data['mois'] = $data['mois'] ?? date('n'); // mois sans leading zero
-        $data['id_exercice'] = $data['id_exercice'] ?? null;
+        
+        // Si aucun exercice n'est spécifié, on prend l'exercice actif (non clôturé)
+        if (empty($data['id_exercice'])) {
+            $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+                
+            if ($exerciceActif) {
+                $data['id_exercice'] = $exerciceActif->id;
+                // Mettre à jour l'année avec celle de l'exercice actif
+                $data['annee'] = date('Y', strtotime($exerciceActif->date_debut));
+            }
+        }
 
         $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
             ->orderByRaw("LEFT(numero_de_compte, 1) ASC")  // trie par classe
@@ -88,7 +101,23 @@ class EcritureComptableController extends Controller
 
         $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
 
-        $exercice = $data['id_exercice'] ? ExerciceComptable::findOrFail($data['id_exercice']) : null;
+        // Récupérer l'exercice sélectionné ou l'exercice actif
+        $exercice = null;
+        if (!empty($data['id_exercice'])) {
+            $exercice = ExerciceComptable::find($data['id_exercice']);
+        }
+        
+        // Si aucun exercice n'est trouvé, on prend le premier exercice disponible
+        if (!$exercice) {
+            $exercice = ExerciceComptable::where('company_id', $user->company_id)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+                
+            if ($exercice) {
+                $data['id_exercice'] = $exercice->id;
+                $data['annee'] = date('Y', strtotime($exercice->date_debut));
+            }
+        }
 
         // dd($dateDebut . '' . $dateFin);
 
