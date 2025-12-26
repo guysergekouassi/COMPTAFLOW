@@ -1,64 +1,56 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\JournalSaisi;
-use App\Models\CodeJournal; // CLASSE À AJOUTER
-use App\Models\PlanComptable; // CLASSE À AJOUTER
-use App\Models\tresoreries\Tresoreries; // CLASSE À AJOUTER
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class JournauxSaisisController extends Controller
 {
-
+    /**
+     * Affiche la liste des journaux saisis pour un exercice donné.
+     */
     public function index(Request $request)
     {
-        $user = Auth::user();
-
-        $data = $request->all();
+        // Validation minimale pour éviter les erreurs 500 si id_exercice manque
+        $request->validate([
+            'id_exercice' => 'required|exists:exercices_comptables,id'
+        ]);
 
         $companyId = Auth::user()->company_id;
-        $idExercice = $data['id_exercice'];
+        $data = $request->all();
 
-        // Récupérer les journaux saisis liés à l'exercice et à la compagnie
+        // Récupérer les journaux saisis avec relation
         $journaux = JournalSaisi::with('codeJournal')
-        ->where('exercices_comptables_id', $request->id_exercice)
-        ->where('company_id', Auth::user()->company_id)
-        ->get();
+            ->where('exercices_comptables_id', $request->id_exercice)
+            ->where('company_id', $companyId)
+            ->get();
 
         return view('journaux_saisis', compact('data', 'journaux'));
     }
-//     public function index(Request $request)
-// {
-//     $user = Auth::user();
-//     $companyId = $user->company_id;
-//     $idExercice = $request->input('id_exercice');
 
-//     // Démarre la requête avec les filtres de base
-//     $query = JournalSaisi::with('codeJournal')
-//         ->where('company_id', $companyId);
-
-//     // 💡 Ajoutez la logique de filtrage par utilisateur/administrateur
-//     $query->currentUser(); // Utilisez le scope défini précédemment
-
-//     // Applique le filtre d'exercice UNIQUEMENT s'il est fourni
-//     if ($idExercice) {
-//         $query->where('exercices_comptables_id', $idExercice);
-//     }
-
-//     // Récupère les données
-//     $journaux = $query->get();
-
-//     return view('journaux_saisis', compact('journaux'));
-// }
-
+    /**
+     * Trouve un journal spécifique via AJAX.
+     */
     public function find(Request $request)
     {
-        $journal = JournalSaisi::where('annee', $request->annee)
-            ->where('mois', $request->mois)
-            ->where('exercices_comptables_id', $request->exercice_id)
-            ->where('code_journals_id', $request->code_journal_id)
-            ->where('company_id', auth()->user()->company_id)
+        // Sécurité : Validation des entrées
+        if (!$request->has(['annee', 'mois', 'exercice_id', 'code_journal_id'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Paramètres manquants'
+            ], 400);
+        }
+
+        $journal = JournalSaisi::where([
+                ['annee', '=', $request->annee],
+                ['mois', '=', $request->mois],
+                ['exercices_comptables_id', '=', $request->exercice_id],
+                ['code_journals_id', '=', $request->code_journal_id],
+                ['company_id', '=', Auth::user()->company_id]
+            ])
+            ->select('id') // On ne récupère que l'ID pour optimiser la mémoire
             ->first();
 
         if ($journal) {
@@ -70,7 +62,7 @@ class JournauxSaisisController extends Controller
 
         return response()->json([
             'success' => false,
-            'message' => 'Aucun journal trouvé'
+            'message' => 'Aucun journal trouvé pour cette période'
         ], 404);
     }
 }
