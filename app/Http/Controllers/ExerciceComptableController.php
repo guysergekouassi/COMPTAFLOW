@@ -29,7 +29,10 @@ class ExerciceComptableController extends Controller
         }
 
     // La requête est automatiquement filtrée par TenantScope (Session active)
-    $exercices = ExerciceComptable::orderBy('date_debut', 'desc')
+    // Récupération des exercices uniques par intitulé en gardant le plus récent
+    $exercices = ExerciceComptable::select(DB::raw('MAX(id) as id'), 'intitule', 'date_debut', 'date_fin')
+        ->groupBy('intitule', 'date_debut', 'date_fin')
+        ->orderBy('date_debut', 'desc')
         ->get()
         ->map(function ($exercice) {
             $dateDebut = Carbon::parse($exercice->date_debut);
@@ -37,8 +40,6 @@ class ExerciceComptableController extends Controller
 
             // Différence en mois complets
             $nbMois = (int) $dateDebut->diffInMonths($dateFin) + 1;
-
-            // +1 car on veut compter le mois de début inclus
 
             $exercice->nb_mois = $nbMois;
             return $exercice;

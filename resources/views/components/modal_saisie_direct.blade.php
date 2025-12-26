@@ -13,17 +13,13 @@
                 <div class="modal-body">
                     <div class="mb-2">
                         <label for="exercice_id" class="form-label">Exercice</label>
-                        @php
-                            // Filtrer les exercices pour éliminer les doublons basés sur l'intitulé
-                            $exercicesUniques = $exercices->unique('intitule');
-                        @endphp
                         <select class="selectpicker w-100" data-live-search="true" id="exercice_id" name="exercice_id"
                             data-exercice-actif="{{ isset($exerciceActif) ? $exerciceActif->id : '' }}"
                             required>
                             <option value="" disabled {{ isset($exerciceActif) ? '' : 'selected' }} hidden>
                                 {{ isset($exerciceActif) ? '-- Sélectionnez un exercice --' : 'Aucun exercice actif trouvé' }}
                             </option>
-                            @foreach ($exercicesUniques as $exercice)
+                            @foreach ($exercices as $exercice)
                                 <option value="{{ $exercice->id }}"
                                     data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}"
                                     {{ (isset($exerciceActif) && $exerciceActif->id == $exercice->id) ? 'selected' : '' }}>
