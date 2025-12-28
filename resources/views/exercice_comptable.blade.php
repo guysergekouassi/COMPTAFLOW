@@ -381,7 +381,7 @@
         const dateFinInput = document.getElementById('date_fin');
         const intituleInput = document.getElementById('intitule_exercice');
         let dataTable;
-        
+
         // Initialiser la DataTable
         initDataTable();
 
@@ -390,7 +390,7 @@
             if ($.fn.DataTable.isDataTable('#exerciceTable')) {
                 dataTable.destroy();
             }
-            
+
             dataTable = $('#exerciceTable').DataTable({
                 language: {
                     emptyTable: 'Aucune donnée disponible dans le tableau',
@@ -421,10 +421,10 @@
                      "<'row'<'col-sm-12'tr>>" +
                      "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
             });
-            
+
             return dataTable;
         }
-        
+
         // Formater une date au format jj/mm/aaaa
         function formatDate(dateString) {
             if (!dateString) return '';
@@ -435,12 +435,12 @@
         // Ajouter une ligne au DataTable
         function addRowToTable(exercice) {
             console.log('Ajout d\'une nouvelle ligne à la table:', exercice);
-            
+
             if (!dataTable) {
                 console.error('DataTable non initialisée');
                 return;
             }
-            
+
             try {
                 // S'assurer que l'objet exercice a toutes les propriétés nécessaires
                 const exerciceData = {
@@ -452,12 +452,12 @@
                     nombre_journaux_saisis: exercice.nombre_journaux_saisis || 0,
                     cloturer: exercice.cloturer !== undefined ? Boolean(exercice.cloturer) : false
                 };
-                
+
                 console.log('Données formatées pour la nouvelle ligne:', exerciceData);
-                
+
                 // Formater le nombre de mois avec 2 décimales
                 const nbMois = parseFloat(exerciceData.nb_mois).toFixed(2).replace(/\.?0+$/, '');
-                
+
                 // Créer la ligne avec toutes les colonnes nécessaires
                 const rowNode = dataTable.row.add([
                     formatDate(exerciceData.date_debut),
@@ -513,26 +513,26 @@
                     </div>
                     `
                 ]).draw(false).node();
-                
+
                 console.log('Nouvelle ligne ajoutée avec succès');
-                
+
                 // Animation de la nouvelle ligne
                 if (rowNode) {
                     $(rowNode).css('background-color', '#e8f5e9');
                     setTimeout(() => {
                         $(rowNode).css('background-color', '');
-                        
+
                         // Réinitialiser les tooltips
                         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
                         tooltipTriggerList.map(function (tooltipTriggerEl) {
                             return new bootstrap.Tooltip(tooltipTriggerEl);
                         });
-                        
+
                         // Réinitialiser les gestionnaires d'événements pour les boutons
                         initializeEventHandlers();
                     }, 100);
                 }
-                
+
                 return rowNode;
             } catch (error) {
                 console.error('Erreur lors de l\'ajout de la ligne au tableau:', error);
@@ -552,12 +552,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
-            
+
             // Ajouter l'alerte en haut de la page
             const container = document.querySelector('.container-xxl');
             if (container) {
                 container.insertAdjacentHTML('afterbegin', alertHtml);
-                
+
                 // Supprimer l'alerte après 5 secondes
                 setTimeout(() => {
                     const alert = container.querySelector('.alert');
@@ -571,7 +571,7 @@
         // Générer automatiquement l'intitulé à partir de la date de fin
         function genererIntitule() {
             if (!dateFinInput || !intituleInput) return;
-            
+
             const dateFinValue = dateFinInput.value;
             if (dateFinValue) {
                 try {
@@ -592,23 +592,23 @@
             formExercice.addEventListener('submit', async function(e) {
                 // Ne pas empêcher le comportement par défaut si JavaScript est désactivé
                 const isAjax = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest();
-                
+
                 if (isAjax) {
                     e.preventDefault();
-                    
+
                     console.log('Soumission AJAX du formulaire');
                     const submitButton = this.querySelector('button[type="submit"]');
                     const originalText = submitButton.innerHTML;
-                    
+
                     // Créer un objet FormData pour le formulaire
                     const formData = new FormData(this);
-                    
+
                     // Afficher les données du formulaire dans la console
                     console.log('Données du formulaire :');
                     for (let [key, value] of formData.entries()) {
                         console.log(`${key}: ${value}`);
                     }
-                    
+
                     try {
                         // Désactiver le bouton pendant la soumission
                         submitButton.disabled = true;
@@ -616,10 +616,10 @@
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             Enregistrement...
                         `;
-                        
+
                         // Récupérer le token CSRF
                         const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                        
+
                         // Envoyer la requête avec l'objet FormData existant
                         console.log('Envoi de la requête AJAX à', this.action);
                         const response = await fetch(this.action, {
@@ -631,7 +631,7 @@
                             },
                             body: formData
                         });
-                    
+
                     console.log('Réponse reçue, statut:', response.status);
                     const responseData = await response.json();
                     console.log('Données de la réponse:', responseData);
@@ -646,10 +646,10 @@
                                 document.querySelectorAll('.invalid-feedback').forEach(el => {
                                     el.remove();
                                 });
-                                
+
                                 // Afficher les erreurs de validation
                                 let errorMessages = [];
-                                
+
                                 for (const [field, messages] of Object.entries(responseData.errors)) {
                                     const input = document.querySelector(`[name="${field}"]`);
                                     if (input) {
@@ -661,7 +661,7 @@
                                         errorMessages.push(messages[0]);
                                     }
                                 }
-                                
+
                                 if (errorMessages.length > 0) {
                                     showAlert('danger', errorMessages.join('<br>'));
                                 } else {
@@ -678,10 +678,10 @@
                         if (responseData.success) {
                             // Ajouter la nouvelle ligne au tableau
                             addRowToTable(responseData.exercice);
-                            
+
                             // Afficher un message de succès
                             showAlert('success', responseData.message || 'Exercice enregistré avec succès');
-                            
+
                             // Fermer le modal et réinitialiser le formulaire
                             if (modalInstance) {
                                 modalInstance.hide();
@@ -722,30 +722,30 @@
                 button.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
                     const label = this.getAttribute('data-label') || 'cet exercice';
-                    
+
                     const form = document.getElementById('deleteForm');
                     if (form) {
                         form.action = exercice_comptableDeleteUrl.replace('__ID__', id);
                     }
-                    
+
                     const modalLabel = document.getElementById('deleteModalLabel');
                     if (modalLabel) {
                         modalLabel.textContent = `Supprimer ${label}`;
                     }
                 });
             });
-            
-            // Gestionnaire pour le bouton de clôture
+
+        // Gestionnaire pour le bouton de clôture
             document.querySelectorAll('.open-cloture-modal').forEach(button => {
                 button.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
                     const label = this.getAttribute('data-intitule') || 'cet exercice';
-                    
+
                     const form = document.getElementById('clotureForm');
                     if (form) {
                         form.action = exercice_comptableCloturerUrl.replace('__ID__', id);
                     }
-                    
+
                     const modalLabel = document.getElementById('clotureModalLabel');
                     if (modalLabel) {
                         modalLabel.textContent = `Clôturer ${label}`;
@@ -753,18 +753,6 @@
                 });
             });
         }
-        
-        // Initialiser le DataTable et les gestionnaires d'événements au chargement du DOM
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof $ !== 'undefined' && $.fn.DataTable) {
-                if ($('#exerciceTable').length) {
-                    dataTable = initDataTable();
-                    initializeEventHandlers();
-                }
-            } else {
-                console.error('jQuery ou DataTables n\'est pas chargé correctement');
-            }
-        });
 
         // Gestion de la fermeture du modal
         if (modalCreate) {
