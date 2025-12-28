@@ -23,7 +23,7 @@ class ExerciceComptableController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return redirect()->route('login');
         }
@@ -50,13 +50,41 @@ class ExerciceComptableController extends Controller
     return view('exercice_comptable', compact('exercices','code_journaux'));
 }
 
+    public function getData()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Récupération des exercices avec les mêmes critères que dans index()
+        $exercices = ExerciceComptable::select(DB::raw('MAX(id) as id'), 'intitule', 'date_debut', 'date_fin', 'cloturer')
+            ->groupBy('intitule', 'date_debut', 'date_fin', 'cloturer')
+            ->orderBy('date_debut', 'desc')
+            ->get()
+            ->map(function ($exercice) {
+                $dateDebut = Carbon::parse($exercice->date_debut);
+                $dateFin = Carbon::parse($exercice->date_fin);
+
+                // Différence en mois complets
+                $nbMois = (int) $dateDebut->diffInMonths($dateFin) + 1;
+
+                $exercice->nb_mois = $nbMois;
+                $exercice->nombre_journaux_saisis = 0; // À calculer si nécessaire
+                return $exercice;
+            });
+
+        return response()->json(['data' => $exercices]);
+    }
+
 
 
     // recreer
     public function store(Request $request)
     {
         logger('Début de la méthode store', ['request' => $request->all()]);
-        
+
         try {
             // Validation des données de base
             $validated = $request->validate(ExerciceComptable::$rules, [
@@ -67,15 +95,15 @@ class ExerciceComptableController extends Controller
                 'intitule.max' => 'L\'intitulé ne doit pas dépasser 255 caractères',
                 'intitule.unique' => 'Un exercice avec cet intitulé existe déjà pour cette période'
             ]);
-            
+
             $user = Auth::user();
             $companyId = $user->company_id;
-            
+
             // Vérification de l'unicité de l'intitulé pour cette entreprise
             $existingExercice = ExerciceComptable::where('company_id', $companyId)
                 ->where('intitule', $request->intitule)
                 ->first();
-                
+
             if ($existingExercice) {
                 return response()->json([
                     'success' => false,
@@ -106,7 +134,7 @@ class ExerciceComptableController extends Controller
             $existingExercice = ExerciceComptable::where('company_id', $companyId)
                 ->where('intitule', $request->intitule)
                 ->first();
-                
+
             if ($existingExercice) {
                 return response()->json([
                     'success' => false,
@@ -116,7 +144,7 @@ class ExerciceComptableController extends Controller
 
             // Création de l'exercice dans une transaction
             DB::beginTransaction();
-            
+
             try {
                 logger('Création de l\'exercice avec les données', [
                     'date_debut' => $request->date_debut,
@@ -125,7 +153,7 @@ class ExerciceComptableController extends Controller
                     'user_id' => $user->id,
                     'company_id' => $companyId,
                 ]);
-                
+
                 $exercice = ExerciceComptable::create([
                     'date_debut' => $request->date_debut,
                     'date_fin' => $request->date_fin,
@@ -140,10 +168,10 @@ class ExerciceComptableController extends Controller
                 if (method_exists($exercice, 'syncJournaux')) {
                     $exercice->syncJournaux();
                 }
-                
+
                 DB::commit();
                 logger('Exercice créé avec succès', ['exercice_id' => $exercice->id]);
-                
+
             } catch (\Exception $e) {
                 DB::rollBack();
                 \Log::error('Erreur lors de la création de l\'exercice: ' . $e->getMessage());
@@ -157,10 +185,10 @@ class ExerciceComptableController extends Controller
             $dateDebut = Carbon::parse($exercice->date_debut);
             $dateFin = Carbon::parse($exercice->date_fin);
             $nbMois = $dateDebut->diffInMonths($dateFin) + 1;
-            
+
             // Mettre à jour l'exercice avec le nombre de mois calculé
             $exercice->update(['nb_mois' => $nbMois]);
-            
+
             // Préparer la réponse
             $response = [
                 'success' => true,
@@ -175,20 +203,20 @@ class ExerciceComptableController extends Controller
                     'cloturer' => 0
                 ]
             ];
-            
+
             // Retourner la vue avec les données mises à jour pour les requêtes non-AJAX
             if (!$request->ajax()) {
                 $exercices = ExerciceComptable::where('company_id', $companyId)
                     ->orderBy('date_debut', 'desc')
                     ->get();
-                    
+
                 return view('exercice_comptable', [
                     'exercices' => $exercices,
                     'code_journaux' => CodeJournal::all(),
                     'success' => $response['message']
                 ]);
             }
-            
+
             // Pour les requêtes AJAX, retourner la réponse JSON
             return response()->json($response);
 
