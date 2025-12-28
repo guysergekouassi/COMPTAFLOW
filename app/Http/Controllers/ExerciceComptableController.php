@@ -58,39 +58,26 @@ class ExerciceComptableController extends Controller
 }
 
     public function getData()
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
+    $companyId = $user->company_id;
 
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+    // Simplification de la requête : on récupère tout pour l'entreprise
+    $exercices = ExerciceComptable::where('company_id', $companyId)
+        ->orderBy('date_debut', 'desc')
+        ->get()
+        ->map(function ($exercice) {
+            $dateDebut = Carbon::parse($exercice->date_debut);
+            $dateFin = Carbon::parse($exercice->date_fin);
 
-        $companyId = $user->company_id;
+            // Calcul propre du nombre de mois
+            $exercice->nb_mois = (int) $dateDebut->diffInMonths($dateFin) + 1;
+            $exercice->nombre_journaux_saisis = $exercice->nombre_journaux_saisis ?? 0;
+            return $exercice;
+        });
 
-        if (!$companyId) {
-            return response()->json(['error' => 'No company associated with user'], 403);
-        }
-
-        // Récupération des exercices filtrés par company_id
-        $exercices = ExerciceComptable::select(DB::raw('MAX(id) as id'), 'intitule', 'date_debut', 'date_fin', 'cloturer')
-            ->where('company_id', $companyId)
-            ->groupBy('intitule', 'date_debut', 'date_fin', 'cloturer')
-            ->orderBy('date_debut', 'desc')
-            ->get()
-            ->map(function ($exercice) {
-                $dateDebut = Carbon::parse($exercice->date_debut);
-                $dateFin = Carbon::parse($exercice->date_fin);
-
-                // Différence en mois complets
-                $nbMois = (int) $dateDebut->diffInMonths($dateFin) + 1;
-
-                $exercice->nb_mois = $nbMois;
-                $exercice->nombre_journaux_saisis = 0; // À calculer si nécessaire
-                return $exercice;
-            });
-
-        return response()->json(['data' => $exercices]);
-    }
+    return response()->json(['data' => $exercices]);
+}
 
 
 
