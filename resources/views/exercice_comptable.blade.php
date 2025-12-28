@@ -633,14 +633,13 @@
                         });
                     
                     console.log('Réponse reçue, statut:', response.status);
-                    const data = await response.json();
-                    console.log('Données de la réponse:', data);
+                    const responseData = await response.json();
+                    console.log('Données de la réponse:', responseData);
 
-                        if (!response.ok) {
-                            // Gestion des erreurs de validation
-                            const data = await response.json();
-                            if (response.status === 422 && data.errors) {
-                                // Réinitialiser les états d'erreur précédents
+                    if (!response.ok) {
+                        // Gestion des erreurs de validation
+                        if (response.status === 422 && responseData.errors) {
+                            // Réinitialiser les états d'erreur précédents
                                 document.querySelectorAll('.is-invalid').forEach(el => {
                                     el.classList.remove('is-invalid');
                                 });
@@ -651,7 +650,7 @@
                                 // Afficher les erreurs de validation
                                 let errorMessages = [];
                                 
-                                for (const [field, messages] of Object.entries(data.errors)) {
+                                for (const [field, messages] of Object.entries(responseData.errors)) {
                                     const input = document.querySelector(`[name="${field}"]`);
                                     if (input) {
                                         input.classList.add('is-invalid');
@@ -669,20 +668,19 @@
                                     showAlert('danger', 'Veuillez corriger les erreurs dans le formulaire.');
                                 }
                             } else {
-                                throw new Error(data.message || 'Une erreur est survenue');
+                                throw new Error(responseData.message || 'Une erreur est survenue');
                             }
                             return;
                         }
 
-                        const data = await response.json();
-                        console.log('Réponse du serveur:', data);
+                        console.log('Réponse du serveur:', responseData);
 
-                        if (data.success) {
+                        if (responseData.success) {
                             // Ajouter la nouvelle ligne au tableau
-                            addRowToTable(data.exercice);
+                            addRowToTable(responseData.exercice);
                             
                             // Afficher un message de succès
-                            showAlert('success', data.message || 'Exercice enregistré avec succès');
+                            showAlert('success', responseData.message || 'Exercice enregistré avec succès');
                             
                             // Fermer le modal et réinitialiser le formulaire
                             if (modalInstance) {
@@ -690,7 +688,7 @@
                             }
                             this.reset();
                         } else {
-                            throw new Error(data.message || 'Une erreur est survenue');
+                            throw new Error(responseData.message || 'Une erreur est survenue');
                         }
                     } catch (error) {
                         console.error('Erreur:', error);
