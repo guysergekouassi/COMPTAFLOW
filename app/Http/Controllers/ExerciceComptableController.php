@@ -57,29 +57,37 @@ class ExerciceComptableController extends Controller
     return view('exercice_comptable', compact('exercices','code_journaux'));
 }
 
-    public function getData()
+public function getData()
 {
     $user = Auth::user();
-    $companyId = $user->company_id;
+    $companyId = $user ? $user->company_id : null;
 
-    // Simplification de la requête : on récupère tout pour l'entreprise
+    if (!$companyId) {
+        return response()->json(['data' => []]);
+    }
+
+    // On récupère tous les exercices de l'entreprise sans groupement restrictif
     $exercices = ExerciceComptable::where('company_id', $companyId)
         ->orderBy('date_debut', 'desc')
         ->get()
         ->map(function ($exercice) {
-            $dateDebut = Carbon::parse($exercice->date_debut);
-            $dateFin = Carbon::parse($exercice->date_fin);
+            $dateDebut = \Carbon\Carbon::parse($exercice->date_debut);
+            $dateFin = \Carbon\Carbon::parse($exercice->date_fin);
 
-            // Calcul propre du nombre de mois
-            $exercice->nb_mois = (int) $dateDebut->diffInMonths($dateFin) + 1;
-            $exercice->nombre_journaux_saisis = $exercice->nombre_journaux_saisis ?? 0;
-            return $exercice;
+            // On s'assure que les champs attendus par le JS sont présents
+            return [
+                'id' => $exercice->id,
+                'date_debut' => $exercice->date_debut,
+                'date_fin' => $exercice->date_fin,
+                'intitule' => $exercice->intitule,
+                'nb_mois' => (int) $dateDebut->diffInMonths($dateFin) + 1,
+                'nombre_journaux_saisis' => $exercice->nombre_journaux_saisis ?? 0,
+                'cloturer' => (bool) $exercice->cloturer
+            ];
         });
 
     return response()->json(['data' => $exercices]);
 }
-
-
 
     // recreer
     public function store(Request $request)
