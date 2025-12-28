@@ -28,9 +28,16 @@ class ExerciceComptableController extends Controller
             return redirect()->route('login');
         }
 
+        $companyId = $user->company_id;
+
+        if (!$companyId) {
+            return redirect()->route('login')->with('error', 'Aucune entreprise associée à votre compte.');
+        }
+
     // La requête est automatiquement filtrée par TenantScope (Session active)
     // Récupération des exercices uniques par intitulé en gardant le plus récent
     $exercices = ExerciceComptable::select(DB::raw('MAX(id) as id'), 'intitule', 'date_debut', 'date_fin')
+        ->where('company_id', $companyId)
         ->groupBy('intitule', 'date_debut', 'date_fin')
         ->orderBy('date_debut', 'desc')
         ->get()
@@ -58,8 +65,15 @@ class ExerciceComptableController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Récupération des exercices avec les mêmes critères que dans index()
+        $companyId = $user->company_id;
+
+        if (!$companyId) {
+            return response()->json(['error' => 'No company associated with user'], 403);
+        }
+
+        // Récupération des exercices filtrés par company_id
         $exercices = ExerciceComptable::select(DB::raw('MAX(id) as id'), 'intitule', 'date_debut', 'date_fin', 'cloturer')
+            ->where('company_id', $companyId)
             ->groupBy('intitule', 'date_debut', 'date_fin', 'cloturer')
             ->orderBy('date_debut', 'desc')
             ->get()
