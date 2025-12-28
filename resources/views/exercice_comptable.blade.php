@@ -309,7 +309,7 @@
             const exercice_comptableCloturerUrl = "{{ route('exercice_comptable.cloturer', ['id' => '__ID__']) }}";
 
         </script>
-        <script src="{{ asset('js/exercice_compt.js') }}"></script>
+        {{-- <script src="{{ asset('js/exercice_compt.js') }}"></script> --}}
 
         <script>
     document.addEventListener('DOMContentLoaded', function() {
