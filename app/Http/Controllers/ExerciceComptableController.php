@@ -93,192 +93,52 @@ class ExerciceComptableController extends Controller
     return response()->json(['data' => $exercices]);
 }
 
-    // recreer
-    public function store(Request $request)
-    {
-        logger('Début de la méthode store', ['request' => $request->all()]);
+   public function store(Request $request)
+{
+    try {
+        $user = Auth::user();
+        // Récupération dynamique de la société (Switch)
+        $companyId = session('selected_company_id', $user->company_id);
 
-        try {
-            $user = Auth::user();
-            
-            // Récupérer la société de l'utilisateur
-            $company = $user->company;
-            $companyId = session('selected_company_id', $user->company_id);
-            // Utiliser l'ID de la société actuelle (32 pour COMPTABILITE-CAAPA)
-            // $companyId = 32; // À remplacer par $company->id en production
-            dd([
-    'session_id' => session('selected_company_id'),
-    'user_company_id' => $user->company_id,
-    'final_company_id' => $companyId
-]);
-            Log::info('ID de société utilisé', ['company_id' => $companyId]);
+        $request->validate(ExerciceComptable::$rules);
 
-            // Validation des données de base
-            $validated = $request->validate(ExerciceComptable::$rules, [
-                'date_debut.required' => 'La date de début est obligatoire',
-                'date_fin.required' => 'La date de fin est obligatoire',
-                'date_fin.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début',
-                'intitule.required' => 'L\'intitulé est obligatoire',
-                'intitule.max' => 'L\'intitulé ne doit pas dépasser 255 caractères',
-                'intitule.unique' => 'Un exercice avec cet intitulé existe déjà pour cette période'
-            ]);
+        DB::beginTransaction();
 
-            // Vérification de l'unicité de l'intitulé pour cette entreprise
-            $existingExercice = ExerciceComptable::where('company_id', $companyId)
-                ->where('intitule', $request->intitule)
-                ->first();
+        // 1. Log sans la colonne problématique
+        Log::info('Tentative de création exercice', [
+            'intitule' => $request->intitule,
+            'company_id' => $companyId
+        ]);
 
-            if ($existingExercice) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Un exercice avec le même intitulé existe déjà.'
-                ], 422);
-            }
+        // 2. Création stricte (uniquement les colonnes existantes)
+        $exercice = new ExerciceComptable();
+        $exercice->date_debut = $request->date_debut;
+        $exercice->date_fin = $request->date_fin;
+        $exercice->intitule = $request->intitule;
+        $exercice->user_id = $user->id;
+        $exercice->company_id = $companyId;
+        $exercice->nombre_journaux_saisis = 0;
+        $exercice->cloturer = 0;
+        $exercice->save();
 
-            // Vérification des chevauchements de dates
-            $overlap = ExerciceComptable::where('company_id', $companyId)
-                ->where(function($query) use ($request) {
-                    $query->whereBetween('date_debut', [$request->date_debut, $request->date_fin])
-                        ->orWhereBetween('date_fin', [$request->date_debut, $request->date_fin])
-                        ->orWhere(function($q) use ($request) {
-                            $q->where('date_debut', '<=', $request->date_debut)
-                              ->where('date_fin', '>=', $request->date_fin);
-                        });
-                })
-                ->exists();
-
-            if ($overlap) {
-                Log::warning('Chevauchement détecté pour la période', [
-                    'date_debut' => $request->date_debut,
-                    'date_fin' => $request->date_fin,
-                    'company_id' => $companyId
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Un exercice existe déjà sur cette période.'
-                ], 422);
-            }
-
-            // Vérification de l'existence d'un exercice avec le même intitulé
-            $existingExercice = ExerciceComptable::where('company_id', $companyId)
-                ->where('intitule', $request->intitule)
-                ->first();
-
-            if ($existingExercice) {
-                Log::warning('Exercice avec le même intitulé existe déjà', [
-                    'intitule' => $request->intitule,
-                    'company_id' => $companyId
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Un exercice avec le même intitulé existe déjà.'
-                ], 422);
-            }
-
-            // Création de l'exercice dans une transaction
-            DB::beginTransaction();
-
-            try {
-                Log::info('Création de l\'exercice avec les données', [
-                    'date_debut' => $request->date_debut,
-                    'date_fin' => $request->date_fin,
-                    'intitule' => $request->intitule,
-                    'user_id' => $user->id,
-                    'company_id' => $companyId,
-                    // 'parent_company_id' => $user->company_id // Ajout de l'ID de la société parente
-                ]);
-
-                $exercice = new ExerciceComptable([
-                    'date_debut' => $request->date_debut,
-                    'date_fin' => $request->date_fin,
-                    'intitule' => $request->intitule,
-                    'user_id' => $user->id,
-                    'company_id' => $companyId,
-                //    'parent_company_id' => $user->company_id, // Enregistrement de la société parente
-                    'nombre_journaux_saisis' => 0,
-                    'cloturer' => 0,
-                ]);
-                
-                $exercice->save(); // Utilisation de save() pour déclencher les événements du modèle
-
-                // Génération des journaux si la méthode existe
-                if (method_exists($exercice, 'syncJournaux')) {
-                    $exercice->syncJournaux();
-                }
-
-                DB::commit();
-                Log::info('Exercice créé avec succès', ['exercice_id' => $exercice->id]);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Erreur lors de la création de l\'exercice: ' . $e->getMessage(), [
-                    'exception' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erreur lors de la création de l\'exercice: ' . $e->getMessage()
-                ], 500);
-            }
-
-            // Calcul du nombre de mois
-            $dateDebut = Carbon::parse($exercice->date_debut);
-            $dateFin = Carbon::parse($exercice->date_fin);
-            $nbMois = $dateDebut->diffInMonths($dateFin) + 1;
-
-            // Mettre à jour l'exercice avec le nombre de mois calculé
-            $exercice->update(['nb_mois' => $nbMois]);
-
-            // Préparer la réponse
-            $response = [
-                'success' => true,
-                'message' => 'Exercice comptable créé avec succès',
-                'exercice' => [
-                    'id' => $exercice->id,
-                    'date_debut' => $exercice->date_debut,
-                    'date_fin' => $exercice->date_fin,
-                    'intitule' => $exercice->intitule,
-                    'nb_mois' => $nbMois,
-                    'nombre_journaux_saisis' => 0,
-                    'cloturer' => 0
-                ]
-            ];
-
-            // Retourner la vue avec les données mises à jour pour les requêtes non-AJAX
-            if (!$request->ajax()) {
-                $exercices = ExerciceComptable::where('company_id', $companyId)
-                    ->orderBy('date_debut', 'desc')
-                    ->get();
-
-                return view('exercice_comptable', [
-                    'exercices' => $exercices,
-                    'code_journaux' => CodeJournal::all(),
-                    'success' => $response['message']
-                ]);
-            }
-
-            // Pour les requêtes AJAX, retourner la réponse JSON
-            return response()->json($response);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur de validation',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Erreur création exercice: ' . $e->getMessage(), [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Une erreur est survenue lors de la création de l\'exercice: ' . $e->getMessage()
-            ], 500);
+        if (method_exists($exercice, 'syncJournaux')) {
+            $exercice->syncJournaux();
         }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Exercice créé avec succès',
+            'exercice' => $exercice
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Erreur insertion : ' . $e->getMessage());
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
-
-
+}
 
 
 
