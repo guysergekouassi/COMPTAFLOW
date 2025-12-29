@@ -139,14 +139,14 @@
                             <!-- Section Actions Rapides (Modules) -->
                             <div class="lg:col-span-2 space-y-8">
                                 <div class="glass-card p-8">
-                                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                    <h2 class="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
                                         <i class="fas fa-th-large text-blue-700"></i> Vos Modules de Travail
                                     </h2>
 
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                         <!-- Traitement -->
                                         <div class="space-y-3">
-                                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Traitement</h4>
+                                            <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2">Traitement</h4>
                                             <a href="{{ route('accounting_entry_real') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold pulse bg-blue-700 text-white border-none transition-all hover:bg-blue-800">
                                                 <i class="fas fa-keyboard w-5"></i> Nouvelle Saisie
                                             </a>
@@ -160,7 +160,7 @@
 
                                         <!-- Paramétrage -->
                                         <div class="space-y-3">
-                                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Paramétrage</h4>
+                                            <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2">Paramétrage</h4>
                                             <a href="{{ route('plan_comptable') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-book w-5"></i> Plan Comptable
                                             </a>
@@ -174,7 +174,7 @@
 
                                         <!-- Rapports -->
                                         <div class="space-y-3">
-                                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Rapports</h4>
+                                            <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2">Rapports</h4>
                                             <a href="{{ route('accounting_ledger') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-file-invoice w-5"></i> Grand Livre
                                             </a>
@@ -188,7 +188,7 @@
                                 <!-- Activité Récente / Journaux de Trésorerie -->
                                 <div class="glass-card p-8">
                                     <div class="flex items-center justify-between mb-6">
-                                        <h2 class="text-xl font-bold text-slate-800">Derniers Journaux de Trésorerie</h2>
+                                        <h2 class="text-lg font-bold text-slate-800">Derniers Journaux de Trésorerie</h2>
                                         <button class="text-sm text-blue-700 font-bold hover:underline">Voir tout</button>
                                     </div>
                                     <div class="space-y-4">

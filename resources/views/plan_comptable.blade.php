@@ -569,7 +569,7 @@
                 // Initialisation du DataTable
                 table = $('#planComptableTable').DataTable({
                     dom: 't',
-                    pageLength: 25,
+                    pageLength: 5,
                     // Activer le débogage
                     // debug: true,
                     // Afficher les logs de débogage

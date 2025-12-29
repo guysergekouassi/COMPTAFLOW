@@ -74,6 +74,6 @@ class JournauxSaisisController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Aucun journal trouvé pour cette période'
-        ], 404);
+        ], 200);
     }
 }

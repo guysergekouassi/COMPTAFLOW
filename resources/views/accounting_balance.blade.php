@@ -133,6 +133,15 @@
                             transition: all 0.3s ease;
                         }
 
+                        .btn-action {
+                            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                        }
+
+                        .btn-action:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+                        }
+
                         .table-row {
                             transition: background-color 0.2s;
                         }
@@ -192,47 +201,51 @@
                             </div>
                         @endif
 
-                        <!-- Actions Bar -->
-                        <div class="flex flex-col md:flex-row justify-between items-center mb-8 w-full gap-4">
+                        <!-- Actions Bar (même modèle que Plan Tiers) -->
+                        <div class="flex justify-between items-center mb-8 w-full gap-4">
                             <!-- Left Group: Filter -->
-                            <div class="w-full md:w-auto">
-                                <button class="btn btn-white border border-slate-200 rounded-xl px-5 py-3 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all w-full md:w-auto flex items-center justify-center gap-2" 
-                                        type="button" 
-                                        data-bs-toggle="collapse" 
-                                        data-bs-target="#filterPanel">
-                                    <i class="bx bx-filter-alt text-blue-600"></i> Filtrer
+                            <div class="flex items-center">
+                                <button type="button" id="toggleFilterBtn" onclick="window.toggleAdvancedFilter()"
+                                    class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm">
+                                    <i class="fas fa-filter text-blue-600"></i>
+                                    Filtrer
                                 </button>
                             </div>
 
                             <!-- Right Group: Actions -->
-                            <div class="w-full md:w-auto">
-                                <button type="button" class="btn bg-blue-700 hover:bg-blue-800 text-white rounded-xl px-6 py-3 font-semibold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5 w-full md:w-auto flex items-center justify-center gap-2" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#modalCenterCreate">
-                                    <i class="fas fa-file-export"></i> Générer Balance
+                            <div class="flex flex-wrap items-center justify-end gap-3">
+                                <button type="button" data-bs-toggle="modal" data-bs-target="#modalCenterCreate"
+                                    class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
+                                    <i class="fas fa-file-export"></i>
+                                    Générer Balance
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Filter Panel (Collapse) -->
-                        <div class="collapse mb-8" id="filterPanel">
+                        <!-- Advanced Filter Panel (même modèle que Plan Tiers) -->
+                        <div id="advancedFilterPanel" style="display: none;" class="mb-8 transition-all duration-300">
                             <div class="glass-card p-6">
-                                <div class="row g-4 items-end">
-                                    <div class="col-md-4">
-                                        <label class="input-label-premium mb-2">Filtrer par description</label>
-                                        <input type="text" id="filter-client" class="input-field-premium" placeholder="Rechercher...">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="relative w-full">
+                                        <input type="text" id="filter-client" placeholder="Filtrer par description..."
+                                            class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
+                                        <i class="fas fa-font absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="input-label-premium mb-2">Statut</label>
-                                        <select id="filter-status" class="input-field-premium">
+                                    <div class="relative w-full">
+                                        <select id="filter-status"
+                                            class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
                                             <option value="">Tous les statuts</option>
                                             <option value="Active">Actif</option>
                                             <option value="Inactive">Inactif</option>
                                         </select>
+                                        <i class="fas fa-tag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                     </div>
-                                    <div class="col-md-4">
-                                        <button class="btn bg-blue-600 text-white font-bold uppercase text-xs tracking-wider py-3 px-4 rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-200 w-full" id="apply-filters">
-                                            Appliquer
+                                    <div class="flex justify-end gap-3">
+                                        <button type="button" class="btn btn-secondary rounded-xl px-6 font-semibold" onclick="window.resetAdvancedFilters()">
+                                            <i class="fas fa-undo me-2"></i>Réinitialiser
+                                        </button>
+                                        <button type="button" class="btn btn-primary rounded-xl px-6 font-semibold" id="apply-filters" onclick="window.applyAdvancedFilters()">
+                                            <i class="fas fa-search me-2"></i>Rechercher
                                         </button>
                                     </div>
                                 </div>
@@ -581,6 +594,35 @@
         const accounting_balanceDeleteUrl = "{{ route('accounting_balance.destroy', ['id' => '__ID__']) }}";
         const accounting_ledgerpreviewBalanceUrl = "{{ route('accounting_balance.previewBalance') }}";
 
+    </script>
+
+    <script>
+        window.toggleAdvancedFilter = function() {
+            const panel = document.getElementById('advancedFilterPanel');
+            if (!panel) return;
+            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+        };
+
+        window.applyAdvancedFilters = function() {
+            const q = (document.getElementById('filter-client')?.value || '').toLowerCase();
+            const status = (document.getElementById('filter-status')?.value || '').toLowerCase();
+
+            const rows = document.querySelectorAll('table.table-premium tbody tr');
+            rows.forEach((tr) => {
+                const text = (tr.textContent || '').toLowerCase();
+                const matchQ = !q || text.includes(q);
+                const matchStatus = !status || text.includes(status);
+                tr.style.display = (matchQ && matchStatus) ? '' : 'none';
+            });
+        };
+
+        window.resetAdvancedFilters = function() {
+            const q = document.getElementById('filter-client');
+            const s = document.getElementById('filter-status');
+            if (q) q.value = '';
+            if (s) s.value = '';
+            window.applyAdvancedFilters();
+        };
     </script>
     <script src="{{ asset('js/acc_balance.js') }}"></script>
 

@@ -197,8 +197,8 @@
                         <script>
                             $(document).ready(function() {
                                 $('#FluxTable').DataTable({
-                                    pageLength: 10,
-                                    lengthMenu: [10, 15, 20, 25],
+                                    pageLength: 5,
+                                    lengthMenu: [5, 10, 15, 20, 25],
                                     language: {
                                         search: "Rechercher :",
                                         lengthMenu: "Afficher _MENU_ lignes",

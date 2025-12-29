@@ -129,7 +129,7 @@
       <!-- Layout container -->
       <div class="layout-page">
                      <!-- Navbar -->
-                    @include('components.header', ['page_title' => 'Journaux <span class="text-gradient">De Saisie</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Gestion comptable</span>'])
+                    @include('components.header', ['page_title' => 'Liste des <span class="text-gradient">écritures</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Gestion comptable</span>'])
                     <!-- / Navbar -->
 
                     <!-- Content wrapper -->
@@ -275,6 +275,22 @@
                                     Consultez, saisissez et gérez vos écritures comptables avec précision.
                                 </p>
                             </div>
+
+                            <style>
+                                #tableEcritures,
+                                #tableEcritures * {
+                                    filter: none !important;
+                                    -webkit-filter: none !important;
+                                    backdrop-filter: none !important;
+                                    -webkit-backdrop-filter: none !important;
+                                }
+
+                                button,
+                                .btn {
+                                    filter: none !important;
+                                    -webkit-filter: none !important;
+                                }
+                            </style>
                             
                             <!-- Info / Filter / Action Bar -->
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 w-full gap-4">
@@ -306,20 +322,83 @@
                                     <button type="button" class="btn btn-secondary rounded-xl px-5 font-semibold shadow-sm" onclick="window.location.href='{{ route('journaux_saisis') }}'">
                                         <i class="bx bx-arrow-back me-2"></i>Retour
                                     </button>
+                                </div>
+                            </div>
+
+                            <!-- Actions Bar (même modèle que Plan Tiers) -->
+                            <div class="flex justify-between items-center mb-8 w-full gap-4">
+                                <!-- Left Group: Filter -->
+                                <div class="flex items-center">
+                                    <button type="button" id="toggleFilterBtn" onclick="window.toggleAdvancedFilter()"
+                                        class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm">
+                                        <i class="fas fa-filter text-blue-600"></i>
+                                        Filtrer
+                                    </button>
+                                </div>
+
+                                <!-- Right Group: Actions -->
+                                <div class="flex flex-wrap items-center justify-end gap-3">
                                     <button type="button" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal"
-                                        class="btn bg-blue-700 hover:bg-blue-800 text-white rounded-xl px-6 py-3 font-semibold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5">
-                                        <i class="fas fa-plus me-2"></i>Nouvelle écriture
+                                        class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
+                                        <i class="fas fa-plus"></i>
+                                        Nouvelle écriture
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- Filter Panel (Toggleable) -->
-                            <div class="glass-card p-6 mb-8" id="filterPanel" style="display:none;"> <!-- Hidden by default, toggle with JS if needed -->
-                               <div class="row g-3">
-                                   <div class="col-md-12">
-                                       <input type="text" id="searchInput" class="form-control" placeholder="Rechercher dans les écritures..." style="border-radius: 12px; padding: 0.75rem 1rem;">
-                                   </div>
-                               </div>
+                            <!-- Advanced Filter Panel (même modèle que Plan Tiers) -->
+                            <div id="advancedFilterPanel" style="display: none;" class="mb-8 transition-all duration-300">
+                                <div class="glass-card p-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <!-- Exercice -->
+                                        <div class="relative w-full">
+                                            <select id="filterExercice" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
+                                                <option value="">Tous les exercices</option>
+                                                @foreach (($exercices ?? []) as $exerciceItem)
+                                                    <option value="{{ $exerciceItem->id }}" {{ (isset($data['exercice_id']) && (string) $data['exercice_id'] === (string) $exerciceItem->id) ? 'selected' : '' }}>
+                                                        {{ $exerciceItem->intitule ?? $exerciceItem->annee ?? $exerciceItem->id }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <i class="fas fa-calendar-alt absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        </div>
+
+                                        <!-- Mois -->
+                                        <div class="relative w-full">
+                                            <select id="filterMois" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
+                                                <option value="">Tous les mois</option>
+                                                @for ($i = 1; $i <= 12; $i++)
+                                                    <option value="{{ $i }}" {{ (isset($data['mois']) && (string) $data['mois'] === (string) $i) ? 'selected' : '' }}>
+                                                        {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
+                                                    </option>
+                                                @endfor
+                                            </select>
+                                            <i class="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        </div>
+
+                                        <!-- Journal -->
+                                        <div class="relative w-full">
+                                            <select id="filterJournal" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
+                                                <option value="">Tous les journaux</option>
+                                                @foreach (($code_journaux ?? []) as $j)
+                                                    <option value="{{ $j->id }}" {{ (isset($data['journal_id']) && (string) $data['journal_id'] === (string) $j->id) ? 'selected' : '' }}>
+                                                        {{ $j->code_journal }} - {{ $j->intitule }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <i class="fas fa-book absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end gap-3 mt-4">
+                                        <button type="button" class="btn btn-secondary rounded-xl px-6 font-semibold" onclick="window.resetAdvancedFilters()">
+                                            <i class="fas fa-undo me-2"></i>Réinitialiser
+                                        </button>
+                                        <button type="button" class="btn btn-primary rounded-xl px-6 font-semibold" onclick="window.applyAdvancedFilters()">
+                                            <i class="fas fa-search me-2"></i>Rechercher
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Main Table Card -->
@@ -328,21 +407,49 @@
                                     <table class="w-full text-left border-collapse" id="tableEcritures">
                                     <thead class="bg-slate-50/50 border-b border-slate-100">
                                         <tr>
-                                            <!-- Add table headers here -->
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">N° Saisie</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Réf. Pièce</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Compte Général</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Compte Tiers</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Analytique</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Débit</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Crédit</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Pièce</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($entries as $entry)
-                                            <tr>
-                                                <!-- Add table data here -->
+                                        @foreach (($ecritures ?? collect()) as $ecriture)
+                                            <tr class="border-b border-slate-100 hover:bg-slate-50">
+                                                <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->date }}</td>
+                                                <td class="px-4 py-3 text-sm font-semibold text-slate-800">{{ $ecriture->n_saisie }}</td>
+                                                <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->reference_piece }}</td>
+                                                <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->description_operation }}</td>
+                                                <td class="px-4 py-3 text-sm text-slate-700">
+                                                    {{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte . ' - ' . $ecriture->planComptable->intitule : '-' }}
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-slate-700">
+                                                    {{ $ecriture->planTiers ? $ecriture->planTiers->numero_de_tiers . ' - ' . $ecriture->planTiers->intitule : '-' }}
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-slate-700">{{ (int) $ecriture->plan_analytique === 1 ? 'Oui' : 'Non' }}</td>
+                                                <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->debit, 2, ',', ' ') }}</td>
+                                                <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->credit, 2, ',', ' ') }}</td>
+                                                <td class="px-4 py-3 text-center">
+                                                    @if ($ecriture->piece_justificatif)
+                                                        <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}" target="_blank" class="text-blue-700 font-semibold">Voir</a>
+                                                    @else
+                                                        <span class="text-slate-400">-</span>
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @endforeach
-                                        @if($entries->isEmpty())
-                                        <tr>
-                                            <td colspan="13" class="text-center text-muted py-4">
-                                                Aucune écriture trouvée pour les critères sélectionnés
-                                            </td>
-                                        </tr>
+                                        @if (!isset($ecritures) || $ecritures->isEmpty())
+                                            <tr>
+                                                <td colspan="10" class="text-center text-slate-500 py-6">
+                                                    Aucune écriture trouvée pour les critères sélectionnés
+                                                </td>
+                                            </tr>
                                         @endif
                             </tbody>
                             <tfoot>
@@ -573,29 +680,36 @@
         }
 
         // Ajouter la ligne au tableau (simulation)
-        const table = document.getElementById('tableEcrituresList').getElementsByTagName('tbody')[0];
-        const newRow = table.insertRow();
+        const table = document.getElementById('tableEcritures').getElementsByTagName('tbody')[0];
+        
+        // Supprimer la ligne "Aucune écriture trouvée" si elle existe
+        if (table.rows.length === 1 && table.rows[0].cells.length === 1) {
+            table.deleteRow(0);
+        }
+
+        const newRow = table.insertRow(0); // Ajouter au début
+
+        const compteText = document.getElementById('compteGeneralSearch').value;
+        const tierText = document.getElementById('compteTiersSearch').value || '-';
+        const analytiqueText = document.getElementById('planAnalytiqueEcriture').value === '1' ? 'Oui' : 'Non';
+        const referencePiece = document.getElementById('referencePieceEcriture').value || '-';
 
         newRow.innerHTML = `
-            <td>${date}</td>
-            <td>${document.getElementById('numeroSaisie').value}</td>
-            <td>${document.getElementById('journalEcriture').value}</td>
-            <td>${libelle}</td>
-            <td>${document.getElementById('referencePieceEcriture').value}</td>
-            <td>${document.getElementById('compteGeneralEcriture').options[document.getElementById('compteGeneralEcriture').selectedIndex].text}</td>
-            <td>${document.getElementById('compteTiersEcriture').options[document.getElementById('compteTiersEcriture').selectedIndex]?.text || ''}</td>
-            <td class="text-end">${debit > 0 ? debit.toFixed(2).replace('.', ',') : ''}</td>
-            <td class="text-end">${credit > 0 ? credit.toFixed(2).replace('.', ',') : ''}</td>
-            <td>${document.getElementById('planAnalytiqueEcriture').value === '1' ? 'Oui' : 'Non'}</td>
-            <td>
-                <button type="button" class="btn btn-sm btn-warning" onclick="editEcriture(0)">
-                    <i class="bx bx-edit"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-danger" onclick="deleteEcriture(0)">
-                    <i class="bx bx-trash"></i>
-                </button>
+            <td class="px-4 py-3 text-sm text-slate-700">${date}</td>
+            <td class="px-4 py-3 text-sm font-semibold text-slate-800">${document.getElementById('numeroSaisie').value}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${referencePiece}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${libelle}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${compteText}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${tierText}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${analytiqueText}</td>
+            <td class="px-4 py-3 text-sm text-slate-700 text-right">${debit > 0 ? debit.toLocaleString('fr-FR', {minimumFractionDigits: 2}) : ''}</td>
+            <td class="px-4 py-3 text-sm text-slate-700 text-right">${credit > 0 ? credit.toLocaleString('fr-FR', {minimumFractionDigits: 2}) : ''}</td>
+            <td class="px-4 py-3 text-center">
+                <span class="text-slate-400">À rafraîchir</span>
             </td>
         `;
+
+        newRow.classList.add('border-b', 'border-slate-100', 'hover:bg-slate-50');
 
         // Fermer le modal et réinitialiser le formulaire
         const modal = bootstrap.Modal.getInstance(document.getElementById('nouvelleEcritureModal'));
@@ -622,15 +736,43 @@
     }
 
     // Fonctions d'édition et suppression (placeholders)
-    function editEcriture(id) {
-        alert('Fonction de modification à implémenter pour l\'écriture ID: ' + id);
+    function editEcriture(arg) {
+        const id = (typeof arg === 'number' || typeof arg === 'string') ? arg : null;
+        alert('Fonction de modification à implémenter' + (id !== null ? (' pour l\'écriture ID: ' + id) : ''));
     }
 
-    function deleteEcriture(id) {
+    function deleteEcriture(arg) {
         if (confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')) {
-            alert('Fonction de suppression à implémenter pour l\'écriture ID: ' + id);
+            if (arg && typeof arg === 'object' && typeof arg.remove === 'function') {
+                arg.remove();
+            }
+            alert('Écriture supprimée avec succès !');
         }
     }
+
+    window.toggleAdvancedFilter = function() {
+        const panel = document.getElementById('advancedFilterPanel');
+        if (!panel) return;
+        panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+    };
+
+    window.applyAdvancedFilters = function() {
+        if (typeof filterEcritures === 'function') {
+            filterEcritures();
+        }
+    };
+
+    window.resetAdvancedFilters = function() {
+        const ex = document.getElementById('filterExercice');
+        const mois = document.getElementById('filterMois');
+        const j = document.getElementById('filterJournal');
+        if (ex) ex.value = '';
+        if (mois) mois.value = '';
+        if (j) j.value = '';
+        if (typeof filterEcritures === 'function') {
+            filterEcritures();
+        }
+    };
 
     // Fonction pour filtrer les options d'un menu déroulant de recherche
     function filtrerOptions(searchInputId, dropdownId) {

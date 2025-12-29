@@ -58,7 +58,7 @@ public function index()
     // IMPORTANT: On passe bien les 3 variables à la vue
     return view('exercice_comptable', compact('exercices', 'code_journaux', 'exerciceActif'));
 }
-    public function getData()
+    public function getData(Request $request)
     {
         $user = Auth::user();
 
@@ -73,8 +73,27 @@ public function index()
             return response()->json(['data' => []]);
         }
 
-        $exercices = ExerciceComptable::where('company_id', $companyId)
-            ->orderBy('date_debut', 'desc')
+        $query = ExerciceComptable::where('company_id', $companyId);
+
+        if ($request->filled('date_debut')) {
+            try {
+                $dateDebut = Carbon::parse($request->input('date_debut'))->startOfDay();
+                $query->whereDate('date_debut', '>=', $dateDebut);
+            } catch (\Exception $e) {
+                // Ignorer un format invalide
+            }
+        }
+
+        if ($request->filled('date_fin')) {
+            try {
+                $dateFin = Carbon::parse($request->input('date_fin'))->endOfDay();
+                $query->whereDate('date_fin', '<=', $dateFin);
+            } catch (\Exception $e) {
+                // Ignorer un format invalide
+            }
+        }
+
+        $exercices = $query->orderBy('date_debut', 'desc')
             ->get()
             ->map(function ($exercice) {
                 $dateDebut = Carbon::parse($exercice->date_debut);

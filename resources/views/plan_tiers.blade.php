@@ -165,11 +165,6 @@
                                 background-position: right 1rem center !important;
                                 background-size: 1.2em !important;
                             }
-
-                            .header-dynamic-title h1 {
-                                font-size: 3.5rem !important; /* Augmenté de 2.5rem à 3.5rem */
-                                letter-spacing: -0.04em !important;
-                            }
                         </style>
 
                     <div class="container-xxl flex-grow-1 container-p-y">
