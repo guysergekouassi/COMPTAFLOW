@@ -18,11 +18,13 @@ class PlanComptableController extends Controller
         try {
             // Récupérer l'utilisateur connecté
             $user = Auth::user();
+
+            $companyId = session('current_company_id', $user->company_id);
             
             // Récupérer tous les plans comptables par défaut (adding_strategy = 'auto')
-            $plansComptables = PlanComptable::where('adding_strategy', 'auto')
-                ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-                ->get();
+            $plansComptables = PlanComptable::where('company_id', $companyId)
+            ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
+            ->get();
 
             // Si aucun plan par défaut n'existe, charger depuis le fichier JSON
             if ($plansComptables->isEmpty()) {
@@ -110,42 +112,49 @@ class PlanComptableController extends Controller
         }
     }
 
-    public function store(Request $request)
-    {
-        try {
-            $request->validate([
-                'numero_de_compte' => 'required',
-                'intitule' => 'required',
-            ]);
+  public function store(Request $request)
+{
+    try {
+        $request->validate([
+            'numero_de_compte' => 'required',
+            'intitule' => 'required',
+        ]);
 
-            $numero_formate = str_pad($request->numero_de_compte, 8, '0', STR_PAD_RIGHT);
-            $intitule_formate = ucfirst(strtolower($request->intitule));
+        $numero_formate = str_pad($request->numero_de_compte, 8, '0', STR_PAD_RIGHT);
+        $intitule_formate = ucfirst(strtolower($request->intitule));
 
-            $exists = PlanComptable::where(function ($query) use ($numero_formate, $intitule_formate) {
-                    $query->where('numero_de_compte', $numero_formate)
-                        ->orWhere('intitule', $intitule_formate);
-                })
-                ->exists();
+        // 1. RÉCUPÉRER L'ID DE LA SOCIÉTÉ EN SESSION (Switch)
+        $companyId = session('current_company_id', Auth::user()->company_id);
 
-            if ($exists) {
-                return redirect()->back()->with('error', 'Ce numéro de compte ou cet intitulé existe déjà.');
-            }
+        // 2. Vérifier l'existence au sein de CETTE société uniquement
+        $exists = PlanComptable::where('company_id', $companyId)
+            ->where(function ($query) use ($numero_formate, $intitule_formate) {
+                $query->where('numero_de_compte', $numero_formate)
+                      ->orWhere('intitule', $intitule_formate);
+            })
+            ->exists();
 
-            $user = Auth::user();
-            
-            PlanComptable::create([
-                'numero_de_compte' => $numero_formate,
-                'intitule' => $intitule_formate,
-                'adding_strategy' => 'manuel',
-                'user_id' => $user->id,
-                'company_id' => $user->company_id,
-            ]);
-
-            return redirect()->back()->with('success', 'Plan comptable ajouté avec succès.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Erreur lors de l\'ajout du plan comptable : ' . $e->getMessage());
+        if ($exists) {
+            return redirect()->back()->with('error', 'Ce numéro de compte ou cet intitulé existe déjà dans cette comptabilité.');
         }
+
+        $user = Auth::user();
+        
+        // 3. ENREGISTRER AVEC LE BON company_id
+        PlanComptable::create([
+            'numero_de_compte' => $numero_formate,
+            'intitule' => $intitule_formate,
+            'adding_strategy' => 'manuel',
+            'user_id' => $user->id,
+            'company_id' => $companyId, // Utilise l'ID switché
+            'type_de_compte' => $this->determinerTypeCompte($numero_formate), // Optionnel mais conseillé
+        ]);
+
+        return redirect()->back()->with('success', 'Plan comptable ajouté avec succès à la comptabilité actuelle.');
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Erreur lors de l\'ajout : ' . $e->getMessage());
     }
+}
 
     public function useDefault(Request $request)
     {
