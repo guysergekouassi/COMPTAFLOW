@@ -173,8 +173,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/exercice_comptable', [ExerciceComptableController::class, 'index'])->name('exercice_comptable');
     Route::get('/exercice_comptable/data', [ExerciceComptableController::class, 'getData'])->name('exercice_comptable.data');
     Route::post('/exercice_comptable', [ExerciceComptableController::class, 'store'])->name('exercice_comptable.store');
-    Route::delete('/exercice_comptable/{id}', [ExerciceComptableController::class, 'destroy'])->name('exercice_comptable.destroy');
-    Route::patch('/exercice_comptable/{id}', [ExerciceComptableController::class, 'cloturer'])->name('exercice_comptable.cloturer');
+    Route::delete('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'destroy'])->name('exercice_comptable.destroy');
+    Route::patch('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'cloturer'])->name('exercice_comptable.cloturer');
 
     // *****************ROUTE GESTION DES JOURNAUX DE SAISIS
     Route::get('/journaux_saisis', [JournauxSaisisController::class, 'index'])->name('journaux_saisis');

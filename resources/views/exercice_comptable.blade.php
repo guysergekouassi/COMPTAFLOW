@@ -6,23 +6,11 @@
 @include('components.head')
 
 <body>
-    <!-- Layout wrapper -->
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
-            <!-- Menu -->
-
             @include('components.sidebar')
-            <!-- / Menu -->
-
-            <!-- Layout container -->
             <div class="layout-page">
-                <!-- Navbar -->
-
                 @include('components.header', ['page_title' => 'EXERCICE <span class="text-gradient">COMPTABLE</span>'])
-
-                <!-- / Navbar -->
-
-                <!-- Content wrapper -->
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
@@ -45,7 +33,6 @@
                             @endif
 
 
-                            <!-- Section table -->
                             <div class="card">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0">Exercice comptable</h5>
@@ -61,22 +48,18 @@
                                     </div>
                                 </div>
 
-                                <!-- Filtre personnalisé -->
                                 <div class="collapse px-3 pt-2" id="filterPanel">
                                     <div class="row g-2">
-                                        <!-- Champ Date de début -->
                                         <div class="col-md-4">
                                             <input type="date" id="filter-date-debut" class="form-control"
                                                 placeholder="Date de début">
                                         </div>
 
-                                        <!-- Champ Date de fin -->
                                         <div class="col-md-4">
                                             <input type="date" id="filter-date-fin" class="form-control"
                                                 placeholder="Date de fin">
                                         </div>
 
-                                        <!-- Boutons Appliquer et Réinitialiser -->
                                         <div class="col-md-4 d-flex gap-2">
                                             <button class="btn btn-primary w-100" id="apply-filters">
                                                 Appliquer les filtres
@@ -89,9 +72,6 @@
                                 </div>
 
 
-                                <!-- Table -->
-
-                                <!-- Initialisation du DataTable déplacée dans la section script plus bas -->
                                 <div class="table-responsive text-nowrap">
                                     <table class="table" id="exerciceTable">
 
@@ -112,12 +92,12 @@
                                 </div>
                             </div>
 
-                            <!-- Modal Creation Ecriture-->
                             <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
-                                    <form id="formCreateExercice" action="{{ route('exercice_comptable.store') }}" method="POST" class="needs-validation" novalidate>
-                                        @csrf
-                                        <div class="modal-content">
+                                    <div class="modal-content">
+                                        <form id="formCreateExercice" method="POST"
+                                            action="{{ route('exercice_comptable.store') }}">
+                                            @csrf
                                             <div class="modal-header">
                                                 <h5 class="modal-title" id="modalCenterTitle">
                                                     Créer un nouvel exercice comptable
@@ -126,6 +106,16 @@
                                                     aria-label="Fermer"></button>
                                             </div>
                                             <div class="modal-body">
+                                                @if ($errors->any())
+                                                    <div class="alert alert-danger">
+                                                        <ul class="mb-0">
+                                                            @foreach ($errors->all() as $error)
+                                                                <li>{{ $error }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                @endif
+
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <label for="date_debut" class="form-label">Date de
@@ -155,19 +145,18 @@
                                                     data-bs-dismiss="modal">
                                                     Fermer
                                                 </button>
-                                                <button type="submit" class="btn btn-primary">
+                                                <button type="submit" class="btn btn-primary" id="btnSubmitExercice">
                                                     Enregistrer
                                                 </button>
                                             </div>
-                                        </div>
-                                    </form>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
 
 
 
 
-                            <!-- Modal Creation plan update-->
                             <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered" role="document">
                                     <div class="modal-content">
@@ -210,12 +199,10 @@
                                 </div>
                             </div>
 
-                            <!-- Modal Confirmation de suppression -->
-                            <!-- Modal de confirmation de suppression -->
                             <div class="modal fade" id="deleteConfirmationModal" tabindex="-1"
                                 aria-labelledby="deleteModalLabel" aria-hidden="true">
                                 <div class="modal-dialog modal-sm">
-                                    <form method="POST" id="deleteForm">
+                                    <form method="POST" id="deleteForm" action="">
                                         @csrf
                                         @method('DELETE')
                                         <div class="modal-content border-0 shadow">
@@ -248,14 +235,12 @@
                             </div>
 
 
-                            <!-- Modal de confirmation de clôture -->
                             <div class="modal fade" id="clotureConfirmationModal" tabindex="-1"
                                 aria-labelledby="clotureModalLabel" aria-hidden="true">
                                 <div class="modal-dialog modal-sm">
                                     <form method="POST" id="clotureForm">
                                         @csrf
-                                        @method('PATCH') <!-- Ou PUT si tu préfères -->
-                                        <div class="modal-content border-0 shadow">
+                                        @method('PATCH') <div class="modal-content border-0 shadow">
                                             <div class="modal-header text-white justify-content-center bg-warning">
                                                 <h5 class="modal-title" id="clotureModalLabel">
                                                     <i class="bx bx-lock-alt me-2"></i>Clôturer l'exercice
@@ -288,25 +273,18 @@
 
                         </div>
                     </div>
-                    <!-- Content wrapper -->
+                    </div>
                 </div>
-                <!-- / Layout page -->
-            </div>
 
-            <!-- Overlay -->
             <div class="layout-overlay layout-menu-toggle"></div>
         </div>
-        <!-- / Layout wrapper -->
-
-        <!-- Core JS -->
-
         @include('components.footer')
 
         <script>
 
             const journauxSaisisUrl = "{{ route('journaux_saisis') }}";
-            const exercice_comptableDeleteUrl = "{{ route('exercice_comptable.destroy', ['id' => '__ID__']) }}";
-            const exercice_comptableCloturerUrl = "{{ route('exercice_comptable.cloturer', ['id' => '__ID__']) }}";
+            const exercice_comptableDeleteUrl = "{{ route('exercice_comptable.destroy', ['exercice_comptable' => '__ID__']) }}";
+            const exercice_comptableCloturerUrl = "{{ route('exercice_comptable.cloturer', ['exercice_comptable' => '__ID__']) }}";
 
         </script>
         {{-- <script src="{{ asset('js/exercice_compt.js') }}"></script> --}}
@@ -702,6 +680,32 @@
         }
         });
 
+</script>
+
+<script>
+    $(document).ready(function() {
+        if ($.fn.DataTable.isDataTable('#exerciceTable')) {
+            $('#exerciceTable').DataTable().destroy();
+        }
+        $('#exerciceTable').DataTable({
+            pageLength: 10,
+            lengthMenu: [10, 15, 20, 25],
+            language: {
+                search: "Rechercher :",
+                lengthMenu: "Afficher _MENU_ lignes",
+                info: "Affichage de _START_ à _END_ sur _TOTAL_ lignes",
+                paginate: {
+                    first: "Premier",
+                    last: "Dernier",
+                    next: "Suivant",
+                    previous: "Précédent"
+                },
+                zeroRecords: "Aucune donnée trouvée",
+                infoEmpty: "Aucune donnée à afficher",
+                infoFiltered: "(filtré depuis _MAX_ lignes totales)"
+            }
+        });
+    });
 </script>
 </body>
 
