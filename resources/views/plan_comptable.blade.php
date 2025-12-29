@@ -582,10 +582,7 @@
                         { width: "55%", targets: 1 },
                         { width: "15%", targets: 2 },
                         { width: "15%", targets: 3 }
-                    ],
-                    drawCallback: function() {
-                        updatePagination();
-                    }
+                    ]
                 });
 
                 // Fonction pour basculer l'affichage du panneau de filtre
@@ -663,44 +660,70 @@
                         activateCard(selector);
                     });
                 });
-
-                // Fonction de mise à jour de la pagination
-                function updatePagination() {
-                    const info = table.page.info();
-                    console.log("📊 Mise à jour pagination:", info);
-
-                    if (info.recordsDisplay > 0) {
-                        $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
-
-                        let paginationHtml = '';
-                        paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                        paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                        paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                        $('.pagination-container').html(paginationHtml);
-
-                        // Gestion des événements de pagination
-                        $(document).off('click', '#prevPage, #nextPage').on('click', '#prevPage, #nextPage', function() {
-                            if ($(this).attr('id') === 'prevPage' && info.page > 0) {
-                                table.page('previous').draw('page');
-                            } else if ($(this).attr('id') === 'nextPage' && info.page < info.pages - 1) {
-                                table.page('next').draw('page');
-                            }
-                        });
-                    } else {
-                        $('.table-info').html('Aucun compte trouvé');
-                        $('.pagination-container').empty();
-                    }
-                }
-
-                // Initialisation de la pagination
-                updatePagination();
-
-                // Gestion de l'événement de dessin du tableau
-                table.on('draw', function() {
-                    console.log("🎨 Tableau redessiné");
-                    updatePagination();
-                });
             }
+        });
+    </script>
+                    panel.removeClass('hidden');
+                    $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
+                } else {
+                    panel.addClass('hidden');
+                    $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
+                }
+                    });
+
+                    // 4. KPI Cards
+                    function activateCard(cardId) {
+                        $('.filter-card').removeClass('filter-active');
+                        $(`${cardId}`).addClass('filter-active');
+                    }
+
+                    $('#filter-all').on('click', function() { table.column(2).search('').draw(); activateCard('#filter-all'); });
+                    $('#filter-manuel').on('click', function() { table.column(2).search('manuel').draw(); activateCard('#filter-manuel'); });
+                    $('#filter-auto').on('click', function() { table.column(2).search('auto').draw(); activateCard('#filter-auto'); });
+
+                    // 5. Pagination
+                    function updatePagination() {
+                        const info = table.page.info();
+                        console.log("📊 Mise à jour pagination:", info);
+
+                        if (info.recordsDisplay > 0) {
+                            $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
+
+                            let paginationHtml = '';
+                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                            paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
+                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                            $('.pagination-container').html(paginationHtml);
+                        } else {
+                            $('.table-info').html('Aucun compte trouvé');
+                            $('.pagination-container').empty();
+                        }
+                    }
+
+                    // On attache l'event AVANT tout draw potentiel
+                    table.on('draw', function() {
+                        console.log("🎨 Event draw déclenché");
+                        updatePagination();
+                    });
+
+                    
+                    // Gestion de la pagination
+                    $(document).on('click', '#nextPage', function() { 
+                        table.page('next').draw('page');
+                        updatePagination();
+                    });
+                    
+                    $(document).on('click', '#prevPage', function() { 
+                        table.page('previous').draw('page');
+                        updatePagination();
+                    });
+                } else {
+                    console.log("⏳ En attente de jQuery/DataTables...");
+                    setTimeout(initDataTables, 1200);
+                }
+            };
+
+            initDataTables();
         });
     </script>
 </body>
