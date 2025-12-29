@@ -564,7 +564,7 @@
                 table = $('#planComptableTable').DataTable({
                     dom: 't',
                     pageLength: 25,
-                    order: [[0, 'asc']], // Trier par numéro de compte par défaut
+                    order: [[0, 'asc']],
                     language: {
                         search: "Rechercher:",
                         zeroRecords: "Aucun compte trouvé",
@@ -579,54 +579,61 @@
                         }
                     },
                     columnDefs: [
-                        { width: "15%", targets: 0 }, // Numéro de compte
-                        { width: "55%", targets: 1 }, // Intitulé
-                        { width: "15%", targets: 2 }, // Type
-                        { width: "15%", targets: 3 }  // Date
+                        { width: "15%", targets: 0 },
+                        { width: "55%", targets: 1 },
+                        { width: "15%", targets: 2 },
+                        { width: "15%", targets: 3 }
                     ]
                 });
 
-                // 2. Filtres
+                // Fonction pour appliquer les filtres
                 function applyCustomFilters() {
-                    table.column(0).search($('#filterNumero').val()).draw();
-                    table.column(1).search($('#filterIntitule').val()).draw();
-                    table.column(3).search($('#filterClasse').val()).draw();
+                    table.draw(); // Redessiner le tableau avec tous les filtres actuels
                 }
 
-            $('#filterNumero, #filterIntitule, #filterClasse').on('keyup', applyCustomFilters);
+                // Gestion des événements de filtre
+                $('#filterNumero, #filterIntitule, #filterClasse').on('keyup change', function() {
+                    // Appliquer le filtre sur la colonne correspondante
+                    if ($(this).attr('id') === 'filterNumero') {
+                        table.column(0).search(this.value).draw();
+                    } else if ($(this).attr('id') === 'filterIntitule') {
+                        table.column(1).search(this.value).draw();
+                    } else if ($(this).attr('id') === 'filterClasse') {
+                        table.column(3).search(this.value).draw();
+                    }
+                });
 
-            // Boutons
-            $('#applyFilterBtn').on('click', function(e) {
-                e.preventDefault();
-                applyCustomFilters();
-            });
+                // Bouton Appliquer les filtres
+                $('#applyFilterBtn').on('click', function(e) {
+                    e.preventDefault();
+                    applyCustomFilters();
+                });
 
-            $('#resetFilterBtn').on('click', function(e) {
-                e.preventDefault();
-                $('#filterNumero').val('');
-                $('#filterIntitule').val('');
-                $('#filterClasse').val('');
-                applyCustomFilters();
-            });
+                // Bouton Réinitialiser
+                $('#resetFilterBtn').on('click', function(e) {
+                    e.preventDefault();
+                    $('#filterNumero, #filterIntitule, #filterClasse').val('');
+                    table.search('').columns().search('').draw();
+                });
 
-            // 3. Toggle Button
-            $('#toggleFilterBtn').on('click', function(e) {
-                 e.preventDefault();
-                 const panel = $('#advancedFilterPanel');
-                 if(panel.hasClass('hidden')) {
-                     panel.removeClass('hidden');
-                     $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
-                 } else {
-                     panel.addClass('hidden');
-                     $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
-                 }
-            });
+                // Toggle Button pour afficher/masquer le panneau de filtre
+                $('#toggleFilterBtn').on('click', function(e) {
+                    e.preventDefault();
+                    const panel = $('#advancedFilterPanel');
+                    if(panel.hasClass('hidden')) {
+                        panel.removeClass('hidden');
+                        $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
+                    } else {
+                        panel.addClass('hidden');
+                        $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
+                    }
+                });
 
-            // 4. KPI Cards
-            function activateCard(cardId) {
-                $('.filter-card').removeClass('filter-active');
-                $(`${cardId}`).addClass('filter-active');
-            }
+                // Activation des cartes de filtre
+                function activateCard(cardId) {
+                    $('.filter-card').removeClass('filter-active');
+                    $(cardId).addClass('filter-active');
+                }
 
             // Gestion des filtres
             if (table) {
