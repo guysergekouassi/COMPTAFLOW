@@ -189,42 +189,39 @@
 
                         <!-- KPI Filters Section with Interactive Buttons -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <!-- Total Button -->
-                            <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active hover:scale-105 transition-transform duration-200" 
-                                    data-filter-type="all" onclick="filterPlans('all')">
-                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-                                    <i class="bx bx-layer text-2xl"></i>
-                                </div>
-                                <div class="text-left">
-                                    <p class="text-sm text-slate-500">Total des plans</p>
-                                    <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlans }}</h3>
-                                </div>
-                            </button>
+    <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active hover:scale-105 transition-all duration-200" 
+            data-filter-type="all">
+        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+            <i class="bx bx-layer text-2xl"></i>
+        </div>
+        <div class="text-left">
+            <p class="text-sm text-slate-500">Total des plans</p>
+            <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlans }}</h3>
+        </div>
+    </button>
 
-                            <!-- Manuel Button -->
-                            <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card hover:scale-105 transition-transform duration-200" 
-                                    data-filter-type="user" onclick="filterPlans('user')">
-                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-                                    <i class="bx bx-user text-2xl"></i>
-                                </div>
-                                <div class="text-left">
-                                    <p class="text-sm text-slate-500">Plans par utilisateur</p>
-                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansByUser }}</h3>
-                                </div>
-                            </button>
+    <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card hover:scale-105 transition-all duration-200" 
+            data-filter-type="user">
+        <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+            <i class="bx bx-user text-2xl"></i>
+        </div>
+        <div class="text-left">
+            <p class="text-sm text-slate-500">Plans par utilisateur</p>
+            <h3 class="text-2xl font-bold text-slate-800">{{ $plansByUser }}</h3>
+        </div>
+    </button>
 
-                            <!-- Auto Button -->
-                            <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card hover:scale-105 transition-transform duration-200" 
-                                    data-filter-type="system" onclick="filterPlans('system')">
-                                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
-                                    <i class="bx bx-cog text-2xl"></i>
-                                </div>
-                                <div class="text-left">
-                                    <p class="text-sm text-slate-500">Plan SYSCOHADA</p>
-                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
-                                </div>
-                            </button>
-                        </div>
+    <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card hover:scale-105 transition-all duration-200" 
+            data-filter-type="system">
+        <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+            <i class="bx bx-cog text-2xl"></i>
+        </div>
+        <div class="text-left">
+            <p class="text-sm text-slate-500">Plan SYSCOHADA</p>
+            <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
+        </div>
+    </button>
+</div>
 
                         <!-- Tableau des plans comptables -->
                         <div class="overflow-x-auto bg-white rounded-lg shadow">
@@ -876,5 +873,6 @@ switch(filterType) {
             box-shadow: 0 0 0 1px #3b82f6;
         }
     </style>
+    
 </body>
 </html>
