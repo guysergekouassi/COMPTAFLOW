@@ -19,7 +19,8 @@ class JournauxSaisisController extends Controller
             'id_exercice' => 'required|exists:exercices_comptables,id'
         ]);
 
-        $companyId = Auth::user()->company_id;
+        // $companyId = Auth::user()->company_id;
+        $companyId = session('current_company_id', Auth::user()->company_id);
         $data = $request->all();
 
         // Récupérer l'exercice sélectionné
@@ -57,7 +58,8 @@ class JournauxSaisisController extends Controller
                 ['mois', '=', $request->mois],
                 ['exercices_comptables_id', '=', $request->exercice_id],
                 ['code_journals_id', '=', $request->code_journal_id],
-                ['company_id', '=', Auth::user()->company_id]
+                // ['company_id', '=', Auth::user()->company_id]
+                ['company_id', '=', session('current_company_id', Auth::user()->company_id)]
             ])
             ->select('id') // On ne récupère que l'ID pour optimiser la mémoire
             ->first();

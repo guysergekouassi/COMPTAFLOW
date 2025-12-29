@@ -19,16 +19,17 @@ class ModalDirectController   extends Controller
         try {
             $user = Auth::user();
             $data = $request->all();
+            $companyId = session('current_company_id', $user->company_id);
 
-            $plansComptables = PlanComptable::where('company_id', $user->company_id)
+            $plansComptables = PlanComptable::where('company_id', $companyId)
                 ->select('id', 'numero_de_compte', 'intitule')
                 ->get();
 
-            $plansTiers = PlanTiers::where('company_id', $user->company_id)
+            $plansTiers = PlanTiers::where('company_id', $companyId)
                 ->select('id', 'numero_de_tiers', 'intitule')
                 ->get();
 
-            $query = EcritureComptable::where('company_id', $user->company_id)
+            $query = EcritureComptable::where('company_id', $companyId)
                 ->orderBy('created_at', 'desc');
 
             if (!empty($data['n_saisie'])) {
