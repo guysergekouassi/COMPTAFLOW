@@ -103,10 +103,14 @@ class ExerciceComptableController extends Controller
             
             // Récupérer la société de l'utilisateur
             $company = $user->company;
-            
+            $companyId = session('selected_company_id', $user->company_id);
             // Utiliser l'ID de la société actuelle (32 pour COMPTABILITE-CAAPA)
-            $companyId = 32; // À remplacer par $company->id en production
-            
+            // $companyId = 32; // À remplacer par $company->id en production
+            dd([
+    'session_id' => session('selected_company_id'),
+    'user_company_id' => $user->company_id,
+    'final_company_id' => $companyId
+]);
             Log::info('ID de société utilisé', ['company_id' => $companyId]);
 
             // Validation des données de base
@@ -181,7 +185,7 @@ class ExerciceComptableController extends Controller
                     'intitule' => $request->intitule,
                     'user_id' => $user->id,
                     'company_id' => $companyId,
-                    'parent_company_id' => $user->company_id // Ajout de l'ID de la société parente
+                    // 'parent_company_id' => $user->company_id // Ajout de l'ID de la société parente
                 ]);
 
                 $exercice = new ExerciceComptable([
@@ -190,7 +194,7 @@ class ExerciceComptableController extends Controller
                     'intitule' => $request->intitule,
                     'user_id' => $user->id,
                     'company_id' => $companyId,
-                    'parent_company_id' => $user->company_id, // Enregistrement de la société parente
+                //    'parent_company_id' => $user->company_id, // Enregistrement de la société parente
                     'nombre_journaux_saisis' => 0,
                     'cloturer' => 0,
                 ]);
