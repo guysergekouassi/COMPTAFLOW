@@ -563,6 +563,16 @@
                 table = $('#planComptableTable').DataTable({
                     dom: 't',
                     pageLength: 25,
+                    // Activer le débogage
+                    // debug: true,
+                    // Afficher les logs de débogage
+                    // "language": {
+                    //     "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/French.json"
+                    // },
+                    // Afficher toutes les données dans la console
+                    "initComplete": function(settings, json) {
+                        console.log('Données chargées :', this.api().data().toArray());
+                    },
                     order: [[0, 'asc']],
                     language: {
                         search: "Rechercher:",
@@ -700,6 +710,9 @@
 
                 // Gestion des filtres par carte KPI
                 $('.filter-card').on('click', function() {
+                    // Retourner si le bouton est déjà actif
+                    if ($(this).hasClass('filter-active')) return;
+                    
                     // Retirer la classe active de toutes les cartes
                     $('.filter-card').removeClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
                     
@@ -709,9 +722,12 @@
                     // Récupérer le type de filtre
                     const filterType = $(this).data('filter-type');
                     
+                    console.log('Filtre appliqué :', filterType);
+                    
                     // Appliquer le filtre approprié
                     switch(filterType) {
                         case 'user':
+                            // On filtre sur la colonne 'adding_strategy' qui est à l'index 2 (3ème colonne)
                             table.column(2).search('manuel').draw();
                             break;
                         case 'system':
@@ -720,6 +736,9 @@
                         default: // 'all'
                             table.column(2).search('').draw();
                     }
+                    
+                    // Afficher toutes les données pour débogage
+                    console.log('Données du tableau après filtrage :', table.data().toArray());
                 });
             }
         });
