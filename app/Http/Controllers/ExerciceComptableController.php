@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\ExerciceComptable;
 use App\Models\JournalSaisi;
-
 use App\Models\CodeJournal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log as Logger;
 use Carbon\Carbon;
 use App\Models\Company;
 use Illuminate\Support\Facades\DB;
@@ -108,7 +107,7 @@ class ExerciceComptableController extends Controller
             // Utiliser l'ID de la société actuelle (32 pour COMPTABILITE-CAAPA)
             $companyId = 32; // À remplacer par $company->id en production
             
-            logger('ID de société utilisé', ['company_id' => $companyId]);
+            Log::info('ID de société utilisé', ['company_id' => $companyId]);
 
             // Validation des données de base
             $validated = $request->validate(ExerciceComptable::$rules, [
@@ -145,7 +144,7 @@ class ExerciceComptableController extends Controller
                 ->exists();
 
             if ($overlap) {
-                logger('Chevauchement détecté pour la période', [
+                Logger::warning('Chevauchement détecté pour la période', [
                     'date_debut' => $request->date_debut,
                     'date_fin' => $request->date_fin,
                     'company_id' => $companyId
@@ -162,7 +161,7 @@ class ExerciceComptableController extends Controller
                 ->first();
 
             if ($existingExercice) {
-                logger('Exercice avec le même intitulé existe déjà', [
+                Logger::warning('Exercice avec le même intitulé existe déjà', [
                     'intitule' => $request->intitule,
                     'company_id' => $companyId
                 ]);
@@ -176,7 +175,7 @@ class ExerciceComptableController extends Controller
             DB::beginTransaction();
 
             try {
-                logger('Création de l\'exercice avec les données', [
+                Logger::info('Création de l\'exercice avec les données', [
                     'date_debut' => $request->date_debut,
                     'date_fin' => $request->date_fin,
                     'intitule' => $request->intitule,
@@ -204,11 +203,14 @@ class ExerciceComptableController extends Controller
                 }
 
                 DB::commit();
-                logger('Exercice créé avec succès', ['exercice_id' => $exercice->id]);
+                Logger::info('Exercice créé avec succès', ['exercice_id' => $exercice->id]);
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                \Log::error('Erreur lors de la création de l\'exercice: ' . $e->getMessage());
+                Logger::error('Erreur lors de la création de l\'exercice: ' . $e->getMessage(), [
+                    'exception' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Erreur lors de la création de l\'exercice: ' . $e->getMessage()
@@ -261,7 +263,10 @@ class ExerciceComptableController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Erreur création exercice: ' . $e->getMessage());
+            Logger::error('Erreur création exercice: ' . $e->getMessage(), [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Une erreur est survenue lors de la création de l\'exercice: ' . $e->getMessage()
