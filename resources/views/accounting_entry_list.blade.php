@@ -286,7 +286,7 @@
                                        </div>
                                        <div>
                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Journal</p>
-                                           <p class="text-sm font-bold text-slate-800">{{ $journal->code_journal }} - {{ $journal->intitule }}</p>
+                                           <p class="text-sm font-bold text-slate-800">{{ data_get($journal ?? null, 'code_journal', '-') }} - {{ data_get($journal ?? null, 'intitule', '-') }}</p>
                                        </div>
                                    </div>
                                    <div class="h-8 w-px bg-slate-200"></div>
@@ -296,7 +296,7 @@
                                        </div>
                                        <div>
                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Période</p>
-                                           <p class="text-sm font-bold text-slate-800">{{ \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}</p>
+                                           <p class="text-sm font-bold text-slate-800">{{ isset($exercice) && data_get($exercice, 'date_debut') ? \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') : '-' }} - {{ isset($exercice) && data_get($exercice, 'date_fin') ? \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') : '-' }}</p>
                                        </div>
                                    </div>
                                 </div>
