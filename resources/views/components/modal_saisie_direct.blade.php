@@ -84,17 +84,7 @@
 <!-- Ajout de jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    // Correction robuste contre les doublons d'affichage
-    // $(document).ready(function() {
-    //     $('#saisieRedirectModal').on('show.bs.modal', function () {
-         
-    //         setTimeout(function() {
-    //             $('.selectpicker').selectpicker('destroy');
-    //             $('.selectpicker').selectpicker('render');  
-    //             $('.selectpicker').selectpicker('refresh'); 
-    //         }, 100);
-    //     });
-    // });
+
 
  $(document).ready(function() {
     // Utilisation de 'shown.bs.modal' pour s'assurer que le modal est visible avant d'agir

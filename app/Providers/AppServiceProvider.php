@@ -95,28 +95,38 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
         //
-View::composer('components.modal_saisie_direct', function ($view) {
-        if (Auth::check()) {
-            $user = Auth::user();
-            $companyId = $user->company_id ?? session('company_id') ?? 1;
+      View::composer('components.modal_saisie_direct', function ($view) {
+    if (Auth::check()) {
+        $user = Auth::user();
+        
+        // CORRECTION : On utilise 'current_company_id' et on lui donne la PRIORITÉ
+        $companyId = session('current_company_id', $user->company_id);
 
-            // Récupère les données
-            $exercices = ExerciceComptable::where('company_id', $companyId)
-                ->orderBy('date_debut', 'desc')
-                ->get()
-                ->unique('intitule');
+        // Récupère les données filtrées par la société active (switchée)
+        $exercices = ExerciceComptable::where('company_id', $companyId)
+            ->orderBy('date_debut', 'desc')
+            ->get();
+            // Retirez le unique('intitule') si vous voulez voir tous les exercices par année
 
-            $code_journaux = CodeJournal::where('company_id', $companyId)->get()->unique('code_journal');
+        $code_journaux = CodeJournal::where('company_id', $companyId)->get();
 
-            // Partage les variables avec la vue du modal
-            $view->with('exercices', $exercices)
-                 ->with('code_journaux', $code_journaux);
-        } else {
-            // Optionnel : Passer des collections vides si l'utilisateur n'est pas connecté
-            $view->with('exercices', collect())
-                 ->with('code_journaux', collect());
-        }
-    });
+        // Définition de l'exercice actif (le premier de la liste par défaut)
+        $exerciceActif = $exercices->where('is_active', true)->first() ?? $exercices->first();
+
+        // Partage les variables avec la vue du modal
+        $view->with([
+            'exercices' => $exercices,
+            'code_journaux' => $code_journaux,
+            'exerciceActif' => $exerciceActif
+        ]);
+    } else {
+        $view->with([
+            'exercices' => collect(),
+            'code_journaux' => collect(),
+            'exerciceActif' => null
+        ]);
+    }
+});
 
 
       View::composer(['layouts.app', 'user_management', 'layouts.sections.sidebar.company-menu'], function ($view) {
