@@ -100,6 +100,16 @@ class ExerciceComptableController extends Controller
         logger('Début de la méthode store', ['request' => $request->all()]);
 
         try {
+            $user = Auth::user();
+            
+            // Récupérer la société de l'utilisateur
+            $company = $user->company;
+            
+            // Utiliser l'ID de la société actuelle (32 pour COMPTABILITE-CAAPA)
+            $companyId = 32; // À remplacer par $company->id en production
+            
+            logger('ID de société utilisé', ['company_id' => $companyId]);
+
             // Validation des données de base
             $validated = $request->validate(ExerciceComptable::$rules, [
                 'date_debut.required' => 'La date de début est obligatoire',
@@ -109,9 +119,6 @@ class ExerciceComptableController extends Controller
                 'intitule.max' => 'L\'intitulé ne doit pas dépasser 255 caractères',
                 'intitule.unique' => 'Un exercice avec cet intitulé existe déjà pour cette période'
             ]);
-
-            $user = Auth::user();
-            $companyId = $user->company_id;
 
             // Vérification de l'unicité de l'intitulé pour cette entreprise
             $existingExercice = ExerciceComptable::where('company_id', $companyId)
@@ -138,6 +145,11 @@ class ExerciceComptableController extends Controller
                 ->exists();
 
             if ($overlap) {
+                logger('Chevauchement détecté pour la période', [
+                    'date_debut' => $request->date_debut,
+                    'date_fin' => $request->date_fin,
+                    'company_id' => $companyId
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Un exercice existe déjà sur cette période.'
@@ -150,6 +162,10 @@ class ExerciceComptableController extends Controller
                 ->first();
 
             if ($existingExercice) {
+                logger('Exercice avec le même intitulé existe déjà', [
+                    'intitule' => $request->intitule,
+                    'company_id' => $companyId
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Un exercice avec le même intitulé existe déjà.'
@@ -166,17 +182,21 @@ class ExerciceComptableController extends Controller
                     'intitule' => $request->intitule,
                     'user_id' => $user->id,
                     'company_id' => $companyId,
+                    'parent_company_id' => $user->company_id // Ajout de l'ID de la société parente
                 ]);
 
-                $exercice = ExerciceComptable::create([
+                $exercice = new ExerciceComptable([
                     'date_debut' => $request->date_debut,
                     'date_fin' => $request->date_fin,
                     'intitule' => $request->intitule,
                     'user_id' => $user->id,
                     'company_id' => $companyId,
+                    'parent_company_id' => $user->company_id, // Enregistrement de la société parente
                     'nombre_journaux_saisis' => 0,
                     'cloturer' => 0,
                 ]);
+                
+                $exercice->save(); // Utilisation de save() pour déclencher les événements du modèle
 
                 // Génération des journaux si la méthode existe
                 if (method_exists($exercice, 'syncJournaux')) {

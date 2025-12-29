@@ -29,11 +29,38 @@ class ExerciceComptable extends Model
         'cloturer',
         'user_id',
         'company_id',
+        'parent_company_id',
     ];
     
+    protected $dates = [
+        'date_debut',
+        'date_fin',
+        'created_at',
+        'updated_at',
+    ];
+    
+    protected $casts = [
+        'date_debut' => 'date:Y-m-d',
+        'date_fin' => 'date:Y-m-d',
+        'cloturer' => 'boolean',
+        'nombre_journaux_saisis' => 'integer',
+    ];
+    
+    /**
+     * Scope pour filtrer par société (inclut les sociétés filles)
+     */
     public function scopeForCompany($query, $companyId = null)
     {
-        return $query->where('company_id', $companyId ?? auth()->user()->company_id);
+        $companyId = $companyId ?? (auth()->check() ? auth()->user()->company_id : null);
+        
+        if (!$companyId) {
+            return $query;
+        }
+        
+        return $query->where(function($q) use ($companyId) {
+            $q->where('company_id', $companyId)
+              ->orWhere('parent_company_id', $companyId);
+        });
     }
 
     /**
@@ -96,6 +123,23 @@ class ExerciceComptable extends Model
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
+    
+    /**
+     * Relation avec la société parente
+     */
+    public function parentCompany()
+    {
+        return $this->belongsTo(Company::class, 'parent_company_id');
+    }
+
+    /**
+     * Vérifie si l'exercice appartient à une société spécifique
+     */
+    public function belongsToCompany($companyId)
+    {
+        return $this->company_id == $companyId || $this->parent_company_id == $companyId;
+    }
+
 
 
 
