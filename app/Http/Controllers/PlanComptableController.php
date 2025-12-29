@@ -25,9 +25,13 @@ class PlanComptableController extends Controller
         // On utilise withoutGlobalScopes() si vous avez un scope qui bloque l'admin
         $query = PlanComptable::where('company_id', $companyId);
 
-        $plansComptables = (clone $query)
-            ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-            ->get();
+        // $plansComptables = (clone $query)
+        //     ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
+        //     ->get();
+
+        $plansComptables = PlanComptable::where('company_id', $companyId)
+    ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
+    ->get();
 
         // 3. CALCUL DES STATISTIQUES RÉELLES
         // Nombre total

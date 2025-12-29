@@ -313,21 +313,24 @@
                                             <td class="px-8 py-6">
                                                 <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
                                             </td>
+
                                             <td class="px-8 py-6">
-                                                @php
-                                                    $typeClasses = [
-                                                        'actif' => 'bg-green-100 text-green-800',
-                                                        'passif' => 'bg-blue-100 text-blue-800',
-                                                        'produit' => 'bg-purple-100 text-purple-800',
-                                                        'charge' => 'bg-yellow-100 text-yellow-800',
-                                                        'divers' => 'bg-gray-100 text-gray-800'
-                                                    ];
-                                                    $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
-                                                @endphp
-                                                <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
-                                                    {{ ucfirst($plan->type_de_compte) }}
-                                                </span>
-                                            </td>
+    @php
+        $typeClasses = [
+            'actif' => 'bg-green-100 text-green-800',
+            'passif' => 'bg-blue-100 text-blue-800',
+            'produit' => 'bg-purple-100 text-purple-800',
+            'charge' => 'bg-yellow-100 text-yellow-800',
+            'divers' => 'bg-gray-100 text-gray-800'
+        ];
+        $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
+    @endphp
+    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
+        {{ ucfirst($plan->type_de_compte) }}
+    </span>
+    <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
+</td>
+
                                             <td class="px-8 py-6">
                                                 <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
                                             </td>
@@ -725,17 +728,19 @@
                     console.log('Filtre appliqué :', filterType);
                     
                     // Appliquer le filtre approprié
-                    switch(filterType) {
-                        case 'user':
-                            // On filtre sur la colonne 'adding_strategy' qui est à l'index 2 (3ème colonne)
-                            table.column(2).search('manuel').draw();
-                            break;
-                        case 'system':
-                            table.column(2).search('auto').draw();
-                            break;
-                        default: // 'all'
-                            table.column(2).search('').draw();
-                    }
+                  // Appliquer le filtre approprié
+switch(filterType) {
+    case 'user':
+        // On cherche le mot 'manuel' à l'intérieur de la colonne 2
+        table.column(2).search('manuel').draw();
+        break;
+    case 'system':
+        // On cherche le mot 'auto' à l'intérieur de la colonne 2
+        table.column(2).search('auto').draw();
+        break;
+    default: // 'all'
+        table.column(2).search('').draw();
+}
                     
                     // Afficher toutes les données pour débogage
                     console.log('Données du tableau après filtrage :', table.data().toArray());
