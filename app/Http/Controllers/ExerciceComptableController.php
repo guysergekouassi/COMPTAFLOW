@@ -57,48 +57,42 @@ class ExerciceComptableController extends Controller
     return view('exercice_comptable', compact('exercices','code_journaux'));
 }
 
-    public function getData()
-    {
-        $user = Auth::user();
+   public function getData()
+{
+    $user = Auth::user();
 
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        // Check for session company ID first (for multi-company switching)
-        $companyId = session('company_id', $user->company_id);
-
-        if (!$companyId) {
-            \Log::info('No company ID found for user', ['user_id' => $user->id, 'user_company_id' => $user->company_id, 'session_company_id' => session('company_id')]);
-            return response()->json(['data' => []]);
-        }
-
-        // Log::info('Fetching exercises for company', ['company_id' => $companyId, 'user_id' => $user->id]);
-
-        // On récupère tous les exercices de l'entreprise sans groupement restrictif
-        $exercices = ExerciceComptable::where('company_id', $companyId)
-            ->orderBy('date_debut', 'desc')
-            ->get()
-            ->map(function ($exercice) {
-                $dateDebut = \Carbon\Carbon::parse($exercice->date_debut);
-                $dateFin = \Carbon\Carbon::parse($exercice->date_fin);
-
-                // On s'assure que les champs attendus par le JS sont présents
-                return [
-                    'id' => $exercice->id,
-                    'date_debut' => $exercice->date_debut,
-                    'date_fin' => $exercice->date_fin,
-                    'intitule' => $exercice->intitule,
-                    'nb_mois' => (int) $dateDebut->diffInMonths($dateFin) + 1,
-                    'nombre_journaux_saisis' => $exercice->nombre_journaux_saisis ?? 0,
-                    'cloturer' => (bool) ($exercice->getAttribute('cloturer') ?? 0)
-                ];
-            });
-
-        \Log::info('Exercises found', ['count' => $exercices->count(), 'company_id' => $companyId]);
-
-        return response()->json(['data' => $exercices]);
+    if (!$user) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    // Utilisation d'une récupération plus directe du company_id
+    $companyId = $user->company_id;
+
+    if (!$companyId) {
+        return response()->json(['data' => []]);
+    }
+
+    $exercices = ExerciceComptable::where('company_id', $companyId)
+        ->orderBy('date_debut', 'desc')
+        ->get()
+        ->map(function ($exercice) {
+            $dateDebut = \Carbon\Carbon::parse($exercice->date_debut);
+            $dateFin = \Carbon\Carbon::parse($exercice->date_fin);
+
+            return [
+                'id' => $exercice->id,
+                'date_debut' => $exercice->date_debut,
+                'date_fin' => $exercice->date_fin,
+                'intitule' => $exercice->intitule,
+                'nb_mois' => (int) $dateDebut->diffInMonths($dateFin) + 1,
+                'nombre_journaux_saisis' => $exercice->nombre_journaux_saisis ?? 0,
+                // Correction ici : accès direct à l'attribut
+                'cloturer' => (bool) $exercice->cloturer
+            ];
+        });
+
+    return response()->json(['data' => $exercices]);
+}
 
     // recreer
     public function store(Request $request)
