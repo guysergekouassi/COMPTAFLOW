@@ -54,7 +54,7 @@ class ExerciceComptableController extends Controller
     // Définir exerciceActif pour le modal
     $exerciceActif = $exercices->first();
 
-        return view('exercice_comptable', compact('exercices', 'code_journaux'));
+        return view('exercice_comptable', compact('exercices', 'code_journaux','exerciceActif'));
     }
 
     public function getData()
