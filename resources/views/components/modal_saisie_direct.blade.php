@@ -96,13 +96,23 @@
     //     });
     // });
 
-    $(document).ready(function() {
+ $(document).ready(function() {
+    // Utilisation de 'shown.bs.modal' pour s'assurer que le modal est visible avant d'agir
     $('#saisieRedirectModal').on('shown.bs.modal', function () {
-        // Force le rafraîchissement des données dans le menu visuel
+        console.log("Modal affiché, rafraîchissement des listes...");
+        
+        // On détruit et on réinitialise proprement
+        $('.selectpicker').selectpicker('destroy');
+        $('.selectpicker').selectpicker({
+            liveSearch: true,
+            width: '100%',
+            style: 'btn-outline-secondary'
+        });
+        
+        // Force la mise à jour visuelle
         $('.selectpicker').selectpicker('refresh');
     });
 });
-
     const accounting_entry_realSaisisUrl = "{{ route('accounting_entry_list') }}";
     const journaux_saisisfindSaisisUrl = "{{ route('journaux_saisis.find') }}";
 
