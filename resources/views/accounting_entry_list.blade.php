@@ -303,7 +303,7 @@
     
                                 <!-- Right Group: Actions -->
                                 <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                                    <button type="button" class="btn btn-secondary rounded-xl px-5 font-semibold shadow-sm" onclick="window.location.href='{{ route('journaux_saisis.index') }}'">
+                                    <button type="button" class="btn btn-secondary rounded-xl px-5 font-semibold shadow-sm" onclick="window.location.href='{{ route('journaux_saisis') }}'">
                                         <i class="bx bx-arrow-back me-2"></i>Retour
                                     </button>
                                     <button type="button" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal"
