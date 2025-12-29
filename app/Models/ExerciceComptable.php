@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\JournalSaisi;
 use App\Models\CodeJournal;
+use App\Models\Company;
 
 use App\Traits\BelongsToTenant;
 
@@ -29,7 +30,7 @@ class ExerciceComptable extends Model
         'cloturer',
         'user_id',
         'company_id',
-        'parent_company_id',
+        
     ];
     
     protected $dates = [
@@ -114,18 +115,24 @@ class ExerciceComptable extends Model
     }
 
 
+    /**
+     * Get the user that owns the exercice comptable.
+     */
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Get the company that owns the exercice comptable.
+     */
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
     
     /**
-     * Relation avec la société parente
+     * Get the parent company that owns the exercice comptable.
      */
     public function parentCompany()
     {
