@@ -13,60 +13,49 @@ class PlanComptableController extends Controller
 {
 
    use ManagesCompany;
-    public function index()
-    {
-        try {
-            // Récupérer l'utilisateur connecté
-            $user = Auth::user();
-            
-            // Récupérer tous les plans comptables par défaut (adding_strategy = 'auto')
-            $plansComptables = PlanComptable::where('adding_strategy', 'auto')
-                ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-                ->get();
+  public function index()
+{
+    try {
+        $user = Auth::user();
+        
+        // 1. Récupérer l'ID de la société active (gestion du switch admin)
+        $companyId = session('current_company_id', $user->company_id);
 
-            // Si aucun plan par défaut n'existe, charger depuis le fichier JSON
-            if ($plansComptables->isEmpty()) {
-                $jsonPath = storage_path('app/plan_comptable.json');
-                if (file_exists($jsonPath)) {
-                    $plansComptablesDefauts = json_decode(file_get_contents($jsonPath), true);
-                    
-                    // Créer les plans à partir du fichier JSON
-                    foreach ($plansComptablesDefauts as $numero => $intitule) {
-                        PlanComptable::firstOrCreate(
-                            ['numero_de_compte' => $numero],
-                            [
-                                'intitule' => $intitule,
-                                'adding_strategy' => 'auto',
-                                'type_de_compte' => $this->determinerTypeCompte($numero),
-                                'user_id' => $user->id,
-                                'company_id' => $user->company_id
-                            ]
-                        );
-                    }
-                    
-                    // Recharger les plans après création
-                    $plansComptables = PlanComptable::where('adding_strategy', 'auto')
-                        ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-                        ->get();
-                }
-            }
+        // 2. Récupérer TOUS les plans de cette société (auto + manuel)
+        // On utilise withoutGlobalScopes() si vous avez un scope qui bloque l'admin
+        $query = PlanComptable::where('company_id', $companyId);
 
-            // Statistiques
-            $totalPlans = $plansComptables->count();
-            $plansByUser = 0; // Pas de plans manuels dans cette vue
-            $plansSys = $totalPlans;
-            $hasAutoStrategy = $plansSys > 0;
+        // $plansComptables = (clone $query)
+        //     ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
+        //     ->get();
 
-            return view('plan_comptable', [
-                'plansComptables' => $plansComptables,
-                'totalPlans' => $totalPlans,
-                'plansByUser' => $plansByUser,
-                'plansSys' => $plansSys,
-                'hasAutoStrategy' => $hasAutoStrategy,
-                'isDefaultView' => true // Nouvelle variable pour la vue
-            ]);
+        $plansComptables = PlanComptable::where('company_id', $companyId)
+    ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
+    ->get();
+
+        // 3. CALCUL DES STATISTIQUES RÉELLES
+        // Nombre total
+        $totalPlans = $plansComptables->count();
+        
+        // Nombre de plans créés MANUELLEMENT (votre indicateur vert)
+        $plansByUser = $plansComptables->where('adding_strategy', 'manuel')->count();
+        
+        // Nombre de plans créés AUTOMATIQUEMENT (Système)
+        $plansSys = $plansComptables->where('adding_strategy', 'auto')->count();
+        
+        $hasAutoStrategy = $plansSys > 0;
+
+        return view('plan_comptable', [
+            'plansComptables' => $plansComptables,
+            'totalPlans' => $totalPlans,
+            'plansByUser' => $plansByUser, // Sera maintenant dynamique (ex: 2)
+            'plansSys' => $plansSys,
+            'hasAutoStrategy' => $hasAutoStrategy,
+            'isDefaultView' => true 
+        ]);
+
     } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'Erreur lors du chargement des plans comptables : ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Erreur : ' . $e->getMessage());
     }
 }
 
@@ -110,42 +99,49 @@ class PlanComptableController extends Controller
         }
     }
 
-    public function store(Request $request)
-    {
-        try {
-            $request->validate([
-                'numero_de_compte' => 'required',
-                'intitule' => 'required',
-            ]);
+  public function store(Request $request)
+{
+    try {
+        $request->validate([
+            'numero_de_compte' => 'required',
+            'intitule' => 'required',
+        ]);
 
-            $numero_formate = str_pad($request->numero_de_compte, 8, '0', STR_PAD_RIGHT);
-            $intitule_formate = ucfirst(strtolower($request->intitule));
+        $numero_formate = str_pad($request->numero_de_compte, 8, '0', STR_PAD_RIGHT);
+        $intitule_formate = ucfirst(strtolower($request->intitule));
 
-            $exists = PlanComptable::where(function ($query) use ($numero_formate, $intitule_formate) {
-                    $query->where('numero_de_compte', $numero_formate)
-                        ->orWhere('intitule', $intitule_formate);
-                })
-                ->exists();
+        // 1. RÉCUPÉRER L'ID DE LA SOCIÉTÉ EN SESSION (Switch)
+        $companyId = session('current_company_id', Auth::user()->company_id);
 
-            if ($exists) {
-                return redirect()->back()->with('error', 'Ce numéro de compte ou cet intitulé existe déjà.');
-            }
+        // 2. Vérifier l'existence au sein de CETTE société uniquement
+        $exists = PlanComptable::where('company_id', $companyId)
+            ->where(function ($query) use ($numero_formate, $intitule_formate) {
+                $query->where('numero_de_compte', $numero_formate)
+                      ->orWhere('intitule', $intitule_formate);
+            })
+            ->exists();
 
-            $user = Auth::user();
-            
-            PlanComptable::create([
-                'numero_de_compte' => $numero_formate,
-                'intitule' => $intitule_formate,
-                'adding_strategy' => 'manuel',
-                'user_id' => $user->id,
-                'company_id' => $user->company_id,
-            ]);
-
-            return redirect()->back()->with('success', 'Plan comptable ajouté avec succès.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Erreur lors de l\'ajout du plan comptable : ' . $e->getMessage());
+        if ($exists) {
+            return redirect()->back()->with('error', 'Ce numéro de compte ou cet intitulé existe déjà dans cette comptabilité.');
         }
+
+        $user = Auth::user();
+        
+        // 3. ENREGISTRER AVEC LE BON company_id
+        PlanComptable::create([
+            'numero_de_compte' => $numero_formate,
+            'intitule' => $intitule_formate,
+            'adding_strategy' => 'manuel',
+            'user_id' => $user->id,
+            'company_id' => $companyId, // Utilise l'ID switché
+            'type_de_compte' => $this->determinerTypeCompte($numero_formate), // Optionnel mais conseillé
+        ]);
+
+        return redirect()->back()->with('success', 'Plan comptable ajouté avec succès à la comptabilité actuelle.');
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Erreur lors de l\'ajout : ' . $e->getMessage());
     }
+}
 
     public function useDefault(Request $request)
     {

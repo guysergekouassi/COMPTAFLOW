@@ -4,7 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+<<<<<<< HEAD
 // La ligne en double a été supprimée ici
+=======
+
+>>>>>>> 657121d161255c889a90ab1406a27a6ea6b161c5
 use App\Traits\BelongsToTenant;
 use App\Models\User;
 use App\Models\Company;

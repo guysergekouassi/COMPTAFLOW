@@ -190,7 +190,7 @@
                         <!-- KPI Filters Section (Preserving functionality with new Look) -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <!-- Total -->
-                            <div class="glass-card !p-6 flex items-center">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active" data-filter-type="all">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <i class="bx bx-layer text-2xl"></i>
                                 </div>
@@ -201,7 +201,7 @@
                             </div>
 
                             <!-- Manuel -->
-                            <div class="glass-card !p-6 flex items-center">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="user">
                                 <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
                                     <i class="bx bx-user text-2xl"></i>
                                 </div>
@@ -212,12 +212,12 @@
                             </div>
 
                             <!-- Auto -->
-                            <div class="glass-card !p-6 flex items-center">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="system">
                                 <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
                                     <i class="bx bx-cog text-2xl"></i>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-slate-500">Plans système</p>
+                                    <p class="text-sm text-slate-500">Plan SYSCOHADA</p>
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
                                 </div>
                             </div>
@@ -314,7 +314,9 @@
                                             <td class="px-8 py-6">
                                                 <p class="font-semibold text-slate-800">{{ $plan->intitule }}</p>
                                             </td>
+
                                             <td class="px-8 py-6">
+<<<<<<< HEAD
                                                 @php
                                                     $typeClasses = [
                                                         'actif' => 'bg-green-100 text-green-800 border border-green-200',
@@ -331,6 +333,26 @@
                                             </td>
                                             <td class="px-8 py-6 text-right">
                                                 <span class="text-sm font-medium text-slate-500">{{ $plan->created_at->format('d/m/Y') }}</span>
+=======
+    @php
+        $typeClasses = [
+            'actif' => 'bg-green-100 text-green-800',
+            'passif' => 'bg-blue-100 text-blue-800',
+            'produit' => 'bg-purple-100 text-purple-800',
+            'charge' => 'bg-yellow-100 text-yellow-800',
+            'divers' => 'bg-gray-100 text-gray-800'
+        ];
+        $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
+    @endphp
+    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
+        {{ ucfirst($plan->type_de_compte) }}
+    </span>
+    <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
+</td>
+
+                                            <td class="px-8 py-6">
+                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
+>>>>>>> 657121d161255c889a90ab1406a27a6ea6b161c5
                                             </td>
                                         </tr>
                                         @empty
@@ -561,7 +583,6 @@
 
     <!-- Custom Logic for New Design -->
     <script>
-        // Initialisation de DataTables pour la table des plans comptables
         document.addEventListener("DOMContentLoaded", function() {
             let table;
             
@@ -570,7 +591,17 @@
                 table = $('#planComptableTable').DataTable({
                     dom: 't',
                     pageLength: 25,
-                    order: [[0, 'asc']], // Trier par numéro de compte par défaut
+                    // Activer le débogage
+                    // debug: true,
+                    // Afficher les logs de débogage
+                    // "language": {
+                    //     "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/French.json"
+                    // },
+                    // Afficher toutes les données dans la console
+                    "initComplete": function(settings, json) {
+                        console.log('Données chargées :', this.api().data().toArray());
+                    },
+                    order: [[0, 'asc']],
                     language: {
                         search: "Rechercher:",
                         zeroRecords: "Aucun compte trouvé",
@@ -585,13 +616,14 @@
                         }
                     },
                     columnDefs: [
-                        { width: "15%", targets: 0 }, // Numéro de compte
-                        { width: "55%", targets: 1 }, // Intitulé
-                        { width: "15%", targets: 2 }, // Type
-                        { width: "15%", targets: 3 }  // Date
+                        { width: "15%", targets: 0 },
+                        { width: "55%", targets: 1 },
+                        { width: "15%", targets: 2 },
+                        { width: "15%", targets: 3 }
                     ]
                 });
 
+<<<<<<< HEAD
                 // 2. Filtres
                 function applyCustomFilters() {
                     // Clear any existing custom search
@@ -611,60 +643,157 @@
                     }
                     
                     table.draw();
+=======
+                // Fonction pour basculer l'affichage du panneau de filtre
+                function toggleFilterPanel() {
+                    const panel = $('#advancedFilterPanel');
+                    const button = $('#toggleFilterBtn');
+                    
+                    if (panel.hasClass('hidden')) {
+                        panel.removeClass('hidden');
+                        button.addClass('bg-blue-50 border-blue-200 text-blue-700');
+                    } else {
+                        panel.addClass('hidden');
+                        button.removeClass('bg-blue-50 border-blue-200 text-blue-700');
+                    }
+>>>>>>> 657121d161255c889a90ab1406a27a6ea6b161c5
                 }
 
-            $('#filterNumero, #filterIntitule, #filterClasse').on('keyup', applyCustomFilters);
+                // Gestion du clic sur le bouton de filtre
+                $(document).on('click', '#toggleFilterBtn', function(e) {
+                    e.preventDefault();
+                    toggleFilterPanel();
+                });
 
-            // Boutons
-            $('#applyFilterBtn').on('click', function(e) {
-                e.preventDefault();
-                applyCustomFilters();
-            });
+                // Mappage des champs de filtre vers les colonnes
+                const filterMap = {
+                    'filterNumero': 0,
+                    'filterIntitule': 1,
+                    'filterClasse': 3
+                };
 
-            $('#resetFilterBtn').on('click', function(e) {
-                e.preventDefault();
-                $('#filterNumero').val('');
-                $('#filterIntitule').val('');
-                $('#filterClasse').val('');
-                applyCustomFilters();
-            });
+                // Gestion des champs de filtre
+                $(document).on('keyup change', '#filterNumero, #filterIntitule, #filterClasse', function() {
+                    const column = filterMap[$(this).attr('id')];
+                    if (column !== undefined) {
+                        table.column(column).search(this.value).draw();
+                    }
+                });
 
-            // 3. Toggle Button
-            $('#toggleFilterBtn').on('click', function(e) {
-                 e.preventDefault();
-                 const panel = $('#advancedFilterPanel');
-                 if(panel.hasClass('hidden')) {
-                     panel.removeClass('hidden');
-                     $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
-                 } else {
-                     panel.addClass('hidden');
-                     $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
-                 }
-            });
+                // Bouton Appliquer les filtres
+                $(document).on('click', '#applyFilterBtn', function(e) {
+                    e.preventDefault();
+                    table.draw();
+                });
 
-            // 4. KPI Cards
-            function activateCard(cardId) {
-                $('.filter-card').removeClass('filter-active');
-                $(`${cardId}`).addClass('filter-active');
-            }
+                // Bouton Réinitialiser
+                $(document).on('click', '#resetFilterBtn', function(e) {
+                    e.preventDefault();
+                    $('#filterNumero, #filterIntitule, #filterClasse').val('');
+                    table.search('').columns().search('').draw();
+                });
 
-            // Gestion des filtres
-            if (table) {
-                $('#filter-all').on('click', function() { 
-                    table.column(2).search('').draw(); 
-                    activateCard('#filter-all'); 
+                // Gestion des cartes de filtre
+                function activateCard(cardId) {
+                    $('.filter-card').removeClass('filter-active');
+                    $(cardId).addClass('filter-active');
+                }
+
+                // Gestion des filtres rapides
+                const filterHandlers = {
+                    '#filter-all': function() { 
+                        table.column(2).search('').draw();
+                    },
+                    '#filter-manuel': function() { 
+                        table.column(2).search('manuel').draw();
+                    },
+                    '#filter-auto': function() { 
+                        table.column(2).search('auto').draw();
+                    }
+                };
+
+                // Configuration des gestionnaires d'événements pour les filtres rapides
+                Object.keys(filterHandlers).forEach(function(selector) {
+                    $(document).on('click', selector, function(e) {
+                        e.preventDefault();
+                        filterHandlers[selector]();
+                        activateCard(selector);
+                    });
+                });
+
+                // Fonction de mise à jour de la pagination
+                function updatePagination() {
+                    const info = table.page.info();
+                    console.log("📊 Mise à jour pagination:", info);
+
+                    if (info.recordsDisplay > 0) {
+                        $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
+
+                        let paginationHtml = '';
+                        paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                        paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
+                        paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                        $('.pagination-container').html(paginationHtml);
+                    } else {
+                        $('.table-info').html('Aucun compte trouvé');
+                        $('.pagination-container').empty();
+                    }
+                }
+
+                // Gestion de l'événement de dessin du tableau
+                table.on('draw', function() {
+                    console.log("🎨 Tableau redessiné");
+                    updatePagination();
+                });
+
+                // Gestion de la pagination
+                $(document).on('click', '#nextPage', function() { 
+                    table.page('next').draw('page');
                 });
                 
-                $('#filter-manuel').on('click', function() { 
-                    table.column(2).search('manuel').draw(); 
-                    activateCard('#filter-manuel'); 
+                $(document).on('click', '#prevPage', function() { 
+                    table.page('previous').draw('page');
                 });
-                
-                $('#filter-auto').on('click', function() { 
-                    table.column(2).search('auto').draw(); 
-                    activateCard('#filter-auto'); 
+
+                // Initialisation de la pagination
+                updatePagination();
+
+                // Gestion des filtres par carte KPI
+                $('.filter-card').on('click', function() {
+                    // Retourner si le bouton est déjà actif
+                    if ($(this).hasClass('filter-active')) return;
+                    
+                    // Retirer la classe active de toutes les cartes
+                    $('.filter-card').removeClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
+                    
+                    // Ajouter la classe active à la carte cliquée
+                    $(this).addClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
+                    
+                    // Récupérer le type de filtre
+                    const filterType = $(this).data('filter-type');
+                    
+                    console.log('Filtre appliqué :', filterType);
+                    
+                    // Appliquer le filtre approprié
+                  // Appliquer le filtre approprié
+switch(filterType) {
+    case 'user':
+        // On cherche le mot 'manuel' à l'intérieur de la colonne 2
+        table.column(2).search('manuel').draw();
+        break;
+    case 'system':
+        // On cherche le mot 'auto' à l'intérieur de la colonne 2
+        table.column(2).search('auto').draw();
+        break;
+    default: // 'all'
+        table.column(2).search('').draw();
+}
+                    
+                    // Afficher toutes les données pour débogage
+                    console.log('Données du tableau après filtrage :', table.data().toArray());
                 });
             }
+<<<<<<< HEAD
 
             // 5. Pagination
             function updatePagination() {
@@ -706,6 +835,24 @@
             console.log("⏳ DataTables non disponible");
         }
     });
+=======
+        });
+>>>>>>> 657121d161255c889a90ab1406a27a6ea6b161c5
     </script>
+    
+    <style>
+        .filter-card {
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .filter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .filter-active {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+    </style>
 </body>
 </html>

@@ -18,40 +18,46 @@ class ExerciceComptableController extends Controller
     {
         $this->middleware('auth');
     }
+public function index()
+{
+    $user = Auth::user();
 
-    public function index()
-    {
-        $user = Auth::user();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        // Utilisation de la session pour le switch de contexte
-        $companyId = session('current_company_id', $user->company_id);
-
-        if (!$companyId) {
-            return redirect()->route('login')->with('error', 'Aucune entreprise associée à votre compte.');
-        }
-
-        // Récupération des exercices filtrés par la société active
-        $exercices = ExerciceComptable::select(DB::raw('MAX(id) as id'), 'intitule', 'date_debut', 'date_fin')
-            ->where('company_id', $companyId)
-            ->groupBy('intitule', 'date_debut', 'date_fin')
-            ->orderBy('date_debut', 'desc')
-            ->get()
-            ->map(function ($exercice) {
-                $dateDebut = Carbon::parse($exercice->date_debut);
-                $dateFin   = Carbon::parse($exercice->date_fin);
-                $exercice->nb_mois = (int) $dateDebut->diffInMonths($dateFin) + 1;
-                return $exercice;
-            });
-
-        $code_journaux = CodeJournal::get();
-
-        return view('exercice_comptable', compact('exercices', 'code_journaux'));
+    if (!$user) {
+        return redirect()->route('login');
     }
 
+    // Récupérer l'ID de la société switchée (ici ce sera 33 d'après vos logs)
+    $companyId = session('current_company_id', $user->company_id);
+
+    if (!$companyId) {
+        return redirect()->route('login')->with('error', 'Aucune entreprise associée.');
+    }
+
+    // RÉCUPÉRATION DES EXERCICES
+    // On ajoute withoutGlobalScopes() pour être sûr que Laravel ne filtre pas 
+    // par l'ID de l'admin au lieu de l'ID de la société choisie.
+    $exercices = ExerciceComptable::withoutGlobalScopes()
+        ->where('company_id', $companyId)
+        ->orderBy('date_debut', 'desc')
+        ->get()
+        ->map(function ($exercice) {
+            $dateDebut = \Carbon\Carbon::parse($exercice->date_debut);
+            $dateFin   = \Carbon\Carbon::parse($exercice->date_fin);
+            $exercice->nb_mois = (int) $dateDebut->diffInMonths($dateFin) + 1;
+            return $exercice;
+        });
+
+    // RÉCUPÉRATION DES JOURNAUX
+    $code_journaux = CodeJournal::withoutGlobalScopes()
+        ->where('company_id', $companyId)
+        ->get();
+    
+    // Définir l'exercice par défaut pour le modal
+    $exerciceActif = $exercices->first();
+
+    // IMPORTANT: On passe bien les 3 variables à la vue
+    return view('exercice_comptable', compact('exercices', 'code_journaux', 'exerciceActif'));
+}
     public function getData()
     {
         $user = Auth::user();

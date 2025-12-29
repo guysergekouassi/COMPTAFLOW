@@ -208,18 +208,25 @@
 <!-- Ajout de jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    // Correction robuste contre les doublons d'affichage
-    $(document).ready(function() {
-        $('#saisieRedirectModal').on('show.bs.modal', function () {
-            // Un petit délai permet d'attendre l'animation du modal
-            setTimeout(function() {
-                $('.selectpicker').selectpicker('destroy'); // On détruit d'abord
-                $('.selectpicker').selectpicker('render');  // On reconstruit
-                $('.selectpicker').selectpicker('refresh'); // On rafraîchit les valeurs
-            }, 100);
-        });
-    });
 
+
+ $(document).ready(function() {
+    // Utilisation de 'shown.bs.modal' pour s'assurer que le modal est visible avant d'agir
+    $('#saisieRedirectModal').on('shown.bs.modal', function () {
+        console.log("Modal affiché, rafraîchissement des listes...");
+        
+        // On détruit et on réinitialise proprement
+        $('.selectpicker').selectpicker('destroy');
+        $('.selectpicker').selectpicker({
+            liveSearch: true,
+            width: '100%',
+            style: 'btn-outline-secondary'
+        });
+        
+        // Force la mise à jour visuelle
+        $('.selectpicker').selectpicker('refresh');
+    });
+});
     const accounting_entry_realSaisisUrl = "{{ route('accounting_entry_list') }}";
     const journaux_saisisfindSaisisUrl = "{{ route('journaux_saisis.find') }}";
 
