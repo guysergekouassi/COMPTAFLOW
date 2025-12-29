@@ -73,7 +73,7 @@ class ExerciceComptableController extends Controller
             return response()->json(['data' => []]);
         }
 
-        \Log::info('Fetching exercises for company', ['company_id' => $companyId, 'user_id' => $user->id]);
+        // Log::info('Fetching exercises for company', ['company_id' => $companyId, 'user_id' => $user->id]);
 
         // On récupère tous les exercices de l'entreprise sans groupement restrictif
         $exercices = ExerciceComptable::where('company_id', $companyId)
