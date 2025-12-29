@@ -355,6 +355,22 @@ public function getComptesParFlux(Request $request) {
             $query->where('code_journal_id', $data['journal_id']);
         }
 
+        $journal = null;
+        if (!empty($data['journal_id'])) {
+            $journal = CodeJournal::find($data['journal_id']);
+        }
+        if ($journal === null) {
+            $journal = CodeJournal::orderBy('code_journal')->first();
+        }
+
+        $exercice = null;
+        if (!empty($data['exercice_id'])) {
+            $exercice = ExerciceComptable::find($data['exercice_id']);
+        }
+        if ($exercice === null) {
+            $exercice = ExerciceComptable::orderBy('date_debut', 'desc')->first();
+        }
+
         // Récupérer les écritures
         $ecritures = $query->orderBy('date', 'desc')->orderBy('n_saisie', 'desc')->get();
 
@@ -376,10 +392,15 @@ public function getComptesParFlux(Request $request) {
         $postesTresorerie = CompteTresorerie::orderBy('name', 'asc')
             ->get();
 
+        $entries = $ecritures;
+
         return view('accounting_entry_list', compact(
             'exercices',
             'code_journaux',
             'ecritures',
+            'entries',
+            'journal',
+            'exercice',
             'totalDebit',
             'totalCredit',
             'plansComptables',

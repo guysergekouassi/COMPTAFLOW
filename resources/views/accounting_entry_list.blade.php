@@ -5,6 +5,119 @@
 
 @include('components.head')
 
+<style>
+    /* Premium Modal Styles */
+    .premium-modal-content-wide {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .input-field-premium {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        background-color: white;
+    }
+
+    .input-field-premium:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .input-label-premium {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-save-premium {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.3);
+        width: 100%;
+    }
+
+    .btn-save-premium:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.4);
+    }
+
+    .btn-cancel-premium {
+        background: #f1f5f9;
+        color: #64748b;
+        border: 2px solid #e2e8f0;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+
+    .btn-cancel-premium:hover {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .text-blue-gradient-premium {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Search dropdown styles */
+    .search-select-container {
+        position: relative;
+    }
+
+    .search-select-dropdown {
+        position: absolute;
+        width: 100%;
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1060;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-top: 5px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .search-select-dropdown .list-group-item {
+        border: none;
+        padding: 10px 15px;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+    }
+
+    .search-select-dropdown .list-group-item:hover {
+        background-color: #f0f2ff;
+        color: #696cff;
+    }
+</style>
+
 <body>
   <!-- Layout wrapper -->
   <div class="layout-wrapper layout-content-navbar">
@@ -15,137 +128,222 @@
 
       <!-- Layout container -->
       <div class="layout-page">
-        <!-- Navbar -->
-          @include('components.header', ['page_title' => 'LISTE DES <span class="text-gradient">ÉCRITURES</span>'])
-        <!-- / Navbar -->
+                     <!-- Navbar -->
+                    @include('components.header', ['page_title' => 'Journaux <span class="text-gradient">De Saisie</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Gestion comptable</span>'])
+                    <!-- / Navbar -->
 
-        <!-- Content wrapper -->
-        <div class="content-wrapper">
-          <!-- Content -->
-          <div class="container-xxl flex-grow-1 container-p-y">
-            <div class="row">
-              <div class="col-12">
-              </div>
-            </div>
+                    <!-- Content wrapper -->
+                    <div class="content-wrapper">
+                        <style>
+                            .glass-card {
+                                background: #ffffff;
+                                border: 1px solid #e2e8f0;
+                                border-radius: 16px;
+                                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+                                transition: all 0.3s ease;
+                            }
 
-            <!-- Card avec tableau et bouton -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Liste des écritures</h5>
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal">
-                        <i class="bx bx-plus me-1"></i> Nouvelle écriture
-                    </button>
-                </div>
-                <div class="card-body">
-                    <!-- Filtres -->
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label for="filterExercice" class="form-label">Exercice</label>
-                            <select id="filterExercice" class="form-select">
-                                <option value="">Tous les exercices</option>
-                                @if(isset($exercices))
-                                    @foreach ($exercices as $exercice)
-                                        <option value="{{ $exercice->id }}" {{ ($data['exercice_id'] ?? '') == $exercice->id ? 'selected' : '' }}>
-                                            {{ $exercice->intitule }}
-                                        </option>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="filterMois" class="form-label">Mois</label>
-                            <select id="filterMois" class="form-select">
-                                <option value="">Tous les mois</option>
-                                @for ($i = 1; $i <= 12; $i++)
-                                    <option value="{{ $i }}" {{ ($data['mois'] ?? '') == $i ? 'selected' : '' }}>
-                                        {{ date('F', mktime(0, 0, 0, $i, 1)) }}
-                                    </option>
-                                @endfor
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="filterJournal" class="form-label">Journal</label>
-                            <select id="filterJournal" class="form-select">
-                                <option value="">Tous les journaux</option>
-                                @if(isset($code_journaux))
-                                    @foreach ($code_journaux as $journal)
-                                        <option value="{{ $journal->id }}" {{ ($data['journal_id'] ?? '') == $journal->id ? 'selected' : '' }}>
-                                            {{ $journal->code }} - {{ $journal->intitule }}
-                                        </option>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button type="button" class="btn btn-outline-primary w-100" onclick="filterEcritures()">
-                                <i class="bx bx-filter me-1"></i> Filtrer
-                            </button>
-                        </div>
-                    </div>
+                            .table-row {
+                                transition: background-color 0.2s;
+                            }
 
-                    <!-- Tableau des écritures -->
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered align-middle" id="tableEcrituresList">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>N° Saisie</th>
-                                    <th>Journal</th>
-                                    <th>Libellé</th>
-                                    <th>Référence Pièce</th>
-                                    <th>Compte Général</th>
-                                    <th>Compte Tiers</th>
-                                    <th>Débit</th>
-                                    <th>Crédit</th>
-                                    <th>Plan Analytique</th>
-                                    <th>Pièce Justificative</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if(isset($ecritures) && count($ecritures) > 0)
-                                    @foreach ($ecritures as $ecriture)
+                            .table-row:hover {
+                                background-color: #f1f5f9;
+                            }
+
+                            #tableEcritures_wrapper .dataTables_length,
+                            #tableEcritures_wrapper .dataTables_filter {
+                                display: none;
+                            }
+
+                            #tableEcritures {
+                                border-collapse: separate !important;
+                                border-spacing: 0 !important;
+                            }
+
+                            #tableEcritures thead th {
+                                background-color: #f8fafc;
+                                border-bottom: 1px solid #e2e8f0;
+                                padding: 1.25rem 2rem !important;
+                                font-size: 0.875rem !important;
+                                font-weight: 700 !important;
+                                color: #64748b !important;
+                                text-transform: uppercase !important;
+                                letter-spacing: 0.05em !important;
+                            }
+                            
+                            #tableEcritures tbody td {
+                                padding: 1.5rem 2rem !important;
+                                vertical-align: middle !important;
+                            }
+
+                            /* Nouveau Design Premium pour les Modaux */
+                            .premium-modal-content, .premium-modal-content-wide {
+                                background: rgba(255, 255, 255, 0.98);
+                                backdrop-filter: blur(15px);
+                                border: 1px solid rgba(255, 255, 255, 1);
+                                border-radius: 20px;
+                                box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+                                font-family: 'Plus Jakarta Sans', sans-serif;
+                            }
+                            
+                            .premium-modal-content {
+                                max-width: 400px;
+                                margin: auto;
+                            }
+
+                            .input-field-premium {
+                                transition: all 0.2s ease;
+                                border: 2px solid #f1f5f9 !important;
+                                background-color: #f8fafc !important;
+                                border-radius: 12px !important;
+                                padding: 0.75rem 1rem !important;
+                                font-size: 0.8rem !important;
+                                font-weight: 600 !important;
+                                color: #0f172a !important;
+                                width: 100%;
+                            }
+
+                            .input-field-premium:focus {
+                                border-color: #1e40af !important;
+                                background-color: #ffffff !important;
+                                box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.05) !important;
+                                outline: none !important;
+                            }
+
+                            .text-blue-gradient-premium {
+                                background: linear-gradient(to right, #1e40af, #3b82f6);
+                                -webkit-background-clip: text;
+                                -webkit-text-fill-color: transparent;
+                                font-weight: 800;
+                            }
+
+                            .input-label-premium {
+                                font-size: 0.7rem !important;
+                                font-weight: 800 !important;
+                                color: #64748b !important;
+                                text-transform: uppercase !important;
+                                letter-spacing: 0.05em !important;
+                                margin-left: 0.1rem !important;
+                                margin-bottom: 0.35rem !important;
+                                display: block !important;
+                            }
+                            
+                            .btn-save-premium {
+                                padding: 0.75rem 1rem !important;
+                                border-radius: 12px !important;
+                                background-color: #1e40af !important;
+                                color: white !important;
+                                font-weight: 800 !important;
+                                font-size: 0.7rem !important;
+                                text-transform: uppercase !important;
+                                letter-spacing: 0.05em !important;
+                                box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1) !important;
+                                transition: all 0.2s ease !important;
+                                border: none !important;
+                            }
+
+                            .btn-save-premium:hover {
+                                background-color: #1e3a8a !important;
+                                transform: translateY(-2px) !important;
+                            }
+
+                            .btn-cancel-premium {
+                                padding: 0.75rem 1rem !important;
+                                border-radius: 12px !important;
+                                color: #94a3b8 !important;
+                                font-weight: 700 !important;
+                                font-size: 0.7rem !important;
+                                text-transform: uppercase !important;
+                                letter-spacing: 0.05em !important;
+                                transition: all 0.2s ease !important;
+                                border: none !important;
+                                background: transparent !important;
+                            }
+
+                            .btn-cancel-premium:hover {
+                                background-color: #f8fafc !important;
+                                color: #475569 !important;
+                            }
+                        </style>
+
+                        <div class="container-fluid flex-grow-1 container-p-y">
+                            
+                            <!-- Badge Section -->
+                            <div class="text-center mb-8 -mt-4">
+                                <p class="text-slate-500 font-medium max-w-xl mx-auto">
+                                    Consultez, saisissez et gérez vos écritures comptables avec précision.
+                                </p>
+                            </div>
+                            
+                            <!-- Info / Filter / Action Bar -->
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 w-full gap-4">
+                                <!-- Left Group: Informations Saisie -->
+                                <div class="glass-card px-6 py-4 flex items-center gap-6 w-full md:w-auto">
+                                   <div class="flex items-center gap-3">
+                                       <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                           <i class='bx bx-notepad text-xl'></i>
+                                       </div>
+                                       <div>
+                                           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Journal</p>
+                                           <p class="text-sm font-bold text-slate-800">{{ data_get($journal ?? null, 'code_journal', '-') }} - {{ data_get($journal ?? null, 'intitule', '-') }}</p>
+                                       </div>
+                                   </div>
+                                   <div class="h-8 w-px bg-slate-200"></div>
+                                   <div class="flex items-center gap-3">
+                                       <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                            <i class='bx bx-calendar text-xl'></i>
+                                       </div>
+                                       <div>
+                                           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Période</p>
+                                           <p class="text-sm font-bold text-slate-800">{{ isset($exercice) && data_get($exercice, 'date_debut') ? \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') : '-' }} - {{ isset($exercice) && data_get($exercice, 'date_fin') ? \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') : '-' }}</p>
+                                       </div>
+                                   </div>
+                                </div>
+    
+                                <!-- Right Group: Actions -->
+                                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                                    <button type="button" class="btn btn-secondary rounded-xl px-5 font-semibold shadow-sm" onclick="window.location.href='{{ route('journaux_saisis') }}'">
+                                        <i class="bx bx-arrow-back me-2"></i>Retour
+                                    </button>
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal"
+                                        class="btn bg-blue-700 hover:bg-blue-800 text-white rounded-xl px-6 py-3 font-semibold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5">
+                                        <i class="fas fa-plus me-2"></i>Nouvelle écriture
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Filter Panel (Toggleable) -->
+                            <div class="glass-card p-6 mb-8" id="filterPanel" style="display:none;"> <!-- Hidden by default, toggle with JS if needed -->
+                               <div class="row g-3">
+                                   <div class="col-md-12">
+                                       <input type="text" id="searchInput" class="form-control" placeholder="Rechercher dans les écritures..." style="border-radius: 12px; padding: 0.75rem 1rem;">
+                                   </div>
+                               </div>
+                            </div>
+                            
+                            <!-- Main Table Card -->
+                            <div class="glass-card overflow-hidden">
+                                <div class="table-responsive">
+                                    <table class="w-full text-left border-collapse" id="tableEcritures">
+                                    <thead class="bg-slate-50/50 border-b border-slate-100">
                                         <tr>
-                                            <td>{{ $ecriture->date ?? '' }}</td>
-                                            <td>{{ $ecriture->n_saisie ?? '' }}</td>
-                                            <td>{{ $ecriture->code_journal ?? '' }}</td>
-                                            <td>{{ $ecriture->description_operation ?? '' }}</td>
-                                            <td>{{ $ecriture->reference_piece ?? '' }}</td>
-                                            <td>{{ $ecriture->compte_general ?? '' }}</td>
-                                            <td>{{ $ecriture->compte_tiers ?? '' }}</td>
-                                            <td class="text-end">
-                                                {{ $ecriture->debit ? number_format($ecriture->debit, 2, ',', ' ') : '' }}
-                                            </td>
-                                            <td class="text-end">
-                                                {{ $ecriture->credit ? number_format($ecriture->credit, 2, ',', ' ') : '' }}
-                                            </td>
-                                            <td>{{ $ecriture->plan_analytique ? 'Oui' : 'Non' }}</td>
-                                            <td>
-                                                @if($ecriture->piece_justificatif)
-                                                    <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                        <i class="bx bx-file"></i>
-                                                    </a>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <button type="button" class="btn btn-sm btn-warning" onclick="editEcriture({{ $ecriture->id }})">
-                                                    <i class="bx bx-edit"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteEcriture({{ $ecriture->id }})">
-                                                    <i class="bx bx-trash"></i>
-                                                </button>
+                                            <!-- Add table headers here -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($entries as $entry)
+                                            <tr>
+                                                <!-- Add table data here -->
+                                            </tr>
+                                        @endforeach
+                                        @if($entries->isEmpty())
+                                        <tr>
+                                            <td colspan="13" class="text-center text-muted py-4">
+                                                Aucune écriture trouvée pour les critères sélectionnés
                                             </td>
                                         </tr>
-                                    @endforeach
-                                @else
-                                    <tr>
-                                        <td colspan="13" class="text-center text-muted py-4">
-                                            Aucune écriture trouvée pour les critères sélectionnés
-                                        </td>
-                                    </tr>
-                                @endif
+                                        @endif
                             </tbody>
                             <tfoot>
                                 <tr class="table-active fw-bold">
@@ -179,42 +377,53 @@
 
       <!-- Modal Nouvelle écriture -->
       <div class="modal fade" id="nouvelleEcritureModal" tabindex="-1" aria-labelledby="nouvelleEcritureModalLabel" aria-hidden="true">
-          <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
-              <div class="modal-content">
-                  <div class="modal-header">
-                      <h5 class="modal-title" id="nouvelleEcritureModalLabel">Nouvelle écriture</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                  </div>
-                  <div class="modal-body">
-                      <form id="formNouvelleEcriture">
-                          <input type="hidden" id="hiddenNumeroSaisie" name="numero_saisie" />
-                          <input type="hidden" id="hiddenCodeJournal" name="code_journal" />
+          <div class="modal-dialog modal-dialog-centered" style="max-width: 95%; margin: auto;">
+              <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem; max-height: 90vh; overflow-y: auto;">
+                  <form id="formNouvelleEcriture">
+                      <input type="hidden" id="hiddenNumeroSaisie" name="numero_saisie" />
+                      <input type="hidden" id="hiddenCodeJournal" name="code_journal" />
 
-                          <div class="row g-4">
-                              <div class="col-md-4">
-                                  <label for="dateEcriture" class="form-label">Date</label>
-                                  <input type="date" id="dateEcriture" name="date" class="form-control" required />
-                              </div>
-                              <div class="col-md-4">
-                                  <label for="journalEcriture" class="form-label">Journal</label>
-                                  <input type="text" id="journalEcriture" name="journal" class="form-control" readonly />
-                              </div>
-                              <div class="col-md-4">
-                                  <label for="numeroSaisie" class="form-label">N° Saisie</label>
-                                  <input type="text" id="numeroSaisie" name="numero_saisie" class="form-control" readonly />
-                              </div>
-                              
-                              <div class="col-md-12">
-                                  <label for="libelleEcriture" class="form-label">Libellé / Intitulé de l'opération</label>
-                                  <input type="text" id="libelleEcriture" name="libelle" class="form-control" placeholder="Entrez le libellé de l'écriture..." required />
-                              </div>
+                      <!-- Header -->
+                      <div class="text-center mb-3 position-relative">
+                          <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer" style="top: -0.5rem; right: -0.5rem;"></button>
+                          <h1 class="text-xl font-extrabold tracking-tight text-slate-900" style="font-size: 1.5rem; font-weight: 800;">
+                              Nouvelle <span class="text-blue-gradient-premium">Écriture</span>
+                          </h1>
+                      </div>
 
+                      <div class="modal-body" style="padding: 0;">
+                          <!-- Ligne 1: Date, Journal, N° Saisie -->
+                          <div class="row g-2 mb-3">
+                              <div class="col-md-4">
+                                  <label for="dateEcriture" class="input-label-premium" style="font-size: 0.7rem;">Date</label>
+                                  <input type="date" id="dateEcriture" name="date" class="input-field-premium" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
+                              </div>
+                              <div class="col-md-4">
+                                  <label for="journalEcriture" class="input-label-premium" style="font-size: 0.7rem;">Journal</label>
+                                  <input type="text" id="journalEcriture" name="journal" class="input-field-premium" readonly style="padding: 0.625rem 0.875rem; font-size: 0.8rem; background-color: #f8f9fa;" />
+                              </div>
+                              <div class="col-md-4">
+                                  <label for="numeroSaisie" class="input-label-premium" style="font-size: 0.7rem;">N° Saisie</label>
+                                  <input type="text" id="numeroSaisie" name="numero_saisie" class="input-field-premium" readonly style="padding: 0.625rem 0.875rem; font-size: 0.8rem; background-color: #f8f9fa;" />
+                              </div>
+                          </div>
+
+                          <!-- Ligne 2: Libellé -->
+                          <div class="row g-2 mb-3">
+                              <div class="col-12">
+                                  <label for="libelleEcriture" class="input-label-premium" style="font-size: 0.7rem;">Libellé / Intitulé de l'opération</label>
+                                  <input type="text" id="libelleEcriture" name="libelle" class="input-field-premium" placeholder="Entrez le libellé de l'écriture..." required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
+                              </div>
+                          </div>
+
+                          <!-- Ligne 3: Comptes -->
+                          <div class="row g-2 mb-3">
                               <div class="col-md-6">
-                                  <label for="compteGeneralSearch" class="form-label">Compte Général Search</label>
+                                  <label for="compteGeneralSearch" class="input-label-premium" style="font-size: 0.7rem;">Compte Général</label>
                                   <div class="search-select-container">
                                       <div class="input-group">
-                                          <span class="input-group-text"><i class="bx bx-search"></i></span>
-                                          <input type="text" id="compteGeneralSearch" class="form-control" placeholder="Rechercher un compte général (ex: 701...)" autocomplete="off">
+                                          <span class="input-group-text" style="background-color: #f8f9fa; border-radius: 8px 0 0 8px; border-right: none; color: #3b82f6;"><i class="bx bx-search"></i></span>
+                                          <input type="text" id="compteGeneralSearch" class="form-control" placeholder="Rechercher un compte général (ex: 701...)" autocomplete="off" style="border-radius: 0 8px 8px 0 !important; padding: 0.625rem 0.875rem; font-size: 0.8rem;">
                                           <input type="hidden" id="compteGeneralEcriture" name="compte_general" required>
                                       </div>
                                       <div class="search-select-dropdown" id="compteGeneralDropdown" style="display: none;">
@@ -233,11 +442,11 @@
                                   </div>
                               </div>
                               <div class="col-md-6">
-                                  <label for="compteTiersSearch" class="form-label">Compte Tiers Search</label>
+                                  <label for="compteTiersSearch" class="input-label-premium" style="font-size: 0.7rem;">Compte Tiers</label>
                                   <div class="search-select-container">
                                       <div class="input-group">
-                                          <span class="input-group-text"><i class="bx bx-search"></i></span>
-                                          <input type="text" id="compteTiersSearch" class="form-control" placeholder="Rechercher un tiers (Client, Fournisseur...)" autocomplete="off">
+                                          <span class="input-group-text" style="background-color: #f8f9fa; border-radius: 8px 0 0 8px; border-right: none; color: #3b82f6;"><i class="bx bx-search"></i></span>
+                                          <input type="text" id="compteTiersSearch" class="form-control" placeholder="Rechercher un tiers (Client, Fournisseur...)" autocomplete="off" style="border-radius: 0 8px 8px 0 !important; padding: 0.625rem 0.875rem; font-size: 0.8rem;">
                                           <input type="hidden" id="compteTiersEcriture" name="compte_tiers">
                                       </div>
                                       <div class="search-select-dropdown" id="compteTiersDropdown" style="display: none;">
@@ -263,37 +472,50 @@
                                       </div>
                                   </div>
                               </div>
+                          </div>
 
+                          <!-- Ligne 4: Montants et détails -->
+                          <div class="row g-2 mb-3">
                               <div class="col-md-3">
-                                  <label for="referencePieceEcriture" class="form-label">Référence Pièce</label>
-                                  <input type="text" id="referencePieceEcriture" name="reference_piece" class="form-control" placeholder="N° de facture, chèque..." />
+                                  <label for="referencePieceEcriture" class="input-label-premium" style="font-size: 0.7rem;">Référence Pièce</label>
+                                  <input type="text" id="referencePieceEcriture" name="reference_piece" class="input-field-premium" placeholder="N° facture..." style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
                               </div>
                               <div class="col-md-3">
-                                  <label for="debitEcriture" class="form-label">Montant Débit</label>
-                                  <input type="number" id="debitEcriture" name="debit" class="form-control" step="0.01" min="0" placeholder="0.00" />
+                                  <label for="debitEcriture" class="input-label-premium" style="font-size: 0.7rem;">Montant Débit</label>
+                                  <input type="number" id="debitEcriture" name="debit" class="input-field-premium" step="0.01" min="0" placeholder="0.00" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
                               </div>
                               <div class="col-md-3">
-                                  <label for="creditEcriture" class="form-label">Montant Crédit</label>
-                                  <input type="number" id="creditEcriture" name="credit" class="form-control" step="0.01" min="0" placeholder="0.00" />
+                                  <label for="creditEcriture" class="input-label-premium" style="font-size: 0.7rem;">Montant Crédit</label>
+                                  <input type="number" id="creditEcriture" name="credit" class="input-field-premium" step="0.01" min="0" placeholder="0.00" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
                               </div>
                               <div class="col-md-3">
-                                  <label for="planAnalytiqueEcriture" class="form-label">Analytique</label>
-                                  <select id="planAnalytiqueEcriture" name="plan_analytique" class="form-select">
+                                  <label for="planAnalytiqueEcriture" class="input-label-premium" style="font-size: 0.7rem;">Analytique</label>
+                                  <select id="planAnalytiqueEcriture" name="plan_analytique" class="input-field-premium" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
                                       <option value="0">Non</option>
                                       <option value="1">Oui</option>
                                   </select>
                               </div>
-                              <div class="col-md-12">
-                                  <label for="pieceJustificativeEcriture" class="form-label">Pièce justificative (PDF, Image)</label>
-                                  <input type="file" id="pieceJustificativeEcriture" name="piece_justificative" class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
+                          </div>
+
+                          <!-- Ligne 5: Pièce justificative -->
+                          <div class="row g-2">
+                              <div class="col-12">
+                                  <label for="pieceJustificativeEcriture" class="input-label-premium" style="font-size: 0.7rem;">Pièce justificative (PDF, Image)</label>
+                                  <input type="file" id="pieceJustificativeEcriture" name="piece_justificative" class="input-field-premium" accept=".pdf,.jpg,.jpeg,.png" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
                               </div>
                           </div>
-                      </form>
-                  </div>
-                  <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                      <button type="button" class="btn btn-primary" onclick="ajouterEcritureModal()">Ajouter l'écriture</button>
-                  </div>
+                      </div>
+
+                      <!-- Footer Actions -->
+                      <div class="d-flex gap-2 mt-3 pt-3" style="border-top: 1px solid #e2e8f0;">
+                          <button type="button" class="btn btn-cancel-premium flex-fill" data-bs-dismiss="modal" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
+                              <i class="bx bx-x me-1"></i>Annuler
+                          </button>
+                          <button type="button" class="btn-save-premium flex-fill" onclick="ajouterEcritureModal()" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
+                              <i class="bx bx-check me-1"></i>Ajouter l'écriture
+                          </button>
+                      </div>
+                  </form>
               </div>
           </div>
       </div>

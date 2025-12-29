@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 use App\Traits\BelongsToTenant;
 use App\Models\User;
 use App\Models\Company;
 use App\Models\PlanComptable;
+
 class PlanTiers extends Model
 {
     use HasFactory, BelongsToTenant;
+
     protected $table = 'plan_tiers';
 
     protected $fillable = [
@@ -34,8 +35,7 @@ class PlanTiers extends Model
     }
 
     public function compte()
-{
-    return $this->belongsTo(PlanComptable::class, 'compte_general');
-}
-
+    {
+        return $this->belongsTo(PlanComptable::class, 'compte_general');
+    }
 }
