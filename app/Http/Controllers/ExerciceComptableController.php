@@ -47,7 +47,12 @@ class ExerciceComptableController extends Controller
                 return $exercice;
             });
 
-        $code_journaux = CodeJournal::get();
+        // $code_journaux = CodeJournal::get();
+        // IMPORTANT : Filtrer aussi les journaux par la société active
+    $code_journaux = CodeJournal::where('company_id', $companyId)->get();
+    
+    // Définir exerciceActif pour le modal
+    $exerciceActif = $exercices->first();
 
         return view('exercice_comptable', compact('exercices', 'code_journaux'));
     }
