@@ -223,7 +223,7 @@
                                             <input type="text" id="country" name="country" class="form-control" value="{{ old('country') }}" />
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="email_adresse_create" class="form-label">Email de contact <span class="text-danger">*</span></label>
+                                            <label for="email_adresse_create" class="form-label">Email de contact <span class="text-danger"></span></label>
                                             <input type="email" id="email_adresse_create" name="email_adresse" class="form-control" value="{{ old('email_adresse') }}" required />
                                         </div>
                                         <div class="col-md-6">

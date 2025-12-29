@@ -297,51 +297,47 @@
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse" id="planComptableTable">
                                     <thead>
-                                    <thead>
                                         <tr class="bg-slate-50/50 border-b border-slate-100">
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Numéro</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Date de création</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de création</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
                                         @forelse ($plansComptables as $plan)
                                         <tr class="table-row group">
                                             <td class="px-8 py-6">
-                                                <span class="font-mono text-base font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
+                                                <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
                                             </td>
                                             <td class="px-8 py-6">
-                                                <p class="font-semibold text-slate-800">{{ $plan->intitule }}</p>
+                                                <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
                                             </td>
 
                                             <td class="px-8 py-6">
-                                                @php
-                                                    $typeClasses = [
-                                                        'actif' => 'bg-green-100 text-green-800 border border-green-200',
-                                                        'passif' => 'bg-blue-100 text-blue-800 border border-blue-200',
-                                                        'produit' => 'bg-purple-100 text-purple-800 border border-purple-200',
-                                                        'charge' => 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-                                                        'divers' => 'bg-gray-100 text-gray-800 border border-gray-200'
-                                                    ];
-                                                    $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
-                                                @endphp
-                                                <span class="px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg {{ $typeClass }}">
-                                                    {{ ucfirst($plan->type_de_compte) }}
-                                                </span>
-                                            </td>
-                                            <td class="px-8 py-6 text-right">
-                                                <span class="text-sm font-medium text-slate-500">{{ $plan->created_at->format('d/m/Y') }}</span>
+    @php
+        $typeClasses = [
+            'actif' => 'bg-green-100 text-green-800',
+            'passif' => 'bg-blue-100 text-blue-800',
+            'produit' => 'bg-purple-100 text-purple-800',
+            'charge' => 'bg-yellow-100 text-yellow-800',
+            'divers' => 'bg-gray-100 text-gray-800'
+        ];
+        $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
+    @endphp
+    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
+        {{ ucfirst($plan->type_de_compte) }}
+    </span>
+    <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
+</td>
+
+                                            <td class="px-8 py-6">
+                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
                                             </td>
                                         </tr>
                                         @empty
                                         <tr>
-                                            <td colspan="4" class="px-8 py-12 text-center text-slate-500 font-medium">
-                                                <div class="flex flex-col items-center">
-                                                    <i class="bx bx-folder-open text-5xl text-slate-200 mb-3"></i>
-                                                    Aucun plan comptable par défaut trouvé.
-                                                </div>
-                                            </td>
+                                            <td colspan="4" class="text-center py-8 text-muted">Aucun plan comptable par défaut trouvé.</td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -601,6 +597,7 @@
                         { width: "15%", targets: 3 }
                     ]
                 });
+
                 // Fonction pour basculer l'affichage du panneau de filtre
                 function toggleFilterPanel() {
                     const panel = $('#advancedFilterPanel');
@@ -749,47 +746,7 @@ switch(filterType) {
                     console.log('Données du tableau après filtrage :', table.data().toArray());
                 });
             }
-
-            // 5. Pagination
-            function updatePagination() {
-                const info = table.page.info();
-                console.log("📊 Mise à jour pagination:", info);
-
-                if (info.recordsDisplay > 0) {
-                    $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
-
-                    let paginationHtml = '';
-                    paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                    paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                    paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                    $('.pagination-container').html(paginationHtml);
-                } else {
-                    $('.table-info').html('Aucun compte trouvé');
-                    $('.pagination-container').empty();
-                }
-            }
-
-            // On attache l'event AVANT tout draw potentiel
-            table.on('draw', function() {
-                console.log("🎨 Event draw déclenché");
-                updatePagination();
-            });
-
-            // Initial pagination update
-            updatePagination();
-            
-            // Gestion de la pagination
-            $(document).on('click', '#nextPage', function() { 
-                table.page('next').draw('page');
-            });
-            
-            $(document).on('click', '#prevPage', function() { 
-                table.page('previous').draw('page');
-            });
-        } else {
-            console.log("⏳ DataTables non disponible");
-        }
-    });
+        });
     </script>
     
     <style>

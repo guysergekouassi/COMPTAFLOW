@@ -35,7 +35,7 @@ class SuperAdminCompanyController extends Controller
         'juridique_form' => 'required|string|max:255',
         'activity' => 'required|string|max:255',
         'social_capital' => 'required|numeric|min:0',
-        'adresse' => 'required|string|max:255',
+        'adresse' => 'string|max:255',
         'code_postal' => 'required|string|max:20',
         'city' => 'required|string|max:255',
         'country' => 'required|string|max:255',
