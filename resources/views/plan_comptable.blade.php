@@ -316,7 +316,6 @@
                                             </td>
 
                                             <td class="px-8 py-6">
-<<<<<<< HEAD
                                                 @php
                                                     $typeClasses = [
                                                         'actif' => 'bg-green-100 text-green-800 border border-green-200',
@@ -333,26 +332,6 @@
                                             </td>
                                             <td class="px-8 py-6 text-right">
                                                 <span class="text-sm font-medium text-slate-500">{{ $plan->created_at->format('d/m/Y') }}</span>
-=======
-    @php
-        $typeClasses = [
-            'actif' => 'bg-green-100 text-green-800',
-            'passif' => 'bg-blue-100 text-blue-800',
-            'produit' => 'bg-purple-100 text-purple-800',
-            'charge' => 'bg-yellow-100 text-yellow-800',
-            'divers' => 'bg-gray-100 text-gray-800'
-        ];
-        $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
-    @endphp
-    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
-        {{ ucfirst($plan->type_de_compte) }}
-    </span>
-    <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
-</td>
-
-                                            <td class="px-8 py-6">
-                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
->>>>>>> 657121d161255c889a90ab1406a27a6ea6b161c5
                                             </td>
                                         </tr>
                                         @empty
@@ -622,28 +601,6 @@
                         { width: "15%", targets: 3 }
                     ]
                 });
-
-<<<<<<< HEAD
-                // 2. Filtres
-                function applyCustomFilters() {
-                    // Clear any existing custom search
-                    $.fn.dataTable.ext.search = [];
-                    
-                    // Apply Numéro and Intitulé filters
-                    table.column(0).search($('#filterNumero').val());
-                    table.column(1).search($('#filterIntitule').val());
-                    
-                    // Custom filter for Classe (first digit of account number)
-                    const classeValue = $('#filterClasse').val().trim();
-                    if (classeValue) {
-                        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-                            const accountNumber = data[0] || '';
-                            return accountNumber.toString().startsWith(classeValue);
-                        });
-                    }
-                    
-                    table.draw();
-=======
                 // Fonction pour basculer l'affichage du panneau de filtre
                 function toggleFilterPanel() {
                     const panel = $('#advancedFilterPanel');
@@ -656,7 +613,6 @@
                         panel.addClass('hidden');
                         button.removeClass('bg-blue-50 border-blue-200 text-blue-700');
                     }
->>>>>>> 657121d161255c889a90ab1406a27a6ea6b161c5
                 }
 
                 // Gestion du clic sur le bouton de filtre
@@ -793,7 +749,6 @@ switch(filterType) {
                     console.log('Données du tableau après filtrage :', table.data().toArray());
                 });
             }
-<<<<<<< HEAD
 
             // 5. Pagination
             function updatePagination() {
@@ -835,9 +790,6 @@ switch(filterType) {
             console.log("⏳ DataTables non disponible");
         }
     });
-=======
-        });
->>>>>>> 657121d161255c889a90ab1406a27a6ea6b161c5
     </script>
     
     <style>
