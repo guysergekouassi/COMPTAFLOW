@@ -49,7 +49,7 @@ class JournalSaisi extends Model
     }
     public function exercice()
     {
-        return $this->belongsTo(ExerciceComptable::class, 'exercices_comptables_id ');
+        return $this->belongsTo(ExerciceComptable::class, 'exercices_comptables_id');
     }
     public function codeJournal()
     {

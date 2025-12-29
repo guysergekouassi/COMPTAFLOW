@@ -5,6 +5,7 @@ document
         const dateDebut = document.getElementById("date_debut");
         const dateFin = document.getElementById("date_fin");
         const intitule = document.getElementById("intitule_exercice");
+        const btnSubmit = document.getElementById("btnSubmitExercice");
 
         // Récupérer les containers d'erreur
         const errorDebut = document.getElementById("error_date_debut");
@@ -41,28 +42,41 @@ document
             hasError = true;
         }
 
-        // (Optionnel) Vérification intitulé non vide
-        // if (!intitule.value.trim()) {
-        //     errorIntitule.textContent = 'Veuillez renseigner un intitulé.';
-        //     hasError = true;
-        // }
-
         if (hasError) {
             e.preventDefault(); // Annuler la soumission si erreur
+        } else {
+            // Afficher l'état de chargement
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = `
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Enregistrement...
+                `;
+            }
         }
     });
 
 // Réinitialise les champs et erreurs à la fermeture du modal
 const modalCreate = document.getElementById("modalCenterCreate");
-modalCreate.addEventListener("hidden.bs.modal", function () {
-    // Réinitialiser tous les champs du formulaire
-    document.getElementById("formCreateExercice").reset();
+if (modalCreate) {
+    modalCreate.addEventListener("hidden.bs.modal", function () {
+        // Réinitialiser tous les champs du formulaire
+        const form = document.getElementById("formCreateExercice");
+        if (form) form.reset();
 
-    // Effacer les messages d'erreur
-    document.getElementById("error_date_debut").textContent = "";
-    document.getElementById("error_date_fin").textContent = "";
-    document.getElementById("error_intitule").textContent = "";
-});
+        // Réinitialiser le bouton
+        const btnSubmit = document.getElementById("btnSubmitExercice");
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = "Enregistrer";
+        }
+
+        // Effacer les messages d'erreur
+        if (document.getElementById("error_date_debut")) document.getElementById("error_date_debut").textContent = "";
+        if (document.getElementById("error_date_fin")) document.getElementById("error_date_fin").textContent = "";
+        if (document.getElementById("error_intitule")) document.getElementById("error_intitule").textContent = "";
+    });
+}
 
 // filtre
 document.getElementById("apply-filters").addEventListener("click", function () {
