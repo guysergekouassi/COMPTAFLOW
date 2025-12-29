@@ -37,8 +37,13 @@ class ComptaDashboardController extends Controller
 
     private function getDashboardData($companyId)
     {
-        $currentExercice = ExerciceComptable::where('cloturer', 0)
-            ->first();
+        try {
+            $currentExercice = ExerciceComptable::where('cloturer', 0)
+                ->first();
+        } catch (\Exception $e) {
+            // If cloturer column doesn't exist, get the first exercise
+            $currentExercice = ExerciceComptable::first();
+        }
 
         $exerciceId = $currentExercice ? $currentExercice->id : null;
 
@@ -92,7 +97,7 @@ class ComptaDashboardController extends Controller
 
         // KPI 7: Exercice en cours
         $exerciceYear = $currentExercice ? $currentExercice->annee : date('Y');
-        
+
         // Calcul de la progression de l'exercice (approximation basée sur les mois écoulés)
         $exerciceProgress = 0;
         if ($currentExercice) {

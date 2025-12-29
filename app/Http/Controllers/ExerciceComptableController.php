@@ -91,7 +91,7 @@ class ExerciceComptableController extends Controller
                     'intitule' => $exercice->intitule,
                     'nb_mois' => (int) $dateDebut->diffInMonths($dateFin) + 1,
                     'nombre_journaux_saisis' => $exercice->nombre_journaux_saisis ?? 0,
-                    'cloturer' => (bool) $exercice->cloturer
+                    'cloturer' => (bool) ($exercice->getAttribute('cloturer') ?? 0)
                 ];
             });
 
@@ -263,7 +263,7 @@ class ExerciceComptableController extends Controller
     {
         $exercice = ExerciceComptable::findOrFail($id);
 
-        if ($exercice->cloturer) {
+        if ($exercice->getAttribute('cloturer')) {
             return back()->with('error', 'L\'exercice est déjà clôturé.');
         }
 

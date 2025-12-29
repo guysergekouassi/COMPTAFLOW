@@ -277,10 +277,16 @@
     $code_journaux = CodeJournal::where('company_id', $currentCompanyId)->get()->unique('code_journal');
 
     // Récupérer l'exercice actif (non clôturé) pour pré-sélection
-    $exerciceActif = ExerciceComptable::where('company_id', $currentCompanyId)
-        ->where('cloturer', 0)
-        ->orderBy('date_debut', 'desc')
-        ->first();
+    try {
+        $exerciceActif = ExerciceComptable::where('company_id', $currentCompanyId)
+            ->where('cloturer', 0)
+            ->orderBy('date_debut', 'desc')
+            ->first();
+    } catch (\Exception $e) {
+        $exerciceActif = ExerciceComptable::where('company_id', $currentCompanyId)
+            ->orderBy('date_debut', 'desc')
+            ->first();
+    }
 
     $companies = Company::where('id', $user->company_id)->get();
 

@@ -163,7 +163,7 @@
                                         </button>
 
 
-                                        @if ($exercice->cloturer == 0)
+                                        @if (($exercice->cloturer ?? 0) == 0)
                                             <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
                                                 data-bs-target="#modalCenterCreate">
                                                 Nouvelle écriture
@@ -281,11 +281,11 @@
 
 
                                                 <tr class="clickable-row {{ $rowClass }}"
-                                                    data-id="{{ $ecriture->planComptable->id }}" 
-                                                    data-intitule="{{ $ecriture->planComptable->intitule }}" 
-                                                    data-numero_de_compte="{{ $ecriture->planComptable->numero_de_compte }}" 
-                                                    data-n_saisie="{{ $ecriture->n_saisie }}" 
-                                                    
+                                                    data-id="{{ $ecriture->planComptable->id }}"
+                                                    data-intitule="{{ $ecriture->planComptable->intitule }}"
+                                                    data-numero_de_compte="{{ $ecriture->planComptable->numero_de_compte }}"
+                                                    data-n_saisie="{{ $ecriture->n_saisie }}"
+
                                                     >
                                                     <td>{{ $ecriture->date }}</td>
                                                     <td>{{ $ecriture->n_saisie }}</td>
