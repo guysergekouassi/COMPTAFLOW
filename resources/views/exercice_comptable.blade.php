@@ -248,6 +248,10 @@
 
                         <!-- Main Table Card -->
                         <div class="glass-card overflow-hidden">
+                            <div class="px-6 py-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">Exercices Comptables</h3>
+                                <p class="text-sm text-slate-500">Liste des exercices et accès rapide aux journaux saisis</p>
+                            </div>
                             <div class="table-responsive">
                                 <table class="w-full text-left border-collapse" id="exerciceTable">
                                     <thead class="bg-slate-50/50 border-b border-slate-100">

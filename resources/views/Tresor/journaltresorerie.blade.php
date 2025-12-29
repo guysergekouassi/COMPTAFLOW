@@ -239,6 +239,10 @@
 
                         <!-- Tableau Journal Trésorerie -->
                         <div class="glass-card overflow-hidden mx-3">
+                            <div class="px-6 py-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">Journaux de Trésorerie</h3>
+                                <p class="text-sm text-slate-500">Configuration des journaux et paramètres associés</p>
+                            </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse" id="journalTable">
                                     <thead>

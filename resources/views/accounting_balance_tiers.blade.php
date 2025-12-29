@@ -223,10 +223,13 @@
                                 </div>
                             </div>
                         </div>
-                        </div>
 
                         <!-- Section table -->
                         <div class="glass-card overflow-hidden">
+                            <div class="px-6 py-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">Balance (Tiers)</h3>
+                                <p class="text-sm text-slate-500">Balances par tiers et périodes générées</p>
+                            </div>
                             <div class="table-responsive">
                                 <table class="table table-premium mb-0">
                                     <thead>

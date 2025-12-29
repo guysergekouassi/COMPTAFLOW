@@ -219,6 +219,10 @@
                         </script>
 
                         <div class="glass-card overflow-hidden">
+                            <div class="px-6 py-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">Gestion de Trésorerie</h3>
+                                <p class="text-sm text-slate-500">Paramétrage des catégories et flux de trésorerie</p>
+                            </div>
                             <div class="table-responsive">
                                 <table class="w-full text-left border-collapse table-premium" id="FluxTable">
                                     <thead>

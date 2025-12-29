@@ -136,33 +136,33 @@
 
                         <!-- KPI Summary Cards (Style Mirror) -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="glass-card p-6 filter-card flex items-center justify-between filter-type-card" data-type="all">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Journaux</p>
-                                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ $code_journaux->count() }}</h3>
-                                </div>
-                                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-type-card filter-active" data-type="all">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <i class="fas fa-book text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Total Journaux</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $code_journaux->count() }}</h3>
                                 </div>
                             </div>
                             
-                            <div class="glass-card p-6 filter-card flex items-center justify-between filter-type-card" data-type="Tresorerie">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Trésorerie</p>
-                                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ $code_journaux->where('type', 'Tresorerie')->count() }}</h3>
-                                </div>
-                                <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-type-card" data-type="Tresorerie">
+                                <div class="p-3 rounded-full bg-emerald-100 text-emerald-600 mr-4">
                                     <i class="fas fa-university text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Trésorerie</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $code_journaux->where('type', 'Tresorerie')->count() }}</h3>
                                 </div>
                             </div>
 
-                            <div class="glass-card p-6 filter-card flex items-center justify-between filter-type-card" data-type="Ventes">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Achats / Ventes</p>
-                                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ $code_journaux->whereIn('type', ['Achats', 'Ventes'])->count() }}</h3>
-                                </div>
-                                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-type-card" data-type="Ventes">
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
                                     <i class="fas fa-exchange-alt text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Achats / Ventes</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $code_journaux->whereIn('type', ['Achats', 'Ventes'])->count() }}</h3>
                                 </div>
                             </div>
                         </div>
@@ -221,6 +221,10 @@
 
                         <!-- Main Table Card -->
                         <div class="glass-card overflow-hidden">
+                            <div class="px-6 py-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">Codes Journaux</h3>
+                                <p class="text-sm text-slate-500">Liste et configuration des journaux comptables</p>
+                            </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left" id="JournalTable">
                                     <thead>

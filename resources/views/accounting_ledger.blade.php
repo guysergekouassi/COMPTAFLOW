@@ -254,6 +254,10 @@
 
                         <!-- Main Table Card -->
                         <div class="glass-card overflow-hidden">
+                            <div class="px-6 py-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">Grand Livre</h3>
+                                <p class="text-sm text-slate-500">Historique des mouvements par période et comptes</p>
+                            </div>
                             <div class="table-responsive">
                                 <table class="w-full text-left border-collapse table-premium">
                                     <thead>
@@ -269,35 +273,6 @@
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
                                         @forelse ($grandLivre as $livre)
-                                            <tr>
-                                                <td>
-                                                    {{ \Carbon\Carbon::parse($livre->date_debut)->format('d/m/Y') }} -
-                                                    {{ \Carbon\Carbon::parse($livre->date_fin)->format('d/m/Y') }}
-                                                </td>
-
-                                                <td>
-                                                    {{ $livre->updated_at }}
-                                                </td>
-
-                                                <td>
-                                                    {{ $livre->format }}
-                                                </td>
-
-                                                <td>{{ $livre->PlanComptable1->numero_de_compte ?? 'N/A' }}
-                                                </td>
-
-                                                <td>{{ $livre->PlanComptable2->numero_de_compte ?? 'N/A' }}
-                                                </td>
-                                                {{-- <td>
-                                                    <button class="btn btn-sm btn-outline-primary btn-preview-pdf"
-                                                        data-pdf-url="{{ asset('grand_livres/' . $livre->grand_livre) }}"
-                                                        data-bs-toggle="modal" data-bs-target="#pdfPreviewModal"
-                                                        title="Afficher le grand livre">
-                                                        Voir PDF
-                                                    </button>
-                                                </td> --}}
-
-                                                <td>
                                             <tr class="table-row">
                                                 <td class="px-8 py-4 font-medium text-slate-700">
                                                     {{ \Carbon\Carbon::parse($livre->date_debut)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($livre->date_fin)->format('d/m/Y') }}

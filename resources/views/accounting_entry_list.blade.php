@@ -403,6 +403,10 @@
                             
                             <!-- Main Table Card -->
                             <div class="glass-card overflow-hidden">
+                                <div class="px-6 py-4 border-b border-slate-100">
+                                    <h3 class="text-lg font-bold text-slate-800">Liste des écritures</h3>
+                                    <p class="text-sm text-slate-500">Consultation et suivi des écritures comptables</p>
+                                </div>
                                 <div class="table-responsive">
                                     <table class="w-full text-left border-collapse" id="tableEcritures">
                                     <thead class="bg-slate-50/50 border-b border-slate-100">
@@ -455,12 +459,12 @@
                             <tfoot>
                                 <tr class="table-active fw-bold">
                                     <td colspan="7" class="text-end">TOTAL</td>
-                                    <td class="text-end">
-                                        {{ isset($totalDebit) ? number_format($totalDebit, 2, ',', ' ') : '0,00' }}
-                                    </td>
-                                    <td class="text-end">
-                                        {{ isset($totalCredit) ? number_format($totalCredit, 2, ',', ' ') : '0,00' }}
-                                    </td>
+                                     <td class="text-end" id="footerTotalDebit">
+                                         {{ isset($totalDebit) ? number_format($totalDebit, 2, ',', ' ') : '0,00' }}
+                                     </td>
+                                     <td class="text-end" id="footerTotalCredit">
+                                         {{ isset($totalCredit) ? number_format($totalCredit, 2, ',', ' ') : '0,00' }}
+                                     </td>
                                     <td colspan="2"></td>
                                 </tr>
                             </tfoot>
@@ -484,7 +488,7 @@
 
       <!-- Modal Nouvelle écriture -->
       <div class="modal fade" id="nouvelleEcritureModal" tabindex="-1" aria-labelledby="nouvelleEcritureModalLabel" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered" style="max-width: 95%; margin: auto;">
+          <div class="modal-dialog modal-dialog-centered" style="max-width: 98vw; width: 98vw; margin: auto;">
               <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem; max-height: 90vh; overflow-y: auto;">
                   <form id="formNouvelleEcriture">
                       <input type="hidden" id="hiddenNumeroSaisie" name="numero_saisie" />
@@ -641,10 +645,16 @@
         // Récupérer les paramètres de l'URL
         const urlParams = new URLSearchParams(window.location.search);
 
+        // N° Saisie automatique via PHP si non fourni en URL
+        const nextSaisie = "{{ $nextSaisieNumber ?? '' }}";
+
         // Remplir les champs si les paramètres existent
         if (urlParams.has('numero_saisie')) {
             document.getElementById('numeroSaisie').value = urlParams.get('numero_saisie');
             document.getElementById('hiddenNumeroSaisie').value = urlParams.get('numero_saisie');
+        } else if (nextSaisie) {
+            document.getElementById('numeroSaisie').value = nextSaisie;
+            document.getElementById('hiddenNumeroSaisie').value = nextSaisie;
         }
 
         if (urlParams.has('code')) {
@@ -655,6 +665,36 @@
         if (urlParams.has('id_journal')) {
             document.getElementById('hiddenCodeJournal').value = urlParams.get('id_journal');
         }
+
+        // Exclusion mutuelle Débit / Crédit
+        const debitInput = document.getElementById('debitEcriture');
+        const creditInput = document.getElementById('creditEcriture');
+
+        debitInput.addEventListener('input', function() {
+            if (this.value && parseFloat(this.value) > 0) {
+                creditInput.value = '';
+                creditInput.readOnly = true;
+                creditInput.style.backgroundColor = '#f8f9fa';
+                creditInput.style.cursor = 'not-allowed';
+            } else {
+                creditInput.readOnly = false;
+                creditInput.style.backgroundColor = '';
+                creditInput.style.cursor = '';
+            }
+        });
+
+        creditInput.addEventListener('input', function() {
+            if (this.value && parseFloat(this.value) > 0) {
+                debitInput.value = '';
+                debitInput.readOnly = true;
+                debitInput.style.backgroundColor = '#f8f9fa';
+                debitInput.style.cursor = 'not-allowed';
+            } else {
+                debitInput.readOnly = false;
+                debitInput.style.backgroundColor = '';
+                debitInput.style.cursor = '';
+            }
+        });
     });
 
     // Fonction pour ajouter une écriture depuis le modal
@@ -693,6 +733,8 @@
         const tierText = document.getElementById('compteTiersSearch').value || '-';
         const analytiqueText = document.getElementById('planAnalytiqueEcriture').value === '1' ? 'Oui' : 'Non';
         const referencePiece = document.getElementById('referencePieceEcriture').value || '-';
+        const pieceFile = document.getElementById('pieceJustificativeEcriture');
+        const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '-';
 
         newRow.innerHTML = `
             <td class="px-4 py-3 text-sm text-slate-700">${date}</td>
@@ -704,19 +746,67 @@
             <td class="px-4 py-3 text-sm text-slate-700">${analytiqueText}</td>
             <td class="px-4 py-3 text-sm text-slate-700 text-right">${debit > 0 ? debit.toLocaleString('fr-FR', {minimumFractionDigits: 2}) : ''}</td>
             <td class="px-4 py-3 text-sm text-slate-700 text-right">${credit > 0 ? credit.toLocaleString('fr-FR', {minimumFractionDigits: 2}) : ''}</td>
-            <td class="px-4 py-3 text-center">
-                <span class="text-slate-400">À rafraîchir</span>
-            </td>
+            <td class="px-4 py-3 text-sm text-slate-700 text-center">${pieceFileName}</td>
         `;
 
         newRow.classList.add('border-b', 'border-slate-100', 'hover:bg-slate-50');
 
+        // Mettre à jour les totaux
+        updateTableTotals();
+
+        // Incrémenter le numéro de saisie pour la prochaine fois
+        const currentSaisie = document.getElementById('numeroSaisie').value;
+        if (currentSaisie && !isNaN(currentSaisie)) {
+            const nextVal = (BigInt(currentSaisie) + 1n).toString().padStart(currentSaisie.length, '0');
+            document.getElementById('numeroSaisie').value = nextVal;
+            document.getElementById('hiddenNumeroSaisie').value = nextVal;
+        }
+
         // Fermer le modal et réinitialiser le formulaire
         const modal = bootstrap.Modal.getInstance(document.getElementById('nouvelleEcritureModal'));
         modal.hide();
+        
+        // Reset manuel pour garder le numero de saisie
+        const prevSaisie = document.getElementById('numeroSaisie').value;
         form.reset();
+        document.getElementById('numeroSaisie').value = prevSaisie;
+        document.getElementById('hiddenNumeroSaisie').value = prevSaisie;
+        document.getElementById('dateEcriture').value = new Date().toISOString().split('T')[0];
+        
+        // Reset readOnly states
+        document.getElementById('creditEcriture').readOnly = false;
+        document.getElementById('creditEcriture').style.backgroundColor = '';
+        document.getElementById('creditEcriture').style.cursor = '';
+        document.getElementById('debitEcriture').readOnly = false;
+        document.getElementById('debitEcriture').style.backgroundColor = '';
+        document.getElementById('debitEcriture').style.cursor = '';
 
         alert('Écriture ajoutée avec succès !');
+    }
+
+    // Fonction pour mettre à jour les totaux du tableau
+    function updateTableTotals() {
+        const table = document.getElementById('tableEcritures').getElementsByTagName('tbody')[0];
+        let totalDebit = 0;
+        let totalCredit = 0;
+
+        for (let i = 0; i < table.rows.length; i++) {
+            const row = table.rows[i];
+            if (row.cells.length < 9) continue;
+            
+            // Debit est l'index 7, Credit est l'index 8
+            const debitVal = parseFloat(row.cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            const creditVal = parseFloat(row.cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            
+            totalDebit += debitVal;
+            totalCredit += creditVal;
+        }
+
+        const footerDebit = document.getElementById('footerTotalDebit');
+        const footerCredit = document.getElementById('footerTotalCredit');
+        
+        if (footerDebit) footerDebit.textContent = totalDebit.toLocaleString('fr-FR', {minimumFractionDigits: 2});
+        if (footerCredit) footerCredit.textContent = totalCredit.toLocaleString('fr-FR', {minimumFractionDigits: 2});
     }
 
     // Fonction pour filtrer les écritures
@@ -832,8 +922,8 @@
         style.textContent = `
             /* Taille du modal */
             #nouvelleEcritureModal .modal-dialog {
-                max-width: 80%;
-                width: 850px;
+                max-width: 98vw;
+                width: 98vw;
                 max-height: 90vh;
                 margin: 1.75rem auto;
             }
@@ -947,7 +1037,8 @@
 
             @media (max-width: 992px) {
                 #nouvelleEcritureModal .modal-dialog {
-                    max-width: 95%;
+                    max-width: 100vw;
+                    width: 100vw;
                     margin: 10px auto;
                 }
             }
@@ -978,9 +1069,21 @@
         
         // Gérer le focus et le clic en dehors
         input.addEventListener('focus', function() {
-            if (this.value) {
-                dropdown.style.display = 'block';
+            // Afficher tout s'il n'y a pas de recherche, sinon filtrer
+            const searchText = this.value.toLowerCase();
+            const items = dropdown.getElementsByClassName('list-group-item');
+            let hasVisibleItems = false;
+            
+            for (let item of items) {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchText)) {
+                    item.style.display = '';
+                    hasVisibleItems = true;
+                } else {
+                    item.style.display = 'none';
+                }
             }
+            dropdown.style.display = hasVisibleItems ? 'block' : 'none';
         });
         
         document.addEventListener('click', function(e) {

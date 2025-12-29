@@ -178,13 +178,13 @@
 
                         <!-- KPI Summary Cards (Style Plan Comptable) -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                            <div class="glass-card p-6 filter-card flex items-center justify-between filtre-tiers" data-type="all">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Tiers</p>
-                                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ $totalPlanTiers }}</h3>
-                                </div>
-                                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filtre-tiers" data-type="all">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <i class="bx bx-group text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Total Tiers</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlanTiers }}</h3>
                                 </div>
                             </div>
 
@@ -197,13 +197,13 @@
                                         $color = 'indigo';
                                     }
                                 @endphp
-                                <div class="glass-card p-6 filter-card flex items-center justify-between filtre-tiers" data-type="{{ $type }}">
-                                    <div>
-                                        <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">{{ $type }}s</p>
-                                        <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ $count }}</h3>
-                                    </div>
-                                    <div class="w-12 h-12 bg-{{ $color }}-100 rounded-xl flex items-center justify-center text-{{ $color }}-600">
+                                <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filtre-tiers" data-type="{{ $type }}">
+                                    <div class="p-3 rounded-full bg-{{ $color }}-100 text-{{ $color }}-600 mr-4">
                                         <i class="bx bx-user text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-slate-500">{{ $type }}s</p>
+                                        <h3 class="text-2xl font-bold text-slate-800">{{ $count }}</h3>
                                     </div>
                                 </div>
                             @endforeach
@@ -283,6 +283,10 @@
 
                         <!-- Main Table Card -->
                         <div class="glass-card overflow-hidden">
+                            <div class="px-6 py-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">Plan Tiers</h3>
+                                <p class="text-sm text-slate-500">Liste des clients et fournisseurs enregistrés</p>
+                            </div>
                             <div class="table-responsive">
                                 <table class="w-full text-left border-collapse" id="tiersTable">
                                     <thead>

@@ -47,7 +47,7 @@
         background-color: #f8fafc !important;
     }
     .content-wrapper {
-        padding: 2rem !important;
+        padding: 1.5rem !important;
     }
 </style>
 
@@ -67,20 +67,20 @@
 
                         <!-- En-tête Centré Dynamique -->
                         <!-- En-tête Centré Dynamique -->
-                        <div class="text-center mb-12">
+                        <div class="text-center mb-8">
                             <p class="text-slate-500 font-medium">Bienvenue, voici l'état actuel de votre exercice comptable.</p>
                         </div>
 
                         <!-- Section Statistiques (KPIs) -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                            <div class="glass-card p-6 border-l-4 border-l-blue-700">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+                            <div class="glass-card p-5 border-l-4 border-l-blue-700">
                                 <div class="flex justify-between items-start">
                                     <div>
                                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Écritures du mois</p>
-                                        <h3 class="text-3xl font-black text-slate-800 mt-1">{{ number_format($monthlyEntries ?? 0, 0, ',', ' ') }}</h3>
+                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ number_format($monthlyEntries ?? 0, 0, ',', ' ') }}</h3>
                                     </div>
                                     <div class="p-3 bg-blue-50 text-blue-700 rounded-2xl">
-                                        <i class="fas fa-pen-nib text-xl"></i>
+                                        <i class="fas fa-pen-nib text-lg"></i>
                                     </div>
                                 </div>
                                 <p class="text-xs text-green-600 mt-4 font-bold">
@@ -88,29 +88,29 @@
                                 </p>
                             </div>
 
-                            <div class="glass-card p-6 border-l-4 border-l-indigo-600">
+                            <div class="glass-card p-5 border-l-4 border-l-indigo-600">
                                 <div class="flex justify-between items-start">
                                     <div>
                                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Solde Trésorerie</p>
-                                        <h3 class="text-3xl font-black text-slate-800 mt-1">
+                                        <h3 class="text-2xl font-black text-slate-800 mt-1">
                                             {{ number_format($cashBalance ?? 0, 0, ',', ' ') }} <span class="text-sm font-medium">FCFA</span>
                                         </h3>
                                     </div>
                                     <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-                                        <i class="fas fa-wallet text-xl"></i>
+                                        <i class="fas fa-wallet text-lg"></i>
                                     </div>
                                 </div>
                                 <p class="text-xs text-slate-500 mt-4 italic">Mise à jour en temps réel</p>
                             </div>
 
-                            <div class="glass-card p-6 border-l-4 border-l-emerald-500">
+                            <div class="glass-card p-5 border-l-4 border-l-emerald-500">
                                 <div class="flex justify-between items-start">
                                     <div>
                                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tiers Actifs</p>
-                                        <h3 class="text-3xl font-black text-slate-800 mt-1">{{ ($clientCount ?? 0) + ($supplierCount ?? 0) }}</h3>
+                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ ($clientCount ?? 0) + ($supplierCount ?? 0) }}</h3>
                                     </div>
                                     <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-                                        <i class="fas fa-users text-xl"></i>
+                                        <i class="fas fa-users text-lg"></i>
                                     </div>
                                 </div>
                                 <div class="flex gap-2 mt-4 text-[10px] font-bold uppercase">
@@ -120,14 +120,14 @@
                                 </div>
                             </div>
 
-                            <div class="glass-card p-6 border-l-4 border-l-slate-800">
+                            <div class="glass-card p-5 border-l-4 border-l-slate-800">
                                 <div class="flex justify-between items-start">
                                     <div>
                                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Exercice en cours</p>
-                                        <h3 class="text-3xl font-black text-slate-800 mt-1">{{ $exerciceYear ?? date('Y') }}</h3>
+                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $exerciceYear ?? date('Y') }}</h3>
                                     </div>
                                     <div class="p-3 bg-slate-100 text-slate-800 rounded-2xl">
-                                        <i class="fas fa-calendar-check text-xl"></i>
+                                        <i class="fas fa-calendar-check text-lg"></i>
                                     </div>
                                 </div>
                                 <p class="text-xs text-blue-700 mt-4 font-bold italic underline">Période : {{ \Carbon\Carbon::now()->translatedFormat('F') }}</p>
@@ -138,7 +138,7 @@
 
                             <!-- Section Actions Rapides (Modules) -->
                             <div class="lg:col-span-2 space-y-8">
-                                <div class="glass-card p-8">
+                                <div class="glass-card p-6">
                                     <h2 class="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
                                         <i class="fas fa-th-large text-blue-700"></i> Vos Modules de Travail
                                     </h2>
@@ -186,7 +186,7 @@
                                 </div>
 
                                 <!-- Activité Récente / Journaux de Trésorerie -->
-                                <div class="glass-card p-8">
+                                <div class="glass-card p-6">
                                     <div class="flex items-center justify-between mb-6">
                                         <h2 class="text-lg font-bold text-slate-800">Derniers Journaux de Trésorerie</h2>
                                         <button class="text-sm text-blue-700 font-bold hover:underline">Voir tout</button>
@@ -221,7 +221,7 @@
 
                             <!-- Barre Latérale Droite : Alertes & Statut -->
                             <div class="space-y-8">
-                                <div class="glass-card p-8 bg-slate-900 text-white border-none shadow-xl shadow-blue-900/20">
+                                <div class="glass-card p-6 bg-slate-900 text-white border-none shadow-xl shadow-blue-900/20">
                                     <h2 class="text-lg font-bold mb-4">Statut Clôture</h2>
                                     <div class="w-full bg-slate-800 rounded-full h-2 mb-2">
                                         <div class="bg-blue-500 h-2 rounded-full transition-all duration-1000" style="width: {{ $exerciceProgress ?? 0 }}%"></div>
@@ -232,7 +232,7 @@
                                     </button>
                                 </div>
 
-                                <div class="glass-card p-8">
+                                <div class="glass-card p-6">
                                     <h2 class="text-lg font-bold text-slate-800 mb-4">Notifications</h2>
                                     <div class="space-y-6">
                                         @forelse($alerts ?? [] as $alert)

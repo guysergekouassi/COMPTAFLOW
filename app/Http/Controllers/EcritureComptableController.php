@@ -394,20 +394,25 @@ public function getComptesParFlux(Request $request) {
 
         $entries = $ecritures;
 
-        return view('accounting_entry_list', compact(
-            'exercices',
-            'code_journaux',
-            'ecritures',
-            'entries',
-            'journal',
-            'exercice',
-            'totalDebit',
-            'totalCredit',
-            'plansComptables',
-            'tiers',
-            'postesTresorerie',
-            'data'
-        ));
+        // Génération automatique du n° de saisie (12 chiffres, unique)
+    $lastSaisie = EcritureComptable::max('n_saisie');
+    $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+
+    return view('accounting_entry_list', compact(
+        'exercices',
+        'code_journaux',
+        'ecritures',
+        'entries',
+        'journal',
+        'exercice',
+        'totalDebit',
+        'totalCredit',
+        'plansComptables',
+        'tiers',
+        'postesTresorerie',
+        'nextSaisieNumber',
+        'data'
+    ));
     }
 
 }
