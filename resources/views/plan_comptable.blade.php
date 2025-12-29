@@ -186,9 +186,7 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
                         @endif
-
-                        <!-- KPI Filters Section with Interactive Buttons -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active hover:scale-105 transition-all duration-200" 
             data-filter-type="all">
         <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
@@ -912,10 +910,46 @@ switch(filterType) {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         .filter-active {
-            border-color: #3b82f6 !important;
+            border: 2px solid #3b82f6;
             box-shadow: 0 0 0 1px #3b82f6;
         }
     </style>
-    
+
+    <script>
+    $(document).ready(function() {
+        // On s'assure que la table est bien initialisée
+        var table = $('#planComptableTable').DataTable();
+
+        // Gestion du clic sur les cartes KPI
+        $('.filter-card').on('click', function() {
+            // 1. Gestion visuelle : on retire la classe active de tous et on l'ajoute au cliqué
+            $('.filter-card').removeClass('filter-active ring-2 ring-offset-2 ring-blue-500');
+            $(this).addClass('filter-active ring-2 ring-offset-2 ring-blue-500');
+
+            // 2. Récupération du type de filtre
+            var filterType = $(this).data('filter-type');
+            
+            // 3. Application du filtre sur la colonne 2 (Type)
+            // Note : On utilise des expressions régulières pour correspondre aux labels affichés
+            switch(filterType) {
+                case 'user':
+                    // Filtre les lignes contenant 'Utilisateur' ou 'manuel'
+                    table.column(2).search('Utilisateur|manuel', true, false).draw();
+                    break;
+                case 'system':
+                    // Filtre les lignes contenant 'SYSCOHADA' ou 'auto'
+                    table.column(2).search('SYSCOHADA|auto', true, false).draw();
+                    break;
+                default:
+                    // 'all' : on réinitialise le filtre de la colonne
+                    table.column(2).search('').draw();
+                    break;
+            }
+
+            // Optionnel : Petit effet visuel sur le tableau lors du changement
+            $('#planComptableTable tbody').hide().fadeIn(200);
+        });
+    });
+    </script>
 </body>
 </html>
