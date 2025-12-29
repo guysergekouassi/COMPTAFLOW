@@ -13,62 +13,45 @@ class PlanComptableController extends Controller
 {
 
    use ManagesCompany;
-    public function index()
-    {
-        try {
-            // Récupérer l'utilisateur connecté
-            $user = Auth::user();
+  public function index()
+{
+    try {
+        $user = Auth::user();
+        
+        // 1. Récupérer l'ID de la société active (gestion du switch admin)
+        $companyId = session('current_company_id', $user->company_id);
 
-            $companyId = session('current_company_id', $user->company_id);
-            
-            // Récupérer tous les plans comptables par défaut (adding_strategy = 'auto')
-            $plansComptables = PlanComptable::where('company_id', $companyId)
+        // 2. Récupérer TOUS les plans de cette société (auto + manuel)
+        // On utilise withoutGlobalScopes() si vous avez un scope qui bloque l'admin
+        $query = PlanComptable::where('company_id', $companyId);
+
+        $plansComptables = (clone $query)
             ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
             ->get();
 
-            // Si aucun plan par défaut n'existe, charger depuis le fichier JSON
-            if ($plansComptables->isEmpty()) {
-                $jsonPath = storage_path('app/plan_comptable.json');
-                if (file_exists($jsonPath)) {
-                    $plansComptablesDefauts = json_decode(file_get_contents($jsonPath), true);
-                    
-                    // Créer les plans à partir du fichier JSON
-                    foreach ($plansComptablesDefauts as $numero => $intitule) {
-                        PlanComptable::firstOrCreate(
-                            ['numero_de_compte' => $numero],
-                            [
-                                'intitule' => $intitule,
-                                'adding_strategy' => 'auto',
-                                'type_de_compte' => $this->determinerTypeCompte($numero),
-                                'user_id' => $user->id,
-                                'company_id' => $user->company_id
-                            ]
-                        );
-                    }
-                    
-                    // Recharger les plans après création
-                    $plansComptables = PlanComptable::where('adding_strategy', 'auto')
-                        ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-                        ->get();
-                }
-            }
+        // 3. CALCUL DES STATISTIQUES RÉELLES
+        // Nombre total
+        $totalPlans = $plansComptables->count();
+        
+        // Nombre de plans créés MANUELLEMENT (votre indicateur vert)
+        $plansByUser = $plansComptables->where('adding_strategy', 'manuel')->count();
+        
+        // Nombre de plans créés AUTOMATIQUEMENT (Système)
+        $plansSys = $plansComptables->where('adding_strategy', 'auto')->count();
+        
+        $hasAutoStrategy = $plansSys > 0;
 
-            // Statistiques
-            $totalPlans = $plansComptables->count();
-            $plansByUser = 0; // Pas de plans manuels dans cette vue
-            $plansSys = $totalPlans;
-            $hasAutoStrategy = $plansSys > 0;
+        return view('plan_comptable', [
+            'plansComptables' => $plansComptables,
+            'totalPlans' => $totalPlans,
+            'plansByUser' => $plansByUser, // Sera maintenant dynamique (ex: 2)
+            'plansSys' => $plansSys,
+            'hasAutoStrategy' => $hasAutoStrategy,
+            'isDefaultView' => true 
+        ]);
 
-            return view('plan_comptable', [
-                'plansComptables' => $plansComptables,
-                'totalPlans' => $totalPlans,
-                'plansByUser' => $plansByUser,
-                'plansSys' => $plansSys,
-                'hasAutoStrategy' => $hasAutoStrategy,
-                'isDefaultView' => true // Nouvelle variable pour la vue
-            ]);
     } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'Erreur lors du chargement des plans comptables : ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Erreur : ' . $e->getMessage());
     }
 }
 
