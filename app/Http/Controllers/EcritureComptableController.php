@@ -140,8 +140,11 @@ class EcritureComptableController extends Controller
     {
         $user = Auth::user();
         
+        // Récupérer l'ID de la société active (gestion du switch admin)
+        $companyId = session('current_company_id', $user->company_id);
+        
         // Récupérer les exercices uniques par intitulé, triés par date de début décroissante
-        $exercices = ExerciceComptable::where('company_id', $user->company_id)
+        $exercices = ExerciceComptable::where('company_id', $companyId)
             ->orderBy('date_debut', 'desc')
             ->get()
             ->unique('intitule')
@@ -150,7 +153,8 @@ class EcritureComptableController extends Controller
         // Récupérer l'exercice actif (non clôturé) ou le premier disponible
         $exerciceActif = $exercices->firstWhere('cloturer', 0) ?? $exercices->first();
 
-        $code_journaux = CodeJournal::where('company_id', $user->company_id)
+        // Récupérer les journaux pour la société active
+        $code_journaux = CodeJournal::where('company_id', $companyId)
             ->orderBy('code_journal', 'asc')
             ->get()
             ->unique('code_journal');
@@ -159,6 +163,7 @@ class EcritureComptableController extends Controller
             'exercices' => $exercices,
             'code_journaux' => $code_journaux,
             'exerciceActif' => $exerciceActif,
+            'companyId' => $companyId
         ]);
     }
 
