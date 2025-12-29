@@ -35,7 +35,8 @@ class ExerciceComptableController extends Controller
         }
 
         // Récupération des exercices filtrés par la société active
-        $exercices = ExerciceComptable::select(DB::raw('MAX(id) as id'), 'intitule', 'date_debut', 'date_fin')
+        $exercices = ExerciceComptable::withoutGlobalScopes()
+           ->select(DB::raw('MAX(id) as id'), 'intitule', 'date_debut', 'date_fin')
             ->where('company_id', $companyId)
             ->groupBy('intitule', 'date_debut', 'date_fin')
             ->orderBy('date_debut', 'desc')
@@ -49,7 +50,8 @@ class ExerciceComptableController extends Controller
 
         // $code_journaux = CodeJournal::get();
         // IMPORTANT : Filtrer aussi les journaux par la société active
-    $code_journaux = CodeJournal::where('company_id', $companyId)->get();
+    $code_journaux = CodeJournal::withoutGlobalScopes()
+    ->where('company_id', $companyId)->get();
     
     // Définir exerciceActif pour le modal
     $exerciceActif = $exercices->first();
