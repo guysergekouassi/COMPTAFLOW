@@ -186,150 +186,42 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
                         @endif
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active hover:scale-105 transition-all duration-200" 
-            data-filter-type="all">
-        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-            <i class="bx bx-layer text-2xl"></i>
-        </div>
-        <div class="text-left">
-            <p class="text-sm text-slate-500">Total des plans</p>
-            <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlans }}</h3>
-        </div>
-    </button>
 
-    <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card hover:scale-105 transition-all duration-200" 
-            data-filter-type="user">
-        <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-            <i class="bx bx-user text-2xl"></i>
-        </div>
-        <div class="text-left">
-            <p class="text-sm text-slate-500">Plans par utilisateur</p>
-            <h3 class="text-2xl font-bold text-slate-800">{{ $plansByUser }}</h3>
-        </div>
-    </button>
+                        <!-- KPI Filters Section (Preserving functionality with new Look) -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <!-- Total -->
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active" data-filter-type="all">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="bx bx-layer text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Total des plans</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlans }}</h3>
+                                </div>
+                            </div>
 
-    <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card hover:scale-105 transition-all duration-200" 
-            data-filter-type="system">
-        <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
-            <i class="bx bx-cog text-2xl"></i>
-        </div>
-        <div class="text-left">
-            <p class="text-sm text-slate-500">Plan SYSCOHADA</p>
-            <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
-        </div>
-    </button>
-</div>
+                            <!-- Manuel -->
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="user">
+                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                                    <i class="bx bx-user text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Plans par utilisateur</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansByUser }}</h3>
+                                </div>
+                            </div>
 
-                        <!-- Tableau des plans comptables -->
-                        <div class="overflow-x-auto bg-white rounded-lg shadow">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° de compte</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Intitulé</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="plansTableBody" class="bg-white divide-y divide-gray-200">
-                                    @foreach($plansComptables as $plan)
-                                    <tr class="plan-row" 
-                                        data-type="{{ $plan->adding_strategy === 'auto' ? 'system' : 'user' }}"
-                                        data-visible="true">
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $plan->numero_de_compte }}</td>
-                                        <td class="px-6 py-4">{{ $plan->intitule }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            @if($plan->adding_strategy === 'auto')
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                                                    SYSCOHADA
-                                                </span>
-                                            @else
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                    Utilisateur
-                                                </span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                            <!-- Auto -->
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="system">
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                                    <i class="bx bx-cog text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Plan SYSCOHADA</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
+                                </div>
+                            </div>
                         </div>
-
-                        <script>
-                            function filterPlans(filterType) {
-                                // Mettre à jour les classes des boutons
-                                document.querySelectorAll('.filter-card').forEach(btn => {
-                                    btn.classList.remove('filter-active', 'ring-2', 'ring-offset-2', 'ring-blue-500');
-                                });
-                                
-                                // Activer le bouton cliqué
-                                const activeBtn = document.querySelector(`[data-filter-type="${filterType}"]`);
-                                if (activeBtn) {
-                                    activeBtn.classList.add('filter-active', 'ring-2', 'ring-offset-2', 'ring-blue-500');
-                                }
-
-                                // Filtrer les lignes du tableau
-                                const rows = document.querySelectorAll('.plan-row');
-                                rows.forEach(row => {
-                                    if (filterType === 'all') {
-                                        row.style.display = '';
-                                        row.setAttribute('data-visible', 'true');
-                                    } else {
-                                        const rowType = row.getAttribute('data-type');
-                                        const isVisible = rowType === filterType;
-                                        row.style.display = isVisible ? '' : 'none';
-                                        row.setAttribute('data-visible', isVisible ? 'true' : 'false');
-                                    }
-                                });
-
-                                // Ajouter une animation de fondu
-                                document.getElementById('plansTableBody').style.opacity = '0.5';
-                                setTimeout(() => {
-                                    document.getElementById('plansTableBody').style.opacity = '1';
-                                }, 50);
-                            }
-
-                            // Initialiser le filtre au chargement de la page
-                            document.addEventListener('DOMContentLoaded', function() {
-                                // Ajouter des écouteurs d'événements pour le survol
-                                document.querySelectorAll('.filter-card').forEach(btn => {
-                                    btn.addEventListener('mouseenter', function() {
-                                        this.classList.add('ring-2', 'ring-offset-2', 'ring-blue-300');
-                                    });
-                                    
-                                    btn.addEventListener('mouseleave', function() {
-                                        if (!this.classList.contains('filter-active')) {
-                                            this.classList.remove('ring-2', 'ring-offset-2', 'ring-blue-300');
-                                        }
-                                    });
-                                });
-                            });
-                        </script>
-
-                        <style>
-                            .filter-card {
-                                transition: all 0.2s ease-in-out;
-                                border: 1px solid #e2e8f0;
-                            }
-                            
-                            .filter-card:hover {
-                                transform: translateY(-2px);
-                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                            }
-                            
-                            .filter-active {
-                                border-color: #3b82f6;
-                                background-color: #f8fafc;
-                            }
-                            
-                            .plan-row {
-                                transition: all 0.3s ease;
-                            }
-                            
-                            #plansTableBody {
-                                transition: opacity 0.3s ease;
-                            }
-                        </style>
 
                         <!-- Actions Bar -->
                         <div class="flex justify-between items-center mb-8 w-full gap-4">
@@ -405,51 +297,47 @@
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse" id="planComptableTable">
                                     <thead>
-                                    <thead>
                                         <tr class="bg-slate-50/50 border-b border-slate-100">
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Numéro</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Date de création</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de création</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
                                         @forelse ($plansComptables as $plan)
                                         <tr class="table-row group">
                                             <td class="px-8 py-6">
-                                                <span class="font-mono text-base font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
+                                                <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
                                             </td>
                                             <td class="px-8 py-6">
-                                                <p class="font-semibold text-slate-800">{{ $plan->intitule }}</p>
+                                                <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
                                             </td>
 
                                             <td class="px-8 py-6">
-                                                @php
-                                                    $typeClasses = [
-                                                        'actif' => 'bg-green-100 text-green-800 border border-green-200',
-                                                        'passif' => 'bg-blue-100 text-blue-800 border border-blue-200',
-                                                        'produit' => 'bg-purple-100 text-purple-800 border border-purple-200',
-                                                        'charge' => 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-                                                        'divers' => 'bg-gray-100 text-gray-800 border border-gray-200'
-                                                    ];
-                                                    $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
-                                                @endphp
-                                                <span class="px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg {{ $typeClass }}">
-                                                    {{ ucfirst($plan->type_de_compte) }}
-                                                </span>
-                                            </td>
-                                            <td class="px-8 py-6 text-right">
-                                                <span class="text-sm font-medium text-slate-500">{{ $plan->created_at->format('d/m/Y') }}</span>
+    @php
+        $typeClasses = [
+            'actif' => 'bg-green-100 text-green-800',
+            'passif' => 'bg-blue-100 text-blue-800',
+            'produit' => 'bg-purple-100 text-purple-800',
+            'charge' => 'bg-yellow-100 text-yellow-800',
+            'divers' => 'bg-gray-100 text-gray-800'
+        ];
+        $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
+    @endphp
+    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
+        {{ ucfirst($plan->type_de_compte) }}
+    </span>
+    <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
+</td>
+
+                                            <td class="px-8 py-6">
+                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
                                             </td>
                                         </tr>
                                         @empty
                                         <tr>
-                                            <td colspan="4" class="px-8 py-12 text-center text-slate-500 font-medium">
-                                                <div class="flex flex-col items-center">
-                                                    <i class="bx bx-folder-open text-5xl text-slate-200 mb-3"></i>
-                                                    Aucun plan comptable par défaut trouvé.
-                                                </div>
-                                            </td>
+                                            <td colspan="4" class="text-center py-8 text-muted">Aucun plan comptable par défaut trouvé.</td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -709,6 +597,7 @@
                         { width: "15%", targets: 3 }
                     ]
                 });
+
                 // Fonction pour basculer l'affichage du panneau de filtre
                 function toggleFilterPanel() {
                     const panel = $('#advancedFilterPanel');
@@ -857,47 +746,7 @@ switch(filterType) {
                     console.log('Données du tableau après filtrage :', table.data().toArray());
                 });
             }
-
-            // 5. Pagination
-            function updatePagination() {
-                const info = table.page.info();
-                console.log("📊 Mise à jour pagination:", info);
-
-                if (info.recordsDisplay > 0) {
-                    $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
-
-                    let paginationHtml = '';
-                    paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                    paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                    paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                    $('.pagination-container').html(paginationHtml);
-                } else {
-                    $('.table-info').html('Aucun compte trouvé');
-                    $('.pagination-container').empty();
-                }
-            }
-
-            // On attache l'event AVANT tout draw potentiel
-            table.on('draw', function() {
-                console.log("🎨 Event draw déclenché");
-                updatePagination();
-            });
-
-            // Initial pagination update
-            updatePagination();
-            
-            // Gestion de la pagination
-            $(document).on('click', '#nextPage', function() { 
-                table.page('next').draw('page');
-            });
-            
-            $(document).on('click', '#prevPage', function() { 
-                table.page('previous').draw('page');
-            });
-        } else {
-            console.log("⏳ DataTables non disponible");
-        }
-    });
+        });
     </script>
     
     <style>
@@ -914,6 +763,5 @@ switch(filterType) {
             box-shadow: 0 0 0 1px #3b82f6;
         }
     </style>
-    
 </body>
 </html>
