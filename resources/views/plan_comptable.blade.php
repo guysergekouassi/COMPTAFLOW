@@ -187,41 +187,154 @@
                             </div>
                         @endif
 
-                        <!-- KPI Filters Section (Preserving functionality with new Look) -->
+                        <!-- KPI Filters Section with Interactive Buttons -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <!-- Total -->
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active" data-filter-type="all">
+                            <!-- Total Button -->
+                            <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active hover:scale-105 transition-transform duration-200" 
+                                    data-filter-type="all" onclick="filterPlans('all')">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <i class="bx bx-layer text-2xl"></i>
                                 </div>
-                                <div>
+                                <div class="text-left">
                                     <p class="text-sm text-slate-500">Total des plans</p>
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlans }}</h3>
                                 </div>
-                            </div>
+                            </button>
 
-                            <!-- Manuel -->
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="user">
+                            <!-- Manuel Button -->
+                            <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card hover:scale-105 transition-transform duration-200" 
+                                    data-filter-type="user" onclick="filterPlans('user')">
                                 <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
                                     <i class="bx bx-user text-2xl"></i>
                                 </div>
-                                <div>
+                                <div class="text-left">
                                     <p class="text-sm text-slate-500">Plans par utilisateur</p>
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $plansByUser }}</h3>
                                 </div>
-                            </div>
+                            </button>
 
-                            <!-- Auto -->
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="system">
+                            <!-- Auto Button -->
+                            <button type="button" class="glass-card !p-6 flex items-center cursor-pointer filter-card hover:scale-105 transition-transform duration-200" 
+                                    data-filter-type="system" onclick="filterPlans('system')">
                                 <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
                                     <i class="bx bx-cog text-2xl"></i>
                                 </div>
-                                <div>
+                                <div class="text-left">
                                     <p class="text-sm text-slate-500">Plan SYSCOHADA</p>
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
                                 </div>
-                            </div>
+                            </button>
                         </div>
+
+                        <!-- Tableau des plans comptables -->
+                        <div class="overflow-x-auto bg-white rounded-lg shadow">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° de compte</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Intitulé</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="plansTableBody" class="bg-white divide-y divide-gray-200">
+                                    @foreach($plansComptables as $plan)
+                                    <tr class="plan-row" 
+                                        data-type="{{ $plan->adding_strategy === 'auto' ? 'system' : 'user' }}"
+                                        data-visible="true">
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ $plan->numero_de_compte }}</td>
+                                        <td class="px-6 py-4">{{ $plan->intitule }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            @if($plan->adding_strategy === 'auto')
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                                    SYSCOHADA
+                                                </span>
+                                            @else
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                    Utilisateur
+                                                </span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <script>
+                            function filterPlans(filterType) {
+                                // Mettre à jour les classes des boutons
+                                document.querySelectorAll('.filter-card').forEach(btn => {
+                                    btn.classList.remove('filter-active', 'ring-2', 'ring-offset-2', 'ring-blue-500');
+                                });
+                                
+                                // Activer le bouton cliqué
+                                const activeBtn = document.querySelector(`[data-filter-type="${filterType}"]`);
+                                if (activeBtn) {
+                                    activeBtn.classList.add('filter-active', 'ring-2', 'ring-offset-2', 'ring-blue-500');
+                                }
+
+                                // Filtrer les lignes du tableau
+                                const rows = document.querySelectorAll('.plan-row');
+                                rows.forEach(row => {
+                                    if (filterType === 'all') {
+                                        row.style.display = '';
+                                        row.setAttribute('data-visible', 'true');
+                                    } else {
+                                        const rowType = row.getAttribute('data-type');
+                                        const isVisible = rowType === filterType;
+                                        row.style.display = isVisible ? '' : 'none';
+                                        row.setAttribute('data-visible', isVisible ? 'true' : 'false');
+                                    }
+                                });
+
+                                // Ajouter une animation de fondu
+                                document.getElementById('plansTableBody').style.opacity = '0.5';
+                                setTimeout(() => {
+                                    document.getElementById('plansTableBody').style.opacity = '1';
+                                }, 50);
+                            }
+
+                            // Initialiser le filtre au chargement de la page
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // Ajouter des écouteurs d'événements pour le survol
+                                document.querySelectorAll('.filter-card').forEach(btn => {
+                                    btn.addEventListener('mouseenter', function() {
+                                        this.classList.add('ring-2', 'ring-offset-2', 'ring-blue-300');
+                                    });
+                                    
+                                    btn.addEventListener('mouseleave', function() {
+                                        if (!this.classList.contains('filter-active')) {
+                                            this.classList.remove('ring-2', 'ring-offset-2', 'ring-blue-300');
+                                        }
+                                    });
+                                });
+                            });
+                        </script>
+
+                        <style>
+                            .filter-card {
+                                transition: all 0.2s ease-in-out;
+                                border: 1px solid #e2e8f0;
+                            }
+                            
+                            .filter-card:hover {
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                            }
+                            
+                            .filter-active {
+                                border-color: #3b82f6;
+                                background-color: #f8fafc;
+                            }
+                            
+                            .plan-row {
+                                transition: all 0.3s ease;
+                            }
+                            
+                            #plansTableBody {
+                                transition: opacity 0.3s ease;
+                            }
+                        </style>
 
                         <!-- Actions Bar -->
                         <div class="flex justify-between items-center mb-8 w-full gap-4">
