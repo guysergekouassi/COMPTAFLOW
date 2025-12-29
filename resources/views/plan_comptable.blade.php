@@ -555,7 +555,6 @@
 
     <!-- Custom Logic for New Design -->
     <script>
-        // Initialisation de DataTables pour la table des plans comptables
         document.addEventListener("DOMContentLoaded", function() {
             let table;
             
@@ -583,142 +582,125 @@
                         { width: "55%", targets: 1 },
                         { width: "15%", targets: 2 },
                         { width: "15%", targets: 3 }
-                    ]
+                    ],
+                    drawCallback: function() {
+                        updatePagination();
+                    }
                 });
 
-                // Fonction pour appliquer les filtres
-                function applyCustomFilters() {
-                    table.draw(); // Redessiner le tableau avec tous les filtres actuels
+                // Fonction pour basculer l'affichage du panneau de filtre
+                function toggleFilterPanel() {
+                    const panel = $('#advancedFilterPanel');
+                    const button = $('#toggleFilterBtn');
+                    
+                    if (panel.hasClass('hidden')) {
+                        panel.removeClass('hidden');
+                        button.addClass('bg-blue-50 border-blue-200 text-blue-700');
+                    } else {
+                        panel.addClass('hidden');
+                        button.removeClass('bg-blue-50 border-blue-200 text-blue-700');
+                    }
                 }
 
-                // Gestion des événements de filtre
-                $('#filterNumero, #filterIntitule, #filterClasse').on('keyup change', function() {
-                    // Appliquer le filtre sur la colonne correspondante
-                    if ($(this).attr('id') === 'filterNumero') {
-                        table.column(0).search(this.value).draw();
-                    } else if ($(this).attr('id') === 'filterIntitule') {
-                        table.column(1).search(this.value).draw();
-                    } else if ($(this).attr('id') === 'filterClasse') {
-                        table.column(3).search(this.value).draw();
+                // Gestion du clic sur le bouton de filtre
+                $(document).on('click', '#toggleFilterBtn', function(e) {
+                    e.preventDefault();
+                    toggleFilterPanel();
+                });
+
+                // Mappage des champs de filtre vers les colonnes
+                const filterMap = {
+                    'filterNumero': 0,
+                    'filterIntitule': 1,
+                    'filterClasse': 3
+                };
+
+                // Gestion des champs de filtre
+                $(document).on('keyup change', '#filterNumero, #filterIntitule, #filterClasse', function() {
+                    const column = filterMap[$(this).attr('id')];
+                    if (column !== undefined) {
+                        table.column(column).search(this.value).draw();
                     }
                 });
 
                 // Bouton Appliquer les filtres
-                $('#applyFilterBtn').on('click', function(e) {
+                $(document).on('click', '#applyFilterBtn', function(e) {
                     e.preventDefault();
-                    applyCustomFilters();
+                    table.draw();
                 });
 
                 // Bouton Réinitialiser
-                $('#resetFilterBtn').on('click', function(e) {
+                $(document).on('click', '#resetFilterBtn', function(e) {
                     e.preventDefault();
                     $('#filterNumero, #filterIntitule, #filterClasse').val('');
                     table.search('').columns().search('').draw();
                 });
 
-                // Toggle Button pour afficher/masquer le panneau de filtre
-                $('#toggleFilterBtn').on('click', function(e) {
-                    e.preventDefault();
-                    const panel = $('#advancedFilterPanel');
-                    if(panel.hasClass('hidden')) {
-                        panel.removeClass('hidden');
-                        $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
-                    } else {
-                        panel.addClass('hidden');
-                        $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
-                    }
-                });
-
-                // Activation des cartes de filtre
+                // Gestion des cartes de filtre
                 function activateCard(cardId) {
                     $('.filter-card').removeClass('filter-active');
                     $(cardId).addClass('filter-active');
                 }
 
-            // Gestion des filtres
-            if (table) {
-                $('#filter-all').on('click', function() { 
-                    table.column(2).search('').draw(); 
-                    activateCard('#filter-all'); 
+                // Gestion des filtres rapides
+                const filterHandlers = {
+                    '#filter-all': function() { 
+                        table.column(2).search('').draw();
+                    },
+                    '#filter-manuel': function() { 
+                        table.column(2).search('manuel').draw();
+                    },
+                    '#filter-auto': function() { 
+                        table.column(2).search('auto').draw();
+                    }
+                };
+
+                // Configuration des gestionnaires d'événements pour les filtres rapides
+                Object.keys(filterHandlers).forEach(function(selector) {
+                    $(document).on('click', selector, function(e) {
+                        e.preventDefault();
+                        filterHandlers[selector]();
+                        activateCard(selector);
+                    });
                 });
-                
-                $('#filter-manuel').on('click', function() { 
-                    table.column(2).search('manuel').draw(); 
-                    activateCard('#filter-manuel'); 
-                });
-                
-                $('#filter-auto').on('click', function() { 
-                    table.column(2).search('auto').draw(); 
-                    activateCard('#filter-auto'); 
+
+                // Fonction de mise à jour de la pagination
+                function updatePagination() {
+                    const info = table.page.info();
+                    console.log("📊 Mise à jour pagination:", info);
+
+                    if (info.recordsDisplay > 0) {
+                        $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
+
+                        let paginationHtml = '';
+                        paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                        paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
+                        paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                        $('.pagination-container').html(paginationHtml);
+
+                        // Gestion des événements de pagination
+                        $(document).off('click', '#prevPage, #nextPage').on('click', '#prevPage, #nextPage', function() {
+                            if ($(this).attr('id') === 'prevPage' && info.page > 0) {
+                                table.page('previous').draw('page');
+                            } else if ($(this).attr('id') === 'nextPage' && info.page < info.pages - 1) {
+                                table.page('next').draw('page');
+                            }
+                        });
+                    } else {
+                        $('.table-info').html('Aucun compte trouvé');
+                        $('.pagination-container').empty();
+                    }
+                }
+
+                // Initialisation de la pagination
+                updatePagination();
+
+                // Gestion de l'événement de dessin du tableau
+                table.on('draw', function() {
+                    console.log("🎨 Tableau redessiné");
+                    updatePagination();
                 });
             }
-            
-            // Gestion du panneau de filtre avancé
-            $('#toggleFilterBtn').on('click', function(e) {
-                e.preventDefault();
-                const panel = $('#advancedFilterPanel');
-                if(panel.hasClass('hidden')) {
-                    panel.removeClass('hidden');
-                    $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
-                } else {
-                    panel.addClass('hidden');
-                    $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
-                }
-                    });
-
-                    // 4. KPI Cards
-                    function activateCard(cardId) {
-                        $('.filter-card').removeClass('filter-active');
-                        $(`${cardId}`).addClass('filter-active');
-                    }
-
-                    $('#filter-all').on('click', function() { table.column(2).search('').draw(); activateCard('#filter-all'); });
-                    $('#filter-manuel').on('click', function() { table.column(2).search('manuel').draw(); activateCard('#filter-manuel'); });
-                    $('#filter-auto').on('click', function() { table.column(2).search('auto').draw(); activateCard('#filter-auto'); });
-
-                    // 5. Pagination
-                    function updatePagination() {
-                        const info = table.page.info();
-                        console.log("📊 Mise à jour pagination:", info);
-
-                        if (info.recordsDisplay > 0) {
-                            $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
-
-                            let paginationHtml = '';
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                            paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                            $('.pagination-container').html(paginationHtml);
-                        } else {
-                            $('.table-info').html('Aucun compte trouvé');
-                            $('.pagination-container').empty();
-                        }
-                    }
-
-                    // On attache l'event AVANT tout draw potentiel
-                    table.on('draw', function() {
-                        console.log("🎨 Event draw déclenché");
-                        updatePagination();
-                    });
-
-                    
-                    // Gestion de la pagination
-                    $(document).on('click', '#nextPage', function() { 
-                        table.page('next').draw('page');
-                        updatePagination();
-                    });
-                    
-                    $(document).on('click', '#prevPage', function() { 
-                        table.page('previous').draw('page');
-                        updatePagination();
-                    });
-                } else {
-                    console.log("⏳ En attente de jQuery/DataTables...");
-                    setTimeout(initDataTables, 1200);
-                }
-            };
-
-            initDataTables();
         });
     </script>
 </body>
