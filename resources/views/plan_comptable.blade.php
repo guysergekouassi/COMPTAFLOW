@@ -217,7 +217,7 @@
                                     <i class="bx bx-cog text-2xl"></i>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-slate-500">Plans système</p>
+                                    <p class="text-sm text-slate-500">Plan OHADA</p>
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
                                 </div>
                             </div>
