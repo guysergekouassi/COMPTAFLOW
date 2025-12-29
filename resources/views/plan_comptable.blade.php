@@ -190,7 +190,7 @@
                         <!-- KPI Filters Section (Preserving functionality with new Look) -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <!-- Total -->
-                            <div class="glass-card !p-6 flex items-center">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active" data-filter-type="all">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <i class="bx bx-layer text-2xl"></i>
                                 </div>
@@ -201,7 +201,7 @@
                             </div>
 
                             <!-- Manuel -->
-                            <div class="glass-card !p-6 flex items-center">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="user">
                                 <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
                                     <i class="bx bx-user text-2xl"></i>
                                 </div>
@@ -212,7 +212,7 @@
                             </div>
 
                             <!-- Auto -->
-                            <div class="glass-card !p-6 flex items-center">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="system">
                                 <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
                                     <i class="bx bx-cog text-2xl"></i>
                                 </div>
@@ -697,8 +697,47 @@
 
                 // Initialisation de la pagination
                 updatePagination();
+
+                // Gestion des filtres par carte KPI
+                $('.filter-card').on('click', function() {
+                    // Retirer la classe active de toutes les cartes
+                    $('.filter-card').removeClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
+                    
+                    // Ajouter la classe active à la carte cliquée
+                    $(this).addClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
+                    
+                    // Récupérer le type de filtre
+                    const filterType = $(this).data('filter-type');
+                    
+                    // Appliquer le filtre approprié
+                    switch(filterType) {
+                        case 'user':
+                            table.column(2).search('manuel').draw();
+                            break;
+                        case 'system':
+                            table.column(2).search('auto').draw();
+                            break;
+                        default: // 'all'
+                            table.column(2).search('').draw();
+                    }
+                });
             }
         });
     </script>
+    
+    <style>
+        .filter-card {
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .filter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .filter-active {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+    </style>
 </body>
 </html>
