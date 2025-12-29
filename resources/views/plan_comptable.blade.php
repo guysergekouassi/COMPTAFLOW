@@ -297,44 +297,50 @@
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse" id="planComptableTable">
                                     <thead>
+                                    <thead>
                                         <tr class="bg-slate-50/50 border-b border-slate-100">
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Numéro</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de création</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Date de création</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
                                         @forelse ($plansComptables as $plan)
                                         <tr class="table-row group">
                                             <td class="px-8 py-6">
-                                                <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
+                                                <span class="font-mono text-base font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
                                             </td>
                                             <td class="px-8 py-6">
-                                                <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
+                                                <p class="font-semibold text-slate-800">{{ $plan->intitule }}</p>
                                             </td>
                                             <td class="px-8 py-6">
                                                 @php
                                                     $typeClasses = [
-                                                        'actif' => 'bg-green-100 text-green-800',
-                                                        'passif' => 'bg-blue-100 text-blue-800',
-                                                        'produit' => 'bg-purple-100 text-purple-800',
-                                                        'charge' => 'bg-yellow-100 text-yellow-800',
-                                                        'divers' => 'bg-gray-100 text-gray-800'
+                                                        'actif' => 'bg-green-100 text-green-800 border border-green-200',
+                                                        'passif' => 'bg-blue-100 text-blue-800 border border-blue-200',
+                                                        'produit' => 'bg-purple-100 text-purple-800 border border-purple-200',
+                                                        'charge' => 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+                                                        'divers' => 'bg-gray-100 text-gray-800 border border-gray-200'
                                                     ];
                                                     $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
                                                 @endphp
-                                                <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
+                                                <span class="px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg {{ $typeClass }}">
                                                     {{ ucfirst($plan->type_de_compte) }}
                                                 </span>
                                             </td>
-                                            <td class="px-8 py-6">
-                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
+                                            <td class="px-8 py-6 text-right">
+                                                <span class="text-sm font-medium text-slate-500">{{ $plan->created_at->format('d/m/Y') }}</span>
                                             </td>
                                         </tr>
                                         @empty
                                         <tr>
-                                            <td colspan="4" class="text-center py-8 text-muted">Aucun plan comptable par défaut trouvé.</td>
+                                            <td colspan="4" class="px-8 py-12 text-center text-slate-500 font-medium">
+                                                <div class="flex flex-col items-center">
+                                                    <i class="bx bx-folder-open text-5xl text-slate-200 mb-3"></i>
+                                                    Aucun plan comptable par défaut trouvé.
+                                                </div>
+                                            </td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -588,9 +594,23 @@
 
                 // 2. Filtres
                 function applyCustomFilters() {
-                    table.column(0).search($('#filterNumero').val()).draw();
-                    table.column(1).search($('#filterIntitule').val()).draw();
-                    table.column(3).search($('#filterClasse').val()).draw();
+                    // Clear any existing custom search
+                    $.fn.dataTable.ext.search = [];
+                    
+                    // Apply Numéro and Intitulé filters
+                    table.column(0).search($('#filterNumero').val());
+                    table.column(1).search($('#filterIntitule').val());
+                    
+                    // Custom filter for Classe (first digit of account number)
+                    const classeValue = $('#filterClasse').val().trim();
+                    if (classeValue) {
+                        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                            const accountNumber = data[0] || '';
+                            return accountNumber.toString().startsWith(classeValue);
+                        });
+                    }
+                    
+                    table.draw();
                 }
 
             $('#filterNumero, #filterIntitule, #filterClasse').on('keyup', applyCustomFilters);
@@ -645,74 +665,47 @@
                     activateCard('#filter-auto'); 
                 });
             }
+
+            // 5. Pagination
+            function updatePagination() {
+                const info = table.page.info();
+                console.log("📊 Mise à jour pagination:", info);
+
+                if (info.recordsDisplay > 0) {
+                    $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
+
+                    let paginationHtml = '';
+                    paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                    paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
+                    paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                    $('.pagination-container').html(paginationHtml);
+                } else {
+                    $('.table-info').html('Aucun compte trouvé');
+                    $('.pagination-container').empty();
+                }
+            }
+
+            // On attache l'event AVANT tout draw potentiel
+            table.on('draw', function() {
+                console.log("🎨 Event draw déclenché");
+                updatePagination();
+            });
+
+            // Initial pagination update
+            updatePagination();
             
-            // Gestion du panneau de filtre avancé
-            $('#toggleFilterBtn').on('click', function(e) {
-                e.preventDefault();
-                const panel = $('#advancedFilterPanel');
-                if(panel.hasClass('hidden')) {
-                    panel.removeClass('hidden');
-                    $(this).addClass('bg-blue-50 border-blue-200 text-blue-700');
-                } else {
-                    panel.addClass('hidden');
-                    $(this).removeClass('bg-blue-50 border-blue-200 text-blue-700');
-                }
-                    });
-
-                    // 4. KPI Cards
-                    function activateCard(cardId) {
-                        $('.filter-card').removeClass('filter-active');
-                        $(`${cardId}`).addClass('filter-active');
-                    }
-
-                    $('#filter-all').on('click', function() { table.column(2).search('').draw(); activateCard('#filter-all'); });
-                    $('#filter-manuel').on('click', function() { table.column(2).search('manuel').draw(); activateCard('#filter-manuel'); });
-                    $('#filter-auto').on('click', function() { table.column(2).search('auto').draw(); activateCard('#filter-auto'); });
-
-                    // 5. Pagination
-                    function updatePagination() {
-                        const info = table.page.info();
-                        console.log("📊 Mise à jour pagination:", info);
-
-                        if (info.recordsDisplay > 0) {
-                            $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
-
-                            let paginationHtml = '';
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                            paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                            $('.pagination-container').html(paginationHtml);
-                        } else {
-                            $('.table-info').html('Aucun compte trouvé');
-                            $('.pagination-container').empty();
-                        }
-                    }
-
-                    // On attache l'event AVANT tout draw potentiel
-                    table.on('draw', function() {
-                        console.log("🎨 Event draw déclenché");
-                        updatePagination();
-                    });
-
-                    
-                    // Gestion de la pagination
-                    $(document).on('click', '#nextPage', function() { 
-                        table.page('next').draw('page');
-                        updatePagination();
-                    });
-                    
-                    $(document).on('click', '#prevPage', function() { 
-                        table.page('previous').draw('page');
-                        updatePagination();
-                    });
-                } else {
-                    console.log("⏳ En attente de jQuery/DataTables...");
-                    setTimeout(initDataTables, 1200);
-                }
-            };
-
-            initDataTables();
-        });
+            // Gestion de la pagination
+            $(document).on('click', '#nextPage', function() { 
+                table.page('next').draw('page');
+            });
+            
+            $(document).on('click', '#prevPage', function() { 
+                table.page('previous').draw('page');
+            });
+        } else {
+            console.log("⏳ DataTables non disponible");
+        }
+    });
     </script>
 </body>
 </html>

@@ -5,317 +5,190 @@
 
 @include('components.head')
 
-<style>
-    /* Premium Modal Styles */
-    .premium-modal-content {
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 1);
-        border-radius: 20px;
-        box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        max-width: 400px;
-        margin: auto;
-        padding: 1.25rem !important;
-    }
-
-    .input-field-premium {
-        transition: all 0.2s ease;
-        border: 2px solid #f1f5f9 !important;
-        background-color: #f8fafc !important;
-        border-radius: 12px !important;
-        padding: 0.75rem 1rem !important;
-        font-size: 0.8rem !important;
-        font-weight: 600 !important;
-        color: #0f172a !important;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .input-field-premium:focus {
-        border-color: #1e40af !important;
-        background-color: #ffffff !important;
-        box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.05) !important;
-        outline: none !important;
-    }
-
-    .text-blue-gradient-premium {
-        background: linear-gradient(to right, #1e40af, #3b82f6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800;
-    }
-
-    .input-label-premium {
-        font-size: 0.7rem !important;
-        font-weight: 800 !important;
-        color: #64748b !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-        margin-left: 0.1rem !important;
-        margin-bottom: 0.35rem !important;
-        display: block !important;
-    }
-
-    .btn-save-premium {
-        padding: 0.75rem 1rem !important;
-        border-radius: 12px !important;
-        background-color: #1e40af !important;
-        color: white !important;
-        font-weight: 800 !important;
-        font-size: 0.7rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-        box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1) !important;
-        transition: all 0.2s ease !important;
-        border: none !important;
-        width: 100%;
-    }
-
-    .btn-save-premium:hover {
-        background-color: #1e3a8a !important;
-        transform: translateY(-2px) !important;
-    }
-
-    .btn-cancel-premium {
-        padding: 0.75rem 1rem !important;
-        border-radius: 12px !important;
-        color: #94a3b8 !important;
-        font-weight: 700 !important;
-        font-size: 0.7rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-        transition: all 0.2s ease !important;
-        border: none !important;
-        background: transparent !important;
-        width: 100%;
-    }
-
-    .btn-cancel-premium:hover {
-        background-color: #f8fafc !important;
-        color: #475569 !important;
-    }
-
-    /* Premium Modal Content Wide for complex forms */
-    .premium-modal-content-wide {
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 1);
-        border-radius: 20px;
-        box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        max-width: 90%;
-        margin: auto;
-        padding: 1.5rem !important;
-    }
-</style>
-
 <body>
+    <!-- Layout wrapper -->
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
+            <!-- Menu -->
+
             @include('components.sidebar')
+            <!-- / Menu -->
+
+            <!-- Layout container -->
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Exercice <span class="text-gradient">Comptable</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Configuration</span>'])
+                <!-- Navbar -->
+
+                @include('components.header', ['page_title' => 'EXERCICE <span class="text-gradient">COMPTABLE</span>'])
+
+                <!-- / Navbar -->
+
+                <!-- Content wrapper -->
 
                 <div class="content-wrapper">
-                    <style>
-                        .glass-card {
-                            background: #ffffff;
-                            border: 1px solid #e2e8f0;
-                            border-radius: 16px;
-                            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-                            transition: all 0.3s ease;
-                        }
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <div class="row g-6 mb-6">
 
-                        .table-row {
-                            transition: background-color 0.2s;
-                        }
-
-                        .table-row:hover {
-                            background-color: #f1f5f9;
-                        }
-
-                        #exerciceTable {
-                            border-collapse: separate !important;
-                            border-spacing: 0 !important;
-                        }
-
-                        #exerciceTable thead th {
-                            background-color: #f8fafc;
-                            border-bottom: 1px solid #e2e8f0;
-                            padding: 1.25rem 2rem !important;
-                            font-size: 0.875rem !important;
-                            font-weight: 700 !important;
-                            color: #64748b !important;
-                            text-transform: uppercase !important;
-                            letter-spacing: 0.05em !important;
-                        }
-                        
-                        #exerciceTable tbody td {
-                            padding: 1.5rem 2rem !important;
-                            vertical-align: middle !important;
-                        }
-
-                        #exerciceTable_wrapper .dataTables_length,
-                        #exerciceTable_wrapper .dataTables_filter {
-                            display: none;
-                        }
-                    </style>
-
-                    <div class="container-fluid flex-grow-1 container-p-y">
-                        
-                        <!-- Badge Section -->
-                        <div class="text-center mb-8 -mt-4">
-                            <p class="text-slate-500 font-medium max-w-xl mx-auto">
-                                Gérez vos périodes comptables : ouverture, clôture et suivi des journaux.
-                            </p>
-                        </div>
-                        
-                        @if (session('success'))
-                            <div class="alert alert-success alert-dismissible fade show mb-6 rounded-2xl shadow-sm border-0 bg-green-50 text-green-800" role="alert">
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-check-circle text-xl"></i>
-                                    <span class="font-medium">{{ session('success') }}</span>
+                            @if (session('success'))
+                                <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                                    {{ session('success') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Fermer"></button>
                                 </div>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                            </div>
-                        @endif
+                            @endif
 
-                        @if (session('error'))
-                            <div class="alert alert-danger alert-dismissible fade show mb-6 rounded-2xl shadow-sm border-0 bg-red-50 text-red-800" role="alert">
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-exclamation-circle text-xl"></i>
-                                    <span class="font-medium">{{ session('error') }}</span>
+                            @if (session('error'))
+                                <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                                    {{ session('error') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Fermer"></button>
                                 </div>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                            </div>
-                        @endif
+                            @endif
 
-                        <!-- Actions Bar -->
-                        <div class="flex flex-col md:flex-row justify-between items-center mb-8 w-full gap-4">
-                            <!-- Left Group: Filter -->
-                            <div class="w-full md:w-auto">
-                                <button class="btn btn-white border border-slate-200 rounded-xl px-5 py-3 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all w-full md:w-auto flex items-center justify-center gap-2" 
-                                        type="button" 
-                                        data-bs-toggle="collapse" 
-                                        data-bs-target="#filterPanel">
-                                    <i class="bx bx-filter-alt text-blue-600"></i> Filtrer les exercices
-                                </button>
-                            </div>
 
-                            <!-- Right Group: Actions -->
-                            <div class="w-full md:w-auto">
-                                <button type="button" class="btn bg-blue-700 hover:bg-blue-800 text-white rounded-xl px-6 py-3 font-semibold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5 w-full md:w-auto flex items-center justify-center gap-2" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#modalCenterCreate">
-                                    <i class="fas fa-plus"></i> Nouvel exercice
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Filter Panel (Collapse) -->
-                        <div class="collapse mb-8" id="filterPanel">
-                            <div class="glass-card p-6">
-                                <div class="row g-4 items-end">
-                                    <div class="col-md-4">
-                                        <label class="input-label-premium mb-2">Date de début</label>
-                                        <input type="date" id="filter-date-debut" class="input-field-premium">
-                                    </div>
-
-                                    <div class="col-md-4">
-                                        <label class="input-label-premium mb-2">Date de fin</label>
-                                        <input type="date" id="filter-date-fin" class="input-field-premium">
-                                    </div>
-
-                                    <div class="col-md-4 flex gap-3">
-                                        <button class="btn bg-slate-100 text-slate-600 font-bold uppercase text-xs tracking-wider py-3 px-4 rounded-xl hover:bg-slate-200 transition flex-1" id="reset-filters">
-                                            Réinitialiser
+                            <!-- Section table -->
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Exercice comptable</h5>
+                                    <div>
+                                        <button class="btn btn-outline-primary me-2 btn-sm" data-bs-toggle="collapse"
+                                            data-bs-target="#filterPanel">
+                                            <i class="bx bx-filter-alt me-1"></i> Filtrer
                                         </button>
-                                        <button class="btn bg-blue-600 text-white font-bold uppercase text-xs tracking-wider py-3 px-4 rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-200 flex-1" id="apply-filters">
-                                            Appliquer
+                                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#modalCenterCreate">
+                                            Nouvel exercice
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Main Table Card -->
-                        <div class="glass-card overflow-hidden">
-                            <div class="table-responsive">
-                                <table class="w-full text-left border-collapse" id="exerciceTable">
-                                    <thead class="bg-slate-50/50 border-b border-slate-100">
-                                        <tr>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de début</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de fin</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Durée</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Journaux</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-50">
-                                        <!-- Content populated by JS (exercice_comptable.js) -->
-                                        <!-- Make sure JS renders rows with class="table-row" and td with px-8 py-4 classes -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                                <!-- Filtre personnalisé -->
+                                <div class="collapse px-3 pt-2" id="filterPanel">
+                                    <div class="row g-2">
+                                        <!-- Champ Date de début -->
+                                        <div class="col-md-4">
+                                            <input type="date" id="filter-date-debut" class="form-control"
+                                                placeholder="Date de début">
+                                        </div>
 
+                                        <!-- Champ Date de fin -->
+                                        <div class="col-md-4">
+                                            <input type="date" id="filter-date-fin" class="form-control"
+                                                placeholder="Date de fin">
+                                        </div>
+
+                                        <!-- Boutons Appliquer et Réinitialiser -->
+                                        <div class="col-md-4 d-flex gap-2">
+                                            <button class="btn btn-primary w-100" id="apply-filters">
+                                                Appliquer les filtres
+                                            </button>
+                                            <button class="btn btn-secondary w-100" id="reset-filters">
+                                                Réinitialiser
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <!-- Table -->
+
+<<<<<<< Updated upstream
+                                <!-- Initialisation du DataTable déplacée dans la section script plus bas -->
+=======
+
+>>>>>>> Stashed changes
+                                <div class="table-responsive text-nowrap">
+                                    <table class="table" id="exerciceTable">
+
+                                        <thead>
+                                            <tr>
+                                                <th>Date de debut</th>
+                                                <th>Date de fin</th>
+                                                <th>Intitulé</th>
+                                                <th>Nombre de mois</th>
+                                                <th>Nombre de journaux</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Modal Creation Ecriture-->
                             <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered" role="document">
-                                    <form id="formCreateExercice" method="POST" action="{{ route('exercice_comptable.store') }}" class="w-full">
+                                <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+<<<<<<< Updated upstream
+                                    <form id="formCreateExercice" action="{{ route('exercice_comptable.store') }}" method="POST" class="needs-validation" novalidate>
                                         @csrf
-                                        <div class="modal-content premium-modal-content">
-                                            
-                                            <!-- Header -->
-                                            <div class="text-center mb-6 position-relative">
-                                                <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                                <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
-                                                    Nouvel <span class="text-blue-gradient-premium">Exercice</span>
-                                                </h1>
-                                                <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
+                                        <div class="modal-content">
+=======
+                                    <div class="modal-content">
+                                        <form id="formCreateExercice" method="POST"
+                                            action="{{ route('exercice_comptable.store') }}">
+                                            @csrf
+>>>>>>> Stashed changes
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="modalCenterTitle">
+                                                    Créer un nouvel exercice comptable
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Fermer"></button>
                                             </div>
+                                            <div class="modal-body">
+                                                @if ($errors->any())
+                                                    <div class="alert alert-danger">
+                                                        <ul class="mb-0">
+                                                            @foreach ($errors->all() as $error)
+                                                                <li>{{ $error }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                @endif
 
-                                            <div class="space-y-4">
-                                                <!-- Date de début -->
-                                                <div class="space-y-1">
-                                                    <label for="date_debut" class="input-label-premium">Date de début</label>
-                                                    <input type="date" class="input-field-premium" id="date_debut" name="date_debut" required>
-                                                    <span id="error_date_debut" class="text-danger small mt-1 d-block"></span>
-                                                </div>
-
-                                                <!-- Date de fin -->
-                                                <div class="space-y-1">
-                                                    <label for="date_fin" class="input-label-premium">Date de fin</label>
-                                                    <input type="date" class="input-field-premium" id="date_fin" name="date_fin" required>
-                                                    <span id="error_date_fin" class="text-danger small mt-1 d-block"></span>
-                                                </div>
-
-                                                <!-- Intitulé -->
-                                                <div class="space-y-1">
-                                                    <label for="intitule_exercice" class="input-label-premium">Intitulé de l'exercice</label>
-                                                    <input type="text" class="input-field-premium" id="intitule_exercice" name="intitule" placeholder="Ex : Exercice 2025">
-                                                    <span id="error_intitule" class="text-danger small mt-1 d-block"></span>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label for="date_debut" class="form-label">Date de
+                                                            début</label>
+                                                        <input type="date" id="date_debut" name="date_debut"
+                                                            class="form-control" required />
+                                                        <div class="text-danger small mt-1" id="error_date_debut">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="date_fin" class="form-label">Date de fin</label>
+                                                        <input type="date" id="date_fin" name="date_fin"
+                                                            class="form-control" required />
+                                                        <div class="text-danger small mt-1" id="error_date_fin"></div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label for="intitule_exercice" class="form-label">Intitulé de
+                                                            l'exercice</label>
+                                                        <input type="text" id="intitule_exercice" name="intitule"
+                                                            class="form-control" placeholder="Ex : Exercice 2025" />
+                                                        <div class="text-danger small mt-1" id="error_intitule"></div>
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            <!-- Actions -->
-                                            <div class="grid grid-cols-2 gap-4 pt-8">
-                                                <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
-                                                    Annuler
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-label-secondary"
+                                                    data-bs-dismiss="modal">
+                                                    Fermer
                                                 </button>
-                                                <button type="submit" class="btn-save-premium" id="btnSubmitExercice">
+                                                <button type="submit" class="btn btn-primary" id="btnSubmitExercice">
                                                     Enregistrer
                                                 </button>
                                             </div>
-                                        </div>
-                                    </form>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
 
 
 
 
+                            <!-- Modal Creation plan update-->
                             <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered" role="document">
                                     <div class="modal-content">
@@ -358,36 +231,35 @@
                                 </div>
                             </div>
 
-                            <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered" role="document">
-                                    <form method="POST" id="deleteForm" action="" class="w-full">
+                            <!-- Modal Confirmation de suppression -->
+                            <!-- Modal de confirmation de suppression -->
+                            <div class="modal fade" id="deleteConfirmationModal" tabindex="-1"
+                                aria-labelledby="deleteModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-sm">
+                                    <form method="POST" id="deleteForm" action="">
                                         @csrf
                                         @method('DELETE')
-                                        <div class="modal-content premium-modal-content">
-                                            <!-- Header -->
-                                            <div class="text-center mb-6 position-relative">
-                                                <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                                <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4" style="width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; background-color: #fef2f2; border-radius: 1rem; margin: 0 auto 1rem;">
-                                                    <i class="fas fa-trash-alt text-red-600 text-xl" style="color: #dc2626; font-size: 1.25rem;"></i>
-                                                </div>
-                                                <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
-                                                    Confirmer la <span style="color: #dc2626; font-weight: 800;">Suppression</span>
-                                                </h1>
+                                        <div class="modal-content border-0 shadow">
+                                            <div class="modal-header text-white justify-content-center bg-danger">
+                                                <h5 class="modal-title" id="deleteModalLabel">
+                                                    <i class="bx bx-error-circle me-2"></i>Confirmer la suppression
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal" aria-label="Fermer"></button>
                                             </div>
-
-                                            <div class="text-center space-y-3 mb-8">
-                                                <p class="text-slate-500 text-sm font-medium leading-relaxed">
-                                                    Êtes-vous sûr de vouloir supprimer cet exercice ? Cette action est irréversible.
+                                            <div class="modal-body text-center">
+                                                <p class="mb-0">
+                                                    Êtes-vous sûr de vouloir supprimer ce projet ? Cette
+                                                    action est <strong>irréversible</strong>.
                                                 </p>
-                                                <p class="text-slate-900 font-bold" id="projectToDelete"></p>
+                                                <p class="fw-bold text-danger mt-2" id="projectToDelete"></p>
                                             </div>
-
-                                            <!-- Actions -->
-                                            <div class="grid grid-cols-2 gap-4">
-                                                <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                                            <div class="modal-footer justify-content-center">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">
                                                     Annuler
                                                 </button>
-                                                <button type="submit" class="btn-save-premium" id="confirmDeleteBtn" style="background-color: #dc2626 !important;">
+                                                <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">
                                                     Supprimer
                                                 </button>
                                             </div>
@@ -397,37 +269,35 @@
                             </div>
 
 
-                            <div class="modal fade" id="clotureConfirmationModal" tabindex="-1" aria-labelledby="clotureModalLabel" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered" role="document">
-                                    <form method="POST" id="clotureForm" class="w-full">
+                            <!-- Modal de confirmation de clôture -->
+                            <div class="modal fade" id="clotureConfirmationModal" tabindex="-1"
+                                aria-labelledby="clotureModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-sm">
+                                    <form method="POST" id="clotureForm">
                                         @csrf
-                                        @method('PATCH')
-                                        <div class="modal-content premium-modal-content">
-                                            <!-- Header -->
-                                            <div class="text-center mb-6 position-relative">
-                                                <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                                <div class="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center mx-auto mb-4" style="width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; background-color: #fefce8; border-radius: 1rem; margin: 0 auto 1rem;">
-                                                    <i class="bx bx-lock-alt text-yellow-600 text-xl" style="color: #ca8a04; font-size: 1.25rem;"></i>
-                                                </div>
-                                                <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
-                                                    Clôturer l'<span style="color: #ca8a04; font-weight: 800;">Exercice</span>
-                                                </h1>
+                                        @method('PATCH') <!-- Ou PUT si tu préfères -->
+                                        <div class="modal-content border-0 shadow">
+                                            <div class="modal-header text-white justify-content-center bg-warning">
+                                                <h5 class="modal-title" id="clotureModalLabel">
+                                                    <i class="bx bx-lock-alt me-2"></i>Clôturer l'exercice
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal" aria-label="Fermer"></button>
                                             </div>
-
-                                            <div class="text-center space-y-3 mb-8">
-                                                <p class="text-slate-500 text-sm font-medium leading-relaxed">
-                                                    Êtes-vous sûr de vouloir <strong>clôturer</strong> cet exercice ?<br>
+                                            <div class="modal-body text-center">
+                                                <p class="mb-0">
+                                                    Êtes-vous sûr de vouloir <strong>clôturer</strong> cet exercice
+                                                    ?<br>
                                                     Après clôture, aucune modification ne sera possible.
                                                 </p>
-                                                <p class="text-slate-900 font-bold" id="exerciceToCloture"></p>
+                                                <p class="fw-bold text-danger mt-2" id="exerciceToCloture"></p>
                                             </div>
-
-                                            <!-- Actions -->
-                                            <div class="grid grid-cols-2 gap-4">
-                                                <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                                            <div class="modal-footer justify-content-center">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">
                                                     Annuler
                                                 </button>
-                                                <button type="submit" class="btn-save-premium" style="background-color: #ca8a04 !important;">
+                                                <button type="submit" class="btn btn-warning">
                                                     Clôturer
                                                 </button>
                                             </div>
@@ -439,11 +309,18 @@
 
                         </div>
                     </div>
-                    </div>
+                    <!-- Content wrapper -->
                 </div>
+                <!-- / Layout page -->
+            </div>
 
+            <!-- Overlay -->
             <div class="layout-overlay layout-menu-toggle"></div>
         </div>
+        <!-- / Layout wrapper -->
+
+        <!-- Core JS -->
+
         @include('components.footer')
 
         <script>
