@@ -910,46 +910,10 @@ switch(filterType) {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         .filter-active {
-            border: 2px solid #3b82f6;
+            border-color: #3b82f6 !important;
             box-shadow: 0 0 0 1px #3b82f6;
         }
     </style>
-
-    <script>
-    $(document).ready(function() {
-        // On s'assure que la table est bien initialisée
-        var table = $('#planComptableTable').DataTable();
-
-        // Gestion du clic sur les cartes KPI
-        $('.filter-card').on('click', function() {
-            // 1. Gestion visuelle : on retire la classe active de tous et on l'ajoute au cliqué
-            $('.filter-card').removeClass('filter-active ring-2 ring-offset-2 ring-blue-500');
-            $(this).addClass('filter-active ring-2 ring-offset-2 ring-blue-500');
-
-            // 2. Récupération du type de filtre
-            var filterType = $(this).data('filter-type');
-            
-            // 3. Application du filtre sur la colonne 2 (Type)
-            // Note : On utilise des expressions régulières pour correspondre aux labels affichés
-            switch(filterType) {
-                case 'user':
-                    // Filtre les lignes contenant 'Utilisateur' ou 'manuel'
-                    table.column(2).search('Utilisateur|manuel', true, false).draw();
-                    break;
-                case 'system':
-                    // Filtre les lignes contenant 'SYSCOHADA' ou 'auto'
-                    table.column(2).search('SYSCOHADA|auto', true, false).draw();
-                    break;
-                default:
-                    // 'all' : on réinitialise le filtre de la colonne
-                    table.column(2).search('').draw();
-                    break;
-            }
-
-            // Optionnel : Petit effet visuel sur le tableau lors du changement
-            $('#planComptableTable tbody').hide().fadeIn(200);
-        });
-    });
-    </script>
+    
 </body>
 </html>
