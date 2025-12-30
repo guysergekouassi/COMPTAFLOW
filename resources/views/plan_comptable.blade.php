@@ -190,7 +190,7 @@
                         <!-- KPI Filters Section (Preserving functionality with new Look) -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <!-- Total -->
-                            <button type="button" class="glass-card !p-6 flex items-center w-full text-left filter-card filter-active hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" data-filter-type="all">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active" data-filter-type="all">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <i class="bx bx-layer text-2xl"></i>
                                 </div>
@@ -198,10 +198,10 @@
                                     <p class="text-sm text-slate-500">Total des plans</p>
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlans }}</h3>
                                 </div>
-                            </button>
+                            </div>
 
                             <!-- Manuel -->
-                            <button type="button" class="glass-card !p-6 flex items-center w-full text-left filter-card hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50" data-filter-type="user">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="user">
                                 <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
                                     <i class="bx bx-user text-2xl"></i>
                                 </div>
@@ -209,10 +209,10 @@
                                     <p class="text-sm text-slate-500">Plans par utilisateur</p>
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $plansByUser }}</h3>
                                 </div>
-                            </button>
+                            </div>
 
                             <!-- Auto -->
-                            <button type="button" class="glass-card !p-6 flex items-center w-full text-left filter-card hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50" data-filter-type="system">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="system">
                                 <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
                                     <i class="bx bx-cog text-2xl"></i>
                                 </div>
@@ -220,7 +220,7 @@
                                     <p class="text-sm text-slate-500">Plan SYSCOHADA</p>
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
                                 </div>
-                            </button>
+                            </div>
                         </div>
 
                         <!-- Actions Bar -->
@@ -564,20 +564,9 @@
             if (typeof $ !== 'undefined' && $.fn.DataTable) {
                 // Initialisation du DataTable
                 table = $('#planComptableTable').DataTable({
-                    processing: true,
-                    serverSide: true,
-                    ajax: "{{ route('plan_comptable.datatable') }}",
-                    columns: [
-                        { data: 'numero_de_compte', name: 'numero_de_compte' },
-                        { data: 'intitule', name: 'intitule' },
-                        { data: 'type_de_compte', name: 'type_de_compte' },
-                        { data: 'created_at', name: 'created_at' }
-                    ],
                     dom: 't',
                     pageLength: 5,
-                    language: {
-                        url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json'
-                    }
+                    // Activer le débogage
                     // debug: true,
                     // Afficher les logs de débogage
                     // "language": {
@@ -738,11 +727,20 @@
                     
                     console.log('Filtre appliqué :', filterType);
                     
-                    // Mettre à jour l'URL de l'AJAX avec le paramètre de filtre
-                    table.ajax.url("{{ route('plan_comptable.datatable') }}?filter_type=" + filterType).load();
-                    
-                    // Rafraîchir le tableau
-                    table.draw();
+                    // Appliquer le filtre approprié
+                  // Appliquer le filtre approprié
+switch(filterType) {
+    case 'user':
+        // On cherche le mot 'manuel' à l'intérieur de la colonne 2
+        table.column(2).search('manuel').draw();
+        break;
+    case 'system':
+        // On cherche le mot 'auto' à l'intérieur de la colonne 2
+        table.column(2).search('auto').draw();
+        break;
+    default: // 'all'
+        table.column(2).search('').draw();
+}
                     
                     // Afficher toutes les données pour débogage
                     console.log('Données du tableau après filtrage :', table.data().toArray());
