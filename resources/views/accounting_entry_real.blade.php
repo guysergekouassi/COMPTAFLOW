@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 n_saisie: nSaisie,
                 description_operation: cells[3].textContent.trim(),
                 reference_piece: cells[4].textContent.trim(),
-                plan_comptable_id: cells[5].getAttribute('data-compte-id') || null,
+              plan_comptable_id: plan_comptable_id,
                 plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
                 code_journal_id: codeJournalId,
                 debit: debit,
