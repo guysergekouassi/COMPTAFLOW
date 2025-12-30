@@ -271,12 +271,17 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Si le champ n_saisie est vide, on le remplit avec le numéro généré côté serveur
         const nSaisieField = document.getElementById('n_saisie');
-        if (nSaisieField && !nSaisieField.value) {
-            // Si le numéro n'est pas défini, on en génère un nouveau côté client (au format 12 chiffres)
-            const now = new Date();
-            const timestamp = now.getTime().toString();
-            const uniqueId = timestamp.slice(-12).padStart(12, '0');
-            nSaisieField.value = uniqueId;
+        if (nSaisieField) {
+            if (!nSaisieField.value) {
+                // Si le numéro n'est pas défini, on en génère un nouveau côté client (au format 12 chiffres)
+                const now = new Date();
+                const timestamp = now.getTime().toString();
+                const uniqueId = timestamp.slice(-12).padStart(12, '0');
+                nSaisieField.value = uniqueId;
+            }
+            // S'assurer que le numéro est bien formaté sur 12 chiffres
+            let currentNumber = parseInt(nSaisieField.value, 10) || 0;
+            nSaisieField.value = currentNumber.toString().padStart(12, '0');
         }
     });
 
@@ -361,6 +366,9 @@
             if (referencePiece) referencePiece.value = '';
             if (pieceFile) pieceFile.value = '';
 
+            // Générer un nouveau numéro de saisie
+            generateNewSaisieNumber();
+
             // Mise à jour des totaux
             updateTotals();
 
@@ -401,6 +409,19 @@
         }
         if (totalCreditElement) {
             totalCreditElement.textContent = totalCredit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+    }
+
+    // Fonction pour générer un nouveau numéro de saisie
+    function generateNewSaisieNumber() {
+        const nSaisieField = document.getElementById('n_saisie');
+        if (nSaisieField) {
+            // Incrémenter le numéro de saisie actuel
+            let currentNumber = parseInt(nSaisieField.value || '0', 10);
+            // Si le numéro est trop grand, on recommence à 1
+            currentNumber = currentNumber >= 999999999999 ? 1 : currentNumber + 1;
+            // Mettre à jour le champ avec le nouveau numéro (formaté sur 12 chiffres)
+            nSaisieField.value = currentNumber.toString().padStart(12, '0');
         }
     }
 
