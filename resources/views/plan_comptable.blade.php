@@ -738,20 +738,11 @@
                     
                     console.log('Filtre appliqué :', filterType);
                     
-                    // Appliquer le filtre approprié
-                  // Appliquer le filtre approprié
-switch(filterType) {
-    case 'user':
-        // On cherche le mot 'manuel' à l'intérieur de la colonne 2
-        table.column(2).search('manuel').draw();
-        break;
-    case 'system':
-        // On cherche le mot 'auto' à l'intérieur de la colonne 2
-        table.column(2).search('auto').draw();
-        break;
-    default: // 'all'
-        table.column(2).search('').draw();
-}
+                    // Mettre à jour l'URL de l'AJAX avec le paramètre de filtre
+                    table.ajax.url("{{ route('plan_comptable.datatable') }}?filter_type=" + filterType).load();
+                    
+                    // Rafraîchir le tableau
+                    table.draw();
                     
                     // Afficher toutes les données pour débogage
                     console.log('Données du tableau après filtrage :', table.data().toArray());
