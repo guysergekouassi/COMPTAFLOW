@@ -1287,15 +1287,15 @@
             }
 
             // Envoyer les données au serveur
-            const response = await fetch("{{ route('ecriture.store.multiple') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ ecritures: entries })
-            });
+            // const response = await fetch("{{ route('ecriture.store.multiple') }}", {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //         'X-CSRF-TOKEN': csrfToken,
+            //         'Accept': 'application/json'
+            //     },
+            //     body: JSON.stringify({ ecritures: entries })
+            // });
 
             console.log('Réponse du serveur :', response);
 
