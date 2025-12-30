@@ -273,44 +273,6 @@
     </html>
 
 <script>
-// Fonction pour obtenir le prochain numéro de saisie (12 chiffres)
-function getNextSaisieNumber() {
-    // Récupérer le dernier numéro de saisie depuis le stockage local ou initialiser à 1
-    let lastNumber = localStorage.getItem('lastSaisieNumber');
-    let nextNumber = lastNumber ? parseInt(lastNumber, 10) : 0;
-    
-    // Formater le numéro sur 12 chiffres avec des zéros devant
-    return (nextNumber + 1).toString().padStart(12, '0');
-}
-
-// Fonction pour incrémenter le numéro de saisie
-function incrementSaisieNumber() {
-    const currentNumber = parseInt(document.getElementById('n_saisie').value || '0', 10);
-    const nextNumber = currentNumber + 1;
-    localStorage.setItem('lastSaisieNumber', nextNumber);
-    return nextNumber.toString().padStart(12, '0');
-}
-
-// Au chargement de la page
-document.addEventListener('DOMContentLoaded', function() {
-    // Définir la date du jour par défaut
-    const today = new Date().toISOString().split('T')[0];
-    const dateField = document.getElementById('date');
-    if (dateField) {
-        dateField.value = today;
-    }
-    
-    // Définir le numéro de saisie initial
-    const nSaisieField = document.getElementById('n_saisie');
-    if (nSaisieField) {
-        nSaisieField.value = getNextSaisieNumber();
-    }
-    
-    // Ajouter la classe 'form-control' si elle n'existe pas
-    if (nSaisieField && !nSaisieField.classList.contains('form-control')) {
-        nSaisieField.classList.add('form-control');
-    }
-});
     // Fonction globale pour ajouter une écriture
     function ajouterEcriture() {
         try {
@@ -435,132 +397,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Fonction pour afficher des alertes stylisées
-    function showAlert(type, message) {
-        // Supprimer les alertes existantes
-        const existingAlerts = document.querySelectorAll('.custom-alert');
-        existingAlerts.forEach(alert => alert.remove());
-
-        // Créer l'élément d'alerte
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `custom-alert alert alert-${type} alert-dismissible fade show`;
-        alertDiv.role = 'alert';
-        
-        // Ajouter le contenu de l'alerte
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-
-        // Positionner l'alerte en haut à droite
-        alertDiv.style.position = 'fixed';
-        alertDiv.style.top = '20px';
-        alertDiv.style.right = '20px';
-        alertDiv.style.zIndex = '9999';
-        alertDiv.style.minWidth = '300px';
-
-        // Ajouter l'alerte au body
-        document.body.appendChild(alertDiv);
-
-        // Supprimer automatiquement après 5 secondes
-        setTimeout(() => {
-            alertDiv.remove();
-        }, 5000);
-    }
-
     // Fonction pour enregistrer les écritures
     function enregistrerEcritures() {
         const tbody = document.querySelector('#tableEcritures tbody');
-        if (!tbody) {
-            alert('Erreur: Tableau des écritures introuvable');
-            return;
-        }
+        if (tbody) {
+            const rows = tbody.getElementsByTagName('tr');
 
-        const rows = tbody.getElementsByTagName('tr');
-        if (rows.length === 0) {
-            alert('Aucune écriture à enregistrer.');
-            return;
-        }
-
-        // Récupérer les données du formulaire
-        const formData = new FormData(document.getElementById('formEcriture'));
-        const ecritures = [];
-        const nSaisie = document.getElementById('n_saisie').value;
-        const codeJournalId = formData.get('code_journal_id');
-        const dateEcriture = formData.get('date');
-
-        // Préparer les données pour l'envoi
-        Array.from(rows).forEach(row => {
-            const cells = row.cells;
-            const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
-            const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
-            
-            ecritures.push({
-                date: dateEcriture,
-                n_saisie: nSaisie,
-                description_operation: cells[3].textContent.trim(),
-                reference_piece: cells[4].textContent.trim(),
-                plan_comptable_id: cells[5].getAttribute('data-compte-id') || null,
-                plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
-                code_journal_id: codeJournalId,
-                debit: debit,
-                credit: credit,
-                piece_justificatif: cells[9].textContent.trim(),
-                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0
-            });
-        });
-
-        // Afficher les données dans la console pour le débogage
-        console.log('Données à envoyer:', ecritures);
-
-        // Afficher l'indicateur de chargement
-        const btnEnregistrer = document.getElementById('btnEnregistrer');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
-        
-        btnText.textContent = 'Enregistrement...';
-        btnEnregistrer.disabled = true;
-        btnSpinner.classList.remove('d-none');
-
-        // Envoyer les données au serveur
-        fetch('{{ route("ecriture.store") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ ecritures: ecritures })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
+            if (rows.length === 0) {
+                alert('Aucune écriture à enregistrer.');
+                return;
             }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                // Incrémenter le numéro de saisie après un enregistrement réussi
-                document.getElementById('n_saisie').value = incrementSaisieNumber();
-                
-                // Vider le tableau
+
+            alert('Écritures enregistrées avec succès !');
+
+            setTimeout(() => {
                 tbody.innerHTML = '';
                 updateTotals();
-                
-                showAlert('success', 'Écritures enregistrées avec succès !');
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            showAlert('danger', 'Erreur lors de l\'enregistrement: ' + (error.message || 'Veuillez réessayer'));
-        })
-        .finally(() => {
-            // Réinitialiser le bouton
-            btnText.textContent = 'Enregistrer';
-            btnEnregistrer.disabled = false;
-            btnSpinner.classList.add('d-none');
-        });
+            }, 2000);
+        }
     }
 
     // Fonction pour modifier une écriture
@@ -576,4 +430,16 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Écriture supprimée avec succès !');
         }
     }
+
+    // Updated numéro de saisie to start at 000000000001 and be non-editable
+    document.addEventListener('DOMContentLoaded', function() {
+        const nSaisieField = document.getElementById('n_saisie');
+        if (nSaisieField) {
+            let currentNumber = localStorage.getItem('currentSaisieNumber') || '000000000000';
+            currentNumber = (parseInt(currentNumber, 10) + 1).toString().padStart(12, '0');
+            nSaisieField.value = currentNumber;
+            nSaisieField.readOnly = true; // Make the field non-editable
+            localStorage.setItem('currentSaisieNumber', currentNumber);
+        }
+    });
 </script>
