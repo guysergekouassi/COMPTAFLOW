@@ -13,7 +13,7 @@ use App\Models\PlanComptable;
 use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
-use Illuminate\Support\Facades\Log;
+
 use App\Models\tresoreries\Tresoreries;
 use Illuminate\Support\Facades\DB;
 
@@ -177,7 +177,7 @@ class EcritureComptableController extends Controller
 
  public function storeMultiple(Request $request)
 {
-  Log::info('Données reçues:', $request->all());
+  
 
     // Initialiser une liste d'erreurs pour le retour
     $errors = [];
