@@ -124,7 +124,7 @@
                             <div class="row g-4">
                                 <div class="col-md-3">
                                     <label for="date" class="form-label">Date de l'écriture</label>
-                                    <input type="date" id="date" name="date" class="form-control" value="{{ date('Y-m-d') }}" required />
+                                    <input type="date" id="date" name="date" class="form-control" required />
                                     <div class="invalid-feedback">Veuillez renseigner la date.</div>
                                 </div>
                                 <div class="col-md-6">
@@ -134,7 +134,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="n_saisie" class="form-label">N° de Saisie</label>
-                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" value="{{ $nextSaisieNumber ?? '' }}" readonly />
+                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique" />
                                 </div>
 
                                 <div class="col-md-12">
@@ -267,19 +267,6 @@
     </html>
 
 <script>
-    // Initialisation du numéro de saisie
-    document.addEventListener('DOMContentLoaded', function() {
-        // Si le champ n_saisie est vide, on le remplit avec le numéro généré côté serveur
-        const nSaisieField = document.getElementById('n_saisie');
-        if (nSaisieField && !nSaisieField.value) {
-            // Si le numéro n'est pas défini, on en génère un nouveau côté client (au format 12 chiffres)
-            const now = new Date();
-            const timestamp = now.getTime().toString();
-            const uniqueId = timestamp.slice(-12).padStart(12, '0');
-            nSaisieField.value = uniqueId;
-        }
-    });
-
     // Fonction globale pour ajouter une écriture
     function ajouterEcriture() {
         try {
