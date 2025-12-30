@@ -177,7 +177,7 @@ class EcritureComptableController extends Controller
 
  public function storeMultiple(Request $request)
 {
-    Log::info('Données d\'écritures reçues:', $request->ecritures);
+  Log::info('Données reçues:', $request->all());
 
     // Initialiser une liste d'erreurs pour le retour
     $errors = [];

@@ -519,9 +519,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             
             // Récupérer l'ID du plan comptable depuis l'attribut data-id de la cellule du compte
-            const compteCell = cells[2]; // La cellule du compte général
-            const planComptableId = compteCell.getAttribute('data-plan-comptable-id');
-            
+           const compteCell = cells[5]; 
+         const planComptableId = compteCell.getAttribute('data-plan-comptable-id');
+            const tiersId = cells[6].getAttribute('data-tiers-id');
             if (!planComptableId) {
                 showAlert('danger', 'Veuillez sélectionner un compte général valide pour chaque ligne.');
                 return;
