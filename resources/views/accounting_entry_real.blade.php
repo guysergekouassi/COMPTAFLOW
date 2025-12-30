@@ -575,8 +575,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const n_saisie = document.getElementById('n_saisie').value;
     const libelleEcriture = document.getElementById('libelleEcriture').value;
     const referencePiece = document.getElementById('referencePiece').value;
-    const id_code_journal = "{{ $id_code }}"; // ID récupéré de la route
-    const id_exercice = "{{ $id_exercice }}"; // ID récupéré de la route
+   const id_code_journal = "{{ request()->get('id_code') }}";
+     onst id_exercice = "{{ request()->get('id_exercice') }}";
 
     lignes.forEach((ligne) => {
         // 1. DÉCLARATION de l'input (Important pour éviter l'erreur ReferenceError)
