@@ -778,13 +778,8 @@
         // Mettre à jour les totaux
         updateTableTotals();
 
-        // Incrémenter le numéro de saisie pour la prochaine fois
-        const currentSaisie = document.getElementById('numeroSaisie').value;
-        if (currentSaisie && !isNaN(currentSaisie)) {
-            const nextVal = (BigInt(currentSaisie) + 1n).toString().padStart(currentSaisie.length, '0');
-            document.getElementById('numeroSaisie').value = nextVal;
-            document.getElementById('hiddenNumeroSaisie').value = nextVal;
-        }
+        // Ne plus incrémenter le numéro de saisie automatiquement
+        // pour conserver le même numéro pour toutes les écritures de la même transaction
 
         // Fermer le modal et réinitialiser le formulaire
         const modal = bootstrap.Modal.getInstance(document.getElementById('nouvelleEcritureModal'));
@@ -1323,21 +1318,68 @@
     // Fonction pour ajouter une nouvelle écriture avec le même numéro de saisie
     function addNewEntry() {
         // Récupérer le numéro de saisie actuel
-        const currentSaisie = document.getElementById('numeroSaisie').value;
+        let currentSaisie = document.getElementById('numeroSaisie').value;
         
+        // Si pas de numéro de saisie, en générer un nouveau
+        if (!currentSaisie) {
+            fetch('{{ route("ecriture.get-next-saisie") }}', {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.nextSaisieNumber) {
+                    currentSaisie = data.nextSaisieNumber;
+                    document.getElementById('numeroSaisie').value = currentSaisie;
+                    document.getElementById('hiddenNumeroSaisie').value = currentSaisie;
+                    openEntryModal(currentSaisie);
+                }
+            });
+        } else {
+            openEntryModal(currentSaisie);
+        }
+    }
+    
+    // Fonction pour ouvrir le modal avec le numéro de saisie
+    function openEntryModal(saisieNumber) {
         // Récupérer la date actuelle
         const today = new Date().toISOString().split('T')[0];
         
         // Réinitialiser le formulaire
-        document.getElementById('formNouvelleEcriture').reset();
+        const form = document.getElementById('formNouvelleEcriture');
+        form.reset();
         
-        // Réinitialiser les champs de date et numéro de saisie
+        // Définir les valeurs par défaut
         document.getElementById('dateEcriture').value = today;
-        document.getElementById('numeroSaisie').value = currentSaisie;
-        document.getElementById('hiddenNumeroSaisie').value = currentSaisie;
+        document.getElementById('numeroSaisie').value = saisieNumber;
+        document.getElementById('hiddenNumeroSaisie').value = saisieNumber;
+        
+        // Réinitialiser les champs de saisie
+        document.getElementById('debitEcriture').value = '';
+        document.getElementById('creditEcriture').value = '';
+        
+        // Réinitialiser les styles des champs de saisie
+        const debitInput = document.getElementById('debitEcriture');
+        const creditInput = document.getElementById('creditEcriture');
+        
+        debitInput.readOnly = false;
+        debitInput.style.backgroundColor = '';
+        debitInput.style.cursor = '';
+        
+        creditInput.readOnly = false;
+        creditInput.style.backgroundColor = '';
+        creditInput.style.cursor = '';
         
         // Ouvrir le modal
         const modal = new bootstrap.Modal(document.getElementById('nouvelleEcritureModal'));
         modal.show();
+        
+        // Focus sur le premier champ de saisie
+        setTimeout(() => {
+            const firstInput = form.querySelector('input:not([type="hidden"]), select');
+            if (firstInput) firstInput.focus();
+        }, 500);
     }
 </script>
