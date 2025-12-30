@@ -273,16 +273,21 @@
     </html>
 
 <script>
-// Fonction pour générer un numéro de saisie automatique (12 chiffres)
-function generateSaisieNumber() {
-    // Récupérer le dernier numéro de saisie depuis le stockage local ou initialiser à 0
+// Fonction pour obtenir le prochain numéro de saisie (12 chiffres)
+function getNextSaisieNumber() {
+    // Récupérer le dernier numéro de saisie depuis le stockage local ou initialiser à 1
     let lastNumber = localStorage.getItem('lastSaisieNumber');
-    let nextNumber = lastNumber ? parseInt(lastNumber, 10) + 1 : 1;
-    
-    // Mettre à jour le stockage local avec le nouveau numéro
-    localStorage.setItem('lastSaisieNumber', nextNumber);
+    let nextNumber = lastNumber ? parseInt(lastNumber, 10) : 0;
     
     // Formater le numéro sur 12 chiffres avec des zéros devant
+    return (nextNumber + 1).toString().padStart(12, '0');
+}
+
+// Fonction pour incrémenter le numéro de saisie
+function incrementSaisieNumber() {
+    const currentNumber = parseInt(document.getElementById('n_saisie').value || '0', 10);
+    const nextNumber = currentNumber + 1;
+    localStorage.setItem('lastSaisieNumber', nextNumber);
     return nextNumber.toString().padStart(12, '0');
 }
 
@@ -295,10 +300,10 @@ document.addEventListener('DOMContentLoaded', function() {
         dateField.value = today;
     }
     
-    // Générer et définir le numéro de saisie
+    // Définir le numéro de saisie initial
     const nSaisieField = document.getElementById('n_saisie');
-    if (nSaisieField && !nSaisieField.value) {
-        nSaisieField.value = generateSaisieNumber();
+    if (nSaisieField) {
+        nSaisieField.value = getNextSaisieNumber();
     }
     
     // Ajouter la classe 'form-control' si elle n'existe pas
@@ -439,6 +444,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rows.length === 0) {
                 alert('Aucune écriture à enregistrer.');
                 return;
+            }
+
+            // Incrémenter le numéro de saisie pour la prochaine fois
+            const nSaisieField = document.getElementById('n_saisie');
+            if (nSaisieField) {
+                nSaisieField.value = incrementSaisieNumber();
             }
 
             alert('Écritures enregistrées avec succès !');
