@@ -134,7 +134,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="n_saisie" class="form-label">N° de Saisie</label>
-                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique" />
+                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" value="{{ $nextSaisieNumber ?? '' }}" readonly />
                                 </div>
 
                                 <div class="col-md-12">
@@ -267,6 +267,19 @@
     </html>
 
 <script>
+    // Initialisation du numéro de saisie
+    document.addEventListener('DOMContentLoaded', function() {
+        // Si le champ n_saisie est vide, on le remplit avec le numéro généré côté serveur
+        const nSaisieField = document.getElementById('n_saisie');
+        if (nSaisieField && !nSaisieField.value) {
+            // Si le numéro n'est pas défini, on en génère un nouveau côté client (au format 12 chiffres)
+            const now = new Date();
+            const timestamp = now.getTime().toString();
+            const uniqueId = timestamp.slice(-12).padStart(12, '0');
+            nSaisieField.value = uniqueId;
+        }
+    });
+
     // Fonction globale pour ajouter une écriture
     function ajouterEcriture() {
         try {
