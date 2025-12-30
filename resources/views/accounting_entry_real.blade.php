@@ -302,7 +302,6 @@
     function ajouterEcriture() {
         try {
             const date = document.getElementById('date');
-            const nSaisie = document.getElementById('n_saisie');
             const libelle = document.getElementById('description_operation');
             const compteGeneral = document.getElementById('compte_general');
             const compteTiers = document.getElementById('compte_tiers');
@@ -341,9 +340,9 @@
                 <td data-compte-id="${compteGeneral.value}">${compteGeneralText}</td>
                 <td data-tiers-id="${compteTiersId}">${compteTiersText}</td>
                 <td>${libelle.value}</td>
-                <td>${debit.value ? parseFloat(debit.value).toFixed(2).replace('.', ',') : '0,00'}</td>
-                <td>${credit.value ? parseFloat(credit.value).toFixed(2).replace('.', ',') : '0,00'}</td>
-                <td class="text-nowrap">
+                <td class="text-end">${debit.value ? parseFloat(debit.value).toFixed(2).replace('.', ',') : '0,00'}</td>
+                <td class="text-end">${credit.value ? parseFloat(credit.value).toFixed(2).replace('.', ',') : '0,00'}</td>
+                <td class="text-nowrap text-center">
                     <button type="button" class="btn btn-sm btn-primary me-1" onclick="modifierEcriture(this.closest('tr'))">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -356,8 +355,8 @@
 
             // Réinitialisation du formulaire
             libelle.value = '';
-            compteGeneral.selectedIndex = 0;
-            if (compteTiers) compteTiers.selectedIndex = 0;
+            if (compteGeneral.selectedIndex > 0) compteGeneral.selectedIndex = 0;
+            if (compteTiers && compteTiers.selectedIndex > 0) compteTiers.selectedIndex = 0;
             debit.value = '';
             credit.value = '';
             if (referencePiece) referencePiece.value = '';
@@ -374,7 +373,7 @@
 
         } catch (error) {
             console.error('Erreur lors de l\'ajout de l\'écriture :', error);
-            showAlert('Une erreur est survenue lors de l\'ajout de l\'écriture.', 'error');
+            showAlert('Une erreur est survenue lors de l\'ajout de l\'écriture : ' + error.message, 'error');
         }
     }
 
@@ -438,8 +437,8 @@
         const rows = tbody.getElementsByTagName('tr');
         for (let row of rows) {
             const cells = row.getElementsByTagName('td');
-            if (cells.length >= 6) { // Vérifier qu'on a suffisamment de colonnes
-                // Récupération des valeurs débit et crédit (en remplaçant la virgule par un point pour la conversion en nombre)
+            if (cells.length >= 6) {
+                // Récupération des valeurs débit et crédit
                 const debit = parseFloat(cells[4].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
                 const credit = parseFloat(cells[5].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
 
@@ -448,15 +447,13 @@
             }
         }
 
-        // Mise à jour de l'affichage des totaux dans l'en-tête
+        // Mise à jour de l'affichage des totaux
         const totalDebitElement = document.getElementById('totalDebit');
         const totalCreditElement = document.getElementById('totalCredit');
-        
-        // Mise à jour du pied de page du tableau
         const totalDebitFooter = document.getElementById('totalDebitFooter');
         const totalCreditFooter = document.getElementById('totalCreditFooter');
         const ecartElement = document.getElementById('ecart');
-        
+
         const formattedDebit = formatNumber(totalDebit);
         const formattedCredit = formatNumber(totalCredit);
         const ecart = Math.abs(totalDebit - totalCredit);
@@ -465,7 +462,7 @@
         if (totalCreditElement) totalCreditElement.textContent = formattedCredit;
         if (totalDebitFooter) totalDebitFooter.textContent = formattedDebit + ' €';
         if (totalCreditFooter) totalCreditFooter.textContent = formattedCredit + ' €';
-        
+
         // Mise à jour de l'affichage de l'écart
         if (ecartElement) {
             if (ecart > 0.01) { // Tolérance pour les erreurs d'arrondi
@@ -474,6 +471,63 @@
                 ecartElement.innerHTML = '<span class="badge bg-success">Équilibre</span>';
             }
         }
+    }
+
+    // Fonction pour supprimer une écriture
+    function supprimerEcriture(row) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')) {
+            row.remove();
+            updateTotals();
+            showAlert('Écriture supprimée avec succès !', 'success');
+        }
+    }
+
+    // Fonction pour modifier une écriture
+    function modifierEcriture(row) {
+        // Récupérer les valeurs de la ligne
+        const cells = row.getElementsByTagName('td');
+        const date = cells[0].textContent;
+        const compteGeneralId = cells[1].getAttribute('data-compte-id');
+        const compteTiersId = cells[2].getAttribute('data-tiers-id');
+        const libelle = cells[3].textContent;
+        const debit = cells[4].textContent.replace(/\s/g, '').replace(',', '.');
+        const credit = cells[5].textContent.replace(/\s/g, '').replace(',', '.');
+
+        // Mettre à jour le formulaire avec les valeurs de la ligne
+        document.getElementById('date').value = date;
+        document.getElementById('description_operation').value = libelle;
+        
+        const compteGeneral = document.getElementById('compte_general');
+        if (compteGeneral) {
+            compteGeneral.value = compteGeneralId;
+            // Déclencher l'événement change pour mettre à jour les comptes tiers si nécessaire
+            const event = new Event('change');
+            compteGeneral.dispatchEvent(event);
+        }
+        
+        // Mettre à jour le compte tiers après un court délai pour laisser le temps au changement de compte général
+        setTimeout(() => {
+            const compteTiers = document.getElementById('compte_tiers');
+            if (compteTiers) {
+                compteTiers.value = compteTiersId || '';
+            }
+        }, 100);
+        
+        document.getElementById('debit').value = parseFloat(debit) > 0 ? debit : '';
+        document.getElementById('credit').value = parseFloat(credit) > 0 ? credit : '';
+
+        // Supprimer la ligne du tableau
+        row.remove();
+        
+        // Mettre à jour les totaux
+        updateTotals();
+        
+        // Afficher un message
+        showAlert('Écriture chargée pour modification', 'info');
+        
+        // Faire défiler vers le haut du formulaire
+        document.querySelector('.card-body').scrollIntoView({ behavior: 'smooth' });
+    }
     }
 
     // Fonction pour générer un nouveau numéro de saisie
@@ -486,7 +540,9 @@
             currentNumber = currentNumber >= 999999999999 ? 1 : currentNumber + 1;
             // Mettre à jour le champ avec le nouveau numéro (formaté sur 12 chiffres)
             nSaisieField.value = currentNumber.toString().padStart(12, '0');
+            return nSaisieField.value;
         }
+        return '';
     }
 
     // Fonction pour enregistrer les écritures
