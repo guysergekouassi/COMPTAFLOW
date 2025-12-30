@@ -273,15 +273,17 @@
     </html>
 
 <script>
-// Fonction pour générer un numéro de saisie automatique
+// Fonction pour générer un numéro de saisie automatique (12 chiffres)
 function generateSaisieNumber() {
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const random = Math.floor(1000 + Math.random() * 9000); // 4 chiffres aléatoires
+    // Récupérer le dernier numéro de saisie depuis le stockage local ou initialiser à 0
+    let lastNumber = localStorage.getItem('lastSaisieNumber');
+    let nextNumber = lastNumber ? parseInt(lastNumber, 10) + 1 : 1;
     
-    return `${year}${month}${day}${random}`;
+    // Mettre à jour le stockage local avec le nouveau numéro
+    localStorage.setItem('lastSaisieNumber', nextNumber);
+    
+    // Formater le numéro sur 12 chiffres avec des zéros devant
+    return nextNumber.toString().padStart(12, '0');
 }
 
 // Au chargement de la page
