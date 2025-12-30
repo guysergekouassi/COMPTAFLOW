@@ -1246,27 +1246,10 @@
     });
     // Fonction pour enregistrer toutes les écritures
     async function saveAllEntries() {
-        console.log('Fonction saveAllEntries appelée');
-        
         // Désactiver le bouton pour éviter les clics multiples
         const saveBtn = document.getElementById('saveEntriesBtn');
-        if (!saveBtn) {
-            console.error('Bouton saveEntriesBtn non trouvé');
-            return;
-        }
-        
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
-        
-        // Afficher un indicateur de chargement
-        Swal.fire({
-            title: 'Enregistrement en cours',
-            text: 'Veuillez patienter...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
 
         try {
             // Récupérer toutes les lignes du tableau
@@ -1293,108 +1276,46 @@
                 entries.push(entry);
             });
 
-            console.log('Préparation de l\'envoi des données :', entries);
-            
-            // Vérifier que nous avons bien des entrées à enregistrer
-            if (entries.length === 0) {
-                throw new Error('Aucune écriture à enregistrer');
-            }
-            
-            // Récupérer le token CSRF
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            if (!csrfToken) {
-                throw new Error('Token CSRF manquant');
-            }
-            
-            // Préparer les données à envoyer
-            const dataToSend = {
-                _token: csrfToken,
-                ecritures: entries.map(entry => ({
-                    date: entry.date,
-                    n_saisie: entry.n_saisie,
-                    description_operation: entry.description,
-                    reference_piece: entry.reference,
-                    plan_comptable_id: entry.compte_general.split(' - ')[0], // Supposant que l'ID est avant le tiret
-                    plan_tiers_id: entry.compte_tiers !== '-' ? entry.compte_tiers.split(' - ')[0] : null,
-                    debit: entry.debit,
-                    credit: entry.credit,
-                    // Ajoutez d'autres champs nécessaires ici
-                }))
-            };
-            
-            console.log('Données à envoyer :', dataToSend);
-            
             // Envoyer les données au serveur
             const response = await fetch("{{ route('ecriture.store.multiple') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify(dataToSend)
+                body: JSON.stringify({ entries })
             });
-            
-            console.log('Réponse du serveur :', response);
 
             const result = await response.json();
 
-            const result = await response.json().catch(() => ({}));
-            console.log('Résultat du serveur :', result);
-            
             if (response.ok) {
                 // Afficher un message de succès
-                await Swal.fire({
+                Swal.fire({
                     title: 'Succès !',
-                    text: result.message || 'Les écritures ont été enregistrées avec succès.',
+                    text: 'Les écritures ont été enregistrées avec succès.',
                     icon: 'success',
                     confirmButtonText: 'OK'
+                }).then(() => {
+                    // Recharger la page pour afficher les nouvelles écritures
+                    window.location.reload();
                 });
-                
-                // Recharger la page pour afficher les nouvelles écritures
-                window.location.reload();
             } else {
-                // Essayer d'extraire le message d'erreur de la réponse
-                let errorMessage = 'Erreur lors de l\'enregistrement des écritures';
-                if (result.message) {
-                    errorMessage = result.message;
-                } else if (result.errors) {
-                    errorMessage = Object.values(result.errors).flat().join('\n');
-                }
-                
-                throw new Error(errorMessage);
+                throw new Error(result.message || 'Erreur lors de l\'enregistrement des écritures');
             }
         } catch (error) {
             console.error('Erreur lors de l\'enregistrement des écritures :', error);
             
-            // Fermer l'indicateur de chargement s'il est toujours actif
-            if (Swal.isVisible()) {
-                Swal.close();
-            }
-            
-            // Afficher un message d'erreur détaillé
-            await Swal.fire({
+            // Afficher un message d'erreur
+            Swal.fire({
                 title: 'Erreur',
-                html: `
-                    <div class="text-left">
-                        <p>${error.message || 'Une erreur est survenue lors de l\'enregistrement des écritures.'}</p>
-                        <details class="mt-3">
-                            <summary class="text-sm text-blue-600 cursor-pointer">Détails techniques</summary>
-                            <pre class="mt-2 p-2 bg-gray-100 rounded text-xs text-red-600 overflow-auto max-h-40">${error.stack || error.toString()}</pre>
-                        </details>
-                    </div>
-                `,
+                text: error.message || 'Une erreur est survenue lors de l\'enregistrement des écritures.',
                 icon: 'error',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#1e40af'
+                confirmButtonText: 'OK'
             });
         } finally {
             // Réactiver le bouton
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer';
-            }
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer ';
         }
     }
 
