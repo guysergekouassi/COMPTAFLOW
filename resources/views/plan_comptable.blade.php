@@ -188,45 +188,39 @@
                         @endif
 
                         <!-- KPI Filters Section (Preserving functionality with new Look) -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                            <!-- Carte 1: Total des comptes -->
-                            <button type="button" class="filter-card w-full text-left bg-white p-6 rounded-2xl border border-slate-200 cursor-pointer transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" data-filter-type="all">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-slate-500">Total des comptes</p>
-                                        <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ $totalComptes }}</h3>
-                                    </div>
-                                    <div class="p-3 rounded-full bg-blue-50 text-blue-600">
-                                        <i class="fas fa-layer-group text-xl"></i>
-                                    </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <!-- Total -->
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active" data-filter-type="all">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="bx bx-layer text-2xl"></i>
                                 </div>
-                            </button>
-                            
-                            <!-- Carte 2: Comptes manuels -->
-                            <button type="button" class="filter-card w-full text-left bg-white p-6 rounded-2xl border border-slate-200 cursor-pointer transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50" data-filter-type="user">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-slate-500">Comptes manuels</p>
-                                        <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ $comptesManuels }}</h3>
-                                    </div>
-                                    <div class="p-3 rounded-full bg-green-50 text-green-600">
-                                        <i class="fas fa-user-edit text-xl"></i>
-                                    </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Total des plans</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $totalPlans }}</h3>
                                 </div>
-                            </button>
-                            
-                            <!-- Carte 3: Comptes système -->
-                            <button type="button" class="filter-card w-full text-left bg-white p-6 rounded-2xl border border-slate-200 cursor-pointer transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50" data-filter-type="system">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-slate-500">Comptes système</p>
-                                        <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ $comptesSysteme }}</h3>
-                                    </div>
-                                    <div class="p-3 rounded-full bg-purple-50 text-purple-600">
-                                        <i class="fas fa-robot text-xl"></i>
-                                    </div>
+                            </div>
+
+                            <!-- Manuel -->
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="user">
+                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                                    <i class="bx bx-user text-2xl"></i>
                                 </div>
-                            </button>
+                                <div>
+                                    <p class="text-sm text-slate-500">Plans par utilisateur</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansByUser }}</h3>
+                                </div>
+                            </div>
+
+                            <!-- Auto -->
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="system">
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                                    <i class="bx bx-cog text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Plan SYSCOHADA</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Actions Bar -->
@@ -311,7 +305,41 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
-                                        <!-- Les données seront chargées dynamiquement par DataTables -->
+                                        @forelse ($plansComptables as $plan)
+                                        <tr class="table-row group">
+                                            <td class="px-8 py-6">
+                                                <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
+                                            </td>
+                                            <td class="px-8 py-6">
+                                                <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
+                                            </td>
+
+                                            <td class="px-8 py-6">
+    @php
+        $typeClasses = [
+            'actif' => 'bg-green-100 text-green-800',
+            'passif' => 'bg-blue-100 text-blue-800',
+            'produit' => 'bg-purple-100 text-purple-800',
+            'charge' => 'bg-yellow-100 text-yellow-800',
+            'divers' => 'bg-gray-100 text-gray-800'
+        ];
+        $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
+    @endphp
+    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
+        {{ ucfirst($plan->type_de_compte) }}
+    </span>
+    <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
+</td>
+
+                                            <td class="px-8 py-6">
+                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
+                                            </td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center py-8 text-muted">Aucun plan comptable par défaut trouvé.</td>
+                                        </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -538,88 +566,15 @@
                 table = $('#planComptableTable').DataTable({
                     processing: true,
                     serverSide: true,
-                    ajax: {
-                        url: "{{ route('plan_comptable.datatable') }}",
-                        type: 'GET',
-                        data: function(d) {
-                            // Ajouter le filtre actif aux paramètres de la requête
-                            const activeFilter = $('.filter-card.filter-active').data('filter-type');
-                            if (activeFilter) {
-                                d.filter_type = activeFilter;
-                            }
-                        }
-                    },
-                    language: {
-                        url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json',
-                        emptyTable: 'Aucune donnée disponible dans le tableau',
-                        info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
-                        infoEmpty: 'Aucune entrée à afficher',
-                        infoFiltered: '(filtré à partir de _MAX_ entrées totales)',
-                        lengthMenu: 'Afficher _MENU_ entrées',
-                        loadingRecords: 'Chargement...',
-                        processing: 'Traitement...',
-                        search: 'Rechercher :',
-                        zeroRecords: 'Aucun enregistrement correspondant trouvé',
-                        paginate: {
-                            first: 'Premier',
-                            last: 'Dernier',
-                            next: 'Suivant',
-                            previous: 'Précédent'
-                        }
-                    },
-                    dom: "<'flex flex-col md:flex-row md:items-center md:justify-between'<'mb-4 md:mb-0'l><'mb-4 md:mb-0'f>><'w-full overflow-x-auto't><'flex flex-col md:flex-row items-center justify-between mt-4'<'mb-4 md:mb-0'i><'pagination-container flex gap-2'p>>",
+                    ajax: "{{ route('plan_comptable.datatable') }}",
                     columns: [
-                        { 
-                            data: 'numero_de_compte', 
-                            name: 'numero_de_compte',
-                            className: 'whitespace-nowrap',
-                            render: function(data, type, row) {
-                                return '<span class="font-mono text-lg font-bold text-blue-700">' + data + '</span>';
-                            }
-                        },
-                        { 
-                            data: 'intitule', 
-                            name: 'intitule',
-                            className: 'min-w-[200px]',
-                            render: function(data) {
-                                return '<p class="font-medium text-slate-800">' + data + '</p>';
-                            }
-                        },
-                        { 
-                            data: 'type_de_compte', 
-                            name: 'type_de_compte',
-                            className: 'whitespace-nowrap',
-                            render: function(data) {
-                                const typeClasses = {
-                                    'actif': 'bg-green-100 text-green-800',
-                                    'passif': 'bg-blue-100 text-blue-800',
-                                    'produit': 'bg-purple-100 text-purple-800',
-                                    'charge': 'bg-yellow-100 text-yellow-800',
-                                    'divers': 'bg-gray-100 text-gray-800'
-                                };
-                                const typeClass = typeClasses[data.toLowerCase()] || 'bg-gray-100 text-gray-800';
-                                return '<span class="px-3 py-1 text-xs font-medium rounded-full ' + typeClass + '">' + 
-                                       data.charAt(0).toUpperCase() + data.slice(1) + 
-                                       '</span>';
-                            }
-                        },
-                        { 
-                            data: 'created_at', 
-                            name: 'created_at',
-                            className: 'whitespace-nowrap',
-                            render: function(data) {
-                                if (!data) return '-';
-                                const date = new Date(data);
-                                if (isNaN(date.getTime())) return data; // Si la date n'est pas valide, retourner la valeur brute
-                                const day = String(date.getDate()).padStart(2, '0');
-                                const month = String(date.getDate() + 1).padStart(2, '0');
-                                const year = date.getFullYear();
-                                return '<span class="text-sm text-slate-600">' + day + '/' + month + '/' + year + '</span>';
-                            }
-                        }
+                        { data: 'numero_de_compte', name: 'numero_de_compte' },
+                        { data: 'intitule', name: 'intitule' },
+                        { data: 'type_de_compte', name: 'type_de_compte' },
+                        { data: 'created_at', name: 'created_at' }
                     ],
                     dom: 't',
-                    pageLength: 10,
+                    pageLength: 5,
                     language: {
                         url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json'
                     }
@@ -768,38 +723,39 @@
                 updatePagination();
 
                 // Gestion des filtres par carte KPI
-                $(document).on('click', '.filter-card', function() {
+                $('.filter-card').on('click', function() {
+                    // Retourner si le bouton est déjà actif
+                    if ($(this).hasClass('filter-active')) return;
+                    
                     // Retirer la classe active de toutes les cartes
                     $('.filter-card').removeClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
                     
                     // Ajouter la classe active à la carte cliquée
                     $(this).addClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
                     
-                    // Rafraîchir la table avec le nouveau filtre
-                    table.ajax.reload();
+                    // Récupérer le type de filtre
+                    const filterType = $(this).data('filter-type');
                     
-                    // Mettre à jour l'affichage du nombre de résultats
-                    table.on('draw', function() {
-                        const total = table.page.info().recordsDisplay;
-                        const filterType = $('.filter-card.filter-active').data('filter-type');
-                        let message = '';
-                        
-                        if (total === 0) {
-                            message = 'Aucun compte trouvé';
-                        } else if (total === 1) {
-                            message = '1 compte affiché';
-                        } else {
-                            message = total + ' comptes affichés';
-                        }
-                        
-                        // Mettre à jour le message d'information
-                        $('.dataTables_info').text(message);
-                    });
+                    console.log('Filtre appliqué :', filterType);
+                    
+                    // Appliquer le filtre approprié
+                  // Appliquer le filtre approprié
+switch(filterType) {
+    case 'user':
+        // On cherche le mot 'manuel' à l'intérieur de la colonne 2
+        table.column(2).search('manuel').draw();
+        break;
+    case 'system':
+        // On cherche le mot 'auto' à l'intérieur de la colonne 2
+        table.column(2).search('auto').draw();
+        break;
+    default: // 'all'
+        table.column(2).search('').draw();
+}
                     
                     // Afficher toutes les données pour débogage
                     console.log('Données du tableau après filtrage :', table.data().toArray());
                 });
-
             }
         });
     </script>
