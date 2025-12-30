@@ -488,7 +488,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const nSaisie = document.getElementById('n_saisie').value;
         const codeJournalId = formData.get('code_journal_id');
         const dateEcriture = formData.get('date');
-        
+        const compteNumero = formData.get('compte_general');
+        const option = document.querySelector(`#comptesOptions option[value="${compteNumero}"]`);
         const plan_comptable_id = option ? option.getAttribute('data-id') : null;
         // Préparer les données pour l'envoi
         Array.from(rows).forEach(row => {
