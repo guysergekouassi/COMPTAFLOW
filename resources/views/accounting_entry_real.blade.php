@@ -124,7 +124,7 @@
                             <div class="row g-4">
                                 <div class="col-md-3">
                                     <label for="date" class="form-label">Date de l'écriture</label>
-                                    <input type="date" id="date" name="date" class="form-control" required />
+                                    <input type="date" id="date" name="date" class="form-control" value="{{ date('Y-m-d') }}" required />
                                     <div class="invalid-feedback">Veuillez renseigner la date.</div>
                                 </div>
                                 <div class="col-md-6">
