@@ -13,7 +13,6 @@ use App\Models\PlanComptable;
 use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
-use Illuminate\Support\Facades\Log;
 use App\Models\tresoreries\Tresoreries;
 use Illuminate\Support\Facades\DB;
 
@@ -177,8 +176,6 @@ class EcritureComptableController extends Controller
 
  public function storeMultiple(Request $request)
 {
-    Log::info('Données d\'écritures reçues:', $request->ecritures);
-
     // Initialiser une liste d'erreurs pour le retour
     $errors = [];
     
@@ -279,7 +276,6 @@ class EcritureComptableController extends Controller
             } catch (\Illuminate\Database\QueryException $e) {
                 // CAPTURE DE L'ERREUR SPÉCIFIQUE À LA LIGNE
                 $errorMessage = "Erreur à la ligne " . ($index + 1) . " (Compte " . $ecriture['compte_general'] . "): " . $e->getMessage();
-                Log::error($errorMessage);
                 // Si une ligne échoue, nous arrêtons et renvoyons l'erreur
                 return response()->json([
                     'error' => 'Échec de l\'enregistrement de la saisie batch.',
@@ -303,13 +299,10 @@ public function getComptesParFlux(Request $request)
     $user = Auth::user();
     $typeFlux = $request->query('type');
 
-    Log::info("AJAX getComptesParFlux called. TypeFlux received: '" . $typeFlux . "'");
-
     $query = PlanComptable::select('id', 'numero_de_compte', 'intitule');
 
     // Filtrage selon la logique comptable des flux de trésorerie
     if ($typeFlux && stripos($typeFlux, 'Operationnelles') !== false) {
-         Log::info("Matched: Operationnelles - Classes 4, 5, 6, 7");
         $query->where(function($q) {
             // ✅ AJOUT : Classes 4 et 5
             $q->where('numero_de_compte', 'like', '4%')
@@ -318,7 +311,6 @@ public function getComptesParFlux(Request $request)
               ->orWhere('numero_de_compte', 'like', '7%');
         });
     } elseif ($typeFlux && stripos($typeFlux, 'Investissement') !== false) {
-         Log::info("Matched: Investissement - Classes 2, 4, 5");
         $query->where(function($q) {
             // ✅ AJOUT : Classes 4 et 5
             $q->where('numero_de_compte', 'like', '2%')
@@ -326,7 +318,6 @@ public function getComptesParFlux(Request $request)
               ->orWhere('numero_de_compte', 'like', '5%');
         });
     } elseif ($typeFlux && stripos($typeFlux, 'Financement') !== false) {
-         Log::info("Matched: Financement - Classes 1, 4, 5");
         $query->where(function($q) {
             // ✅ AJOUT : Classes 4 et 5
             $q->where('numero_de_compte', 'like', '1%')
@@ -335,12 +326,10 @@ public function getComptesParFlux(Request $request)
         });
     }
     else {
-         Log::info("No match found. Returning default limit 500.");
          $query->limit(500);
     }
 
     $comptes = $query->orderBy('numero_de_compte', 'asc')->get();
-    Log::info("Returning " . $comptes->count() . " accounts.");
 
     return response()->json($comptes);
 }
@@ -453,7 +442,6 @@ public function getComptesParFlux(Request $request)
                 'nextSaisieNumber' => $nextSaisieNumber
             ]);
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la récupération du numéro de saisie: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la récupération du numéro de saisie'
@@ -473,7 +461,6 @@ public function getComptesParFlux(Request $request)
         $data = $request->all();
         
         // Journalisation pour le débogage
-        \Log::info('Données reçues:', $data);
         
         // Valider les données
         $validated = $request->validate([
@@ -524,7 +511,6 @@ public function getComptesParFlux(Request $request)
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Erreur lors de l\'enregistrement des écritures : ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
