@@ -355,19 +355,36 @@ document.addEventListener('DOMContentLoaded', function() {
             const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
             const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
 
-            newRow.innerHTML = `
-                <td>${date.value}</td>
-                <td>${nSaisie ? nSaisie.value : ''}</td>
-                <td>${imputationValue}</td>
-                <td>${libelle.value}</td>
-                <td>${referencePiece ? referencePiece.value || '' : ''}</td>
-                <td>${compteText}</td>
-                <td>${compteTiersValue}</td>
-                <td>${debit.value || ''}</td>
-                <td>${credit.value || ''}</td>
-                <td>${pieceFileName}</td>
-                <td>${analytiqueValue}</td>
-            `;
+            // Créer les cellules une par une pour pouvoir ajouter des attributs
+            const cells = [
+                date.value,
+                nSaisie ? nSaisie.value : '',
+                imputationValue,
+                libelle.value,
+                referencePiece ? referencePiece.value || '' : '',
+                '', // Compte général - sera rempli avec l'élément personnalisé
+                compteTiersValue,
+                debit.value || '',
+                credit.value || '',
+                pieceFileName,
+                analytiqueValue
+            ];
+
+            // Ajouter chaque cellule avec son contenu
+            cells.forEach((content, index) => {
+                const cell = newRow.insertCell();
+                if (index === 5) {
+                    // Pour la cellule du compte général, ajouter l'attribut data-plan-comptable-id
+                    cell.textContent = compteText;
+                    cell.setAttribute('data-plan-comptable-id', compteGeneral.value);
+                } else if (index === 6 && compteTiers && compteTiers.value) {
+                    // Pour la cellule du compte tiers, ajouter l'attribut data-tiers-id
+                    cell.textContent = compteTiersValue;
+                    cell.setAttribute('data-tiers-id', compteTiers.value);
+                } else {
+                    cell.textContent = content;
+                }
+            });
 
             const modifierCell = document.createElement('td');
             modifierCell.innerHTML = `
@@ -488,21 +505,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const nSaisie = document.getElementById('n_saisie').value;
         const codeJournalId = formData.get('code_journal_id');
         const dateEcriture = formData.get('date');
-        const compteNumero = formData.get('compte_general');
-        const option = document.querySelector(`#comptesOptions option[value="${compteNumero}"]`);
-        const plan_comptable_id = option ? option.getAttribute('data-id') : null;
+        
+        // Vérifier que tous les champs requis sont présents
+        if (!dateEcriture || !nSaisie || !codeJournalId) {
+            showAlert('danger', 'Veuillez remplir tous les champs obligatoires.');
+            return;
+        }
+
         // Préparer les données pour l'envoi
         Array.from(rows).forEach(row => {
             const cells = row.cells;
             const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             
+            // Récupérer l'ID du plan comptable depuis l'attribut data-id de la cellule du compte
+            const compteCell = cells[2]; // La cellule du compte général
+            const planComptableId = compteCell.getAttribute('data-plan-comptable-id');
+            
+            if (!planComptableId) {
+                showAlert('danger', 'Veuillez sélectionner un compte général valide pour chaque ligne.');
+                return;
+            }
+            
             ecritures.push({
                 date: dateEcriture,
                 n_saisie: nSaisie,
                 description_operation: cells[3].textContent.trim(),
                 reference_piece: cells[4].textContent.trim(),
-              plan_comptable_id: plan_comptable_id,
+                plan_comptable_id: planComptableId,
                 plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
                 code_journal_id: codeJournalId,
                 debit: debit,
