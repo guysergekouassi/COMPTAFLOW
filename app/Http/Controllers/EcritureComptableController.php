@@ -120,6 +120,16 @@ class EcritureComptableController extends Controller
                     }
                 }
 
+                // Récupérer l'exercice comptable actif
+                $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+                    ->where('cloturer', 0)
+                    ->orderBy('date_debut', 'desc')
+                    ->first();
+
+                if (!$exerciceActif) {
+                    throw new \Exception('Aucun exercice comptable actif trouvé.');
+                }
+
                 $ecritureData = [
                     'date' => $ecriture['date'] ?? now()->format('Y-m-d'),
                     'n_saisie' => $ecriture['n_saisie'] ?? $nextSaisieNumber,
@@ -133,7 +143,7 @@ class EcritureComptableController extends Controller
                     'credit' => $credit,
                     'plan_analytique' => (isset($ecriture['plan_analytique']) && $ecriture['plan_analytique'] === 'Oui') || ($ecriture['analytique'] ?? 'Non') === 'Oui' ? 1 : 0,
                     'code_journal_id' => $ecriture['code_journal_id'] ?? $ecriture['journal'] ?? null,
-                    'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? $ecriture['exercice_id'] ?? null,
+                    'exercices_comptables_id' => $exerciceActif->id,
                     'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? $ecriture['journal_id'] ?? null,
                     'piece_justificatif' => $pieceJustificatifName,
                     'user_id' => $user ? $user->id : null,
