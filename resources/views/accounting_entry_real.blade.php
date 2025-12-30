@@ -83,7 +83,13 @@
         font-weight: 600;
         transition: all 0.3s;
     }
+    .btn-primary {
+        background-color: #696cff; /* Blue color */
+        color: #fff;
+        border: 2px solid #566a7f; /* Complementary border */
+    }
     .btn-primary:hover {
+        background-color: #4a5bcc; /* Darker blue on hover */
         transform: translateY(-2px);
         box-shadow: 0 4px 10px rgba(105, 108, 255, 0.3);
     }
@@ -235,7 +241,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
-                        <button type="button" class="btn btn-success" id="btnEnregistrer"
+                        <button type="button" class="btn btn-primary" id="btnEnregistrer"
                             onclick="enregistrerEcritures()">
                             <span id="btnText">Enregistrer</span>
                             <span id="btnSpinner" class="spinner-border spinner-border-sm d-none"

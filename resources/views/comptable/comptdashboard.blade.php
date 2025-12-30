@@ -68,7 +68,7 @@
                         <!-- En-tête Centré Dynamique -->
                         <!-- En-tête Centré Dynamique -->
                         <div class="text-center mb-8">
-                            <p class="text-slate-500 font-medium">Bienvenue, voici l'état actuel de votre exercice comptable.</p>
+                            <p class="text-base font-medium text-slate-500">Bienvenue, voici l'état actuel de votre exercice comptable.</p>
                         </div>
 
                         <!-- Section Statistiques (KPIs) -->
@@ -138,15 +138,15 @@
 
                             <!-- Section Actions Rapides (Modules) -->
                             <div class="lg:col-span-2 space-y-8">
-                                <div class="glass-card p-6">
-                                    <h2 class="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
+                                <div class="glass-card p-6 mt-6">
+                                    <h3 class="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
                                         <i class="fas fa-th-large text-blue-700"></i> Vos Modules de Travail
-                                    </h2>
+                                    </h3>
 
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
                                         <!-- Traitement -->
                                         <div class="space-y-3">
-                                            <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2">Traitement</h4>
+                                            <h5 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Traitement</h5>
                                             <a href="{{ route('accounting_entry_real') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold pulse bg-blue-700 text-white border-none transition-all hover:bg-blue-800">
                                                 <i class="fas fa-keyboard w-5"></i> Nouvelle Saisie
                                             </a>
@@ -160,7 +160,7 @@
 
                                         <!-- Paramétrage -->
                                         <div class="space-y-3">
-                                            <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2">Paramétrage</h4>
+                                            <h5 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Paramétrage</h5>
                                             <a href="{{ route('plan_comptable') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-book w-5"></i> Plan Comptable
                                             </a>
@@ -174,7 +174,7 @@
 
                                         <!-- Rapports -->
                                         <div class="space-y-3">
-                                            <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2">Rapports</h4>
+                                            <h5 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Rapports</h5>
                                             <a href="{{ route('accounting_ledger') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-file-invoice w-5"></i> Grand Livre
                                             </a>
@@ -188,7 +188,7 @@
                                 <!-- Activité Récente / Journaux de Trésorerie -->
                                 <div class="glass-card p-6">
                                     <div class="flex items-center justify-between mb-6">
-                                        <h2 class="text-lg font-bold text-slate-800">Derniers Journaux de Trésorerie</h2>
+                                        <h3 class="text-lg font-bold text-slate-800">Derniers Journaux de Trésorerie</h3>
                                         <button class="text-sm text-blue-700 font-bold hover:underline">Voir tout</button>
                                     </div>
                                     <div class="space-y-4">
@@ -222,7 +222,7 @@
                             <!-- Barre Latérale Droite : Alertes & Statut -->
                             <div class="space-y-8">
                                 <div class="glass-card p-6 bg-slate-900 text-white border-none shadow-xl shadow-blue-900/20">
-                                    <h2 class="text-lg font-bold mb-4">Statut Clôture</h2>
+                                    <h3 class="text-base font-bold mb-4">Statut Clôture</h3>
                                     <div class="w-full bg-slate-800 rounded-full h-2 mb-2">
                                         <div class="bg-blue-500 h-2 rounded-full transition-all duration-1000" style="width: {{ $exerciceProgress ?? 0 }}%"></div>
                                     </div>
@@ -233,7 +233,7 @@
                                 </div>
 
                                 <div class="glass-card p-6">
-                                    <h2 class="text-lg font-bold text-slate-800 mb-4">Notifications</h2>
+                                    <h3 class="text-base font-bold text-slate-800 mb-4">Notifications</h3>
                                     <div class="space-y-6">
                                         @forelse($alerts ?? [] as $alert)
                                         <div class="flex gap-4">

@@ -319,9 +319,7 @@
     
                                 <!-- Right Group: Actions -->
                                 <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                                    <button type="button" class="btn btn-secondary rounded-xl px-5 font-semibold shadow-sm" onclick="window.location.href='{{ route('journaux_saisis') }}'">
-                                        <i class="bx bx-arrow-back me-2"></i>Retour
-                                    </button>
+                                    <!-- Removed button -->
                                 </div>
                             </div>
 
@@ -338,11 +336,7 @@
 
                                 <!-- Right Group: Actions -->
                                 <div class="flex flex-wrap items-center justify-end gap-3">
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal"
-                                        class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
-                                        <i class="fas fa-plus"></i>
-                                        Nouvelle écriture
-                                    </button>
+                                    <!-- Removed button -->
                                 </div>
                             </div>
 
@@ -457,38 +451,7 @@
                                         @endif
                             </tbody>
                             <tfoot>
-                                <tr class="table-active fw-bold">
-                                    <td colspan="7" class="text-end">TOTAL</td>
-                                    <td class="text-end" id="footerTotalDebit">
-                                        {{ number_format($totalDebit, 2, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="text-end" id="footerTotalCredit">
-                                        {{ number_format($totalCredit, 2, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="text-center">
-                                        @if(abs($totalDebit - $totalCredit) < 0.01)
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <button type="button" id="addEntryBtn" class="btn btn-primary btn-sm" onclick="addNewEntry()">
-                                                    <i class="fas fa-plus me-1"></i>Ajouter
-                                                </button>
-                                                <button type="button" id="saveEntriesBtn" class="btn btn-success btn-sm" onclick="saveAllEntries()">
-                                                    <i class="fas fa-save me-1"></i>Enregistrer
-                                                </button>
-                                                <script>
-                                                    // S'assurer que la fonction est dans la portée globale
-                                                    window.saveAllEntries = saveAllEntries;
-                                                </script>
-                                            </div>
-                                        @else
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <button type="button" id="addEntryBtn" class="btn btn-primary btn-sm" onclick="addNewEntry()">
-                                                    <i class="fas fa-plus me-1"></i>Ajouter
-                                                </button>
-                                                <span class="text-danger ms-2">Les totaux ne sont pas équilibrés</span>
-                                            </div>
-                                        @endif
-                                    </td>
-                                </tr>
+                                <!-- Removed TOTAL row and its values -->
                             </tfoot>
                         </table>
                     </div>
