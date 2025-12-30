@@ -21,13 +21,17 @@ class PlanComptableController extends Controller
         // 1. Récupérer l'ID de la société active (gestion du switch admin)
         $companyId = session('current_company_id', $user->company_id);
 
-        // 2. Récupérer TOUS les plans de cette société (auto + manuel)
-        // On utilise withoutGlobalScopes() si vous avez un scope qui bloque l'admin
-        $query = PlanComptable::where('company_id', $companyId);
+        // 2. Récupérer les statistiques pour les KPI
+        $totalComptes = PlanComptable::where('company_id', $companyId)->count();
+        $comptesManuels = PlanComptable::where('company_id', $companyId)
+            ->where('adding_strategy', 'manuel')
+            ->count();
+        $comptesSysteme = PlanComptable::where('company_id', $companyId)
+            ->where('adding_strategy', 'auto')
+            ->count();
 
-        // $plansComptables = (clone $query)
-        //     ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-        //     ->get();
+        // 3. Récupérer TOUS les plans de cette société (auto + manuel)
+        $query = PlanComptable::where('company_id', $companyId);
 
         $plansComptables = PlanComptable::where('company_id', $companyId)
     ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
@@ -48,10 +52,14 @@ class PlanComptableController extends Controller
         return view('plan_comptable', [
             'plansComptables' => $plansComptables,
             'totalPlans' => $totalPlans,
-            'plansByUser' => $plansByUser, // Sera maintenant dynamique (ex: 2)
+            'plansByUser' => $plansByUser,
             'plansSys' => $plansSys,
             'hasAutoStrategy' => $hasAutoStrategy,
-            'isDefaultView' => true 
+            'isDefaultView' => true,
+            // Variables pour les KPI
+            'totalComptes' => $totalComptes,
+            'comptesManuels' => $comptesManuels,
+            'comptesSysteme' => $comptesSysteme
         ]);
 
     } catch (\Exception $e) {
