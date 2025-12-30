@@ -146,6 +146,12 @@ class EcritureComptableController extends Controller
                     throw new \Exception('Aucun exercice comptable trouvé. Veuillez d\'abord créer un exercice comptable.');
                 }
 
+                // Récupérer le journal saisi par défaut si non spécifié
+                $journalSaisiId = $ecriture['journaux_saisis_id'] ?? $ecriture['journal_id'] ?? null;
+                if (!$journalSaisiId && !empty($ecriture['code_journal_id'])) {
+                    $journalSaisiId = $ecriture['code_journal_id'];
+                }
+
                 $ecritureData = [
                     'date' => $ecriture['date'] ?? now()->format('Y-m-d'),
                     'n_saisie' => $ecriture['n_saisie'] ?? $nextSaisieNumber,
@@ -160,7 +166,7 @@ class EcritureComptableController extends Controller
                     'plan_analytique' => (isset($ecriture['plan_analytique']) && $ecriture['plan_analytique'] === 'Oui') || ($ecriture['analytique'] ?? 'Non') === 'Oui' ? 1 : 0,
                     'code_journal_id' => $ecriture['code_journal_id'] ?? $ecriture['journal'] ?? null,
                     'exercices_comptables_id' => $exerciceActif->id,
-                    'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? $ecriture['journal_id'] ?? null,
+                    'journaux_saisis_id' => $journalSaisiId,
                     'piece_justificatif' => $pieceJustificatifName,
                     'user_id' => $user ? $user->id : null,
                     'company_id' => $user ? $user->company_id : null,
