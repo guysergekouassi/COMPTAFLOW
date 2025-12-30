@@ -13,7 +13,7 @@ use App\Models\PlanComptable;
 use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
-
+use Illuminate\Support\Facades\Log;
 use App\Models\tresoreries\Tresoreries;
 use Illuminate\Support\Facades\DB;
 
@@ -279,7 +279,7 @@ class EcritureComptableController extends Controller
             } catch (\Illuminate\Database\QueryException $e) {
                 // CAPTURE DE L'ERREUR SPÉCIFIQUE À LA LIGNE
                 $errorMessage = "Erreur à la ligne " . ($index + 1) . " (Compte " . $ecriture['compte_general'] . "): " . $e->getMessage();
-                Log::error($errorMessage);
+                \Log::error($errorMessage);
                 // Si une ligne échoue, nous arrêtons et renvoyons l'erreur
                 return response()->json([
                     'error' => 'Échec de l\'enregistrement de la saisie batch.',
