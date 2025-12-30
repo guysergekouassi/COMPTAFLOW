@@ -273,6 +273,37 @@
     </html>
 
 <script>
+// Fonction pour générer un numéro de saisie automatique
+function generateSaisieNumber() {
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const random = Math.floor(1000 + Math.random() * 9000); // 4 chiffres aléatoires
+    
+    return `${year}${month}${day}${random}`;
+}
+
+// Au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Définir la date du jour par défaut
+    const today = new Date().toISOString().split('T')[0];
+    const dateField = document.getElementById('date');
+    if (dateField) {
+        dateField.value = today;
+    }
+    
+    // Générer et définir le numéro de saisie
+    const nSaisieField = document.getElementById('n_saisie');
+    if (nSaisieField && !nSaisieField.value) {
+        nSaisieField.value = generateSaisieNumber();
+    }
+    
+    // Ajouter la classe 'form-control' si elle n'existe pas
+    if (nSaisieField && !nSaisieField.classList.contains('form-control')) {
+        nSaisieField.classList.add('form-control');
+    }
+});
     // Fonction globale pour ajouter une écriture
     function ajouterEcriture() {
         try {
