@@ -176,9 +176,8 @@ class EcritureComptableController extends Controller
 
                 // Nettoyer les valeurs nulles
                 $ecritureData = array_filter($ecritureData, function($value) {
-                    return $value !== null && $value !== '';
-                });
-
+    return !is_null($value) && $value !== '';
+});
                 EcritureComptable::create($ecritureData);
             }
             
