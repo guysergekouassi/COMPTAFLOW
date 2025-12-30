@@ -309,7 +309,7 @@ public function getComptesParFlux(Request $request)
 
     // Filtrage selon la logique comptable des flux de trésorerie
     if ($typeFlux && stripos($typeFlux, 'Operationnelles') !== false) {
-         Log::info("Matched: Operationnelles - Classes 4, 5, 6, 7");
+        \Log::info("Matched: Operationnelles - Classes 4, 5, 6, 7");
         $query->where(function($q) {
             // ✅ AJOUT : Classes 4 et 5
             $q->where('numero_de_compte', 'like', '4%')
