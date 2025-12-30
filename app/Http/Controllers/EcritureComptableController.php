@@ -72,92 +72,87 @@ class EcritureComptableController extends Controller
     /**
      * Renommé en "store" pour correspondre à l'appel API du front-end
      */
-    public function store(Request $request)
-    {
-        try {
-            DB::beginTransaction();
-            
-            // Valider que des écritures sont présentes
-            if (empty($request->ecritures) || !is_array($request->ecritures)) {
-                throw new \Exception('Aucune écriture à enregistrer.');
-            }
-            
-            // Génération du numéro de saisie unique pour ce batch
-            $lastSaisie = EcritureComptable::max('n_saisie');
-            $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
-            $user = auth()->user();
-
-            foreach ($request->ecritures as $index => $ecriture) {
-                // Vérifier que les champs obligatoires sont présents
-                if (empty($ecriture['plan_comptable_id']) && empty($ecriture['compte_general'])) {
-                    throw new \Exception("Le compte général est obligatoire pour l'écriture #" . ($index + 1));
-                }
-                
-                // Utiliser plan_comptable_id ou compte_general selon ce qui est disponible
-                $planComptableId = $ecriture['plan_comptable_id'] ?? $ecriture['compte_general'] ?? null;
-                
-                $pieceJustificatifName = null;
-                if ($request->hasFile("ecritures.$index.piece_justificatif")) {
-                    $file = $request->file("ecritures.$index.piece_justificatif");
-                    $pieceJustificatifName = time() . '_' . $file->getClientOriginalName();
-                    $file->move(public_path('justificatifs'), $pieceJustificatifName);
-                }
-
-                $debit = (float)($ecriture['debit'] ?? 0);
-                $credit = (float)($ecriture['credit'] ?? 0);
-                $compteTresorerieId = !empty($ecriture['tresorerieFields']) ? $ecriture['tresorerieFields'] : null;
-                $typeFlux = !empty($ecriture['typeFlux']) ? $ecriture['typeFlux'] : null;
-
-                // Logique de déduction automatique du flux
-                if (!is_null($compteTresorerieId) && is_null($typeFlux)) {
-                    $typeFlux = ($debit > 0) ? 'encaissement' : (($credit > 0) ? 'decaissement' : null);
-                }
-
-                if (is_null($typeFlux) && !empty($planComptableId)) {
-                    $planComptable = PlanComptable::find($planComptableId);
-                    if ($planComptable) {
-                        $typeFlux = $this->determineFluxClasse($planComptable->numero_de_compte);
-                    }
-                }
-
-                $ecritureData = [
-                    'date' => $ecriture['date'] ?? now()->format('Y-m-d'),
-                    'n_saisie' => $ecriture['n_saisie'] ?? $nextSaisieNumber,
-                    'description_operation' => ucfirst(strtolower($ecriture['description_operation'] ?? $ecriture['description'] ?? '')),
-                    'reference_piece' => strtoupper($ecriture['reference_piece'] ?? $ecriture['reference'] ?? ''),
-                    'plan_comptable_id' => $planComptableId,
-                    'plan_tiers_id' => $ecriture['plan_tiers_id'] ?? $ecriture['compte_tiers'] ?? null,
-                    'compte_tresorerie_id' => $compteTresorerieId,
-                    'type_flux' => $typeFlux,
-                    'debit' => $debit,
-                    'credit' => $credit,
-                    'plan_analytique' => (isset($ecriture['plan_analytique']) && $ecriture['plan_analytique'] === 'Oui') || ($ecriture['analytique'] ?? 'Non') === 'Oui' ? 1 : 0,
-                    'code_journal_id' => $ecriture['code_journal_id'] ?? $ecriture['journal'] ?? null,
-                    'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? $ecriture['exercice_id'] ?? null,
-                    'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? $ecriture['journal_id'] ?? null,
-                    'piece_justificatif' => $pieceJustificatifName,
-                    'user_id' => $user ? $user->id : null,
-                    'company_id' => $user ? $user->company_id : null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-
-                // Nettoyer les valeurs nulles
-                $ecritureData = array_filter($ecritureData, function($value) {
-                    return $value !== null && $value !== '';
-                });
-
-                EcritureComptable::create($ecritureData);
-            }
-            
-            DB::commit();
-            return response()->json(['success' => true, 'message' => 'Enregistré avec succès.']);
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+   public function store(Request $request)
+{
+    try {
+        DB::beginTransaction();
+        
+        if (empty($request->ecritures) || !is_array($request->ecritures)) {
+            throw new \Exception('Aucune écriture à enregistrer.');
         }
+        
+        $user = auth()->user();
+
+        // 1. Récupération des IDs depuis les paramètres de l'URL ou du formulaire global
+        // Ces variables serviront de secours si la ligne individuelle est vide
+        $idExerciceGlobal = $request->id_exercice ?? $request->exercices_comptables_id;
+        $idJournalSaisiGlobal = $request->id_journal ?? $request->journaux_saisis_id;
+        $idCodeJournalGlobal = $request->id_code ?? $request->code_journal_id;
+
+        // 2. Génération du numéro de saisie
+        $lastSaisie = EcritureComptable::max('n_saisie');
+        $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+
+        foreach ($request->ecritures as $index => $ecriture) {
+            $planComptableId = $ecriture['plan_comptable_id'] ?? $ecriture['compte_general'] ?? null;
+            
+            if (!$planComptableId) {
+                throw new \Exception("Le compte général est obligatoire (ligne " . ($index + 1) . ")");
+            }
+
+            // Gestion des fichiers
+            $pieceJustificatifName = null;
+            if ($request->hasFile("ecritures.$index.piece_justificatif")) {
+                $file = $request->file("ecritures.$index.piece_justificatif");
+                $pieceJustificatifName = time() . '_' . $file->getClientOriginalName();
+                $file->move(public_path('justificatifs'), $pieceJustificatifName);
+            }
+
+            // Déduction du flux
+            $debit = (float)($ecriture['debit'] ?? 0);
+            $credit = (float)($ecriture['credit'] ?? 0);
+            $typeFlux = $ecriture['typeFlux'] ?? null;
+
+            if (is_null($typeFlux) && $planComptableId) {
+                $plan = PlanComptable::find($planComptableId);
+                if ($plan) {
+                    $typeFlux = $this->determineFluxClasse($plan->numero_de_compte);
+                }
+            }
+
+            // 3. Création de l'écriture avec sécurités sur les IDs
+            EcritureComptable::create([
+                'date' => $ecriture['date'] ?? now()->format('Y-m-d'),
+                'n_saisie' => $nextSaisieNumber,
+                'description_operation' => ucfirst(strtolower($ecriture['description'] ?? '')),
+                'reference_piece' => strtoupper($ecriture['reference'] ?? ''),
+                'plan_comptable_id' => $planComptableId,
+                'plan_tiers_id' => $ecriture['compte_tiers'] ?? null,
+                'compte_tresorerie_id' => $ecriture['tresorerieFields'] ?? null,
+                'type_flux' => $typeFlux,
+                'debit' => $debit,
+                'credit' => $credit,
+                'plan_analytique' => (($ecriture['analytique'] ?? 'Non') === 'Oui') ? 1 : 0,
+                
+                // UTILISATION DES FALLBACKS POUR ÉVITER L'ERREUR SQL
+                'code_journal_id' => $ecriture['journal'] ?? $idCodeJournalGlobal,
+                'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? $idExerciceGlobal,
+                'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? $idJournalSaisiGlobal,
+                
+                'user_id' => $user->id,
+                'company_id' => $user->company_id,
+                'piece_justificatif' => $pieceJustificatifName,
+            ]);
+        }
+        
+        DB::commit();
+        return response()->json(['success' => true, 'message' => 'Enregistré avec succès.']);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
+}
 
     public function getComptesParFlux(Request $request)
     {
