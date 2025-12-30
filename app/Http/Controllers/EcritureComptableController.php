@@ -469,7 +469,7 @@ public function getComptesParFlux(Request $request)
             'ecritures' => 'required|array',
             'ecritures.*.date' => 'required|date',
             'ecritures.*.n_saisie' => 'required|string|max:12',
-            'ecritures.*.code_journal_id' => 'required|exists:code_journaux,id',
+            'ecritures.*.code_journal_id' => 'required|exists:code_journals,id',
             'ecritures.*.plan_comptable_id' => 'required|exists:plan_comptables,id',
             'ecritures.*.debit' => 'required|numeric|min:0',
             'ecritures.*.credit' => 'required|numeric|min:0',
