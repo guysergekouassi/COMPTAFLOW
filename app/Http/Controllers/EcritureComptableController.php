@@ -120,14 +120,33 @@ class EcritureComptableController extends Controller
                     }
                 }
 
-                // Récupérer l'exercice comptable actif
-                $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
-                    ->where('cloturer', 0)
-                    ->orderBy('date_debut', 'desc')
-                    ->first();
+                // Récupérer l'exercice comptable
+                $exerciceActif = null;
+                
+                // 1. Vérifier si un exercice est spécifié dans la requête
+                if (!empty($ecriture['exercices_comptables_id'])) {
+                    $exerciceActif = ExerciceComptable::where('id', $ecriture['exercices_comptables_id'])
+                        ->where('company_id', $user->company_id)
+                        ->first();
+                }
+                
+                // 2. Sinon, chercher l'exercice actif (non clôturé)
+                if (!$exerciceActif) {
+                    $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+                        ->where('cloturer', 0)
+                        ->orderBy('date_debut', 'desc')
+                        ->first();
+                }
+                
+                // 3. Si toujours pas trouvé, prendre le dernier exercice créé
+                if (!$exerciceActif) {
+                    $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+                        ->orderBy('date_debut', 'desc')
+                        ->first();
+                }
 
                 if (!$exerciceActif) {
-                    throw new \Exception('Aucun exercice comptable actif trouvé.');
+                    throw new \Exception('Aucun exercice comptable trouvé. Veuillez d\'abord créer un exercice comptable.');
                 }
 
                 $ecritureData = [
