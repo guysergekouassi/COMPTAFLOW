@@ -468,7 +468,7 @@
                                     <td class="text-center">
                                         @if(abs($totalDebit - $totalCredit) < 0.01)
                                             <div class="d-flex justify-content-center gap-2">
-                                                <button type="button" id="addEntryBtn" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal">
+                                                <button type="button" id="addEntryBtn" class="btn btn-primary btn-sm" onclick="addNewEntry()">
                                                     <i class="fas fa-plus me-1"></i>Ajouter
                                                 </button>
                                                 <button type="button" id="saveEntriesBtn" class="btn btn-success btn-sm" onclick="saveAllEntries()">
@@ -477,7 +477,7 @@
                                             </div>
                                         @else
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <button type="button" id="addEntryBtn" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal">
+                                                <button type="button" id="addEntryBtn" class="btn btn-primary btn-sm" onclick="addNewEntry()">
                                                     <i class="fas fa-plus me-1"></i>Ajouter
                                                 </button>
                                                 <span class="text-danger ms-2">Les totaux ne sont pas équilibrés</span>
@@ -1318,5 +1318,26 @@
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer ';
         }
+    }
+
+    // Fonction pour ajouter une nouvelle écriture avec le même numéro de saisie
+    function addNewEntry() {
+        // Récupérer le numéro de saisie actuel
+        const currentSaisie = document.getElementById('numeroSaisie').value;
+        
+        // Récupérer la date actuelle
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Réinitialiser le formulaire
+        document.getElementById('formNouvelleEcriture').reset();
+        
+        // Réinitialiser les champs de date et numéro de saisie
+        document.getElementById('dateEcriture').value = today;
+        document.getElementById('numeroSaisie').value = currentSaisie;
+        document.getElementById('hiddenNumeroSaisie').value = currentSaisie;
+        
+        // Ouvrir le modal
+        const modal = new bootstrap.Modal(document.getElementById('nouvelleEcritureModal'));
+        modal.show();
     }
 </script>
