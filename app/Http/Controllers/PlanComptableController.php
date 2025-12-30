@@ -264,13 +264,21 @@ class PlanComptableController extends Controller
                 'created_at',
                 'adding_strategy'
             ]);
+        
+        // Gestion du filtrage
+        $filterType = request()->get('filter_type');
+        if ($filterType === 'user') {
+            $query->where('adding_strategy', 'manuel');
+        } elseif ($filterType === 'system') {
+            $query->where('adding_strategy', 'auto');
+        }
             
         return DataTables::of($query)
             ->addColumn('actions', function($plan) {
                 return view('components.actions-plan-comptable', compact('plan'))->render();
             })
             ->editColumn('created_at', function($plan) {
-                return $plan->created_at->format('Y-m-d H:i:s');
+                return $plan->created_at ? $plan->created_at->format('Y-m-d H:i:s') : null;
             })
             ->rawColumns(['actions'])
             ->make(true);
