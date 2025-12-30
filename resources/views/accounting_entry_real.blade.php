@@ -366,8 +366,7 @@
             if (referencePiece) referencePiece.value = '';
             if (pieceFile) pieceFile.value = '';
 
-            // Générer un nouveau numéro de saisie
-            generateNewSaisieNumber();
+            // On ne génère pas de nouveau numéro ici, il ne changera qu'à l'enregistrement
 
             // Mise à jour des totaux
             updateTotals();
@@ -435,6 +434,9 @@
                 alert('Aucune écriture à enregistrer.');
                 return;
             }
+            
+            // Générer un nouveau numéro de saisie pour la prochaine fois
+            generateNewSaisieNumber();
 
             alert('Écritures enregistrées avec succès !');
 
