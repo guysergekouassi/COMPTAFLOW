@@ -317,19 +317,36 @@
             const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
             const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
 
-            newRow.innerHTML = `
-                <td>${date.value}</td>
-                <td>${nSaisie ? nSaisie.value : ''}</td>
-                <td>${imputationValue}</td>
-                <td>${libelle.value}</td>
-                <td>${referencePiece ? referencePiece.value || '' : ''}</td>
-                <td>${compteText}</td>
-                <td>${compteTiersValue}</td>
-                <td>${debit.value || ''}</td>
-                <td>${credit.value || ''}</td>
-                <td>${pieceFileName}</td>
-                <td>${analytiqueValue}</td>
-            `;
+            // Créer les cellules une par une pour pouvoir ajouter des attributs
+            const cells = [
+                date.value,
+                nSaisie ? nSaisie.value : '',
+                imputationValue,
+                libelle.value,
+                referencePiece ? referencePiece.value || '' : '',
+                '', // Compte général - sera rempli avec l'élément personnalisé
+                compteTiersValue,
+                debit.value || '',
+                credit.value || '',
+                pieceFileName,
+                analytiqueValue
+            ];
+
+            // Ajouter chaque cellule avec son contenu
+            cells.forEach((content, index) => {
+                const cell = newRow.insertCell();
+                if (index === 5) {
+                    // Pour la cellule du compte général, ajouter l'attribut data-plan-comptable-id
+                    cell.textContent = compteText;
+                    cell.setAttribute('data-plan-comptable-id', compteGeneral.value);
+                } else if (index === 6 && compteTiers && compteTiers.value) {
+                    // Pour la cellule du compte tiers, ajouter l'attribut data-tiers-id
+                    cell.textContent = compteTiersValue;
+                    cell.setAttribute('data-tiers-id', compteTiers.value);
+                } else {
+                    cell.textContent = content;
+                }
+            });
 
             const modifierCell = document.createElement('td');
             modifierCell.innerHTML = `
@@ -408,9 +425,70 @@
                 return;
             }
 
-            alert('Écritures enregistrées avec succès !');
+        // Récupérer les données du formulaire
+        const formData = new FormData(document.getElementById('formEcriture'));
+        const ecritures = [];
+        const nSaisie = document.getElementById('n_saisie').value;
+        const codeJournalId = formData.get('code_journal_id');
+        const dateEcriture = formData.get('date');
+        const option = document.querySelector(`#comptesOptions option[value="${compteNumero}"]`);
+        const plan_comptable_id = option ? option.getAttribute('data-id') : null;
+        // Préparer les données pour l'envoi
+        Array.from(rows).forEach(row => {
+            const cells = row.cells;
+            const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            
+            ecritures.push({
+                date: dateEcriture,
+                n_saisie: nSaisie,
+                description_operation: cells[3].textContent.trim(),
+                reference_piece: cells[4].textContent.trim(),
+              plan_comptable_id: plan_comptable_id,
+                plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
+                code_journal_id: codeJournalId,
+                debit: debit,
+                credit: credit,
+                piece_justificatif: cells[9].textContent.trim(),
+                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0
+            });
+        });
 
-            setTimeout(() => {
+        // Afficher les données dans la console pour le débogage
+        console.log('Données à envoyer:', ecritures);
+
+        // Afficher l'indicateur de chargement
+        const btnEnregistrer = document.getElementById('btnEnregistrer');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        
+        btnText.textContent = 'Enregistrement...';
+        btnEnregistrer.disabled = true;
+        btnSpinner.classList.remove('d-none');
+
+        // Envoyer les données au serveur
+        fetch('{{ route("ecriture.store") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ ecritures: ecritures })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Incrémenter le numéro de saisie après un enregistrement réussi
+                document.getElementById('n_saisie').value = incrementSaisieNumber();
+                
+                // Vider le tableau
                 tbody.innerHTML = '';
                 updateTotals();
             }, 2000);

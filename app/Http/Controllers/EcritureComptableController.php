@@ -124,8 +124,12 @@ class EcritureComptableController extends Controller
                 $data['annee'] = date('Y', strtotime($exercice->date_debut));
             }
         }
+        $id_code = $request->id_code; 
+        $id_exercice = $request->id_exercice;
 
         return view('accounting_entry_real', compact(
+            'id_code',       
+            'id_exercice',
             'plansComptables',
             'plansTiers',
             'data',
