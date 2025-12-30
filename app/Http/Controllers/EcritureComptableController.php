@@ -83,16 +83,10 @@ class EcritureComptableController extends Controller
             $nextSaisieNumber = session('current_saisie_number');
         }
 
-        $exercice = null;
-        if (!empty($data['id_exercice'])) {
-            $exercice = ExerciceComptable::find($data['id_exercice']);
-        }
+        $exercice = !empty($data['id_exercice']) ? ExerciceComptable::find($data['id_exercice']) : null;
         
         if (!$exercice) {
-            $exercice = ExerciceComptable::where('company_id', $user->company_id)
-                ->orderBy('date_debut', 'desc')
-                ->first();
-                
+            $exercice = ExerciceComptable::where('company_id', $user->company_id)->orderBy('date_debut', 'desc')->first();
             if ($exercice) {
                 $data['id_exercice'] = $exercice->id;
                 $data['annee'] = date('Y', strtotime($exercice->date_debut));
@@ -109,30 +103,15 @@ class EcritureComptableController extends Controller
         ));
     }
 
-    public function showSaisieModal()
-    {
-        $user = Auth::user();
-        $companyId = session('current_company_id', $user->company_id);
-        
-        $exercices = ExerciceComptable::where('company_id', $companyId)
-            ->orderBy('date_debut', 'desc')
-            ->get()
-            ->unique('intitule')
-            ->values();
-
-        $exerciceActif = $exercices->firstWhere('cloturer', 0) ?? $exercices->first();
-
-        $code_journaux = CodeJournal::where('company_id', $companyId)
-            ->orderBy('code_journal', 'asc')
-            ->get()
-            ->unique('code_journal');
-
-        return view('components.modal_saisie_direct', [
-            'exercices' => $exercices,
-            'code_journaux' => $code_journaux,
-            'exerciceActif' => $exerciceActif,
-            'companyId' => $companyId
-        ]);
+    /**
+     * AJOUTÉ : Méthode manquante pour déterminer le flux selon la classe du compte
+     */
+    private function determineFluxClasse($numeroCompte) {
+        $classe = substr($numeroCompte, 0, 1);
+        if (in_array($classe, ['6', '7'])) return 'Operationnelles';
+        if ($classe == '2') return 'Investissement';
+        if ($classe == '1') return 'Financement';
+        return null;
     }
 
     public function storeMultiple(Request $request)
@@ -146,9 +125,9 @@ class EcritureComptableController extends Controller
         }
 
         try {
+            DB::beginTransaction();
             foreach ($request->ecritures as $index => $ecriture) {
                 $pieceJustificatifName = null;
-
                 if ($request->hasFile("ecritures.$index.piece_justificatif")) {
                     $file = $request->file("ecritures.$index.piece_justificatif");
                     $pieceJustificatifName = time() . '_' . $file->getClientOriginalName();
@@ -157,9 +136,10 @@ class EcritureComptableController extends Controller
 
                 $debit = (float)($ecriture['debit'] ?? 0);
                 $credit = (float)($ecriture['credit'] ?? 0);
-                $compteTresorerieId = $ecriture['tresorerieFields'] ?? null;
-                $typeFlux = $ecriture['typeFlux'] ?? null;
+                $compteTresorerieId = !empty($ecriture['tresorerieFields']) ? $ecriture['tresorerieFields'] : null;
+                $typeFlux = !empty($ecriture['typeFlux']) ? $ecriture['typeFlux'] : null;
 
+                // Logique de déduction du flux
                 if (!is_null($compteTresorerieId) && is_null($typeFlux)) {
                     $typeFlux = ($debit > 0) ? 'encaissement' : (($credit > 0) ? 'decaissement' : null);
                 }
@@ -168,10 +148,7 @@ class EcritureComptableController extends Controller
                 if (is_null($typeFlux) && $compteGeneralId) {
                     $planComptable = PlanComptable::find($compteGeneralId);
                     if ($planComptable) {
-                        $classeFluxDeterminee = $this->determineFluxClasse($planComptable->numero_de_compte);
-                        if (is_null($compteTresorerieId)) {
-                            $typeFlux = $classeFluxDeterminee;
-                        }
+                        $typeFlux = $this->determineFluxClasse($planComptable->numero_de_compte);
                     }
                 }
 
@@ -186,185 +163,56 @@ class EcritureComptableController extends Controller
                     'type_flux' => $typeFlux,
                     'debit' => $debit,
                     'credit' => $credit,
-                    'plan_analytique' => $ecriture['analytique'] === 'Oui' ? 1 : 0,
+                    'plan_analytique' => ($ecriture['analytique'] ?? 'Non') === 'Oui' ? 1 : 0,
                     'code_journal_id' => $ecriture['journal'] ?? null,
                     'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? null,
                     'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? null,
                     'piece_justificatif' => $pieceJustificatifName,
                 ]);
             }
-
-            return response()->json(['message' => 'Toutes les écritures ont été enregistrées avec succès.']);
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Toutes les écritures ont été enregistrées avec succès.']);
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Une erreur est survenue lors de l\'enregistrement.',
-                'details' => $e->getMessage()
-            ], 500);
+            DB::rollBack();
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
     public function getComptesParFlux(Request $request)
     {
-        $user = Auth::user();
         $typeFlux = $request->query('type');
         $query = PlanComptable::select('id', 'numero_de_compte', 'intitule');
 
         if ($typeFlux && stripos($typeFlux, 'Operationnelles') !== false) {
             $query->where(function($q) {
-                $q->where('numero_de_compte', 'like', '4%')
-                  ->orWhere('numero_de_compte', 'like', '5%')
-                  ->orWhere('numero_de_compte', 'like', '6%')
-                  ->orWhere('numero_de_compte', 'like', '7%');
+                $q->where('numero_de_compte', 'like', '4%')->orWhere('numero_de_compte', 'like', '5%')
+                  ->orWhere('numero_de_compte', 'like', '6%')->orWhere('numero_de_compte', 'like', '7%');
             });
         } elseif ($typeFlux && stripos($typeFlux, 'Investissement') !== false) {
             $query->where(function($q) {
-                $q->where('numero_de_compte', 'like', '2%')
-                  ->orWhere('numero_de_compte', 'like', '4%')
-                  ->orWhere('numero_de_compte', 'like', '5%');
+                $q->where('numero_de_compte', 'like', '2%')->orWhere('numero_de_compte', 'like', '4%')->orWhere('numero_de_compte', 'like', '5%');
             });
         } elseif ($typeFlux && stripos($typeFlux, 'Financement') !== false) {
             $query->where(function($q) {
-                $q->where('numero_de_compte', 'like', '1%')
-                  ->orWhere('numero_de_compte', 'like', '4%')
-                  ->orWhere('numero_de_compte', 'like', '5%');
+                $q->where('numero_de_compte', 'like', '1%')->orWhere('numero_de_compte', 'like', '4%')->orWhere('numero_de_compte', 'like', '5%');
             });
         } else {
-             $query->limit(500);
+            $query->limit(500);
         }
 
         return response()->json($query->orderBy('numero_de_compte', 'asc')->get());
     }
 
-    public function list(Request $request)
-    {
-        $user = Auth::user();
-        $data = $request->all();
-
-        $exercices = ExerciceComptable::get()->unique('intitule');
-        $code_journaux = CodeJournal::get()->unique('code_journal');
-
-        $query = EcritureComptable::query();
-
-        if (!empty($data['exercice_id'])) {
-            $query->where('exercice_id', $data['exercice_id']);
-        }
-        if (!empty($data['mois'])) {
-            $query->whereMonth('date', $data['mois']);
-        }
-        if (!empty($data['journal_id'])) {
-            $query->where('code_journal_id', $data['journal_id']);
-        }
-
-        $journal = !empty($data['journal_id']) ? CodeJournal::find($data['journal_id']) : CodeJournal::orderBy('code_journal')->first();
-        $exercice = !empty($data['exercice_id']) ? ExerciceComptable::find($data['exercice_id']) : ExerciceComptable::orderBy('date_debut', 'desc')->first();
-
-        $ecritures = $query->orderBy('date', 'desc')->orderBy('n_saisie', 'desc')->get();
-        $totalDebit = $ecritures->sum('debit');
-        $totalCredit = $ecritures->sum('credit');
-
-        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
-            ->orderByRaw("LEFT(numero_de_compte, 1) ASC")
-            ->orderBy('numero_de_compte', 'asc')
-            ->get();
-
-        $tiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule')
-            ->orderByRaw("LEFT(numero_de_tiers, 1) ASC")
-            ->orderBy('numero_de_tiers', 'asc')
-            ->get();
-
-        $postesTresorerie = CompteTresorerie::orderBy('name', 'asc')->get();
-        $entries = $ecritures;
-
-        $lastSaisie = EcritureComptable::max('n_saisie');
-        $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
-
-        return view('accounting_entry_list', compact(
-            'exercices', 'code_journaux', 'ecritures', 'entries', 'journal', 
-            'exercice', 'totalDebit', 'totalCredit', 'plansComptables', 
-            'tiers', 'postesTresorerie', 'nextSaisieNumber', 'data'
-        ));
-    }
-
     public function getNextSaisieNumber(Request $request)
     {
         try {
-            if (!session()->has('current_saisie_number')) {
-                $lastSaisie = EcritureComptable::max('n_saisie');
-                $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
-                session(['current_saisie_number' => $nextSaisieNumber]);
-            } else {
-                $nextSaisieNumber = session('current_saisie_number');
-            }
+            $lastSaisie = EcritureComptable::max('n_saisie');
+            $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+            session(['current_saisie_number' => $nextSaisieNumber]);
 
-            return response()->json([
-                'success' => true,
-                'nextSaisieNumber' => $nextSaisieNumber
-            ]);
+            return response()->json(['success' => true, 'nextSaisieNumber' => $nextSaisieNumber]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la récupération du numéro de saisie'
-            ], 500);
-        }
-    }
-
-    public function store(Request $request)
-    {
-        $data = $request->all();
-        
-        $request->validate([
-            'ecritures' => 'required|array|min:1',
-            'ecritures.*.date' => 'required|date',
-            'ecritures.*.n_saisie' => 'required|string|max:12',
-            'ecritures.*.code_journal_id' => 'required|exists:code_journals,id',
-            'ecritures.*.plan_comptable_id' => 'required|exists:plan_comptables,id',
-            'ecritures.*.debit' => 'required|numeric|min:0',
-            'ecritures.*.credit' => 'required|numeric|min:0',
-        ]);
-
-        DB::beginTransaction();
-        
-        try {
-            $savedEcritures = [];
-            $user = auth()->user();
-            
-            foreach ($request->ecritures as $ecriture) {
-                $savedEcriture = EcritureComptable::create([
-                    'date' => $ecriture['date'],
-                    'n_saisie' => $ecriture['n_saisie'],
-                    'description_operation' => $ecriture['description_operation'] ?? null,
-                    'reference_piece' => $ecriture['reference_piece'] ?? null,
-                    'plan_comptable_id' => $ecriture['plan_comptable_id'],
-                    'plan_tiers_id' => $ecriture['plan_tiers_id'] ?? null,
-                    'code_journal_id' => $ecriture['code_journal_id'],
-                    'debit' => $ecriture['debit'],
-                    'credit' => $ecriture['credit'],
-                    'piece_justificatif' => $ecriture['piece_justificatif'] ?? null,
-                    'plan_analytique' => $ecriture['plan_analytique'] ?? false,
-                    'user_id' => $user->id,
-                    'company_id' => $user->company_id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                
-                $savedEcritures[] = $savedEcriture;
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Écritures enregistrées avec succès',
-                'data' => $savedEcritures
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Une erreur est survenue lors de l\'enregistrement',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }
