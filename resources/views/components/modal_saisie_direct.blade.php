@@ -227,7 +227,7 @@
         $('.selectpicker').selectpicker('refresh');
     });
 });
-    const accounting_entry_realSaisisUrl = "{{ route('accounting_entry_list') }}";
+    const accounting_entry_realUrl = "{{ route('accounting_entry_real') }}";
     const journaux_saisisfindSaisisUrl = "{{ route('journaux_saisis.find') }}";
 
     document.getElementById("btnRedirectToSaisie").addEventListener("click", function() {
@@ -282,7 +282,7 @@
                 id_code: selectedOption.value,
             });
 
-            window.location.href = accounting_entry_realSaisisUrl + "?" + params.toString();
+            window.location.href = accounting_entry_realUrl + "?" + params.toString();
         })();
     });
 </script>
