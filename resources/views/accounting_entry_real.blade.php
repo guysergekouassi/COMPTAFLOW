@@ -398,22 +398,57 @@
     }
 
     // Fonction pour enregistrer les écritures
-    function enregistrerEcritures() {
+    async function enregistrerEcritures() {
         const tbody = document.querySelector('#tableEcritures tbody');
-        if (tbody) {
-            const rows = tbody.getElementsByTagName('tr');
+        if (!tbody) {
+            alert('Erreur : Tableau des écritures introuvable.');
+            return;
+        }
 
-            if (rows.length === 0) {
-                alert('Aucune écriture à enregistrer.');
-                return;
-            }
+        const rows = tbody.getElementsByTagName('tr');
+        if (rows.length === 0) {
+            alert('Aucune écriture à enregistrer.');
+            return;
+        }
 
-            alert('Écritures enregistrées avec succès !');
+        const ecritures = [];
+        for (let row of rows) {
+            const cells = row.getElementsByTagName('td');
+            ecritures.push({
+                date: cells[0]?.textContent || '',
+                n_saisie: cells[1]?.textContent || '',
+                journal: cells[2]?.textContent || '',
+                libelle: cells[3]?.textContent || '',
+                reference_piece: cells[4]?.textContent || '',
+                compte_general: cells[5]?.textContent || '',
+                compte_tiers: cells[6]?.textContent || '',
+                debit: cells[7]?.textContent || '',
+                credit: cells[8]?.textContent || '',
+                piece_justificatif: cells[9]?.textContent || '',
+                analytique: cells[10]?.textContent || '',
+            });
+        }
 
-            setTimeout(() => {
+        try {
+            const response = await fetch('/api/ecritures', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ecritures }),
+            });
+
+            if (response.ok) {
+                alert('Écritures enregistrées avec succès !');
                 tbody.innerHTML = '';
                 updateTotals();
-            }, 2000);
+            } else {
+                console.error('Erreur API :', response.status, response.statusText);
+                alert('Erreur lors de l\'enregistrement des écritures.');
+            }
+        } catch (error) {
+            console.error('Erreur réseau ou serveur :', error);
+            alert('Une erreur est survenue lors de l\'enregistrement.');
         }
     }
 
@@ -430,4 +465,96 @@
             alert('Écriture supprimée avec succès !');
         }
     }
+
+    // Updated script to handle credit/debit exclusivity, auto-date, journal code, and confirmation message
+    document.addEventListener('DOMContentLoaded', function() {
+        const nSaisieField = document.getElementById('n_saisie');
+        const dateField = document.getElementById('date');
+        const debitField = document.getElementById('debit');
+        const creditField = document.getElementById('credit');
+        const journalCodeField = document.getElementById('code_journal');
+        const tableBody = document.querySelector('#tableEcritures tbody');
+
+        // Initialize numéro de saisie
+        if (nSaisieField) {
+            let currentNumber = localStorage.getItem('currentSaisieNumber') || '000000000000';
+            currentNumber = (parseInt(currentNumber, 10) + 1).toString().padStart(12, '0');
+            nSaisieField.value = currentNumber;
+            nSaisieField.readOnly = true;
+            localStorage.setItem('currentSaisieNumber', currentNumber);
+        }
+
+        // Set current date and make it non-editable
+        if (dateField) {
+            const today = new Date().toISOString().split('T')[0];
+            dateField.value = today;
+            dateField.readOnly = true;
+        }
+
+        // Ensure exclusivity between debit and credit
+        if (debitField && creditField) {
+            debitField.addEventListener('input', function() {
+                if (debitField.value) {
+                    creditField.value = '';
+                    creditField.readOnly = true;
+                } else {
+                    creditField.readOnly = false;
+                }
+            });
+
+            creditField.addEventListener('input', function() {
+                if (creditField.value) {
+                    debitField.value = '';
+                    debitField.readOnly = true;
+                } else {
+                    debitField.readOnly = false;
+                }
+            });
+        }
+
+        // Add journal code to the table
+        function ajouterEcriture() {
+            if (!tableBody) {
+                alert('Tableau des écritures introuvable.');
+                return;
+            }
+
+            const newRow = tableBody.insertRow();
+            newRow.innerHTML = `
+                <td>${dateField.value}</td>
+                <td>${nSaisieField.value}</td>
+                <td>${journalCodeField ? journalCodeField.value : ''}</td>
+                <td>${debitField.value || ''}</td>
+                <td>${creditField.value || ''}</td>
+            `;
+
+            // Clear fields after adding
+            debitField.value = '';
+            creditField.value = '';
+            creditField.readOnly = false;
+            debitField.readOnly = false;
+        }
+
+        // Confirm creation and clear table
+        function enregistrerEcritures() {
+            if (tableBody && tableBody.rows.length > 0) {
+                alert('Écritures enregistrées avec succès !');
+                tableBody.innerHTML = '';
+            } else {
+                alert('Aucune écriture à enregistrer.');
+            }
+        }
+
+        // Attach functions to buttons
+        const btnAjouter = document.getElementById('btnAjouter');
+        const btnEnregistrer = document.getElementById('btnEnregistrer');
+
+        if (btnAjouter) {
+            btnAjouter.addEventListener('click', ajouterEcriture);
+        }
+
+        if (btnEnregistrer) {
+            btnEnregistrer.addEventListener('click', enregistrerEcritures);
+        }
+    });
 </script>
