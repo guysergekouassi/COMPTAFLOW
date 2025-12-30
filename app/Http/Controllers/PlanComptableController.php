@@ -255,12 +255,22 @@ class PlanComptableController extends Controller
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
         
-        $plans = PlanComptable::where('company_id', $companyId)
-            ->select(['id', 'numero_de_compte', 'intitule', 'type_de_compte', 'created_at']);
+        $query = PlanComptable::where('company_id', $companyId)
+            ->select([
+                'id',
+                'numero_de_compte',
+                'intitule',
+                'type_de_compte',
+                'created_at',
+                'adding_strategy'
+            ]);
             
-        return DataTables::of($plans)
+        return DataTables::of($query)
             ->addColumn('actions', function($plan) {
                 return view('components.actions-plan-comptable', compact('plan'))->render();
+            })
+            ->editColumn('created_at', function($plan) {
+                return $plan->created_at->format('Y-m-d H:i:s');
             })
             ->rawColumns(['actions'])
             ->make(true);

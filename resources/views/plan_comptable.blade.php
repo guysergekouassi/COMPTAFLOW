@@ -305,41 +305,7 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
-                                        @forelse ($plansComptables as $plan)
-                                        <tr class="table-row group">
-                                            <td class="px-8 py-6">
-                                                <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
-                                            </td>
-                                            <td class="px-8 py-6">
-                                                <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>
-                                            </td>
-
-                                            <td class="px-8 py-6">
-    @php
-        $typeClasses = [
-            'actif' => 'bg-green-100 text-green-800',
-            'passif' => 'bg-blue-100 text-blue-800',
-            'produit' => 'bg-purple-100 text-purple-800',
-            'charge' => 'bg-yellow-100 text-yellow-800',
-            'divers' => 'bg-gray-100 text-gray-800'
-        ];
-        $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
-    @endphp
-    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
-        {{ ucfirst($plan->type_de_compte) }}
-    </span>
-    <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
-</td>
-
-                                            <td class="px-8 py-6">
-                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
-                                            </td>
-                                        </tr>
-                                        @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center py-8 text-muted">Aucun plan comptable par défaut trouvé.</td>
-                                        </tr>
-                                        @endforelse
+                                        <!-- Les données seront chargées dynamiquement par DataTables -->
                                     </tbody>
                                 </table>
                             </div>
@@ -566,15 +532,56 @@
                 table = $('#planComptableTable').DataTable({
                     processing: true,
                     serverSide: true,
-                    ajax: "{{ route('plan_comptable.datatable') }}",
+                    ajax: {
+                        url: "{{ route('plan_comptable.datatable') }}",
+                        type: 'GET'
+                    },
                     columns: [
-                        { data: 'numero_de_compte', name: 'numero_de_compte' },
-                        { data: 'intitule', name: 'intitule' },
-                        { data: 'type_de_compte', name: 'type_de_compte' },
-                        { data: 'created_at', name: 'created_at' }
+                        { 
+                            data: 'numero_de_compte', 
+                            name: 'numero_de_compte',
+                            render: function(data, type, row) {
+                                return '<span class="font-mono text-lg font-bold text-blue-700">' + data + '</span>';
+                            }
+                        },
+                        { 
+                            data: 'intitule', 
+                            name: 'intitule',
+                            render: function(data) {
+                                return '<p class="font-medium text-slate-800">' + data + '</p>';
+                            }
+                        },
+                        { 
+                            data: 'type_de_compte', 
+                            name: 'type_de_compte',
+                            render: function(data) {
+                                const typeClasses = {
+                                    'actif': 'bg-green-100 text-green-800',
+                                    'passif': 'bg-blue-100 text-blue-800',
+                                    'produit': 'bg-purple-100 text-purple-800',
+                                    'charge': 'bg-yellow-100 text-yellow-800',
+                                    'divers': 'bg-gray-100 text-gray-800'
+                                };
+                                const typeClass = typeClasses[data.toLowerCase()] || 'bg-gray-100 text-gray-800';
+                                return '<span class="px-3 py-1 text-xs font-medium rounded-full ' + typeClass + '">' + 
+                                       data.charAt(0).toUpperCase() + data.slice(1) + 
+                                       '</span>';
+                            }
+                        },
+                        { 
+                            data: 'created_at', 
+                            name: 'created_at',
+                            render: function(data) {
+                                const date = new Date(data);
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const year = date.getFullYear();
+                                return '<span class="text-sm text-slate-600">' + day + '/' + month + '/' + year + '</span>';
+                            }
+                        }
                     ],
                     dom: 't',
-                    pageLength: 5,
+                    pageLength: 10,
                     language: {
                         url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json'
                     }
