@@ -303,7 +303,7 @@ public function getComptesParFlux(Request $request)
     $user = Auth::user();
     $typeFlux = $request->query('type');
 
-    Log::info("AJAX getComptesParFlux called. TypeFlux received: '" . $typeFlux . "'");
+   \Log::info("AJAX getComptesParFlux called. TypeFlux received: '" . $typeFlux . "'");
 
     $query = PlanComptable::select('id', 'numero_de_compte', 'intitule');
 
@@ -318,7 +318,7 @@ public function getComptesParFlux(Request $request)
               ->orWhere('numero_de_compte', 'like', '7%');
         });
     } elseif ($typeFlux && stripos($typeFlux, 'Investissement') !== false) {
-         Log::info("Matched: Investissement - Classes 2, 4, 5");
+         \Log::info("Matched: Investissement - Classes 2, 4, 5");
         $query->where(function($q) {
             // ✅ AJOUT : Classes 4 et 5
             $q->where('numero_de_compte', 'like', '2%')
@@ -326,7 +326,7 @@ public function getComptesParFlux(Request $request)
               ->orWhere('numero_de_compte', 'like', '5%');
         });
     } elseif ($typeFlux && stripos($typeFlux, 'Financement') !== false) {
-         Log::info("Matched: Financement - Classes 1, 4, 5");
+         \Log::info("Matched: Financement - Classes 1, 4, 5");
         $query->where(function($q) {
             // ✅ AJOUT : Classes 4 et 5
             $q->where('numero_de_compte', 'like', '1%')
@@ -335,12 +335,12 @@ public function getComptesParFlux(Request $request)
         });
     }
     else {
-         Log::info("No match found. Returning default limit 500.");
+         \Log::info("No match found. Returning default limit 500.");
          $query->limit(500);
     }
 
     $comptes = $query->orderBy('numero_de_compte', 'asc')->get();
-    Log::info("Returning " . $comptes->count() . " accounts.");
+    \Log::info("Returning " . $comptes->count() . " accounts.");
 
     return response()->json($comptes);
 }
