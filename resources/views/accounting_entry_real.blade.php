@@ -273,6 +273,44 @@
     </html>
 
 <script>
+// Fonction pour obtenir le prochain numéro de saisie (12 chiffres)
+function getNextSaisieNumber() {
+    // Récupérer le dernier numéro de saisie depuis le stockage local ou initialiser à 1
+    let lastNumber = localStorage.getItem('lastSaisieNumber');
+    let nextNumber = lastNumber ? parseInt(lastNumber, 10) : 0;
+    
+    // Formater le numéro sur 12 chiffres avec des zéros devant
+    return (nextNumber + 1).toString().padStart(12, '0');
+}
+
+// Fonction pour incrémenter le numéro de saisie
+function incrementSaisieNumber() {
+    const currentNumber = parseInt(document.getElementById('n_saisie').value || '0', 10);
+    const nextNumber = currentNumber + 1;
+    localStorage.setItem('lastSaisieNumber', nextNumber);
+    return nextNumber.toString().padStart(12, '0');
+}
+
+// Au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Définir la date du jour par défaut
+    const today = new Date().toISOString().split('T')[0];
+    const dateField = document.getElementById('date');
+    if (dateField) {
+        dateField.value = today;
+    }
+    
+    // Définir le numéro de saisie initial
+    const nSaisieField = document.getElementById('n_saisie');
+    if (nSaisieField) {
+        nSaisieField.value = getNextSaisieNumber();
+    }
+    
+    // Ajouter la classe 'form-control' si elle n'existe pas
+    if (nSaisieField && !nSaisieField.classList.contains('form-control')) {
+        nSaisieField.classList.add('form-control');
+    }
+});
     // Fonction globale pour ajouter une écriture
     function ajouterEcriture() {
         try {
@@ -414,16 +452,52 @@
         }
     }
 
+    // Fonction pour afficher des alertes stylisées
+    function showAlert(type, message) {
+        // Supprimer les alertes existantes
+        const existingAlerts = document.querySelectorAll('.custom-alert');
+        existingAlerts.forEach(alert => alert.remove());
+
+        // Créer l'élément d'alerte
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `custom-alert alert alert-${type} alert-dismissible fade show`;
+        alertDiv.role = 'alert';
+        
+        // Ajouter le contenu de l'alerte
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        // Positionner l'alerte en haut à droite
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+
+        // Ajouter l'alerte au body
+        document.body.appendChild(alertDiv);
+
+        // Supprimer automatiquement après 5 secondes
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+
     // Fonction pour enregistrer les écritures
     function enregistrerEcritures() {
         const tbody = document.querySelector('#tableEcritures tbody');
-        if (tbody) {
-            const rows = tbody.getElementsByTagName('tr');
+        if (!tbody) {
+            alert('Erreur: Tableau des écritures introuvable');
+            return;
+        }
 
-            if (rows.length === 0) {
-                alert('Aucune écriture à enregistrer.');
-                return;
-            }
+        const rows = tbody.getElementsByTagName('tr');
+        if (rows.length === 0) {
+            alert('Aucune écriture à enregistrer.');
+            return;
+        }
 
         // Récupérer les données du formulaire
         const formData = new FormData(document.getElementById('formEcriture'));
@@ -431,27 +505,56 @@
         const nSaisie = document.getElementById('n_saisie').value;
         const codeJournalId = formData.get('code_journal_id');
         const dateEcriture = formData.get('date');
-        const option = document.querySelector(`#comptesOptions option[value="${compteNumero}"]`);
-        const plan_comptable_id = option ? option.getAttribute('data-id') : null;
+        
+        // Vérifier que tous les champs requis sont présents
+        if (!dateEcriture || !nSaisie || !codeJournalId) {
+            showAlert('danger', 'Veuillez remplir tous les champs obligatoires.');
+            return;
+        }
+
         // Préparer les données pour l'envoi
         Array.from(rows).forEach(row => {
             const cells = row.cells;
             const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             
-            ecritures.push({
+            // Récupérer l'ID du plan comptable depuis l'attribut data-id de la cellule du compte
+           const compteCell = cells[5]; 
+         const planComptableId = compteCell.getAttribute('data-plan-comptable-id');
+            const tiersId = cells[6].getAttribute('data-tiers-id');
+            if (!planComptableId) {
+                showAlert('danger', 'Veuillez sélectionner un compte général valide pour chaque ligne.');
+                return;
+            }
+            
+            // Créer l'objet d'écriture avec tous les champs possibles
+            const ecriture = {
                 date: dateEcriture,
                 n_saisie: nSaisie,
                 description_operation: cells[3].textContent.trim(),
                 reference_piece: cells[4].textContent.trim(),
-              plan_comptable_id: plan_comptable_id,
-                plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
+                // Utiliser les deux formats pour la compatibilité
+                plan_comptable_id: planComptableId,
+                compte_general: planComptableId, // Pour la compatibilité ascendante
+                plan_tiers_id: tiersId || null,
+                compte_tiers: tiersId || null,   // Pour la compatibilité ascendante
                 code_journal_id: codeJournalId,
+                journal: codeJournalId,          // Pour la compatibilité ascendante
                 debit: debit,
                 credit: credit,
                 piece_justificatif: cells[9].textContent.trim(),
-                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0
-            });
+                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
+                analytique: cells[10].textContent.trim() === 'Oui' ? 'Oui' : 'Non' // Pour la compatibilité
+            };
+            
+            // Ajouter l'ID de l'exercice si disponible
+            const exerciceId = document.querySelector('input[name="id_exercice"]')?.value;
+            if (exerciceId) {
+                ecriture.exercices_comptables_id = exerciceId;
+                ecriture.exercice_id = exerciceId; // Pour la compatibilité
+            }
+            
+            ecritures.push(ecriture);
         });
 
         // Afficher les données dans la console pour le débogage
@@ -466,8 +569,8 @@
         btnEnregistrer.disabled = true;
         btnSpinner.classList.remove('d-none');
 
-        // Envoyer les données au serveur
-        fetch('{{ route("ecriture.store") }}', {
+        // Envoyer les données au serveur via la nouvelle route API
+        fetch('{{ route("api.ecriture.store") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -479,7 +582,15 @@
         })
         .then(response => {
             if (!response.ok) {
-                return response.json().then(err => { throw err; });
+                return response.json().then(err => { 
+                    let errorMessage = 'Erreur lors de l\'enregistrement';
+                    if (err.errors) {
+                        errorMessage += ': ' + Object.values(err.errors).flat().join(', ');
+                    } else if (err.message) {
+                        errorMessage += ': ' + err.message;
+                    }
+                    throw new Error(errorMessage);
+                });
             }
             return response.json();
         })
@@ -491,8 +602,20 @@
                 // Vider le tableau
                 tbody.innerHTML = '';
                 updateTotals();
-            }, 2000);
-        }
+                
+                showAlert('success', 'Écritures enregistrées avec succès !');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showAlert('danger', 'Erreur lors de l\'enregistrement: ' + (error.message || 'Veuillez réessayer'));
+        })
+        .finally(() => {
+            // Réinitialiser le bouton
+            btnText.textContent = 'Enregistrer';
+            btnEnregistrer.disabled = false;
+            btnSpinner.classList.add('d-none');
+        });
     }
 
     // Fonction pour modifier une écriture
@@ -508,16 +631,4 @@
             alert('Écriture supprimée avec succès !');
         }
     }
-
-    // Updated numéro de saisie to start at 000000000001 and be non-editable
-    document.addEventListener('DOMContentLoaded', function() {
-        const nSaisieField = document.getElementById('n_saisie');
-        if (nSaisieField) {
-            let currentNumber = localStorage.getItem('currentSaisieNumber') || '000000000000';
-            currentNumber = (parseInt(currentNumber, 10) + 1).toString().padStart(12, '0');
-            nSaisieField.value = currentNumber;
-            nSaisieField.readOnly = true; // Make the field non-editable
-            localStorage.setItem('currentSaisieNumber', currentNumber);
-        }
-    });
 </script>
