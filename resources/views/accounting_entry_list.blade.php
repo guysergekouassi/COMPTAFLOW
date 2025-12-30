@@ -459,13 +459,21 @@
                             <tfoot>
                                 <tr class="table-active fw-bold">
                                     <td colspan="7" class="text-end">TOTAL</td>
-                                     <td class="text-end" id="footerTotalDebit">
-                                         {{ isset($totalDebit) ? number_format($totalDebit, 2, ',', ' ') : '0,00' }}
-                                     </td>
-                                     <td class="text-end" id="footerTotalCredit">
-                                         {{ isset($totalCredit) ? number_format($totalCredit, 2, ',', ' ') : '0,00' }}
-                                     </td>
-                                    <td colspan="2"></td>
+                                    <td class="text-end" id="footerTotalDebit">
+                                        {{ number_format($totalDebit, 2, ',', ' ') }} FCFA
+                                    </td>
+                                    <td class="text-end" id="footerTotalCredit">
+                                        {{ number_format($totalCredit, 2, ',', ' ') }} FCFA
+                                    </td>
+                                    <td class="text-center">
+                                        @if(abs($totalDebit - $totalCredit) < 0.01)
+                                            <button type="button" id="saveEntriesBtn" class="btn btn-success btn-sm" onclick="saveAllEntries()">
+                                                <i class="fas fa-save me-2"></i>Enregistrer les écritures
+                                            </button>
+                                        @else
+                                            <span class="text-danger">Les totaux ne sont pas équilibrés</span>
+                                        @endif
+                                    </td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -843,7 +851,7 @@
     window.toggleAdvancedFilter = function() {
         const panel = document.getElementById('advancedFilterPanel');
         if (!panel) return;
-        panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+        panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
     };
 
     window.applyAdvancedFilters = function() {
@@ -1221,4 +1229,78 @@
             }
         }
     });
+    // Fonction pour enregistrer toutes les écritures
+    async function saveAllEntries() {
+        // Désactiver le bouton pour éviter les clics multiples
+        const saveBtn = document.getElementById('saveEntriesBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
+
+        try {
+            // Récupérer toutes les lignes du tableau
+            const rows = document.querySelectorAll('#tableEcritures tbody tr');
+            const entries = [];
+            
+            // Parcourir chaque ligne pour collecter les données
+            rows.forEach(row => {
+                // Ignorer les lignes vides ou de message
+                if (row.querySelector('td[colspan]')) return;
+                
+                const entry = {
+                    date: row.querySelector('td:nth-child(1)').textContent.trim(),
+                    n_saisie: row.querySelector('td:nth-child(2)').textContent.trim(),
+                    description: row.querySelector('td:nth-child(3)').textContent.trim(),
+                    reference: row.querySelector('td:nth-child(4)').textContent.trim(),
+                    compte_general: row.querySelector('td:nth-child(5)').textContent.trim(),
+                    compte_tiers: row.querySelector('td:nth-child(6)').textContent.trim(),
+                    debit: parseFloat(row.querySelector('td:nth-child(7)').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0,
+                    credit: parseFloat(row.querySelector('td:nth-child(8)').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0,
+                    // Ajoutez d'autres champs nécessaires ici
+                };
+                
+                entries.push(entry);
+            });
+
+            // Envoyer les données au serveur
+            const response = await fetch("{{ route('ecriture.store.multiple') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ entries })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Afficher un message de succès
+                Swal.fire({
+                    title: 'Succès !',
+                    text: 'Les écritures ont été enregistrées avec succès.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Recharger la page pour afficher les nouvelles écritures
+                    window.location.reload();
+                });
+            } else {
+                throw new Error(result.message || 'Erreur lors de l\'enregistrement des écritures');
+            }
+        } catch (error) {
+            console.error('Erreur lors de l\'enregistrement des écritures :', error);
+            
+            // Afficher un message d'erreur
+            Swal.fire({
+                title: 'Erreur',
+                text: error.message || 'Une erreur est survenue lors de l\'enregistrement des écritures.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        } finally {
+            // Réactiver le bouton
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les écritures';
+        }
+    }
 </script>
