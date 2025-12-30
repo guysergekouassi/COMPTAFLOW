@@ -462,85 +462,59 @@
         row.remove();
       }
 
-      function validerEcriture() {
-        const lignes = document.querySelectorAll(".ligne-ecriture");
-        let totalDebit = 0;
-        let totalCredit = 0;
-        let erreurs = [];
+     function validerEcriture() {
+    const lignes = document.querySelectorAll(".ligne-ecriture");
+    let ecritures = [];
+    
+    const journalId = document.getElementById('journal').value;
+    const dateSaisie = document.getElementById('dateEcriture').value;
+    const libelle = document.getElementById('libelleEcriture').value;
+    const reference = document.getElementById('referencePiece').value;
 
-        // Validation des lignes
-        lignes.forEach((ligne, index) => {
-          const debit = parseFloat(ligne.querySelector('.debit-input').value) || 0;
-          const credit = parseFloat(ligne.querySelector('.credit-input').value) || 0;
-          const compte = ligne.querySelector('.compte-input').value;
+    lignes.forEach((ligne) => {
+        const debit = parseFloat(ligne.querySelector('.debit-input').value) || 0;
+        const credit = parseFloat(ligne.querySelector('.credit-input').value) || 0;
+        const compte = ligne.querySelector('.compte-input').value;
 
-          if (!compte) {
-            erreurs.push(`Ligne ${index + 1}: Le numéro de compte est requis`);
-          }
-
-          totalDebit += debit;n
-          totalCredit += credit;
-        });
-
-        // Vérification de l'équilibre débit/crédit
-        if (Math.abs(totalDebit - totalCredit) > 0.01) {
-          erreurs.push(`L'équilibre débit/crédit n'est pas respecté: Débit=${totalDebit.toFixed(2)}, Crédit=${totalCredit.toFixed(2)}`);
+        if (compte && (debit > 0 || credit > 0)) {
+            ecritures.push({
+                date: dateSaisie,
+                description: libelle,
+                reference: reference,
+                compte_general: compte, // Le contrôleur l'utilisera pour chercher plan_comptable_id
+                debit: debit,
+                credit: credit,
+                journaux_saisis_id: journalId,
+                analytique: 'Non'
+            });
         }
+    });
 
-        if ( erreurs.length > 0) {
-          alert('Erreurs de validation:\n' + erreurs.join('\n'));
-          return;
+    if (ecritures.length === 0) {
+        alert("Veuillez remplir au moins une ligne d'écriture.");
+        return;
+    }
+
+    // Envoi au serveur
+    fetch("{{ route('ecritures-comptables.store-multiple') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+        },
+        body: JSON.stringify({ ecritures: ecritures })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert("Succès : " + data.message);
+            window.location.reload();
+        } else {
+            alert("Erreur : " + (data.error || "Une erreur est survenue"));
         }
-
-        // Simulation d'enregistrement
-        const ecriture = {
-          date: document.getElementById('dateEcriture').value,
-          journal: document.getElementById('journal').value,
-          reference: document.getElementById('referencePiece').value,
-          libelle: document.getElementById('libelleEcriture').value,
-          fichier: fichierSelectionne,
-          lignes: Array.from(lignes).map(ligne => ({
-            compte: ligne.querySelector('.compte-input').value,
-            intitule: ligne.querySelector('.intitule-input').value,
-            debit: parseFloat(ligne.querySelector('.debit-input').value) || 0,
-            credit: parseFloat(ligne.querySelector('.credit-input').value) || 0
-          }))
-        };
-
-        console.log('Écriture à enregistrer:', ecriture);
-
-        // Fermer le modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalCenterCreate'));
-        modal.hide();
-
-        // Réinitialiser le formulaire
-        document.getElementById('dateEcriture').value = '';
-        document.getElementById('journal').value = '';
-        document.getElementById('referencePiece').value = '';
-        document.getElementById('libelleEcriture').value = '';
-        document.getElementById('compteGeneral').value = '';
-        document.getElementById('pieceFile').value = '';
-        fichierSelectionne = null;
-
-        // Réinitialiser le tableau
-        const tbody = document.querySelector("#lignesEcritureTable tbody");
-        tbody.innerHTML = `
-          <tr class="ligne-ecriture">
-            <td><input type="text" class="form-control compte-input" placeholder="ex: 401" required /></td>
-            <td><input type="text" class="form-control intitule-input" placeholder="Intitulé compte" readonly /></td>
-            <td><input type="number" class="form-control debit-input" placeholder="0.00" step="0.01" /></td>
-            <td><input type="number" class="form-control credit-input" placeholder="0.00" step="0.01" /></td>
-            <td><span class="piece-display">-</span></td>
-            <td>
-              <button type="button" class="btn btn-sm btn-danger" onclick="supprimerLigne(this)">
-                <i class="bx bx-trash"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-
-        alert('Écriture enregistrée avec succès!');
-      }
+    })
+    .catch(error => console.error('Erreur:', error));
+}
 
       // Gestion de l'affichage des champs de trésorerie selon le journal
       document.addEventListener('DOMContentLoaded', function() {
