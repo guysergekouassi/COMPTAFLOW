@@ -13,10 +13,6 @@ use App\Models\PlanComptable;
 use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
-<<<<<<< HEAD
-use App\Models\tresoreries\Tresoreries;
-=======
->>>>>>> e75dd97871a7b3f1790f1751c44c99b0e43a5fb9
 use Illuminate\Support\Facades\DB;
 
 class EcritureComptableController extends Controller
@@ -62,322 +58,15 @@ class EcritureComptableController extends Controller
         ));
     }
 
-<<<<<<< HEAD
-    public function showSaisieModal()
-    {
-        $user = Auth::user();
-        
-        // Récupérer l'ID de la société active (gestion du switch admin)
-        $companyId = session('current_company_id', $user->company_id);
-        
-        // Récupérer les exercices uniques par intitulé, triés par date de début décroissante
-        $exercices = ExerciceComptable::where('company_id', $companyId)
-            ->orderBy('date_debut', 'desc')
-            ->get()
-            ->unique('intitule')
-            ->values();
-
-        // Récupérer l'exercice actif (non clôturé) ou le premier disponible
-        $exerciceActif = $exercices->firstWhere('cloturer', 0) ?? $exercices->first();
-
-        // Récupérer les journaux pour la société active
-        $code_journaux = CodeJournal::where('company_id', $companyId)
-            ->orderBy('code_journal', 'asc')
-            ->get()
-            ->unique('code_journal');
-
-        return view('components.modal_saisie_direct', [
-            'exercices' => $exercices,
-            'code_journaux' => $code_journaux,
-            'exerciceActif' => $exerciceActif,
-            'companyId' => $companyId
-        ]);
-    }
-
- public function storeMultiple(Request $request)
-{
-    // Initialiser une liste d'erreurs pour le retour
-    $errors = [];
-    
-    // Récupérer le numéro de saisie de la session ou en générer un nouveau
-    if (!session()->has('current_saisie_number')) {
-        $lastSaisie = EcritureComptable::max('n_saisie');
-        $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
-        session(['current_saisie_number' => $nextSaisieNumber]);
-    } else {
-        $nextSaisieNumber = session('current_saisie_number');
-    }
-
-    try {
-        // Utiliser le numéro de saisie de la session
-        $nextSaisieNumber = session('current_saisie_number');
-        
-        foreach ($request->ecritures as $index => $ecriture) {
-            $pieceJustificatifName = null;
-
-            // ... (GESTION FICHIER)
-
-            // 1. Gestion du Fichier Justificatif
-            if ($request->hasFile("ecritures.$index.piece_justificatif")) {
-                $file = $request->file("ecritures.$index.piece_justificatif");
-                $pieceJustificatifName = time() . '_' . $file->getClientOriginalName();
-                $file->move(public_path('justificatifs'), $pieceJustificatifName);
-            }
-
-
-            // 2. Préparation et Sécurisation des variables (LE CODE QUE VOUS AVEZ DÉJÀ)
-            $debit = (float)($ecriture['debit'] ?? 0);
-            $credit = (float)($ecriture['credit'] ?? 0);
-
-            $compteTresorerieId = $ecriture['tresorerieFields'] ?? null;
-            if ($compteTresorerieId === "" || is_null($compteTresorerieId)) {
-                $compteTresorerieId = null;
-            }
-
-            $typeFlux = $ecriture['typeFlux'] ?? null;
-            if ($typeFlux === "" || is_null($typeFlux)) {
-                $typeFlux = null;
-            }
-
-            // 3. LOGIQUE DE DÉDUCTION DU TYPE DE FLUX (inchangée)
-            if (!is_null($compteTresorerieId) && is_null($typeFlux)) {
-
-                if ($debit > 0) {
-                    $typeFlux = 'encaissement';
-                }
-                elseif ($credit > 0) {
-                    $typeFlux = 'decaissement';
-                }
-            }
-
-            //NOUVELLE LOGIQUE
-            $compteGeneralId = $ecriture['compte_general'] ?? null;
-
-            if (is_null($typeFlux) && $compteGeneralId) {
-                // Récupérer le numéro de compte général
-                $planComptable = PlanComptable::find($compteGeneralId);
-
-                if ($planComptable) {
-                    $classeFluxDeterminee = $this->determineFluxClasse($planComptable->numero_de_compte);
-
-
-                    if (is_null($compteTresorerieId)) {
-                        $typeFlux = $classeFluxDeterminee;
-                    }
-                }
-            }
-
-
-
-            // 4. Insertion de l'écriture complète
-            try {
-                 EcritureComptable::create([
-                    'date' => $ecriture['date'],
-                    'n_saisie' => $nextSaisieNumber, // Utilisation du même numéro pour toutes les écritures
-                    'description_operation' => ucfirst(strtolower($ecriture['description'])),
-                    'reference_piece' => strtoupper($ecriture['reference']),
-                    'plan_comptable_id' => $ecriture['compte_general'],
-                    'plan_tiers_id' => $ecriture['compte_tiers'] ?? null,
-
-                    // 'compte_tresorerie_id' => $compteTresorerieId,
-                    'compte_tresorerie_id' => $compteTresorerieId,
-                    'type_flux' => $typeFlux,
-
-                    'debit' => $debit,
-                    'credit' => $credit,
-
-                    'plan_analytique' => $ecriture['analytique'] === 'Oui' ? 1 : 0,
-                    'code_journal_id' => $ecriture['journal'] ?? null,
-                    'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? null,
-                    'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? null,
-                    'piece_justificatif' => $pieceJustificatifName,
-                    // 'user_id' et 'company_id' sont maintenant gérés par BelongsToTenant
-                ]);
-            } catch (\Illuminate\Database\QueryException $e) {
-                // CAPTURE DE L'ERREUR SPÉCIFIQUE À LA LIGNE
-                $errorMessage = "Erreur à la ligne " . ($index + 1) . " (Compte " . $ecriture['compte_general'] . "): " . $e->getMessage();
-                // Si une ligne échoue, nous arrêtons et renvoyons l'erreur
-                return response()->json([
-                    'error' => 'Échec de l\'enregistrement de la saisie batch.',
-                    'details' => $errorMessage
-                ], 500);
-            }
-        }
-
-        return response()->json(['message' => 'Toutes les écritures ont été enregistrées avec succès.']);
-    } catch (\Exception $e) {
-        // Erreur inattendue (non liée à la base de données)
-        return response()->json([
-            'error' => 'Une erreur générale est survenue lors de l\'enregistrement.',
-            'details' => $e->getMessage()
-        ], 500);
-    }
-}
-
-public function getComptesParFlux(Request $request)
-{
-    $user = Auth::user();
-    $typeFlux = $request->query('type');
-
-    $query = PlanComptable::select('id', 'numero_de_compte', 'intitule');
-
-    // Filtrage selon la logique comptable des flux de trésorerie
-    if ($typeFlux && stripos($typeFlux, 'Operationnelles') !== false) {
-        $query->where(function($q) {
-            // ✅ AJOUT : Classes 4 et 5
-            $q->where('numero_de_compte', 'like', '4%')
-              ->orWhere('numero_de_compte', 'like', '5%')
-              ->orWhere('numero_de_compte', 'like', '6%')
-              ->orWhere('numero_de_compte', 'like', '7%');
-        });
-    } elseif ($typeFlux && stripos($typeFlux, 'Investissement') !== false) {
-        $query->where(function($q) {
-            // ✅ AJOUT : Classes 4 et 5
-            $q->where('numero_de_compte', 'like', '2%')
-              ->orWhere('numero_de_compte', 'like', '4%')
-              ->orWhere('numero_de_compte', 'like', '5%');
-        });
-    } elseif ($typeFlux && stripos($typeFlux, 'Financement') !== false) {
-        $query->where(function($q) {
-            // ✅ AJOUT : Classes 4 et 5
-            $q->where('numero_de_compte', 'like', '1%')
-              ->orWhere('numero_de_compte', 'like', '4%')
-              ->orWhere('numero_de_compte', 'like', '5%');
-        });
-    }
-    else {
-         $query->limit(500);
-    }
-
-    $comptes = $query->orderBy('numero_de_compte', 'asc')->get();
-
-    return response()->json($comptes);
-}
-
-
-
-
-
-    public function list(Request $request)
-    {
-        $user = Auth::user();
-        $data = $request->all();
-
-        // Récupérer les données de base
-        $exercices = ExerciceComptable::get()->unique('intitule');
-        $code_journaux = CodeJournal::get()->unique('code_journal');
-
-        // Construire la requête pour les écritures
-        $query = EcritureComptable::query();
-
-        // Appliquer les filtres
-        if (!empty($data['exercice_id'])) {
-            $query->where('exercice_id', $data['exercice_id']);
-        }
-
-        if (!empty($data['mois'])) {
-            $query->whereMonth('date', $data['mois']);
-        }
-
-        if (!empty($data['journal_id'])) {
-            $query->where('code_journal_id', $data['journal_id']);
-        }
-
-        $journal = null;
-        if (!empty($data['journal_id'])) {
-            $journal = CodeJournal::find($data['journal_id']);
-        }
-        if ($journal === null) {
-            $journal = CodeJournal::orderBy('code_journal')->first();
-        }
-
-        $exercice = null;
-        if (!empty($data['exercice_id'])) {
-            $exercice = ExerciceComptable::find($data['exercice_id']);
-        }
-        if ($exercice === null) {
-            $exercice = ExerciceComptable::orderBy('date_debut', 'desc')->first();
-        }
-
-        // Récupérer les écritures
-        $ecritures = $query->orderBy('date', 'desc')->orderBy('n_saisie', 'desc')->get();
-
-        // Calculer les totaux
-        $totalDebit = $ecritures->sum('debit');
-        $totalCredit = $ecritures->sum('credit');
-
-        // Récupérer les données pour les formulaires
-        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
-            ->orderByRaw("LEFT(numero_de_compte, 1) ASC")
-            ->orderBy('numero_de_compte', 'asc')
-            ->get();
-
-        $tiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule')
-            ->orderByRaw("LEFT(numero_de_tiers, 1) ASC")
-            ->orderBy('numero_de_tiers', 'asc')
-            ->get();
-
-        $postesTresorerie = CompteTresorerie::orderBy('name', 'asc')
-            ->get();
-
-        $entries = $ecritures;
-
-        // Génération automatique du n° de saisie (12 chiffres, unique)
-    $lastSaisie = EcritureComptable::max('n_saisie');
-    $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
-
-    return view('accounting_entry_list', compact(
-        'exercices',
-        'code_journaux',
-        'ecritures',
-        'entries',
-        'journal',
-        'exercice',
-        'totalDebit',
-        'totalCredit',
-        'plansComptables',
-        'tiers',
-        'postesTresorerie',
-        'nextSaisieNumber',
-        'data'
-    ));
-    }
-
-=======
->>>>>>> e75dd97871a7b3f1790f1751c44c99b0e43a5fb9
     /**
      * Détermine le flux selon la classe du compte (Indispensable pour éviter l'erreur 500)
      */
-<<<<<<< HEAD
-    public function getNextSaisieNumber(Request $request)
-    {
-        try {
-            if (!session()->has('current_saisie_number')) {
-                $lastSaisie = EcritureComptable::max('n_saisie');
-                $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
-                session(['current_saisie_number' => $nextSaisieNumber]);
-            } else {
-                $nextSaisieNumber = session('current_saisie_number');
-            }
-
-            return response()->json([
-                'success' => true,
-                'nextSaisieNumber' => $nextSaisieNumber
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la récupération du numéro de saisie'
-            ], 500);
-        }
-=======
     private function determineFluxClasse($numeroCompte) {
         $classe = substr($numeroCompte, 0, 1);
         if (in_array($classe, ['6', '7'])) return 'Operationnelles';
         if ($classe == '2') return 'Investissement';
         if ($classe == '1') return 'Financement';
         return null;
->>>>>>> e75dd97871a7b3f1790f1751c44c99b0e43a5fb9
     }
 
     /**
@@ -385,27 +74,6 @@ public function getComptesParFlux(Request $request)
      */
     public function store(Request $request)
     {
-<<<<<<< HEAD
-        // Récupérer les données JSON brutes
-        $data = $request->all();
-        
-        // Journalisation pour le débogage
-        
-        // Valider les données
-        $validated = $request->validate([
-            'ecritures' => 'required|array|min:1',
-            'ecritures.*.date' => 'required|date',
-            'ecritures.*.n_saisie' => 'required|string|max:12',
-            'ecritures.*.code_journal_id' => 'required|exists:code_journals,id',
-            'ecritures.*.plan_comptable_id' => 'required|exists:plan_comptables,id',
-            'ecritures.*.debit' => 'required|numeric|min:0',
-            'ecritures.*.credit' => 'required|numeric|min:0',
-        ]);
-
-        DB::beginTransaction();
-        
-=======
->>>>>>> e75dd97871a7b3f1790f1751c44c99b0e43a5fb9
         try {
             DB::beginTransaction();
             
@@ -487,16 +155,7 @@ public function getComptesParFlux(Request $request)
             
         } catch (\Exception $e) {
             DB::rollBack();
-<<<<<<< HEAD
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Une erreur est survenue lors de l\'enregistrement des écritures',
-                'error' => $e->getMessage()
-            ], 500);
-=======
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
->>>>>>> e75dd97871a7b3f1790f1751c44c99b0e43a5fb9
         }
     }
 
