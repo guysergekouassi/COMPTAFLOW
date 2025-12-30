@@ -160,7 +160,7 @@ class EcritureComptableController extends Controller
                     'plan_comptable_id' => $planComptableId,
                     'plan_tiers_id' => $ecriture['plan_tiers_id'] ?? $ecriture['compte_tiers'] ?? null,
                     'compte_tresorerie_id' => $compteTresorerieId,
-                    'type_flux' => $typeFlux,
+                    'type_flux' => $typeFlux ? strtolower($typeFlux) : null,
                     'debit' => $debit,
                     'credit' => $credit,
                     'plan_analytique' => (isset($ecriture['plan_analytique']) && $ecriture['plan_analytique'] === 'Oui') || ($ecriture['analytique'] ?? 'Non') === 'Oui' ? 1 : 0,
