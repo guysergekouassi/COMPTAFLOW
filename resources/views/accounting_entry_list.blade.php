@@ -467,11 +467,21 @@
                                     </td>
                                     <td class="text-center">
                                         @if(abs($totalDebit - $totalCredit) < 0.01)
-                                            <button type="button" id="saveEntriesBtn" class="btn btn-success btn-sm" onclick="saveAllEntries()">
-                                                <i class="fas fa-save me-2"></i>Enregistrer les écritures
-                                            </button>
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <button type="button" id="addEntryBtn" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal">
+                                                    <i class="fas fa-plus me-1"></i>Ajouter
+                                                </button>
+                                                <button type="button" id="saveEntriesBtn" class="btn btn-success btn-sm" onclick="saveAllEntries()">
+                                                    <i class="fas fa-save me-1"></i>Enregistrer
+                                                </button>
+                                            </div>
                                         @else
-                                            <span class="text-danger">Les totaux ne sont pas équilibrés</span>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <button type="button" id="addEntryBtn" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nouvelleEcritureModal">
+                                                    <i class="fas fa-plus me-1"></i>Ajouter
+                                                </button>
+                                                <span class="text-danger ms-2">Les totaux ne sont pas équilibrés</span>
+                                            </div>
                                         @endif
                                     </td>
                                 </tr>
@@ -1306,7 +1316,7 @@
         } finally {
             // Réactiver le bouton
             saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les écritures';
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer ';
         }
     }
 </script>
