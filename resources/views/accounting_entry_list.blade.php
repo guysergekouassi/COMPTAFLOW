@@ -1246,10 +1246,22 @@
     });
     // Fonction pour enregistrer toutes les écritures
     async function saveAllEntries() {
+        console.log('Début de la fonction saveAllEntries');
+        
         // Désactiver le bouton pour éviter les clics multiples
         const saveBtn = document.getElementById('saveEntriesBtn');
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
+
+        // Afficher un indicateur de chargement
+        Swal.fire({
+            title: 'Enregistrement en cours',
+            text: 'Veuillez patienter...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
         try {
             // Récupérer toutes les lignes du tableau
@@ -1257,65 +1269,130 @@
             const entries = [];
             
             // Parcourir chaque ligne pour collecter les données
-            rows.forEach(row => {
+            rows.forEach((row, index) => {
                 // Ignorer les lignes vides ou de message
                 if (row.querySelector('td[colspan]')) return;
+
+                // Récupérer les données de la ligne
+                const date = row.querySelector('td:nth-child(1)').textContent.trim();
+                const n_saisie = row.querySelector('td:nth-child(2)').textContent.trim();
+                const description = row.querySelector('td:nth-child(3)').textContent.trim();
+                const reference = row.querySelector('td:nth-child(4)').textContent.trim();
+                const compte_general = row.querySelector('td:nth-child(5)').textContent.trim();
+                const compte_tiers = row.querySelector('td:nth-child(6)').textContent.trim();
+                const debit = parseFloat(row.querySelector('td:nth-child(7)').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+                const credit = parseFloat(row.querySelector('td:nth-child(8)').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+
+                // Extraire l'ID du compte général (supposé être avant le tiret)
+                const compteGeneralId = compte_general.split(' - ')[0];
                 
+                // Extraire l'ID du compte tiers s'il existe
+                const compteTiersId = compte_tiers && compte_tiers !== '-' ? compte_tiers.split(' - ')[0] : null;
+
                 const entry = {
-                    date: row.querySelector('td:nth-child(1)').textContent.trim(),
-                    n_saisie: row.querySelector('td:nth-child(2)').textContent.trim(),
-                    description: row.querySelector('td:nth-child(3)').textContent.trim(),
-                    reference: row.querySelector('td:nth-child(4)').textContent.trim(),
-                    compte_general: row.querySelector('td:nth-child(5)').textContent.trim(),
-                    compte_tiers: row.querySelector('td:nth-child(6)').textContent.trim(),
-                    debit: parseFloat(row.querySelector('td:nth-child(7)').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0,
-                    credit: parseFloat(row.querySelector('td:nth-child(8)').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0,
-                    // Ajoutez d'autres champs nécessaires ici
+                    date: date,
+                    n_saisie: n_saisie,
+                    description_operation: description,
+                    reference_piece: reference,
+                    plan_comptable_id: compteGeneralId,
+                    plan_tiers_id: compteTiersId,
+                    debit: debit,
+                    credit: credit,
+                    // Ajouter l'ID de l'exercice si nécessaire
+                    exercice_comptable_id: document.querySelector('select[name="exercice_id"]')?.value,
+                    // Ajouter l'ID de l'utilisateur
+                    user_id: {{ auth()->id() }},
+                    // Ajouter la date de création
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
                 };
                 
+                console.log(`Entrée ${index + 1}:`, entry);
                 entries.push(entry);
             });
+
+            if (entries.length === 0) {
+                throw new Error('Aucune écriture à enregistrer');
+            }
+
+            console.log('Données à envoyer :', { ecritures: entries });
+
+            // Récupérer le token CSRF
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                throw new Error('Token CSRF manquant');
+            }
 
             // Envoyer les données au serveur
             const response = await fetch("{{ route('ecriture.store.multiple') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 },
-                body: JSON.stringify({ entries })
+                body: JSON.stringify({ ecritures: entries })
             });
 
-            const result = await response.json();
+            console.log('Réponse du serveur :', response);
+
+            const result = await response.json().catch(error => {
+                console.error('Erreur lors de la lecture de la réponse JSON :', error);
+                throw new Error('Erreur lors de la lecture de la réponse du serveur');
+            });
+
+            console.log('Résultat du serveur :', result);
 
             if (response.ok) {
                 // Afficher un message de succès
-                Swal.fire({
+                await Swal.fire({
                     title: 'Succès !',
-                    text: 'Les écritures ont été enregistrées avec succès.',
+                    text: result.message || 'Les écritures ont été enregistrées avec succès.',
                     icon: 'success',
                     confirmButtonText: 'OK'
-                }).then(() => {
-                    // Recharger la page pour afficher les nouvelles écritures
-                    window.location.reload();
                 });
+
+                // Recharger la page pour afficher les nouvelles écritures
+                window.location.reload();
             } else {
-                throw new Error(result.message || 'Erreur lors de l\'enregistrement des écritures');
+                let errorMessage = 'Erreur lors de l\'enregistrement des écritures';
+                if (result.message) {
+                    errorMessage = result.message;
+                } else if (result.errors) {
+                    errorMessage = Object.values(result.errors).flat().join('\n');
+                }
+                throw new Error(errorMessage);
             }
         } catch (error) {
             console.error('Erreur lors de l\'enregistrement des écritures :', error);
             
-            // Afficher un message d'erreur
-            Swal.fire({
+            // Fermer l'indicateur de chargement s'il est toujours actif
+            if (Swal.isVisible()) {
+                Swal.close();
+            }
+            
+            // Afficher un message d'erreur détaillé
+            await Swal.fire({
                 title: 'Erreur',
-                text: error.message || 'Une erreur est survenue lors de l\'enregistrement des écritures.',
+                html: `
+                    <div class="text-left">
+                        <p>${error.message || 'Une erreur est survenue lors de l\'enregistrement des écritures.'}</p>
+                        <details class="mt-3">
+                            <summary class="text-sm text-blue-600 cursor-pointer">Détails techniques</summary>
+                            <pre class="mt-2 p-2 bg-gray-100 rounded text-xs text-red-600 overflow-auto max-h-40">${error.stack || error.toString()}</pre>
+                        </details>
+                    </div>
+                `,
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#1e40af'
             });
         } finally {
             // Réactiver le bouton
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer ';
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer';
+            }
         }
     }
 
