@@ -564,9 +564,20 @@
             if (typeof $ !== 'undefined' && $.fn.DataTable) {
                 // Initialisation du DataTable
                 table = $('#planComptableTable').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: "{{ route('plan_comptable.datatable') }}",
+                    columns: [
+                        { data: 'numero_de_compte', name: 'numero_de_compte' },
+                        { data: 'intitule', name: 'intitule' },
+                        { data: 'type_de_compte', name: 'type_de_compte' },
+                        { data: 'created_at', name: 'created_at' }
+                    ],
                     dom: 't',
                     pageLength: 5,
-                    // Activer le débogage
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/French.json'
+                    }
                     // debug: true,
                     // Afficher les logs de débogage
                     // "language": {
