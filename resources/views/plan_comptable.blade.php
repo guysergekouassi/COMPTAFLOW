@@ -746,19 +746,16 @@
                     console.log('Filtre appliqué :', filterType);
                     
                     // Appliquer le filtre approprié
-                  // Appliquer le filtre approprié
-switch(filterType) {
-    case 'user':
-        // On cherche le mot 'manuel' à l'intérieur de la colonne 2
-        table.column(2).search('manuel').draw();
-        break;
-    case 'system':
-        // On cherche le mot 'auto' à l'intérieur de la colonne 2
-        table.column(2).search('auto').draw();
-        break;
-    default: // 'all'
-        table.column(2).search('').draw();
-}
+                    if (filterType === 'user') {
+                        // On cherche le mot 'manuel' à l'intérieur de la colonne 2
+                        table.column(2).search('manuel').draw();
+                    } else if (filterType === 'system') {
+                        // On cherche le mot 'auto' à l'intérieur de la colonne 2
+                        table.column(2).search('auto').draw();
+                    } else {
+                        // 'all' - on efface le filtre
+                        table.column(2).search('').draw();
+                    }
                     
                     // Afficher toutes les données pour débogage
                     console.log('Données du tableau après filtrage :', table.data().toArray());
