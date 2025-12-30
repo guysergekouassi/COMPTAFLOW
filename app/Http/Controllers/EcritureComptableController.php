@@ -469,8 +469,15 @@ public function getComptesParFlux(Request $request)
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'ecritures' => 'required|array',
+        // Récupérer les données JSON brutes
+        $data = $request->all();
+        
+        // Journalisation pour le débogage
+        \Log::info('Données reçues:', $data);
+        
+        // Valider les données
+        $validated = $request->validate([
+            'ecritures' => 'required|array|min:1',
             'ecritures.*.date' => 'required|date',
             'ecritures.*.n_saisie' => 'required|string|max:12',
             'ecritures.*.code_journal_id' => 'required|exists:code_journals,id',

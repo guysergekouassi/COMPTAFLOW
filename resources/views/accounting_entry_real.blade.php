@@ -554,8 +554,8 @@ document.addEventListener('DOMContentLoaded', function() {
         btnEnregistrer.disabled = true;
         btnSpinner.classList.remove('d-none');
 
-        // Envoyer les données au serveur
-        fetch('{{ route("ecriture.store") }}', {
+        // Envoyer les données au serveur via la nouvelle route API
+        fetch('{{ route("api.ecriture.store") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -567,7 +567,15 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             if (!response.ok) {
-                return response.json().then(err => { throw err; });
+                return response.json().then(err => { 
+                    let errorMessage = 'Erreur lors de l\'enregistrement';
+                    if (err.errors) {
+                        errorMessage += ': ' + Object.values(err.errors).flat().join(', ');
+                    } else if (err.message) {
+                        errorMessage += ': ' + err.message;
+                    }
+                    throw new Error(errorMessage);
+                });
             }
             return response.json();
         })
