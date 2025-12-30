@@ -565,9 +565,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Fonction pour modifier une écriture
-    function modifierEcriture(row) {
-        alert('Fonction de modification à implémenter');
+  function enregistrerEcritures() {
+    const tbody = document.getElementById('ecritures-body');
+    const lignes = tbody.querySelectorAll('tr');
+    let ecritures = [];
+
+    // Récupération des valeurs globales du formulaire
+    const dateEcriture = document.getElementById('dateEcriture').value;
+    const n_saisie = document.getElementById('n_saisie').value;
+    const libelleEcriture = document.getElementById('libelleEcriture').value;
+    const referencePiece = document.getElementById('referencePiece').value;
+    const id_code_journal = "{{ $id_code }}"; // ID récupéré de la route
+    const id_exercice = "{{ $id_exercice }}"; // ID récupéré de la route
+
+    lignes.forEach((ligne) => {
+        // 1. DÉCLARATION de l'input (Important pour éviter l'erreur ReferenceError)
+        const compteInput = ligne.querySelector('.compte-input');
+        
+        if (compteInput) {
+            // 2. DÉCLARATION de compteNumero
+            const compteNumero = compteInput.value;
+
+            // 3. RECHERCHE de l'ID dans la datalist
+            const option = document.querySelector(`#comptesOptions option[value="${compteNumero}"]`);
+            const plan_comptable_id = option ? option.getAttribute('data-id') : null;
+
+            const debit = parseFloat(ligne.querySelector('.debit-input').value) || 0;
+            const credit = parseFloat(ligne.querySelector('.credit-input').value) || 0;
+
+            // On n'ajoute que si on a un ID de compte valide et un montant
+            if (plan_comptable_id && (debit > 0 || credit > 0)) {
+                ecritures.push({
+                    date: dateEcriture,
+                    n_saisie: n_saisie,
+                    description_operation: libelleEcriture,
+                    reference_piece: referencePiece,
+                    plan_comptable_id: plan_comptable_id, // L'ID numérique
+                    code_journal_id: id_code_journal,
+                    exercices_comptables_id: id_exercice,
+                    debit: debit,
+                    credit: credit,
+                    plan_analytique: 0
+                });
+            }
+        }
+    });
+
+    if (ecritures.length === 0) {
+        showAlert('danger', 'Veuillez saisir au moins une ligne complète (compte et montant).');
+        return;
     }
+
+    // Suite du code (fetch...)
+    envoiVersServeur(ecritures);
+}
 
     // Fonction pour supprimer une écriture
     function supprimerEcriture(row) {
