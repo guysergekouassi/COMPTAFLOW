@@ -435,6 +435,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Fonction pour afficher des alertes stylisées
+    function showAlert(type, message) {
+        // Supprimer les alertes existantes
+        const existingAlerts = document.querySelectorAll('.custom-alert');
+        existingAlerts.forEach(alert => alert.remove());
+
+        // Créer l'élément d'alerte
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `custom-alert alert alert-${type} alert-dismissible fade show`;
+        alertDiv.role = 'alert';
+        
+        // Ajouter le contenu de l'alerte
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        // Positionner l'alerte en haut à droite
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+
+        // Ajouter l'alerte au body
+        document.body.appendChild(alertDiv);
+
+        // Supprimer automatiquement après 5 secondes
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+
     // Fonction pour enregistrer les écritures
     function enregistrerEcritures() {
         const tbody = document.querySelector('#tableEcritures tbody');

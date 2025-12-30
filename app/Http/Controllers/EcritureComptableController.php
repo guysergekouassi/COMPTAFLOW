@@ -456,4 +456,70 @@ public function getComptesParFlux(Request $request)
             ], 500);
         }
     }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'ecritures' => 'required|array',
+            'ecritures.*.date' => 'required|date',
+            'ecritures.*.n_saisie' => 'required|string|max:12',
+            'ecritures.*.code_journal_id' => 'required|exists:code_journaux,id',
+            'ecritures.*.plan_comptable_id' => 'required|exists:plan_comptables,id',
+            'ecritures.*.debit' => 'required|numeric|min:0',
+            'ecritures.*.credit' => 'required|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        
+        try {
+            $savedEcritures = [];
+            $user = auth()->user();
+            
+            foreach ($request->ecritures as $ecriture) {
+                $savedEcriture = EcritureComptable::create([
+                    'date' => $ecriture['date'],
+                    'n_saisie' => $ecriture['n_saisie'],
+                    'description_operation' => $ecriture['description_operation'] ?? null,
+                    'reference_piece' => $ecriture['reference_piece'] ?? null,
+                    'plan_comptable_id' => $ecriture['plan_comptable_id'],
+                    'plan_tiers_id' => $ecriture['plan_tiers_id'] ?? null,
+                    'code_journal_id' => $ecriture['code_journal_id'],
+                    'debit' => $ecriture['debit'],
+                    'credit' => $ecriture['credit'],
+                    'piece_justificatif' => $ecriture['piece_justificatif'] ?? null,
+                    'plan_analytique' => $ecriture['plan_analytique'] ?? false,
+                    'user_id' => $user->id,
+                    'company_id' => $user->company_id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                
+                $savedEcritures[] = $savedEcriture;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Écritures enregistrées avec succès',
+                'data' => $savedEcritures
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Erreur lors de l\'enregistrement des écritures : ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors de l\'enregistrement des écritures',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
