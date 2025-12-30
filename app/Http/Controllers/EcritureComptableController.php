@@ -189,4 +189,54 @@ class EcritureComptableController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
+    public function list(Request $request)
+    {
+        $user = Auth::user();
+        $data = $request->all();
+
+        $exercices = ExerciceComptable::get()->unique('intitule');
+        $code_journaux = CodeJournal::get()->unique('code_journal');
+
+        $query = EcritureComptable::query();
+
+        if (!empty($data['exercice_id'])) {
+            $query->where('exercice_id', $data['exercice_id']);
+        }
+        if (!empty($data['mois'])) {
+            $query->whereMonth('date', $data['mois']);
+        }
+        if (!empty($data['journal_id'])) {
+            $query->where('code_journal_id', $data['journal_id']);
+        }
+
+        $journal = !empty($data['journal_id']) ? CodeJournal::find($data['journal_id']) : CodeJournal::orderBy('code_journal')->first();
+        $exercice = !empty($data['exercice_id']) ? ExerciceComptable::find($data['exercice_id']) : ExerciceComptable::orderBy('date_debut', 'desc')->first();
+
+        $ecritures = $query->orderBy('date', 'desc')->orderBy('n_saisie', 'desc')->get();
+        $totalDebit = $ecritures->sum('debit');
+        $totalCredit = $ecritures->sum('credit');
+
+        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
+            ->orderByRaw("LEFT(numero_de_compte, 1) ASC")
+            ->orderBy('numero_de_compte', 'asc')
+            ->get();
+
+        $tiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule')
+            ->orderByRaw("LEFT(numero_de_tiers, 1) ASC")
+            ->orderBy('numero_de_tiers', 'asc')
+            ->get();
+
+        $postesTresorerie = CompteTresorerie::orderBy('name', 'asc')->get();
+        $entries = $ecritures;
+
+        $lastSaisie = EcritureComptable::max('n_saisie');
+        $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+
+        return view('accounting_entry_list', compact(
+            'exercices', 'code_journaux', 'ecritures', 'entries', 'journal', 
+            'exercice', 'totalDebit', 'totalCredit', 'plansComptables', 
+            'tiers', 'postesTresorerie', 'nextSaisieNumber', 'data'
+        ));
+    }
 }
