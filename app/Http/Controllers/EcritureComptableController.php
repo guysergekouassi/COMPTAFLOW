@@ -175,6 +175,10 @@ class EcritureComptableController extends Controller
     $errors = [];
 
     try {
+        // Générer un seul numéro de saisie pour toutes les écritures
+        $lastSaisie = EcritureComptable::max('n_saisie');
+        $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+        
         foreach ($request->ecritures as $index => $ecriture) {
             $pieceJustificatifName = null;
 
@@ -236,7 +240,7 @@ class EcritureComptableController extends Controller
             try {
                  EcritureComptable::create([
                     'date' => $ecriture['date'],
-                    'n_saisie' => $ecriture['n_saisie'],
+                    'n_saisie' => $nextSaisieNumber, // Utilisation du même numéro pour toutes les écritures
                     'description_operation' => ucfirst(strtolower($ecriture['description'])),
                     'reference_piece' => strtoupper($ecriture['reference']),
                     'plan_comptable_id' => $ecriture['compte_general'],
