@@ -53,7 +53,7 @@ class ModalDirectController   extends Controller
 
             $exercice = ExerciceComptable::findOrFail($data['id_exercice']);
 
-            return view('accounting_entry_real', compact(
+            return view('accounting_entry_real_goupes', compact(
                 'plansComptables',
                 'plansTiers',
                 'data',
