@@ -566,7 +566,7 @@
                 table = $('#planComptableTable').DataTable({
                     processing: true,
                     serverSide: true,
-                    ajax: "{{  }}",
+                    ajax: "{{ route('plan_comptable.datatable') }}",
                     columns: [
                         { data: 'numero_de_compte', name: 'numero_de_compte' },
                         { data: 'intitule', name: 'intitule' },

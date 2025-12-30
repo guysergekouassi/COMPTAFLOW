@@ -312,7 +312,7 @@ Route::put('/poste/{compte}', [PosteTresorController::class, 'update'])->name('p
 
 
 
-
+Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datatable'])->name('plan_comptable.datatable');
 
 
 

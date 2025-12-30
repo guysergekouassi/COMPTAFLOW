@@ -8,11 +8,11 @@ use App\Models\EcritureComptable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use App\Traits\ManagesCompany;
+use Yajra\DataTables\Facades\DataTables;
 
 class PlanComptableController extends Controller
 {
-
-   use ManagesCompany;
+    use ManagesCompany;
   public function index()
 {
     try {
@@ -245,5 +245,24 @@ class PlanComptableController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la suppression du plan comptable : ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Retourne les données pour DataTables
+     */
+    public function datatable()
+    {
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+        
+        $plans = PlanComptable::where('company_id', $companyId)
+            ->select(['id', 'numero_de_compte', 'intitule', 'type_de_compte', 'created_at']);
+            
+        return DataTables::of($plans)
+            ->addColumn('actions', function($plan) {
+                return view('components.actions-plan-comptable', compact('plan'))->render();
+            })
+            ->rawColumns(['actions'])
+            ->make(true);
     }
 }
