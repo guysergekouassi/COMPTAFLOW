@@ -15,6 +15,7 @@ use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\Log;
 use App\Models\tresoreries\Tresoreries;
+use Illuminate\Support\Facades\DB;
 
 
 class EcritureComptableController extends Controller
