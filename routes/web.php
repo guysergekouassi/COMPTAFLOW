@@ -154,6 +154,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/accounting_entry_real', [EcritureComptableController::class, 'storeMultiple'])->name('storeMultiple.storeMultiple');
     Route::post('/ecriture/store/multiple', [EcritureComptableController::class, 'storeMultiple'])->name('ecriture.store.multiple');
     Route::get('/saisie-directe-modal', [EcritureComptableController::class, 'showSaisieModal'])->name('modal_saisie_direct');
+    Route::get('/ecriture/get-next-saisie', [EcritureComptableController::class, 'getNextSaisieNumber'])->name('ecriture.get-next-saisie');
 
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE GROUPES
     Route::get('/accounting_entry_real_goupes', [EcritureComptableGroupesController::class, 'index'])->name('accounting_entry_real_goupes');

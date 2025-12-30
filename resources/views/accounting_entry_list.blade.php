@@ -650,19 +650,25 @@
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('dateEcriture').value = today;
 
-        // Récupérer les paramètres de l'URL
-        const urlParams = new URLSearchParams(window.location.search);
-
-        // N° Saisie automatique via PHP si non fourni en URL
-        const nextSaisie = "{{ $nextSaisieNumber ?? '' }}";
-
-        // Remplir les champs si les paramètres existent
-        if (urlParams.has('numero_saisie')) {
-            document.getElementById('numeroSaisie').value = urlParams.get('numero_saisie');
-            document.getElementById('hiddenNumeroSaisie').value = urlParams.get('numero_saisie');
-        } else if (nextSaisie) {
-            document.getElementById('numeroSaisie').value = nextSaisie;
-            document.getElementById('hiddenNumeroSaisie').value = nextSaisie;
+        // Récupérer le numéro de saisie depuis le champ caché
+        const nextSaisie = document.getElementById('hiddenNumeroSaisie').value;
+        
+        // Si le numéro de saisie n'est pas défini, en générer un nouveau
+        if (!nextSaisie) {
+            // Faire une requête pour obtenir un nouveau numéro de saisie
+            fetch('{{ route("ecriture.get-next-saisie") }}', {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.nextSaisieNumber) {
+                    document.getElementById('numeroSaisie').value = data.nextSaisieNumber;
+                    document.getElementById('hiddenNumeroSaisie').value = data.nextSaisieNumber;
+                }
+            });
         }
 
         if (urlParams.has('code')) {

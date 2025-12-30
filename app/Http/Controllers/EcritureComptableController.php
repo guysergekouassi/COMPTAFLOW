@@ -97,9 +97,14 @@ class EcritureComptableController extends Controller
         $totalCredit = $queryForSum->sum('credit');
 
         // Génération automatique du n° de saisie (12 chiffres, unique)
-        $lastSaisie = EcritureComptable::max('n_saisie');
-
-        $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+        // Générer un numéro de saisie unique pour la session
+        if (!session()->has('current_saisie_number')) {
+            $lastSaisie = EcritureComptable::max('n_saisie');
+            $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+            session(['current_saisie_number' => $nextSaisieNumber]);
+        } else {
+            $nextSaisieNumber = session('current_saisie_number');
+        }
 
         // Récupérer l'exercice sélectionné ou l'exercice actif
         $exercice = null;
@@ -118,8 +123,6 @@ class EcritureComptableController extends Controller
                 $data['annee'] = date('Y', strtotime($exercice->date_debut));
             }
         }
-
-        // dd($dateDebut . '' . $dateFin);
 
         return view('accounting_entry_real', compact(
             'plansComptables',
@@ -173,11 +176,19 @@ class EcritureComptableController extends Controller
 
     // Initialiser une liste d'erreurs pour le retour
     $errors = [];
-
-    try {
-        // Générer un seul numéro de saisie pour toutes les écritures
+    
+    // Récupérer le numéro de saisie de la session ou en générer un nouveau
+    if (!session()->has('current_saisie_number')) {
         $lastSaisie = EcritureComptable::max('n_saisie');
         $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+        session(['current_saisie_number' => $nextSaisieNumber]);
+    } else {
+        $nextSaisieNumber = session('current_saisie_number');
+    }
+
+    try {
+        // Utiliser le numéro de saisie de la session
+        $nextSaisieNumber = session('current_saisie_number');
         
         foreach ($request->ecritures as $index => $ecriture) {
             $pieceJustificatifName = null;
@@ -282,9 +293,8 @@ class EcritureComptableController extends Controller
     }
 }
 
-
-
-public function getComptesParFlux(Request $request) {
+public function getComptesParFlux(Request $request)
+{
     $user = Auth::user();
     $typeFlux = $request->query('type');
 
@@ -419,4 +429,30 @@ public function getComptesParFlux(Request $request) {
     ));
     }
 
+    /**
+     * Récupère le prochain numéro de saisie
+     */
+    public function getNextSaisieNumber(Request $request)
+    {
+        try {
+            if (!session()->has('current_saisie_number')) {
+                $lastSaisie = EcritureComptable::max('n_saisie');
+                $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+                session(['current_saisie_number' => $nextSaisieNumber]);
+            } else {
+                $nextSaisieNumber = session('current_saisie_number');
+            }
+
+            return response()->json([
+                'success' => true,
+                'nextSaisieNumber' => $nextSaisieNumber
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération du numéro de saisie: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération du numéro de saisie'
+            ], 500);
+        }
+    }
 }
