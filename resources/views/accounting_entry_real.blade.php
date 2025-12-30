@@ -438,27 +438,96 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour enregistrer les écritures
     function enregistrerEcritures() {
         const tbody = document.querySelector('#tableEcritures tbody');
-        if (tbody) {
-            const rows = tbody.getElementsByTagName('tr');
+        if (!tbody) {
+            alert('Erreur: Tableau des écritures introuvable');
+            return;
+        }
 
-            if (rows.length === 0) {
-                alert('Aucune écriture à enregistrer.');
-                return;
+        const rows = tbody.getElementsByTagName('tr');
+        if (rows.length === 0) {
+            alert('Aucune écriture à enregistrer.');
+            return;
+        }
+
+        // Récupérer les données du formulaire
+        const formData = new FormData(document.getElementById('formEcriture'));
+        const ecritures = [];
+        const nSaisie = document.getElementById('n_saisie').value;
+        const codeJournalId = formData.get('code_journal_id');
+        const dateEcriture = formData.get('date');
+
+        // Préparer les données pour l'envoi
+        Array.from(rows).forEach(row => {
+            const cells = row.cells;
+            const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            
+            ecritures.push({
+                date: dateEcriture,
+                n_saisie: nSaisie,
+                description_operation: cells[3].textContent.trim(),
+                reference_piece: cells[4].textContent.trim(),
+                plan_comptable_id: cells[5].getAttribute('data-compte-id') || null,
+                plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
+                code_journal_id: codeJournalId,
+                debit: debit,
+                credit: credit,
+                piece_justificatif: cells[9].textContent.trim(),
+                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0
+            });
+        });
+
+        // Afficher les données dans la console pour le débogage
+        console.log('Données à envoyer:', ecritures);
+
+        // Afficher l'indicateur de chargement
+        const btnEnregistrer = document.getElementById('btnEnregistrer');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        
+        btnText.textContent = 'Enregistrement...';
+        btnEnregistrer.disabled = true;
+        btnSpinner.classList.remove('d-none');
+
+        // Envoyer les données au serveur
+        fetch('{{ route("ecriture.store") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ ecritures: ecritures })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
             }
-
-            // Incrémenter le numéro de saisie pour la prochaine fois
-            const nSaisieField = document.getElementById('n_saisie');
-            if (nSaisieField) {
-                nSaisieField.value = incrementSaisieNumber();
-            }
-
-            alert('Écritures enregistrées avec succès !');
-
-            setTimeout(() => {
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Incrémenter le numéro de saisie après un enregistrement réussi
+                document.getElementById('n_saisie').value = incrementSaisieNumber();
+                
+                // Vider le tableau
                 tbody.innerHTML = '';
                 updateTotals();
-            }, 2000);
-        }
+                
+                showAlert('success', 'Écritures enregistrées avec succès !');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showAlert('danger', 'Erreur lors de l\'enregistrement: ' + (error.message || 'Veuillez réessayer'));
+        })
+        .finally(() => {
+            // Réinitialiser le bouton
+            btnText.textContent = 'Enregistrer';
+            btnEnregistrer.disabled = false;
+            btnSpinner.classList.add('d-none');
+        });
     }
 
     // Fonction pour modifier une écriture
