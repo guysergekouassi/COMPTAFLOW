@@ -77,11 +77,25 @@ class EcritureComptableController extends Controller
         try {
             DB::beginTransaction();
             
+            // Valider que des écritures sont présentes
+            if (empty($request->ecritures) || !is_array($request->ecritures)) {
+                throw new \Exception('Aucune écriture à enregistrer.');
+            }
+            
             // Génération du numéro de saisie unique pour ce batch
             $lastSaisie = EcritureComptable::max('n_saisie');
             $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+            $user = auth()->user();
 
             foreach ($request->ecritures as $index => $ecriture) {
+                // Vérifier que les champs obligatoires sont présents
+                if (empty($ecriture['plan_comptable_id']) && empty($ecriture['compte_general'])) {
+                    throw new \Exception("Le compte général est obligatoire pour l'écriture #" . ($index + 1));
+                }
+                
+                // Utiliser plan_comptable_id ou compte_general selon ce qui est disponible
+                $planComptableId = $ecriture['plan_comptable_id'] ?? $ecriture['compte_general'] ?? null;
+                
                 $pieceJustificatifName = null;
                 if ($request->hasFile("ecritures.$index.piece_justificatif")) {
                     $file = $request->file("ecritures.$index.piece_justificatif");
@@ -99,30 +113,41 @@ class EcritureComptableController extends Controller
                     $typeFlux = ($debit > 0) ? 'encaissement' : (($credit > 0) ? 'decaissement' : null);
                 }
 
-                if (is_null($typeFlux) && !empty($ecriture['compte_general'])) {
-                    $planComptable = PlanComptable::find($ecriture['compte_general']);
+                if (is_null($typeFlux) && !empty($planComptableId)) {
+                    $planComptable = PlanComptable::find($planComptableId);
                     if ($planComptable) {
                         $typeFlux = $this->determineFluxClasse($planComptable->numero_de_compte);
                     }
                 }
 
-                EcritureComptable::create([
-                    'date' => $ecriture['date'],
-                    'n_saisie' => $nextSaisieNumber,
-                    'description_operation' => ucfirst(strtolower($ecriture['description'] ?? '')),
-                    'reference_piece' => strtoupper($ecriture['reference'] ?? ''),
-                    'plan_comptable_id' => $ecriture['compte_general'],
-                    'plan_tiers_id' => $ecriture['compte_tiers'] ?? null,
+                $ecritureData = [
+                    'date' => $ecriture['date'] ?? now()->format('Y-m-d'),
+                    'n_saisie' => $ecriture['n_saisie'] ?? $nextSaisieNumber,
+                    'description_operation' => ucfirst(strtolower($ecriture['description_operation'] ?? $ecriture['description'] ?? '')),
+                    'reference_piece' => strtoupper($ecriture['reference_piece'] ?? $ecriture['reference'] ?? ''),
+                    'plan_comptable_id' => $planComptableId,
+                    'plan_tiers_id' => $ecriture['plan_tiers_id'] ?? $ecriture['compte_tiers'] ?? null,
                     'compte_tresorerie_id' => $compteTresorerieId,
                     'type_flux' => $typeFlux,
                     'debit' => $debit,
                     'credit' => $credit,
-                    'plan_analytique' => ($ecriture['analytique'] ?? 'Non') === 'Oui' ? 1 : 0,
-                    'code_journal_id' => $ecriture['journal'] ?? null,
-                    'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? null,
-                    'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? null,
+                    'plan_analytique' => (isset($ecriture['plan_analytique']) && $ecriture['plan_analytique'] === 'Oui') || ($ecriture['analytique'] ?? 'Non') === 'Oui' ? 1 : 0,
+                    'code_journal_id' => $ecriture['code_journal_id'] ?? $ecriture['journal'] ?? null,
+                    'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? $ecriture['exercice_id'] ?? null,
+                    'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? $ecriture['journal_id'] ?? null,
                     'piece_justificatif' => $pieceJustificatifName,
-                ]);
+                    'user_id' => $user ? $user->id : null,
+                    'company_id' => $user ? $user->company_id : null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                // Nettoyer les valeurs nulles
+                $ecritureData = array_filter($ecritureData, function($value) {
+                    return $value !== null && $value !== '';
+                });
+
+                EcritureComptable::create($ecritureData);
             }
             
             DB::commit();

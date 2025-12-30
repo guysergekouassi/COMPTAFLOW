@@ -527,19 +527,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            ecritures.push({
+            // Créer l'objet d'écriture avec tous les champs possibles
+            const ecriture = {
                 date: dateEcriture,
                 n_saisie: nSaisie,
                 description_operation: cells[3].textContent.trim(),
                 reference_piece: cells[4].textContent.trim(),
+                // Utiliser les deux formats pour la compatibilité
                 plan_comptable_id: planComptableId,
-                plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
+                compte_general: planComptableId, // Pour la compatibilité ascendante
+                plan_tiers_id: tiersId || null,
+                compte_tiers: tiersId || null,   // Pour la compatibilité ascendante
                 code_journal_id: codeJournalId,
+                journal: codeJournalId,          // Pour la compatibilité ascendante
                 debit: debit,
                 credit: credit,
                 piece_justificatif: cells[9].textContent.trim(),
-                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0
-            });
+                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
+                analytique: cells[10].textContent.trim() === 'Oui' ? 'Oui' : 'Non' // Pour la compatibilité
+            };
+            
+            // Ajouter l'ID de l'exercice si disponible
+            const exerciceId = document.querySelector('input[name="id_exercice"]')?.value;
+            if (exerciceId) {
+                ecriture.exercices_comptables_id = exerciceId;
+                ecriture.exercice_id = exerciceId; // Pour la compatibilité
+            }
+            
+            ecritures.push(ecriture);
         });
 
         // Afficher les données dans la console pour le débogage
