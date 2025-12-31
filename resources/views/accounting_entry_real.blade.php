@@ -162,7 +162,7 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label for="compte_general" class="form-label">Compte Général (Classe 1-8)</label>
+                                    <label for="compte_general" class="form-label">Compte Général </label>
                                     <select id="compte_general" name="compte_general"
                                         class="form-select select2 w-100" data-live-search="true"
                                         title="Sélectionner un compte général" required>
