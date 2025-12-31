@@ -307,13 +307,9 @@
                                 <button type="button" class="btn btn-success" id="btnEnregistrer" onclick="enregistrerEcritures()">
                                     <i class="fas fa-check-circle me-2"></i>Valider l'écriture
                                 </button>
-                                <button type="button" class="btn btn-success"
-                            onclick="ajouterEcriture()">Ajouter à la
-                            liste
-                        </button>
                             </div>
                         </div>
-                    <!-- <div class="modal-footer">
+                    <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
                         <button type="button" class="btn btn-primary" id="btnEnregistrer"
                             onclick="enregistrerEcritures()">
@@ -326,7 +322,7 @@
                             liste
                         </button>
 
-                    </div> -->
+                    </div>
                 </div>
             </div>
           </div>
