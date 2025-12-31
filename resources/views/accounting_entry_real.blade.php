@@ -325,54 +325,54 @@
     </html>
 
 <script>
-// Fonction pour formater la date au format AAAAMMJJ
-function formatDateForSaisie(date) {
+// Fonction pour formater la date au format JJ/MM/AAAA
+function formatDateForDisplay(date) {
     const d = new Date(date);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    return `${year}${month}${day}`;
+    return `${day}/${month}/${year}`;
 }
 
-// Fonction pour obtenir le prochain numéro de saisie avec la date
+// Fonction pour obtenir le prochain numéro de saisie au format 000000000001
 function getNextSaisieNumber() {
     // Récupérer le dernier numéro de saisie depuis le stockage local
-    let lastNumber = localStorage.getItem('lastSaisieNumber') || '0';
-    let lastDate = localStorage.getItem('lastSaisieDate');
-    const today = formatDateForSaisie(new Date());
-    
-    // Si c'est un nouveau jour ou premier enregistrement, réinitialiser le compteur
-    if (lastDate !== today) {
-        lastNumber = '0';
-        localStorage.setItem('lastSaisieDate', today);
-    }
+    let lastNumber = parseInt(localStorage.getItem('lastSaisieNumber') || '0');
     
     // Incrémenter le numéro
-    const nextNumber = (parseInt(lastNumber, 10) + 1).toString().padStart(4, '0');
+    const nextNumber = (lastNumber + 1).toString().padStart(12, '0');
     
-    // Format final : AAAAMMJJ-NNNN
-    return `${today}-${nextNumber}`;
+    // Mettre à jour le dernier numéro utilisé
+    localStorage.setItem('lastSaisieNumber', (lastNumber + 1).toString());
+    
+    // Formater la date pour l'affichage
+    const today = formatDateForDisplay(new Date());
+    
+    // Format final : 000000000001 (JJ/MM/AAAA)
+    return `${nextNumber} (${today})`;
 }
 
 // Fonction pour incrémenter le numéro de saisie
 function incrementSaisieNumber() {
     const currentSaisie = document.getElementById('n_saisie').value;
-    const today = formatDateForSaisie(new Date());
     
+    // Extraire le numéro actuel si possible
+    let nextNumber = 1;
     if (currentSaisie) {
-        const [saisieDate, saisieNumber] = currentSaisie.split('-');
-        if (saisieDate === today) {
-            // Même jour, on incrémente le numéro
-            const nextNumber = (parseInt(saisieNumber, 10) + 1).toString().padStart(4, '0');
-            localStorage.setItem('lastSaisieNumber', nextNumber);
-            return `${today}-${nextNumber}`;
+        const match = currentSaisie.match(/^\d+/);
+        if (match) {
+            nextNumber = parseInt(match[0], 10) + 1;
         }
     }
     
-    // Nouveau jour ou première saisie
-    localStorage.setItem('lastSaisieNumber', '1'.padStart(4, '0'));
-    localStorage.setItem('lastSaisieDate', today);
-    return `${today}-0001`;
+    // Mettre à jour le dernier numéro utilisé
+    localStorage.setItem('lastSaisieNumber', nextNumber.toString());
+    
+    // Formater la date pour l'affichage
+    const today = formatDateForDisplay(new Date());
+    
+    // Retourner le nouveau numéro de saisie formaté
+    return `${nextNumber.toString().padStart(12, '0')} (${today})`;
 }
 
 // Au chargement de la page
