@@ -415,6 +415,7 @@
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Débit</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Crédit</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Pièce</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -439,6 +440,15 @@
                                                     @else
                                                         <span class="text-slate-400">-</span>
                                                     @endif
+                                                </td>
+                                                <td class="px-4 py-3 text-center">
+                                                    <a href="{{ route('ecriture.show', $ecriture->id) }}" class="btn btn-sm btn-info">Voir</a>
+                                                    <a href="{{ route('ecriture.edit', $ecriture->id) }}" class="btn btn-sm btn-warning">Modifier</a>
+                                                    <form action="{{ route('ecriture.destroy', $ecriture->id) }}" method="POST" style="display:inline;">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')">Supprimer</button>
+                                                    </form>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -1287,7 +1297,7 @@
             }
 
             // Envoyer les données au serveur
-            const response = await fetch("{{ route('ecriture.store.multiple') }}", {
+            const response = await fetch("{{ route('ecritures-comptables.store-multiple') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
