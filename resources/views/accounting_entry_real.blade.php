@@ -353,6 +353,44 @@ function formatDateForDisplay(date) {
     return `${day}/${month}/${year}`;
 }
 
+// Fonction pour ajouter une écriture au tableau
+function ajouterEcriture() {
+    // 1. Récupérer les valeurs des champs
+    const date = document.getElementById('date').value;
+    const compte = document.getElementById('compte_general').value;
+    const debit = document.getElementById('debit').value || 0;
+    const credit = document.getElementById('credit').value || 0;
+
+    if (!date || !compte) {
+        alert("Veuillez remplir au moins la date et le compte.");
+        return;
+    }
+
+    // 2. Créer une nouvelle ligne dans le tableau
+    const table = document.getElementById('table-ecritures').getElementsByTagName('tbody')[0];
+    const newRow = table.insertRow();
+
+    newRow.innerHTML = `
+        <td>${date}</td>
+        <td>${compte}</td>
+        <td>${debit}</td>
+        <td>${credit}</td>
+        <td>
+            <button type="button" onclick="modifierEcriture(this.closest('tr'))" class="btn btn-sm btn-primary"><i class="fa fa-edit"></i></button>
+            <button type="button" onclick="supprimerLigne(this)" class="btn btn-sm btn-danger"><i class="fa fa-trash"></i></button>
+        </td>
+    `;
+
+    // 3. Réinitialiser les champs et mettre à jour les totaux
+    document.getElementById('debit').value = '';
+    document.getElementById('credit').value = '';
+    updateTotals(); 
+}
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${day}/${month}/${year}`;
+}
+
 // Fonction pour obtenir le numéro de saisie initial depuis le serveur
 function getInitialSaisieNumber() {
     return new Promise((resolve) => {
