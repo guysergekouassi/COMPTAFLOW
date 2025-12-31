@@ -440,8 +440,107 @@ function incrementSaisieNumber() {
 }
 
 // Au chargement de la page
+// Fonction globale pour ajouter une écriture
+function ajouterEcriture() {
+    try {
+        const date = document.getElementById('date');
+        const nSaisie = document.getElementById('n_saisie');
+        const libelle = document.getElementById('description_operation');
+        const debit = document.getElementById('debit');
+        const credit = document.getElementById('credit');
+        const compteGeneral = document.getElementById('compte_general');
+        const referencePiece = document.getElementById('reference_piece');
+        const compteTiers = document.getElementById('compte_tiers');
+        const pieceFile = document.getElementById('piece_justificatif');
+        const imputationInput = document.querySelector('input[readonly][placeholder*="N/A"]');
+        const planAnalytique = document.getElementById('plan_analytique');
+
+        if (!date || !libelle || !compteGeneral) {
+            alert('Champs du formulaire introuvables.');
+            return;
+        }
+
+        if (!date.value || !libelle.value || !compteGeneral.value || compteGeneral.value === '') {
+            alert('Veuillez remplir tous les champs obligatoires (Date, Description, Compte Général).');
+            return;
+        }
+
+        if (!debit.value && !credit.value) {
+            alert('Veuillez saisir un montant au débit ou au crédit.');
+            return;
+        }
+
+        const tbody = document.querySelector('#tableEcritures tbody');
+        if (!tbody) {
+            alert('Tableau des écritures introuvable.');
+            return;
+        }
+
+        const newRow = tbody.insertRow();
+
+        const imputationValue = imputationInput ? imputationInput.value : '';
+        const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? 'Oui' : 'Non') : '';
+        const compteText = compteGeneral.options[compteGeneral.selectedIndex].text;
+        const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
+        const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
+
+        // Ajouter les cellules à la nouvelle ligne
+        const cellDate = newRow.insertCell(0);
+        const cellSaisie = newRow.insertCell(1);
+        const cellJournal = newRow.insertCell(2);
+        const cellLibelle = newRow.insertCell(3);
+        const cellCompte = newRow.insertCell(4);
+        const cellTiers = newRow.insertCell(5);
+        const cellDebit = newRow.insertCell(6);
+        const cellCredit = newRow.insertCell(7);
+        const cellPiece = newRow.insertCell(8);
+        const cellActions = newRow.insertCell(9);
+
+        // Remplir les cellules
+        cellDate.textContent = date.value;
+        cellSaisie.textContent = nSaisie ? nSaisie.value : '';
+        cellJournal.textContent = imputationValue;
+        cellLibelle.textContent = libelle.value;
+        cellCompte.textContent = compteText;
+        cellTiers.textContent = compteTiersValue;
+        cellDebit.textContent = debit.value ? parseFloat(debit.value).toFixed(2) : '0.00';
+        cellCredit.textContent = credit.value ? parseFloat(credit.value).toFixed(2) : '0.00';
+        cellPiece.textContent = referencePiece.value || '';
+
+        // Ajouter le bouton de suppression
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'btn btn-sm btn-danger';
+        deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+        deleteButton.onclick = function() {
+            supprimerLigne(this);
+        };
+        cellActions.appendChild(deleteButton);
+
+        // Réinitialiser les champs
+        libelle.value = '';
+        debit.value = '';
+        credit.value = '';
+        referencePiece.value = '';
+        if (compteTiers) compteTiers.value = '';
+        if (pieceFile) pieceFile.value = '';
+
+        // Mettre à jour les totaux
+        updateTotals();
+
+        // Mettre à jour le numéro de saisie pour la prochaine écriture
+        if (nSaisie) {
+            const nextNumber = incrementSaisieNumber();
+            nSaisie.value = nextNumber;
+        }
+
+    } catch (error) {
+        console.error('Erreur lors de l\'ajout de l\'écriture:', error);
+        alert('Une erreur est survenue: ' + error.message);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM chargé - Initialisation ultra-simple...');
+    console.log('DOM chargé - Initialisation...');
     
     // Variables globales pour le suivi
     let numeroSaisieActuel = 1;
@@ -554,67 +653,28 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Initialisation terminée');
 }); 
 
-    // Fonction globale pour ajouter une écriture
-    function ajouterEcriture() {
-        try {
-            const date = document.getElementById('date');
-            const nSaisie = document.getElementById('n_saisie');
-            const libelle = document.getElementById('description_operation');
-            const debit = document.getElementById('debit');
-            const credit = document.getElementById('credit');
-            const compteGeneral = document.getElementById('compte_general');
-            const referencePiece = document.getElementById('reference_piece');
-            const compteTiers = document.getElementById('compte_tiers');
-            const pieceFile = document.getElementById('piece_justificatif');
-            const imputationInput = document.querySelector('input[readonly][placeholder*="N/A"]');
-            const planAnalytique = document.getElementById('plan_analytique');
+// Fonction pour ajouter une ligne au tableau
+function ajouterLigneEcriture(ligne = {}) {
+    const tbody = document.querySelector('#tableEcritures tbody');
+    if (!tbody) return;
 
-            if (!date || !libelle || !compteGeneral) {
-                alert('Champs du formulaire introuvables.');
-                return;
-            }
+    const newRow = tbody.insertRow();
+    
+    // Créer les cellules avec les données fournies ou des valeurs par défaut
+    const cells = [
+        ligne.date || new Date().toISOString().split('T')[0],
+        ligne.n_saisie || '',
+        ligne.journal || '',
+        ligne.libelle || '',
+        ligne.compte || '',
+        ligne.tiers || '',
+        ligne.debit ? parseFloat(ligne.debit).toFixed(2) : '0.00',
+        ligne.credit ? parseFloat(ligne.credit).toFixed(2) : '0.00',
+        ligne.piece || ''
+    ];
 
-            if (!date.value || !libelle.value || !compteGeneral.value || compteGeneral.value === '') {
-                alert('Veuillez remplir tous les champs obligatoires (Date, Description, Compte Général).');
-                return;
-            }
-
-            if (!debit.value && !credit.value) {
-                alert('Veuillez saisir un montant au débit ou au crédit.');
-                return;
-            }
-
-            const tbody = document.querySelector('#tableEcritures tbody');
-            if (!tbody) {
-                alert('Tableau des écritures introuvable.');
-                return;
-            }
-
-            const newRow = tbody.insertRow();
-
-            const imputationValue = imputationInput ? imputationInput.value : '';
-            const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? 'Oui' : 'Non') : '';
-            const compteText = compteGeneral.options[compteGeneral.selectedIndex].text;
-            const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
-            const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
-
-            // Créer les cellules une par une pour pouvoir ajouter des attributs
-            const cells = [
-                date.value,
-                nSaisie ? nSaisie.value : '',
-                imputationValue,
-                libelle.value,
-                referencePiece ? referencePiece.value || '' : '',
-                '', // Compte général - sera rempli avec l'élément personnalisé
-                compteTiersValue,
-                debit.value || '',
-                credit.value || '',
-                pieceFileName,
-                analytiqueValue
-            ];
-
-            // Ajouter chaque cellule avec son contenu
-            cells.forEach((content, index) => {
+    // Ajouter chaque cellule avec son contenu
+    cells.forEach((content, index) => {
                 const cell = newRow.insertCell();
                 if (index === 5) {
                     // Pour la cellule du compte général, ajouter l'attribut data-plan-comptable-id
