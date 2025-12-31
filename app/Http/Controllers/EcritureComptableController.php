@@ -121,7 +121,7 @@ class EcritureComptableController extends Controller
             ));
             
         } catch (\Exception $e) {
-            \Log::error('Erreur lors de l\'édition de l\'écriture comptable: ' . $e->getMessage());
+           
             return redirect()->back()->with('error', 'Impossible de charger l\'écriture pour édition: ' . $e->getMessage());
         }
     }
