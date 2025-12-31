@@ -47,8 +47,9 @@ class EcritureComptableController extends Controller
         $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')->with('compte')->get();
         $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')->orderBy('name')->get();
 
-        $lastSaisie = EcritureComptable::max('n_saisie');
-        $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
+        // Récupérer le dernier numéro de saisie et incrémenter
+        $lastSaisie = EcritureComptable::max('id');
+        $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
 
         $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('created_at', 'desc');
         $ecritures = $query->with(['planComptable', 'planTiers','compteTresorerie'])->get();
