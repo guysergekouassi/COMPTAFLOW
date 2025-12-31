@@ -401,8 +401,8 @@
                                     <h3 class="text-lg font-bold text-slate-800">Liste des écritures</h3>
                                     <p class="text-sm text-slate-500">Consultation et suivi des écritures comptables</p>
                                 </div>
-                                <div class="table-responsive">
-                                    <table class="w-full text-left border-collapse" id="tableEcritures">
+                                <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                                    <table class="w-full text-left border-collapse min-w-full" id="tableEcritures" style="min-width: 1200px;">
                                     <thead class="bg-slate-50/50 border-b border-slate-100">
                                         <tr>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
@@ -455,7 +455,7 @@
                                         @endforeach
                                         @if (!isset($ecritures) || $ecritures->isEmpty())
                                             <tr>
-                                                <td colspan="10" class="text-center text-slate-500 py-6">
+                                                <td colspan="11" class="text-center text-slate-500 py-6">
                                                     Aucune écriture trouvée pour les critères sélectionnés
                                                 </td>
                                             </tr>
