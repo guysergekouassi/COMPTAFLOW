@@ -473,7 +473,7 @@ let numeroSaisieActuel = 1;
 
 // Script ultra-simple pour le numéro de saisie
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM chargé - Initialisation ultra-simple...');
+    console.log('DOM chargé - Initialisation...');
     
     console.log('Initialisation ultra-simple terminée');
     console.log('Numéro de saisie initial:', document.getElementById('n_saisie')?.value);
