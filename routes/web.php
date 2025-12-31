@@ -161,6 +161,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/ecriture/get-next-saisie', [EcritureComptableController::class, 'getNextSaisieNumber'])->name('ecriture.get-next-saisie');
     Route::get('/ecriture/{ecriture}/edit', [EcritureComptableController::class, 'edit'])->name('ecriture.edit');
     Route::put('/ecriture/{ecriture}', [EcritureComptableController::class, 'update'])->name('ecriture.update');
+    Route::get('/ecriture/{ecriture}', [EcritureComptableController::class, 'show'])->name('ecriture.show');
     Route::delete('/ecriture/{ecriture}', [EcritureComptableController::class, 'destroy'])->name('ecriture.destroy');
 
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE GROUPES
