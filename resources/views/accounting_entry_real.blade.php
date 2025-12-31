@@ -270,7 +270,7 @@
                             </table>
                         </div>
                     </div>
-<<<<<<< HEAD
+
                     <div class="card-footer">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -290,7 +290,6 @@
                                 </button>
                             </div>
                         </div>
-=======
                     <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
                         <button type="button" class="btn btn-primary" id="btnEnregistrer"
@@ -302,7 +301,7 @@
                         <button type="button" class="btn btn-success"
                             onclick="ajouterEcriture()">Ajouter à la
                             liste</button>
->>>>>>> 53a3eb8dce44f78cd5853403671238f9aba39073
+
                     </div>
                 </div>
             </div>
