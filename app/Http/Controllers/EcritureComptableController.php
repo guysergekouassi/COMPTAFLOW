@@ -112,7 +112,7 @@ class EcritureComptableController extends Controller
                 'n_saisie' => $ecriture->n_saisie,
             ]);
             
-            return view('accounting_entry_edit', compact(
+            return view('accounting_entry_', compact(
                 'ecriture', 
                 'plansComptables', 
                 'plansTiers', 
