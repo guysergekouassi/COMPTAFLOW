@@ -401,8 +401,28 @@
                                     <h3 class="text-lg font-bold text-slate-800">Liste des écritures</h3>
                                     <p class="text-sm text-slate-500">Consultation et suivi des écritures comptables</p>
                                 </div>
-                                <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                                    <table class="w-full text-left border-collapse min-w-full" id="tableEcritures" style="min-width: 1200px;">
+                                <style>
+                                    /* Style personnalisé pour la barre de défilement */
+                                    .table-responsive::-webkit-scrollbar {
+                                        height: 10px;
+                                        background-color: #f5f5f5;
+                                    }
+                                    .table-responsive::-webkit-scrollbar-thumb {
+                                        background-color: #888;
+                                        border-radius: 5px;
+                                    }
+                                    .table-responsive::-webkit-scrollbar-thumb:hover {
+                                        background-color: #555;
+                                    }
+                                    .table-responsive {
+                                        overflow-x: auto;
+                                        -webkit-overflow-scrolling: touch;
+                                        scrollbar-width: thin;
+                                        scrollbar-color: #888 #f5f5f5;
+                                    }
+                                </style>
+                                <div class="table-responsive" style="margin-bottom: 15px;">
+                                    <table class="w-full text-left border-collapse" id="tableEcritures" style="min-width: 100%; width: max-content;">
                                     <thead class="bg-slate-50/50 border-b border-slate-100">
                                         <tr>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
