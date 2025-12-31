@@ -399,12 +399,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const dateField = document.getElementById('date');
     if (dateField) {
         dateField.value = today;
+        // Déclencher l'événement change pour mettre à jour le numéro de saisie
+        dateField.dispatchEvent(new Event('change'));
     }
     
     // Définir le numéro de saisie initial
     const nSaisieField = document.getElementById('n_saisie');
     if (nSaisieField) {
-        nSaisieField.value = getInitialSaisieNumber();
+        // Récupérer le dernier numéro de saisie depuis le serveur
+        fetch('/ecriture/get-next-saisie')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    nSaisieField.value = data.nextSaisieNumber;
+                } else {
+                    // En cas d'erreur, générer un numéro local
+                    nSaisieField.value = '000000000001';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération du numéro de saisie:', error);
+                nSaisieField.value = '000000000001';
+            });
     }
     
     // Ajouter la classe 'form-control' si elle n'existe pas
