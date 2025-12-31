@@ -47,7 +47,7 @@ class EcritureComptableController extends Controller
         $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')->with('compte')->get();
         $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')->orderBy('name')->get();
 
-        // Récupérer le dernier numéro de saisie et incrémenter
+            // Récupérer le dernier numéro de saisie et incrémenter
         $lastSaisie = EcritureComptable::max('id');
         $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
 
@@ -77,6 +77,7 @@ class EcritureComptableController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+
     public function edit($id)
     {
         try {
@@ -298,11 +299,37 @@ class EcritureComptableController extends Controller
     public function getNextSaisieNumber(Request $request)
     {
         try {
-            $lastSaisie = EcritureComptable::max('n_saisie');
-            $nextSaisieNumber = $lastSaisie ? str_pad((int) $lastSaisie + 1, 12, '0', STR_PAD_LEFT) : '000000000001';
-            return response()->json(['success' => true, 'nextSaisieNumber' => $nextSaisieNumber]);
+            // Récupérer le dernier numéro de saisie
+            $lastSaisie = EcritureComptable::orderBy('id', 'desc')->first();
+            $nextNumber = 1;
+            
+            if ($lastSaisie) {
+                // Extraire le numéro de la dernière saisie ou utiliser l'ID + 1
+                if (preg_match('/^(\d+)/', $lastSaisie->n_saisie, $matches)) {
+                    $nextNumber = (int)$matches[1] + 1;
+                } else {
+                    $nextNumber = $lastSaisie->id + 1;
+                }
+            }
+            
+            // Formater le numéro sur 12 chiffres
+            $nextSaisieNumber = str_pad($nextNumber, 12, '0', STR_PAD_LEFT);
+            
+            // Ajouter la date actuelle au format JJ/MM/AAAA
+            $formattedDate = now()->format('d/m/Y');
+            $formattedSaisieNumber = "$nextSaisieNumber ($formattedDate)";
+            
+            return response()->json([
+                'success' => true, 
+                'nextSaisieNumber' => $formattedSaisieNumber
+            ]);
+            
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Erreur lors de la récupération du numéro de saisie',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

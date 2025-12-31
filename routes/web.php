@@ -159,7 +159,16 @@ Route::middleware('auth')->group(function () {
    Route::post('/ecritures-comptables/store', [EcritureComptableController::class, 'storeMultiple'])
      ->name('ecritures-comptables.store-multiple');
     Route::get('/saisie-directe-modal', [EcritureComptableController::class, 'showSaisieModal'])->name('modal_saisie_direct');
-    Route::get('/ecriture/get-next-saisie', [EcritureComptableController::class, 'getNextSaisieNumber'])->name('ecriture.get-next-saisie');
+    // Route pour obtenir le prochain numéro de saisie
+Route::get('/ecriture/get-next-saisie', [EcritureComptableController::class, 'getNextSaisieNumber'])
+    ->name('ecriture.get-next-saisie')
+    ->middleware(['web']);
+
+// Route de test pour vérifier que le contrôleur fonctionne
+Route::get('/test-saisie-number', function() {
+    $controller = new \App\Http\Controllers\EcritureComptableController();
+    return $controller->getNextSaisieNumber(request());
+});
     Route::get('/ecriture/{ecriture}/edit', [EcritureComptableController::class, 'edit'])->name('ecriture.edit');
     Route::put('/ecriture/{ecriture}', [EcritureComptableController::class, 'update'])->name('ecriture.update');
     Route::get('/ecriture/{ecriture}', [EcritureComptableController::class, 'show'])->name('ecriture.show');

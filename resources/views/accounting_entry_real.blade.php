@@ -2,6 +2,21 @@
 
 <html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/"
   data-template="vertical-menu-template-free" data-bs-theme="light">
+  <head>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      #loading-icon {
+        display: none;
+      }
+      .loading #loading-icon {
+        display: inline-block;
+      }
+      .form-control:disabled, .form-control[readonly] {
+        background-color: #f8f9fa !important;
+      }
+    </style>
+  </head>
 
 @include('components.head')
 <style>
@@ -141,9 +156,18 @@
                         <form id="formEcriture">
                             <div class="row g-4">
                                 <div class="col-md-3">
+<<<<<<< HEAD
                                     <label for="date" class="form-label">Date de l'écriture</label>
                                     <input type="date" id="date" name="date" class="form-control" readonly value="{{ date('Y-m-d') }}" />
                                     <div class="invalid-feedback">Veuillez renseigner la date.</div>
+=======
+                                    <label for="date" class="form-label">Date de l'écriture <span class="text-danger">*</span></label>
+                                    <input type="date" id="date" name="date" class="form-control" required 
+                                           value="{{ date('Y-m-d') }}" 
+                                           min="{{ date('Y-m-d', strtotime('-1 year')) }}" 
+                                           max="{{ date('Y-m-d', strtotime('+1 year')) }}" />
+                                    <div class="invalid-feedback">Veuillez renseigner une date valide.</div>
+>>>>>>> 26f408f9b7d0cc269cdc45f7c4bf8d55eccd13e3
                                 </div>
                                 <div class="col-md-6">
                                     <label for="imputation" class="form-label">Journal d'imputation</label>
@@ -152,7 +176,17 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="n_saisie" class="form-label">N° de Saisie</label>
+<<<<<<< HEAD
                                     <input type="text" id="n_saisie" name="n_saisie" class="form-control" readonly value="000000000001" />
+=======
+                                    <div class="input-group">
+                                        <input type="text" id="n_saisie" name="n_saisie" class="form-control bg-light" placeholder="Chargement..." readonly style="cursor: not-allowed;" />
+                                        <span class="input-group-text bg-light">
+                                            <i class="fas fa-sync-alt fa-spin" id="loading-icon"></i>
+                                        </span>
+                                    </div>
+                                    <small class="form-text text-muted">Généré automatiquement</small>
+>>>>>>> 26f408f9b7d0cc269cdc45f7c4bf8d55eccd13e3
                                 </div>
 
                                 <div class="col-md-12">
@@ -162,7 +196,7 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label for="compte_general" class="form-label">Compte Général (Classe 1-8)</label>
+                                    <label for="compte_general" class="form-label">Compte Général </label>
                                     <select id="compte_general" name="compte_general"
                                         class="form-select select2 w-100" data-live-search="true"
                                         title="Sélectionner un compte général" required>
@@ -354,8 +388,9 @@ function resetSaisieNumber() {
     console.log('Numéro de saisie réinitialisé');
 }
 
-// Fonction pour obtenir le numéro de saisie initial
+// Fonction pour obtenir le numéro de saisie initial depuis le serveur
 function getInitialSaisieNumber() {
+<<<<<<< HEAD
     // Récupérer le dernier numéro depuis localStorage ou commencer à 0
     let lastNumber = localStorage.getItem('lastSaisieNumber');
     let currentNumber = lastNumber ? parseInt(lastNumber, 10) : 0;
@@ -368,6 +403,68 @@ function getInitialSaisieNumber() {
     
     // Retourner le numéro formaté sur 12 chiffres
     return currentNumber.toString().padStart(12, '0');
+=======
+    return new Promise((resolve) => {
+        const loadingIcon = document.getElementById('loading-icon');
+        const nSaisieField = document.getElementById('n_saisie');
+        
+        // Afficher l'icône de chargement
+        if (loadingIcon && nSaisieField) {
+            loadingIcon.closest('.input-group').classList.add('loading');
+            nSaisieField.placeholder = 'Génération en cours...';
+        }
+        
+        // Fonction pour définir un numéro par défaut
+        const setDefaultNumber = () => {
+            const today = formatDateForDisplay(new Date());
+            return `000000000001 (${today})`;
+        };
+        
+        // Essayer de récupérer depuis le serveur
+        fetch('/ecriture/get-next-saisie')
+            .then(response => {
+                if (!response.ok) throw new Error('Erreur serveur');
+                return response.json();
+            })
+            .then(data => {
+                if (data?.success && data.nextSaisieNumber) {
+                    return data.nextSaisieNumber;
+                }
+                throw new Error('Format de réponse invalide');
+            })
+            .catch(error => {
+                console.error('Erreur avec la route principale, essai avec la route de test...', error);
+                // Essayer avec la route de test
+                return fetch('/test-saisie-number')
+                    .then(response => response.json())
+                    .then(testData => {
+                        if (testData?.success && testData.nextSaisieNumber) {
+                            return testData.nextSaisieNumber;
+                        }
+                        throw new Error('Échec de la route de test');
+                    });
+            })
+            .catch(error => {
+                console.error('Tentatives échouées, utilisation du numéro par défaut', error);
+                return setDefaultNumber();
+            })
+            .then(result => {
+                // S'assurer que le résultat est bien une chaîne
+                if (typeof result === 'string') {
+                    return result;
+                }
+                return setDefaultNumber();
+            })
+            .finally(() => {
+                // Cacher l'icône de chargement
+                if (loadingIcon && nSaisieField) {
+                    loadingIcon.closest('.input-group').classList.remove('loading');
+                    nSaisieField.placeholder = '';
+                }
+            })
+            .then(resolve);
+    });
+>>>>>>> 26f408f9b7d0cc269cdc45f7c4bf8d55eccd13e3
 }
 
 // Fonction pour incrémenter le numéro de saisie
@@ -381,14 +478,20 @@ function incrementSaisieNumber() {
     // Sauvegarder
     localStorage.setItem('lastSaisieNumber', currentNumber);
     
+<<<<<<< HEAD
     // Retourner le numéro formaté
     return currentNumber.toString().padStart(12, '0');
+=======
+    // En cas d'erreur, retourner un numéro par défaut avec la date actuelle
+    return `000000000001 (${today})`;
+>>>>>>> 26f408f9b7d0cc269cdc45f7c4bf8d55eccd13e3
 }
 
 // Script simplifié pour gérer uniquement l'incrémentation du numéro de saisie
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Initialisation simplifiée...');
     
+<<<<<<< HEAD
     // Fonction simple pour incrémenter le numéro de saisie
     function incrementerNumeroSaisie() {
         const champSaisie = document.getElementById('n_saisie');
@@ -398,6 +501,130 @@ document.addEventListener('DOMContentLoaded', function() {
             const nouveauNumero = (numero + 1).toString().padStart(12, '0');
             champSaisie.value = nouveauNumero;
             console.log('Numéro incrémenté:', valeurActuelle, '->', nouveauNumero);
+=======
+    // Vérifier et charger un brouillon existant
+    const brouillonCharge = chargerBrouillon();
+    
+    // Mettre à jour les totaux initialement
+    updateTotals();
+    
+    // Ajouter un gestionnaire pour le menu du brouillon
+    const brouillonMenu = document.getElementById('brouillonMenu');
+    if (brouillonMenu) {
+        brouillonMenu.addEventListener('click', function(e) {
+            if (e.target.classList.contains('dropdown-item')) {
+                e.preventDefault();
+                if (e.target.dataset.action === 'charger') {
+                    chargerBrouillon();
+                } else if (e.target.dataset.action === 'effacer') {
+                    effacerBrouillon();
+                }
+            }
+        });
+    }
+    
+    // Définir la date du jour par défaut
+    const today = new Date().toISOString().split('T')[0];
+    const dateField = document.getElementById('date');
+    if (dateField) {
+        dateField.value = today;
+    }
+    
+    // Définir le numéro de saisie initial avec la date
+    const nSaisieField = document.getElementById('n_saisie');
+    if (nSaisieField) {
+        // Fonction pour définir la valeur du champ
+        const setSaisieNumber = (number) => {
+            try {
+                nSaisieField.value = number;
+                nSaisieField.dispatchEvent(new Event('input', { bubbles: true }));
+                nSaisieField.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log('Numéro de saisie défini avec succès:', number);
+            } catch (error) {
+                console.error('Erreur lors de la définition du numéro de saisie:', error);
+                // Essayer une méthode alternative
+                nSaisieField.setAttribute('value', number);
+            }
+        };
+        
+        // Fonction pour forcer la mise à jour du champ
+        const forceUpdateSaisieNumber = () => {
+            const today = formatDateForDisplay(new Date());
+            const defaultNumber = `000000000001 (${today})`;
+            
+            // Essayer de récupérer le numéro du serveur
+            getInitialSaisieNumber()
+                .then(saisieNumber => {
+                    console.log('Numéro de saisie reçu du serveur:', saisieNumber);
+                    setSaisieNumber(saisieNumber);
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération du numéro de saisie:', error);
+                    setSaisieNumber(defaultNumber);
+                });
+        };
+        
+        // Démarrer le chargement du numéro
+        console.log('Début du chargement du numéro de saisie...');
+        forceUpdateSaisieNumber();
+        
+        // Vérifier périodiquement que le champ a bien une valeur
+        let checkCount = 0;
+        const checkInterval = setInterval(() => {
+            if (nSaisieField.value) {
+                console.log('Vérification - Le champ a une valeur:', nSaisieField.value);
+                clearInterval(checkInterval);
+            } else if (checkCount >= 3) { // Vérifier 3 fois maximum (3 secondes)
+                console.warn('Le champ est toujours vide après plusieurs tentatives, utilisation du numéro par défaut');
+                clearInterval(checkInterval);
+                const today = formatDateForDisplay(new Date());
+                setSaisieNumber(`000000000001 (${today})`);
+            }
+            checkCount++;
+        }, 1000);
+    }
+    
+    // Ajouter la classe 'form-control' si elle n'existe pas
+    if (nSaisieField && !nSaisieField.classList.contains('form-control')) {
+        nSaisieField.classList.add('form-control');
+    }
+    
+    // Initialiser Select2 pour les champs de sélection
+    if (typeof $.fn.select2 === 'function') {
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: function() {
+                return $(this).attr('title');
+            },
+            allowClear: true
+        });
+    }
+    
+    // Gérer l'interaction entre les champs débit et crédit
+    const debitField = document.getElementById('debit');
+    const creditField = document.getElementById('credit');
+    
+    function handleDebitCreditInteraction() {
+        if (debitField.value && parseFloat(debitField.value) > 0) {
+            creditField.disabled = true;
+            creditField.style.backgroundColor = '#f8f9fa';
+            creditField.style.cursor = 'not-allowed';
+        } else {
+            creditField.disabled = false;
+            creditField.style.backgroundColor = '';
+            creditField.style.cursor = '';
+        }
+        
+        if (creditField.value && parseFloat(creditField.value) > 0) {
+            debitField.disabled = true;
+            debitField.style.backgroundColor = '#f8f9fa';
+            debitField.style.cursor = 'not-allowed';
+        } else {
+            debitField.disabled = false;
+            debitField.style.backgroundColor = '';
+            debitField.style.cursor = '';
+>>>>>>> 26f408f9b7d0cc269cdc45f7c4bf8d55eccd13e3
         }
     }
     
