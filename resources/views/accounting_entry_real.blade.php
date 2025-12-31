@@ -209,7 +209,21 @@
                         </form>
                         <hr />
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6>Écritures saisies :</h6>
+                            <div class="d-flex align-items-center gap-3">
+                                <h6 class="mb-0">Écritures saisies :</h6>
+                                <div class="dropdown" id="brouillonMenu">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownBrouillon" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-file-alt me-1"></i>
+                                        <span id="brouillonIndicator" style="display: none;">
+                                            <i class="fas fa-circle text-warning" style="font-size: 0.6rem;"></i>
+                                        </span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownBrouillon">
+                                        <li><a class="dropdown-item" href="#" data-action="charger"><i class="fas fa-folder-open me-2"></i>Charger le brouillon</a></li>
+                                        <li><a class="dropdown-item" href="#" data-action="effacer"><i class="fas fa-trash-alt me-2"></i>Effacer le brouillon</a></li>
+                                    </ul>
+                                </div>
+                            </div>
                             <div class="d-flex align-items-center">
                                 <span class="me-3">Total Débit : <span id="totalDebit">0.00</span></span>
                                 <span>Total Crédit : <span id="totalCredit">0.00</span></span>
@@ -239,17 +253,25 @@
                             </table>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
-                        <button type="button" class="btn btn-primary" id="btnEnregistrer"
-                            onclick="enregistrerEcritures()">
-                            <span id="btnText">Enregistrer</span>
-                            <span id="btnSpinner" class="spinner-border spinner-border-sm d-none"
-                                role="status" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" class="btn btn-primary"
-                            onclick="ajouterEcriture()">Ajouter à la
-                            liste</button>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <button type="button" class="btn btn-primary me-2" onclick="ajouterEcriture()">
+                                    <i class="fas fa-plus-circle me-2"></i>Ajouter une ligne
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary me-2" id="btnBrouillon" onclick="sauvegarderBrouillon()">
+                                    <i class="fas fa-save me-2"></i>Enregistrer en brouillon
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-label-secondary me-2" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-2"></i>Fermer
+                                </button>
+                                <button type="button" class="btn btn-success" id="btnEnregistrer" onclick="enregistrerEcritures()">
+                                    <i class="fas fa-check-circle me-2"></i>Valider l'écriture
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -293,6 +315,30 @@ function incrementSaisieNumber() {
 
 // Au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les sélecteurs
+    initialiserSelect2();
+    
+    // Vérifier et charger un brouillon existant
+    const brouillonCharge = chargerBrouillon();
+    
+    // Mettre à jour les totaux initialement
+    updateTotals();
+    
+    // Ajouter un gestionnaire pour le menu du brouillon
+    const brouillonMenu = document.getElementById('brouillonMenu');
+    if (brouillonMenu) {
+        brouillonMenu.addEventListener('click', function(e) {
+            if (e.target.classList.contains('dropdown-item')) {
+                e.preventDefault();
+                if (e.target.dataset.action === 'charger') {
+                    chargerBrouillon();
+                } else if (e.target.dataset.action === 'effacer') {
+                    effacerBrouillon();
+                }
+            }
+        });
+    }
+    
     // Définir la date du jour par défaut
     const today = new Date().toISOString().split('T')[0];
     const dateField = document.getElementById('date');
@@ -420,6 +466,146 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Fonction pour ajouter une ligne d'écriture au tableau
+    function ajouterLigneEcriture(ligne = {}) {
+        const tbody = document.querySelector('#tableEcritures tbody');
+        if (!tbody) return;
+
+        const tr = document.createElement('tr');
+        
+        // Formater les valeurs par défaut
+        const date = ligne.date || document.getElementById('date').value;
+        const piece = ligne.piece || document.getElementById('piece').value || '';
+        const journal = ligne.journal || document.getElementById('journal').value || '';
+        const compte = ligne.compte || '';
+        const libelle = ligne.libelle || '';
+        const tiers = ligne.tiers || '';
+        const debit = ligne.debit ? parseFloat(ligne.debit.replace(/\s/g, '').replace(',', '.')) : 0;
+        const credit = ligne.credit ? parseFloat(ligne.credit.replace(/\s/g, '').replace(',', '.')) : 0;
+        const analytique = ligne.analytique === 'Oui';
+        
+        tr.innerHTML = `
+            <td>${date}</td>
+            <td>${piece}</td>
+            <td>${journal}</td>
+            <td>${compte}</td>
+            <td>${libelle}</td>
+            <td>${tiers}</td>
+            <td class="text-end">${debit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}</td>
+            <td class="text-end">${credit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}</td>
+            <td class="text-center"><input type="checkbox" ${analytique ? 'checked' : ''}></td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-icon btn-label-warning" onclick="modifierEcriture(this.closest('tr'))">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-icon btn-label-danger" onclick="supprimerLigne(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+        updateTotals();
+        return tr;
+    }
+    
+    // Fonction pour sauvegarder le brouillon dans le stockage local
+    function sauvegarderBrouillon() {
+        const tbody = document.querySelector('#tableEcritures tbody');
+        if (!tbody) return;
+        
+        const lignes = [];
+        const rows = tbody.getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            const cells = row.cells;
+            if (cells.length >= 10) { // Vérifier que c'est une ligne valide
+                const ligne = {
+                    date: cells[0].textContent.trim(),
+                    piece: cells[1].textContent.trim(),
+                    journal: cells[2].textContent.trim(),
+                    compte: cells[3].textContent.trim(),
+                    libelle: cells[4].textContent.trim(),
+                    tiers: cells[5].textContent.trim(),
+                    debit: cells[6].textContent.trim(),
+                    credit: cells[7].textContent.trim(),
+                    analytique: cells[8].querySelector('input[type="checkbox"]')?.checked ? 'Oui' : 'Non'
+                };
+                lignes.push(ligne);
+            }
+        }
+        
+        // Sauvegarder dans le stockage local avec une date d'expiration (7 jours)
+        const brouillon = {
+            date: new Date().toISOString(),
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            lignes: lignes
+        };
+        
+        localStorage.setItem('brouillon_ecritures', JSON.stringify(brouillon));
+        showAlert('success', 'Brouillon sauvegardé avec succès !');
+        
+        // Mettre à jour l'indicateur de brouillon
+        updateBrouillonIndicator(true);
+    }
+    
+    // Fonction pour charger le brouillon
+    function chargerBrouillon() {
+        const brouillonData = localStorage.getItem('brouillon_ecritures');
+        if (!brouillonData) return false;
+        
+        try {
+            const brouillon = JSON.parse(brouillonData);
+            
+            // Vérifier si le brouillon est toujours valide
+            if (new Date(brouillon.expires) < new Date()) {
+                localStorage.removeItem('brouillon_ecritures');
+                return false;
+            }
+            
+            // Demander confirmation avant de charger
+            if (confirm('Un brouillon a été trouvé. Voulez-vous le charger ?')) {
+                // Vider le tableau actuel
+                const tbody = document.querySelector('#tableEcritures tbody');
+                if (tbody) tbody.innerHTML = '';
+                
+                // Ajouter les lignes du brouillon
+                brouillon.lignes.forEach(ligne => {
+                    // Utiliser la fonction existante pour ajouter les lignes
+                    // (à adapter selon votre implémentation actuelle)
+                    ajouterLigneEcriture(ligne);
+                });
+                
+                showAlert('info', `Brouillon du ${new Date(brouillon.date).toLocaleString()} chargé`);
+                updateBrouillonIndicator(true);
+                return true;
+            }
+        } catch (e) {
+            console.error('Erreur lors du chargement du brouillon:', e);
+            localStorage.removeItem('brouillon_ecritures');
+        }
+        return false;
+    }
+    
+    // Fonction pour mettre à jour l'indicateur de brouillon
+    function updateBrouillonIndicator(hasBrouillon) {
+        const indicator = document.getElementById('brouillonIndicator');
+        if (indicator) {
+            indicator.style.display = hasBrouillon ? 'inline' : 'none';
+        }
+    }
+    
+    // Fonction pour effacer le brouillon
+    function effacerBrouillon() {
+        if (confirm('Voulez-vous vraiment effacer le brouillon en cours ?')) {
+            localStorage.removeItem('brouillon_ecritures');
+            updateBrouillonIndicator(false);
+            showAlert('info', 'Brouillon effacé avec succès');
+        }
+    }
+    
     // Fonction pour mettre à jour les totaux
     function updateTotals() {
         const tbody = document.querySelector('#tableEcritures tbody');
@@ -649,9 +835,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Fonction pour supprimer une ligne du tableau
+    function supprimerLigne(button) {
+        if (confirm('Voulez-vous vraiment supprimer cette ligne ?')) {
+            const row = button.closest('tr');
+            if (row) {
+                row.remove();
+                updateTotals();
+                showAlert('success', 'Ligne supprimée avec succès');
+            }
+        }
+    }
+    
     // Fonction pour modifier une écriture
     function modifierEcriture(row) {
-        alert('Fonction de modification à implémenter');
+        // Récupérer les données de la ligne
+        const cells = row.cells;
+        
+        // Mettre à jour le formulaire avec les valeurs de la ligne
+        document.getElementById('date').value = cells[0].textContent.trim();
+        document.getElementById('piece').value = cells[1].textContent.trim();
+        
+        // Mettre à jour les sélecteurs (journal, compte, etc.)
+        // Note: Vous devrez peut-être adapter cette partie selon votre implémentation
+        
+        // Supprimer la ligne modifiée
+        row.remove();
+        updateTotals();
+        
+        // Mettre le focus sur le premier champ
+        document.getElementById('date').focus();
+        
+        showAlert('info', 'Modifiez les champs et cliquez sur "Ajouter une ligne" pour valider');
     }
 
     // Fonction pour supprimer une écriture
