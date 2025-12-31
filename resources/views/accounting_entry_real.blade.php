@@ -2,6 +2,21 @@
 
 <html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/"
   data-template="vertical-menu-template-free" data-bs-theme="light">
+  <head>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      #loading-icon {
+        display: none;
+      }
+      .loading #loading-icon {
+        display: inline-block;
+      }
+      .form-control:disabled, .form-control[readonly] {
+        background-color: #f8f9fa !important;
+      }
+    </style>
+  </head>
 
 @include('components.head')
 <style>
@@ -141,9 +156,12 @@
                         <form id="formEcriture">
                             <div class="row g-4">
                                 <div class="col-md-3">
-                                    <label for="date" class="form-label">Date de l'écriture</label>
-                                    <input type="date" id="date" name="date" class="form-control"  />
-                                    <div class="invalid-feedback">Veuillez renseigner la date.</div>
+                                    <label for="date" class="form-label">Date de l'écriture <span class="text-danger">*</span></label>
+                                    <input type="date" id="date" name="date" class="form-control" required 
+                                           value="{{ date('Y-m-d') }}" 
+                                           min="{{ date('Y-m-d', strtotime('-1 year')) }}" 
+                                           max="{{ date('Y-m-d', strtotime('+1 year')) }}" />
+                                    <div class="invalid-feedback">Veuillez renseigner une date valide.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="imputation" class="form-label">Journal d'imputation</label>
@@ -152,7 +170,13 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="n_saisie" class="form-label">N° de Saisie</label>
-                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique"  />
+                                    <div class="input-group">
+                                        <input type="text" id="n_saisie" name="n_saisie" class="form-control bg-light" placeholder="Chargement..." readonly style="cursor: not-allowed;" />
+                                        <span class="input-group-text bg-light">
+                                            <i class="fas fa-sync-alt fa-spin" id="loading-icon"></i>
+                                        </span>
+                                    </div>
+                                    <small class="form-text text-muted">Généré automatiquement</small>
                                 </div>
 
                                 <div class="col-md-12">
@@ -337,21 +361,25 @@ function formatDateForDisplay(date) {
 // Fonction pour obtenir le numéro de saisie initial depuis le serveur
 function getInitialSaisieNumber() {
     return new Promise((resolve) => {
-        console.log('Début de getInitialSaisieNumber');
+        const loadingIcon = document.getElementById('loading-icon');
+        const nSaisieField = document.getElementById('n_saisie');
+        
+        // Afficher l'icône de chargement
+        if (loadingIcon && nSaisieField) {
+            loadingIcon.closest('.input-group').classList.add('loading');
+            nSaisieField.placeholder = 'Génération en cours...';
+        }
         
         // D'abord, essayer de récupérer depuis le serveur
         fetch('/ecriture/get-next-saisie')
             .then(response => {
-                console.log('Réponse reçue du serveur:', response);
                 if (!response.ok) {
                     throw new Error(`Erreur HTTP: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('Données reçues du serveur:', data);
                 if (data && data.success && data.nextSaisieNumber) {
-                    console.log('Numéro de saisie du serveur:', data.nextSaisieNumber);
                     resolve(data.nextSaisieNumber);
                 } else {
                     throw new Error('Format de réponse invalide du serveur');
@@ -359,28 +387,29 @@ function getInitialSaisieNumber() {
             })
             .catch(error => {
                 console.error('Erreur lors de la récupération du numéro de saisie:', error);
-                
                 // En cas d'échec, essayer la route de test
-                console.log('Essai de la route de test...');
-                fetch('/test-saisie-number')
+                return fetch('/test-saisie-number')
                     .then(response => response.json())
                     .then(testData => {
                         if (testData && testData.success && testData.nextSaisieNumber) {
-                            console.log('Numéro de saisie de la route de test:', testData.nextSaisieNumber);
-                            resolve(testData.nextSaisieNumber);
-                        } else {
-                            throw new Error('Échec de la route de test');
+                            return testData.nextSaisieNumber;
                         }
-                    })
-                    .catch(testError => {
-                        console.error('Échec de la route de test:', testError);
-                        // En dernier recours, générer un numéro local
-                        const today = formatDateForDisplay(new Date());
-                        const defaultNum = `000000000001 (${today})`;
-                        console.log('Utilisation du numéro par défaut:', defaultNum);
-                        resolve(defaultNum);
+                        throw new Error('Échec de la route de test');
                     });
-            });
+            })
+            .catch(() => {
+                // En dernier recours, générer un numéro local
+                const today = formatDateForDisplay(new Date());
+                return `000000000001 (${today})`;
+            })
+            .finally(() => {
+                // Cacher l'icône de chargement
+                if (loadingIcon && nSaisieField) {
+                    loadingIcon.closest('.input-group').classList.remove('loading');
+                    nSaisieField.placeholder = '';
+                }
+            })
+            .then(resolve);
     });
 }
 
@@ -442,28 +471,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Définir le numéro de saisie initial avec la date
     const nSaisieField = document.getElementById('n_saisie');
     if (nSaisieField) {
-        console.log('Champ n_saisie trouvé, tentative de récupération du numéro...');
-        
         // Fonction pour définir la valeur du champ
         const setSaisieNumber = (number) => {
-            console.log('Définition du numéro de saisie:', number);
             nSaisieField.value = number;
-            console.log('Valeur du champ après mise à jour:', nSaisieField.value);
-            
-            // Vérifier que la valeur a bien été définie
-            if (nSaisieField.value !== number) {
-                console.warn('La valeur n\'a pas été correctement définie, tentative alternative...');
-                setTimeout(() => {
-                    nSaisieField.value = number;
-                    console.log('Deuxième tentative de définition de la valeur:', nSaisieField.value);
-                }, 100);
-            }
+            nSaisieField.dispatchEvent(new Event('change'));
         };
         
         // Récupérer le numéro de saisie
         getInitialSaisieNumber()
             .then(saisieNumber => {
-                console.log('Numéro de saisie reçu:', saisieNumber);
                 setSaisieNumber(saisieNumber);
             })
             .catch(error => {
@@ -471,23 +487,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const today = formatDateForDisplay(new Date());
                 setSaisieNumber(`000000000001 (${today})`);
             });
-            
-        // Vérifier périodiquement que le champ a bien une valeur
-        let checkCount = 0;
-        const checkInterval = setInterval(() => {
-            if (nSaisieField.value) {
-                console.log('Vérification - Le champ a une valeur:', nSaisieField.value);
-                clearInterval(checkInterval);
-            } else if (checkCount >= 5) { // Vérifier 5 fois maximum
-                console.warn('Le champ est toujours vide après plusieurs tentatives');
-                clearInterval(checkInterval);
-                const today = formatDateForDisplay(new Date());
-                setSaisieNumber(`000000000001 (${today})`);
-            }
-            checkCount++;
-        }, 200);
-    } else {
-        console.error('Le champ n_saisie n\'a pas été trouvé dans le DOM');
     }
     
     // Ajouter la classe 'form-control' si elle n'existe pas
