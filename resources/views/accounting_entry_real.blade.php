@@ -311,7 +311,7 @@
                         </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
-                        <button type="button" class="btn btn-success" id="btnEnregistrer"
+                        <button type="button" class="btn btn-primary" id="btnEnregistrer"
                             onclick="enregistrerEcritures()">
                             <span id="btnText">Enregistrer</span>
                             <span id="btnSpinner" class="spinner-border spinner-border-sm d-none"
