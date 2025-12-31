@@ -15,6 +15,7 @@ use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\DB;
 
+
 class EcritureComptableController extends Controller
 {
     public function index(Request $request)
@@ -70,7 +71,66 @@ class EcritureComptableController extends Controller
     }
 
     /**
-     * Renommé en "store" pour correspondre à l'appel API du front-end
+     * Affiche le formulaire d'édition d'une écriture comptable spécifique.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        try {
+            $user = Auth::user();
+            
+            // Récupérer l'écriture avec ses relations
+            $ecriture = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+                ->where('company_id', $user->company_id)
+                ->findOrFail($id);
+                
+            $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
+                ->orderBy('numero_de_compte')
+                ->get();
+                
+            $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+                ->with('compte')
+                ->get();
+                
+            $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
+                ->orderBy('name')
+                ->get();
+                
+            $codeJournaux = CodeJournal::all();
+            
+            // Debug: Vérifier les données avant l'envoi à la vue
+            \Log::info('Données envoyées à la vue d\'édition:', [
+                'ecriture_id' => $ecriture->id,
+                'compte_general' => $ecriture->compte_general,
+                'tiers' => $ecriture->tiers,
+                'libelle' => $ecriture->libelle,
+                'mouvement' => $ecriture->mouvement,
+                'date_ecriture' => $ecriture->date_ecriture,
+                'piece' => $ecriture->piece,
+                'n_saisie' => $ecriture->n_saisie,
+            ]);
+            
+            return view('accounting_entry_', compact(
+                'ecriture', 
+                'plansComptables', 
+                'plansTiers', 
+                'comptesTresorerie',
+                'codeJournaux'
+            ));
+            
+        } catch (\Exception $e) {
+           
+            return redirect()->back()->with('error', 'Impossible de charger l\'écriture pour édition: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Enregistre une nouvelle écriture comptable.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
@@ -169,7 +229,8 @@ class EcritureComptableController extends Controller
                     'journaux_saisis_id' => $journalSaisiId,
                     'piece_justificatif' => $pieceJustificatifName,
                     'user_id' => $user ? $user->id : null,
-                    'company_id' => $user ? $user->company_id : null,
+                    // 'company_id' => $user ? $user->company_id : null,
+                   'company_id' => session('current_company_id', $user->company_id),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];

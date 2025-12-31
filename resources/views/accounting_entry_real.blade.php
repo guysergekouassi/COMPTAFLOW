@@ -526,13 +526,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const totalDebitElement = document.getElementById('totalDebit');
         const totalCreditElement = document.getElementById('totalCredit');
-
-        if (totalDebitElement) {
-            totalDebitElement.textContent = totalDebit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        const saveButton = document.getElementById('btnEnregistrer');
+        const totalRow = document.querySelector('tfoot tr');
+        
+        // Formater et afficher les totaux
+        const formattedDebit = totalDebit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        const formattedCredit = totalCredit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        
+        if (totalDebitElement) totalDebitElement.textContent = formattedDebit;
+        if (totalCreditElement) totalCreditElement.textContent = formattedCredit;
+        
+        // Vérifier l'équilibre avec une tolérance pour les arrondis
+        const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+        
+        // Mettre à jour l'état du bouton d'enregistrement
+        if (saveButton) {
+            saveButton.disabled = !isBalanced || rows.length === 0;
+            saveButton.title = isBalanced 
+                ? 'Enregistrer les écritures' 
+                : 'Les totaux débit et crédit doivent être égaux';
         }
-        if (totalCreditElement) {
-            totalCreditElement.textContent = totalCredit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        
+        // Mettre en évidence la ligne des totaux si non équilibrée
+        if (totalRow) {
+            if (!isBalanced) {
+                totalRow.classList.add('table-warning');
+            } else {
+                totalRow.classList.remove('table-warning');
+            }
         }
+        
+        return { totalDebit, totalCredit, isBalanced };
     }
 
     // Fonction pour afficher des alertes stylisées
@@ -570,9 +594,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Fonction pour enregistrer les écritures
     function enregistrerEcritures() {
+        // Vérifier l'équilibre avant l'enregistrement
+        const { isBalanced } = updateTotals();
+        if (!isBalanced) {
+            showAlert('danger', 'Les totaux débit et crédit ne sont pas équilibrés');
+            return;
+        }
+        
         const tbody = document.querySelector('#tableEcritures tbody');
         if (!tbody) {
-            alert('Erreur: Tableau des écritures introuvable');
+            showAlert('danger', 'Erreur: Tableau des écritures introuvable');
             return;
         }
 
