@@ -150,6 +150,7 @@ Route::middleware('auth')->group(function () {
 
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE
     Route::get('/accounting_entry_real', [EcritureComptableController::class, 'index'])->name('accounting_entry_real');
+    Route::get('/ecriture/{id}', [EcritureComptableController::class, 'show'])->name('ecriture.show');
     Route::get('/accounting_entry_list', [EcritureComptableController::class, 'list'])->name('accounting_entry_list');
     Route::post('/accounting_entry_real', [EcritureComptableController::class, 'storeMultiple'])->name('storeMultiple.storeMultiple');
     Route::post('/api/ecritures', [EcritureComptableController::class, 'store'])->name('api.ecriture.store')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
