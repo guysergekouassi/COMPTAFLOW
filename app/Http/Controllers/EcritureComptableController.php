@@ -77,43 +77,6 @@ class EcritureComptableController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    /**
-     * Récupère le prochain numéro de saisie disponible
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getNextSaisieNumber()
-    {
-        try {
-            // Récupérer le dernier numéro de saisie
-            $lastSaisie = EcritureComptable::orderBy('id', 'desc')->first();
-            $nextNumber = 1;
-            
-            if ($lastSaisie) {
-                // Extraire le numéro de la dernière saisie ou utiliser l'ID + 1
-                if (preg_match('/^(\d+)/', $lastSaisie->n_saisie, $matches)) {
-                    $nextNumber = (int)$matches[1] + 1;
-                } else {
-                    $nextNumber = $lastSaisie->id + 1;
-                }
-            }
-            
-            // Formater le numéro sur 12 chiffres
-            $nextSaisieNumber = str_pad($nextNumber, 12, '0', STR_PAD_LEFT);
-            
-            return response()->json([
-                'success' => true,
-                'nextSaisieNumber' => $nextSaisieNumber
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la récupération du numéro de saisie',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     public function edit($id)
     {
