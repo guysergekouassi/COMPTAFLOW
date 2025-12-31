@@ -449,14 +449,6 @@ function ajouterEcriture() {
         if (referencePiece) referencePiece.value = '';
         if (pieceFile) pieceFile.value = '';
 
-        // Incrémenter automatiquement le numéro de saisie pour la prochaine écriture
-        if (nSaisie) {
-            numeroSaisieActuel++;
-            const nouveauNumero = numeroSaisieActuel.toString().padStart(12, '0');
-            nSaisie.value = nouveauNumero;
-            console.log('Numéro incrémenté:', nouveauNumero);
-        }
-
         // Mise à jour des totaux
         updateTotals();
 
@@ -475,8 +467,19 @@ let numeroSaisieActuel = 1;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM chargé - Initialisation...');
     
-    console.log('Initialisation ultra-simple terminée');
-    console.log('Numéro de saisie initial:', document.getElementById('n_saisie')?.value);
+    // Récupérer le numéro depuis localStorage ou commencer à 1
+    const dernierNumero = localStorage.getItem('dernierNumeroSaisie');
+    numeroSaisieActuel = dernierNumero ? parseInt(dernierNumero, 10) : 0;
+    
+    // Mettre à jour le champ avec le numéro actuel
+    const champSaisie = document.getElementById('n_saisie');
+    if (champSaisie) {
+        const numeroActuel = (numeroSaisieActuel + 1).toString().padStart(12, '0');
+        champSaisie.value = numeroActuel;
+        console.log('Numéro de saisie initial:', numeroActuel);
+    }
+    
+    console.log('Initialisation terminée');
 });
 
     // Fonction pour ajouter une ligne d'écriture au tableau
@@ -831,6 +834,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     numeroSaisieActuel++;
                     const nextNumber = numeroSaisieActuel.toString().padStart(12, '0');
                     nSaisie.value = nextNumber;
+                    
+                    // Sauvegarder dans localStorage pour la persistance
+                    localStorage.setItem('dernierNumeroSaisie', numeroSaisieActuel.toString());
+                    
                     console.log('Prochain numéro de saisie:', nextNumber);
                 }    
                 tbody.innerHTML = '';
