@@ -49,6 +49,13 @@
     .form-control[readonly] {
         background-color: #f8f9fa;
         border-color: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+    .form-control[readonly]:focus {
+        background-color: #f8f9fa;
+        border-color: #e9ecef;
+        box-shadow: none;
     }
 
     /* Table d'aperçu */
@@ -84,18 +91,23 @@
         transition: all 0.3s;
     }
     .btn-primary {
-        background-color: #696cff; /* Blue color */
+        background-color: #1e40af;
         color: #fff;
-        border: 2px solid #566a7f; /* Complementary border */
+        border: 2px solid #1e40af;
     }
     .btn-primary:hover {
-        background-color: #4a5bcc; /* Darker blue on hover */
+        background-color: #1e3a8a;
         transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(105, 108, 255, 0.3);
+        box-shadow: 0 4px 10px rgba(30, 64, 175, 0.3);
+    }
+    .btn-success {
+        background-color: #10b981;
+        color: #fff;
+        border: 2px solid #10b981;
     }
     .btn-success:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(113, 221, 55, 0.3);
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
     }
 </style>
 
@@ -130,7 +142,7 @@
                             <div class="row g-4">
                                 <div class="col-md-3">
                                     <label for="date" class="form-label">Date de l'écriture</label>
-                                    <input type="date" id="date" name="date" class="form-control" required />
+                                    <input type="date" id="date" name="date" class="form-control" readonly />
                                     <div class="invalid-feedback">Veuillez renseigner la date.</div>
                                 </div>
                                 <div class="col-md-6">
@@ -140,7 +152,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="n_saisie" class="form-label">N° de Saisie</label>
-                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique" />
+                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique" readonly />
                                 </div>
 
                                 <div class="col-md-12">
@@ -150,7 +162,7 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label for="compte_general" class="form-label">Compte Général (Classe 1-7)</label>
+                                    <label for="compte_general" class="form-label">Compte Général (Classe 1-8)</label>
                                     <select id="compte_general" name="compte_general"
                                         class="form-select select2 w-100" data-live-search="true"
                                         title="Sélectionner un compte général" required>
@@ -168,11 +180,16 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="compte_tiers" class="form-label">Compte Tiers (Le cas échéant)</label>
-                                    <select id="compte_tiers" name="compte_tiers" class="form-select select2 w-100" data-live-search="true">
-                                        <option value="">Sélectionner un compte tiers</option>
-                                        @if(isset($tiers))
-                                            @foreach ($tiers as $tier)
-                                                <option value="{{ $tier->id }}">{{ $tier->intitule }}</option>
+                                    <select id="compte_tiers" name="compte_tiers"
+                                        class="form-select select2 w-100" data-live-search="true"
+                                        title="Sélectionner un compte tiers">
+                                        <option value="" selected disabled>Sélectionner un compte tiers</option>
+                                        @if(isset($plansTiers))
+                                            @foreach ($plansTiers as $tier)
+                                                <option value="{{ $tier->id }}" data-compte-general="{{ $tier->compte_general }}">
+                                                    {{ $tier->numero_de_tiers }} -
+                                                    {{ $tier->intitule }}
+                                                </option>
                                             @endforeach
                                         @endif
                                     </select>
@@ -247,7 +264,7 @@
                             <span id="btnSpinner" class="spinner-border spinner-border-sm d-none"
                                 role="status" aria-hidden="true"></span>
                         </button>
-                        <button type="button" class="btn btn-primary"
+                        <button type="button" class="btn btn-success"
                             onclick="ajouterEcriture()">Ajouter à la
                             liste</button>
                     </div>
@@ -310,6 +327,65 @@ document.addEventListener('DOMContentLoaded', function() {
     if (nSaisieField && !nSaisieField.classList.contains('form-control')) {
         nSaisieField.classList.add('form-control');
     }
+    
+    // Initialiser Select2 pour les champs de sélection
+    if (typeof $.fn.select2 === 'function') {
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: function() {
+                return $(this).attr('title');
+            },
+            allowClear: true
+        });
+    }
+    
+    // Gérer l'interaction entre les champs débit et crédit
+    const debitField = document.getElementById('debit');
+    const creditField = document.getElementById('credit');
+    
+    function handleDebitCreditInteraction() {
+        if (debitField.value && parseFloat(debitField.value) > 0) {
+            creditField.disabled = true;
+            creditField.style.backgroundColor = '#f8f9fa';
+            creditField.style.cursor = 'not-allowed';
+        } else {
+            creditField.disabled = false;
+            creditField.style.backgroundColor = '';
+            creditField.style.cursor = '';
+        }
+        
+        if (creditField.value && parseFloat(creditField.value) > 0) {
+            debitField.disabled = true;
+            debitField.style.backgroundColor = '#f8f9fa';
+            debitField.style.cursor = 'not-allowed';
+        } else {
+            debitField.disabled = false;
+            debitField.style.backgroundColor = '';
+            debitField.style.cursor = '';
+        }
+    }
+    
+    // Ajouter les écouteurs d'événements
+    debitField.addEventListener('input', handleDebitCreditInteraction);
+    creditField.addEventListener('input', handleDebitCreditInteraction);
+    
+    // Réinitialiser les champs quand ils sont vidés
+    debitField.addEventListener('change', function() {
+        if (!this.value || parseFloat(this.value) === 0) {
+            creditField.disabled = false;
+            creditField.style.backgroundColor = '';
+            creditField.style.cursor = '';
+        }
+    });
+    
+    creditField.addEventListener('change', function() {
+        if (!this.value || parseFloat(this.value) === 0) {
+            debitField.disabled = false;
+            debitField.style.backgroundColor = '';
+            debitField.style.cursor = '';
+        }
+    });
 });
     // Fonction globale pour ajouter une écriture
     function ajouterEcriture() {
@@ -406,6 +482,13 @@ document.addEventListener('DOMContentLoaded', function() {
             libelle.value = '';
             debit.value = '';
             credit.value = '';
+            // Réactiver les deux champs débit et crédit
+            debit.disabled = false;
+            credit.disabled = false;
+            debit.style.backgroundColor = '';
+            credit.style.backgroundColor = '';
+            debit.style.cursor = '';
+            credit.style.cursor = '';
             if (referencePiece) referencePiece.value = '';
             if (pieceFile) pieceFile.value = '';
 
