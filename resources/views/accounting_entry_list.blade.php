@@ -1287,7 +1287,7 @@
             }
 
             // Envoyer les données au serveur
-            const response = await fetch("{{ route('ecriture.store.multiple') }}", {
+            const response = await fetch("{{ route('ecritures-comptables.store-multiple') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
