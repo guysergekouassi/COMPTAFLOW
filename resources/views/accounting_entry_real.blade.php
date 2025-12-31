@@ -370,37 +370,46 @@ function getInitialSaisieNumber() {
             nSaisieField.placeholder = 'Génération en cours...';
         }
         
-        // D'abord, essayer de récupérer depuis le serveur
+        // Fonction pour définir un numéro par défaut
+        const setDefaultNumber = () => {
+            const today = formatDateForDisplay(new Date());
+            return `000000000001 (${today})`;
+        };
+        
+        // Essayer de récupérer depuis le serveur
         fetch('/ecriture/get-next-saisie')
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
+                if (!response.ok) throw new Error('Erreur serveur');
                 return response.json();
             })
             .then(data => {
-                if (data && data.success && data.nextSaisieNumber) {
-                    resolve(data.nextSaisieNumber);
-                } else {
-                    throw new Error('Format de réponse invalide du serveur');
+                if (data?.success && data.nextSaisieNumber) {
+                    return data.nextSaisieNumber;
                 }
+                throw new Error('Format de réponse invalide');
             })
             .catch(error => {
-                console.error('Erreur lors de la récupération du numéro de saisie:', error);
-                // En cas d'échec, essayer la route de test
+                console.error('Erreur avec la route principale, essai avec la route de test...', error);
+                // Essayer avec la route de test
                 return fetch('/test-saisie-number')
                     .then(response => response.json())
                     .then(testData => {
-                        if (testData && testData.success && testData.nextSaisieNumber) {
+                        if (testData?.success && testData.nextSaisieNumber) {
                             return testData.nextSaisieNumber;
                         }
                         throw new Error('Échec de la route de test');
                     });
             })
-            .catch(() => {
-                // En dernier recours, générer un numéro local
-                const today = formatDateForDisplay(new Date());
-                return `000000000001 (${today})`;
+            .catch(error => {
+                console.error('Tentatives échouées, utilisation du numéro par défaut', error);
+                return setDefaultNumber();
+            })
+            .then(result => {
+                // S'assurer que le résultat est bien une chaîne
+                if (typeof result === 'string') {
+                    return result;
+                }
+                return setDefaultNumber();
             })
             .finally(() => {
                 // Cacher l'icône de chargement
@@ -473,20 +482,53 @@ document.addEventListener('DOMContentLoaded', function() {
     if (nSaisieField) {
         // Fonction pour définir la valeur du champ
         const setSaisieNumber = (number) => {
-            nSaisieField.value = number;
-            nSaisieField.dispatchEvent(new Event('change'));
+            try {
+                nSaisieField.value = number;
+                nSaisieField.dispatchEvent(new Event('input', { bubbles: true }));
+                nSaisieField.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log('Numéro de saisie défini avec succès:', number);
+            } catch (error) {
+                console.error('Erreur lors de la définition du numéro de saisie:', error);
+                // Essayer une méthode alternative
+                nSaisieField.setAttribute('value', number);
+            }
         };
         
-        // Récupérer le numéro de saisie
-        getInitialSaisieNumber()
-            .then(saisieNumber => {
-                setSaisieNumber(saisieNumber);
-            })
-            .catch(error => {
-                console.error('Erreur lors de la récupération du numéro de saisie:', error);
+        // Fonction pour forcer la mise à jour du champ
+        const forceUpdateSaisieNumber = () => {
+            const today = formatDateForDisplay(new Date());
+            const defaultNumber = `000000000001 (${today})`;
+            
+            // Essayer de récupérer le numéro du serveur
+            getInitialSaisieNumber()
+                .then(saisieNumber => {
+                    console.log('Numéro de saisie reçu du serveur:', saisieNumber);
+                    setSaisieNumber(saisieNumber);
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération du numéro de saisie:', error);
+                    setSaisieNumber(defaultNumber);
+                });
+        };
+        
+        // Démarrer le chargement du numéro
+        console.log('Début du chargement du numéro de saisie...');
+        forceUpdateSaisieNumber();
+        
+        // Vérifier périodiquement que le champ a bien une valeur
+        let checkCount = 0;
+        const checkInterval = setInterval(() => {
+            if (nSaisieField.value) {
+                console.log('Vérification - Le champ a une valeur:', nSaisieField.value);
+                clearInterval(checkInterval);
+            } else if (checkCount >= 3) { // Vérifier 3 fois maximum (3 secondes)
+                console.warn('Le champ est toujours vide après plusieurs tentatives, utilisation du numéro par défaut');
+                clearInterval(checkInterval);
                 const today = formatDateForDisplay(new Date());
                 setSaisieNumber(`000000000001 (${today})`);
-            });
+            }
+            checkCount++;
+        }, 1000);
     }
     
     // Ajouter la classe 'form-control' si elle n'existe pas
