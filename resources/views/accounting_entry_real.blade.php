@@ -220,12 +220,42 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="debit" class="form-label">Montant Débit</label>
-                                    <input type="number" id="debit" name="debit" class="form-control" step="0.01" min="0" placeholder="0.00" />
+                                    <input type="number" id="debit" name="debit" class="form-control" step="0.01" min="0" placeholder="0.00" 
+                                           oninput="updateCreditField(this)" />
                                 </div>
                                 <div class="col-md-3">
                                     <label for="credit" class="form-label">Montant Crédit</label>
-                                    <input type="number" id="credit" name="credit" class="form-control" step="0.01" min="0" placeholder="0.00" />
+                                    <input type="number" id="credit" name="credit" class="form-control" step="0.01" min="0" placeholder="0.00" 
+                                           oninput="updateDebitField(this)" />
                                 </div>
+                                
+                                @push('scripts')
+                                <script>
+                                    function updateCreditField(debitField) {
+                                        const creditField = document.getElementById('credit');
+                                        if (debitField.value && parseFloat(debitField.value) > 0) {
+                                            creditField.disabled = true;
+                                            creditField.value = '';
+                                            creditField.style.backgroundColor = '#f8f9fa';
+                                        } else {
+                                            creditField.disabled = false;
+                                            creditField.style.backgroundColor = '';
+                                        }
+                                    }
+
+                                    function updateDebitField(creditField) {
+                                        const debitField = document.getElementById('debit');
+                                        if (creditField.value && parseFloat(creditField.value) > 0) {
+                                            debitField.disabled = true;
+                                            debitField.value = '';
+                                            debitField.style.backgroundColor = '#f8f9fa';
+                                        } else {
+                                            debitField.disabled = false;
+                                            debitField.style.backgroundColor = '';
+                                        }
+                                    }
+                                </script>
+                                @endpush
                                 <div class="col-md-3">
                                     <label for="plan_analytique" class="form-label">Analytique</label>
                                     <select id="plan_analytique" name="plan_analytique"
