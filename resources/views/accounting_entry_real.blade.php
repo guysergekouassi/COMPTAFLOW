@@ -334,45 +334,38 @@ function formatDateForDisplay(date) {
     return `${day}/${month}/${year}`;
 }
 
-// Fonction pour obtenir le prochain numéro de saisie au format 000000000001
-function getNextSaisieNumber() {
-    // Récupérer le dernier numéro de saisie depuis le stockage local
-    let lastNumber = parseInt(localStorage.getItem('lastSaisieNumber') || '0');
-    
-    // Incrémenter le numéro
-    const nextNumber = (lastNumber + 1).toString().padStart(12, '0');
-    
-    // Mettre à jour le dernier numéro utilisé
-    localStorage.setItem('lastSaisieNumber', (lastNumber + 1).toString());
+// Fonction pour obtenir le numéro de saisie initial
+function getInitialSaisieNumber() {
+    // Récupérer le numéro de saisie depuis le serveur (passé via PHP)
+    const serverSaisieNumber = '{{ $nextSaisieNumber ?? '000000000001' }}';
     
     // Formater la date pour l'affichage
     const today = formatDateForDisplay(new Date());
     
-    // Format final : 000000000001 (JJ/MM/AAAA)
-    return `${nextNumber} (${today})`;
+    // Retourner le numéro formaté avec la date
+    return `${serverSaisieNumber} (${today})`;
 }
 
 // Fonction pour incrémenter le numéro de saisie
 function incrementSaisieNumber() {
     const currentSaisie = document.getElementById('n_saisie').value;
-    
-    // Extraire le numéro actuel si possible
-    let nextNumber = 1;
-    if (currentSaisie) {
-        const match = currentSaisie.match(/^\d+/);
-        if (match) {
-            nextNumber = parseInt(match[0], 10) + 1;
-        }
-    }
-    
-    // Mettre à jour le dernier numéro utilisé
-    localStorage.setItem('lastSaisieNumber', nextNumber.toString());
-    
-    // Formater la date pour l'affichage
     const today = formatDateForDisplay(new Date());
     
-    // Retourner le nouveau numéro de saisie formaté
-    return `${nextNumber.toString().padStart(12, '0')} (${today})`;
+    // Si c'est la première saisie, utiliser le numéro initial
+    if (!currentSaisie) {
+        return getInitialSaisieNumber();
+    }
+    
+    // Extraire le numéro actuel et l'incrémenter
+    const match = currentSaisie.match(/^(\d+)/);
+    if (match) {
+        const currentNumber = parseInt(match[1], 10);
+        const nextNumber = (currentNumber + 1).toString().padStart(12, '0');
+        return `${nextNumber} (${today})`;
+    }
+    
+    // En cas d'erreur, retourner un numéro par défaut
+    return `000000000001 (${today})`;
 }
 
 // Au chargement de la page
@@ -411,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Définir le numéro de saisie initial
     const nSaisieField = document.getElementById('n_saisie');
     if (nSaisieField) {
-        nSaisieField.value = getNextSaisieNumber();
+        nSaisieField.value = getInitialSaisieNumber();
     }
     
     // Ajouter la classe 'form-control' si elle n'existe pas
