@@ -325,22 +325,54 @@
     </html>
 
 <script>
-// Fonction pour obtenir le prochain numéro de saisie (12 chiffres)
+// Fonction pour formater la date au format AAAAMMJJ
+function formatDateForSaisie(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+}
+
+// Fonction pour obtenir le prochain numéro de saisie avec la date
 function getNextSaisieNumber() {
-    // Récupérer le dernier numéro de saisie depuis le stockage local ou initialiser à 1
-    let lastNumber = localStorage.getItem('lastSaisieNumber');
-    let nextNumber = lastNumber ? parseInt(lastNumber, 10) : 0;
+    // Récupérer le dernier numéro de saisie depuis le stockage local
+    let lastNumber = localStorage.getItem('lastSaisieNumber') || '0';
+    let lastDate = localStorage.getItem('lastSaisieDate');
+    const today = formatDateForSaisie(new Date());
     
-    // Formater le numéro sur 12 chiffres avec des zéros devant
-    return (nextNumber + 1).toString().padStart(12, '0');
+    // Si c'est un nouveau jour ou premier enregistrement, réinitialiser le compteur
+    if (lastDate !== today) {
+        lastNumber = '0';
+        localStorage.setItem('lastSaisieDate', today);
+    }
+    
+    // Incrémenter le numéro
+    const nextNumber = (parseInt(lastNumber, 10) + 1).toString().padStart(4, '0');
+    
+    // Format final : AAAAMMJJ-NNNN
+    return `${today}-${nextNumber}`;
 }
 
 // Fonction pour incrémenter le numéro de saisie
 function incrementSaisieNumber() {
-    const currentNumber = parseInt(document.getElementById('n_saisie').value || '0', 10);
-    const nextNumber = currentNumber + 1;
-    localStorage.setItem('lastSaisieNumber', nextNumber);
-    return nextNumber.toString().padStart(12, '0');
+    const currentSaisie = document.getElementById('n_saisie').value;
+    const today = formatDateForSaisie(new Date());
+    
+    if (currentSaisie) {
+        const [saisieDate, saisieNumber] = currentSaisie.split('-');
+        if (saisieDate === today) {
+            // Même jour, on incrémente le numéro
+            const nextNumber = (parseInt(saisieNumber, 10) + 1).toString().padStart(4, '0');
+            localStorage.setItem('lastSaisieNumber', nextNumber);
+            return `${today}-${nextNumber}`;
+        }
+    }
+    
+    // Nouveau jour ou première saisie
+    localStorage.setItem('lastSaisieNumber', '1'.padStart(4, '0'));
+    localStorage.setItem('lastSaisieDate', today);
+    return `${today}-0001`;
 }
 
 // Au chargement de la page
