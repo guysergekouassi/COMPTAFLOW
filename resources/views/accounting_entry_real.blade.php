@@ -142,7 +142,7 @@
                             <div class="row g-4">
                                 <div class="col-md-3">
                                     <label for="date" class="form-label">Date de l'écriture</label>
-                                    <input type="date" id="date" name="date" class="form-control" readonly />
+                                    <input type="date" id="date" name="date" class="form-control"  />
                                     <div class="invalid-feedback">Veuillez renseigner la date.</div>
                                 </div>
                                 <div class="col-md-6">
@@ -152,7 +152,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="n_saisie" class="form-label">N° de Saisie</label>
-                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique" readonly />
+                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique"  />
                                 </div>
 
                                 <div class="col-md-12">
