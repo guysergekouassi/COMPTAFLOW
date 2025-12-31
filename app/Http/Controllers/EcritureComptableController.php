@@ -14,7 +14,7 @@ use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\DB;
-use App\Models\PlanTiers;
+
 
 class EcritureComptableController extends Controller
 {
