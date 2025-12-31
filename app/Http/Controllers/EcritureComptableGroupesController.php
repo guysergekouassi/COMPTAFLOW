@@ -19,21 +19,24 @@ class EcritureComptableGroupesController extends Controller
     {
         try {
             $user = Auth::user();
-            $data = $request->all();
+// RÉCUPÉRER L'ID DE LA COMPAGNIE ACTIVE
+        $activeCompanyId = session('current_company_id', $user->company_id);
 
-            $plansComptables = PlanComptable::where('company_id', $user->company_id)
+            $data = $request->all();
+            
+            $plansComptables = PlanComptable::where('company_id', $activeCompanyId)
                 ->select('id', 'numero_de_compte', 'intitule')
                 ->get();
 
-            $plansTiers = PlanTiers::where('company_id', $user->company_id)
+            $plansTiers = PlanTiers::where('company_id', $activeCompanyId)
                 ->select('id', 'numero_de_tiers', 'intitule')
                 ->get();
 
-            $comptesTresorerie = CompteTresorerie::where('company_id', $user->company_id) // Assurez-vous d'avoir une colonne 'company_id' si vous filtrez par entreprise
+            $comptesTresorerie = CompteTresorerie::where('company_id', $activeCompanyId) // Assurez-vous d'avoir une colonne 'company_id' si vous filtrez par entreprise
                 ->select('id', 'name', 'type')
                 ->get();
 
-            $query = EcritureComptable::where('company_id', $user->company_id)
+            $query = EcritureComptable::where('company_id', $activeCompanyId)
                 ->orderBy('created_at', 'desc');
 
             if (!empty($data['n_saisie'])) {

@@ -69,9 +69,6 @@ class EcritureComptableController extends Controller
         return null;
     }
 
-    /**
-     * Renommé en "store" pour correspondre à l'appel API du front-end
-     */
     public function store(Request $request)
     {
         try {
@@ -169,7 +166,8 @@ class EcritureComptableController extends Controller
                     'journaux_saisis_id' => $journalSaisiId,
                     'piece_justificatif' => $pieceJustificatifName,
                     'user_id' => $user ? $user->id : null,
-                    'company_id' => $user ? $user->company_id : null,
+                    // 'company_id' => $user ? $user->company_id : null,
+                   'company_id' => session('current_company_id', $user->company_id),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];

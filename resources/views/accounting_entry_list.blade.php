@@ -1307,12 +1307,13 @@
             console.log('Résultat du serveur :', result);
 
             if (response.ok) {
-                // Afficher un message de succès
+                
                 await Swal.fire({
                     title: 'Succès !',
                     text: result.message || 'Les écritures ont été enregistrées avec succès.',
                     icon: 'success',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'OK',
+                    
                 });
 
                 // Recharger la page pour afficher les nouvelles écritures
