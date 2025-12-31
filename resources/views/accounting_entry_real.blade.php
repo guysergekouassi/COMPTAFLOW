@@ -344,48 +344,162 @@
     </html>
 
 <script>
-// Script ultra-simple pour le numéro de saisie
+// Fonction pour formater la date au format JJ/MM/AAAA
+function formatDateForDisplay(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${day}/${month}/${year}`;
+}
+
+// Fonction pour obtenir le numéro de saisie initial depuis le serveur
+function getInitialSaisieNumber() {
+    return new Promise((resolve) => {
+        const loadingIcon = document.getElementById('loading-icon');
+        const nSaisieField = document.getElementById('n_saisie');
+        
+        // Afficher l'icône de chargement
+        if (loadingIcon && nSaisieField) {
+            loadingIcon.closest('.input-group').classList.add('loading');
+            nSaisieField.placeholder = 'Génération en cours...';
+        }
+        
+        // Fonction pour définir un numéro par défaut
+        const setDefaultNumber = () => {
+            const today = formatDateForDisplay(new Date());
+            return `000000000001 (${today})`;
+        };
+        
+        // Essayer de récupérer depuis le serveur
+        fetch('/ecriture/get-next-saisie')
+            .then(response => {
+                if (!response.ok) throw new Error('Erreur serveur');
+                return response.json();
+            })
+            .then(data => {
+                if (data?.success && data.nextSaisieNumber) {
+                    return data.nextSaisieNumber;
+                }
+                throw new Error('Format de réponse invalide');
+            })
+            .catch(error => {
+                console.error('Erreur avec la route principale, essai avec la route de test...', error);
+                // Essayer avec la route de test
+                return fetch('/test-saisie-number')
+                    .then(response => response.json())
+                    .then(testData => {
+                        if (testData?.success && testData.nextSaisieNumber) {
+                            return testData.nextSaisieNumber;
+                        }
+                        throw new Error('Échec de la route de test');
+                    });
+            })
+            .catch(error => {
+                console.error('Tentatives échouées, utilisation du numéro par défaut', error);
+                return setDefaultNumber();
+            })
+            .then(result => {
+                // S'assurer que le résultat est bien une chaîne
+                if (typeof result === 'string') {
+                    return result;
+                }
+                return setDefaultNumber();
+            })
+            .finally(() => {
+                // Cacher l'icône de chargement
+                if (loadingIcon && nSaisieField) {
+                    loadingIcon.closest('.input-group').classList.remove('loading');
+                    nSaisieField.placeholder = '';
+                }
+            })
+            .then(resolve);
+    });
+}
+
+// Fonction pour incrémenter le numéro de saisie
+function incrementSaisieNumber() {
+    const currentSaisie = document.getElementById('n_saisie').value;
+    const today = formatDateForDisplay(new Date());
+    
+    // Si c'est la première saisie, utiliser le numéro initial
+    if (!currentSaisie) {
+        return getInitialSaisieNumber();
+    }
+    
+    // Extraire le numéro actuel et l'incrémenter
+    const match = currentSaisie.match(/^(\d+)/);
+    if (match) {
+        const currentNumber = parseInt(match[1], 10);
+        const nextNumber = (currentNumber + 1).toString().padStart(12, '0');
+        return `${nextNumber} (${today})`;
+    }
+    
+    // En cas d'erreur, retourner un numéro par défaut avec la date actuelle
+    return `000000000001 (${today})`;
+}
+
+// Au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM chargé - Initialisation ultra-simple...');
     
     // Variables globales pour le suivi
     let numeroSaisieActuel = 1;
     
-    // Fonction pour incrémenter le numéro de saisie
-    window.incrementerNumeroSaisie = function() {
-        numeroSaisieActuel++;
-        const champSaisie = document.getElementById('n_saisie');
-        if (champSaisie) {
-            const nouveauNumero = numeroSaisieActuel.toString().padStart(12, '0');
-            champSaisie.value = nouveauNumero;
-            console.log('Numéro incrémenté:', nouveauNumero);
+    // Ajouter un gestionnaire pour le menu du brouillon
+    const brouillonMenu = document.getElementById('brouillonMenu');
+    if (brouillonMenu) {
+        brouillonMenu.addEventListener('click', function(e) {
+            if (e.target.classList.contains('dropdown-item')) {
+                e.preventDefault();
+                if (e.target.dataset.action === 'charger') {
+                    chargerBrouillon();
+                } else if (e.target.dataset.action === 'effacer') {
+                    effacerBrouillon();
+                }
+            }
+        });
+    }
+    
+    // Définir la date du jour par défaut
+    const today = new Date().toISOString().split('T')[0];
+    const dateField = document.getElementById('date');
+    if (dateField) {
+        dateField.value = today;
+    }
+    
+    // Définir le numéro de saisie initial avec la date
+    const nSaisieField = document.getElementById('n_saisie');
+    if (nSaisieField) {
+        // Fonction pour définir la valeur du champ
+        const setSaisieNumber = (number) => {
+            try {
+                nSaisieField.value = number;
+                nSaisieField.dispatchEvent(new Event('input', { bubbles: true }));
+                nSaisieField.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log('Numéro de saisie défini avec succès:', number);
+            } catch (error) {
+                console.error('Erreur lors de la définition du numéro de saisie:', error);
+                // Essayer une méthode alternative
+                nSaisieField.setAttribute('value', number);
+            }
+        };
+        
+        // Fonction pour forcer la mise à jour du champ
+        const forceUpdateSaisieNumber = () => {
+            const today = formatDateForDisplay(new Date());
+            const defaultNumber = `000000000001 (${today})`;
+            
+            // Essayer de récupérer le numéro du serveur
+            getInitialSaisieNumber()
+                .then(saisieNumber => {
                     console.log('Numéro de saisie reçu du serveur:', saisieNumber);
                     setSaisieNumber(saisieNumber);
                 })
                 .catch(error => {
-                    console.error('Erreur lors de la récupération du numéro de saisie:', error);
-                    setSaisieNumber(defaultNumber);
+                    console.error('Erreur lors de la récupération du numéro:', error);
                 });
-        };
-        
-        // Démarrer le chargement du numéro
-        console.log('Début du chargement du numéro de saisie...');
-        forceUpdateSaisieNumber();
-        
-        // Vérifier périodiquement que le champ a bien une valeur
-        let checkCount = 0;
-        const checkInterval = setInterval(() => {
-            if (nSaisieField.value) {
-                console.log('Vérification - Le champ a une valeur:', nSaisieField.value);
-                clearInterval(checkInterval);
-            } else if (checkCount >= 3) { // Vérifier 3 fois maximum (3 secondes)
-                console.warn('Le champ est toujours vide après plusieurs tentatives, utilisation du numéro par défaut');
-                clearInterval(checkInterval);
-                const today = formatDateForDisplay(new Date());
-                setSaisieNumber(`000000000001 (${today})`);
-            }
-            checkCount++;
-        }, 1000);
+        }, 100);
     }
     
     // Ajouter la classe 'form-control' si elle n'existe pas

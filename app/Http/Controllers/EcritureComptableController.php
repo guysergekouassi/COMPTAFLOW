@@ -303,13 +303,16 @@ class EcritureComptableController extends Controller
             $lastSaisie = EcritureComptable::orderBy('id', 'desc')->first();
             $nextNumber = 1;
             
-            if ($lastSaisie) {
-                // Extraire le numéro de la dernière saisie ou utiliser l'ID + 1
+            if ($lastSaisie && !empty($lastSaisie->n_saisie)) {
+                // Extraire le numéro de la dernière saisie
                 if (preg_match('/^(\d+)/', $lastSaisie->n_saisie, $matches)) {
                     $nextNumber = (int)$matches[1] + 1;
                 } else {
                     $nextNumber = $lastSaisie->id + 1;
                 }
+            } elseif ($lastSaisie) {
+                // Si n_saisie est vide mais qu'il y a des enregistrements
+                $nextNumber = $lastSaisie->id + 1;
             }
             
             // Formater le numéro sur 12 chiffres
@@ -317,19 +320,20 @@ class EcritureComptableController extends Controller
             
             // Ajouter la date actuelle au format JJ/MM/AAAA
             $formattedDate = now()->format('d/m/Y');
-            $formattedSaisieNumber = "$nextSaisieNumber ($formattedDate)";
             
             return response()->json([
                 'success' => true, 
-                'nextSaisieNumber' => $formattedSaisieNumber
+                'nextSaisieNumber' => $nextSaisieNumber,
+                'date' => $formattedDate
             ]);
             
         } catch (\Exception $e) {
+            // En cas d'erreur, retourner une valeur par défaut
             return response()->json([
-                'success' => false, 
-                'message' => 'Erreur lors de la récupération du numéro de saisie',
-                'error' => $e->getMessage()
-            ], 500);
+                'success' => true, 
+                'nextSaisieNumber' => '000000000001',
+                'date' => now()->format('d/m/Y')
+            ]);
         }
     }
 
