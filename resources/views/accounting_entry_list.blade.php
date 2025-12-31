@@ -119,20 +119,11 @@
 </style>
 
 <body>
-  <!-- Layout wrapper -->
   <div class="layout-wrapper layout-content-navbar">
     <div class="layout-container">
-      <!-- Menu -->
       @include('components.sidebar')
-      <!-- / Menu -->
-
-      <!-- Layout container -->
       <div class="layout-page">
-                     <!-- Navbar -->
-                    @include('components.header', ['page_title' => 'Liste des <span class="text-gradient">écritures</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Gestion comptable</span>'])
-                    <!-- / Navbar -->
-
-                    <!-- Content wrapper -->
+                     @include('components.header', ['page_title' => 'Liste des <span class="text-gradient">écritures</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Gestion comptable</span>'])
                     <div class="content-wrapper">
                         <style>
                             .glass-card {
@@ -269,7 +260,6 @@
 
                         <div class="container-fluid flex-grow-1 container-p-y">
                             
-                            <!-- Badge Section -->
                             <div class="text-center mb-8 -mt-4">
                                 <p class="text-slate-500 font-medium max-w-xl mx-auto">
                                     Consultez, saisissez et gérez vos écritures comptables avec précision.
@@ -292,9 +282,7 @@
                                 }
                             </style>
                             
-                            <!-- Info / Filter / Action Bar -->
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 w-full gap-4">
-                                <!-- Left Group: Informations Saisie -->
                                 <div class="glass-card px-6 py-4 flex items-center gap-6 w-full md:w-auto">
                                    <div class="flex items-center gap-3">
                                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
@@ -317,15 +305,11 @@
                                    </div>
                                 </div>
     
-                                <!-- Right Group: Actions -->
                                 <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                                    <!-- Removed button -->
-                                </div>
+                                    </div>
                             </div>
 
-                            <!-- Actions Bar (même modèle que Plan Tiers) -->
                             <div class="flex justify-between items-center mb-8 w-full gap-4">
-                                <!-- Left Group: Filter -->
                                 <div class="flex items-center">
                                     <button type="button" id="toggleFilterBtn" onclick="window.toggleAdvancedFilter()"
                                         class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm">
@@ -334,17 +318,13 @@
                                     </button>
                                 </div>
 
-                                <!-- Right Group: Actions -->
                                 <div class="flex flex-wrap items-center justify-end gap-3">
-                                    <!-- Removed button -->
-                                </div>
+                                    </div>
                             </div>
 
-                            <!-- Advanced Filter Panel (même modèle que Plan Tiers) -->
                             <div id="advancedFilterPanel" style="display: none;" class="mb-8 transition-all duration-300">
                                 <div class="glass-card p-6">
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <!-- Exercice -->
                                         <div class="relative w-full">
                                             <select id="filterExercice" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
                                                 <option value="">Tous les exercices</option>
@@ -357,7 +337,6 @@
                                             <i class="fas fa-calendar-alt absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                         </div>
 
-                                        <!-- Mois -->
                                         <div class="relative w-full">
                                             <select id="filterMois" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
                                                 <option value="">Tous les mois</option>
@@ -370,7 +349,6 @@
                                             <i class="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                         </div>
 
-                                        <!-- Journal -->
                                         <div class="relative w-full">
                                             <select id="filterJournal" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
                                                 <option value="">Tous les journaux</option>
@@ -395,7 +373,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Main Table Card -->
                             <div class="glass-card overflow-hidden">
                                 <div class="px-6 py-4 border-b border-slate-100">
                                     <h3 class="text-lg font-bold text-slate-800">Liste des écritures</h3>
@@ -463,6 +440,9 @@
                                                 </td>
                                                 <td class="px-4 py-3 text-center whitespace-nowrap">
                                                     <div class="flex items-center justify-center space-x-2">
+                                                        <a href="{{ route('ecriture.show', $ecriture->id) }}" class="p-1.5 text-info hover:text-blue-800 transition-colors duration-200" title="Voir">
+                                                            <i class="bx bx-show text-xl"></i>
+                                                        </a>
                                                         <button onclick="editEntry({{ $ecriture->id }})" class="p-1.5 text-blue-600 hover:text-blue-800 transition-colors duration-200" title="Modifier">
                                                             <i class="bx bx-edit-alt text-xl"></i>
                                                         </button>
@@ -482,27 +462,17 @@
                                         @endif
                             </tbody>
                             <tfoot>
-                                <!-- Removed TOTAL row and its values -->
-                            </tfoot>
+                                </tfoot>
                         </table>
                     </div>
                 </div>
             </div>
           </div>
-          <!-- / Content wrapper -->
-
-        </div>
-        <!-- / Layout container -->
-
-        <!-- Overlay -->
+          </div>
         <div class="layout-overlay layout-menu-toggle"></div>
       </div>
-      <!-- / Layout wrapper -->
-
-      <!-- Core JS -->
       @include('components.footer')
 
-      <!-- Modal Nouvelle écriture -->
       <div class="modal fade" id="nouvelleEcritureModal" tabindex="-1" aria-labelledby="nouvelleEcritureModalLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered" style="max-width: 98vw; width: 98vw; margin: auto;">
               <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem; max-height: 90vh; overflow-y: auto;">
@@ -510,7 +480,6 @@
                       <input type="hidden" id="hiddenNumeroSaisie" name="numero_saisie" />
                       <input type="hidden" id="hiddenCodeJournal" name="code_journal" />
 
-                      <!-- Header -->
                       <div class="text-center mb-3 position-relative">
                           <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer" style="top: -0.5rem; right: -0.5rem;"></button>
                           <h1 class="text-xl font-extrabold tracking-tight text-slate-900" style="font-size: 1.5rem; font-weight: 800;">
@@ -519,7 +488,6 @@
                       </div>
 
                       <div class="modal-body" style="padding: 0;">
-                          <!-- Ligne 1: Date, Journal, N° Saisie -->
                           <div class="row g-2 mb-3">
                               <div class="col-md-4">
                                   <label for="dateEcriture" class="input-label-premium" style="font-size: 0.7rem;">Date</label>
@@ -535,7 +503,6 @@
                               </div>
                           </div>
 
-                          <!-- Ligne 2: Libellé -->
                           <div class="row g-2 mb-3">
                               <div class="col-12">
                                   <label for="libelleEcriture" class="input-label-premium" style="font-size: 0.7rem;">Libellé / Intitulé de l'opération</label>
@@ -543,7 +510,6 @@
                               </div>
                           </div>
 
-                          <!-- Ligne 3: Comptes -->
                           <div class="row g-2 mb-3">
                               <div class="col-md-6">
                                   <label for="compteGeneralSearch" class="input-label-premium" style="font-size: 0.7rem;">Compte Général</label>
@@ -601,7 +567,6 @@
                               </div>
                           </div>
 
-                          <!-- Ligne 4: Montants et détails -->
                           <div class="row g-2 mb-3">
                               <div class="col-md-3">
                                   <label for="referencePieceEcriture" class="input-label-premium" style="font-size: 0.7rem;">Référence Pièce</label>
@@ -624,7 +589,6 @@
                               </div>
                           </div>
 
-                          <!-- Ligne 5: Pièce justificative -->
                           <div class="row g-2">
                               <div class="col-12">
                                   <label for="pieceJustificativeEcriture" class="input-label-premium" style="font-size: 0.7rem;">Pièce justificative (PDF, Image)</label>
@@ -633,7 +597,6 @@
                           </div>
                       </div>
 
-                      <!-- Footer Actions -->
                       <div class="d-flex gap-2 mt-3 pt-3" style="border-top: 1px solid #e2e8f0;">
                           <button type="button" class="btn btn-cancel-premium flex-fill" data-bs-dismiss="modal" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
                               <i class="bx bx-x me-1"></i>Annuler
@@ -656,14 +619,15 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Remplir automatiquement la date du jour
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('dateEcriture').value = today;
+        const dateInput = document.getElementById('dateEcriture');
+        if (dateInput) dateInput.value = today;
 
         // Récupérer le numéro de saisie depuis le champ caché
-        const nextSaisie = document.getElementById('hiddenNumeroSaisie').value;
+        const hiddenSaisie = document.getElementById('hiddenNumeroSaisie');
+        const nextSaisie = hiddenSaisie ? hiddenSaisie.value : null;
         
         // Si le numéro de saisie n'est pas défini, en générer un nouveau
         if (!nextSaisie) {
-            // Faire une requête pour obtenir un nouveau numéro de saisie
             fetch('{{ route("ecriture.get-next-saisie") }}', {
                 method: 'GET',
                 headers: {
@@ -673,50 +637,57 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.nextSaisieNumber) {
-                    document.getElementById('numeroSaisie').value = data.nextSaisieNumber;
-                    document.getElementById('hiddenNumeroSaisie').value = data.nextSaisieNumber;
+                    const numSaisieInput = document.getElementById('numeroSaisie');
+                    if (numSaisieInput) numSaisieInput.value = data.nextSaisieNumber;
+                    if (hiddenSaisie) hiddenSaisie.value = data.nextSaisieNumber;
                 }
             });
         }
 
+        const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('code')) {
-            document.getElementById('journalEcriture').value = urlParams.get('code');
-            document.getElementById('hiddenCodeJournal').value = urlParams.get('code');
+            const journalInput = document.getElementById('journalEcriture');
+            const hiddenJournal = document.getElementById('hiddenCodeJournal');
+            if (journalInput) journalInput.value = urlParams.get('code');
+            if (hiddenJournal) hiddenJournal.value = urlParams.get('code');
         }
 
         if (urlParams.has('id_journal')) {
-            document.getElementById('hiddenCodeJournal').value = urlParams.get('id_journal');
+            const hiddenJournal = document.getElementById('hiddenCodeJournal');
+            if (hiddenJournal) hiddenJournal.value = urlParams.get('id_journal');
         }
 
         // Exclusion mutuelle Débit / Crédit
         const debitInput = document.getElementById('debitEcriture');
         const creditInput = document.getElementById('creditEcriture');
 
-        debitInput.addEventListener('input', function() {
-            if (this.value && parseFloat(this.value) > 0) {
-                creditInput.value = '';
-                creditInput.readOnly = true;
-                creditInput.style.backgroundColor = '#f8f9fa';
-                creditInput.style.cursor = 'not-allowed';
-            } else {
-                creditInput.readOnly = false;
-                creditInput.style.backgroundColor = '';
-                creditInput.style.cursor = '';
-            }
-        });
+        if (debitInput && creditInput) {
+            debitInput.addEventListener('input', function() {
+                if (this.value && parseFloat(this.value) > 0) {
+                    creditInput.value = '';
+                    creditInput.readOnly = true;
+                    creditInput.style.backgroundColor = '#f8f9fa';
+                    creditInput.style.cursor = 'not-allowed';
+                } else {
+                    creditInput.readOnly = false;
+                    creditInput.style.backgroundColor = '';
+                    creditInput.style.cursor = '';
+                }
+            });
 
-        creditInput.addEventListener('input', function() {
-            if (this.value && parseFloat(this.value) > 0) {
-                debitInput.value = '';
-                debitInput.readOnly = true;
-                debitInput.style.backgroundColor = '#f8f9fa';
-                debitInput.style.cursor = 'not-allowed';
-            } else {
-                debitInput.readOnly = false;
-                debitInput.style.backgroundColor = '';
-                debitInput.style.cursor = '';
-            }
-        });
+            creditInput.addEventListener('input', function() {
+                if (this.value && parseFloat(this.value) > 0) {
+                    debitInput.value = '';
+                    debitInput.readOnly = true;
+                    debitInput.style.backgroundColor = '#f8f9fa';
+                    debitInput.style.cursor = 'not-allowed';
+                } else {
+                    debitInput.readOnly = false;
+                    debitInput.style.backgroundColor = '';
+                    debitInput.style.cursor = '';
+                }
+            });
+        }
     });
 
     // Fonction pour ajouter une écriture depuis le modal
@@ -744,12 +715,11 @@
         // Ajouter la ligne au tableau (simulation)
         const table = document.getElementById('tableEcritures').getElementsByTagName('tbody')[0];
         
-        // Supprimer la ligne "Aucune écriture trouvée" si elle existe
         if (table.rows.length === 1 && table.rows[0].cells.length === 1) {
             table.deleteRow(0);
         }
 
-        const newRow = table.insertRow(0); // Ajouter au début
+        const newRow = table.insertRow(0);
 
         const compteText = document.getElementById('compteGeneralSearch').value;
         const tierText = document.getElementById('compteTiersSearch').value || '-';
@@ -769,28 +739,27 @@
             <td class="px-4 py-3 text-sm text-slate-700 text-right">${debit > 0 ? debit.toLocaleString('fr-FR', {minimumFractionDigits: 2}) : ''}</td>
             <td class="px-4 py-3 text-sm text-slate-700 text-right">${credit > 0 ? credit.toLocaleString('fr-FR', {minimumFractionDigits: 2}) : ''}</td>
             <td class="px-4 py-3 text-sm text-slate-700 text-center">${pieceFileName}</td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center space-x-2">
+                    <span class="text-slate-400 text-xs italic">Nouvelle ligne</span>
+                </div>
+            </td>
         `;
 
         newRow.classList.add('border-b', 'border-slate-100', 'hover:bg-slate-50');
 
-        // Mettre à jour les totaux
         updateTableTotals();
 
-        // Ne plus incrémenter le numéro de saisie automatiquement
-        // pour conserver le même numéro pour toutes les écritures de la même transaction
-
-        // Fermer le modal et réinitialiser le formulaire
-        const modal = bootstrap.Modal.getInstance(document.getElementById('nouvelleEcritureModal'));
+        const modalEl = document.getElementById('nouvelleEcritureModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
         modal.hide();
         
-        // Reset manuel pour garder le numero de saisie
         const prevSaisie = document.getElementById('numeroSaisie').value;
         form.reset();
         document.getElementById('numeroSaisie').value = prevSaisie;
         document.getElementById('hiddenNumeroSaisie').value = prevSaisie;
         document.getElementById('dateEcriture').value = new Date().toISOString().split('T')[0];
         
-        // Reset readOnly states
         document.getElementById('creditEcriture').readOnly = false;
         document.getElementById('creditEcriture').style.backgroundColor = '';
         document.getElementById('creditEcriture').style.cursor = '';
@@ -801,7 +770,6 @@
         alert('Écriture ajoutée avec succès !');
     }
 
-    // Fonction pour mettre à jour les totaux du tableau
     function updateTableTotals() {
         const table = document.getElementById('tableEcritures').getElementsByTagName('tbody')[0];
         let totalDebit = 0;
@@ -811,7 +779,6 @@
             const row = table.rows[i];
             if (row.cells.length < 9) continue;
             
-            // Debit est l'index 7, Credit est l'index 8
             const debitVal = parseFloat(row.cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             const creditVal = parseFloat(row.cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             
@@ -826,35 +793,17 @@
         if (footerCredit) footerCredit.textContent = totalCredit.toLocaleString('fr-FR', {minimumFractionDigits: 2});
     }
 
-    // Fonction pour filtrer les écritures
     function filterEcritures() {
         const exercice = document.getElementById('filterExercice').value;
         const mois = document.getElementById('filterMois').value;
         const journal = document.getElementById('filterJournal').value;
 
-        // Construire l'URL avec les filtres
         const params = new URLSearchParams();
         if (exercice) params.append('exercice_id', exercice);
         if (mois) params.append('mois', mois);
         if (journal) params.append('journal_id', journal);
 
-        // Recharger la page avec les filtres
         window.location.href = window.location.pathname + '?' + params.toString();
-    }
-
-    // Fonctions d'édition et suppression (placeholders)
-    function editEcriture(arg) {
-        const id = (typeof arg === 'number' || typeof arg === 'string') ? arg : null;
-        alert('Fonction de modification à implémenter' + (id !== null ? (' pour l\'écriture ID: ' + id) : ''));
-    }
-
-    function deleteEcriture(arg) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')) {
-            if (arg && typeof arg === 'object' && typeof arg.remove === 'function') {
-                arg.remove();
-            }
-            alert('Écriture supprimée avec succès !');
-        }
     }
 
     window.toggleAdvancedFilter = function() {
@@ -864,9 +813,7 @@
     };
 
     window.applyAdvancedFilters = function() {
-        if (typeof filterEcritures === 'function') {
-            filterEcritures();
-        }
+        filterEcritures();
     };
 
     window.resetAdvancedFilters = function() {
@@ -876,207 +823,9 @@
         if (ex) ex.value = '';
         if (mois) mois.value = '';
         if (j) j.value = '';
-        if (typeof filterEcritures === 'function') {
-            filterEcritures();
-        }
+        filterEcritures();
     };
 
-    // Fonction pour filtrer les options d'un menu déroulant de recherche
-    function filtrerOptions(searchInputId, dropdownId) {
-        const searchText = document.getElementById(searchInputId).value.toLowerCase();
-        const dropdown = document.getElementById(dropdownId);
-        const items = dropdown.getElementsByClassName('list-group-item');
-        let hasVisibleItems = false;
-        
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const text = item.textContent.toLowerCase();
-            
-            if (text.includes(searchText)) {
-                item.style.display = '';
-                hasVisibleItems = true;
-            } else {
-                item.style.display = 'none';
-            }
-        }
-        
-        // Afficher/masquer le dropdown
-        if (searchText.length > 0) {
-            dropdown.style.display = hasVisibleItems ? 'block' : 'none';
-        } else {
-            dropdown.style.display = 'none';
-        }
-    }
-
-    // Fonction pour ajuster dynamiquement la taille du modal
-    function ajusterTailleModal() {
-        const modal = document.querySelector('#nouvelleEcritureModal .modal-dialog');
-        if (!modal) return;
-        
-        // Réinitialiser la taille
-        modal.style.maxWidth = '90%';
-        modal.style.margin = '1.75rem auto';
-        
-        // Ajuster en fonction du contenu
-        const windowHeight = window.innerHeight;
-        const modalContent = modal.querySelector('.modal-content');
-        
-        if (modalContent.scrollHeight > windowHeight * 0.8) {
-            modal.style.maxHeight = '90vh';
-            modalContent.style.maxHeight = 'calc(90vh - 3.5rem)';
-            modalContent.style.overflowY = 'auto';
-        } else {
-            modal.style.maxHeight = '';
-            modalContent.style.maxHeight = '';
-            modalContent.style.overflowY = '';
-        }
-    }
-
-    // Mettre à jour l'affichage des sélecteurs au chargement
-    document.addEventListener('DOMContentLoaded', function() {
-        // Ajouter des styles pour les menus de recherche
-        const style = document.createElement('style');
-        style.textContent = `
-            /* Taille du modal */
-            #nouvelleEcritureModal .modal-dialog {
-                max-width: 98vw;
-                width: 98vw;
-                max-height: 90vh;
-                margin: 1.75rem auto;
-            }
-            
-            #nouvelleEcritureModal .modal-content {
-                border: none;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            }
-            
-            #nouvelleEcritureModal .modal-header {
-                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                border-bottom: 1px solid #dee2e6;
-                padding: 1.5rem;
-                border-radius: 12px 12px 0 0;
-            }
-
-            #nouvelleEcritureModal .modal-body {
-                padding: 2rem;
-            }
-            
-            /* Ajustements pour les champs du formulaire */
-            #nouvelleEcritureModal .form-control,
-            #nouvelleEcritureModal .form-select {
-                padding: 0.75rem 1rem;
-                font-size: 1.05rem;
-                border-radius: 8px;
-                border: 1px solid #ced4da;
-                transition: all 0.2s ease;
-                background-color: #fff;
-            }
-            
-            #nouvelleEcritureModal .form-control:focus,
-            #nouvelleEcritureModal .form-select:focus {
-                border-color: #696cff;
-                box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.1);
-                background-color: #fff;
-            }
-
-            #nouvelleEcritureModal input[readonly] {
-                background-color: #f8f9fa;
-                cursor: not-allowed;
-                border-color: #e9ecef;
-            }
-            
-            #nouvelleEcritureModal .form-label {
-                font-weight: 600;
-                color: #566a7f;
-                margin-bottom: 0.5rem;
-                font-size: 0.9rem;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-            /* Styles pour les menus de recherche */
-            .search-select-container { 
-                position: relative;
-            }
-
-            .search-select-dropdown {
-                position: absolute;
-                width: 100%;
-                max-height: 250px;
-                overflow-y: auto;
-                z-index: 1060;
-                background: white;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
-                margin-top: 5px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            }
-
-            .search-select-dropdown .list-group-item {
-                border: none;
-                padding: 10px 15px;
-                font-size: 0.95rem;
-                transition: background 0.2s;
-            }
-
-            .search-select-dropdown .list-group-item:hover {
-                background-color: #f0f2ff;
-                color: #696cff;
-            }
-
-            .input-group-text {
-                background-color: #f8f9fa;
-                border-radius: 8px 0 0 8px;
-                border-right: none;
-                color: #696cff;
-            }
-
-            .input-group .form-control {
-                border-radius: 0 8px 8px 0 !important;
-            }
-            
-            .modal-footer {
-                padding: 1.5rem;
-                border-top: 1px solid #dee2e6;
-            }
-            
-            .btn-primary {
-                padding: 0.75rem 2rem;
-                border-radius: 8px;
-                font-weight: 600;
-            }
-            
-            .btn-secondary {
-                padding: 0.75rem 2rem;
-                border-radius: 8px;
-            }
-
-            @media (max-width: 992px) {
-                #nouvelleEcritureModal .modal-dialog {
-                    max-width: 100vw;
-                    width: 100vw;
-                    margin: 10px auto;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Initialiser les champs de recherche
-        initSearchSelect('compteGeneralSearch', 'compteGeneralDropdown', 'compteGeneralEcriture');
-        initSearchSelect('compteTiersSearch', 'compteTiersDropdown', 'compteTiersEcriture');
-        
-        // Ajouter un écouteur pour le redimensionnement de la fenêtre
-        window.addEventListener('resize', ajusterTailleModal);
-        
-        // Ajuster la taille du modal après son affichage
-        const modal = document.getElementById('nouvelleEcritureModal');
-        if (modal) {
-            modal.addEventListener('shown.bs.modal', ajusterTailleModal);
-        }
-    });
-    
-    // Fonction pour initialiser les champs de recherche
     function initSearchSelect(inputId, dropdownId, hiddenInputId) {
         const input = document.getElementById(inputId);
         const dropdown = document.getElementById(dropdownId);
@@ -1084,9 +833,7 @@
         
         if (!input || !dropdown) return;
         
-        // Gérer le focus et le clic en dehors
         input.addEventListener('focus', function() {
-            // Afficher tout s'il n'y a pas de recherche, sinon filtrer
             const searchText = this.value.toLowerCase();
             const items = dropdown.getElementsByClassName('list-group-item');
             let hasVisibleItems = false;
@@ -1109,7 +856,6 @@
             }
         });
         
-        // Gérer la recherche
         input.addEventListener('input', function() {
             const searchText = this.value.toLowerCase();
             const items = dropdown.getElementsByClassName('list-group-item');
@@ -1128,7 +874,6 @@
             dropdown.style.display = hasVisibleItems ? 'block' : 'none';
         });
         
-        // Gérer la sélection d'un élément
         dropdown.addEventListener('click', function(e) {
             e.preventDefault();
             const item = e.target.closest('.list-group-item');
@@ -1138,278 +883,46 @@
             hiddenInput.value = item.dataset.value;
             dropdown.style.display = 'none';
             
-            // Déclencher l'événement de changement si c'est un compte tiers
             if (hiddenInputId === 'compteTiersEcriture') {
                 remplirChampsPlanTiers(item);
             }
         });
     }
-    
-    // Fonction pour sélectionner automatiquement le compte général correspondant
-    function selectionnerCompteGeneralParNumero(numeroCompte) {
-        const compteGeneralSelect = document.getElementById('compteGeneralEcriture');
-        if (!compteGeneralSelect) return false;
-        
-        // Rechercher le compte par son numéro
-        for (let i = 0; i < compteGeneralSelect.options.length; i++) {
-            const option = compteGeneralSelect.options[i];
-            if (option.dataset.numero === numeroCompte) {
-                compteGeneralSelect.value = option.value;
-                return true;
-            }
-        }
-        return false;
-    }
 
-    // Fonction pour remplir automatiquement les champs lors de la sélection d'un plan tiers
     function remplirChampsPlanTiers(selectedItem) {
-        if (!selectedItem.dataset) {
-            // Si c'est un élément select (pour la rétrocompatibilité)
-            if (selectedItem.options) {
-                selectedItem = selectedItem.options[selectedItem.selectedIndex];
-            } else {
-                return;
-            }
-        }
-        
-        // Remplir le libellé en priorité
         if (selectedItem.dataset.libelle) {
             document.getElementById('libelleEcriture').value = selectedItem.dataset.libelle;
         }
-        
-        // Si un numéro de compte est fourni, essayer de sélectionner le compte général correspondant
-        if (selectedItem.dataset.numeroCompte) {
-            const numeroCompte = selectedItem.dataset.numeroCompte;
-            const compteTrouve = selectionnerCompteGeneralParNumero(numeroCompte);
-            
-            if (!compteTrouve) {
-                console.warn('Aucun compte général trouvé pour le numéro:', numeroCompte);
-                // Si aucun compte n'est trouvé, utiliser le compte général fourni en fallback
-                if (selectedItem.dataset.compteGeneral) {
-                    document.getElementById('compteGeneralEcriture').value = selectedItem.dataset.compteGeneral;
-                    // Mettre à jour le champ de recherche du compte général
-                    const compteGeneralSearch = document.getElementById('compteGeneralSearch');
-                    if (compteGeneralSearch) {
-                        // Trouver le libellé du compte général
-                        const compteGeneralSelect = document.getElementById('compteGeneralEcriture');
-                        if (compteGeneralSelect) {
-                            const selectedOption = Array.from(compteGeneralSelect.options).find(
-                                opt => opt.value === selectedItem.dataset.compteGeneral
-                            );
-                            if (selectedOption) {
-                                compteGeneralSearch.value = selectedOption.text.trim();
-                            }
-                        }
-                    }
-                }
-            }
-        } else if (selectedItem.dataset.compteGeneral) {
-            // Fallback si seul compte_general_id est fourni
-            document.getElementById('compteGeneralEcriture').value = selectedItem.dataset.compteGeneral;
-        }
-        
-        // Remplir les autres champs si disponibles
-        const fields = ['adresse', 'telephone', 'email'];
-        fields.forEach(field => {
-            const element = document.getElementById(field + 'Ecriture');
-            if (element && selectedItem.dataset[field]) {
-                element.value = selectedItem.dataset[field];
-            }
-        });
-        
-        // Ajuster la taille du modal si nécessaire
-        ajusterTailleModal();
     }
-    
-    // Gérer la suppression de la sélection
-    document.addEventListener('click', function(e) {
-        // Si on clique sur la croix dans le champ de recherche
-        if (e.target.matches('.search-clear') || e.target.closest('.search-clear')) {
-            const input = e.target.closest('.input-group').querySelector('input[type="text"]');
-            const hiddenInput = e.target.closest('.input-group').querySelector('input[type="hidden"]');
-            if (input && hiddenInput) {
-                input.value = '';
-                hiddenInput.value = '';
-                
-                // Si c'est le champ des tiers, vider aussi le libellé
-                if (hiddenInput.id === 'compteTiersEcriture') {
-                    document.getElementById('libelleEcriture').value = '';
-                }
-            }
-        }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initSearchSelect('compteGeneralSearch', 'compteGeneralDropdown', 'compteGeneralEcriture');
+        initSearchSelect('compteTiersSearch', 'compteTiersDropdown', 'compteTiersEcriture');
     });
-    // Fonction pour enregistrer toutes les écritures
-    async function saveAllEntries() {
-        console.log('Début de la fonction saveAllEntries');
-        
-        // Désactiver le bouton pour éviter les clics multiples
-        const saveBtn = document.getElementById('saveEntriesBtn');
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
 
-        // Afficher un indicateur de chargement
-        Swal.fire({
-            title: 'Enregistrement en cours',
-            text: 'Veuillez patienter...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        try {
-            // Récupérer toutes les lignes du tableau
-            const rows = document.querySelectorAll('#tableEcritures tbody tr');
-            const entries = [];
-            
-            // Parcourir chaque ligne pour collecter les données
-            rows.forEach((row, index) => {
-                // Ignorer les lignes vides ou de message
-                if (row.querySelector('td[colspan]')) return;
-
-                // Récupérer les données de la ligne
-                const date = row.querySelector('td:nth-child(1)').textContent.trim();
-                const n_saisie = row.querySelector('td:nth-child(2)').textContent.trim();
-                const description = row.querySelector('td:nth-child(3)').textContent.trim();
-                const reference = row.querySelector('td:nth-child(4)').textContent.trim();
-                const compte_general = row.querySelector('td:nth-child(5)').textContent.trim();
-                const compte_tiers = row.querySelector('td:nth-child(6)').textContent.trim();
-                const debit = parseFloat(row.querySelector('td:nth-child(7)').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
-                const credit = parseFloat(row.querySelector('td:nth-child(8)').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
-
-                // Extraire l'ID du compte général (supposé être avant le tiret)
-                const compteGeneralId = compte_general.split(' - ')[0];
-                
-                // Extraire l'ID du compte tiers s'il existe
-                const compteTiersId = compte_tiers && compte_tiers !== '-' ? compte_tiers.split(' - ')[0] : null;
-
-                const entry = {
-                    date: date,
-                    n_saisie: n_saisie,
-                    description_operation: description,
-                    reference_piece: reference,
-                    plan_comptable_id: compteGeneralId,
-                    plan_tiers_id: compteTiersId,
-                    debit: debit,
-                    credit: credit,
-                    // Ajouter l'ID de l'exercice si nécessaire
-                    exercice_comptable_id: document.querySelector('select[name="exercice_id"]')?.value,
-                    // Ajouter l'ID de l'utilisateur
-                    user_id: {{ auth()->id() }},
-                    // Ajouter la date de création
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                };
-                
-                console.log(`Entrée ${index + 1}:`, entry);
-                entries.push(entry);
-            });
-
-            if (entries.length === 0) {
-                throw new Error('Aucune écriture à enregistrer');
-            }
-
-            console.log('Données à envoyer :', { ecritures: entries });
-
-            // Récupérer le token CSRF
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            if (!csrfToken) {
-                throw new Error('Token CSRF manquant');
-            }
-
-            // Envoyer les données au serveur
-            const response = await fetch("{{ route('ecritures-comptables.store-multiple') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ ecritures: entries })
-            });
-
-            console.log('Réponse du serveur :', response);
-
-            const result = await response.json().catch(error => {
-                console.error('Erreur lors de la lecture de la réponse JSON :', error);
-                throw new Error('Erreur lors de la lecture de la réponse du serveur');
-            });
-
-            console.log('Résultat du serveur :', result);
-
-            if (response.ok) {
-                
-                await Swal.fire({
-                    title: 'Succès !',
-                    text: result.message || 'Les écritures ont été enregistrées avec succès.',
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                    
-                });
-
-                // Recharger la page pour afficher les nouvelles écritures
-                window.location.reload();
-            } else {
-                let errorMessage = 'Erreur lors de l\'enregistrement des écritures';
-                if (result.message) {
-                    errorMessage = result.message;
-                } else if (result.errors) {
-                    errorMessage = Object.values(result.errors).flat().join('\n');
-                }
-                throw new Error(errorMessage);
-            }
-        } catch (error) {
-            console.error('Erreur lors de l\'enregistrement des écritures :', error);
-            
-            // Fermer l'indicateur de chargement s'il est toujours actif
-            if (Swal.isVisible()) {
-                Swal.close();
-            }
-            
-            // Afficher un message d'erreur détaillé
-            await Swal.fire({
-                title: 'Erreur',
-                html: `
-                    <div class="text-left">
-                        <p>${error.message || 'Une erreur est survenue lors de l\'enregistrement des écritures.'}</p>
-                        <details class="mt-3">
-                            <summary class="text-sm text-blue-600 cursor-pointer">Détails techniques</summary>
-                            <pre class="mt-2 p-2 bg-gray-100 rounded text-xs text-red-600 overflow-auto max-h-40">${error.stack || error.toString()}</pre>
-                        </details>
-                    </div>
-                `,
-                icon: 'error',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#1e40af'
-            });
-        } finally {
-            // Réactiver le bouton
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer';
-            }
-        }
-    }
-
-    // Fonction pour confirmer la suppression d'une écriture
     function confirmDelete(ecritureId) {
-        Swal.fire({
-            title: 'Êtes-vous sûr ?',
-            text: 'Cette action est irréversible !',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Oui, supprimer',
-            cancelButtonText: 'Annuler'
-        }).then((result) => {
-            if (result.isConfirmed) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Êtes-vous sûr ?',
+                text: 'Cette action est irréversible !',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Oui, supprimer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteEntry(ecritureId);
+                }
+            });
+        } else {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')) {
                 deleteEntry(ecritureId);
             }
-        });
+        }
     }
 
-    // Fonction pour supprimer une écriture
     async function deleteEntry(ecritureId) {
         try {
             const response = await fetch(`/ecriture/${ecritureId}`, {
@@ -1424,100 +937,21 @@
             const result = await response.json();
 
             if (response.ok) {
-                Swal.fire({
-                    title: 'Supprimé !',
-                    text: result.message || 'L\'écriture a été supprimée avec succès.',
-                    icon: 'success',
-                    confirmButtonText: 'OK'
-                }).then(() => {
-                    // Recharger la page pour afficher les modifications
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Supprimé !', result.message, 'success').then(() => window.location.reload());
+                } else {
+                    alert(result.message);
                     window.location.reload();
-                });
+                }
             } else {
-                throw new Error(result.message || 'Une erreur est survenue lors de la suppression.');
+                throw new Error(result.message || 'Erreur lors de la suppression.');
             }
         } catch (error) {
-            console.error('Erreur lors de la suppression :', error);
-            Swal.fire({
-                title: 'Erreur !',
-                text: error.message || 'Une erreur est survenue lors de la suppression de l\'écriture.',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
+            alert(error.message);
         }
     }
 
-    // Fonction pour éditer une écriture
     function editEntry(ecritureId) {
-        // Rediriger vers la page d'édition avec l'ID de l'écriture
         window.location.href = `/ecriture/${ecritureId}/edit`;
-    }
-
-    // Fonction pour ajouter une nouvelle écriture avec le même numéro de saisie
-    function addNewEntry() {
-        // Récupérer le numéro de saisie actuel
-        let currentSaisie = document.getElementById('numeroSaisie').value;
-        
-        // Si pas de numéro de saisie, en générer un nouveau
-        if (!currentSaisie) {
-            fetch('{{ route("ecriture.get-next-saisie") }}', {
-                method: 'GET',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.nextSaisieNumber) {
-                    currentSaisie = data.nextSaisieNumber;
-                    document.getElementById('numeroSaisie').value = currentSaisie;
-                    document.getElementById('hiddenNumeroSaisie').value = currentSaisie;
-                    openEntryModal(currentSaisie);
-                }
-            });
-        } else {
-            openEntryModal(currentSaisie);
-        }
-    }
-    
-    // Fonction pour ouvrir le modal avec le numéro de saisie
-    function openEntryModal(saisieNumber) {
-        // Récupérer la date actuelle
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Réinitialiser le formulaire
-        const form = document.getElementById('formNouvelleEcriture');
-        form.reset();
-        
-        // Définir les valeurs par défaut
-        document.getElementById('dateEcriture').value = today;
-        document.getElementById('numeroSaisie').value = saisieNumber;
-        document.getElementById('hiddenNumeroSaisie').value = saisieNumber;
-        
-        // Réinitialiser les champs de saisie
-        document.getElementById('debitEcriture').value = '';
-        document.getElementById('creditEcriture').value = '';
-        
-        // Réinitialiser les styles des champs de saisie
-        const debitInput = document.getElementById('debitEcriture');
-        const creditInput = document.getElementById('creditEcriture');
-        
-        debitInput.readOnly = false;
-        debitInput.style.backgroundColor = '';
-        debitInput.style.cursor = '';
-        
-        creditInput.readOnly = false;
-        creditInput.style.backgroundColor = '';
-        creditInput.style.cursor = '';
-        
-        // Ouvrir le modal
-        const modal = new bootstrap.Modal(document.getElementById('nouvelleEcritureModal'));
-        modal.show();
-        
-        // Focus sur le premier champ de saisie
-        setTimeout(() => {
-            const firstInput = form.querySelector('input:not([type="hidden"]), select');
-            if (firstInput) firstInput.focus();
-        }, 500);
     }
 </script>
