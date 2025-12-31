@@ -344,331 +344,140 @@
     </html>
 
 <script>
-// Fonction pour formater la date au format JJ/MM/AAAA
-function formatDateForDisplay(date) {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${day}/${month}/${year}`;
-}
+// Fonction globale pour ajouter une écriture
+function ajouterEcriture() {
+    try {
+        const date = document.getElementById('date');
+        const nSaisie = document.getElementById('n_saisie');
+        const libelle = document.getElementById('description_operation');
+        const debit = document.getElementById('debit');
+        const credit = document.getElementById('credit');
+        const compteGeneral = document.getElementById('compte_general');
+        const referencePiece = document.getElementById('reference_piece');
+        const compteTiers = document.getElementById('compte_tiers');
+        const pieceFile = document.getElementById('piece_justificatif');
+        const imputationInput = document.querySelector('input[readonly][placeholder*="N/A"]');
+        const planAnalytique = document.getElementById('plan_analytique');
 
-// Fonction pour obtenir le numéro de saisie initial depuis le serveur
-function getInitialSaisieNumber() {
-    return new Promise((resolve) => {
-        const loadingIcon = document.getElementById('loading-icon');
-        const nSaisieField = document.getElementById('n_saisie');
-        
-        // Afficher l'icône de chargement
-        if (loadingIcon && nSaisieField) {
-            loadingIcon.closest('.input-group').classList.add('loading');
-            nSaisieField.placeholder = 'Génération en cours...';
+        if (!date || !libelle || !compteGeneral) {
+            alert('Champs du formulaire introuvables.');
+            return;
         }
-        
-        // Fonction pour définir un numéro par défaut
-        const setDefaultNumber = () => {
-            const today = formatDateForDisplay(new Date());
-            return `000000000001 (${today})`;
-        };
-        
-        // Essayer de récupérer depuis le serveur
-        fetch('/ecriture/get-next-saisie')
-            .then(response => {
-                if (!response.ok) throw new Error('Erreur serveur');
-                return response.json();
-            })
-            .then(data => {
-                if (data?.success && data.nextSaisieNumber) {
-                    return data.nextSaisieNumber;
-                }
-                throw new Error('Format de réponse invalide');
-            })
-            .catch(error => {
-                console.error('Erreur avec la route principale, essai avec la route de test...', error);
-                // Essayer avec la route de test
-                return fetch('/test-saisie-number')
-                    .then(response => response.json())
-                    .then(testData => {
-                        if (testData?.success && testData.nextSaisieNumber) {
-                            return testData.nextSaisieNumber;
-                        }
-                        throw new Error('Échec de la route de test');
-                    });
-            })
-            .catch(error => {
-                console.error('Tentatives échouées, utilisation du numéro par défaut', error);
-                return setDefaultNumber();
-            })
-            .then(result => {
-                // S'assurer que le résultat est bien une chaîne
-                if (typeof result === 'string') {
-                    return result;
-                }
-                return setDefaultNumber();
-            })
-            .finally(() => {
-                // Cacher l'icône de chargement
-                if (loadingIcon && nSaisieField) {
-                    loadingIcon.closest('.input-group').classList.remove('loading');
-                    nSaisieField.placeholder = '';
-                }
-            })
-            .then(resolve);
-    });
+
+        if (!date.value || !libelle.value || !compteGeneral.value || compteGeneral.value === '') {
+            alert('Veuillez remplir tous les champs obligatoires (Date, Description, Compte Général).');
+            return;
+        }
+
+        if (!debit.value && !credit.value) {
+            alert('Veuillez saisir un montant au débit ou au crédit.');
+            return;
+        }
+
+        const tbody = document.querySelector('#tableEcritures tbody');
+        if (!tbody) {
+            alert('Tableau des écritures introuvable.');
+            return;
+        }
+
+        const newRow = tbody.insertRow();
+
+        const imputationValue = imputationInput ? imputationInput.value : '';
+        const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? 'Oui' : 'Non') : '';
+        const compteText = compteGeneral.options[compteGeneral.selectedIndex].text;
+        const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
+        const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
+
+        // Créer les cellules une par une pour pouvoir ajouter des attributs
+        const cells = [
+            date.value,
+            nSaisie ? nSaisie.value : '',
+            imputationValue,
+            libelle.value,
+            referencePiece ? referencePiece.value || '' : '',
+            '', // Compte général - sera rempli avec l'élément personnalisé
+            compteTiersValue,
+            debit.value || '',
+            credit.value || '',
+            pieceFileName,
+            analytiqueValue
+        ];
+
+        // Ajouter chaque cellule avec son contenu
+        cells.forEach((content, index) => {
+            const cell = newRow.insertCell();
+            if (index === 5) {
+                // Pour la cellule du compte général, ajouter l'attribut data-plan-comptable-id
+                cell.textContent = compteText;
+                cell.setAttribute('data-plan-comptable-id', compteGeneral.value);
+            } else if (index === 6 && compteTiers && compteTiers.value) {
+                // Pour la cellule du compte tiers, ajouter l'attribut data-tiers-id
+                cell.textContent = compteTiersValue;
+                cell.setAttribute('data-tiers-id', compteTiers.value);
+            } else {
+                cell.textContent = content;
+            }
+        });
+
+        const modifierCell = document.createElement('td');
+        modifierCell.innerHTML = `
+            <button class="btn btn-sm btn-warning" onclick="modifierEcriture(this.closest('tr'));">
+                <i class="bx bx-edit"></i>
+            </button>
+        `;
+        newRow.appendChild(modifierCell);
+
+        const supprimerCell = document.createElement('td');
+        supprimerCell.innerHTML = `
+            <button class="btn btn-sm btn-danger" onclick="supprimerEcriture(this.closest('tr'));">
+                <i class="bx bx-trash"></i>
+            </button>
+        `;
+        newRow.appendChild(supprimerCell);
+
+        // Réinitialisation du formulaire
+        libelle.value = '';
+        debit.value = '';
+        credit.value = '';
+        // Réactiver les deux champs débit et crédit
+        debit.disabled = false;
+        credit.disabled = false;
+        debit.style.backgroundColor = '';
+        credit.style.backgroundColor = '';
+        debit.style.cursor = '';
+        credit.style.cursor = '';
+        if (referencePiece) referencePiece.value = '';
+        if (pieceFile) pieceFile.value = '';
+
+        // Incrémenter automatiquement le numéro de saisie pour la prochaine écriture
+        if (nSaisie) {
+            numeroSaisieActuel++;
+            const nouveauNumero = numeroSaisieActuel.toString().padStart(12, '0');
+            nSaisie.value = nouveauNumero;
+            console.log('Numéro incrémenté:', nouveauNumero);
+        }
+
+        // Mise à jour des totaux
+        updateTotals();
+
+        alert('Écriture ajoutée avec succès !');
+
+    } catch (error) {
+        console.error('Erreur lors de l\'ajout de l\'écriture:', error);
+        alert('Une erreur est survenue: ' + error.message);
+    }
 }
 
-// Fonction pour incrémenter le numéro de saisie
-function incrementSaisieNumber() {
-    const currentSaisie = document.getElementById('n_saisie').value;
-    const today = formatDateForDisplay(new Date());
-    
-    // Si c'est la première saisie, utiliser le numéro initial
-    if (!currentSaisie) {
-        return getInitialSaisieNumber();
-    }
-    
-    // Extraire le numéro actuel et l'incrémenter
-    const match = currentSaisie.match(/^(\d+)/);
-    if (match) {
-        const currentNumber = parseInt(match[1], 10);
-        const nextNumber = (currentNumber + 1).toString().padStart(12, '0');
-        return `${nextNumber} (${today})`;
-    }
-    
-    // En cas d'erreur, retourner un numéro par défaut avec la date actuelle
-    return `000000000001 (${today})`;
-}
+// Variable globale pour le suivi du numéro de saisie
+let numeroSaisieActuel = 1;
 
-// Au chargement de la page
+// Script ultra-simple pour le numéro de saisie
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM chargé - Initialisation ultra-simple...');
     
-    // Variables globales pour le suivi
-    let numeroSaisieActuel = 1;
-    
-    // Ajouter un gestionnaire pour le menu du brouillon
-    const brouillonMenu = document.getElementById('brouillonMenu');
-    if (brouillonMenu) {
-        brouillonMenu.addEventListener('click', function(e) {
-            if (e.target.classList.contains('dropdown-item')) {
-                e.preventDefault();
-                if (e.target.dataset.action === 'charger') {
-                    chargerBrouillon();
-                } else if (e.target.dataset.action === 'effacer') {
-                    effacerBrouillon();
-                }
-            }
-        });
-    }
-    
-    // Définir la date du jour par défaut
-    const today = new Date().toISOString().split('T')[0];
-    const dateField = document.getElementById('date');
-    if (dateField) {
-        dateField.value = today;
-    }
-    
-    // Définir le numéro de saisie initial avec la date
-    const nSaisieField = document.getElementById('n_saisie');
-    if (nSaisieField) {
-        // Fonction pour définir la valeur du champ
-        const setSaisieNumber = (number) => {
-            try {
-                nSaisieField.value = number;
-                nSaisieField.dispatchEvent(new Event('input', { bubbles: true }));
-                nSaisieField.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log('Numéro de saisie défini avec succès:', number);
-            } catch (error) {
-                console.error('Erreur lors de la définition du numéro de saisie:', error);
-                // Essayer une méthode alternative
-                nSaisieField.setAttribute('value', number);
-            }
-        };
-        
-        // Fonction pour forcer la mise à jour du champ
-        const forceUpdateSaisieNumber = () => {
-            const today = formatDateForDisplay(new Date());
-            const defaultNumber = `000000000001 (${today})`;
-            
-            // Essayer de récupérer le numéro du serveur
-            getInitialSaisieNumber()
-                .then(saisieNumber => {
-                    console.log('Numéro de saisie reçu du serveur:', saisieNumber);
-                    setSaisieNumber(saisieNumber);
-                })
-                .catch(error => {
-                    console.error('Erreur lors de la récupération du numéro:', error);
-                });
-        }, 100);
-    }
-    
-    // Ajouter la classe 'form-control' si elle n'existe pas
-    if (nSaisieField && !nSaisieField.classList.contains('form-control')) {
-        nSaisieField.classList.add('form-control');
-    }
-    
-    // Initialiser Select2 pour les champs de sélection
-    if (typeof $.fn.select2 === 'function') {
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            width: '100%',
-            placeholder: function() {
-                return $(this).attr('title');
-            },
-            allowClear: true
-        });
-    }
-    
-    // Gérer l'interaction entre les champs débit et crédit
-    const debitField = document.getElementById('debit');
-    const creditField = document.getElementById('credit');
-    
-    function handleDebitCreditInteraction() {
-        if (debitField.value && parseFloat(debitField.value) > 0) {
-            creditField.disabled = true;
-            creditField.style.backgroundColor = '#f8f9fa';
-            creditField.style.cursor = 'not-allowed';
-        } else {
-            creditField.disabled = false;
-            creditField.style.backgroundColor = '';
-            creditField.style.cursor = '';
-        }
-        
-        if (creditField.value && parseFloat(creditField.value) > 0) {
-            debitField.disabled = true;
-            debitField.style.backgroundColor = '#f8f9fa';
-            debitField.style.cursor = 'not-allowed';
-        } else {
-            debitField.disabled = false;
-            debitField.style.backgroundColor = '';
-            debitField.style.cursor = '';
-        }
-    }
-    
-    // Ajouter les écouteurs d'événements
-    if (debitField && creditField) {
-        debitField.addEventListener('input', handleDebitCreditInteraction);
-        creditField.addEventListener('input', handleDebitCreditInteraction);
-    }
-    
-    console.log('Initialisation terminée');
-}); 
-
-    // Fonction globale pour ajouter une écriture
-    function ajouterEcriture() {
-        try {
-            const date = document.getElementById('date');
-            const nSaisie = document.getElementById('n_saisie');
-            const libelle = document.getElementById('description_operation');
-            const debit = document.getElementById('debit');
-            const credit = document.getElementById('credit');
-            const compteGeneral = document.getElementById('compte_general');
-            const referencePiece = document.getElementById('reference_piece');
-            const compteTiers = document.getElementById('compte_tiers');
-            const pieceFile = document.getElementById('piece_justificatif');
-            const imputationInput = document.querySelector('input[readonly][placeholder*="N/A"]');
-            const planAnalytique = document.getElementById('plan_analytique');
-
-            if (!date || !libelle || !compteGeneral) {
-                alert('Champs du formulaire introuvables.');
-                return;
-            }
-
-            if (!date.value || !libelle.value || !compteGeneral.value || compteGeneral.value === '') {
-                alert('Veuillez remplir tous les champs obligatoires (Date, Description, Compte Général).');
-                return;
-            }
-
-            if (!debit.value && !credit.value) {
-                alert('Veuillez saisir un montant au débit ou au crédit.');
-                return;
-            }
-
-            const tbody = document.querySelector('#tableEcritures tbody');
-            if (!tbody) {
-                alert('Tableau des écritures introuvable.');
-                return;
-            }
-
-            const newRow = tbody.insertRow();
-
-            const imputationValue = imputationInput ? imputationInput.value : '';
-            const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? 'Oui' : 'Non') : '';
-            const compteText = compteGeneral.options[compteGeneral.selectedIndex].text;
-            const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
-            const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
-
-            // Créer les cellules une par une pour pouvoir ajouter des attributs
-            const cells = [
-                date.value,
-                nSaisie ? nSaisie.value : '',
-                imputationValue,
-                libelle.value,
-                referencePiece ? referencePiece.value || '' : '',
-                '', // Compte général - sera rempli avec l'élément personnalisé
-                compteTiersValue,
-                debit.value || '',
-                credit.value || '',
-                pieceFileName,
-                analytiqueValue
-            ];
-
-            // Ajouter chaque cellule avec son contenu
-            cells.forEach((content, index) => {
-                const cell = newRow.insertCell();
-                if (index === 5) {
-                    // Pour la cellule du compte général, ajouter l'attribut data-plan-comptable-id
-                    cell.textContent = compteText;
-                    cell.setAttribute('data-plan-comptable-id', compteGeneral.value);
-                } else if (index === 6 && compteTiers && compteTiers.value) {
-                    // Pour la cellule du compte tiers, ajouter l'attribut data-tiers-id
-                    cell.textContent = compteTiersValue;
-                    cell.setAttribute('data-tiers-id', compteTiers.value);
-                } else {
-                    cell.textContent = content;
-                }
-            });
-
-            const modifierCell = document.createElement('td');
-            modifierCell.innerHTML = `
-                <button class="btn btn-sm btn-warning" onclick="modifierEcriture(this.closest('tr'));">
-                    <i class="bx bx-edit"></i>
-                </button>
-            `;
-            newRow.appendChild(modifierCell);
-
-            const supprimerCell = document.createElement('td');
-            supprimerCell.innerHTML = `
-                <button class="btn btn-sm btn-danger" onclick="supprimerEcriture(this.closest('tr'));">
-                    <i class="bx bx-trash"></i>
-                </button>
-            `;
-            newRow.appendChild(supprimerCell);
-
-            // Réinitialisation du formulaire
-            libelle.value = '';
-            debit.value = '';
-            credit.value = '';
-            // Réactiver les deux champs débit et crédit
-            debit.disabled = false;
-            credit.disabled = false;
-            debit.style.backgroundColor = '';
-            credit.style.backgroundColor = '';
-            debit.style.cursor = '';
-            credit.style.cursor = '';
-            if (referencePiece) referencePiece.value = '';
-            if (pieceFile) pieceFile.value = '';
-
-            // Mise à jour des totaux
-            updateTotals();
-
-            alert('Écriture ajoutée avec succès !');
-
-        } catch (error) {
-            console.error('Erreur lors de l\'ajout de l\'écriture:', error);
-            alert('Une erreur est survenue: ' + error.message);
-        }
-    }
+    console.log('Initialisation ultra-simple terminée');
+    console.log('Numéro de saisie initial:', document.getElementById('n_saisie')?.value);
+});
 
     // Fonction pour ajouter une ligne d'écriture au tableau
     function ajouterLigneEcriture(ligne = {}) {
@@ -1019,7 +828,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 // Incrémenter automatiquement le numéro de saisie pour la prochaine écriture
                 if (nSaisie) {
-                    const nextNumber = incrementSaisieNumber();
+                    numeroSaisieActuel++;
+                    const nextNumber = numeroSaisieActuel.toString().padStart(12, '0');
                     nSaisie.value = nextNumber;
                     console.log('Prochain numéro de saisie:', nextNumber);
                 }    
