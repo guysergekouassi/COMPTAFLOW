@@ -220,40 +220,66 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="debit" class="form-label">Montant Débit</label>
-                                    <input type="number" id="debit" name="debit" class="form-control" step="0.01" min="0" placeholder="0.00" 
-                                           oninput="updateCreditField(this)" />
+                                    <input type="number" id="debit" name="debit" class="form-control debit-amount" 
+                                           step="0.01" min="0" placeholder="0.00" />
                                 </div>
                                 <div class="col-md-3">
                                     <label for="credit" class="form-label">Montant Crédit</label>
-                                    <input type="number" id="credit" name="credit" class="form-control" step="0.01" min="0" placeholder="0.00" 
-                                           oninput="updateDebitField(this)" />
+                                    <input type="number" id="credit" name="credit" class="form-control credit-amount" 
+                                           step="0.01" min="0" placeholder="0.00" />
                                 </div>
                                 
                                 @push('scripts')
                                 <script>
-                                    function updateCreditField(debitField) {
-                                        const creditField = document.getElementById('credit');
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const debitField = document.getElementById('debit');
+                                    const creditField = document.getElementById('credit');
+                                    
+                                    function updateFields() {
+                                        // Si débit a une valeur, on désactive crédit et vice versa
                                         if (debitField.value && parseFloat(debitField.value) > 0) {
                                             creditField.disabled = true;
                                             creditField.value = '';
-                                            creditField.style.backgroundColor = '#f8f9fa';
+                                            creditField.style.backgroundColor = '#e9ecef';
+                                        } else if (creditField.value && parseFloat(creditField.value) > 0) {
+                                            debitField.disabled = true;
+                                            debitField.value = '';
+                                            debitField.style.backgroundColor = '#e9ecef';
                                         } else {
+                                            // Si les deux champs sont vides, on réactive tout
+                                            debitField.disabled = false;
                                             creditField.disabled = false;
+                                            debitField.style.backgroundColor = '';
                                             creditField.style.backgroundColor = '';
                                         }
                                     }
 
-                                    function updateDebitField(creditField) {
-                                        const debitField = document.getElementById('debit');
-                                        if (creditField.value && parseFloat(creditField.value) > 0) {
+                                    // Écouteurs d'événements
+                                    debitField.addEventListener('input', function() {
+                                        if (this.value && parseFloat(this.value) > 0) {
+                                            creditField.disabled = true;
+                                            creditField.value = '';
+                                            creditField.style.backgroundColor = '#e9ecef';
+                                        } else {
+                                            creditField.disabled = false;
+                                            creditField.style.backgroundColor = '';
+                                        }
+                                    });
+
+                                    creditField.addEventListener('input', function() {
+                                        if (this.value && parseFloat(this.value) > 0) {
                                             debitField.disabled = true;
                                             debitField.value = '';
-                                            debitField.style.backgroundColor = '#f8f9fa';
+                                            debitField.style.backgroundColor = '#e9ecef';
                                         } else {
                                             debitField.disabled = false;
                                             debitField.style.backgroundColor = '';
                                         }
-                                    }
+                                    });
+
+                                    // Initialisation
+                                    updateFields();
+                                });
                                 </script>
                                 @endpush
                                 <div class="col-md-3">
