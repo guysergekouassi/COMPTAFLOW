@@ -334,16 +334,24 @@ function formatDateForDisplay(date) {
     return `${day}/${month}/${year}`;
 }
 
-// Fonction pour obtenir le numéro de saisie initial
-function getInitialSaisieNumber() {
-    // Récupérer le numéro de saisie depuis le serveur (passé via PHP)
-    const serverSaisieNumber = '{{ $nextSaisieNumber ?? '000000000001' }}';
-    
-    // Formater la date pour l'affichage
-    const today = formatDateForDisplay(new Date());
-    
-    // Retourner le numéro formaté avec la date
-    return `${serverSaisieNumber} (${today})`;
+// Fonction pour obtenir le numéro de saisie initial depuis le serveur
+async function getInitialSaisieNumber() {
+    try {
+        const response = await fetch('/ecriture/get-next-saisie');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                return data.nextSaisieNumber;
+            }
+        }
+        // En cas d'erreur, générer un numéro local avec la date actuelle
+        const today = formatDateForDisplay(new Date());
+        return `000000000001 (${today})`;
+    } catch (error) {
+        console.error('Erreur lors de la récupération du numéro de saisie:', error);
+        const today = formatDateForDisplay(new Date());
+        return `000000000001 (${today})`;
+    }
 }
 
 // Fonction pour incrémenter le numéro de saisie
@@ -364,7 +372,7 @@ function incrementSaisieNumber() {
         return `${nextNumber} (${today})`;
     }
     
-    // En cas d'erreur, retourner un numéro par défaut
+    // En cas d'erreur, retourner un numéro par défaut avec la date actuelle
     return `000000000001 (${today})`;
 }
 
@@ -399,28 +407,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const dateField = document.getElementById('date');
     if (dateField) {
         dateField.value = today;
-        // Déclencher l'événement change pour mettre à jour le numéro de saisie
-        dateField.dispatchEvent(new Event('change'));
     }
     
-    // Définir le numéro de saisie initial
+    // Définir le numéro de saisie initial avec la date
     const nSaisieField = document.getElementById('n_saisie');
     if (nSaisieField) {
-        // Récupérer le dernier numéro de saisie depuis le serveur
-        fetch('/ecriture/get-next-saisie')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    nSaisieField.value = data.nextSaisieNumber;
-                } else {
-                    // En cas d'erreur, générer un numéro local
-                    nSaisieField.value = '000000000001';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors de la récupération du numéro de saisie:', error);
-                nSaisieField.value = '000000000001';
-            });
+        // Récupérer le numéro de saisie depuis le serveur
+        getInitialSaisieNumber().then(saisieNumber => {
+            nSaisieField.value = saisieNumber;
+        });
     }
     
     // Ajouter la classe 'form-control' si elle n'existe pas
