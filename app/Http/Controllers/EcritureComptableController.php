@@ -70,6 +70,48 @@ class EcritureComptableController extends Controller
         return null;
     }
 
+    /**
+     * Affiche le formulaire d'édition d'une écriture comptable spécifique.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        $user = Auth::user();
+        $ecriture = EcritureComptable::where('company_id', $user->company_id)
+            ->where('id', $id)
+            ->firstOrFail();
+            
+        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
+            ->orderBy('numero_de_compte')
+            ->get();
+            
+        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+            ->with('compte')
+            ->get();
+            
+        $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
+            ->orderBy('name')
+            ->get();
+            
+        $codeJournaux = CodeJournal::all();
+        
+        return view('accounting_entry_edit', compact(
+            'ecriture', 
+            'plansComptables', 
+            'plansTiers', 
+            'comptesTresorerie',
+            'codeJournaux'
+        ));
+    }
+
+    /**
+     * Enregistre une nouvelle écriture comptable.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function store(Request $request)
     {
         try {
