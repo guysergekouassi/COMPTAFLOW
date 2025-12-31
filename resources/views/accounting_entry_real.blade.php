@@ -142,7 +142,7 @@
                             <div class="row g-4">
                                 <div class="col-md-3">
                                     <label for="date" class="form-label">Date de l'écriture</label>
-                                    <input type="date" id="date" name="date" class="form-control"  />
+                                    <input type="date" id="date" name="date" class="form-control" readonly value="{{ date('Y-m-d') }}" />
                                     <div class="invalid-feedback">Veuillez renseigner la date.</div>
                                 </div>
                                 <div class="col-md-6">
@@ -152,7 +152,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label for="n_saisie" class="form-label">N° de Saisie</label>
-                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" placeholder="Automatique"  />
+                                    <input type="text" id="n_saisie" name="n_saisie" class="form-control" readonly value="000000000001" />
                                 </div>
 
                                 <div class="col-md-12">
@@ -326,134 +326,95 @@
 
 <script>
 // Fonction pour formater la date au format JJ/MM/AAAA
-function formatDateForDisplay(date) {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${day}/${month}/${year}`;
+function formatDateForDisplay(dateString) {
+    if (!dateString) return '';
+    
+    // Si la date est déjà au format JJ/MM/AAAA, la retourner telle quelle
+    if (dateString.includes('/') && dateString.length === 10) {
+        return dateString;
+    }
+    
+    // Convertir YYYY-MM-DD en JJ/MM/AAAA
+    try {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return dateString; // Retourner la date originale si invalide
+        
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${day}/${month}/${year}`;
+    } catch (e) {
+        return dateString; // Retourner la date originale en cas d'erreur
+    }
+}
+
+// Fonction pour réinitialiser le numéro de saisie (pour test)
+function resetSaisieNumber() {
+    localStorage.removeItem('lastSaisieNumber');
+    console.log('Numéro de saisie réinitialisé');
 }
 
 // Fonction pour obtenir le numéro de saisie initial
 function getInitialSaisieNumber() {
-    // Récupérer le numéro de saisie depuis le serveur (passé via PHP)
-    const serverSaisieNumber = '{{ $nextSaisieNumber ?? '000000000001' }}';
+    // Récupérer le dernier numéro depuis localStorage ou commencer à 0
+    let lastNumber = localStorage.getItem('lastSaisieNumber');
+    let currentNumber = lastNumber ? parseInt(lastNumber, 10) : 0;
     
-    // Formater la date pour l'affichage
-    const today = formatDateForDisplay(new Date());
+    // Incrémenter pour le nouveau numéro
+    currentNumber = currentNumber + 1;
     
-    // Retourner le numéro formaté avec la date
-    return `${serverSaisieNumber} (${today})`;
+    // Sauvegarder pour la prochaine fois
+    localStorage.setItem('lastSaisieNumber', currentNumber);
+    
+    // Retourner le numéro formaté sur 12 chiffres
+    return currentNumber.toString().padStart(12, '0');
 }
 
 // Fonction pour incrémenter le numéro de saisie
 function incrementSaisieNumber() {
-    const currentSaisie = document.getElementById('n_saisie').value;
-    const today = formatDateForDisplay(new Date());
+    // Récupérer le numéro actuel
+    let currentNumber = parseInt(localStorage.getItem('lastSaisieNumber') || '0', 10);
     
-    // Si c'est la première saisie, utiliser le numéro initial
-    if (!currentSaisie) {
-        return getInitialSaisieNumber();
-    }
+    // Incrémenter
+    currentNumber = currentNumber + 1;
     
-    // Extraire le numéro actuel et l'incrémenter
-    const match = currentSaisie.match(/^(\d+)/);
-    if (match) {
-        const currentNumber = parseInt(match[1], 10);
-        const nextNumber = (currentNumber + 1).toString().padStart(12, '0');
-        return `${nextNumber} (${today})`;
-    }
+    // Sauvegarder
+    localStorage.setItem('lastSaisieNumber', currentNumber);
     
-    // En cas d'erreur, retourner un numéro par défaut
-    return `000000000001 (${today})`;
+    // Retourner le numéro formaté
+    return currentNumber.toString().padStart(12, '0');
 }
 
-// Au chargement de la page
+// Script simplifié pour gérer uniquement l'incrémentation du numéro de saisie
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialiser les sélecteurs
-    initialiserSelect2();
+    console.log('Initialisation simplifiée...');
     
-    // Vérifier et charger un brouillon existant
-    const brouillonCharge = chargerBrouillon();
-    
-    // Mettre à jour les totaux initialement
-    updateTotals();
-    
-    // Ajouter un gestionnaire pour le menu du brouillon
-    const brouillonMenu = document.getElementById('brouillonMenu');
-    if (brouillonMenu) {
-        brouillonMenu.addEventListener('click', function(e) {
-            if (e.target.classList.contains('dropdown-item')) {
-                e.preventDefault();
-                if (e.target.dataset.action === 'charger') {
-                    chargerBrouillon();
-                } else if (e.target.dataset.action === 'effacer') {
-                    effacerBrouillon();
-                }
-            }
-        });
-    }
-    
-    // Définir la date du jour par défaut
-    const today = new Date().toISOString().split('T')[0];
-    const dateField = document.getElementById('date');
-    if (dateField) {
-        dateField.value = today;
-    }
-    
-    // Définir le numéro de saisie initial
-    const nSaisieField = document.getElementById('n_saisie');
-    if (nSaisieField) {
-        nSaisieField.value = getInitialSaisieNumber();
-    }
-    
-    // Ajouter la classe 'form-control' si elle n'existe pas
-    if (nSaisieField && !nSaisieField.classList.contains('form-control')) {
-        nSaisieField.classList.add('form-control');
-    }
-    
-    // Initialiser Select2 pour les champs de sélection
-    if (typeof $.fn.select2 === 'function') {
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            width: '100%',
-            placeholder: function() {
-                return $(this).attr('title');
-            },
-            allowClear: true
-        });
-    }
-    
-    // Gérer l'interaction entre les champs débit et crédit
-    const debitField = document.getElementById('debit');
-    const creditField = document.getElementById('credit');
-    
-    function handleDebitCreditInteraction() {
-        if (debitField.value && parseFloat(debitField.value) > 0) {
-            creditField.disabled = true;
-            creditField.style.backgroundColor = '#f8f9fa';
-            creditField.style.cursor = 'not-allowed';
-        } else {
-            creditField.disabled = false;
-            creditField.style.backgroundColor = '';
-            creditField.style.cursor = '';
-        }
-        
-        if (creditField.value && parseFloat(creditField.value) > 0) {
-            debitField.disabled = true;
-            debitField.style.backgroundColor = '#f8f9fa';
-            debitField.style.cursor = 'not-allowed';
-        } else {
-            debitField.disabled = false;
-            debitField.style.backgroundColor = '';
-            debitField.style.cursor = '';
+    // Fonction simple pour incrémenter le numéro de saisie
+    function incrementerNumeroSaisie() {
+        const champSaisie = document.getElementById('n_saisie');
+        if (champSaisie) {
+            const valeurActuelle = champSaisie.value;
+            const numero = parseInt(valeurActuelle) || 1;
+            const nouveauNumero = (numero + 1).toString().padStart(12, '0');
+            champSaisie.value = nouveauNumero;
+            console.log('Numéro incrémenté:', valeurActuelle, '->', nouveauNumero);
         }
     }
     
-    // Ajouter les écouteurs d'événements
-    debitField.addEventListener('input', handleDebitCreditInteraction);
-    creditField.addEventListener('input', handleDebitCreditInteraction);
+    // Surcharge de la fonction ajouterEcriture pour incrémenter après ajout
+    const ajouterEcritureOriginal = window.ajouterEcriture;
+    window.ajouterEcriture = function() {
+        // Appeler la fonction originale
+        if (ajouterEcritureOriginal) {
+            ajouterEcritureOriginal();
+        }
+        // Incrémenter le numéro après l'ajout
+        setTimeout(incrementerNumeroSaisie, 100);
+    };
     
+    console.log('Initialisation terminée - Numéro de saisie:', document.getElementById('n_saisie')?.value);
+    console.log('Date:', document.getElementById('date')?.value);
+});
     // Réinitialiser les champs quand ils sont vidés
     debitField.addEventListener('change', function() {
         if (!this.value || parseFloat(this.value) === 0) {
@@ -516,9 +477,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
 
             // Créer les cellules une par une pour pouvoir ajouter des attributs
+            // Formater la date pour l'affichage (convertir YYYY-MM-DD en JJ/MM/AAAA)
+            const dateValue = date.value;
+            const formattedDate = dateValue ? formatDateForDisplay(dateValue) : '';
+            const saisieValue = nSaisie ? nSaisie.value : '';
+            
+            console.log('Date brute:', dateValue);
+            console.log('Date formatée:', formattedDate);
+            console.log('N° saisie:', saisieValue);
+            
             const cells = [
-                date.value,
-                nSaisie ? nSaisie.value : '',
+                formattedDate,
+                saisieValue,
                 imputationValue,
                 libelle.value,
                 referencePiece ? referencePiece.value || '' : '',
@@ -575,6 +545,18 @@ document.addEventListener('DOMContentLoaded', function() {
             credit.style.cursor = '';
             if (referencePiece) referencePiece.value = '';
             if (pieceFile) pieceFile.value = '';
+            
+            // Réinitialiser les sélecteurs
+            if (compteGeneral) compteGeneral.value = '';
+            if (compteTiers) compteTiers.value = '';
+            if (planAnalytique) planAnalytique.value = '0';
+
+            // Incrémenter automatiquement le numéro de saisie pour la prochaine écriture
+            if (nSaisie) {
+                const nextNumber = incrementSaisieNumber();
+                nSaisie.value = nextNumber;
+                console.log('Prochain numéro de saisie:', nextNumber);
+            }
 
             // Mise à jour des totaux
             updateTotals();
