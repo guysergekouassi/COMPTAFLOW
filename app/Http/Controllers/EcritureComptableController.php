@@ -78,32 +78,52 @@ class EcritureComptableController extends Controller
      */
     public function edit($id)
     {
-        $user = Auth::user();
-        $ecriture = EcritureComptable::where('company_id', $user->company_id)
-            ->where('id', $id)
-            ->firstOrFail();
+        try {
+            $user = Auth::user();
             
-        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
-            ->orderBy('numero_de_compte')
-            ->get();
+            // Récupérer l'écriture avec ses relations
+            $ecriture = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+                ->where('company_id', $user->company_id)
+                ->findOrFail($id);
+                
+            $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
+                ->orderBy('numero_de_compte')
+                ->get();
+                
+            $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+                ->with('compte')
+                ->get();
+                
+            $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
+                ->orderBy('name')
+                ->get();
+                
+            $codeJournaux = CodeJournal::all();
             
-        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')
-            ->with('compte')
-            ->get();
+            // Debug: Vérifier les données avant l'envoi à la vue
+            \Log::info('Données envoyées à la vue d\'édition:', [
+                'ecriture_id' => $ecriture->id,
+                'compte_general' => $ecriture->compte_general,
+                'tiers' => $ecriture->tiers,
+                'libelle' => $ecriture->libelle,
+                'mouvement' => $ecriture->mouvement,
+                'date_ecriture' => $ecriture->date_ecriture,
+                'piece' => $ecriture->piece,
+                'n_saisie' => $ecriture->n_saisie,
+            ]);
             
-        $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
-            ->orderBy('name')
-            ->get();
+            return view('accounting_entry_edit', compact(
+                'ecriture', 
+                'plansComptables', 
+                'plansTiers', 
+                'comptesTresorerie',
+                'codeJournaux'
+            ));
             
-        $codeJournaux = CodeJournal::all();
-        
-        return view('accounting_entry_edit', compact(
-            'ecriture', 
-            'plansComptables', 
-            'plansTiers', 
-            'comptesTresorerie',
-            'codeJournaux'
-        ));
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'édition de l\'écriture comptable: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Impossible de charger l\'écriture pour édition: ' . $e->getMessage());
+        }
     }
 
     /**
