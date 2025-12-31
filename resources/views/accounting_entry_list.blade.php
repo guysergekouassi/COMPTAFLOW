@@ -415,6 +415,7 @@
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Débit</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Crédit</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Pièce</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -439,6 +440,16 @@
                                                     @else
                                                         <span class="text-slate-400">-</span>
                                                     @endif
+                                                </td>
+                                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                                    <div class="flex items-center justify-center space-x-2">
+                                                        <button onclick="editEntry({{ $ecriture->id }})" class="p-1.5 text-blue-600 hover:text-blue-800 transition-colors duration-200" title="Modifier">
+                                                            <i class="bx bx-edit-alt text-xl"></i>
+                                                        </button>
+                                                        <button onclick="confirmDelete({{ $ecriture->id }})" class="p-1.5 text-red-600 hover:text-red-800 transition-colors duration-200" title="Supprimer">
+                                                            <i class="bx bx-trash text-xl"></i>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -1358,6 +1369,68 @@
                 saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer';
             }
         }
+    }
+
+    // Fonction pour confirmer la suppression d'une écriture
+    function confirmDelete(ecritureId) {
+        Swal.fire({
+            title: 'Êtes-vous sûr ?',
+            text: 'Cette action est irréversible !',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Oui, supprimer',
+            cancelButtonText: 'Annuler'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                deleteEntry(ecritureId);
+            }
+        });
+    }
+
+    // Fonction pour supprimer une écriture
+    async function deleteEntry(ecritureId) {
+        try {
+            const response = await fetch(`/ecriture/${ecritureId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                Swal.fire({
+                    title: 'Supprimé !',
+                    text: result.message || 'L\'écriture a été supprimée avec succès.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Recharger la page pour afficher les modifications
+                    window.location.reload();
+                });
+            } else {
+                throw new Error(result.message || 'Une erreur est survenue lors de la suppression.');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la suppression :', error);
+            Swal.fire({
+                title: 'Erreur !',
+                text: error.message || 'Une erreur est survenue lors de la suppression de l\'écriture.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    // Fonction pour éditer une écriture
+    function editEntry(ecritureId) {
+        // Rediriger vers la page d'édition avec l'ID de l'écriture
+        window.location.href = `/ecriture/${ecritureId}/edit`;
     }
 
     // Fonction pour ajouter une nouvelle écriture avec le même numéro de saisie
