@@ -236,44 +236,41 @@
                                     const creditField = document.getElementById('credit');
                                     
                                     function updateFields() {
-                                        // Si débit a une valeur, on désactive crédit et vice versa
+                                        // Si débit a une valeur, on désactive et grise crédit
                                         if (debitField.value && parseFloat(debitField.value) > 0) {
                                             creditField.disabled = true;
                                             creditField.value = '';
-                                            creditField.style.backgroundColor = '#e9ecef';
-                                        } else if (creditField.value && parseFloat(creditField.value) > 0) {
+                                            creditField.classList.add('bg-light');
+                                            creditField.classList.add('text-muted');
+                                            debitField.classList.remove('bg-light');
+                                            debitField.classList.remove('text-muted');
+                                        } 
+                                        // Si crédit a une valeur, on désactive et grise débit
+                                        else if (creditField.value && parseFloat(creditField.value) > 0) {
                                             debitField.disabled = true;
                                             debitField.value = '';
-                                            debitField.style.backgroundColor = '#e9ecef';
-                                        } else {
-                                            // Si les deux champs sont vides, on réactive tout
+                                            debitField.classList.add('bg-light');
+                                            debitField.classList.add('text-muted');
+                                            creditField.classList.remove('bg-light');
+                                            creditField.classList.remove('text-muted');
+                                        } 
+                                        // Si les deux champs sont vides, on réactive tout
+                                        else {
                                             debitField.disabled = false;
+                                            debitField.classList.remove('bg-light');
+                                            debitField.classList.remove('text-muted');
                                             creditField.disabled = false;
-                                            debitField.style.backgroundColor = '';
-                                            creditField.style.backgroundColor = '';
+                                            creditField.classList.remove('bg-light');
+                                            creditField.classList.remove('text-muted');
                                         }
                                     }
 
-                                    // Écouteurs d'événements
-                                    debitField.addEventListener('input', function() {
-                                        if (this.value && parseFloat(this.value) > 0) {
-                                            creditField.disabled = true;
-                                            creditField.value = '';
-                                            creditField.style.backgroundColor = '#e9ecef';
-                                        } else {
-                                            creditField.disabled = false;
-                                            creditField.style.backgroundColor = '';
-                                        }
-                                    });
-
-                                    creditField.addEventListener('input', function() {
-                                        if (this.value && parseFloat(this.value) > 0) {
-                                            debitField.disabled = true;
-                                            debitField.value = '';
-                                            debitField.style.backgroundColor = '#e9ecef';
-                                        } else {
-                                            debitField.disabled = false;
-                                            debitField.style.backgroundColor = '';
+                                    // Ajouter les écouteurs d'événements
+                                    debitField.addEventListener('input', updateFields);
+                                    creditField.addEventListener('input', updateFields);
+                                    
+                                    // Appeler updateFields au chargement pour gérer l'état initial
+                                    updateFields();
                                         }
                                     });
 
