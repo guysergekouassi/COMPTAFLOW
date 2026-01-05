@@ -480,12 +480,15 @@ function ajouterEcriture() {
         `;
         newRow.appendChild(supprimerCell);
 
-        // Réinitialisation du formulaire
-        libelle.value = '';
-        debit.value = '';
-        credit.value = '';
-        // Réactiver les deux champs débit et crédit
-       if (window.resetAccountingFields) window.resetAccountingFields();
+             libelle.value = '';
+            debit.value = '';
+            credit.value = '';
+            // On appelle la fonction de reset qui va débloquer et remettre les couleurs par défaut
+            if (typeof toggleFields === "function") {
+                toggleFields(); 
+            } else if (window.resetAccountingFields) {
+                window.resetAccountingFields();
+            }
         debit.style.cursor = '';
         credit.style.cursor = '';
         if (referencePiece) referencePiece.value = '';
