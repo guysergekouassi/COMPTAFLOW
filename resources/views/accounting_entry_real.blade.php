@@ -15,6 +15,11 @@
       .form-control:disabled, .form-control[readonly] {
         background-color: #f8f9fa !important;
       }
+            input:disabled {
+            background-color: #e9ecef !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
     </style>
   </head>
 
@@ -230,55 +235,45 @@
                                 </div>
                                 
                                 @push('scripts')
-                                <script>
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    const debitField = document.getElementById('debit');
-                                    const creditField = document.getElementById('credit');
-                                    
-                                    function updateFields() {
-                                        // Si débit a une valeur, on désactive et grise crédit
-                                        if (debitField.value && parseFloat(debitField.value) > 0) {
-                                            creditField.disabled = true;
-                                            creditField.value = '';
-                                            creditField.classList.add('bg-light');
-                                            creditField.classList.add('text-muted');
-                                            debitField.classList.remove('bg-light');
-                                            debitField.classList.remove('text-muted');
-                                        } 
-                                        // Si crédit a une valeur, on désactive et grise débit
-                                        else if (creditField.value && parseFloat(creditField.value) > 0) {
-                                            debitField.disabled = true;
-                                            debitField.value = '';
-                                            debitField.classList.add('bg-light');
-                                            debitField.classList.add('text-muted');
-                                            creditField.classList.remove('bg-light');
-                                            creditField.classList.remove('text-muted');
-                                        } 
-                                        // Si les deux champs sont vides, on réactive tout
-                                        else {
-                                            debitField.disabled = false;
-                                            debitField.classList.remove('bg-light');
-                                            debitField.classList.remove('text-muted');
-                                            creditField.disabled = false;
-                                            creditField.classList.remove('bg-light');
-                                            creditField.classList.remove('text-muted');
-                                        }
-                                    }
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const debitField = document.getElementById('debit');
+    const creditField = document.getElementById('credit');
+    
+    function toggleAccountingFields() {
+        const debitValue = parseFloat(debitField.value);
+        const creditValue = parseFloat(creditField.value);
 
-                                    // Ajouter les écouteurs d'événements
-                                    debitField.addEventListener('input', updateFields);
-                                    creditField.addEventListener('input', updateFields);
-                                    
-                                    // Appeler updateFields au chargement pour gérer l'état initial
-                                    updateFields();
-                                        }
-                                    });
+        // Si le débit est rempli (supérieur à 0)
+        if (!isNaN(debitValue) && debitValue > 0) {
+            creditField.value = ''; // On vide le crédit
+            creditField.disabled = true; // On désactive
+            creditField.style.backgroundColor = '#e9ecef'; // On grise visuellement
+        } 
+        // Sinon si le crédit est rempli (supérieur à 0)
+        else if (!isNaN(creditValue) && creditValue > 0) {
+            debitField.value = ''; // On vide le débit
+            debitField.disabled = true; // On désactive
+            debitField.style.backgroundColor = '#e9ecef'; // On grise visuellement
+        } 
+        // Si les deux sont vides ou à zéro
+        else {
+            debitField.disabled = false;
+            creditField.disabled = false;
+            debitField.style.backgroundColor = '';
+            creditField.style.backgroundColor = '';
+        }
+    }
 
-                                    // Initialisation
-                                    updateFields();
-                                });
-                                </script>
-                                @endpush
+    // Écouteurs d'événements sur la saisie
+    debitField.addEventListener('input', toggleAccountingFields);
+    creditField.addEventListener('input', toggleAccountingFields);
+    
+    // Initialisation au chargement de la page
+    toggleAccountingFields();
+});
+</script>
+@endpush
                                 <div class="col-md-3">
                                     <label for="plan_analytique" class="form-label">Analytique</label>
                                     <select id="plan_analytique" name="plan_analytique"
