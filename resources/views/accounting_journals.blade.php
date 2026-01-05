@@ -3,16 +3,6 @@
 
 @include('components.head')
 
-<!-- Tailwind Integration with Preflight disabled -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-    tailwind.config = {
-        corePlugins: {
-            preflight: false,
-        }
-    }
-</script>
-
 <style>
     /* Global harmonized styles */
     .bg-slate-50\/50 { background-color: rgb(248 250 252 / 0.5); }
@@ -26,7 +16,6 @@
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
     }
     .btn-action {
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -111,7 +100,7 @@
                 @include('components.header', ['page_title' => 'Codes <span class="text-gradient">Journaux</span> <span class="inline-block px-3 py-0.5 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full ml-3">Configuration</span>'])
 
                 <div class="content-wrapper">
-                    <div class="container-fluid flex-grow-1 container-p-y">
+                    <div class="container-xxl flex-grow-1 container-p-y">
 
                         <!-- Description Section -->
                         <div class="text-center mb-8 -mt-4">
@@ -136,7 +125,7 @@
 
                         <!-- KPI Summary Cards (Style Mirror) -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-type-card filter-active" data-type="all">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active" data-type="all">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <i class="fas fa-book text-2xl"></i>
                                 </div>
@@ -146,7 +135,7 @@
                                 </div>
                             </div>
                             
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-type-card" data-type="Tresorerie">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-type="Tresorerie">
                                 <div class="p-3 rounded-full bg-emerald-100 text-emerald-600 mr-4">
                                     <i class="fas fa-university text-2xl"></i>
                                 </div>
@@ -156,7 +145,7 @@
                                 </div>
                             </div>
 
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-type-card" data-type="Ventes">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-type="Ventes">
                                 <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
                                     <i class="fas fa-exchange-alt text-2xl"></i>
                                 </div>
@@ -555,11 +544,18 @@
                     });
 
                     // KPI Cards
-                    $('.filter-type-card').on('click', function() {
+                    $('.filter-card').on('click', function() {
                         $('.filter-card').removeClass('filter-active');
                         $(this).addClass('filter-active');
                         const type = $(this).data('type');
-                        table.column(0).search(type === 'all' ? '' : type).draw();
+                        
+                        if (type === 'Ventes') {
+                            // Pour la carte "Achats/Ventes", filtrer sur "Achats" ET "Ventes"
+                            table.column(0).search('Achats|Ventes', true, false).draw();
+                        } else {
+                            // Pour les autres types, recherche normale
+                            table.column(0).search(type === 'all' ? '' : type).draw();
+                        }
                     });
 
                     // 4. Modal Interactions (Treasury Toggle)

@@ -136,8 +136,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/plan_tiers_ecritures/{id}', [PlanTiersEcritureController::class, 'update'])->name('plan_tiers_ecritures.update');
 
     // *****************ROUTE GESTION DES PLAN TIERS
-    Route::get('/plan_tiers/{racine}', [PlanTiersController::class, 'getDernierNumero'])->name('getDernierNumero');
     Route::get('/plan_tiers', [PlanTiersController::class, 'index'])->name('plan_tiers');
+    Route::get('/plan_tiers/view/{plan_tier}', [PlanTiersController::class, 'show'])->name('plan_tiers.show');
+    Route::get('/plan_tiers/{racine}', [PlanTiersController::class, 'getDernierNumero'])->name('getDernierNumero');
     Route::post('/plan_tiers', [PlanTiersController::class, 'store'])->name('plan_tiers.store');
     Route::put('/plan_tiers/{id}', [PlanTiersController::class, 'update'])->name('plan_tiers.update');
     Route::delete('/plan_tiers/{id}', [PlanTiersController::class, 'destroy'])->name('plan_tiers.destroy');
@@ -192,7 +193,10 @@ Route::get('/test-saisie-number', function() {
     // *****************ROUTE GESTION DES EXERCICES COMPTABLE
     Route::get('/exercice_comptable', [ExerciceComptableController::class, 'index'])->name('exercice_comptable');
     Route::get('/exercice_comptable/data', [ExerciceComptableController::class, 'getData'])->name('exercice_comptable.data');
+    Route::get('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'show'])->name('exercice_comptable.show');
+    Route::get('/exercice_comptable/{exercice_comptable}/edit', [ExerciceComptableController::class, 'edit'])->name('exercice_comptable.edit');
     Route::post('/exercice_comptable', [ExerciceComptableController::class, 'store'])->name('exercice_comptable.store');
+    Route::put('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'update'])->name('exercice_comptable.update');
     Route::delete('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'destroy'])->name('exercice_comptable.destroy');
     Route::patch('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'cloturer'])->name('exercice_comptable.cloturer');
 

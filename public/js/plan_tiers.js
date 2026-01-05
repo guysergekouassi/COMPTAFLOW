@@ -144,19 +144,31 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // --- 6. REDIRECTION VERS ÉCRITURES ---
-    const actionButtons = document.querySelectorAll(".donnees-plan-tiers");
-    actionButtons.forEach((button) => {
-        button.addEventListener("click", function() {
+    console.log("Configuration du gestionnaire pour les boutons .donnees-plan-tiers...");
+    
+    // Utiliser la délégation d'événements pour gérer les boutons dynamiques
+    document.addEventListener("click", function(event) {
+        const button = event.target.closest(".donnees-plan-tiers");
+        if (button) {
+            console.log("Clic sur le bouton voir détecté via délégation!");
+            event.preventDefault();
+            
             const params = {
-                id_plan_tiers: this.getAttribute("data-id"),
-                intitule: this.getAttribute("data-intitule"),
-                numero_de_tiers: this.getAttribute("data-numero_de_tiers"),
+                id_plan_tiers: button.getAttribute("data-id"),
+                intitule: button.getAttribute("data-intitule"),
+                numero_de_tiers: button.getAttribute("data-numero_de_tiers"),
             };
+            console.log("Paramètres:", params);
+            console.log("URL disponible:", typeof plan_tiers_ecrituresSaisisUrl !== 'undefined');
 
             if (typeof plan_tiers_ecrituresSaisisUrl !== 'undefined') {
                 const queryString = new URLSearchParams(params).toString();
-                window.location.href = plan_tiers_ecrituresSaisisUrl + "?" + queryString;
+                const finalUrl = plan_tiers_ecrituresSaisisUrl + "?" + queryString;
+                console.log("URL finale:", finalUrl);
+                window.location.href = finalUrl;
+            } else {
+                console.error("plan_tiers_ecrituresSaisisUrl n'est pas défini!");
             }
-        });
+        }
     });
 });

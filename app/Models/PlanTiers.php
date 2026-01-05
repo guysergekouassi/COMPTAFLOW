@@ -8,6 +8,7 @@ use App\Traits\BelongsToTenant;
 use App\Models\User;
 use App\Models\Company;
 use App\Models\PlanComptable;
+use App\Models\EcritureComptable;
 
 class PlanTiers extends Model
 {
@@ -37,5 +38,10 @@ class PlanTiers extends Model
     public function compte()
     {
         return $this->belongsTo(PlanComptable::class, 'compte_general');
+    }
+
+    public function ecritures()
+    {
+        return $this->hasMany(EcritureComptable::class, 'plan_tiers_id');
     }
 }

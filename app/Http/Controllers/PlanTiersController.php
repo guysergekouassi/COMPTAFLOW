@@ -215,6 +215,43 @@ class PlanTiersController extends Controller
         }
     }
 
+    public function show($id)
+    {
+        try {
+            $user = Auth::user();
+            $currentCompanyId = session('current_company_id', $user->company_id);
+            
+            $tier = PlanTiers::with(['compte', 'ecritures' => function($query) use ($currentCompanyId) {
+                $query->where('company_id', $currentCompanyId)
+                      ->orderBy('date', 'desc')
+                      ->take(10);
+            }])
+            ->where('company_id', $currentCompanyId)
+            ->findOrFail($id);
+            
+            // Statistiques pour ce tiers
+            $stats = [
+                'total_ecritures' => \App\Models\EcritureComptable::where('plan_tiers_id', $id)
+                    ->where('company_id', $currentCompanyId)
+                    ->count(),
+                'total_debit' => \App\Models\EcritureComptable::where('plan_tiers_id', $id)
+                    ->where('company_id', $currentCompanyId)
+                    ->sum('debit'),
+                'total_credit' => \App\Models\EcritureComptable::where('plan_tiers_id', $id)
+                    ->where('company_id', $currentCompanyId)
+                    ->sum('credit'),
+                'solde' => 0
+            ];
+            
+            $stats['solde'] = $stats['total_debit'] - $stats['total_credit'];
+            
+            return view('plan_tiers_show', compact('tier', 'stats'));
+            
+        } catch (\Exception $e) {
+            return redirect()->route('plan_tiers')->with('error', 'Tiers non trouvé : ' . $e->getMessage());
+        }
+    }
+
     public function destroy($id)
     {
         try {

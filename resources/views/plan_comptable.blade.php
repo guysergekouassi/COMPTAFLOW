@@ -270,7 +270,7 @@
                                     </div>
                                     <!-- Filter Classe -->
                                     <div class="relative w-full">
-                                        <input type="text" id="filterClasse" placeholder="Filtrer par Classe (ex: 1, 6)..."
+                                        <input type="text" id="filterClasse" placeholder="Filtrer par Classe (ex: 1, 8, 68)..."
                                             class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
                                         <i class="fas fa-layer-group absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                     </div>
@@ -622,14 +622,26 @@
                 const filterMap = {
                     'filterNumero': 0,
                     'filterIntitule': 1,
-                    'filterClasse': 3
+                    'filterClasse': 0  // Le filtre par classe doit chercher dans la colonne numéro (index 0)
                 };
 
                 // Gestion des champs de filtre
                 $(document).on('keyup change', '#filterNumero, #filterIntitule, #filterClasse', function() {
                     const column = filterMap[$(this).attr('id')];
                     if (column !== undefined) {
-                        table.column(column).search(this.value).draw();
+                        if ($(this).attr('id') === 'filterClasse') {
+                            // Pour le filtre par classe, utiliser une recherche par préfixe (commence par)
+                            const searchValue = this.value.trim();
+                            if (searchValue) {
+                                // Utiliser une expression régulière pour chercher les numéros qui commencent par la valeur saisie
+                                table.column(column).search('^' + searchValue, true, false).draw();
+                            } else {
+                                table.column(column).search('').draw();
+                            }
+                        } else {
+                            // Pour les autres filtres, utiliser la recherche normale
+                            table.column(column).search(this.value).draw();
+                        }
                     }
                 });
 

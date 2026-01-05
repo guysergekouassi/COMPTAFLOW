@@ -48,6 +48,40 @@
                                 box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
                             }
 
+                            /* Styles spécifiques pour les boutons d'action */
+                            .btn-action-edit {
+                                transition: all 0.2s ease !important;
+                            }
+                            .btn-action-edit:hover {
+                                background-color: #2563eb !important;
+                                color: white !important;
+                                border-color: #2563eb !important;
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+                            }
+
+                            .btn-action-delete {
+                                transition: all 0.2s ease !important;
+                            }
+                            .btn-action-delete:hover {
+                                background-color: #dc2626 !important;
+                                color: white !important;
+                                border-color: #dc2626 !important;
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+                            }
+
+                            .btn-action-view {
+                                transition: all 0.2s ease !important;
+                            }
+                            .btn-action-view:hover {
+                                background-color: #4f46e5 !important;
+                                color: white !important;
+                                border-color: #4f46e5 !important;
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+                            }
+
                             .table-row {
                                 transition: background-color 0.2s;
                             }
@@ -340,7 +374,7 @@
                                                 <td class="px-8 py-6 text-right">
                                                     <div class="flex justify-end gap-2">
                                                         <button type="button"
-                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm bg-white"
+                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-edit"
                                                             title="Modifier" data-bs-toggle="modal"
                                                             data-bs-target="#modalCenterUpdate"
                                                             data-id="{{ $tier->id }}"
@@ -352,7 +386,7 @@
                                                         </button>
 
                                                         <button type="button"
-                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm bg-white"
+                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-delete"
                                                             data-bs-toggle="modal"
                                                             data-bs-target="#deleteConfirmationModalTiers"
                                                             data-id="{{ $tier->id }}"
@@ -360,13 +394,11 @@
                                                             <i class="fas fa-trash-alt"></i>
                                                         </button>
 
-                                                        <button type="button"
-                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm bg-white donnees-plan-tiers"
-                                                            data-id="{{ $tier->id }}"
-                                                            data-intitule="{{ $tier->intitule }}"
-                                                            data-numero_de_tiers="{{ $tier->numero_de_tiers }}">
+                                                        <a href="{{ route('plan_tiers.show', ['plan_tier' => $tier->id]) }}?t={{ time() }}"
+                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-view"
+                                                            title="Voir">
                                                             <i class='bx bx-eye fs-5'></i>
-                                                        </button>
+                                                        </a>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -572,6 +604,18 @@
 
             @include('components.footer')
 
+            <!-- Global URLs for JavaScript -->
+            <script>
+                const plan_tiers_ecrituresSaisisUrl = "{{ route('plan_tiers_ecritures') }}";
+                const plan_tiersUpdateBaseUrl = "{{ route('plan_tiers.update', ['id' => '__ID__']) }}";
+                const plan_tiersDeleteUrl = "{{ route('plan_tiers.destroy', ['id' => '__ID__']) }}";
+                console.log("URLs définies:", {
+                    plan_tiers_ecrituresSaisisUrl,
+                    plan_tiersUpdateBaseUrl,
+                    plan_tiersDeleteUrl
+                });
+            </script>
+
             <!-- Core JS Interactivity -->
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
@@ -719,15 +763,6 @@
                                 }
                             });
 
-                            $(document).on('click', '.donnees-plan-tiers', function() {
-                                const params = {
-                                    id_plan_tiers: $(this).data('id'),
-                                    intitule: $(this).data('intitule'),
-                                    numero_de_tiers: $(this).data('numero_de_tiers'),
-                                };
-                                const queryString = new URLSearchParams(params).toString();
-                                window.location.href = "{{ route('plan_tiers_ecritures') }}?" + queryString;
-                            });
                         } else {
                             setTimeout(initDataTable, 100);
                         }
@@ -768,6 +803,9 @@
                     };
                 });
             </script>
+
+            <!-- Plan Tiers JavaScript - Chargé après tout le reste -->
+            <script src="{{ asset('js/plan_tiers.js') }}"></script>
 
             @if(session('reload'))
             <script>

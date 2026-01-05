@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 
 class EcritureComptableController extends Controller
@@ -72,6 +73,31 @@ class EcritureComptableController extends Controller
     }
 
     /**
+     * Affiche les détails d'une écriture comptable spécifique.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+
+    public function show($id)
+    {
+        try {
+            $user = Auth::user();
+            
+            // Récupérer l'écriture avec ses relations
+            $ecriture = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+                ->where('company_id', $user->company_id)
+                ->findOrFail($id);
+                
+            return view('ecriture_show', compact('ecriture'));
+            
+        } catch (\Exception $e) {
+            return redirect()->route('accounting_entry_list')
+                ->with('error', 'Écriture non trouvée : ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Affiche le formulaire d'édition d'une écriture comptable spécifique.
      *
      * @param  int  $id
@@ -114,7 +140,7 @@ class EcritureComptableController extends Controller
                 'n_saisie' => $ecriture->n_saisie,
             ]);
             
-            return view('accounting_entry_', compact(
+            return view('accounting_entry_edit', compact(
                 'ecriture', 
                 'plansComptables', 
                 'plansTiers', 
@@ -339,10 +365,37 @@ class EcritureComptableController extends Controller
 
     public function list(Request $request)
     {
-        $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $user = Auth::user();
+        $data = $request->all();
+        
+        // Récupérer l'exercice actif
+        $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+            ->where('cloturer', 0)
+            ->orderBy('date_debut', 'desc')
+            ->first();
+            
+        // Récupérer les écritures avec filtres
+        $query = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+            ->where('company_id', $user->company_id);
+            
+        // Appliquer les filtres si présents
+        if (isset($data['numero_saisie']) && $data['numero_saisie']) {
+            $query->where('n_saisie', 'like', '%' . $data['numero_saisie'] . '%');
+        }
+        if (isset($data['code_journal']) && $data['code_journal']) {
+            $query->whereHas('codeJournal', function($q) use ($data) {
+                $q->where('code_journal', 'like', '%' . $data['code_journal'] . '%');
+            });
+        }
+        if (isset($data['mois']) && $data['mois']) {
+            $query->whereMonth('date', $data['mois']);
+        }
+        
+        $ecritures = $query->orderBy('created_at', 'desc')->get();
+        
+        // Récupérer les journaux pour les filtres
+        $code_journaux = CodeJournal::where('company_id', $user->company_id)->get();
 
-        return view('accounting_entry_list', compact('ecritures'));
+        return view('accounting_entry_list', compact('ecritures', 'exerciceActif', 'code_journaux'));
     }
 }

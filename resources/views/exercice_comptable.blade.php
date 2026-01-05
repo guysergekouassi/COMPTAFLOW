@@ -127,6 +127,51 @@
         box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
     }
 
+    /* Styles spécifiques pour les boutons d'action */
+    .btn-action-edit {
+        transition: all 0.2s ease !important;
+    }
+    .btn-action-edit:hover {
+        background-color: #2563eb !important;
+        color: white !important;
+        border-color: #2563eb !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-action-delete {
+        transition: all 0.2s ease !important;
+    }
+    .btn-action-delete:hover {
+        background-color: #dc2626 !important;
+        color: white !important;
+        border-color: #dc2626 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+
+    .btn-action-view {
+        transition: all 0.2s ease !important;
+    }
+    .btn-action-view:hover {
+        background-color: #4f46e5 !important;
+        color: white !important;
+        border-color: #4f46e5 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-action-cloturer {
+        transition: all 0.2s ease !important;
+    }
+    .btn-action-cloturer:hover {
+        background-color: #ca8a04 !important;
+        color: white !important;
+        border-color: #ca8a04 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(202, 138, 4, 0.3);
+    }
+
     .table-row {
         transition: background-color 0.2s;
     }
@@ -413,6 +458,8 @@
             const journauxSaisisUrl = "{{ route('journaux_saisis') }}";
             const exercice_comptableDeleteUrl = "{{ route('exercice_comptable.destroy', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableCloturerUrl = "{{ route('exercice_comptable.cloturer', ['exercice_comptable' => '__ID__']) }}";
+            const exercice_comptableShowUrl = "{{ route('exercice_comptable.show', ['exercice_comptable' => '__ID__']) }}";
+            const exercice_comptableEditUrl = "{{ route('exercice_comptable.edit', ['exercice_comptable' => '__ID__']) }}";
 
         </script>
         {{-- <script src="{{ asset('js/exercice_compt.js') }}"></script> --}}
@@ -525,46 +572,46 @@
                                     return `
                                         <div class="d-flex gap-2">
                                             <button type="button"
-                                                    class="btn p-0 border-0 bg-transparent text-primary view-btn"
+                                                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-view view-btn"
                                                     data-id="${row.id}"
                                                     data-bs-toggle="tooltip"
                                                     title="Voir">
-                                                <i class="bx bx-show"></i>
+                                                <i class="bx bx-show fs-5"></i>
                                             </button>
                                             <button type="button"
-                                                    class="btn p-0 border-0 bg-transparent text-warning edit-btn"
+                                                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-edit edit-btn"
                                                     data-id="${row.id}"
                                                     data-bs-toggle="tooltip"
                                                     title="Modifier">
-                                                <i class="bx bx-edit-alt"></i>
+                                                <i class="bx bx-edit-alt fs-5"></i>
                                             </button>
                                             ${!row.cloturer ? `
                                                 <button type="button"
-                                                        class="btn p-0 border-0 bg-transparent text-danger delete-btn"
+                                                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-delete delete-btn"
                                                         data-id="${row.id}"
                                                         data-label="${row.intitule}"
                                                         data-type="delete"
                                                         data-bs-toggle="tooltip"
                                                         title="Supprimer">
-                                                    <i class="bx bx-trash"></i>
+                                                    <i class="bx bx-trash fs-5"></i>
                                                 </button>
                                                 <button type="button"
-                                                        class="btn p-0 border-0 bg-transparent text-success cloturer-btn"
+                                                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-yellow-100 text-yellow-600 hover:bg-yellow-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-cloturer cloturer-btn"
                                                         data-id="${row.id}"
                                                         data-label="${row.intitule}"
                                                         data-type="cloture"
                                                         data-bs-toggle="tooltip"
                                                         title="Clôturer">
-                                                    <i class="bx bx-lock-alt"></i>
+                                                    <i class="bx bx-lock-alt fs-5"></i>
                                                 </button>` : ''
                                             }
                                             ${row.cloturer ? `
                                                 <button type="button"
-                                                        class="btn p-0 border-0 bg-transparent text-secondary"
+                                                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition shadow-sm bg-white"
                                                         disabled
                                                         data-bs-toggle="tooltip"
                                                         title="Exercice clôturé">
-                                                    <i class="bx bx-lock"></i>
+                                                    <i class="bx bx-lock fs-5"></i>
                                                 </button>` : ''
                                             }
                                         </div>
@@ -848,6 +895,28 @@
                                 if (window.bootstrap?.Modal) {
                                     bootstrap.Modal.getOrCreateInstance(clotureModalEl).show();
                                 }
+                            }
+                        });
+                    });
+
+                    // Gestionnaire pour le bouton "Voir" (bouton généré par DataTable)
+                    document.querySelectorAll('.view-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            if (id) {
+                                // Rediriger vers la page de détails
+                                window.location.href = exercice_comptableShowUrl.replace('__ID__', id);
+                            }
+                        });
+                    });
+
+                    // Gestionnaire pour le bouton "Modifier" (bouton généré par DataTable)
+                    document.querySelectorAll('.edit-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            if (id) {
+                                // Rediriger vers la page d'édition
+                                window.location.href = exercice_comptableEditUrl.replace('__ID__', id);
                             }
                         });
                     });

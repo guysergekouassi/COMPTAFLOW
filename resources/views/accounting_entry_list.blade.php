@@ -285,22 +285,12 @@
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 w-full gap-4">
                                 <div class="glass-card px-6 py-4 flex items-center gap-6 w-full md:w-auto">
                                    <div class="flex items-center gap-3">
-                                       <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                           <i class='bx bx-notepad text-xl'></i>
-                                       </div>
-                                       <div>
-                                           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Journal</p>
-                                           <p class="text-sm font-bold text-slate-800">{{ data_get($journal ?? null, 'code_journal', '-') }} - {{ data_get($journal ?? null, 'intitule', '-') }}</p>
-                                       </div>
-                                   </div>
-                                   <div class="h-8 w-px bg-slate-200"></div>
-                                   <div class="flex items-center gap-3">
                                        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
                                             <i class='bx bx-calendar text-xl'></i>
                                        </div>
                                        <div>
-                                           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Période</p>
-                                           <p class="text-sm font-bold text-slate-800">{{ isset($exercice) && data_get($exercice, 'date_debut') ? \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') : '-' }} - {{ isset($exercice) && data_get($exercice, 'date_fin') ? \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') : '-' }}</p>
+                                           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Période de l'exercice en cours</p>
+                                           <p class="text-sm font-bold text-slate-800">{{ isset($exerciceActif) && data_get($exerciceActif, 'date_debut') ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('d/m/Y') : '-' }} - {{ isset($exerciceActif) && data_get($exerciceActif, 'date_fin') ? \Carbon\Carbon::parse($exerciceActif->date_fin)->format('d/m/Y') : '-' }}</p>
                                        </div>
                                    </div>
                                 </div>
@@ -326,15 +316,10 @@
                                 <div class="glass-card p-6">
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div class="relative w-full">
-                                            <select id="filterExercice" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
-                                                <option value="">Tous les exercices</option>
-                                                @foreach (($exercices ?? []) as $exerciceItem)
-                                                    <option value="{{ $exerciceItem->id }}" {{ (isset($data['exercice_id']) && (string) $data['exercice_id'] === (string) $exerciceItem->id) ? 'selected' : '' }}>
-                                                        {{ $exerciceItem->intitule ?? $exerciceItem->annee ?? $exerciceItem->id }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            <i class="fas fa-calendar-alt absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                            <input type="text" id="filterNumeroSaisie" placeholder="Numéro de saisie" 
+                                                class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm"
+                                                value="{{ $data['numero_saisie'] ?? '' }}">
+                                            <i class="fas fa-hashtag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                         </div>
 
                                         <div class="relative w-full">
@@ -350,14 +335,9 @@
                                         </div>
 
                                         <div class="relative w-full">
-                                            <select id="filterJournal" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
-                                                <option value="">Tous les journaux</option>
-                                                @foreach (($code_journaux ?? []) as $j)
-                                                    <option value="{{ $j->id }}" {{ (isset($data['journal_id']) && (string) $data['journal_id'] === (string) $j->id) ? 'selected' : '' }}>
-                                                        {{ $j->code_journal }} - {{ $j->intitule }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                            <input type="text" id="filterCodeJournal" placeholder="Code journal" 
+                                                class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm"
+                                                value="{{ $data['code_journal'] ?? '' }}">
                                             <i class="fas fa-book absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                         </div>
                                     </div>
@@ -404,6 +384,7 @@
                                         <tr>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">N° Saisie</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Code Journal</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Réf. Pièce</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Compte Général</th>
@@ -416,10 +397,29 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (($ecritures ?? collect()) as $ecriture)
+                                        @php
+                                            $previousDate = null;
+                                            $previousSaisie = null;
+                                        @endphp
+                                        @foreach (($ecritures ?? collect()) as $index => $ecriture)
+                                            @php
+                                                $currentDate = $ecriture->date;
+                                                $currentSaisie = $ecriture->n_saisie;
+                                                $showSeparator = ($previousDate !== null && $currentDate !== $previousDate) || ($previousSaisie !== null && $currentSaisie !== $previousSaisie);
+                                            @endphp
+                                            
+                                            @if($showSeparator)
+                                                <tr>
+                                                    <td colspan="11" class="border-0 p-0">
+                                                        <div class="border-t-2 border-slate-300 my-2"></div>
+                                                    </td>
+                                                </tr>
+                                            @endif
+                                            
                                             <tr class="border-b border-slate-100 hover:bg-slate-50">
                                                 <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->date }}</td>
                                                 <td class="px-4 py-3 text-sm font-semibold text-slate-800">{{ $ecriture->n_saisie }}</td>
+                                                <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</td>
                                                 <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->reference_piece }}</td>
                                                 <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->description_operation }}</td>
                                                 <td class="px-4 py-3 text-sm text-slate-700">
@@ -443,19 +443,21 @@
                                                         <a href="{{ route('ecriture.show', $ecriture->id) }}" class="p-1.5 text-info hover:text-blue-800 transition-colors duration-200" title="Voir">
                                                             <i class="bx bx-show text-xl"></i>
                                                         </a>
-                                                        <button onclick="editEntry({{ $ecriture->id }})" class="p-1.5 text-blue-600 hover:text-blue-800 transition-colors duration-200" title="Modifier">
-                                                            <i class="bx bx-edit-alt text-xl"></i>
-                                                        </button>
                                                         <button onclick="confirmDelete({{ $ecriture->id }})" class="p-1.5 text-red-600 hover:text-red-800 transition-colors duration-200" title="Supprimer">
                                                             <i class="bx bx-trash text-xl"></i>
                                                         </button>
                                                     </div>
                                                 </td>
                                             </tr>
+                                            
+                                            @php
+                                                $previousDate = $currentDate;
+                                                $previousSaisie = $currentSaisie;
+                                            @endphp
                                         @endforeach
                                         @if (!isset($ecritures) || $ecritures->isEmpty())
                                             <tr>
-                                                <td colspan="11" class="text-center text-slate-500 py-6">
+                                                <td colspan="12" class="text-center text-slate-500 py-6">
                                                     Aucune écriture trouvée pour les critères sélectionnés
                                                 </td>
                                             </tr>
@@ -794,14 +796,14 @@
     }
 
     function filterEcritures() {
-        const exercice = document.getElementById('filterExercice').value;
+        const numeroSaisie = document.getElementById('filterNumeroSaisie').value;
         const mois = document.getElementById('filterMois').value;
-        const journal = document.getElementById('filterJournal').value;
+        const codeJournal = document.getElementById('filterCodeJournal').value;
 
         const params = new URLSearchParams();
-        if (exercice) params.append('exercice_id', exercice);
+        if (numeroSaisie) params.append('numero_saisie', numeroSaisie);
         if (mois) params.append('mois', mois);
-        if (journal) params.append('journal_id', journal);
+        if (codeJournal) params.append('code_journal', codeJournal);
 
         window.location.href = window.location.pathname + '?' + params.toString();
     }
@@ -817,12 +819,12 @@
     };
 
     window.resetAdvancedFilters = function() {
-        const ex = document.getElementById('filterExercice');
+        const numeroSaisie = document.getElementById('filterNumeroSaisie');
         const mois = document.getElementById('filterMois');
-        const j = document.getElementById('filterJournal');
-        if (ex) ex.value = '';
+        const codeJournal = document.getElementById('filterCodeJournal');
+        if (numeroSaisie) numeroSaisie.value = '';
         if (mois) mois.value = '';
-        if (j) j.value = '';
+        if (codeJournal) codeJournal.value = '';
         filterEcritures();
     };
 

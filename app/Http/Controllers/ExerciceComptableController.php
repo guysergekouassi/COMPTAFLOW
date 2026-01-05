@@ -180,4 +180,65 @@ public function index()
 
         return redirect()->back()->with('success', 'L\'exercice comptable a été supprimé avec succès.');
     }
+
+    public function show($id)
+    {
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+
+        $exercice = ExerciceComptable::where('id', $id)
+            ->where('company_id', $companyId)
+            ->firstOrFail();
+
+        // Récupérer les journaux saisis pour cet exercice
+        $journauxSaisis = JournalSaisi::where('exercices_comptables_id', $id)
+            ->where('company_id', $companyId)
+            ->with(['codeJournal'])
+            ->get();
+
+        return view('exercice_comptable_show', compact('exercice', 'journauxSaisis'));
+    }
+
+    public function edit($id)
+    {
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+
+        $exercice = ExerciceComptable::where('id', $id)
+            ->where('company_id', $companyId)
+            ->firstOrFail();
+
+        // Empêcher l'édition si l'exercice est clôturé
+        if ($exercice->cloturer) {
+            return back()->with('error', 'Impossible de modifier un exercice clôturé.');
+        }
+
+        return view('exercice_comptable_edit', compact('exercice'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+
+        $exercice = ExerciceComptable::where('id', $id)
+            ->where('company_id', $companyId)
+            ->firstOrFail();
+
+        // Empêcher la mise à jour si l'exercice est clôturé
+        if ($exercice->cloturer) {
+            return back()->with('error', 'Impossible de modifier un exercice clôturé.');
+        }
+
+        $request->validate([
+            'date_debut' => 'required|date',
+            'date_fin' => 'required|date|after:date_debut',
+            'intitule' => 'required|string|max:255'
+        ]);
+
+        $exercice->update($request->all());
+
+        return redirect()->route('exercice_comptable')
+            ->with('success', 'Exercice mis à jour avec succès.');
+    }
 }
