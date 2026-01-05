@@ -234,39 +234,60 @@
                                            step="0.01" min="0" placeholder="0.00" />
                                 </div>
                                 
- @push('scripts')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const debitField = document.getElementById('debit');
     const creditField = document.getElementById('credit');
 
     function toggleFields() {
-        const debitVal = debitField.value;
-        const creditVal = creditField.value;
+        const debitVal = parseFloat(debitField.value) || 0;
+        const creditVal = parseFloat(creditField.value) || 0;
 
-        if (debitVal && parseFloat(debitVal) > 0) {
-            // Si Débit rempli -> Crédit bloqué
+        // Désactiver et griser le champ crédit si débit est rempli
+        if (debitVal > 0) {
             creditField.value = '';
             creditField.disabled = true;
             creditField.style.backgroundColor = '#e9ecef';
-        } else if (creditVal && parseFloat(creditVal) > 0) {
-            // Si Crédit rempli -> Débit bloqué
+            creditField.style.cursor = 'not-allowed';
+            
+            // S'assurer que le champ débit est activé
+            debitField.disabled = false;
+            debitField.style.backgroundColor = '';
+            debitField.style.cursor = '';
+        } 
+        // Désactiver et griser le champ débit si crédit est rempli
+        else if (creditVal > 0) {
             debitField.value = '';
             debitField.disabled = true;
             debitField.style.backgroundColor = '#e9ecef';
-        } else {
-            // Si les deux vides -> Tout débloqué
+            debitField.style.cursor = 'not-allowed';
+            
+            // S'assurer que le champ crédit est activé
+            creditField.disabled = false;
+            creditField.style.backgroundColor = '';
+            creditField.style.cursor = '';
+        } 
+        // Si les deux champs sont vides, tout activer
+        else {
             debitField.disabled = false;
             creditField.disabled = false;
             debitField.style.backgroundColor = '';
             creditField.style.backgroundColor = '';
+            debitField.style.cursor = '';
+            creditField.style.cursor = '';
         }
     }
 
+    // Ajouter les écouteurs d'événements
     debitField.addEventListener('input', toggleFields);
     creditField.addEventListener('input', toggleFields);
-    // On expose la fonction pour pouvoir l'appeler après un ajout
+    
+    // Exposer la fonction pour une utilisation ultérieure
     window.resetAccountingFields = toggleFields;
+    
+    // Appeler une première fois pour initialiser l'état
+    toggleFields();
 });
 </script>
 @endpush
@@ -480,15 +501,18 @@ function ajouterEcriture() {
         `;
         newRow.appendChild(supprimerCell);
 
-             libelle.value = '';
+            // Réinitialisation des champs
+            libelle.value = '';
             debit.value = '';
             credit.value = '';
-            // On appelle la fonction de reset qui va débloquer et remettre les couleurs par défaut
-            if (typeof toggleFields === "function") {
-                toggleFields(); 
-            } else if (window.resetAccountingFields) {
-                window.resetAccountingFields();
-            }
+            
+            // Réinitialisation des états et styles
+            debit.disabled = false;
+            credit.disabled = false;
+            debit.style.backgroundColor = '';
+            credit.style.backgroundColor = '';
+            debit.style.cursor = '';
+            credit.style.cursor = '';
         debit.style.cursor = '';
         credit.style.cursor = '';
         if (referencePiece) referencePiece.value = '';
