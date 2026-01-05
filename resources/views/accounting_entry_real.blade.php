@@ -156,7 +156,7 @@
                         <form id="formEcriture">
                             <div class="row g-4">
                                 <div class="col-md-3">
-                                    <label for="date" class="form-label">Date de l'écriture <span class="text-danger">*</span></label>
+                                    <label for="date" class="form-label">Date de l'écriture <span class="text-danger"></span></label>
                                     <input type="date" id="date" name="date" class="form-control" required 
                                            value="{{ date('Y-m-d') }}" 
                                            min="{{ date('Y-m-d', strtotime('-1 year')) }}" 
