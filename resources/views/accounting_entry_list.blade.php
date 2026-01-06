@@ -264,6 +264,15 @@
                                 <p class="text-slate-500 font-medium max-w-xl mx-auto">
                                     Consultez, saisissez et gérez vos écritures comptables avec précision.
                                 </p>
+                                <div class="mt-5 inline-flex items-center gap-3 px-5 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-blue-700 shadow-sm transition-all hover:shadow-md">
+                                    <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-md shrink-0">
+                                        <i class='bx bx-calendar text-xl'></i>
+                                    </div>
+                                    <div class="text-left">
+                                        <p class="text-[10px] font-bold uppercase tracking-wider leading-tight opacity-80 mb-0">Exercice en cours</p>
+                                        <p class="text-lg font-black leading-tight">{{ isset($exerciceActif) && data_get($exerciceActif, 'date_debut') ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('d/m/Y') : '-' }} - {{ isset($exerciceActif) && data_get($exerciceActif, 'date_fin') ? \Carbon\Carbon::parse($exerciceActif->date_fin)->format('d/m/Y') : '-' }}</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <style>
@@ -283,16 +292,7 @@
                             </style>
                             
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 w-full gap-4">
-                                <div class="glass-card px-6 py-4 flex items-center gap-6 w-full md:w-auto">
-                                   <div class="flex items-center gap-3">
-                                       <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
-                                            <i class='bx bx-calendar text-xl'></i>
-                                       </div>
-                                       <div>
-                                           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Période de l'exercice en cours</p>
-                                           <p class="text-sm font-bold text-slate-800">{{ isset($exerciceActif) && data_get($exerciceActif, 'date_debut') ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('d/m/Y') : '-' }} - {{ isset($exerciceActif) && data_get($exerciceActif, 'date_fin') ? \Carbon\Carbon::parse($exerciceActif->date_fin)->format('d/m/Y') : '-' }}</p>
-                                       </div>
-                                   </div>
+                                <div class="px-6 py-4 flex items-center gap-6 w-full md:w-auto">
                                 </div>
     
                                 <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
@@ -354,9 +354,15 @@
                             </div>
                             
                             <div class="glass-card overflow-hidden">
-                                <div class="px-6 py-4 border-b border-slate-100">
-                                    <h3 class="text-lg font-bold text-slate-800">Liste des écritures</h3>
-                                    <p class="text-sm text-slate-500">Consultation et suivi des écritures comptables</p>
+                                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-800">Liste des écritures</h3>
+                                        <p class="text-sm text-slate-500">Consultation et suivi des écritures comptables</p>
+                                    </div>
+                                    <div class="bg-blue-50 px-4 py-2 rounded-xl">
+                                        <span class="text-blue-700 font-bold">{{ $totalEntries ?? 0 }}</span>
+                                        <span class="text-blue-600 text-sm font-medium"> écritures au total</span>
+                                    </div>
                                 </div>
                                 <style>
                                     /* Style personnalisé pour la barre de défilement */
@@ -398,62 +404,63 @@
                                     </thead>
                                     <tbody>
                                         @php
-                                            $previousDate = null;
-                                            $previousSaisie = null;
+                                            $groupedEcritures = ($ecritures ?? collect())->groupBy('n_saisie');
                                         @endphp
-                                        @foreach (($ecritures ?? collect()) as $index => $ecriture)
+                                        
+                                        @foreach ($groupedEcritures as $nSaisie => $group)
                                             @php
-                                                $currentDate = $ecriture->date;
-                                                $currentSaisie = $ecriture->n_saisie;
-                                                $showSeparator = ($previousDate !== null && $currentDate !== $previousDate) || ($previousSaisie !== null && $currentSaisie !== $previousSaisie);
+                                                $first = $group->first();
+                                                $rowCount = $group->count();
                                             @endphp
                                             
-                                            @if($showSeparator)
-                                                <tr>
-                                                    <td colspan="11" class="border-0 p-0">
-                                                        <div class="border-t-2 border-slate-300 my-2"></div>
-                                                    </td>
-                                                </tr>
-                                            @endif
-                                            
-                                            <tr class="border-b border-slate-100 hover:bg-slate-50">
-                                                <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->date }}</td>
-                                                <td class="px-4 py-3 text-sm font-semibold text-slate-800">{{ $ecriture->n_saisie }}</td>
-                                                <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</td>
-                                                <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->reference_piece }}</td>
-                                                <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->description_operation }}</td>
-                                                <td class="px-4 py-3 text-sm text-slate-700">
-                                                    {{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte . ' - ' . $ecriture->planComptable->intitule : '-' }}
-                                                </td>
-                                                <td class="px-4 py-3 text-sm text-slate-700">
-                                                    {{ $ecriture->planTiers ? $ecriture->planTiers->numero_de_tiers . ' - ' . $ecriture->planTiers->intitule : '-' }}
-                                                </td>
-                                                <td class="px-4 py-3 text-sm text-slate-700">{{ (int) $ecriture->plan_analytique === 1 ? 'Oui' : 'Non' }}</td>
-                                                <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->debit, 2, ',', ' ') }}</td>
-                                                <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->credit, 2, ',', ' ') }}</td>
-                                                <td class="px-4 py-3 text-center">
-                                                    @if ($ecriture->piece_justificatif)
-                                                        <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}" target="_blank" class="text-blue-700 font-semibold">Voir</a>
-                                                    @else
-                                                        <span class="text-slate-400">-</span>
+                                            @foreach ($group as $index => $ecriture)
+                                                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                                                    @if($index === 0)
+                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->date }}</td>
+                                                        <td class="px-4 py-3 text-sm font-semibold text-slate-800" rowspan="{{ $rowCount }}">{{ $ecriture->n_saisie }}</td>
+                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</td>
+                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->reference_piece }}</td>
                                                     @endif
-                                                </td>
-                                                <td class="px-4 py-3 text-center whitespace-nowrap">
-                                                    <div class="flex items-center justify-center space-x-2">
-                                                        <a href="{{ route('ecriture.show', $ecriture->id) }}" class="p-1.5 text-info hover:text-blue-800 transition-colors duration-200" title="Voir">
-                                                            <i class="bx bx-show text-xl"></i>
-                                                        </a>
-                                                        <button onclick="confirmDelete({{ $ecriture->id }})" class="p-1.5 text-red-600 hover:text-red-800 transition-colors duration-200" title="Supprimer">
-                                                            <i class="bx bx-trash text-xl"></i>
-                                                        </button>
-                                                    </div>
+                                                    
+                                                    <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->description_operation }}</td>
+                                                    <td class="px-4 py-3 text-sm text-slate-700">
+                                                        {{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte . ' - ' . $ecriture->planComptable->intitule : '-' }}
+                                                    </td>
+                                                    <td class="px-4 py-3 text-sm text-slate-700">
+                                                        {{ $ecriture->planTiers ? $ecriture->planTiers->numero_de_tiers . ' - ' . $ecriture->planTiers->intitule : '-' }}
+                                                    </td>
+                                                    <td class="px-4 py-3 text-sm text-slate-700">{{ (int) $ecriture->plan_analytique === 1 ? 'Oui' : 'Non' }}</td>
+                                                    <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->debit, 2, ',', ' ') }}</td>
+                                                    <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->credit, 2, ',', ' ') }}</td>
+                                                    
+                                                    @if($index === 0)
+                                                        <td class="px-4 py-3 text-center" rowspan="{{ $rowCount }}">
+                                                            @if ($ecriture->piece_justificatif)
+                                                                <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}" target="_blank" class="text-blue-700 font-semibold">Voir</a>
+                                                            @else
+                                                                <span class="text-slate-400">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="px-4 py-3 text-center whitespace-nowrap" rowspan="{{ $rowCount }}">
+                                                            <div class="flex items-center justify-center space-x-2">
+                                                                <a href="{{ route('ecriture.show', $ecriture->id) }}" class="p-1.5 text-info hover:text-blue-800 transition-colors duration-200" title="Voir l'écriture complète">
+                                                                    <i class="bx bx-show text-xl"></i>
+                                                                </a>
+                                                                <button onclick="confirmDeleteBySaisie('{{ $ecriture->n_saisie }}')" class="p-1.5 text-red-600 hover:text-red-800 transition-colors duration-200" title="Supprimer toute l'écriture">
+                                                                    <i class="bx bx-trash text-xl"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    @endif
+                                                </tr>
+                                            @endforeach
+                                            
+                                            <!-- Separator between entries -->
+                                            <tr>
+                                                <td colspan="12" class="border-0 p-0">
+                                                    <div class="border-t-2 border-slate-200 my-0"></div>
                                                 </td>
                                             </tr>
-                                            
-                                            @php
-                                                $previousDate = $currentDate;
-                                                $previousSaisie = $currentSaisie;
-                                            @endphp
                                         @endforeach
                                         @if (!isset($ecritures) || $ecritures->isEmpty())
                                             <tr>
@@ -467,6 +474,12 @@
                                 </tfoot>
                         </table>
                     </div>
+                    
+                    @if(isset($pagination) && $pagination->hasPages())
+                        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
+                            {{ $pagination->links('pagination::bootstrap-5') }}
+                        </div>
+                    @endif
                 </div>
             </div>
           </div>
@@ -901,6 +914,33 @@
         initSearchSelect('compteGeneralSearch', 'compteGeneralDropdown', 'compteGeneralEcriture');
         initSearchSelect('compteTiersSearch', 'compteTiersDropdown', 'compteTiersEcriture');
     });
+
+    function confirmDeleteBySaisie(nSaisie) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer TOUTES les lignes liées à l\'écriture n° ' + nSaisie + ' ?')) {
+            // Logic to delete by n_saisie
+            // This might require a new backend route or a search for all IDs with this n_saisie.
+            // For now, let's look for a generic route if it exists or explain we need to implement it.
+            fetch(`{{ url('ecriture-delete-by-saisie') }}/${nSaisie}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la suppression : ' + (data.message || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Une erreur est survenue lors de la suppression.');
+            });
+        }
+    }
 
     function confirmDelete(ecritureId) {
         if (typeof Swal !== 'undefined') {

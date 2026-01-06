@@ -155,7 +155,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/accounting_entry_list', [EcritureComptableController::class, 'list'])->name('accounting_entry_list');
     Route::post('/accounting_entry_real', [EcritureComptableController::class, 'storeMultiple'])->name('storeMultiple.storeMultiple');
     Route::post('/api/ecritures', [EcritureComptableController::class, 'store'])->name('api.ecriture.store')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::delete('/ecriture-delete-by-saisie/{n_saisie?}', [EcritureComptableController::class, 'deleteBySaisie'])->name('ecriture.delete-by-saisie');
     Route::post('/ecriture', [EcritureComptableController::class, 'store'])->name('ecriture.store');
+    Route::get('/ecriture-scan', [EcritureComptableController::class, 'scanIndex'])->name('ecriture.scan');
     // Route::post('/ecriture/store/multiple', [EcritureComptableController::class, 'storeMultiple'])->name('ecriture.store.multiple');
    Route::post('/ecritures-comptables/store', [EcritureComptableController::class, 'storeMultiple'])
      ->name('ecritures-comptables.store-multiple');

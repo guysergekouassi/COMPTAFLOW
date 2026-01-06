@@ -29,87 +29,86 @@
             </div>
             
             <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Détails de l'écriture #{{ $ecriture->id }}</h4>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">Détails de l'écriture n° {{ $primaryEcriture->n_saisie }}</h4>
+                    <span class="badge bg-label-info">Journal : {{ $primaryEcriture->codeJournal ? $primaryEcriture->codeJournal->code_journal : '-' }}</span>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>Date :</strong></td>
-                                    <td>{{ $ecriture->date }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>N° Saisie :</strong></td>
-                                    <td>{{ $ecriture->n_saisie }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Code Journal :</strong></td>
-                                    <td>{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Référence Pièce :</strong></td>
-                                    <td>{{ $ecriture->reference_piece }}</td>
-                                </tr>
-                            </table>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <p class="mb-1"><small class="text-muted">DATE DE L'OPÉRATION</small></p>
+                            <h5 class="fw-bold">{{ $primaryEcriture->date }}</h5>
                         </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>Description :</strong></td>
-                                    <td>{{ $ecriture->description_operation }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Compte Général :</strong></td>
-                                    <td>{{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte . ' - ' . $ecriture->planComptable->intitule : '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Compte Tiers :</strong></td>
-                                    <td>{{ $ecriture->planTiers ? $ecriture->planTiers->numero_de_tiers . ' - ' . $ecriture->planTiers->intitule : '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Analytique :</strong></td>
-                                    <td>{{ (int) $ecriture->plan_analytique === 1 ? 'Oui' : 'Non' }}</td>
-                                </tr>
-                            </table>
+                        <div class="col-md-4">
+                            <p class="mb-1"><small class="text-muted">N° DE SAISIE</small></p>
+                            <h5 class="fw-bold">{{ $primaryEcriture->n_saisie }}</h5>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <p class="mb-1"><small class="text-muted">PIÈCE RÉF.</small></p>
+                            <h5 class="fw-bold">{{ $primaryEcriture->reference_piece ?? '-' }}</h5>
                         </div>
                     </div>
                     
-                    <div class="row mt-4">
-                        <div class="col-md-12">
-                            <table class="table table-bordered">
-                                <thead>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Compte Général</th>
+                                    <th>Compte Tiers</th>
+                                    <th class="text-end">Débit</th>
+                                    <th class="text-end">Crédit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    $totalDebit = 0;
+                                    $totalCredit = 0;
+                                @endphp
+                                @foreach($ecritures as $ec)
+                                    @php
+                                        $totalDebit += (float)$ec->debit;
+                                        $totalCredit += (float)$ec->credit;
+                                    @endphp
                                     <tr>
-                                        <th>Débit</th>
-                                        <th>Crédit</th>
+                                        <td>{{ $ec->description_operation }}</td>
+                                        <td>{{ $ec->planComptable ? $ec->planComptable->numero_de_compte . ' - ' . $ec->planComptable->intitule : '-' }}</td>
+                                        <td>{{ $ec->planTiers ? $ec->planTiers->numero_de_tiers . ' - ' . $ec->planTiers->intitule : '-' }}</td>
+                                        <td class="text-end">{{ number_format((float) $ec->debit, 2, ',', ' ') }}</td>
+                                        <td class="text-end">{{ number_format((float) $ec->credit, 2, ',', ' ') }}</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="text-right">{{ number_format((float) $ecriture->debit, 2, ',', ' ') }}</td>
-                                        <td class="text-right">{{ number_format((float) $ecriture->credit, 2, ',', ' ') }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                                @endforeach
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <th colspan="3" class="text-end">TOTAL</th>
+                                    <th class="text-end">{{ number_format($totalDebit, 2, ',', ' ') }}</th>
+                                    <th class="text-end">{{ number_format($totalCredit, 2, ',', ' ') }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
                     
-                    @if ($ecriture->piece_justificatif)
+                    @if ($primaryEcriture->piece_justificatif)
                     <div class="row mt-4">
                         <div class="col-md-12">
-                            <h5>Pièce Justificative</h5>
-                            <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}" target="_blank" class="btn btn-primary">
-                                <i class="fas fa-download"></i> Télécharger la pièce
-                            </a>
+                            <div class="alert alert-info d-flex align-items-center" role="alert">
+                                <i class="bx bx-file me-2 fs-4"></i>
+                                <div>
+                                    Une pièce justificative est jointe à cette écriture.
+                                    <a href="{{ asset('justificatifs/' . $primaryEcriture->piece_justificatif) }}" target="_blank" class="fw-bold ms-2 text-decoration-underline">
+                                        Voir le document
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     @endif
                     
                     <div class="row mt-4">
                         <div class="col-md-12">
-                            <a href="{{ route('accounting_entry_list') }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Retour à la liste
+                            <a href="{{ route('accounting_entry_list') }}" class="btn btn-outline-secondary">
+                                <i class="bx bx-arrow-back me-1"></i> Retour à la liste
                             </a>
                         </div>
                     </div>

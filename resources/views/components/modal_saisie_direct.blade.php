@@ -192,13 +192,30 @@
                 </div>
 
                 <!-- Footer Actions -->
-                <div class="d-flex gap-2 mt-3 pt-3" style="border-top: 1px solid #e2e8f0;">
-                    <button type="button" class="btn btn-cancel-premium flex-fill" data-bs-dismiss="modal" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
-                        <i class="bx bx-x me-1"></i>Fermer
-                    </button>
-                    <button type="button" id="btnRedirectToSaisie" class="btn-save-premium flex-fill" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
-                        <i class="bx bx-right-arrow-alt me-1"></i>Continuer
-                    </button>
+                <div class="d-flex flex-column gap-2 mt-3 pt-3" style="border-top: 1px solid #e2e8f0;">
+                    <div id="initialActions" class="d-flex gap-2 w-100">
+                        <button type="button" class="btn btn-cancel-premium flex-fill" data-bs-dismiss="modal" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
+                            <i class="bx bx-x me-1"></i>Fermer
+                        </button>
+                        <button type="button" id="btnRedirectToSaisie" class="btn-save-premium flex-fill" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
+                            <i class="bx bx-right-arrow-alt me-1"></i>Continuer
+                        </button>
+                    </div>
+                    
+                    <div id="choiceActions" class="d-none animate__animated animate__fadeInUp">
+                        <p class="text-center fw-bold mb-3" style="font-size: 0.85rem; color: #1e293b;">Comment souhaitez-vous passer l'écriture ?</p>
+                        <div class="d-flex gap-2 w-100">
+                            <button type="button" id="btnSaisieManuelle" class="btn btn-outline-primary flex-fill" style="padding: 0.75rem 1rem; border-radius: 12px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
+                                <i class="bx bx-keyboard me-1"></i>Saisie Manuelle
+                            </button>
+                            <button type="button" id="btnScannerFacture" class="btn-save-premium flex-fill" style="padding: 0.75rem 1rem; font-size: 0.75rem;">
+                                <i class="bx bx-scan me-1"></i>Scanner Facture
+                            </button>
+                        </div>
+                        <button type="button" id="btnBackToChoice" class="btn btn-link w-100 mt-2 text-muted" style="font-size: 0.75rem;">
+                            <i class="bx bx-chevron-left"></i> Retour aux options
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -228,14 +245,16 @@
     });
 });
     const accounting_entry_realUrl = "{{ route('accounting_entry_real') }}";
+    const ecriture_scanUrl = "{{ route('ecriture.scan') }}";
     const journaux_saisisfindSaisisUrl = "{{ route('journaux_saisis.find') }}";
 
-    document.getElementById("btnRedirectToSaisie").addEventListener("click", function() {
+    let globalParams = null;
+
+    document.getElementById("btnRedirectToSaisie").addEventListener("click", async function() {
         const journalSelect = document.getElementById("code_journal");
         const moisSelect = document.getElementById("mois");
         const exerciceSelect = document.getElementById("exercice_id");
 
-        // Validation rapide côté client
         if (!journalSelect.value || !moisSelect.value || !exerciceSelect.value) {
             alert("Veuillez remplir tous les champs.");
             return;
@@ -246,44 +265,55 @@
         const selectedOptionA = exerciceSelect.options[exerciceSelect.selectedIndex];
         const anneeValue = selectedOptionA.dataset.annee;
 
-        async function getJournalId() {
-            const data = {
-                exercice_id: selectedOptionA.value,
-                annee: anneeValue,
-                code_journal_id: selectedOption.value,
-                mois: moisValeur,
-            };
-
-            try {
-                const response = await fetch(journaux_saisisfindSaisisUrl + '?' + new URLSearchParams(data));
-                const result = await response.json();
-                return result.success ? result.id : null;
-            } catch (err) {
-                console.error("Erreur:", err);
-                return null;
-            }
+        const idSaisi = await getJournalId(selectedOptionA.value, anneeValue, selectedOption.value, moisValeur);
+        if (!idSaisi) {
+            alert("Aucun journal trouvé pour les critères sélectionnés.");
+            return;
         }
 
-        (async () => {
-            const idSaisi = await getJournalId();
-            if (!idSaisi) {
-                alert("Aucun journal trouvé pour les critères sélectionnés.");
-                return;
-            }
+        globalParams = new URLSearchParams({
+            id_exercice: selectedOptionA.value,
+            id_journal: idSaisi,
+            annee: anneeValue,
+            mois: moisValeur,
+            code: selectedOption.dataset.code_journal_j,
+            type: selectedOption.dataset.type_j,
+            intitule: selectedOption.dataset.intitule_j,
+            id_code: selectedOption.value,
+        });
 
-            const params = new URLSearchParams({
-                id_exercice: selectedOptionA.value,
-                id_journal: idSaisi,
-                annee: anneeValue,
-                mois: moisValeur,
-                code: selectedOption.dataset.code_journal_j,
-                type: selectedOption.dataset.type_j,
-                intitule: selectedOption.dataset.intitule_j,
-                id_code: selectedOption.value,
-            });
-
-            window.location.href = accounting_entry_realUrl + "?" + params.toString();
-        })();
+        // Switch button visibility
+        document.getElementById("initialActions").classList.add("d-none");
+        document.getElementById("choiceActions").classList.remove("d-none");
     });
+
+    document.getElementById("btnBackToChoice").addEventListener("click", function() {
+        document.getElementById("choiceActions").classList.add("d-none");
+        document.getElementById("initialActions").classList.remove("d-none");
+    });
+
+    document.getElementById("btnSaisieManuelle").addEventListener("click", function() {
+        if (globalParams) {
+            window.location.href = accounting_entry_realUrl + "?" + globalParams.toString();
+        }
+    });
+
+    document.getElementById("btnScannerFacture").addEventListener("click", function() {
+        if (globalParams) {
+            window.location.href = ecriture_scanUrl + "?" + globalParams.toString();
+        }
+    });
+
+    async function getJournalId(exercice_id, annee, code_journal_id, mois) {
+        const data = { exercice_id, annee, code_journal_id, mois };
+        try {
+            const response = await fetch(journaux_saisisfindSaisisUrl + '?' + new URLSearchParams(data));
+            const result = await response.json();
+            return result.success ? result.id : null;
+        } catch (err) {
+            console.error("Erreur:", err);
+            return null;
+        }
+    }
 </script>
 
