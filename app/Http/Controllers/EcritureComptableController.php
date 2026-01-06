@@ -16,6 +16,7 @@ use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+
 class EcritureComptableController extends Controller
 {
     public function index(Request $request)
@@ -368,13 +369,7 @@ class EcritureComptableController extends Controller
         $data = $request->all();
         
         // Activation des logs de débogage
-        \Log::info('=== DÉBUT DÉBOGAGE ===');
-        \Log::info('Utilisateur connecté:', [
-            'id' => $user->id,
-            'company_id' => $user->company_id
-        ]);
-        \Log::info('Données de la requête:', $data);
-        
+      
         // Récupérer l'exercice actif
         $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
             ->where('cloturer', 0)
@@ -400,12 +395,7 @@ class EcritureComptableController extends Controller
         
         $ecritures = $query->orderBy('created_at', 'desc')->get();
         
-        // Log des résultats
-        \Log::info('Résultats de la requête:', [
-            'requete_sql' => $query->toSql(),
-            'parametres' => $query->getBindings(),
-            'nombre_ecritures' => $ecritures->count()
-        ]);
+       
         
         // Afficher directement les informations de débogage
         if ($ecritures->isEmpty()) {
@@ -418,10 +408,7 @@ class EcritureComptableController extends Controller
             $totalEcritures = \App\Models\EcritureComptable::count();
             $ecrituresCompany = \App\Models\EcritureComptable::where('company_id', $user->company_id)->count();
             
-            \Log::info('Statistiques des écritures:', [
-                'total_ecritures' => $totalEcritures,
-                'ecritures_company' => $ecrituresCompany
-            ]);
+           
         }
         
         // Récupérer les journaux pour les filtres
