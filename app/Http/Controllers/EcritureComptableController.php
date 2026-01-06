@@ -244,7 +244,7 @@ class EcritureComptableController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Erreur lors de l\'ajout de l\'écriture: ' . $e->getMessage());
+           
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'ajout : ' . $e->getMessage()
