@@ -317,16 +317,23 @@
                                             <td class="px-8 py-6">
     @php
         $typeClasses = [
-            'actif' => 'bg-green-100 text-green-800',
-            'passif' => 'bg-blue-100 text-blue-800',
-            'produit' => 'bg-purple-100 text-purple-800',
-            'charge' => 'bg-yellow-100 text-yellow-800',
-            'divers' => 'bg-gray-100 text-gray-800'
+            'Classe 1: Comptes de capitaux' => 'bg-green-100 text-green-800',
+            'Classe 2: Comptes d\'immobilisations' => 'bg-blue-100 text-blue-800',
+            'Classe 3: Comptes de stocks' => 'bg-purple-100 text-purple-800',
+            'Classe 4: Comptes de tiers' => 'bg-yellow-100 text-yellow-800',
+            'Classe 5: Comptes financiers' => 'bg-red-100 text-red-800',
+            'Classe 6: Comptes de charges' => 'bg-orange-100 text-orange-800',
+            'Classe 7: Comptes de produits' => 'bg-teal-100 text-teal-800',
+            'Classe 8: Comptes spéciaux' => 'bg-gray-100 text-gray-800',
+            'Autres' => 'bg-gray-100 text-gray-800'
         ];
-        $typeClass = $typeClasses[$plan->type_de_compte] ?? 'bg-gray-100 text-gray-800';
+        $typeClass = $typeClasses[$plan->classe] ?? 'bg-gray-100 text-gray-800';
+        
+        // Extraire juste le numéro de classe pour l'affichage
+        $classeAffiche = substr($plan->classe, 0, 8);
     @endphp
     <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
-        {{ ucfirst($plan->type_de_compte) }}
+        {{ $classeAffiche }}
     </span>
     <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
 </td>

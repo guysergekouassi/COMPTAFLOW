@@ -183,11 +183,31 @@ class PlanTiersController extends Controller
 
             Log::info('Plan tiers créé avec succès - ID: ' . $planTiers->id);
 
+            // Vérifier si c'est une requête AJAX
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Plan Tiers créé avec succès',
+                    'id' => $planTiers->id,
+                    'numero_de_tiers' => $planTiers->numero_de_tiers,
+                    'intitule' => $planTiers->intitule
+                ]);
+            }
+
             return redirect()->back()->with('success', 'Plan Tiers créé avec succès')->with('reload', true);
         } catch (\Exception $e) {
             logger()->error('Erreur dans PlanTiersController@store: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
+            
+            // Vérifier si c'est une requête AJAX
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Erreur lors de la création du plan tiers: ' . $e->getMessage()
+                ], 500);
+            }
+            
             return redirect()->back()->with('error', 'Erreur lors de la création du plan tiers: ' . $e->getMessage());
         }
     }

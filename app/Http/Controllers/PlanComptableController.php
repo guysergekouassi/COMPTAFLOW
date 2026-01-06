@@ -35,7 +35,7 @@ class PlanComptableController extends Controller
 
         $plansComptables = PlanComptable::where('company_id', $companyId)
     ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-    ->get(['id', 'numero_de_compte', 'intitule', 'type_de_compte', 'adding_strategy', 'created_at', 'user_id', 'company_id']);
+    ->get(['id', 'numero_de_compte', 'intitule', 'classe', 'adding_strategy', 'created_at', 'user_id', 'company_id']);
 
         // 3. CALCUL DES STATISTIQUES RÉELLES
         // Nombre total
@@ -91,6 +91,34 @@ class PlanComptableController extends Controller
         }
     }
 
+    /**
+     * Détermine la classe du compte en fonction du numéro
+     */
+    private function determinerClasse($numero) {
+        $premierChiffre = substr($numero, 0, 1);
+        
+        switch($premierChiffre) {
+            case '1':
+                return 'Classe 1: Comptes de capitaux';
+            case '2':
+                return 'Classe 2: Comptes d\'immobilisations';
+            case '3':
+                return 'Classe 3: Comptes de stocks';
+            case '4':
+                return 'Classe 4: Comptes de tiers';
+            case '5':
+                return 'Classe 5: Comptes financiers';
+            case '6':
+                return 'Classe 6: Comptes de charges';
+            case '7':
+                return 'Classe 7: Comptes de produits';
+            case '8':
+                return 'Classe 8: Comptes spéciaux';
+            default:
+                return 'Autres';
+        }
+    }
+
     public function verifierNumeroCompte(Request $request)
     {
         try {
@@ -142,7 +170,7 @@ class PlanComptableController extends Controller
             'adding_strategy' => 'manuel',
             'user_id' => $user->id,
             'company_id' => $companyId, // Utilise l'ID switché
-            'type_de_compte' => $this->determinerTypeCompte($numero_formate), // Optionnel mais conseillé
+            'classe' => $this->determinerClasse($numero_formate), // Utilise la classe au lieu du type
         ]);
 
         return redirect()->back()->with('success', 'Plan comptable ajouté avec succès à la comptabilité actuelle.');
@@ -178,7 +206,7 @@ class PlanComptableController extends Controller
                         PlanComptable::create([
                             'numero_de_compte' => $numero,
                             'intitule' => $intitule,
-                            'type_de_compte' => $this->determinerTypeCompte($numero),
+                            'classe' => $this->determinerClasse($numero),
                             'adding_strategy' => 'auto',
                             'user_id' => $user->id,
                             'company_id' => $user->company_id,
@@ -206,7 +234,7 @@ class PlanComptableController extends Controller
             $request->validate([
                 'numero_de_compte' => 'required|string',
                 'intitule' => 'required|string',
-                'type_de_compte' => 'nullable|string|in:Bilan,Compte resultat',
+                'classe' => 'nullable|string',
                 'poste' => 'nullable|string',
                 'extrait_du_compte' => 'nullable|in:oui,non',
                 'traitement_analytique' => 'nullable|in:oui,non',
@@ -224,7 +252,7 @@ class PlanComptableController extends Controller
             $plan->update([
                 'numero_de_compte' => $numero,
                 'intitule' => $intitule_formate,
-                'type_de_compte' => $request->type_de_compte,
+                'classe' => $request->classe,
                 'poste' => $request->poste,
                 'extrait_du_compte' => $request->extrait_du_compte === 'oui',
                 'traitement_analytique' => $request->traitement_analytique === 'oui',
@@ -269,7 +297,7 @@ class PlanComptableController extends Controller
                 'id',
                 'numero_de_compte',
                 'intitule',
-                'type_de_compte',
+                'classe',
                 'created_at',
                 'adding_strategy'
             ]);
