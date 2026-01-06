@@ -151,11 +151,7 @@ class EcritureComptableController extends Controller
                 
             $codeJournaux = CodeJournal::all();
             
-            // Debug: Vérifier les données avant l'envoi à la vue
-            \Log::info('Données envoyées à la vue d\'édition:', [
-                'id' => $id,
-                'n_saisie' => $ecriture->n_saisie
-            ]);
+           
             
             return view('accounting_entry_edit', compact('ecriture', 'plansComptables', 'plansTiers', 'comptesTresorerie', 'codeJournaux'));
             
@@ -209,8 +205,7 @@ class EcritureComptableController extends Controller
         try {
             $user = Auth::user();
             
-            // Log incoming data
-            \Log::info('Tentative d\'ajout d\'écriture:', $request->all());
+           
 
             $data = $request->validate([
                 'date' => 'required|date',
