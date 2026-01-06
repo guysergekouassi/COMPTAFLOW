@@ -401,11 +401,11 @@ class EcritureComptableController extends Controller
         $ecritures = $query->orderBy('created_at', 'desc')->get();
         
         // Log pour débogage
-        \Log::info('Résultats de la requête', [
-            'requete_sql' => $query->toSql(),
-            'parametres' => $query->getBindings(),
-            'nombre_ecritures' => $ecritures->count()
-        ]);
+        // \Log::info('Résultats de la requête', [
+        //     'requete_sql' => $query->toSql(),
+        //     'parametres' => $query->getBindings(),
+        //     'nombre_ecritures' => $ecritures->count()
+        // ]);
         
         // Récupérer les journaux pour les filtres
         $code_journaux = CodeJournal::where('company_id', $user->company_id)->get();
