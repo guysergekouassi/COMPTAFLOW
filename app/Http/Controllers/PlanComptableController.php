@@ -35,7 +35,7 @@ class PlanComptableController extends Controller
 
         $plansComptables = PlanComptable::where('company_id', $companyId)
     ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-    ->get(['id', 'numero_de_compte', 'intitule', 'classe', 'adding_strategy', 'created_at', 'user_id', 'company_id']);
+    ->get(['id', 'numero_de_compte', 'intitule', 'adding_strategy', 'created_at', 'user_id', 'company_id']);
 
         // 3. CALCUL DES STATISTIQUES RÉELLES
         // Nombre total
@@ -297,7 +297,7 @@ class PlanComptableController extends Controller
                 'id',
                 'numero_de_compte',
                 'intitule',
-                'classe',
+                // 'classe',
                 'created_at',
                 'adding_strategy'
             ]);
