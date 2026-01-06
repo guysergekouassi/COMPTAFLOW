@@ -399,10 +399,7 @@ class EcritureComptableController extends Controller
         
         // Afficher directement les informations de débogage
         if ($ecritures->isEmpty()) {
-            \Log::info('Aucune écriture trouvée pour les critères suivants:', [
-                'company_id' => $user->company_id,
-                'filtres' => $data
-            ]);
+          
             
             // Vérifier s'il y a des écritures dans la base de données
             $totalEcritures = \App\Models\EcritureComptable::count();
