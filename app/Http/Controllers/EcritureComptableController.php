@@ -16,7 +16,6 @@ use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-
 class EcritureComptableController extends Controller
 {
     public function index(Request $request)
