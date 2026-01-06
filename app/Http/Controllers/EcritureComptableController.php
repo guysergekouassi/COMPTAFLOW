@@ -351,6 +351,8 @@ class EcritureComptableController extends Controller
         $user = Auth::user();
         $data = $request->all();
         
+        // Activation des logs de débogage
+      
         // Récupérer l'exercice actif
         $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
             ->where('cloturer', 0)
@@ -390,6 +392,19 @@ class EcritureComptableController extends Controller
             
         // 4. Compter le nombre total d'écritures uniques (groupes)
         $totalEntries = $paginatedSaisies->total();
+        
+       
+        
+        // Afficher directement les informations de débogage
+        if ($ecritures->isEmpty()) {
+          
+            
+            // Vérifier s'il y a des écritures dans la base de données
+            $totalEcritures = \App\Models\EcritureComptable::count();
+            $ecrituresCompany = \App\Models\EcritureComptable::where('company_id', $user->company_id)->count();
+            
+           
+        }
         
         // Récupérer les journaux pour les filtres
         $code_journaux = CodeJournal::where('company_id', $user->company_id)->get();
