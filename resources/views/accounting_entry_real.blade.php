@@ -133,6 +133,7 @@
         /* transform: translateY(-2px); DÉSACTIVÉ */
         /* box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); DÉSACTIVÉ */
     }
+    
 </style>
 
 <body>
@@ -222,7 +223,7 @@
                                                 @endforeach
                                             @endif
                                         </select>
-                                        <button type="button" class="btn btn-primary" onclick="console.log('Bouton cliqué'); openCreateTiersModal();" title="Créer un nouveau compte tiers">
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTiersModal" title="Créer un nouveau compte tiers">
                                             <i class="fas fa-plus"></i> Créer
                                         </button>
                                     </div>
@@ -277,60 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </form>
                         
-                        <!-- Modal pour créer un nouveau compte tiers -->
-                        <div class="modal fade" id="createTiersModal" tabindex="-1" aria-labelledby="createTiersModalLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="createTiersModalLabel">
-                                            <i class="fas fa-plus-circle me-2"></i>Créer un nouveau compte tiers
-                                        </h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <form id="createTiersForm">
-                                        <div class="modal-body">
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label for="type_tiers" class="form-label">Type de tiers *</label>
-                                                    <select id="type_tiers" name="type_de_tiers" class="form-select" required>
-                                                        <option value="" selected disabled>Sélectionner un type</option>
-                                                        <option value="Fournisseur">Fournisseur</option>
-                                                        <option value="Client">Client</option>
-                                                        <option value="Personnel">Personnel</option>
-                                                        <option value="CNPS">CNPS</option>
-                                                        <option value="Impots">Impots</option>
-                                                        <option value="Associé">Associé</option>
-                                                        <option value="Divers Tiers">Divers Tiers</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="compte_general_tiers" class="form-label">Compte général *</label>
-                                                    <select id="compte_general_tiers" name="compte_general" class="form-select" required>
-                                                        <option value="" selected disabled>Sélectionner d'abord le type de tiers</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="numero_tiers" class="form-label">Numéro de tiers *</label>
-                                                    <input type="text" id="numero_tiers" name="numero_de_tiers" class="form-control" readonly placeholder="Sera généré automatiquement" required>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="intitule_tiers" class="form-label">Intitulé du tiers *</label>
-                                                    <input type="text" id="intitule_tiers" name="intitule" class="form-control" placeholder="Nom du tiers" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                <i class="fas fa-times me-2"></i>Annuler
-                                            </button>
-                                            <button type="button" class="btn btn-primary" id="btnCreateTiers" onclick="handleCreateTiers(event)">
-                                                <i class="fas fa-save me-2"></i>Créer le compte tiers
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
                         
                         <hr />
                         <div class="d-flex justify-content-between align-items-center">
@@ -426,6 +373,62 @@ document.addEventListener('DOMContentLoaded', function() {
       <!-- / Layout wrapper -->
 
       <!-- Core JS -->
+
+      <!-- Modal pour créer un nouveau compte tiers (Déplacé à la racine pour éviter les soucis de backdrop) -->
+      <div class="modal fade" id="createTiersModal" tabindex="-1" aria-labelledby="createTiersModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="createTiersModalLabel">
+                          <i class="fas fa-plus-circle me-2"></i>Créer un nouveau compte tiers
+                      </h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <form id="createTiersForm">
+                      <div class="modal-body">
+                          <div class="row g-3">
+                              <div class="col-md-6">
+                                  <label for="type_tiers" class="form-label">Type de tiers *</label>
+                                  <select id="type_tiers" name="type_de_tiers" class="form-select" required>
+                                      <option value="" selected disabled>Sélectionner un type</option>
+                                      <option value="Fournisseur">Fournisseur</option>
+                                      <option value="Client">Client</option>
+                                      <option value="Personnel">Personnel</option>
+                                      <option value="CNPS">CNPS</option>
+                                      <option value="Impots">Impots</option>
+                                      <option value="Associé">Associé</option>
+                                      <option value="Divers Tiers">Divers Tiers</option>
+                                  </select>
+                              </div>
+                              <div class="col-md-6">
+                                  <label for="compte_general_tiers" class="form-label">Compte général *</label>
+                                  <select id="compte_general_tiers" name="compte_general" class="form-select" required>
+                                      <option value="" selected disabled>Sélectionner d'abord le type de tiers</option>
+                                  </select>
+                              </div>
+                              <div class="col-md-6">
+                                  <label for="numero_tiers" class="form-label">Numéro de tiers *</label>
+                                  <input type="text" id="numero_tiers" name="numero_de_tiers" class="form-control" readonly placeholder="Sera généré automatiquement" required>
+                              </div>
+                              <div class="col-md-6">
+                                  <label for="intitule_tiers" class="form-label">Intitulé du tiers *</label>
+                                  <input type="text" id="intitule_tiers" name="intitule" class="form-control" placeholder="Nom du tiers" required>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                              <i class="fas fa-times me-2"></i>Annuler
+                          </button>
+                          <button type="button" class="btn btn-primary" id="btnCreateTiers" onclick="window.createTiersSimple(event)">
+                              <i class="fas fa-save me-2"></i>Créer le compte tiers
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      </div>
+
       @include('components.footer')
 
 
@@ -434,21 +437,18 @@ document.addEventListener('DOMContentLoaded', function() {
     </html>
 
 <script>
-// Fonction simple et directe pour ouvrir le modal
-function openCreateTiersModal() {
-    console.log('Ouverture du modal...');
+// Logic for Creating Tiers and Modal Management
+// Using standard Bootstrap 5 API to avoid flickering issues
+
+document.addEventListener('DOMContentLoaded', function() {
+    const createTiersModalEl = document.getElementById('createTiersModal');
+    if (!createTiersModalEl) return;
+
+    // Use Bootstrap's Modal instance
+    const tiersModal = new bootstrap.Modal(createTiersModalEl);
     
-    try {
-        const modalElement = document.getElementById('createTiersModal');
-        if (!modalElement) {
-            alert('Modal introuvable');
-            return;
-        }
-        
-        // Créer une nouvelle instance Bootstrap Modal
-        const modal = new bootstrap.Modal(modalElement);
-        
-        // Réinitialiser le formulaire
+    // Reset form when modal opens
+    createTiersModalEl.addEventListener('show.bs.modal', function () {
         const form = document.getElementById('createTiersForm');
         if (form) {
             form.reset();
@@ -459,174 +459,148 @@ function openCreateTiersModal() {
                 compteGeneralTiers.innerHTML = '<option value="" selected disabled>Sélectionner d\'abord le type de tiers</option>';
             }
         }
-        
-        // Ouvrir le modal
-        modal.show();
-        console.log('Modal ouvert avec succès');
-        
-    } catch (error) {
-        console.error('Erreur:', error);
-        alert('Erreur: ' + error.message);
-    }
-}
-
-// Fonction simple pour créer le compte tiers
-function handleCreateTiers(event) {
-    event.preventDefault();
-    
-    console.log('Création du compte tiers...');
-    
-    // Validation simple
-    const typeTiers = document.getElementById('type_tiers').value;
-    const compteGeneral = document.getElementById('compte_general_tiers').value;
-    const intitule = document.getElementById('intitule_tiers').value.trim();
-    
-    if (!typeTiers || !compteGeneral || !intitule) {
-        alert('Veuillez remplir tous les champs obligatoires');
-        return;
-    }
-    
-    const btn = document.getElementById('btnCreateTiers');
-    const originalText = btn.innerHTML;
-    
-    // Indicateur de chargement
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
-    btn.disabled = true;
-    
-    // Préparer les données
-    const formData = {
-        type_de_tiers: typeTiers,
-        compte_general: compteGeneral,
-        intitule: intitule,
-        numero_de_tiers: document.getElementById('numero_tiers').value
-    };
-    
-    // Envoyer la requête
-    fetch('{{ route("plan_tiers.store") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Réponse:', data);
-        
-        if (data.success) {
-            // Fermer le modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('createTiersModal'));
-            modal.hide();
-            
-            // Ajouter le nouveau compte tiers à la liste
-            const select = document.getElementById('compte_tiers');
-            const option = document.createElement('option');
-            option.value = data.id;
-            option.textContent = data.numero_de_tiers + ' - ' + data.intitule;
-            option.selected = true;
-            select.appendChild(option);
-            
-            // Mettre à jour Select2 si utilisé
-            if (typeof $ !== 'undefined' && $(select).data('select2')) {
-                $(select).trigger('change');
-            }
-            
-            alert('Compte tiers créé avec succès !');
-        } else {
-            alert('Erreur: ' + (data.error || 'Erreur inconnue'));
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors de la création: ' + error.message);
-    })
-    .finally(() => {
-        // Réinitialiser le bouton
-        btn.innerHTML = originalText;
-        btn.disabled = false;
     });
-}
 
-// Gestionnaire simple pour le type de tiers
-document.addEventListener('DOMContentLoaded', function() {
-    const typeTiersSelect = document.getElementById('type_tiers');
-    const compteGeneralSelect = document.getElementById('compte_general_tiers');
-    const numeroTiersInput = document.getElementById('numero_tiers');
-    
-    if (!typeTiersSelect || !compteGeneralSelect || !numeroTiersInput) {
-        console.log('Éléments du modal non trouvés');
-        return;
-    }
-    
-    // Écouter le changement de type de tiers
-    typeTiersSelect.addEventListener('change', function() {
-        const typeTiers = this.value;
+    // Handle Tier Creation
+    window.createTiersSimple = function(event) {
+        if (event) event.preventDefault();
         
-        if (!typeTiers) {
-            compteGeneralSelect.innerHTML = '<option value="" selected disabled>Sélectionner d\'abord le type de tiers</option>';
-            numeroTiersInput.value = '';
+        const typeTiers = document.getElementById('type_tiers').value;
+        const compteGeneral = document.getElementById('compte_general_tiers').value;
+        const intitule = document.getElementById('intitule_tiers').value.trim();
+        const numeroTiersValue = document.getElementById('numero_tiers').value;
+        
+        if (!typeTiers || !compteGeneral || !intitule) {
+            alert('Veuillez remplir tous les champs obligatoires');
             return;
         }
         
-        // Mapping des types vers les préfixes
-        const prefixes = {
-            'Fournisseur': '40',
-            'Client': '41',
-            'Personnel': '42',
-            'CNPS': '43',
-            'Impots': '44',
-            'Associé': '45'
+        const btn = document.getElementById('btnCreateTiers');
+        const originalText = btn.innerHTML;
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
+        btn.disabled = true;
+        
+        const data = {
+            'type_de_tiers': typeTiers,
+            'compte_general': compteGeneral,
+            'intitule': intitule,
+            'numero_de_tiers': numeroTiersValue
         };
         
-        // Récupérer les comptes depuis le select principal
-        const mainSelect = document.getElementById('compte_general');
-        if (!mainSelect) return;
-        
-        const options = Array.from(mainSelect.options).filter(opt => opt.value);
-        let filtered = [];
-        
-        if (typeTiers === 'Divers Tiers') {
-            const allPrefixes = Object.values(prefixes);
-            filtered = options.filter(opt => {
-                const numero = opt.textContent.split(' - ')[0];
-                return !allPrefixes.some(prefix => numero.startsWith(prefix));
-            });
-        } else {
-            const prefix = prefixes[typeTiers];
-            filtered = options.filter(opt => {
-                const numero = opt.textContent.split(' - ')[0];
-                return numero.startsWith(prefix);
-            });
-        }
-        
-        // Mettre à jour le select des comptes généraux
-        compteGeneralSelect.innerHTML = '<option value="" selected disabled>Sélectionner un compte général</option>';
-        filtered.forEach(opt => {
-            const newOpt = opt.cloneNode(true);
-            compteGeneralSelect.appendChild(newOpt);
+        fetch('{{ route("plan_tiers.store") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Close modal using BS API
+                tiersModal.hide();
+                
+                // Add to tiers select
+                const select = document.getElementById('compte_tiers');
+                const option = document.createElement('option');
+                option.value = result.id;
+                option.text = (result.numero_de_tiers || numeroTiersValue) + ' - ' + result.intitule;
+                option.selected = true;
+                select.appendChild(option);
+                
+                // Trigger change for Select2/Bootstrap-Select if needed
+                if (typeof $ !== 'undefined') {
+                    $(select).trigger('change');
+                }
+                
+                alert('Compte tiers créé avec succès !');
+            } else {
+                alert('Erreur: ' + (result.error || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            console.error('Erreur AJAX:', error);
+            alert('Erreur lors de la création: ' + error.message);
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         });
-        
-        // Générer le numéro de tiers
-        if (typeTiers !== 'Divers Tiers' && prefixes[typeTiers]) {
-            fetch(`/plan_tiers/${prefixes[typeTiers]}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.numero) {
-                        numeroTiersInput.value = data.numero;
-                    }
-                })
-                .catch(() => {
-                    // Générer un numéro manuellement en cas d'erreur
-                    const random = Math.floor(Math.random() * 9000) + 1000;
-                    numeroTiersInput.value = prefixes[typeTiers] + random;
+    };
+
+    // Logic for type_tiers change (filtering and number generation)
+    const typeTiersSelect = document.getElementById('type_tiers');
+    if (typeTiersSelect) {
+        typeTiersSelect.addEventListener('change', function() {
+            const typeTiers = this.value;
+            const compteGeneralSelect = document.getElementById('compte_general_tiers');
+            const numeroTiersInput = document.getElementById('numero_tiers');
+            
+            if (!typeTiers) {
+                compteGeneralSelect.innerHTML = '<option value="" selected disabled>Sélectionner d\'abord le type de tiers</option>';
+                numeroTiersInput.value = '';
+                return;
+            }
+            
+            const prefixes = {
+                'Fournisseur': '40',
+                'Client': '41',
+                'Personnel': '42',
+                'CNPS': '43',
+                'Impots': '44',
+                'Associé': '45'
+            };
+            
+            const mainSelect = document.getElementById('compte_general');
+            if (mainSelect) {
+                const options = Array.from(mainSelect.options).filter(opt => opt.value);
+                let filtered = [];
+                
+                if (typeTiers === 'Divers Tiers') {
+                    const allPrefixes = Object.values(prefixes);
+                    filtered = options.filter(opt => {
+                        const numero = opt.textContent.split(' - ')[0].trim();
+                        return !allPrefixes.some(prefix => numero.startsWith(prefix));
+                    });
+                } else {
+                    const prefix = prefixes[typeTiers];
+                    filtered = options.filter(opt => {
+                        const numero = opt.textContent.split(' - ')[0].trim();
+                        return numero.startsWith(prefix);
+                    });
+                }
+                
+                compteGeneralSelect.innerHTML = '<option value="" selected disabled>Sélectionner un compte général</option>';
+                filtered.forEach(opt => {
+                    const newOpt = opt.cloneNode(true);
+                    compteGeneralSelect.appendChild(newOpt);
                 });
-        }
-    });
+            }
+            
+            // Generate number
+            if (typeTiers !== 'Divers Tiers' && prefixes[typeTiers]) {
+                fetch('/plan_tiers/' + prefixes[typeTiers])
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.numero) {
+                            numeroTiersInput.value = data.numero;
+                        }
+                    })
+                    .catch(() => {
+                        const random = Math.floor(Math.random() * 9000) + 1000;
+                        numeroTiersInput.value = prefixes[typeTiers] + random;
+                    });
+            } else {
+                numeroTiersInput.value = '';
+            }
+        });
+    }
 });
 
-// Fonction pour ajouter une écriture (inchangée)
+// 5. Fonctions existantes inchangées
 function ajouterEcriture() {
     try {
         const date = document.getElementById('date');
@@ -1187,108 +1161,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Gestionnaire d'événements pour le changement de type de tiers
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('Initialisation du formulaire de création de tiers...');
-        
-        const typeTiersSelect = document.getElementById('type_tiers');
-        const compteGeneralSelect = document.getElementById('compte_general_tiers');
-        const numeroTiersInput = document.getElementById('numero_tiers');
-        const createTiersForm = document.getElementById('createTiersForm');
-
-        // Vérifier que tous les éléments existent
-        if (!typeTiersSelect || !compteGeneralSelect || !numeroTiersInput || !createTiersForm) {
-            console.error('Certains éléments du modal de création de tiers sont manquants:', {
-                typeTiersSelect: !!typeTiersSelect,
-                compteGeneralSelect: !!compteGeneralSelect,
-                numeroTiersInput: !!numeroTiersInput,
-                createTiersForm: !!createTiersForm
-            });
-            return;
-        }
-
-        console.log('Tous les éléments du modal sont présents');
-
-        // Mettre à jour les comptes généraux selon le type de tiers
-        typeTiersSelect.addEventListener('change', function() {
-            const typeTiers = this.value;
-            
-            if (!typeTiers) {
-                compteGeneralSelect.innerHTML = '<option value="" selected disabled>Sélectionner d\'abord le type de tiers</option>';
-                numeroTiersInput.value = '';
-                return;
-            }
-
-            // Mapping des types vers les préfixes de comptes
-            const typePrefixes = {
-                'Fournisseur': '40',
-                'Client': '41', 
-                'Personnel': '42',
-                'CNPS': '43',
-                'Impots': '44',
-                'Associé': '45'
-            };
-
-            // Récupérer les comptes généraux depuis la page principale
-            const compteGeneralMain = document.getElementById('compte_general');
-            if (!compteGeneralMain) {
-                console.error('Le select compte_general principal est introuvable');
-                return;
-            }
-            
-            const options = Array.from(compteGeneralMain.options).filter(option => option.value);
-            
-            let filteredOptions = [];
-            if (typeTiers === 'Divers Tiers') {
-                // Pour Divers Tiers, prendre tous les comptes qui ne correspondent pas aux autres types
-                const allPrefixes = Object.values(typePrefixes);
-                filteredOptions = options.filter(option => {
-                    const numero = option.textContent.trim().split(' - ')[0];
-                    return !allPrefixes.some(prefix => numero.startsWith(prefix));
-                });
-            } else {
-                // Pour les autres types, filtrer selon le préfixe
-                const prefix = typePrefixes[typeTiers];
-                filteredOptions = options.filter(option => {
-                    const numero = option.textContent.trim().split(' - ')[0];
-                    return numero.startsWith(prefix);
-                });
-            }
-
-            // Mettre à jour le select des comptes généraux
-            compteGeneralSelect.innerHTML = '<option value="" selected disabled>Sélectionner un compte général</option>';
-            filteredOptions.forEach(option => {
-                const newOption = option.cloneNode(true);
-                compteGeneralSelect.appendChild(newOption);
-            });
-
-            // Générer le numéro de tiers automatiquement
-            if (typeTiers !== 'Divers Tiers' && typePrefixes[typeTiers]) {
-                generateNumeroTiers(typePrefixes[typeTiers]);
-            } else {
-                numeroTiersInput.value = '';
-            }
-        });
-    });
-
-    // Fonction pour générer un numéro de tiers
-    function generateNumeroTiers(prefix) {
-        fetch(`/plan_tiers/${prefix}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.numero) {
-                    document.getElementById('numero_tiers').value = data.numero;
-                } else {
-                    console.error('Erreur lors de la génération du numéro:', data.error);
-                    // Générer un numéro manuellement en cas d'erreur
-                    const randomSuffix = Math.floor(Math.random() * 9000) + 1000;
-                    document.getElementById('numero_tiers').value = prefix + randomSuffix;
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                // En cas d'erreur, générer un numéro manuellement
-                const randomSuffix = Math.floor(Math.random() * 9000) + 1000;
-                document.getElementById('numero_tiers').value = prefix + randomSuffix;
-            });
-    }
 </script>
