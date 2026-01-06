@@ -368,6 +368,13 @@ class EcritureComptableController extends Controller
         $user = Auth::user();
         $data = $request->all();
         
+        // Log pour débogage
+        \Log::info('Début de la méthode list()', [
+            'user_id' => $user->id,
+            'company_id' => $user->company_id,
+            'request_data' => $data
+        ]);
+        
         // Récupérer l'exercice actif
         $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
             ->where('cloturer', 0)
@@ -392,6 +399,13 @@ class EcritureComptableController extends Controller
         }
         
         $ecritures = $query->orderBy('created_at', 'desc')->get();
+        
+        // Log pour débogage
+        \Log::info('Résultats de la requête', [
+            'requete_sql' => $query->toSql(),
+            'parametres' => $query->getBindings(),
+            'nombre_ecritures' => $ecritures->count()
+        ]);
         
         // Récupérer les journaux pour les filtres
         $code_journaux = CodeJournal::where('company_id', $user->company_id)->get();
