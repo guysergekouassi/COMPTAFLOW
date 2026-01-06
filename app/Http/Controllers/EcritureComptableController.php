@@ -209,7 +209,7 @@ class EcritureComptableController extends Controller
 
             $data = $request->validate([
                 'date' => 'required|date',
-                'numero_saisie' => 'required|string',
+                'n_saisie' => 'required|string',
                 'code_journal' => 'required',
                 'description_operation' => 'required|string',
                 'reference_piece' => 'nullable|string',
