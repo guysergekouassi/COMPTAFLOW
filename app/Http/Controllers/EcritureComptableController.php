@@ -368,12 +368,13 @@ class EcritureComptableController extends Controller
         $user = Auth::user();
         $data = $request->all();
         
-        // Log pour débogage
-        // \Log::info('Début de la méthode list()', [
-        //     'user_id' => $user->id,
-        //     'company_id' => $user->company_id,
-        //     'request_data' => $data
-        // ]);
+        // Activation des logs de débogage
+        \Log::info('=== DÉBUT DÉBOGAGE ===');
+        \Log::info('Utilisateur connecté:', [
+            'id' => $user->id,
+            'company_id' => $user->company_id
+        ]);
+        \Log::info('Données de la requête:', $data);
         
         // Récupérer l'exercice actif
         $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
@@ -400,12 +401,29 @@ class EcritureComptableController extends Controller
         
         $ecritures = $query->orderBy('created_at', 'desc')->get();
         
-        // Log pour débogage
-        // \Log::info('Résultats de la requête', [
-        //     'requete_sql' => $query->toSql(),
-        //     'parametres' => $query->getBindings(),
-        //     'nombre_ecritures' => $ecritures->count()
-        // ]);
+        // Log des résultats
+        \Log::info('Résultats de la requête:', [
+            'requete_sql' => $query->toSql(),
+            'parametres' => $query->getBindings(),
+            'nombre_ecritures' => $ecritures->count()
+        ]);
+        
+        // Afficher directement les informations de débogage
+        if ($ecritures->isEmpty()) {
+            \Log::info('Aucune écriture trouvée pour les critères suivants:', [
+                'company_id' => $user->company_id,
+                'filtres' => $data
+            ]);
+            
+            // Vérifier s'il y a des écritures dans la base de données
+            $totalEcritures = \App\Models\EcritureComptable::count();
+            $ecrituresCompany = \App\Models\EcritureComptable::where('company_id', $user->company_id)->count();
+            
+            \Log::info('Statistiques des écritures:', [
+                'total_ecritures' => $totalEcritures,
+                'ecritures_company' => $ecrituresCompany
+            ]);
+        }
         
         // Récupérer les journaux pour les filtres
         $code_journaux = CodeJournal::where('company_id', $user->company_id)->get();
