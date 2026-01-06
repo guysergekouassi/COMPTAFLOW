@@ -369,11 +369,11 @@ class EcritureComptableController extends Controller
         $data = $request->all();
         
         // Log pour débogage
-        \Log::info('Début de la méthode list()', [
-            'user_id' => $user->id,
-            'company_id' => $user->company_id,
-            'request_data' => $data
-        ]);
+        // \Log::info('Début de la méthode list()', [
+        //     'user_id' => $user->id,
+        //     'company_id' => $user->company_id,
+        //     'request_data' => $data
+        // ]);
         
         // Récupérer l'exercice actif
         $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
