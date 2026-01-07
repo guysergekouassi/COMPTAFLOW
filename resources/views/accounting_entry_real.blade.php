@@ -175,7 +175,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="imputation" class="form-label">Journal d'imputation</label>
-                                    <input type="text" class="form-control" placeholder="{{ $data['code'] ?? 'N/A' }}" readonly />
+                                    <input type="text" id="code_journal_affiche" class="form-control" value="{{ $data['code'] ?? 'N/A' }}" readonly />
                                     <input type="hidden" id="imputation" name="code_journal_id" value="{{ $data['id_code'] ?? 'N/A' }}" class="form-control" data-code_imputation="{{ $data['code'] ?? 'N/A' }}" />
                                     <input type="hidden" name="id_exercice" value="{{ $data['id_exercice'] ?? '' }}" />
                                     <input type="hidden" name="journaux_saisis_id" value="{{ $data['id_journal'] ?? '' }}" />
@@ -614,7 +614,7 @@ function ajouterEcriture() {
         const referencePiece = document.getElementById('reference_piece');
         const compteTiers = document.getElementById('compte_tiers');
         const pieceFile = document.getElementById('piece_justificatif');
-        const imputationInput = document.querySelector('input[readonly][placeholder*="N/A"]');
+        const imputationInput = document.getElementById('code_journal_affiche');
         const planAnalytique = document.getElementById('plan_analytique');
 
         if (!date || !libelle || !compteGeneral) {
