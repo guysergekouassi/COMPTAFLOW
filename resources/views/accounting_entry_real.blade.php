@@ -177,6 +177,8 @@
                                     <label for="imputation" class="form-label">Journal d'imputation</label>
                                     <input type="text" class="form-control" placeholder="{{ $data['code'] ?? 'N/A' }}" readonly />
                                     <input type="hidden" id="imputation" name="code_journal_id" value="{{ $data['id_code'] ?? 'N/A' }}" class="form-control" data-code_imputation="{{ $data['code'] ?? 'N/A' }}" />
+                                    <input type="hidden" name="id_exercice" value="{{ $data['id_exercice'] ?? '' }}" />
+                                    <input type="hidden" name="journaux_saisis_id" value="{{ $data['id_journal'] ?? '' }}" />
                                 </div>
                                 <div class="col-md-3">
                                     <label for="n_saisie" class="form-label">N° de Saisie</label>
@@ -719,27 +721,113 @@ function ajouterEcriture() {
     }
 }
 
-// Variable globale pour le suivi du numéro de saisie
-let numeroSaisieActuel = 1;
-
-// Script ultra-simple pour le numéro de saisie
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM chargé - Initialisation...');
-    
-    // Récupérer le numéro depuis localStorage ou commencer à 1
-    const dernierNumero = localStorage.getItem('dernierNumeroSaisie');
-    numeroSaisieActuel = dernierNumero ? parseInt(dernierNumero, 10) : 0;
-    
-    // Mettre à jour le champ avec le numéro actuel
-    const champSaisie = document.getElementById('n_saisie');
-    if (champSaisie) {
-        const numeroActuel = (numeroSaisieActuel + 1).toString().padStart(12, '0');
-        champSaisie.value = numeroActuel;
-        console.log('Numéro de saisie initial:', numeroActuel);
+    // Fonction pour récupérer le prochain numéro de saisie du serveur
+    async function fetchNextSaisieNumber() {
+        try {
+            const response = await fetch('{{ route("api.next-saisie-number") }}');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    const champSaisie = document.getElementById('n_saisie');
+                    if (champSaisie) {
+                        champSaisie.value = data.nextSaisieNumber;
+                        console.log('Synchronisation n_saisie serveur:', data.nextSaisieNumber);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Erreur sync n_saisie:', e);
+        }
     }
-    
-    console.log('Initialisation terminée');
-});
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM chargé - Initialisation...');
+        fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
+    });
+
+    // ... (rest of local/draft logic can be kept or minimized if needed)
+
+    function enregistrerEcritures() {
+        const { isBalanced } = updateTotals();
+        if (!isBalanced) {
+            showAlert('danger', 'Les totaux débit et crédit ne sont pas équilibrés');
+            return;
+        }
+        
+        const tbody = document.querySelector('#tableEcritures tbody');
+        if (!tbody || tbody.rows.length === 0) {
+            showAlert('danger', 'Aucune écriture à enregistrer.');
+            return;
+        }
+
+        const formData = new FormData(document.getElementById('formEcriture'));
+        const nSaisie = document.getElementById('n_saisie').value;
+        const codeJournalId = formData.get('code_journal_id');
+        
+        // Construction du payload correct pour le contrôleur
+        const ecritures = [];
+        Array.from(tbody.rows).forEach(row => {
+            const cells = row.cells;
+            const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            
+            ecritures.push({
+                date: cells[0].textContent.trim(),
+                n_saisie: nSaisie,
+                description_operation: cells[3].textContent.trim(),
+                reference_piece: cells[4].textContent.trim(),
+                plan_comptable_id: cells[5].getAttribute('data-plan-comptable-id'),
+                plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
+                code_journal_id: codeJournalId,
+                debit: debit,
+                credit: credit,
+                piece_justificatif: cells[9].textContent.trim(),
+                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0
+            });
+        });
+
+        const btnEnregistrer = document.getElementById('btnEnregistrer');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        
+        btnText.textContent = 'Enregistrement...';
+        btnEnregistrer.disabled = true;
+        btnSpinner.classList.remove('d-none');
+
+        fetch('{{ route("api.ecriture.storeMultiple") }}', { // Use storeMultiple explicitly if route exists, or stick to store depending on route def
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ ecritures: ecritures })
+        })
+        .then(response => response.json().then(data => ({ status: response.status, body: data }))) // Capture status for cleaner error handling
+        .then(({ status, body }) => {
+            if (status >= 400) {
+                throw new Error(body?.message || JSON.stringify(body?.errors) || 'Erreur serveur');
+            }
+            if (body?.success) {
+                showAlert('success', 'Écritures enregistrées avec succès !');
+                tbody.innerHTML = '';
+                updateTotals();
+                fetchNextSaisieNumber(); // Rafraîchir le numéro depuis le serveur
+            } else {
+                throw new Error(body?.message || 'Erreur inconnue');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showAlert('danger', 'Erreur lors de l\'enregistrement: ' + error.message);
+        })
+        .finally(() => {
+            btnText.textContent = 'Enregistrer';
+            btnEnregistrer.disabled = false;
+            btnSpinner.classList.add('d-none');
+        });
+    }
 
     // Fonction pour ajouter une ligne d'écriture au tableau
     function ajouterLigneEcriture(ligne = {}) {
@@ -1041,9 +1129,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Ajouter l'ID de l'exercice si disponible
             const exerciceId = document.querySelector('input[name="id_exercice"]')?.value;
+            const journalSaisiId = document.querySelector('input[name="journaux_saisis_id"]')?.value;
+            
             if (exerciceId) {
                 ecriture.exercices_comptables_id = exerciceId;
                 ecriture.exercice_id = exerciceId; // Pour la compatibilité
+            }
+            if (journalSaisiId) {
+                ecriture.journaux_saisis_id = journalSaisiId;
             }
             
             ecritures.push(ecriture);
@@ -1062,47 +1155,31 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSpinner.classList.remove('d-none');
 
         // Envoyer les données au serveur via la nouvelle route API
-        fetch('{{ route("api.ecriture.store") }}', {
+        fetch('{{ route("api.ecriture.storeMultiple") }}', { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'Accept': 'application/json'
             },
             body: JSON.stringify({ ecritures: ecritures })
         })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { 
-                    let errorMessage = 'Erreur lors de l\'enregistrement';
-                    if (err.errors) {
-                        errorMessage += ': ' + Object.values(err.errors).flat().join(', ');
-                    } else if (err.message) {
-                        errorMessage += ': ' + err.message;
-                    }
-                    throw new Error(errorMessage);
-                });
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(({ status, body }) => {
+            if (status >= 400) {
+                throw new Error(body?.message || (body?.errors ? Object.values(body.errors).flat().join(', ') : 'Erreur serveur'));
             }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
+            if (body?.success) {
                 // Incrémenter automatiquement le numéro de saisie pour la prochaine écriture
                 if (nSaisie) {
-                    numeroSaisieActuel++;
-                    const nextNumber = numeroSaisieActuel.toString().padStart(12, '0');
-                    nSaisie.value = nextNumber;
-                    
-                    // Sauvegarder dans localStorage pour la persistance
-                    localStorage.setItem('dernierNumeroSaisie', numeroSaisieActuel.toString());
-                    
-                    console.log('Prochain numéro de saisie:', nextNumber);
+                    fetchNextSaisieNumber(); // Utiliser la fonction de sync serveur plutôt que le calcul local
                 }    
                 tbody.innerHTML = '';
                 updateTotals();
                 
                 showAlert('success', 'Écritures enregistrées avec succès !');
+            } else {
+                 throw new Error(body?.message || 'Erreur inconnue');
             }
         })
         .catch(error => {

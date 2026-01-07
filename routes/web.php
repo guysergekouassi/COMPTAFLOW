@@ -162,10 +162,17 @@ Route::middleware('auth')->group(function () {
    Route::post('/ecritures-comptables/store', [EcritureComptableController::class, 'storeMultiple'])
      ->name('ecritures-comptables.store-multiple');
     Route::get('/saisie-directe-modal', [EcritureComptableController::class, 'showSaisieModal'])->name('modal_saisie_direct');
-    // Route pour obtenir le prochain numéro de saisie
-Route::get('/ecriture/get-next-saisie', [EcritureComptableController::class, 'getNextSaisieNumber'])
-    ->name('ecriture.get-next-saisie')
-    ->middleware(['web']);
+    // Route de test pour vérifier que le contrôleur fonctionne
+    Route::get('/ecriture/get-next-saisie', [EcritureComptableController::class, 'getNextSaisieNumber'])
+        ->name('ecriture.get-next-saisie');
+    
+    // Alias pour l'API (utilisé par le frontend)
+    Route::get('/api/next-saisie-number', [EcritureComptableController::class, 'getNextSaisieNumber'])
+        ->name('api.next-saisie-number');
+
+    Route::post('/api/ecritures/multiple', [EcritureComptableController::class, 'storeMultiple'])
+        ->name('api.ecriture.storeMultiple')
+        ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // Route de test pour vérifier que le contrôleur fonctionne
 Route::get('/test-saisie-number', function() {
@@ -174,7 +181,6 @@ Route::get('/test-saisie-number', function() {
 });
     Route::get('/ecriture/{ecriture}/edit', [EcritureComptableController::class, 'edit'])->name('ecriture.edit');
     Route::put('/ecriture/{ecriture}', [EcritureComptableController::class, 'update'])->name('ecriture.update');
-    Route::get('/ecriture/{ecriture}', [EcritureComptableController::class, 'show'])->name('ecriture.show');
     Route::delete('/ecriture/{ecriture}', [EcritureComptableController::class, 'destroy'])->name('ecriture.destroy');
 
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE GROUPES
@@ -293,7 +299,7 @@ Route::get('/pdf/poste', [PosteTresorController::class, 'generatePdf'])
 Route::get('/tresorerie/create', [TresorerieController::class, 'create'])->name('createtresorerie');
 Route::post('/tresorerie/store', [TresorerieController::class, 'store'])->name('storetresorerie');
 Route::post('/journal-tresorerie/defaut', [TresorerieController::class, 'loadDefaultTresorerie'])->name('journal_tresorerie.defaut');
-Route::put('/postetresorerie/{id}', [PosteTresorController::class, 'update'])->name('postetresorerie.update');
+Route::put('/postetresorerie/{id}', [PosteTresorController::class, 'update'])->name('postetresorerie.update.id');
 
 
 

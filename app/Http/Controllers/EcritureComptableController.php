@@ -278,7 +278,9 @@ class EcritureComptableController extends Controller
                     'code_journal_id' => $data['code_journal_id'] ?? $data['journal_id'] ?? null,
                     'company_id' => $user->company_id,
                     'user_id' => $user->id,
-                    'piece_justificatif' => $data['piece_justificatif'] ?? null
+                    'piece_justificatif' => $data['piece_justificatif'] ?? null,
+                    'exercices_comptables_id' => $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? null,
+                    'journaux_saisis_id' => $data['journaux_saisis_id'] ?? $data['journal_saisi_id'] ?? null
                 ]);
             }
             DB::commit();

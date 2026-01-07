@@ -314,12 +314,13 @@
                     const prompt = `Tu es un expert-comptable SYSCOHADA. Analyse ce document (facture ou reçu) et retourne un JSON strict.
                     RÈGLES CRITIQUES :
                     1. Si c'est un REÇU ou une facture payée "OK/En espèces" : Utilise le compte 571 (Caisse) pour le crédit au lieu de 401.
-                    2. Pour "Maintenance/Entretien/Réparation" de matériel : Utilise le compte 6243.
-                    3. Pour les autres charges : Utilise les comptes commençant par 6 (60x, 61x, 62x, 63x).
-                    4. TVA : Utilise le compte 445 (TVA récupérable) si mentionnée explicitement.
-                    5. Fournisseur : Utilise le compte 401 si non payé immédiatement.
-                    6. IMPORTANT : Retourne un champ "hasVAT": true/false selon si la TVA est présente sur l'image.
-                    7. Format JSON :
+                    2. Pour "Location de matériel" (Bâches, chaises, sono, chapiteaux) : Utilise IMPÉRATIVEMENT le compte 6223.
+                    3. Pour "Transport" (déplacement matériel, livraison) : Utilise le compte 611.
+                    4. Pour "Maintenance/Entretien/Réparation" : Utilise le compte 6242.
+                    5. TVA : Utilise le compte 445 si mentionnée.
+                    6. Fournisseur : Utilise le compte 401 pour le crédit si non payé immédiatement.
+                    7. IMPORTANT : Retourne un champ "hasVAT": true/false selon si la TVA est présente sur l'image.
+                    8. Format JSON :
                     { 
                         "hasVAT": boolean,
                         "fournisseur": "NOM DE L'ENTREPRISE", 
@@ -340,13 +341,52 @@
                         }]
                     };
                     
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, { 
-                        method: 'POST', 
-                        headers: {'Content-Type': 'application/json'}, 
-                        body: JSON.stringify(payload) 
-                    });
+                    const makeGeminiRequest = async (payload, retryCount = 0) => {
+                        const MODEL = 'gemini-2.5-flash';
+                        const MAX_RETRIES = 10; // Augmenté pour forcer le passage
 
-                    const rData = await response.json();
+                        try {
+                            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, { 
+                                method: 'POST', 
+                                headers: {'Content-Type': 'application/json'}, 
+                                body: JSON.stringify(payload) 
+                            });
+
+                            if (response.status === 404) {
+                                throw new Error(`Le modèle ${MODEL} est introuvable. Vérifiez votre clé API.`);
+                            }
+
+                            if (response.status === 429) {
+                                if (retryCount < MAX_RETRIES) {
+                                    // Stratégie "Patience Extrême"
+                                    // Attente progressive : 3s, 6s, 12s, 24s, puis plafonnée à 60s
+                                    let waitTime = Math.pow(2, retryCount) * 3000;
+                                    if (waitTime > 60000) waitTime = 60000;
+
+                                    console.warn(`Quota atteint (${retryCount+1}/${MAX_RETRIES}). Attente ${waitTime/1000}s...`);
+                                    
+                                    const h6 = processingUI.querySelector('h6');
+                                    
+                                    // Compte à rebours visuel
+                                    for (let i = Math.floor(waitTime/1000); i > 0; i--) {
+                                        h6.innerText = `SATURATION SERVEUR GOOGLE (${retryCount+1}/${MAX_RETRIES}).\nPATIENTEZ, JE FORCE LE PASSAGE DANS ${i}s...`;
+                                        await new Promise(r => setTimeout(r, 1000));
+                                    }
+                                    
+                                    h6.innerText = "ANALYSE EN COURS...";
+                                    return makeGeminiRequest(payload, retryCount + 1);
+                                } else {
+                                    throw new Error("Le serveur Google est saturé malgré plusieurs tentatives. Veuillez réessayer plus tard.");
+                                }
+                            }
+                            
+                            return await response.json();
+                        } catch (e) {
+                            throw e;
+                        }
+                    };
+
+                    const rData = await makeGeminiRequest(payload);
                     
                     if (rData.error) throw new Error(rData.error.message || "Erreur API");
                     if (!rData.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Réponse vide");
@@ -403,7 +443,7 @@
                 if (type === 'TVA') return GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('445'))?.id || null;
                 if (type === 'FOURNISSEUR') return GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('401'))?.id || null;
                 if (type === 'CAISSE') return GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('571'))?.id || null;
-                if (code.startsWith('624')) return GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('6243'))?.id || GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('624'))?.id || null;
+                // Removed the 624 hardcode to allow prompt to dictate 6242/611 precisely
  
                 // 4. Short prefix fallback
                 const shortCode = code.substring(0, 3);
