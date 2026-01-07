@@ -183,7 +183,7 @@
                                     <input type="text" id="n_saisie" name="n_saisie" class="form-control" readonly value="000000000001" style="font-weight: bold; color: #000;" />
                                     <small class="form-text text-muted">Numéro automatique</small>
                                 </div>
-                        
+
                                 <div class="col-md-12">
                                     <label for="description_operation" class="form-label">Libellé / Description de l'opération</label>
                                     <input type="text" id="description_operation" name="description_operation" class="form-control" placeholder="Saisissez le libellé de l'opération..." required />
