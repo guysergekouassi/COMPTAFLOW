@@ -9,30 +9,45 @@ class GeminiController extends Controller
 {
     public function generateText(Request $request)
     {
-        $text = $request->input('prompt', 'Bonjour Gemini !');
-
-        // 🔑 Vérifie que la clé API est définie
-        $apiKey = env('GEMINI_API_KEY');
+        $prompt = $request->input('prompt', 'Bonjour Gemini !');
+        $apiKey = config('services.gemini.key');
+        
         if (!$apiKey) {
-            return response()->json(['error' => 'Clé API Gemini manquante'], 500);
+            return response()->json([
+                'error' => 'Clé API Gemini manquante dans le fichier .env (GEMINI_API_KEY)'
+            ], 500);
         }
-
-        // ❌ Ici tu dois remplacer le modèle par un modèle disponible pour ta clé
-        $model = 'gemini-1.5'; // par exemple, au lieu de 'gemini-1.5-pro-latest'
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
-            ])->post("https://api.gemini.com/v1/models/$model/complete", [
-                'prompt' => $text,
-                'max_tokens' => 500,
+            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" . $apiKey, [
+                'contents' => [
+                    'parts' => [
+                        ['text' => $prompt]
+                    ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.5,
+                    'maxOutputTokens' => 2000,
+                ]
             ]);
 
-            return response()->json($response->json());
+            $responseData = $response->json();
+            
+            if (isset($responseData['error'])) {
+                return response()->json([
+                    'error' => 'Erreur de l\'API Gemini: ' . ($responseData['error']['message'] ?? 'Erreur inconnue')
+                ], 500);
+            }
+
+            return response()->json([
+                'text' => $responseData['candidates'][0]['content']['parts'][0]['text'] ?? 'Aucune réponse générée'
+            ]);
+
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Erreur API Gemini : ' . $e->getMessage()
+                'error' => 'Erreur lors de l\'appel à l\'API Gemini: ' . $e->getMessage()
             ], 500);
         }
     }

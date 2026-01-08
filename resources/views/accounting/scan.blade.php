@@ -342,34 +342,29 @@
                     };
                     
                     const makeGeminiRequest = async (payload, retryCount = 0) => {
-                        const MODEL = 'gemini-1.5-pro-latest'; // Using a more stable model
                         const MAX_RETRIES = 10;
-                        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+                        const API_URL = '/gemini/generate';
 
                         try {
-                            // Ensure API key is present
-                            if (!API_KEY) {
-                                throw new Error('Clé API Gemini manquante. Veuillez configurer GEMINI_API_KEY dans le fichier .env');
-                            }
-
-                            const response = await fetch(`${API_URL}?key=${API_KEY}`, { 
+                            const response = await fetch(API_URL, { 
                                 method: 'POST', 
                                 headers: {
                                     'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                 }, 
                                 body: JSON.stringify({
-                                    ...payload,
-                                    generationConfig: {
-                                        temperature: 0.2,
-                                        topP: 0.8,
-                                        topK: 40
-                                    }
+                                    prompt: payload.contents[0].parts[0].text,
+                                    image: payload.contents[0].parts[1]?.inlineData?.data
                                 })
                             });
 
-                            if (response.status === 404) {
-                                throw new Error(`Le modèle ${MODEL} est introuvable. Vérifiez votre clé API et le nom du modèle.`);
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || 'Erreur lors de la génération du contenu');
                             }
+
+                            const responseData = await response.json();
+                            return { candidates: [{ content: { parts: [{ text: responseData.text }] } }] };
 
                             if (response.status === 429) {
                                 if (retryCount < MAX_RETRIES) {
