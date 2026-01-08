@@ -43,7 +43,7 @@ use App\Http\Controllers\Souscrire\SubscriptionController;
 use App\Http\Controllers\Compte\PosteTresorController;
 
 use App\Http\Controllers\GeminiController;
-
+use Illuminate\Support\Facades\Http;
 
 
 
@@ -121,7 +121,15 @@ Route::middleware('auth')->group(function () {
 
     //api route gemini 
     Route::post('/gemini/generate', [GeminiController::class, 'generateText']);
+    Route::get('/gemini/list-models', function () {
+    $apiKey = env('GEMINI_API_KEY');
 
+    $response = Http::withHeaders([
+        'Content-Type' => 'application/json',
+    ])->get("https://generativelanguage.googleapis.com/v1beta/models?key={$apiKey}");
+
+    return $response->json();
+});
 
 
     // *****************ROUTE GESTION DES PLAN COMPTABLES
