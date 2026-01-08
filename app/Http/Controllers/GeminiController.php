@@ -70,7 +70,7 @@ class GeminiController extends Controller
             ];
 
             // Journaliser la requête avant envoi
-            \Log::info('Requête vers Gemini API:', [
+            logger()->info('Requête vers Gemini API', [
                 'url' => "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent",
                 'payload' => $payload
             ]);
@@ -85,12 +85,12 @@ class GeminiController extends Controller
                 $responseData = $response->json();
                 
                 // Journalisation de la réponse complète pour le débogage
-                \Log::info('Réponse de l\'API Gemini:', [
+                logger()->info('Réponse de l\'API Gemini', [
                     'status' => $response->status(),
                     'response' => $responseData
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Erreur lors de l\'appel à l\'API Gemini:', [
+                logger()->error('Erreur lors de l\'appel à l\'API Gemini', [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
