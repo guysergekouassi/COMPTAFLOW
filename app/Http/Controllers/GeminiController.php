@@ -21,39 +21,23 @@ class GeminiController extends Controller
         }
 
         try {
-            // Préparer la structure de base
-            $payload = [
-                'contents' => [
-                    [
-                        'role' => 'user',
-                        'parts' => [
-                            ['text' => $prompt]
-                        ]
-                    ]
-                ],
-                'generationConfig' => [
-                    'temperature' => 0.2,
-                    'topP' => 0.8,
-                    'topK' => 40,
-                    'maxOutputTokens' => 2000,
-                ]
-            ];
+            // Déterminer le modèle à utiliser
+            $model = $image ? 'models/gemini-2.5-flash-image' : 'models/gemini-pro-latest';
 
             // Préparer les parties du contenu
             $parts = [
-                ['text' => $prompt],
-                [
+                ['text' => $prompt]
+            ];
+
+            if ($image) {
+                $parts[] = [
                     'inline_data' => [
                         'mime_type' => 'image/jpeg',
                         'data' => str_replace(['data:image/jpeg;base64,', ' '], ['', '+'], $image)
                     ]
-                ]
-            ];
-            
-            // Utiliser le modèle qui supporte les images
-            $model = 'gemini-pro-vision';
-            
-            // Préparer le payload final
+                ];
+            }
+
             $payload = [
                 'contents' => [
                     [
@@ -69,37 +53,14 @@ class GeminiController extends Controller
                 ]
             ];
 
-            // Journaliser la requête avant envoi
-            logger()->info('Requête vers Gemini API', [
-                'url' => "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent",
-                'payload' => $payload
-            ]);
+            // Appel à l'API Gemini
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->timeout(60)
+              ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", $payload);
 
-            try {
-                $response = Http::withHeaders([
-                    'Content-Type' => 'application/json',
-                ])
-                ->timeout(60) // 60 secondes de timeout
-                ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", $payload);
+            $responseData = $response->json();
 
-                $responseData = $response->json();
-                
-                // Journalisation de la réponse complète pour le débogage
-                logger()->info('Réponse de l\'API Gemini', [
-                    'status' => $response->status(),
-                    'response' => $responseData
-                ]);
-            } catch (\Exception $e) {
-                logger()->error('Erreur lors de l\'appel à l\'API Gemini', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                
-                return response()->json([
-                    'error' => 'Erreur lors de la communication avec l\'API Gemini: ' . $e->getMessage()
-                ], 500);
-            }
-            
             if (isset($responseData['error'])) {
                 return response()->json([
                     'error' => 'Erreur de l\'API Gemini: ' . ($responseData['error']['message'] ?? 'Erreur inconnue'),
@@ -110,7 +71,6 @@ class GeminiController extends Controller
             if (empty($responseData['candidates']) || empty($responseData['candidates'][0]['content']['parts'][0]['text'])) {
                 return response()->json([
                     'error' => 'Réponse inattendue de l\'API Gemini',
-                    'response_structure' => array_keys($responseData),
                     'raw_response' => $responseData
                 ], 500);
             }
