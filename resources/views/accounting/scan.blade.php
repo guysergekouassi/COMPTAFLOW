@@ -254,7 +254,6 @@
     </div>
 
     <script>
-        const API_KEY = "{{ $apiKey }}";
         const CONTEXT = @json($data);
         const GEN_ACCOUNTS = @json($plansComptables);
         const TIERS_LIST = @json($plansTiers);
