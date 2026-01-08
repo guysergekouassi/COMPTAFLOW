@@ -633,6 +633,15 @@
                                         <input type="text" id="reference_piece" name="reference_piece" class="form-control" placeholder="N° Facture, Chèque..." />
                                         <small class="form-text text-muted">Commun à toutes les lignes</small>
                                     </div>
+                                    <div class="col-md-4" id="container_compte_tresorerie" style="display: none;">
+                                        <label for="compte_tresorerie" class="form-label">
+                                            <i class="bx bx-wallet"></i>Compte de Trésorerie
+                                        </label>
+                                        <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2">
+                                            <option value="" selected disabled>Chargement...</option>
+                                        </select>
+                                        <small class="form-text text-primary">Compte automatique pour ce journal</small>
+                                    </div>
                                     <div class="col-md-8">
                                         <label for="piece_justificatif" class="form-label">
                                             <i class="bx bx-file"></i>Pièce justificative (PDF, Scan...)
