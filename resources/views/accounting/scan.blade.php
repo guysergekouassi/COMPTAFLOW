@@ -342,18 +342,33 @@
                     };
                     
                     const makeGeminiRequest = async (payload, retryCount = 0) => {
-                        const MODEL = 'gemini-2.5-flash';
-                        const MAX_RETRIES = 10; // Augmenté pour forcer le passage
+                        const MODEL = 'gemini-1.5-pro-latest'; // Using a more stable model
+                        const MAX_RETRIES = 10;
+                        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
                         try {
-                            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, { 
+                            // Ensure API key is present
+                            if (!API_KEY) {
+                                throw new Error('Clé API Gemini manquante. Veuillez configurer GEMINI_API_KEY dans le fichier .env');
+                            }
+
+                            const response = await fetch(`${API_URL}?key=${API_KEY}`, { 
                                 method: 'POST', 
-                                headers: {'Content-Type': 'application/json'}, 
-                                body: JSON.stringify(payload) 
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                }, 
+                                body: JSON.stringify({
+                                    ...payload,
+                                    generationConfig: {
+                                        temperature: 0.2,
+                                        topP: 0.8,
+                                        topK: 40
+                                    }
+                                })
                             });
 
                             if (response.status === 404) {
-                                throw new Error(`Le modèle ${MODEL} est introuvable. Vérifiez votre clé API.`);
+                                throw new Error(`Le modèle ${MODEL} est introuvable. Vérifiez votre clé API et le nom du modèle.`);
                             }
 
                             if (response.status === 429) {
