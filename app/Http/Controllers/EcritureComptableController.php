@@ -81,9 +81,7 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
         return view('accounting.scan', compact('plansComptables', 'plansTiers', 'data', 'nextSaisieNumber','apiKey'));
     }
 
-    /**
-     * Détermine le flux selon la classe du compte (Indispensable pour éviter l'erreur 500)
-     */
+ 
     private function determineFluxClasse($numeroCompte) {
         $classe = substr($numeroCompte, 0, 1);
         if (in_array($classe, ['6', '7'])) return 'Operationnelles';
@@ -92,12 +90,7 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
         return null;
     }
 
-    /**
-     * Affiche les détails d'une écriture comptable spécifique.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    
 
     public function show($id)
     {
@@ -122,13 +115,7 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
         }
     }
 
-    /**
-     * Affiche le formulaire d'édition d'une écriture comptable spécifique.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-
+    
     public function edit($id)
     {
         try {
@@ -164,12 +151,6 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
         }
     }
 
-    /**
-     * Enregistre une nouvelle écriture comptable.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function deleteBySaisie($n_saisie)
     {
         try {
