@@ -51,9 +51,9 @@ class EcritureComptableController extends Controller
             // Récupérer le dernier numéro de saisie et incrémenter
         $lastSaisie = EcritureComptable::max('id');
         $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
-
-        $activeCompanyId = session('switched_company_id', $user->company_id);
-$query = EcritureComptable::where('company_id', $activeCompanyId)->orderBy('created_at', 'desc');
+            $activeCompanyId = session('current_company_id', $user->company_id);
+        // $activeCompanyId = session('switched_company_id', $user->company_id);
+$query = EcritureComptable::where('company_id', $user->company_id)->orderBy('created_at', 'desc');
         // $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('created_at', 'desc');
         $ecritures = $query->with(['planComptable', 'planTiers','compteTresorerie'])->get();
 
@@ -174,7 +174,7 @@ $query = EcritureComptable::where('company_id', $activeCompanyId)->orderBy('crea
     {
         try {
             $user = Auth::user();
-            $activeCompanyId = session('switched_company_id', $user->company_id); // AJOUTER CECI
+            $activeCompanyId = session('current_company_id', $user->company_id); // AJOUTER CECI
             if (!$user) {
                 return response()->json(['success' => false, 'message' => 'Utilisateur non authentifié.'], 401);
             }
@@ -206,7 +206,7 @@ $query = EcritureComptable::where('company_id', $activeCompanyId)->orderBy('crea
     {
         try {
             $user = Auth::user();
-            $activeCompanyId = session('switched_company_id', $user->company_id);
+            $activeCompanyId = session('current_company_id', $user->company_id);
            
 
             $data = $request->validate([
@@ -260,7 +260,7 @@ $query = EcritureComptable::where('company_id', $activeCompanyId)->orderBy('crea
         $user = Auth::user();
 
         // On récupère l'ID de la compagnie active (switchée ou par défaut)
-        $activeCompanyId = session('switched_company_id', $user->company_id);
+        $activeCompanyId = session('current_company_id', $user->company_id);
         
         $ecritures = $request->input('ecritures');
         
@@ -327,7 +327,8 @@ $query = EcritureComptable::where('company_id', $activeCompanyId)->orderBy('crea
             if (!$user) {
                 return response()->json(['success' => false, 'message' => 'Non authentifié'], 401);
             }
-          $activeCompanyId = session('switched_company_id', $user->company_id);  
+            $activeCompanyId = session('current_company_id', $user->company_id);
+        //   $activeCompanyId = session('switched_company_id', $user->company_id);  
            $lastSaisie = EcritureComptable::where('company_id', $activeCompanyId)
                 ->select(DB::raw('MAX(CAST(n_saisie AS UNSIGNED)) as max_saisie'))
                 ->first();
@@ -357,8 +358,8 @@ $query = EcritureComptable::where('company_id', $activeCompanyId)->orderBy('crea
     $data = $request->all();
     
     // 1. Définir l'ID de la compagnie une bonne fois pour toutes
-    $activeCompanyId = session('switched_company_id', $user->company_id);
-    
+    // $activeCompanyId = session('switched_company_id', $user->company_id);
+    $activeCompanyId = session('current_company_id', $user->company_id);
     // Récupérer l'exercice actif pour la compagnie SWITCHÉE
     $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId) // CORRIGÉ
         ->where('cloturer', 0)
