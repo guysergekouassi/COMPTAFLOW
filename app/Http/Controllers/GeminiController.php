@@ -20,10 +20,14 @@ class GeminiController extends Controller
         }
 
         try {
+            // Préparer la structure de base
             $payload = [
                 'contents' => [
-                    'parts' => [
-                        ['text' => $prompt]
+                    [
+                        'role' => 'user',
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
                     ]
                 ],
                 'generationConfig' => [
