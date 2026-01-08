@@ -267,11 +267,7 @@ $query = EcritureComptable::where('company_id', $activeCompanyId)->orderBy('crea
         if (empty($ecritures) || !is_array($ecritures)) {
             return response()->json(['success' => false, 'message' => 'Aucune écriture à enregistrer.'], 400);
         }
-return response()->json([
-    'debug_session' => session('switched_company_id'),
-    'debug_user_company' => $user->company_id,
-    'active_id_used' => $activeCompanyId
-]);
+
         DB::beginTransaction();
         foreach ($ecritures as $data) {
             EcritureComptable::create([
