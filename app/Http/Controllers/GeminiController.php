@@ -47,10 +47,10 @@ class GeminiController extends Controller
                     ]
                 ];
                 // Utiliser le modèle qui supporte les images
-                $model = 'gemini-1.5-pro';
+                $model = 'models/gemini-2.5-flash-image';
             } else {
                 // Modèle pour le texte uniquement
-                $model = 'gemini-1.5-pro';
+                $model = 'models/gemini-pro-latest';
             }
 
             $response = Http::withHeaders([
