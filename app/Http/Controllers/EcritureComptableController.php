@@ -281,7 +281,25 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
     }
 }
 
-  
+    public function getComptesParFlux(Request $request)
+    {
+        $flux = $request->input('flux');
+        $query = PlanComptable::query();
+        
+        if ($flux === 'Operationnelles') {
+            $query->where(function($q) {
+                $q->where('numero_de_compte', 'like', '6%')
+                  ->orWhere('numero_de_compte', 'like', '7%');
+            });
+        } elseif ($flux === 'Investissement') {
+            $query->where('numero_de_compte', 'like', '2%');
+        } elseif ($flux === 'Financement') {
+            $query->where('numero_de_compte', 'like', '1%');
+        }
+
+        $comptes = $query->orderBy('numero_de_compte')->get();
+        return response()->json($comptes);
+    }
 
     public function getNextSaisieNumber(Request $request)
     {
