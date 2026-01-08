@@ -22,9 +22,10 @@ class EcritureComptableController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $activeCompanyId = session('switched_company_id', $user->company_id);
         $data = $request->all();
 
-        $exercicesCount = ExerciceComptable::count();
+        $exercicesCount = ExerciceComptable::where('company_id', $activeCompanyId)->count();
         if ($exercicesCount == 0) {
             return redirect()->route('exercice_comptable')->with('info', 'Veuillez créer un exercice comptable.');
         }
@@ -33,7 +34,7 @@ class EcritureComptableController extends Controller
         $data['mois'] = $data['mois'] ?? date('n');
         
         if (empty($data['id_exercice'])) {
-            $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
                 ->where('cloturer', 0)
                 ->orderBy('date_debut', 'desc')
                 ->first();
@@ -44,20 +45,35 @@ class EcritureComptableController extends Controller
             }
         }
 
-        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')->orderBy('numero_de_compte')->get();
-        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')->with('compte')->get();
-        $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')->orderBy('name')->get();
+        $plansComptables = PlanComptable::where('company_id', $activeCompanyId)
+            ->select('id', 'numero_de_compte', 'intitule')
+            ->orderBy('numero_de_compte')
+            ->get();
+            
+        $plansTiers = PlanTiers::where('company_id', $activeCompanyId)
+            ->select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+            ->with('compte')
+            ->get();
+            
+        $comptesTresorerie = CompteTresorerie::where('company_id', $activeCompanyId)
+            ->select('id', 'name', 'type')
+            ->orderBy('name')
+            ->get();
 
-            // Récupérer le dernier numéro de saisie et incrémenter
-        $lastSaisie = EcritureComptable::max('id');
+        // Récupérer le dernier numéro de saisie et incrémenter
+        $lastSaisie = EcritureComptable::where('company_id', $activeCompanyId)
+            ->max('id');
+            
         $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
 
-        $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('created_at', 'desc');
-        $ecritures = $query->with(['planComptable', 'planTiers','compteTresorerie'])->get();
+        $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie'])
+            ->where('company_id', $activeCompanyId)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('accounting_entry_real', compact(
             'plansComptables', 'plansTiers', 'data', 'ecritures', 
-            'nextSaisieNumber', 'comptesTresorerie'
+            'nextSaisieNumber', 'comptesTresorerie', 'activeCompanyId'
         ));
     }
 
@@ -101,13 +117,15 @@ class EcritureComptableController extends Controller
     {
         try {
             $user = Auth::user();
+            $activeCompanyId = session('switched_company_id', $user->company_id);
             
             // Récupérer la ligne spécifique pour obtenir le n_saisie
-            $primaryEcriture = EcritureComptable::where('company_id', $user->company_id)->findOrFail($id);
+            $primaryEcriture = EcritureComptable::where('company_id', $activeCompanyId)
+                ->findOrFail($id);
             
             // Récupérer TOUTES les lignes de cette écriture (même n_saisie)
             $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $activeCompanyId)
                 ->where('n_saisie', $primaryEcriture->n_saisie)
                 ->orderBy('id', 'asc')
                 ->get();
@@ -131,21 +149,25 @@ class EcritureComptableController extends Controller
     {
         try {
             $user = Auth::user();
+            $activeCompanyId = session('switched_company_id', $user->company_id);
             
             // Récupérer l'écriture avec ses relations
             $ecriture = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $activeCompanyId)
                 ->findOrFail($id);
                 
-            $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
+            $plansComptables = PlanComptable::where('company_id', $activeCompanyId)
+                ->select('id', 'numero_de_compte', 'intitule')
                 ->orderBy('numero_de_compte')
                 ->get();
                 
-            $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+            $plansTiers = PlanTiers::where('company_id', $activeCompanyId)
+                ->select('id', 'numero_de_tiers', 'intitule', 'compte_general')
                 ->with('compte')
                 ->get();
                 
-            $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
+            $comptesTresorerie = CompteTresorerie::where('company_id', $activeCompanyId)
+                ->select('id', 'name', 'type')
                 ->orderBy('name')
                 ->get();
                 
@@ -204,7 +226,7 @@ class EcritureComptableController extends Controller
     {
         try {
             $user = Auth::user();
-            
+            $activeCompanyId = session('switched_company_id', $user->company_id);
            
 
             $data = $request->validate([
@@ -230,7 +252,7 @@ class EcritureComptableController extends Controller
                 $data['piece_justificatif'] = $filename;
             }
 
-            $data['company_id'] = $user->company_id;
+            $data['company_id'] = $activeCompanyId;
             $data['user_id'] = $user->id;
             $data['n_saisie'] = $request->numero_saisie;
             $data['code_journal_id'] = $request->code_journal;
@@ -256,6 +278,7 @@ class EcritureComptableController extends Controller
     {
         try {
             $user = Auth::user();
+            $activeCompanyId = session('switched_company_id', $user->company_id);
             $ecritures = $request->input('ecritures');
             
             if (empty($ecritures) || !is_array($ecritures)) {
@@ -276,7 +299,7 @@ class EcritureComptableController extends Controller
                     'credit' => $data['credit'] ?? 0,
                     'plan_analytique' => (isset($data['plan_analytique']) && $data['plan_analytique'] == 1) ? 1 : 0,
                     'code_journal_id' => $data['code_journal_id'] ?? $data['journal_id'] ?? null,
-                    'company_id' => $user->company_id,
+                    'company_id' => $activeCompanyId, // Utilisation de l'ID de l'entreprise active
                     'user_id' => $user->id,
                     'piece_justificatif' => $data['piece_justificatif'] ?? null,
                     'exercices_comptables_id' => $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? null,
@@ -319,8 +342,9 @@ class EcritureComptableController extends Controller
             if (!$user) {
                 return response()->json(['success' => false, 'message' => 'Non authentifié'], 401);
             }
-
-            $lastSaisie = EcritureComptable::where('company_id', $user->company_id)
+            
+            $activeCompanyId = session('switched_company_id', $user->company_id);
+            $lastSaisie = EcritureComptable::where('company_id', $activeCompanyId)
                 ->select(DB::raw('MAX(CAST(n_saisie AS UNSIGNED)) as max_saisie'))
                 ->first();
 
@@ -347,17 +371,16 @@ class EcritureComptableController extends Controller
     {
         $user = Auth::user();
         $data = $request->all();
+        $activeCompanyId = session('switched_company_id', $user->company_id);
         
-        // Activation des logs de débogage
-      
-        // Récupérer l'exercice actif
-        $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+        // Récupérer l'exercice actif pour l'entreprise active
+        $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
             ->where('cloturer', 0)
             ->orderBy('date_debut', 'desc')
             ->first();
             
-        // 1. Construire la base de la requête avec filtres
-        $baseQuery = EcritureComptable::where('company_id', $user->company_id);
+        // Construire la base de la requête avec filtres
+        $baseQuery = EcritureComptable::where('company_id', $activeCompanyId);
             
         if (isset($data['numero_saisie']) && $data['numero_saisie']) {
             $baseQuery->where('n_saisie', 'like', '%' . $data['numero_saisie'] . '%');
@@ -381,7 +404,7 @@ class EcritureComptableController extends Controller
         // 3. Récupérer TOUTES les lignes pour ces n_saisie paginés pour l'affichage groupé
         $saisieList = $paginatedSaisies->pluck('n_saisie')->toArray();
         $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
-            ->where('company_id', $user->company_id)
+            ->where('company_id', $activeCompanyId)
             ->whereIn('n_saisie', $saisieList)
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'asc')
