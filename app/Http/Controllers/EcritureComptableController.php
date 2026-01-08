@@ -228,26 +228,37 @@ class EcritureComptableController extends Controller
 
     public function storeMultiple(Request $request)
     {
+        DB::beginTransaction();
+        
         try {
             $user = Auth::user();
             $activeCompanyId = session('current_company_id', $user->company_id);
+            
+            // Récupérer l'exercice comptable actif
             $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
-            ->where('cloturer', 0)
-            ->orderBy('date_debut', 'desc')
-            ->first();
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
 
-        if (!$exerciceActif) {
-            return response()->json(['success' => false, 'message' => 'Aucun exercice comptable actif trouvé.'], 422);
-        }
+            if (!$exerciceActif) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Aucun exercice comptable actif trouvé. Veuillez en créer un avant de continuer.'
+                ], 422);
+            }
+
+            // Récupérer et valider les écritures
             $ecritures = $request->input('ecritures');
-
             
             if (is_string($ecritures)) {
                 $ecritures = json_decode($ecritures, true);
             }
             
             if (empty($ecritures) || !is_array($ecritures)) {
-                return response()->json(['success' => false, 'message' => 'Aucune écriture à enregistrer.'], 400);
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Aucune écriture à enregistrer.'
+                ], 400);
             }
 
             $pieceFilename = null;
