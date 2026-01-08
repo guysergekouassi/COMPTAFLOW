@@ -76,9 +76,9 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
         $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
 
         // Récupérer la clé API Gemini
+      
         $apiKey = env('GEMINI_API_KEY');
-
-        return view('accounting.scan', compact('plansComptables', 'plansTiers', 'data', 'nextSaisieNumber', 'apiKey'));
+        return view('accounting.scan', compact('plansComptables', 'plansTiers', 'data', 'nextSaisieNumber','apiKey'));
     }
 
     /**
