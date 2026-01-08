@@ -338,8 +338,7 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
     $user = Auth::user();
     $data = $request->all();
     
-    // 1. Définir l'ID de la compagnie une bonne fois pour toutes
-    // $activeCompanyId = session('switched_company_id', $user->company_id);
+   
     $activeCompanyId = session('current_company_id', $user->company_id);
     // Récupérer l'exercice actif pour la compagnie SWITCHÉE
     $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId) // CORRIGÉ
