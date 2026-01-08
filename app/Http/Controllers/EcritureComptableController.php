@@ -78,7 +78,7 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
         // Récupérer la clé API Gemini
       
         $apiKey = config('services.gemini.key');
-        dd(config('services.gemini.key'));
+        // dd(config('services.gemini.key'));
         return view('accounting.scan',
          compact('plansComptables', 'plansTiers',
           'data', 'nextSaisieNumber','apiKey'));
