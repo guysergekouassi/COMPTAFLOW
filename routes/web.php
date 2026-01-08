@@ -42,7 +42,7 @@ use App\Http\Controllers\AccountingSwitchController;
 use App\Http\Controllers\Souscrire\SubscriptionController;
 use App\Http\Controllers\Compte\PosteTresorController;
 
-
+use App\Http\Controllers\GeminiController;
 
 
 
@@ -119,7 +119,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
 
 
-
+    //api route gemini 
+    Route::post('/gemini/generate', [GeminiController::class, 'generateText']);
 
 
 
