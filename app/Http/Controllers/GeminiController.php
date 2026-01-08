@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
 class GeminiController extends Controller
@@ -68,14 +69,36 @@ class GeminiController extends Controller
                 ]
             ];
 
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", $payload);
+            // Journaliser la requête avant envoi
+            \Log::info('Requête vers Gemini API:', [
+                'url' => "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent",
+                'payload' => $payload
+            ]);
 
-            $responseData = $response->json();
-            
-            // Journalisation de la réponse complète pour le débogage
-            \Log::info('Réponse complète de l\'API Gemini:', ['response' => $responseData]);
+            try {
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                ])
+                ->timeout(60) // 60 secondes de timeout
+                ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", $payload);
+
+                $responseData = $response->json();
+                
+                // Journalisation de la réponse complète pour le débogage
+                \Log::info('Réponse de l\'API Gemini:', [
+                    'status' => $response->status(),
+                    'response' => $responseData
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Erreur lors de l\'appel à l\'API Gemini:', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                return response()->json([
+                    'error' => 'Erreur lors de la communication avec l\'API Gemini: ' . $e->getMessage()
+                ], 500);
+            }
             
             if (isset($responseData['error'])) {
                 return response()->json([
