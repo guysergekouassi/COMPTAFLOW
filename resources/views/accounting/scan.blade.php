@@ -553,8 +553,8 @@
                 let d = 0, c = 0, hasNull = false;
                 document.querySelectorAll('#entriesBody tr').forEach(tr => {
                     const rowAcc = tr.querySelector('.row-acc'); if (!rowAcc) return;
-                    const dVal = parseFloat(tr.cells[7].textContent.trim().replace(/\s/g, '').replace(',', '.')) || 0;
-                    const cVal = parseFloat(tr.cells[8].textContent.trim().replace(/\s/g, '').replace(',', '.')) || 0;
+                    const dVal = parseFloat(tr.querySelector('.row-debit').value) || 0;
+                    const cVal = parseFloat(tr.querySelector('.row-credit').value) || 0;
                     d += dVal; c += cVal;
                     if (!rowAcc.value) hasNull = true;
                 });
