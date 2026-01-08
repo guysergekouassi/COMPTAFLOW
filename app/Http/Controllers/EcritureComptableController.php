@@ -145,22 +145,48 @@ class EcritureComptableController extends Controller
             $user = Auth::user();
             $activeCompanyId = session('current_company_id', $user->company_id);
 
+            // Récupérer l'exercice comptable actif
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+
+            if (!$exerciceActif) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aucun exercice comptable actif trouvé. Veuillez en créer un avant de continuer.'
+                ], 422);
+            }
+
+            // Valider les données
             $data = $request->validate([
-                'date' => 'required|date',
-                'n_saisie' => 'required|string',
-                'code_journal' => 'required',
-                'description_operation' => 'required|string',
-                'reference_piece' => 'nullable|string',
+                'date' => [
+                    'required',
+                    'date',
+                    function ($attribute, $value, $fail) use ($exerciceActif) {
+                        $dateSaisie = \Carbon\Carbon::parse($value);
+                        $dateDebut = \Carbon\Carbon::parse($exerciceActif->date_debut);
+                        $dateFin = \Carbon\Carbon::parse($exerciceActif->date_fin);
+                        
+                        if ($dateSaisie->lt($dateDebut) || $dateSaisie->gt($dateFin)) {
+                            $fail("La date doit être comprise entre " . $dateDebut->format('d/m/Y') . " et " . $dateFin->format('d/m/Y'));
+                        }
+                    }
+                ],
+                'n_saisie' => 'required|string|max:12',
+                'code_journal' => 'required|exists:code_journaux,id',
+                'description_operation' => 'required|string|max:255',
+                'reference_piece' => 'nullable|string|max:50',
                 'plan_comptable_id' => 'required|exists:plan_comptables,id',
                 'plan_tiers_id' => 'nullable|exists:plan_tiers,id',
-                'debit' => 'nullable|numeric|min:0',
-                'credit' => 'nullable|numeric|min:0',
+                'debit' => 'required_without:credit|numeric|min:0',
+                'credit' => 'required_without:debit|numeric|min:0',
                 'plan_analytique' => 'nullable|boolean',
-                  'exercices_comptables_id' => 'nullable|exists:exercice_comptables,id',
                 'piece_justificatif' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'compte_tresorerie_id' => 'nullable|exists:compte_tresoreries,id',
             ]);
 
+            // Gestion du fichier de pièce justificative
             if ($request->hasFile('piece_justificatif')) {
                 $file = $request->file('piece_justificatif');
                 $filename = time() . '_' . $file->getClientOriginalName();
@@ -168,27 +194,33 @@ class EcritureComptableController extends Controller
                 $data['piece_justificatif'] = $filename;
             }
 
-            $data['company_id'] = $activeCompanyId;
-            $data['user_id'] = $user->id;
-            $data['n_saisie'] = $request->numero_saisie;
-            $data['code_journal_id'] = $request->code_journal;
+            // Préparer les données pour la création
+            $ecritureData = [
+                'company_id' => $activeCompanyId,
+                'user_id' => $user->id,
+                'n_saisie' => $request->numero_saisie ?? $data['n_saisie'],
+                'code_journal_id' => $data['code_journal'],
+                'exercices_comptables_id' => $exerciceActif->id,
+                'date' => $data['date'],
+                'description_operation' => $data['description_operation'],
+                'reference_piece' => $data['reference_piece'] ?? null,
+                'plan_comptable_id' => $data['plan_comptable_id'],
+                'plan_tiers_id' => $data['plan_tiers_id'] ?? null,
+                'debit' => $data['debit'] ?? 0,
+                'credit' => $data['credit'] ?? 0,
+                'plan_analytique' => $data['plan_analytique'] ?? false,
+                'compte_tresorerie_id' => $data['compte_tresorerie_id'] ?? null,
+                'piece_justificatif' => $data['piece_justificatif'] ?? null,
+            ];
 
-
-            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
-    ->where('cloturer', 0)
-    ->orderBy('date_debut', 'desc')
-    ->first();
-
-if (!$exerciceActif) {
-    return response()->json([
-        'success' => false,
-        'message' => 'Aucun exercice comptable actif.'
-    ], 422);
-}
-
-    $data['exercices_comptables_id'] = $exerciceActif->id;
-            $ecriture = EcritureComptable::create($data);
-            return response()->json(['success' => true, 'message' => 'Écriture ajoutée', 'id' => $ecriture->id]);
+            // Créer l'écriture comptable
+            $ecriture = EcritureComptable::create($ecritureData);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Écriture comptable enregistrée avec succès', 
+                'id' => $ecriture->id
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
