@@ -59,15 +59,20 @@ class GeminiController extends Controller
 
             $responseData = $response->json();
             
+            // Journalisation de la réponse complète pour le débogage
+            \Log::info('Réponse complète de l\'API Gemini:', ['response' => $responseData]);
+            
             if (isset($responseData['error'])) {
                 return response()->json([
-                    'error' => 'Erreur de l\'API Gemini: ' . ($responseData['error']['message'] ?? 'Erreur inconnue')
+                    'error' => 'Erreur de l\'API Gemini: ' . ($responseData['error']['message'] ?? 'Erreur inconnue'),
+                    'details' => $responseData['error'] ?? null
                 ], 500);
             }
 
-            if (empty($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+            if (empty($responseData['candidates']) || empty($responseData['candidates'][0]['content']['parts'][0]['text'])) {
                 return response()->json([
                     'error' => 'Réponse inattendue de l\'API Gemini',
+                    'response_structure' => array_keys($responseData),
                     'raw_response' => $responseData
                 ], 500);
             }
