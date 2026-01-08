@@ -231,7 +231,16 @@ class EcritureComptableController extends Controller
         try {
             $user = Auth::user();
             $activeCompanyId = session('current_company_id', $user->company_id);
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+            ->where('cloturer', 0)
+            ->orderBy('date_debut', 'desc')
+            ->first();
+
+        if (!$exerciceActif) {
+            return response()->json(['success' => false, 'message' => 'Aucun exercice comptable actif trouvé.'], 422);
+        }
             $ecritures = $request->input('ecritures');
+
             
             if (is_string($ecritures)) {
                 $ecritures = json_decode($ecritures, true);
