@@ -343,6 +343,17 @@
                     const makeGeminiRequest = async (payload, retryCount = 0) => {
                         const MAX_RETRIES = 10;
                         const API_URL = '/gemini/generate';
+                        
+                        // Préparer les données à envoyer
+                        const requestData = {
+                            prompt: payload.contents[0].parts[0].text,
+                            image: null
+                        };
+                        
+                        // Si une image est présente dans le payload
+                        if (payload.contents[0].parts[1]?.inlineData?.data) {
+                            requestData.image = payload.contents[0].parts[1].inlineData.data;
+                        }
 
                         try {
                             const response = await fetch(API_URL, { 
@@ -351,10 +362,7 @@
                                     'Content-Type': 'application/json',
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                 }, 
-                                body: JSON.stringify({
-                                    prompt: payload.contents[0].parts[0].text,
-                                    image: payload.contents[0].parts[1]?.inlineData?.data
-                                })
+                                body: JSON.stringify(requestData)
                             });
 
                             if (!response.ok) {

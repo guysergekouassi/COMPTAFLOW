@@ -38,20 +38,35 @@ class GeminiController extends Controller
                 ]
             ];
 
-            // Si une image est fournie, l'ajouter aux parties
-            if ($image) {
-                $payload['contents'][0]['parts'][] = [
-                    'inlineData' => [
-                        'mimeType' => 'image/jpeg',
-                        'data' => $image
+            // Préparer les parties du contenu
+            $parts = [
+                ['text' => $prompt],
+                [
+                    'inline_data' => [
+                        'mime_type' => 'image/jpeg',
+                        'data' => str_replace(['data:image/jpeg;base64,', ' '], ['', '+'], $image)
                     ]
-                ];
-                // Utiliser le modèle qui supporte les images
-                $model = 'models/gemini-2.5-flash-image';
-            } else {
-                // Modèle pour le texte uniquement
-                $model = 'models/gemini-pro-latest';
-            }
+                ]
+            ];
+            
+            // Utiliser le modèle qui supporte les images
+            $model = 'gemini-pro-vision';
+            
+            // Préparer le payload final
+            $payload = [
+                'contents' => [
+                    [
+                        'role' => 'user',
+                        'parts' => $parts
+                    ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.2,
+                    'topP' => 0.8,
+                    'topK' => 40,
+                    'maxOutputTokens' => 2000,
+                ]
+            ];
 
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
