@@ -253,46 +253,50 @@ class EcritureComptableController extends Controller
     }
 
     public function storeMultiple(Request $request)
-    {
-        try {
-            $user = Auth::user();
+{
+    try {
+        $user = Auth::user();
 
-            $activeCompanyId = session('switched_company_id', $user->company_id);
-            $ecritures = $request->input('ecritures');
-            
-            if (empty($ecritures) || !is_array($ecritures)) {
-                return response()->json(['success' => false, 'message' => 'Aucune écriture à enregistrer.'], 400);
-            }
-
-            DB::beginTransaction();
-            foreach ($ecritures as $data) {
-                // Ensure required fields are mapped correctly
-                EcritureComptable::create([
-                    'date' => $data['date'] ?? now()->format('Y-m-d'),
-                    'n_saisie' => $data['n_saisie'] ?? $data['numero_saisie'] ?? null,
-                    'description_operation' => $data['description_operation'] ?? $data['description'] ?? '',
-                    'reference_piece' => $data['reference_piece'] ?? $data['reference'] ?? null,
-                    'plan_comptable_id' => $data['plan_comptable_id'] ?? $data['compte_general'] ?? null,
-                    'plan_tiers_id' => $data['plan_tiers_id'] ?? $data['compte_tiers'] ?? null,
-                    'debit' => $data['debit'] ?? 0,
-                    'credit' => $data['credit'] ?? 0,
-                    'plan_analytique' => (isset($data['plan_analytique']) && $data['plan_analytique'] == 1) ? 1 : 0,
-                    'code_journal_id' => $data['code_journal_id'] ?? $data['journal_id'] ?? null,
-                    'company_id' => $user->company_id,
-                    'user_id' => $user->id,
-                    'piece_justificatif' => $data['piece_justificatif'] ?? null,
-                    'exercices_comptables_id' => $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? null,
-                    'journaux_saisis_id' => $data['journaux_saisis_id'] ?? $data['journal_saisi_id'] ?? null
-                ]);
-            }
-            DB::commit();
-
-            return response()->json(['success' => true, 'message' => 'Écritures enregistrées avec succès.']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        // On récupère l'ID de la compagnie active (switchée ou par défaut)
+        $activeCompanyId = session('switched_company_id', $user->company_id);
+        
+        $ecritures = $request->input('ecritures');
+        
+        if (empty($ecritures) || !is_array($ecritures)) {
+            return response()->json(['success' => false, 'message' => 'Aucune écriture à enregistrer.'], 400);
         }
+
+        DB::beginTransaction();
+        foreach ($ecritures as $data) {
+            EcritureComptable::create([
+                'date' => $data['date'] ?? now()->format('Y-m-d'),
+                'n_saisie' => $data['n_saisie'] ?? $data['numero_saisie'] ?? null,
+                'description_operation' => $data['description_operation'] ?? $data['description'] ?? '',
+                'reference_piece' => $data['reference_piece'] ?? $data['reference'] ?? null,
+                'plan_comptable_id' => $data['plan_comptable_id'] ?? $data['compte_general'] ?? null,
+                'plan_tiers_id' => $data['plan_tiers_id'] ?? $data['compte_tiers'] ?? null,
+                'debit' => $data['debit'] ?? 0,
+                'credit' => $data['credit'] ?? 0,
+                'plan_analytique' => (isset($data['plan_analytique']) && $data['plan_analytique'] == 1) ? 1 : 0,
+                'code_journal_id' => $data['code_journal_id'] ?? $data['journal_id'] ?? null,
+                
+                // CORRECTION ICI : Utiliser la variable $activeCompanyId
+                'company_id' => $activeCompanyId, 
+                
+                'user_id' => $user->id,
+                'piece_justificatif' => $data['piece_justificatif'] ?? null,
+                'exercices_comptables_id' => $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? null,
+                'journaux_saisis_id' => $data['journaux_saisis_id'] ?? $data['journal_saisi_id'] ?? null
+            ]);
+        }
+        DB::commit();
+
+        return response()->json(['success' => true, 'message' => 'Écritures enregistrées avec succès.']);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
+}
 
     public function getComptesParFlux(Request $request)
     {
