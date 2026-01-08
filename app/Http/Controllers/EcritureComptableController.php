@@ -394,5 +394,4 @@ $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('cre
         'totalEntries' => $paginatedSaisies->total(),
         'data' => $data
     ]);
-}
-}
+}}
