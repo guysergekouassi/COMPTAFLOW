@@ -156,6 +156,7 @@ class EcritureComptableController extends Controller
                 'debit' => 'nullable|numeric|min:0',
                 'credit' => 'nullable|numeric|min:0',
                 'plan_analytique' => 'nullable|boolean',
+                  'exercices_comptables_id' => 'nullable|exists:exercice_comptables,id',
                 'piece_justificatif' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'compte_tresorerie_id' => 'nullable|exists:compte_tresoreries,id',
             ]);
