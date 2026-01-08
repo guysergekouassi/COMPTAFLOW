@@ -10,7 +10,8 @@ class GeminiController extends Controller
     public function generateText(Request $request)
     {
         $prompt = $request->input('prompt', 'Bonjour Gemini !');
-        $apiKey = config('services.gemini.key');
+        $image = $request->input('image');
+        $apiKey = env('GEMINI_API_KEY');
         
         if (!$apiKey) {
             return response()->json([
@@ -19,19 +20,38 @@ class GeminiController extends Controller
         }
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" . $apiKey, [
+            $payload = [
                 'contents' => [
                     'parts' => [
                         ['text' => $prompt]
                     ]
                 ],
                 'generationConfig' => [
-                    'temperature' => 0.5,
+                    'temperature' => 0.2,
+                    'topP' => 0.8,
+                    'topK' => 40,
                     'maxOutputTokens' => 2000,
                 ]
-            ]);
+            ];
+
+            // Si une image est fournie, l'ajouter aux parties
+            if ($image) {
+                $payload['contents'][0]['parts'][] = [
+                    'inlineData' => [
+                        'mimeType' => 'image/jpeg',
+                        'data' => $image
+                    ]
+                ];
+                // Utiliser le modèle qui supporte les images
+                $model = 'gemini-pro-vision';
+            } else {
+                // Modèle pour le texte uniquement
+                $model = 'gemini-pro';
+            }
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", $payload);
 
             $responseData = $response->json();
             
@@ -41,13 +61,21 @@ class GeminiController extends Controller
                 ], 500);
             }
 
+            if (empty($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+                return response()->json([
+                    'error' => 'Réponse inattendue de l\'API Gemini',
+                    'raw_response' => $responseData
+                ], 500);
+            }
+
             return response()->json([
-                'text' => $responseData['candidates'][0]['content']['parts'][0]['text'] ?? 'Aucune réponse générée'
+                'text' => $responseData['candidates'][0]['content']['parts'][0]['text']
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Erreur lors de l\'appel à l\'API Gemini: ' . $e->getMessage()
+                'error' => 'Erreur lors de l\'appel à l\'API Gemini: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ], 500);
         }
     }
