@@ -187,11 +187,11 @@ function exporterTableau() {
 
         const debit =
             parseFloat(
-                cells[8].innerText.trim().replace(/\s/g, "").replace(",", "."),
+                cells[9].innerText.trim().replace(/\s/g, "").replace(",", "."),
             ) || 0;
         const credit =
             parseFloat(
-                cells[9].innerText.trim().replace(/\s/g, "").replace(",", "."),
+                cells[10].innerText.trim().replace(/\s/g, "").replace(",", "."),
             ) || 0;
 
         totalDebit += debit;
@@ -351,8 +351,8 @@ function recalculerTotaux() {
     let totalCredit = 0;
 
     rows.forEach((row) => {
-        const debitCell = row.cells[8];
-        const creditCell = row.cells[9];
+        const debitCell = row.cells[9];
+        const creditCell = row.cells[10];
 
         const debit =
             parseFloat(
@@ -399,7 +399,7 @@ document
         // Cible uniquement les colonnes Débit et Crédit
         const tdIndex =
             event.target.cellIndex ?? event.target.parentElement.cellIndex;
-        if ([8, 9].includes(tdIndex)) {
+        if ([9, 10].includes(tdIndex)) {
             recalculerTotaux();
         }
     });
