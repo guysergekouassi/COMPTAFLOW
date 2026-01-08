@@ -52,7 +52,9 @@ class EcritureComptableController extends Controller
         $lastSaisie = EcritureComptable::max('id');
         $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
 
-        $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('created_at', 'desc');
+        $activeCompanyId = session('switched_company_id', $user->company_id);
+$query = EcritureComptable::where('company_id', $activeCompanyId)->orderBy('created_at', 'desc');
+        // $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('created_at', 'desc');
         $ecritures = $query->with(['planComptable', 'planTiers','compteTresorerie'])->get();
 
         return view('accounting_entry_real', compact(
@@ -172,15 +174,15 @@ class EcritureComptableController extends Controller
     {
         try {
             $user = Auth::user();
+            $activeCompanyId = session('switched_company_id', $user->company_id); // AJOUTER CECI
             if (!$user) {
                 return response()->json(['success' => false, 'message' => 'Utilisateur non authentifié.'], 401);
             }
 
             // Using Auth::user()->company_id for consistency with the rest of the controller
-            $deleted = EcritureComptable::where('company_id', $user->company_id)
-                ->where('n_saisie', $n_saisie)
-                ->delete();
-
+           $deleted = EcritureComptable::where('company_id', $activeCompanyId) // UTILISER CECI
+        ->where('n_saisie', $n_saisie)
+        ->delete();
             if ($deleted > 0) {
                 return response()->json([
                     'success' => true,
@@ -325,8 +327,8 @@ class EcritureComptableController extends Controller
             if (!$user) {
                 return response()->json(['success' => false, 'message' => 'Non authentifié'], 401);
             }
-
-            $lastSaisie = EcritureComptable::where('company_id', $user->company_id)
+          $activeCompanyId = session('switched_company_id', $user->company_id);  
+           $lastSaisie = EcritureComptable::where('company_id', $activeCompanyId)
                 ->select(DB::raw('MAX(CAST(n_saisie AS UNSIGNED)) as max_saisie'))
                 ->first();
 
@@ -350,76 +352,65 @@ class EcritureComptableController extends Controller
     }
 
     public function list(Request $request)
-    {
-        $user = Auth::user();
-        $data = $request->all();
-        $activeCompanyId = session('switched_company_id', Auth::user()->company_id);
+{
+    $user = Auth::user();
+    $data = $request->all();
+    
+    // 1. Définir l'ID de la compagnie une bonne fois pour toutes
+    $activeCompanyId = session('switched_company_id', $user->company_id);
+    
+    // Récupérer l'exercice actif pour la compagnie SWITCHÉE
+    $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId) // CORRIGÉ
+        ->where('cloturer', 0)
+        ->orderBy('date_debut', 'desc')
+        ->first();
         
-        // Activation des logs de débogage
-      
-        // Récupérer l'exercice actif
-        $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
-            ->where('cloturer', 0)
-            ->orderBy('date_debut', 'desc')
-            ->first();
-            
-        // 1. Construire la base de la requête avec filtres
-        // $baseQuery = EcritureComptable::where('company_id', $user->company_id);
-         $baseQuery = EcritureComptable::where('company_id', $activeCompanyId);   
-        if (isset($data['numero_saisie']) && $data['numero_saisie']) {
-            $baseQuery->where('n_saisie', 'like', '%' . $data['numero_saisie'] . '%');
-        }
-        if (isset($data['code_journal']) && $data['code_journal']) {
-            $baseQuery->whereHas('codeJournal', function($q) use ($data) {
-                $q->where('code_journal', 'like', '%' . $data['code_journal'] . '%');
-            });
-        }
-        if (isset($data['mois']) && $data['mois']) {
-            $baseQuery->whereMonth('date', $data['mois']);
-        }
-
-        // 2. Paginer sur les NUMÉROS DE SAISIE UNIQUES à 5 par page
-        $paginatedSaisies = (clone $baseQuery)
-            ->select('n_saisie', DB::raw('MAX(created_at) as latest_created_at'))
-            ->groupBy('n_saisie')
-            ->orderBy('latest_created_at', 'desc')
-            ->paginate(5);
-            
-        // 3. Récupérer TOUTES les lignes pour ces n_saisie paginés pour l'affichage groupé
-        $saisieList = $paginatedSaisies->pluck('n_saisie')->toArray();
-        $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
-            ->where('company_id', $user->company_id)
-            ->whereIn('n_saisie', $saisieList)
-            ->orderBy('created_at', 'desc')
-            ->orderBy('id', 'asc')
-            ->get();
-            
-        // 4. Compter le nombre total d'écritures uniques (groupes)
-        $totalEntries = $paginatedSaisies->total();
-        
-       
-        
-        // Afficher directement les informations de débogage
-        if ($ecritures->isEmpty()) {
-          
-            
-            // Vérifier s'il y a des écritures dans la base de données
-            $totalEcritures = \App\Models\EcritureComptable::count();
-            $ecrituresCompany = \App\Models\EcritureComptable::where('company_id', $user->company_id)->count();
-            
-           
-        }
-        
-        // Récupérer les journaux pour les filtres
-        $code_journaux = CodeJournal::where('company_id', $user->company_id)->get();
-
-        return view('accounting_entry_list', [
-            'ecritures' => $ecritures,
-            'exerciceActif' => $exerciceActif,
-            'code_journaux' => $code_journaux,
-            'pagination' => $paginatedSaisies,
-            'totalEntries' => $totalEntries,
-            'data' => $data
-        ]);
+    // Construire la base de la requête avec filtres sur la compagnie SWITCHÉE
+    $baseQuery = EcritureComptable::where('company_id', $activeCompanyId); // DÉJÀ BON DANS VOTRE CODE
+    
+    if (isset($data['numero_saisie']) && $data['numero_saisie']) {
+        $baseQuery->where('n_saisie', 'like', '%' . $data['numero_saisie'] . '%');
     }
+    if (isset($data['code_journal']) && $data['code_journal']) {
+        $baseQuery->whereHas('codeJournal', function($q) use ($data) {
+            $q->where('code_journal', 'like', '%' . $data['code_journal'] . '%');
+        });
+    }
+    if (isset($data['mois']) && $data['mois']) {
+        $baseQuery->whereMonth('date', $data['mois']);
+    }
+
+    // 2. Paginer sur les NUMÉROS DE SAISIE UNIQUES
+    $paginatedSaisies = (clone $baseQuery)
+        ->select('n_saisie', DB::raw('MAX(created_at) as latest_created_at'))
+        ->groupBy('n_saisie')
+        ->orderBy('latest_created_at', 'desc')
+        ->paginate(5);
+        
+    // 3. Récupérer TOUTES les lignes (C'est ici que ça bloquait)
+    $saisieList = $paginatedSaisies->pluck('n_saisie')->toArray();
+    $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+        ->where('company_id', $activeCompanyId) // CORRIGÉ : était $user->company_id
+        ->whereIn('n_saisie', $saisieList)
+        ->orderBy('created_at', 'desc')
+        ->orderBy('id', 'asc')
+        ->get();
+        
+    // 4. Débogage interne si vide
+    if ($ecritures->isEmpty()) {
+        $ecrituresCompany = \App\Models\EcritureComptable::where('company_id', $activeCompanyId)->count(); // CORRIGÉ
+    }
+    
+    // Récupérer les journaux pour les filtres de la compagnie SWITCHÉE
+    $code_journaux = CodeJournal::where('company_id', $activeCompanyId)->get(); // CORRIGÉ
+
+    return view('accounting_entry_list', [
+        'ecritures' => $ecritures,
+        'exerciceActif' => $exerciceActif,
+        'code_journaux' => $code_journaux,
+        'pagination' => $paginatedSaisies,
+        'totalEntries' => $paginatedSaisies->total(),
+        'data' => $data
+    ]);
+}
 }
