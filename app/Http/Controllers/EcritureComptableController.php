@@ -172,6 +172,20 @@ class EcritureComptableController extends Controller
             $data['n_saisie'] = $request->numero_saisie;
             $data['code_journal_id'] = $request->code_journal;
 
+
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+    ->where('cloturer', 0)
+    ->orderBy('date_debut', 'desc')
+    ->first();
+
+if (!$exerciceActif) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Aucun exercice comptable actif.'
+    ], 422);
+}
+
+    $data['exercices_comptables_id'] = $exerciceActif->id;
             $ecriture = EcritureComptable::create($data);
             return response()->json(['success' => true, 'message' => 'Écriture ajoutée', 'id' => $ecriture->id]);
         } catch (\Exception $e) {
