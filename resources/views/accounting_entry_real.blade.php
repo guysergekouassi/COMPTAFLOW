@@ -699,9 +699,11 @@
                                 
                                 <div class="row g-4">
                                     <div class="col-md-6">
-                                        <label for="compte_general" class="form-label">
-                                            <i class="bx bx-folder-open"></i>Compte Général <span class="text-danger">*</span>
-                                        </label>
+                                    <label for="compte_general" class="form-label fw-bold text-dark">
+                                        <i class="bx bx-folder-open text-primary"></i> Compte Général <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bx bx-hash"></i></span>
                                         <select id="compte_general" name="compte_general"
                                             class="form-select select2 w-100"
                                             title="Sélectionner un compte général" required
@@ -720,6 +722,8 @@
                                             @endif
                                         </select>
                                     </div>
+                                    <div class="form-text">Sélectionnez le compte de classe 1 à 7.</div>
+                                </div>
                                     <div class="col-md-6">
                                         <label for="compte_tiers" class="form-label">
                                             <i class="bx bx-user"></i>Compte Tiers (Le cas échéant)
