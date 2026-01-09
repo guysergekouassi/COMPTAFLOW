@@ -703,9 +703,11 @@
                                             <i class="bx bx-folder-open"></i>Compte Général <span class="text-danger">*</span>
                                         </label>
                                         <select id="compte_general" name="compte_general"
-                                            class="form-select select2-account"
-                                            title="Sélectionner un compte général" required>
-                                            <option value="" selected disabled>Rechercher un compte...</option>
+                                            class="form-select select2 w-100"
+                                            title="Sélectionner un compte général" required
+                                            data-placeholder="Rechercher un compte..."
+                                            style="width: 100%;">
+                                            <option value=""></option>
                                             @if(isset($plansComptables))
                                                 @foreach ($plansComptables as $plan)
                                                     <option value="{{ $plan->id }}"
@@ -1451,7 +1453,7 @@ function ajouterEcriture() {
     // Initialisation
     // Initialize Select2 for account search
     function initializeSelect2() {
-        $('.select2-account').select2({
+        $('#compte_general').select2({
             placeholder: 'Rechercher un compte...',
             allowClear: true,
             width: '100%',
