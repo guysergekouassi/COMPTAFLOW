@@ -170,6 +170,17 @@
                                                         const compteTiers = document.getElementById('compte_tiers');
                                                         const pieceFile = document.getElementById('piece_justificatif');
                                                         const compteTresorerieId = posteTresorerie ? posteTresorerie.value : null;
+                                                        const debit = document.getElementById('debit').value;
+                                                        const credit = document.getElementById('credit').value;
+
+                                                        // Logique demandée :
+                                                        // Si Crédit est rempli -> Décaissement
+                                                        // Si Débit est rempli -> Encaissement
+                                                        if (parseFloat(credit.value) > 0) {
+                                                            typeFluxAutomatique = 'decaissement';
+                                                        } else if (parseFloat(debit) > 0) {
+                                                            typeFluxAutomatique = 'encaissement';
+                                                        }
                                                         // Validation des champs obligatoires
                                                         if (!date.value || !libelle.value || !compteGeneral.value) {
                                                             alert('Veuillez remplir tous les champs obligatoires (Date, Description, Compte Général).');
