@@ -1448,7 +1448,21 @@ function ajouterEcriture() {
     }
 
     // Initialisation
-    document.addEventListener('DOMContentLoaded', function() {
+    // Initialisation de Select2 pour le champ de recherche de compte général
+    $(document).ready(function() {
+        $('#compte_general').select2({
+            placeholder: "Rechercher un compte...",
+            allowClear: true,
+            width: '100%',
+            // Cette option permet d'afficher la barre de recherche interne
+            minimumResultsForSearch: 0, 
+            language: {
+                noResults: function() {
+                    return "Aucun compte trouvé";
+                }
+            }
+        });
+        
         fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
         
         // Détection du journal au chargement
