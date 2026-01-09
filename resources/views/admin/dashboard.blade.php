@@ -31,55 +31,33 @@
                     </div>
 
                     <!-- Stats Section -->
-                    <div id="stats-section" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <!-- KPI 1: Nombre total d'utilisateurs -->
-                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                                    <i class="fa-solid fa-users text-white text-xl"></i>
-                                </div>
-                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">+12.5%</span>
-                            </div>
-                            <h6 class="text-gray-600 font-medium mb-2">Utilisateurs Total</h6>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($totalUsers ?? 0) }}</h3>
-                        </div>
+                    <div class="w-full overflow-x-auto pb-4">
+    <div id="stats-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 min-w-max">
+        <!-- KPI 1: Nombre total d'utilisateurs -->
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full min-w-[280px]">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-users text-white text-xl"></i>
+                </div>
+                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">+12.5%</span>
+            </div>
+            <h6 class="text-gray-600 font-medium mb-2">Utilisateurs Total</h6>
+            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($totalUsers ?? 0) }}</h3>
+        </div>
 
-                        <!-- KPI 2: Comptes Connectés -->
-                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                    <i class="fa-solid fa-user-check text-white text-xl"></i>
-                                </div>
-                                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold">-3.2%</span>
-                            </div>
-                            <h6 class="text-gray-600 font-medium mb-2">Comptes Connectés</h6>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($connectedUsers ?? 0) }}</h3>
-                        </div>
-
-                        <!-- KPI 3: Plans Comptables créés -->
-                        <!-- <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                                    <i class="fa-solid fa-file-lines text-white text-xl"></i>
-                                </div>
-                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">+18.7%</span>
-                            </div>
-                            <h6 class="text-gray-600 font-medium mb-2">Plans Comptables</h6>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($plansToday ?? 0) }}</h3>
-                        </div> -->
-
-                        <!-- KPI 4: Exercices comptables créés -->
-                        <!-- <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-                                    <i class="fa-solid fa-calendar-days text-white text-xl"></i>
-                                </div>
-                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">{{ number_format($exercicesToday ?? 0) }} total</span>
-                            </div>
-                            <h6 class="text-gray-600 font-medium mb-2">Exercices Comptables</h6>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($exercicesToday ?? 0) }}</h3>
-                        </div> -->
-                    </div>
+        <!-- KPI 2: Comptes Connectés -->
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full min-w-[280px]">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-user-check text-white text-xl"></i>
+                </div>
+                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold">-3.2%</span>
+            </div>
+            <h6 class="text-gray-600 font-medium mb-2">Comptes Connectés</h6>
+            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($connectedUsers ?? 0) }}</h3>
+        </div>
+    </div>
+</div>
 
 
 
