@@ -74,9 +74,19 @@ public function index()
         ->get();
 
 
-    // 7. On passe la variable ENRICHIE ($code_journaux) à la vue.
-    // 🔑 FIX : Utilisez $code_journaux dans compact()
-    return view('accounting_journals', compact('code_journaux', 'totalJournauxCompany', 'userCreatedJournaux', 'comptesTresorerie'));
+    // Récupérer les comptes commençant par 5 (comptes de trésorerie)
+    $comptesCinq = PlanComptable::where('numero_de_compte', 'like', '5%')
+        ->where('company_id', $this->getCurrentCompanyId())
+        ->get();
+
+    // 7. On passe les variables à la vue
+    return view('accounting_journals', compact(
+        'code_journaux', 
+        'totalJournauxCompany', 
+        'userCreatedJournaux', 
+        'comptesTresorerie',
+        'comptesCinq'
+    ));
 }
 
     public function store(Request $request)
