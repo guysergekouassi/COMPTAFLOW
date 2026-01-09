@@ -374,10 +374,10 @@ if ($user->role === 'super_admin') {
                 </a>
                 @endif
                 @if($show_all || in_array('tresorerie', $habilitations))
-                <a href="{{ route('indextresorerie') }}" class="menu-link-new {{ request()->routeIs('indextresorerie') ? 'active' : '' }}">
+                <!-- <a href="{{ route('indextresorerie') }}" class="menu-link-new {{ request()->routeIs('indextresorerie') ? 'active' : '' }}">
                     <i class="fa-solid fa-money-bill-wave"></i>
                     <span>Journal Trésorerie</span>
-                </a>
+                </a> -->
                 @endif
                 @if($show_all || in_array('tresorerie', $habilitations))
                 <a href="{{ route('postetresorerie.index') }}" class="menu-link-new {{ request()->routeIs('postetresorerie.index') ? 'active' : '' }}">
