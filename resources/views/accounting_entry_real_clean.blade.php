@@ -169,7 +169,7 @@
                                                         const referencePiece = document.getElementById('reference_piece');
                                                         const compteTiers = document.getElementById('compte_tiers');
                                                         const pieceFile = document.getElementById('piece_justificatif');
-                                                        
+                                                        const compteTresorerieId = posteTresorerie ? posteTresorerie.value : null;
                                                         // Validation des champs obligatoires
                                                         if (!date.value || !libelle.value || !compteGeneral.value) {
                                                             alert('Veuillez remplir tous les champs obligatoires (Date, Description, Compte Général).');
@@ -190,7 +190,7 @@
                                                         // Créer la nouvelle ligne
                                                         const tbody = document.querySelector('#ecrituresTable tbody');
                                                         const newRow = tbody.insertRow();
-                                                        
+                                                        newRow.setAttribute('data-treso-id', compteTresorerieId);
                                                         // Ajouter les cellules
                                                         newRow.innerHTML = `
                                                             <td>${date.value}</td>
