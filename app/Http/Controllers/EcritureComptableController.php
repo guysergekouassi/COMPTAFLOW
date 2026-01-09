@@ -106,14 +106,15 @@ class EcritureComptableController extends Controller
                 ->where('company_id', $user->company_id)
                 ->findOrFail($id);
                 
-            $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')->orderBy('numero_de_compte')->get();
-            $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')->with('compte')->get();
-            $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')->orderBy('name')->get();
-            $codeJournaux = CodeJournal::all();
-            
-            return view('accounting_entry_edit', compact('ecriture', 'plansComptables', 'plansTiers', 'comptesTresorerie', 'codeJournaux'));
+            return response()->json([
+                'success' => true,
+                'ecriture' => $ecriture
+            ]);
         } catch (\Exception $e) {
-            return redirect()->route('accounting_entry_list')->with('error', 'Erreur lors de l\'ouverture : ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des données : ' . $e->getMessage()
+            ], 500);
         }
     }
 

@@ -1030,16 +1030,28 @@
     // Fonction pour charger les données d'une écriture dans le modal de modification
     function loadEcritureData(ecritureId) {
         fetch(`/ecriture/${ecritureId}/edit`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.ecriture) {
+                if (data.success && data.ecriture) {
                     const ecriture = data.ecriture;
+                    
+                    // Formater la date au format YYYY-MM-DD
+                    const formatDate = (dateString) => {
+                        if (!dateString) return '';
+                        const date = new Date(dateString);
+                        return date.toISOString().split('T')[0];
+                    };
                     
                     // Remplir le formulaire avec les données de l'écriture
                     document.getElementById('edit_ecriture_id').value = ecriture.id;
-                    document.getElementById('edit_date').value = ecriture.date;
-                    document.getElementById('edit_n_saisie').value = ecriture.n_saisie;
-                    document.getElementById('edit_code_journal_id').value = ecriture.code_journal_id;
+                    document.getElementById('edit_date').value = formatDate(ecriture.date);
+                    document.getElementById('edit_n_saisie').value = ecriture.n_saisie || '';
+                    document.getElementById('edit_code_journal_id').value = ecriture.code_journal_id || '';
                     document.getElementById('edit_description_operation').value = ecriture.description_operation || '';
                     document.getElementById('edit_plan_comptable_id').value = ecriture.plan_comptable_id || '';
                     document.getElementById('edit_plan_tiers_id').value = ecriture.plan_tiers_id || '';
@@ -1061,12 +1073,12 @@
                     const modal = new bootstrap.Modal(document.getElementById('editEcritureModal'));
                     modal.show();
                 } else {
-                    alert('Erreur lors du chargement des données de l\'écriture');
+                    alert(data.message || 'Erreur lors du chargement des données de l\'écriture');
                 }
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                alert('Une erreur est survenue lors du chargement des données');
+                alert('Une erreur est survenue lors du chargement des données. Veuillez réessayer.');
             });
     }
 
