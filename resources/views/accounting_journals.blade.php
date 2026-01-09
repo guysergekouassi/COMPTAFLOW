@@ -89,6 +89,10 @@
         margin-bottom: 0.35rem !important;
         display: block !important;
     }
+
+    .uppercase-input {
+    text-transform: uppercase;
+}
 </style>
 
 <body>
@@ -376,15 +380,16 @@
                         <div class="row g-3">
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Code Journal * (4 caractères max)</label>
-                                <input type="text" 
-                                    id="update_code_journal" 
-                                    name="code_journal" 
-                                    class="input-field-premium uppercase-input" 
-                                    maxlength="4"
-                                    oninput="formatCodeJournal(this)"
-                                    onkeydown="return /[A-Z0-9]/i.test(event.key) || event.key === 'Backspace' || event.key === 'Delete' || event.key === 'ArrowLeft' || event.key === 'ArrowRight'"
-                                    title="4 caractères maximum, lettres et chiffres uniquement"
-                                    required>
+                               <input
+                                type="text"
+                                id="update_code_journal"
+                                name="code_journal"
+                                class="input-field-premium uppercase-input"
+                                maxlength="4"
+                                pattern="[A-Z0-9]{1,4}"
+                                title="4 caractères maximum, lettres et chiffres uniquement"
+                                required
+                            >
                                 <script>
                                 function formatCodeJournal(input) {
                                     // Convertir en majuscules et ne garder que les lettres et chiffres
@@ -499,10 +504,19 @@
     <script>
         const accounting_journalsUpdateBaseUrl = "{{ route('accounting_journals.update', ['id' => '__ID__']) }}";
         const accounting_journalsDeleteUrl = "{{ route('accounting_journals.destroy', ['id' => '__ID__']) }}";
+       
 
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 SCRIPT JOURNAUX INITIALISÉ");
+         const input = document.getElementById("update_code_journal");
 
+         
+    input.addEventListener("input", () => {
+        input.value = input.value
+            .replace(/[^A-Z0-9]/gi, '') // lettres + chiffres uniquement
+            .toUpperCase()              // majuscules
+            .slice(0, 4);               // max 4 caractères
+    });
             const initDataTable = () => {
                 if (typeof $ !== 'undefined' && $.fn.dataTable) {
                     const table = $('#JournalTable').DataTable({
@@ -593,6 +607,8 @@
                         if (isTresorerie) $(optionsId).removeClass('d-none');
                         else $(optionsId).addClass('d-none');
                     });
+                    document.getElementById("update_code_journal").addEventListener("input", () => {
+                        
                 }
             };
 
