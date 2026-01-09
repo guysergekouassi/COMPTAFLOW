@@ -699,17 +699,13 @@
                                 
                                 <div class="row g-4">
                                     <div class="col-md-6">
-                                    <label for="compte_general" class="form-label fw-bold text-dark">
-                                        <i class="bx bx-folder-open text-primary"></i> Compte Général <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group input-group-merge">
-                                        <span class="input-group-text"><i class="bx bx-hash"></i></span>
+                                        <label for="compte_general" class="form-label">
+                                            <i class="bx bx-folder-open"></i>Compte Général <span class="text-danger">*</span>
+                                        </label>
                                         <select id="compte_general" name="compte_general"
-                                            class="form-select select2 w-100"
-                                            title="Sélectionner un compte général" required
-                                            data-placeholder="Rechercher un compte..."
-                                            style="width: 100%;">
-                                            <option value=""></option>
+                                            class="form-select select2-account"
+                                            title="Sélectionner un compte général" required>
+                                            <option value="" selected disabled>Rechercher un compte...</option>
                                             @if(isset($plansComptables))
                                                 @foreach ($plansComptables as $plan)
                                                     <option value="{{ $plan->id }}"
@@ -722,8 +718,6 @@
                                             @endif
                                         </select>
                                     </div>
-                                    <div class="form-text">Sélectionnez le compte de classe 1 à 7.</div>
-                                </div>
                                     <div class="col-md-6">
                                         <label for="compte_tiers" class="form-label">
                                             <i class="bx bx-user"></i>Compte Tiers (Le cas échéant)
@@ -1457,7 +1451,7 @@ function ajouterEcriture() {
     // Initialisation
     // Initialize Select2 for account search
     function initializeSelect2() {
-        $('#compte_general').select2({
+        $('.select2-account').select2({
             placeholder: 'Rechercher un compte...',
             allowClear: true,
             width: '100%',
