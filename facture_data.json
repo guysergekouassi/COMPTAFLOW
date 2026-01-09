@@ -1,0 +1,22 @@
+{
+  "fournisseur": "Soulemane",
+  "date": "2020-06-15",
+  "montant_ht": 45000.00,
+  "montant_tva": 0.00,
+  "montant_ttc": 45000.00,
+  "devise": "FCFA",
+  "ecriture": [
+    {
+      "compte": "615",
+      "libelle": "Maintenance et réparation de split (Soulemane)",
+      "debit": 45000.00,
+      "credit": 0.00
+    },
+    {
+      "compte": "512",
+      "libelle": "Règlement Facture N° 2",
+      "debit": 0.00,
+      "credit": 45000.00
+    }
+  ]
+}

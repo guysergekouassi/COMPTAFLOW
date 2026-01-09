@@ -43,7 +43,21 @@ use App\Http\Controllers\Souscrire\SubscriptionController;
 use App\Http\Controllers\Compte\PosteTresorController;
 
 use App\Http\Controllers\GeminiController;
+use App\Http\Controllers\IaController;
 use Illuminate\Support\Facades\Http;
+
+// Route pour le traitement IA SYSCOHADA CI
+Route::post('/ia-traitement', [IaController::class, 'traiterFacture']);
+
+// Route de test sans CSRF
+Route::post('/ia-traitement-test', function() {
+    require_once public_path('ia_traitement_test.php');
+});
+
+// Route pour le script standalone (sans Laravel)
+Route::post('/ia_traitement_standalone.php', function() {
+    require_once public_path('ia_traitement_standalone.php');
+});
 
 
 

@@ -22,7 +22,7 @@ class GeminiController extends Controller
 
         try {
             // Déterminer le modèle à utiliser
-            $model = $image ? 'models/gemini-2.5-flash-image' : 'models/gemini-pro-latest';
+            $model = $image ? 'gemini-flash-latest' : 'gemini-flash-latest';
 
             // Préparer les parties du contenu
             $parts = [
@@ -56,10 +56,25 @@ class GeminiController extends Controller
             // Appel à l'API Gemini
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
-            ])->timeout(60)
+            ])->withoutVerifying()
+              ->timeout(60)
               ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", $payload);
 
             $responseData = $response->json();
+            $httpCode = $response->status();
+            $responseBody = $response->body();
+            
+            Log::info('API Gemini - Code HTTP:', ['code' => $httpCode]);
+            Log::info('API Gemini - Réponse brute (autour position 293):', ['snippet' => substr($responseBody, 280, 30)]);
+            Log::info('API Gemini - Réponse complète:', ['body' => $responseBody]);
+            
+            if ($httpCode !== 200) {
+                Log::error('API Gemini - Erreur HTTP:', ['code' => $httpCode, 'body' => $responseBody]);
+                return response()->json([
+                    'error' => "Erreur HTTP {$httpCode} de l'API Gemini",
+                    'response' => $responseBody
+                ], 500);
+            }
 
             if (isset($responseData['error'])) {
                 return response()->json([
@@ -69,14 +84,22 @@ class GeminiController extends Controller
             }
 
             if (empty($responseData['candidates']) || empty($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+                Log::error('Structure réponse API:', ['keys' => array_keys($responseData), 'candidates' => isset($responseData['candidates']) ? 'exists' : 'missing']);
+                if (isset($responseData['candidates'])) {
+                    Log::error('Candidates structure:', ['count' => count($responseData['candidates']), 'first_keys' => $responseData['candidates'][0] ? array_keys($responseData['candidates'][0]) : 'empty']);
+                }
                 return response()->json([
                     'error' => 'Réponse inattendue de l\'API Gemini',
                     'raw_response' => $responseData
                 ], 500);
             }
 
+            Log::info('Succès API Gemini - Texte généré:', ['text_length' => strlen($responseData['candidates'][0]['content']['parts'][0]['text'])]);
+
+            $generatedText = $responseData['candidates'][0]['content']['parts'][0]['text'];
+            
             return response()->json([
-                'text' => $responseData['candidates'][0]['content']['parts'][0]['text']
+                'text' => $generatedText
             ]);
 
         } catch (\Exception $e) {

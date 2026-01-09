@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Debug Interface</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffe6e6; border: 1px solid #ff0000; }
+        .success { background: #e6ffe6; border: 1px solid #00ff00; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Debug Interface IA SYSCOHADA CI</h1>
+    
+    <div class="debug">
+        <h3>1. Sélectionner une facture</h3>
+        <input type="file" id="facture" accept="image/*" onchange="previewFile()">
+        <br><br>
+        <img id="preview" style="max-width: 300px; display: none;">
+    </div>
+
+    <div class="debug">
+        <h3>2. Tester l'API</h3>
+        <button onclick="testAPI()">🚀 Lancer le test</button>
+        <div id="result"></div>
+    </div>
+
+    <div class="debug">
+        <h3>3. Logs</h3>
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = `debug ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(div);
+            console.log(message);
+        }
+
+        function previewFile() {
+            const file = document.getElementById('facture').files[0];
+            const preview = document.getElementById('preview');
+            
+            if (file) {
+                log(`Fichier sélectionné: ${file.name} (${file.size} bytes, ${file.type})`);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function testAPI() {
+            const fileInput = document.getElementById('facture');
+            const file = fileInput.files[0];
+            const result = document.getElementById('result');
+
+            if (!file) {
+                log('❌ Veuillez sélectionner un fichier', 'error');
+                return;
+            }
+
+            log('🚀 Début du test API...');
+            result.innerHTML = '<div class="debug">⏳ Analyse en cours...</div>';
+
+            const formData = new FormData();
+            formData.append('facture', file);
+
+            try {
+                log('📤 Envoi à /ia-traitement-test...');
+                
+                const response = await fetch('/ia-traitement-test', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log(`📊 Réponse HTTP: ${response.status} ${response.statusText}`);
+                
+                const responseText = await response.text();
+                log(`📝 Réponse brute: ${responseText.substring(0, 200)}...`);
+
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        log('✅ JSON parsé avec succès', 'success');
+                        result.innerHTML = `
+                            <div class="debug success">
+                                <h4>✅ Succès !</h4>
+                                <pre>${JSON.stringify(data, null, 2)}</pre>
+                            </div>
+                        `;
+                    } catch (e) {
+                        log(`❌ Erreur parsing JSON: ${e.message}`, 'error');
+                        result.innerHTML = `
+                            <div class="debug error">
+                                <h4>❌ Erreur JSON</h4>
+                                <pre>${responseText}</pre>
+                            </div>
+                        `;
+                    }
+                } else {
+                    log(`❌ Erreur HTTP: ${response.status}`, 'error');
+                    result.innerHTML = `
+                        <div class="debug error">
+                            <h4>❌ Erreur HTTP ${response.status}</h4>
+                            <pre>${responseText}</pre>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                log(`❌ Erreur fetch: ${error.message}`, 'error');
+                result.innerHTML = `
+                    <div class="debug error">
+                        <h4>❌ Erreur Fetch</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Test au chargement
+        log('🔧 Interface de debug chargée');
+        log('🌐 URL actuelle: ' + window.location.href);
+    </script>
+</body>
+</html>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCAN IA SYSCOHADA CI - Mode Offline</title>
+    
+    <!-- Assets locaux pour éviter les erreurs CDN -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: scale(1.02);
+        }
+
+        .preview-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            display: block;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-danger {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .balance-indicator {
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 style="text-align: center; color: #1a202c; margin-bottom: 30px;">
+                🧠 SCAN IA SYSCOHADA CI - Mode Offline
+            </h1>
+            <p style="text-align: center; color: #6b7280; margin-bottom: 40px;">
+                Analyse intelligente des factures avec expert comptable ivoirien
+            </p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2 style="color: #374151; margin-bottom: 20px;">📤 Upload de facture</h2>
+                
+                <div class="drop-zone" id="dropZone">
+                    <div style="font-size: 48px; color: #667eea; margin-bottom: 20px;">📄</div>
+                    <h3 style="color: #374151; margin-bottom: 10px;">Glissez votre facture ici</h3>
+                    <p style="color: #6b7280; margin-bottom: 20px;">ou cliquez pour sélectionner</p>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        Choisir un fichier
+                    </button>
+                </div>
+
+                <img id="previewImage" class="preview-image" style="display: none;">
+
+                <div id="loadingDiv" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>🧠 Analyse par IA SYSCOHADA CI en cours...</p>
+                </div>
+
+                <div id="alertContainer"></div>
+
+                <button id="scanBtn" class="btn btn-primary" style="width: 100%; margin-top: 20px;" disabled>
+                    🔍 Analyser la facture
+                </button>
+            </div>
+
+            <div class="card">
+                <h2 style="color: #374151; margin-bottom: 20px;">📋 Résultats de l'analyse</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Date de l'exercice</label>
+                    <input type="date" id="dateExercice" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nom du tiers</label>
+                    <input type="text" id="tiersNom" class="form-control" placeholder="Nom du fournisseur">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Référence pièce</label>
+                    <input type="text" id="referencePiece" class="form-control" placeholder="Numéro de facture">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Montant HT</label>
+                    <input type="number" id="montantHt" class="form-control" placeholder="0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Montant TVA (18%)</label>
+                    <input type="number" id="montantTva" class="form-control" placeholder="0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Montant TTC</label>
+                    <input type="number" id="montantTtc" class="form-control" placeholder="0" step="0.01">
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <span id="balanceIndicator" class="balance-indicator badge-warning">
+                        En attente d'analyse
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="color: #374151; margin-bottom: 20px;">📊 Écriture comptable SYSCOHADA CI</h2>
+            
+            <table class="table" id="ecritureTable">
+                <thead>
+                    <tr>
+                        <th>Compte</th>
+                        <th>Libellé</th>
+                        <th>Débit</th>
+                        <th>Crédit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="text" class="form-control" placeholder="601000" id="compte0"></td>
+                        <td><input type="text" class="form-control" placeholder="Achats marchandises" id="libelle0"></td>
+                        <td><input type="number" class="form-control" placeholder="0" id="debit0" step="0.01"></td>
+                        <td><input type="number" class="form-control" placeholder="0" id="credit0" step="0.01"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" class="form-control" placeholder="445100" id="compte1"></td>
+                        <td><input type="text" class="form-control" placeholder="TVA déductible" id="libelle1"></td>
+                        <td><input type="number" class="form-control" placeholder="0" id="debit1" step="0.01"></td>
+                        <td><input type="number" class="form-control" placeholder="0" id="credit1" step="0.01"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" class="form-control" placeholder="401000" id="compte2"></td>
+                        <td><input type="text" class="form-control" placeholder="Fournisseurs" id="libelle2"></td>
+                        <td><input type="number" class="form-control" placeholder="0" id="debit2" step="0.01"></td>
+                        <td><input type="number" class="form-control" placeholder="0" id="credit2" step="0.01"></td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="2">Totaux</th>
+                        <th><input type="number" id="totalDebit" class="form-control" readonly style="background: #f9fafb;"></th>
+                        <th><input type="number" id="totalCredit" class="form-control" readonly style="background: #f9fafb;"></th>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-success" onclick="saveEcriture()">
+                    💾 Enregistrer l'écriture
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ScanSystem {
+            constructor() {
+                this.apiEndpoint = '/ia_traitement_standalone.php';
+                this.currentFile = null;
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                const dropZone = document.getElementById('dropZone');
+                const fileInput = document.getElementById('fileInput');
+                const scanBtn = document.getElementById('scanBtn');
+
+                // Drop zone events
+                dropZone.addEventListener('click', () => fileInput.click());
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('drag-over');
+                });
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('drag-over');
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('drag-over');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.handleFile(files[0]);
+                    }
+                });
+
+                // File input change
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.handleFile(e.target.files[0]);
+                    }
+                });
+
+                // Scan button
+                scanBtn.addEventListener('click', () => this.scanFile());
+
+                // Auto-calculate totals
+                document.querySelectorAll('[id^="debit"], [id^="credit"]').forEach(input => {
+                    input.addEventListener('input', () => this.calculateTotals());
+                });
+            }
+
+            handleFile(file) {
+                if (!file.type.startsWith('image/')) {
+                    this.showAlert('Veuillez sélectionner une image (JPG, PNG)', 'danger');
+                    return;
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                    this.showAlert('Fichier trop volumineux (max 5MB)', 'danger');
+                    return;
+                }
+
+                this.currentFile = file;
+                this.showPreview(file);
+                document.getElementById('scanBtn').disabled = false;
+            }
+
+            showPreview(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const preview = document.getElementById('previewImage');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            async scanFile() {
+                if (!this.currentFile) return;
+
+                const loading = document.getElementById('loadingDiv');
+                const scanBtn = document.getElementById('scanBtn');
+
+                loading.style.display = 'block';
+                scanBtn.disabled = true;
+
+                const formData = new FormData();
+                formData.append('facture', this.currentFile);
+
+                try {
+                    const response = await fetch(this.apiEndpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    this.fillForm(data);
+                    this.showAlert('✅ Analyse réussie !', 'success');
+
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    this.showAlert('❌ Erreur: ' + error.message, 'danger');
+                } finally {
+                    loading.style.display = 'none';
+                    scanBtn.disabled = false;
+                }
+            }
+
+            fillForm(data) {
+                // Remplir les champs de base
+                if (data.date) document.getElementById('dateExercice').value = data.date;
+                if (data.tiers) document.getElementById('tiersNom').value = data.tiers;
+                if (data.reference) document.getElementById('referencePiece').value = data.reference;
+                if (data.montant_ht) document.getElementById('montantHt').value = data.montant_ht;
+                if (data.montant_tva) document.getElementById('montantTva').value = data.montant_tva;
+                if (data.montant_ttc) document.getElementById('montantTtc').value = data.montant_ttc;
+
+                // Remplir les écritures comptables
+                if (data.ecriture && Array.isArray(data.ecriture)) {
+                    data.ecriture.forEach((ligne, index) => {
+                        if (index <= 2) {
+                            if (ligne.compte) document.getElementById(`compte${index}`).value = ligne.compte;
+                            if (ligne.intitule || ligne.libelle) document.getElementById(`libelle${index}`).value = ligne.intitule || ligne.libelle;
+                            if (ligne.debit) document.getElementById(`debit${index}`).value = ligne.debit;
+                            if (ligne.credit) document.getElementById(`credit${index}`).value = ligne.credit;
+                        }
+                    });
+                }
+
+                this.calculateTotals();
+            }
+
+            calculateTotals() {
+                let totalDebit = 0;
+                let totalCredit = 0;
+
+                for (let i = 0; i <= 2; i++) {
+                    const debit = parseFloat(document.getElementById(`debit${i}`).value) || 0;
+                    const credit = parseFloat(document.getElementById(`credit${i}`).value) || 0;
+                    totalDebit += debit;
+                    totalCredit += credit;
+                }
+
+                document.getElementById('totalDebit').value = totalDebit.toFixed(2);
+                document.getElementById('totalCredit').value = totalCredit.toFixed(2);
+
+                // Vérifier l'équilibre
+                const balance = Math.abs(totalDebit - totalCredit);
+                const indicator = document.getElementById('balanceIndicator');
+                
+                if (balance < 0.01) {
+                    indicator.textContent = '✅ ÉQUILIBRÉ';
+                    indicator.className = 'balance-indicator badge-success';
+                } else {
+                    indicator.textContent = '⚠️ NON ÉQUILIBRÉ';
+                    indicator.className = 'balance-indicator badge-warning';
+                }
+            }
+
+            showAlert(message, type) {
+                const container = document.getElementById('alertContainer');
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type}`;
+                alert.textContent = message;
+                container.appendChild(alert);
+
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 5000);
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            new ScanSystem();
+        });
+
+        function saveEcriture() {
+            alert('Fonctionnalité de sauvegarde à implémenter avec votre système COMPTAFLOW');
+        }
+    </script>
+</body>
+</html>

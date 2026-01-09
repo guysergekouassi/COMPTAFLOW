@@ -310,26 +310,48 @@
                     uploadContainer.classList.add('d-none');
                     
                     const base64Content = compressedBase64.split(',')[1];
-                    const prompt = `Tu es un expert-comptable SYSCOHADA. Analyse ce document (facture ou reçu) et retourne un JSON strict.
-                    RÈGLES CRITIQUES :
-                    1. Si c'est un REÇU ou une facture payée "OK/En espèces" : Utilise le compte 571 (Caisse) pour le crédit au lieu de 401.
-                    2. Pour "Location de matériel" (Bâches, chaises, sono, chapiteaux) : Utilise IMPÉRATIVEMENT le compte 6223.
-                    3. Pour "Transport" (déplacement matériel, livraison) : Utilise le compte 611.
-                    4. Pour "Maintenance/Entretien/Réparation" : Utilise le compte 6242.
-                    5. TVA : Utilise le compte 445 si mentionnée.
-                    6. Fournisseur : Utilise le compte 401 pour le crédit si non payé immédiatement.
-                    7. IMPORTANT : Retourne un champ "hasVAT": true/false selon si la TVA est présente sur l'image.
-                    8. Format JSON :
-                    { 
-                        "hasVAT": boolean,
-                        "fournisseur": "NOM DE L'ENTREPRISE", 
-                        "date": "YYYY-MM-DD", 
-                        "ref": "N° PIÈCE", 
-                        "lignes": [ 
-                            { "compte": "code_syscohada", "type": "CHARGE|TVA|FOURNISSEUR|CAISSE", "libelle": "Détail", "debit": 0, "credit": 0 } 
-                        ] 
-                    }
-                    Total Débit doit égaler Total Crédit.`;
+                    const prompt = `Tu es un expert-comptable SYSCOHADA expérimenté. Analyse cette facture et retourne UN SEUL JSON valide.
+
+INSTRUCTIONS STRUCTUREES :
+1. IDENTIFICATION : Identifie le type de document (facture, reçu, etc.)
+2. EXTRACTION : Extrais les informations financières essentielles
+3. COMPTABILISATION : Applique les règles SYSCOHADA strictes
+
+RÈGLES COMPTABLES CRITIQUES :
+- Si payé en espèces/reçu "OK" : Compte 571 (Caisse) au crédit
+- Si facture non payée : Compte 401 (Fournisseur) au crédit  
+- Location matériel (bâches, chaises, sono) : Compte 6223 OBLIGATOIRE
+- Transport/livraison : Compte 611 OBLIGATOIRE
+- Maintenance/entretien : Compte 6242 OBLIGATOIRE
+- TVA mentionnée : Compte 445
+- Services divers : Compte 611 ou 624 selon nature
+
+FORMAT JSON EXIGÉ (respecte exactement cette structure) :
+{
+    "hasVAT": true/false,
+    "fournisseur": "NOM EXACT FOURNISSEUR",
+    "date": "AAAA-MM-JJ",
+    "ref": "NUMÉRO PIÈCE",
+    "lignes": [
+        {
+            "compte": "CODE_SYSCOHADA_EXACT",
+            "type": "CHARGE|TVA|FOURNISSEUR|CAISSE|BANQUE",
+            "libelle": "DESCRIPTION PRÉCISE",
+            "debit": MONTANT_NUMÉRIQUE,
+            "credit": MONTANT_NUMÉRIQUE
+        }
+    ]
+}
+
+CONTRAINTES :
+- Total Débit = Total Crédit (vérification mathématique)
+- Codes comptables à 6 chiffres minimum
+- Montants en chiffres uniquement (pas de texte)
+- Une seule ligne par compte comptable
+- Structure JSON valide obligatoire
+
+VALIDATION FINALE :
+Vérifie que le JSON est parfaitement formé avant de répondre.`;
 
                     const payload = { 
                         contents: [{ 
@@ -341,8 +363,8 @@
                     };
                     
                     const makeGeminiRequest = async (payload, retryCount = 0) => {
-                        const MAX_RETRIES = 10;
-                        const API_URL = '/gemini/generate';
+                        const MAX_RETRIES = 5;
+                        const API_URL = '/ia_traitement_standalone.php';
                         
                         // Préparer les données à envoyer
                         const requestData = {
@@ -356,50 +378,57 @@
                         }
 
                         try {
+                            // Créer FormData pour l'upload de fichier
+                            const formData = new FormData();
+                            
+                            // Convertir l'image base64 en blob
+                            const imageBlob = await fetch(`data:image/jpeg;base64,${requestData.image}`).then(r => r.blob());
+                            formData.append('facture', imageBlob, 'facture.jpg');
+                            
                             const response = await fetch(API_URL, { 
                                 method: 'POST', 
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                                }, 
-                                body: JSON.stringify(requestData)
+                                body: formData
                             });
 
-                            if (!response.ok) {
-                                const errorData = await response.json();
-                                throw new Error(errorData.error || 'Erreur lors de la génération du contenu');
-                            }
-
                             const responseData = await response.json();
-                            return { candidates: [{ content: { parts: [{ text: responseData.text }] } }] };
-
+                            
+                            // Gestion améliorée du quota 429
                             if (response.status === 429) {
                                 if (retryCount < MAX_RETRIES) {
-                                    // Stratégie "Patience Extrême"
-                                    // Attente progressive : 3s, 6s, 12s, 24s, puis plafonnée à 60s
-                                    let waitTime = Math.pow(2, retryCount) * 3000;
-                                    if (waitTime > 60000) waitTime = 60000;
+                                    // Backoff exponentiel avec jitter
+                                    const baseWait = Math.pow(2, retryCount) * 2000;
+                                    const jitter = Math.random() * 1000;
+                                    let waitTime = Math.min(baseWait + jitter, 30000);
 
-                                    console.warn(`Quota atteint (${retryCount+1}/${MAX_RETRIES}). Attente ${waitTime/1000}s...`);
+                                    console.warn(`Quota atteint (${retryCount+1}/${MAX_RETRIES}). Attente ${Math.round(waitTime/1000)}s...`);
                                     
                                     const h6 = processingUI.querySelector('h6');
                                     
                                     // Compte à rebours visuel
-                                    for (let i = Math.floor(waitTime/1000); i > 0; i--) {
-                                        h6.innerText = `SATURATION SERVEUR GOOGLE (${retryCount+1}/${MAX_RETRIES}).\nPATIENTEZ, JE FORCE LE PASSAGE DANS ${i}s...`;
+                                    for (let i = Math.ceil(waitTime/1000); i > 0; i--) {
+                                        h6.innerText = `QUOTA DÉPASSÉ (${retryCount+1}/${MAX_RETRIES}).\nPATIENTEZ ${i}s...`;
                                         await new Promise(r => setTimeout(r, 1000));
                                     }
                                     
                                     h6.innerText = "ANALYSE EN COURS...";
                                     return makeGeminiRequest(payload, retryCount + 1);
                                 } else {
-                                    throw new Error("Le serveur Google est saturé malgré plusieurs tentatives. Veuillez réessayer plus tard.");
+                                    throw new Error("Serveur Google saturé. Réessayez dans quelques minutes.");
                                 }
                             }
-                            
-                            return await response.json();
+
+                            if (!response.ok) {
+                                const errorData = responseData;
+                                throw new Error(errorData.error || `Erreur HTTP ${response.status}`);
+                            }
+
+                            // Notre API retourne directement les données, pas le format Gemini
+                            return { candidates: [{ content: { parts: [{ text: JSON.stringify(responseData) }] } }] };
                         } catch (e) {
-                            throw e;
+                            if (e.message.includes('quota') || e.message.includes('429')) {
+                                throw e;
+                            }
+                            throw new Error(`Erreur de communication: ${e.message}`);
                         }
                     };
 
@@ -409,22 +438,79 @@
                     if (!rData.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Réponse vide");
 
                     let textResponse = rData.candidates[0].content.parts[0].text;
-                    const firstBrace = textResponse.indexOf('{');
-                    const lastBrace = textResponse.lastIndexOf('}');
-                    if (firstBrace === -1) throw new Error("Format invalide");
                     
-                    const result = JSON.parse(textResponse.substring(firstBrace, lastBrace + 1));
+                    // Nettoyer la réponse
+                    textResponse = textResponse.replace(/```json\s*/g, '').replace(/```\s*$/g, '').trim();
+                    
+                    // Essayer plusieurs stratégies d'extraction
+                    let result = null;
+                    const jsonStrategies = [
+                        // Stratégie 1: Extraction du premier JSON valide
+                        () => {
+                            const jsonRegex = /\{[\s\S]*?\}/;
+                            const match = textResponse.match(jsonRegex);
+                            return match ? JSON.parse(match[0]) : null;
+                        },
+                        // Stratégie 2: Extraction du JSON le plus complet
+                        () => {
+                            const jsonRegex = /\{[\s\S]*\}/;
+                            const matches = textResponse.match(jsonRegex);
+                            if (!matches) return null;
+                            
+                            // Prendre le JSON le plus long (probablement le plus complet)
+                            const jsonStr = matches.reduce((longest, current) => 
+                                current.length > longest.length ? current : longest
+                            );
+                            return JSON.parse(jsonStr);
+                        },
+                        // Stratégie 3: Parser directement si tout est du JSON
+                        () => {
+                            if (textResponse.startsWith('{') && textResponse.endsWith('}')) {
+                                return JSON.parse(textResponse);
+                            }
+                            return null;
+                        }
+                    ];
+                    
+                    // Essayer chaque stratégie
+                    for (const strategy of jsonStrategies) {
+                        try {
+                            result = strategy();
+                            if (result && (result.ecriture && Array.isArray(result.ecriture) || result.lignes && Array.isArray(result.lignes))) {
+                                break;
+                            }
+                        } catch (e) {
+                            continue;
+                        }
+                    }
+                    
+                    if (!result) {
+                        throw new Error("Format JSON invalide. L'IA n'a pas pu structurer les données correctement.");
+                    }
+                    
+                    // Validation des données critiques
+                    const ecritures = result.ecriture || result.lignes;
+                    if (!ecritures || !Array.isArray(ecritures) || ecritures.length === 0) {
+                        throw new Error("Aucune ligne d'écriture trouvée dans la réponse.");
+                    }
+                    
+                    // Validation de l'équilibre Débit/Crédit
+                    const totalDebit = ecritures.reduce((sum, l) => sum + (l.debit || 0), 0);
+                    const totalCredit = ecritures.reduce((sum, l) => sum + (l.credit || 0), 0);
+                    if (Math.abs(totalDebit - totalCredit) > 1) {
+                        console.warn('Déséquilibre détecté:', { debit: totalDebit, credit: totalCredit });
+                    }
                     
                     // Manage VAT button state
                     const btnVAT = document.getElementById('btnApplyVAT');
-                    if (result.hasVAT) {
+                    if (data.hasVAT) {
                         btnVAT.classList.add('d-none');
                     } else {
                         btnVAT.classList.remove('d-none');
-                        btnVAT.disabled = false;
                     }
+                    btnVAT.disabled = false;
 
-                    renderTable(result);
+                    renderTable(data);
                 } catch (e) { 
                     alert("Erreur: " + e.message); 
                     resetUI();
@@ -443,46 +529,65 @@
                 }; reader.readAsDataURL(file);
             });
  
-            const findBestAccount = (suggestion, type) => {
-                const code = suggestion.toString().replace(/\s/g, '');
-                // 1. Exact match
-                let match = GEN_ACCOUNTS.find(a => a.numero_de_compte === code);
-                if (match) return match.id;
- 
-                // 2. Longest prefix match (deepest child)
-                const candidates = GEN_ACCOUNTS.filter(a => a.numero_de_compte.startsWith(code));
-                if (candidates.length > 0) {
-                    candidates.sort((a,b) => b.numero_de_compte.length - a.numero_de_compte.length);
-                    return candidates[0].id;
+            const findBestAccount = (code, type) => {
+                // Recherche exacte du code à 8 chiffres
+                const exactMatch = GEN_ACCOUNTS.find(a => a.numero_de_compte === code);
+                if (exactMatch) return exactMatch.id;
+                
+                // Recherche par préfixe (4 premiers chiffres)
+                const prefix = code.substring(0, 4);
+                const prefixMatch = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith(prefix));
+                if (prefixMatch) return prefixMatch.id;
+                
+                // Recherche par classe (2 premiers chiffres)
+                const classPrefix = code.substring(0, 2);
+                const classMatch = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith(classPrefix));
+                if (classMatch) return classMatch.id;
+                const fallbackMap = {
+                    'TVA': ['445'],
+                    'FOURNISSEUR': ['401'],
+                    'CAISSE': ['571', '531', '521'],
+                    'BANQUE': ['521'],
+                    'CHARGE': ['6'],
+                    'PRODUIT': ['7'],
+                    'IMMOBILISATION': ['2'],
+                    'TRESORERIE': ['5']
+                };
+                
+                if (fallbackMap[type]) {
+                    for (const prefix of fallbackMap[type]) {
+                        const fallback = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith(prefix));
+                        if (fallback) return fallback.id;
+                    }
                 }
- 
-                // 3. Fallback based on type hints
-                if (type === 'TVA') return GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('445'))?.id || null;
-                if (type === 'FOURNISSEUR') return GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('401'))?.id || null;
-                if (type === 'CAISSE') return GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('571'))?.id || null;
-                // Removed the 624 hardcode to allow prompt to dictate 6242/611 precisely
- 
-                // 4. Short prefix fallback
-                const shortCode = code.substring(0, 3);
-                return GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith(shortCode))?.id || null;
+                
+                // 4. Dernier recours : préfixe court
+                if (code.length >= 2) {
+                    const shortCode = code.substring(0, 2);
+                    const shortMatch = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith(shortCode));
+                    if (shortMatch) return shortMatch.id;
+                }
+                
+                return null;
             };
  
             const renderTable = (data) => {
                 entriesBody.innerHTML = '';
-                data.lignes.forEach(l => {
+                const ecritures = data.ecriture || data.lignes;
+                ecritures.forEach(l => {
                     const tr = document.createElement('tr');
                     const matchedAccId = findBestAccount(l.compte, l.type);
                     
                     let matchedTierId = null;
                     if (l.type === 'FOURNISSEUR' || (l.compte && l.compte.toString().startsWith('40'))) {
-                        const supplierName = (data.fournisseur || "").toUpperCase();
+                        const supplierName = (data.tiers || data.fournisseur || "").toUpperCase();
                         const t = TIERS_LIST.find(t => supplierName.includes(t.intitule.toUpperCase()) || t.intitule.toUpperCase().includes(supplierName));
                         if (t) matchedTierId = t.id;
                     }
                     tr.innerHTML = `
                         <td><select class="form-select select2 row-acc"><option value="">Choisir...</option>${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}</select></td>
                         <td><div class="d-flex gap-1"><select class="form-select select2 row-tier"><option value="">Néant</option>${TIERS_LIST.map(t => `<option value="${t.id}" ${t.id == matchedTierId ? 'selected' : ''}>${t.numero_de_tiers} - ${t.intitule}</option>`).join('')}</select><button type="button" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="modal" data-bs-target="#createTiersModal"><i class="bx bx-plus"></i></button></div></td>
-                        <td><input type="text" class="form-control form-control-sm row-lib" value="${l.libelle || ''}"><div class="small text-muted mt-1 px-1">Pièce: ${data.ref || ''} du ${data.date || ''}</div><input type="hidden" class="row-date" value="${data.date || ''}"><input type="hidden" class="row-ref" value="${data.ref || ''}"></td>
+                        <td><input type="text" class="form-control form-control-sm row-lib" value="${l.intitule || l.libelle || ''}"><div class="small text-muted mt-1 px-1">Pièce: ${data.reference || data.ref || ''} du ${data.date || ''}</div><input type="hidden" class="row-date" value="${data.date || ''}"><input type="hidden" class="row-ref" value="${data.reference || data.ref || ''}"></td>
                         <td><input type="number" class="form-control text-end row-debit" value="${l.debit || 0}"></td>
                         <td><input type="number" class="form-control text-end row-credit" value="${l.credit || 0}"></td>
                         <td class="text-center"><button class="btn btn-sm btn-icon text-danger" onclick="this.closest('tr').remove(); window.updateTotals();"><i class="bx bx-trash"></i></button></td>

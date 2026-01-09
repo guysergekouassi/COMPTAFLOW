@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Interface IA</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 10px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; margin: 5px; }
+        .result { background: #e9ecef; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Interface IA SYSCOHADA CI</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Vérification de l'API</h3>
+        <button onclick="testAPI()">Tester API Gemini</button>
+        <div id="apiResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: Upload de facture</h3>
+        <input type="file" id="facture" accept="image/*" onchange="handleFile()">
+        <button onclick="testUpload()">Tester Upload</button>
+        <div id="uploadResult" class="result"></div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const result = document.getElementById('apiResult');
+            result.innerHTML = '⏳ Test en cours...';
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/test_api_final.php');
+                const text = await response.text();
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.innerHTML = '✅ API Gemini fonctionne<br><pre>' + text + '</pre>';
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = '❌ Erreur API: ' + response.status;
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = '❌ Erreur: ' + error.message;
+            }
+        }
+
+        function handleFile() {
+            const file = document.getElementById('facture').files[0];
+            if (file) {
+                console.log('Fichier sélectionné:', file.name, file.size, file.type);
+            }
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('facture');
+            const file = fileInput.files[0];
+            const result = document.getElementById('uploadResult');
+            
+            if (!file) {
+                result.className = 'result error';
+                result.innerHTML = '❌ Veuillez sélectionner un fichier';
+                return;
+            }
+            
+            result.innerHTML = '⏳ Upload en cours...';
+            
+            const formData = new FormData();
+            formData.append('facture', file);
+            
+            try {
+                console.log('Envoi vers: http://127.0.0.1:8000/ia-traitement-test');
+                
+                const response = await fetch('http://127.0.0.1:8000/ia-traitement-test', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const text = await response.text();
+                console.log('Réponse brute:', text);
+                
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(text);
+                        result.className = 'result success';
+                        result.innerHTML = '✅ Succès!<br><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    } catch (e) {
+                        result.className = 'result error';
+                        result.innerHTML = '❌ Erreur JSON: ' + e.message + '<br>Réponse: ' + text;
+                    }
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = '❌ Erreur HTTP ' + response.status + '<br>Réponse: ' + text;
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = '❌ Erreur fetch: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
