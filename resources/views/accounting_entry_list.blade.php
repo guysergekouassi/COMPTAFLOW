@@ -443,6 +443,9 @@
                                                         </td>
                                                         <td class="px-4 py-3 text-center whitespace-nowrap" rowspan="{{ $rowCount }}">
                                                             <div class="flex items-center justify-center space-x-2">
+                                                                <a href="{{ route('ecriture-comptable.edit', $ecriture->id) }}" class="p-1.5 text-warning hover:text-yellow-700 transition-colors duration-200" title="Modifier l'écriture">
+                                                                    <i class="bx bx-edit-alt"></i>
+                                                                </a>
                                                                 <a href="{{ route('ecriture.show', $ecriture->id) }}" class="p-1.5 text-info hover:text-blue-800 transition-colors duration-200" title="Voir l'écriture complète">
                                                                     <i class="bx bx-show text-xl"></i>
                                                                 </a>
