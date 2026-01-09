@@ -379,13 +379,32 @@
                                 <input type="text" 
                                     id="update_code_journal" 
                                     name="code_journal" 
-                                    class="input-field-premium" 
-                                    maxlength="4" 
-                                    pattern="[A-Z0-9]{1,4}" 
-                                    oninput="this.value = this.value.toUpperCase()"
-                                    onkeypress="return /[A-Z0-9]/i.test(event.key)"
+                                    class="input-field-premium uppercase-input" 
+                                    maxlength="4"
+                                    oninput="formatCodeJournal(this)"
+                                    onkeydown="return /[A-Z0-9]/i.test(event.key) || event.key === 'Backspace' || event.key === 'Delete' || event.key === 'ArrowLeft' || event.key === 'ArrowRight'"
                                     title="4 caractères maximum, lettres et chiffres uniquement"
                                     required>
+                                <script>
+                                function formatCodeJournal(input) {
+                                    // Convertir en majuscules et ne garder que les lettres et chiffres
+                                    input.value = input.value.replace(/[^A-Z0-9]/g, '').toUpperCase();
+                                    // Limiter à 4 caractères
+                                    if (input.value.length > 4) {
+                                        input.value = input.value.substring(0, 4);
+                                    }
+                                }
+                                
+                                // Ajouter un gestionnaire pour le formulaire
+                                document.getElementById('formCodeJournalUpdate').addEventListener('submit', function(e) {
+                                    const codeInput = document.getElementById('update_code_journal');
+                                    if (!/^[A-Z0-9]{1,4}$/.test(codeInput.value)) {
+                                        e.preventDefault();
+                                        alert('Le code journal doit contenir entre 1 et 4 caractères alphanumériques');
+                                        codeInput.focus();
+                                    }
+                                });
+                                </script>
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
