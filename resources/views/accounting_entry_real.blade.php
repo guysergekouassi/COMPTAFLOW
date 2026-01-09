@@ -1453,62 +1453,7 @@ function ajouterEcriture() {
     }
 
     // Initialisation
-    // Initialize Select2 for account search
-    function initializeSelect2() {
-        $('.select2-account').select2({
-            placeholder: 'Rechercher un compte...',
-            allowClear: true,
-            width: '100%',
-            dropdownParent: $('.modal-body-premium'),
-            language: {
-                noResults: function() {
-                    return 'Aucun résultat trouvé';
-                },
-                searching: function() {
-                    return 'Recherche en cours...';
-                },
-                inputTooShort: function(args) {
-                    return 'Veuillez saisir ' + args.minimum + ' caractères ou plus';
-                }
-            },
-            templateResult: function(account) {
-                if (!account.id) return account.text;
-                return $(
-                    '<div class="d-flex justify-content-between align-items-center">' +
-                    '  <span class="text-truncate me-3">' + account.text + '</span>' +
-                    '  <span class="badge bg-primary">' + $(account.element).data('numero') + '</span>' +
-                    '</div>'
-                );
-            },
-            templateSelection: function(account) {
-                if (!account.id) return account.text;
-                return account.text;
-            },
-            matcher: function(params, data) {
-                if ($.trim(params.term) === '') return data;
-                if (data.text === undefined) return null;
-
-                const searchTerm = params.term.toLowerCase();
-                const accountNumber = $(data.element).data('numero') || '';
-                const accountName = $(data.element).data('intitule') || '';
-                const accountText = data.text.toLowerCase();
-
-                if (accountNumber.toLowerCase().includes(searchTerm) || 
-                    accountName.toLowerCase().includes(searchTerm) ||
-                    accountText.includes(searchTerm)) {
-                    return data;
-                }
-                return null;
-            }
-        });
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Select2 for account search
-        if (typeof $().select2 === 'function') {
-            initializeSelect2();
-        }
-        
         fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
         
         // Détection du journal au chargement
