@@ -131,8 +131,6 @@
                                                     - {{ \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y') }}
                                                 @endif
                                             </h3>
-                                        @else
-                                            <h3 class="text-2xl font-black text-slate-800 mt-1">{{ date('Y') }}</h3>
                                         @endif
                                     </div>
                                     <div class="p-3 bg-slate-100 text-slate-800 rounded-2xl">
