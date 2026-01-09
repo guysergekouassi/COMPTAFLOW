@@ -702,20 +702,25 @@
                                         <label for="compte_general" class="form-label">
                                             <i class="bx bx-folder-open"></i>Compte Général <span class="text-danger">*</span>
                                         </label>
-                                        <select id="compte_general" name="compte_general"
-                                            class="form-select select2 w-100" data-live-search="true"
-                                            title="Sélectionner un compte général" required>
-                                            <option value="" selected disabled>Sélectionner un compte</option>
-                                            @if(isset($plansComptables))
-                                                @foreach ($plansComptables as $plan)
-                                                    <option value="{{ $plan->id }}"
-                                                        data-intitule_compte_general="{{ $plan->numero_de_compte }}">
-                                                        {{ $plan->numero_de_compte }} -
-                                                        {{ $plan->intitule }}
-                                                    </option>
-                                                @endforeach
-                                            @endif
-                                        </select>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                            <select id="compte_general" name="compte_general"
+                                                class="form-select select2-account"
+                                                title="Sélectionner un compte général" required>
+                                                <option value="" selected disabled>Rechercher un compte...</option>
+                                                @if(isset($plansComptables))
+                                                    @foreach ($plansComptables as $plan)
+                                                        <option value="{{ $plan->id }}"
+                                                            data-intitule_compte_general="{{ $plan->numero_de_compte }}"
+                                                            data-numero="{{ $plan->numero_de_compte }}"
+                                                            data-intitule="{{ $plan->intitule }}">
+                                                            {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                                        </option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <small class="text-muted">Commencez à taper pour rechercher un compte</small>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="compte_tiers" class="form-label">
@@ -1448,7 +1453,62 @@ function ajouterEcriture() {
     }
 
     // Initialisation
+    // Initialize Select2 for account search
+    function initializeSelect2() {
+        $('.select2-account').select2({
+            placeholder: 'Rechercher un compte...',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('.modal-body-premium'),
+            language: {
+                noResults: function() {
+                    return 'Aucun résultat trouvé';
+                },
+                searching: function() {
+                    return 'Recherche en cours...';
+                },
+                inputTooShort: function(args) {
+                    return 'Veuillez saisir ' + args.minimum + ' caractères ou plus';
+                }
+            },
+            templateResult: function(account) {
+                if (!account.id) return account.text;
+                return $(
+                    '<div class="d-flex justify-content-between align-items-center">' +
+                    '  <span class="text-truncate me-3">' + account.text + '</span>' +
+                    '  <span class="badge bg-primary">' + $(account.element).data('numero') + '</span>' +
+                    '</div>'
+                );
+            },
+            templateSelection: function(account) {
+                if (!account.id) return account.text;
+                return account.text;
+            },
+            matcher: function(params, data) {
+                if ($.trim(params.term) === '') return data;
+                if (data.text === undefined) return null;
+
+                const searchTerm = params.term.toLowerCase();
+                const accountNumber = $(data.element).data('numero') || '';
+                const accountName = $(data.element).data('intitule') || '';
+                const accountText = data.text.toLowerCase();
+
+                if (accountNumber.toLowerCase().includes(searchTerm) || 
+                    accountName.toLowerCase().includes(searchTerm) ||
+                    accountText.includes(searchTerm)) {
+                    return data;
+                }
+                return null;
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Select2 for account search
+        if (typeof $().select2 === 'function') {
+            initializeSelect2();
+        }
+        
         fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
         
         // Détection du journal au chargement
