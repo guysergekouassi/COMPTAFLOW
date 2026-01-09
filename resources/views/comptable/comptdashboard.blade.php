@@ -124,13 +124,30 @@
                                 <div class="flex justify-between items-start">
                                     <div>
                                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Exercice en cours</p>
-                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $exerciceYear ?? date('Y') }}</h3>
+                                        @if(isset($exerciceEnCours) && $exerciceEnCours)
+                                            <h3 class="text-2xl font-black text-slate-800 mt-1">
+                                                {{ \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y') }}
+                                                @if(\Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y') != \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y'))
+                                                    - {{ \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y') }}
+                                                @endif
+                                            </h3>
+                                        @else
+                                            <h3 class="text-2xl font-black text-slate-800 mt-1">{{ date('Y') }}</h3>
+                                        @endif
                                     </div>
                                     <div class="p-3 bg-slate-100 text-slate-800 rounded-2xl">
                                         <i class="fas fa-calendar-check text-lg"></i>
                                     </div>
                                 </div>
-                                <p class="text-xs text-blue-700 mt-4 font-bold italic underline">Période : {{ \Carbon\Carbon::now()->translatedFormat('F') }}</p>
+                                @if(isset($exerciceEnCours) && $exerciceEnCours)
+                                    <p class="text-xs text-blue-700 mt-4 font-bold">
+                                        <span class="underline">Période :</span> 
+                                        du {{ \Carbon\Carbon::parse($exerciceEnCours->date_debut)->translatedFormat('d/m/Y') }}
+                                        au {{ \Carbon\Carbon::parse($exerciceEnCours->date_fin)->translatedFormat('d/m/Y') }}
+                                    </p>
+                                @else
+                                    <p class="text-xs text-red-600 mt-4 font-bold italic">Aucun exercice actif</p>
+                                @endif
                             </div>
                         </div>
 
