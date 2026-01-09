@@ -30,4 +30,14 @@ trait ManagesCompany
 
         return $managedCompanyIds;
     }
+
+    /**
+     * Get the current company ID from the session or user's company
+     * @return int
+     */
+    protected function getCurrentCompanyId(): int
+    {
+        $user = Auth::user();
+        return session('current_company_id', $user->company_id);
+    }
 }
