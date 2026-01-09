@@ -366,4 +366,19 @@ class EcritureComptableController extends Controller
             'data' => $data
         ]);
     }
+
+    public function getCompteParJournal(){
+        // On cherche le compte de trésorerie lié au journal
+        $journal = CodeJournal::with('compteTresorerie')->find($journalId);
+
+       if ($journal && $journal->compteTresorerie) {
+        return response()->json([
+            'success' => true,
+            'compte' => $journal->compteTresorerie
+        ]);
+    }
+    return response()->json(['success' => false, 'message' => 'Aucun compte associé']);
+    }
+
+
 }

@@ -637,8 +637,11 @@
                                         <label for="Compte_Trésorerie" class="form-label">
                                             <i class="bx bx-receipt"></i>Compte  Trésorerie
                                         </label>
-                                      <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2">
-        <option value="" selected disabled>Chargement...</option>
+                                     <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2">
+        <option value="" selected disabled>Sélectionner le compte de trésorerie</option>
+        @foreach($comptesTresorerie as $treso)
+            <option value="{{ $treso->id }}">{{ $treso->name }}</option>
+        @endforeach
     </select>
                                         <small class="form-text text-muted">Compte automatique pour ce journal</small>
                                     </div>
@@ -1056,6 +1059,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     const createTiersModalEl = document.getElementById('createTiersModal');
+ 
     if (!createTiersModalEl) return;
 
     // Use Bootstrap's Modal instance
@@ -1448,6 +1452,12 @@ function ajouterEcriture() {
     document.addEventListener('DOMContentLoaded', function() {
         fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
         
+        // Détection du journal au chargement
+        const journalId = document.getElementById('imputation').value;
+        if(journalId) {
+            chargerCompteTresorerie(journalId);
+        }
+
         // Gérer l'exclusivité entre débit et crédit
         const debitField = document.getElementById('debit');
         const creditField = document.getElementById('credit');
@@ -1848,6 +1858,24 @@ function ajouterEcriture() {
     }
     
     // Fonction pour modifier une écriture
+    // Fonction pour charger le compte de trésorerie en fonction du journal sélectionné
+    function chargerCompteTresorerie(journalId) {
+        fetch(`/api/journal/compte-treso/${journalId}`)
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    const selectTreso = document.getElementById('compte_tresorerie');
+                    if (selectTreso) {
+                        selectTreso.value = data.compte.id;
+                        if (typeof $(selectTreso).select2 === 'function') {
+                            $(selectTreso).trigger('change'); // Si Select2 est utilisé
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Erreur lors du chargement du compte de trésorerie:', error));
+    }
+
     function modifierEcriture(row) {
         // Récupérer les données de la ligne
         const cells = row.cells;
