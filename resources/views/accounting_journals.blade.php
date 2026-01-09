@@ -375,8 +375,17 @@
                         <input type="hidden" name="journal_id" id="update_journal_id">
                         <div class="row g-3">
                             <div class="col-md-6 text-start">
-                                <label class="input-label-premium">Code Journal *</label>
-                                <input type="text" id="update_code_journal" name="code_journal" class="input-field-premium" required>
+                                <label class="input-label-premium">Code Journal * (4 caractères max)</label>
+                                <input type="text" 
+                                    id="update_code_journal" 
+                                    name="code_journal" 
+                                    class="input-field-premium" 
+                                    maxlength="4" 
+                                    pattern="[A-Z0-9]{1,4}" 
+                                    oninput="this.value = this.value.toUpperCase()"
+                                    onkeypress="return /[A-Z0-9]/i.test(event.key)"
+                                    title="4 caractères maximum, lettres et chiffres uniquement"
+                                    required>
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
