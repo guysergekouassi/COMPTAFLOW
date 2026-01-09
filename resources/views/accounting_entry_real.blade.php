@@ -1252,6 +1252,12 @@ function ajouterEcriture() {
             alert('Tableau des écritures introuvable.');
             return;
         }
+        
+        // Récupérer l'ID du compte de trésorerie s'il est visible
+        const compteTresorerieSelect = document.getElementById('compte_tresorerie');
+        const compteTresorerieId = compteTresorerieSelect && 
+                                 window.getComputedStyle(compteTresorerieSelect.parentElement).display !== 'none' ? 
+                                 compteTresorerieSelect.value : '';
 
         const newRow = tbody.insertRow();
 
@@ -1263,6 +1269,11 @@ function ajouterEcriture() {
 
         // Stocker le fichier globalement pour la visualisation
         let globalPieceFile = null;
+        
+        // Stocker l'ID du compte de trésorerie dans la ligne
+        if (compteTresorerieId) {
+            newRow.setAttribute('data-compte-tresorerie-id', compteTresorerieId);
+        }
         
         // Créer les cellules une par une pour pouvoir ajouter des attributs
         const cells = [
@@ -1276,7 +1287,8 @@ function ajouterEcriture() {
             debit.value || '',
             credit.value || '',
             '', // Pièce justificative - sera rempli avec le bouton Voir
-            analytiqueValue
+            analytiqueValue,
+            compteTresorerieId // Ajout de l'ID du compte de trésorerie
         ];
 
         // Ajouter chaque cellule avec son contenu
@@ -1571,6 +1583,9 @@ function ajouterEcriture() {
             const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             
+            // Récupérer l'ID du compte de trésorerie depuis l'attribut de la ligne
+            const compteTresorerieId = row.getAttribute('data-compte-tresorerie-id');
+            
             ecritures.push({
                 date: dateCommune, // Utiliser la date commune
                 n_saisie: nSaisie,
@@ -1584,7 +1599,8 @@ function ajouterEcriture() {
                 piece_justificatif: pieceFileName, // Utiliser le nom du fichier commun
                 plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
                 id_exercice: formData.get('id_exercice'),
-                journaux_saisis_id: formData.get('journaux_saisis_id')
+                journaux_saisis_id: formData.get('journaux_saisis_id'),
+                compte_tresorerie_id: compteTresorerieId || null // Ajout de l'ID du compte de trésorerie
             });
         });
 

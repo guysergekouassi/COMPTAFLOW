@@ -278,7 +278,8 @@ class EcritureComptableController extends Controller
                 'piece_justificatif' => $pieceFilename,
                 // MODIFICATION : Utilise l'ID fourni ou l'exercice actif détecté
                 'exercices_comptables_id' => $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? $exerciceActif->id,
-                'journaux_saisis_id' => $data['journaux_saisis_id'] ?? $data['journal_saisi_id'] ?? null
+                'journaux_saisis_id' => $data['journaux_saisis_id'] ?? $data['journal_saii_id'] ?? null,
+                'compte_tresorerie_id' => $data['compte_tresorerie_id'] ?? null
             ]);
         }
         DB::commit();
