@@ -82,13 +82,16 @@ public function index()
     public function store(Request $request)
     {
         $request->validate([
-            'code_journal' => 'required|string|max:50',
+            'code_journal' => ['required', 'string', 'max:4', 'regex:/^[A-Z0-9]{1,4}$/'],
             'intitule' => 'required|string|max:255',
             'traitement_analytique' => 'required|in:oui,non',
             'type' => 'nullable|string',
             'compte_de_contrepartie' => 'nullable|string',
             'compte_de_tresorerie' => 'nullable|exists:plan_comptables,id',
             'rapprochement_sur' => 'nullable|string|in:Contrepartie,tresorerie',
+        ], [
+            'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
+            'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'
         ]);
 
         try {
@@ -128,13 +131,16 @@ public function index()
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'code_journal' => 'required|string|max:50',
+            'code_journal' => ['required', 'string', 'max:4', 'regex:/^[A-Z0-9]{1,4}$/'],
             'intitule' => 'required|string|max:255',
             'traitement_analytique' => 'nullable|in:0,1',
             'type' => 'nullable|string',
             'compte_de_contrepartie' => 'nullable|string',
             'compte_de_tresorerie' => 'nullable|exists:plan_comptables,id',
             'rapprochement_sur' => 'nullable|string|in:Contrepartie,tresorerie',
+        ], [
+            'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
+            'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'
         ]);
 
         try {

@@ -305,7 +305,16 @@
                         <div class="row g-3">
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Code Journal *</label>
-                                <input type="text" name="code_journal" class="input-field-premium" required placeholder="ex: VT">
+                               <input
+                                type="text"
+                                name="code_journal"
+                                class="input-field-premium uppercase-input"
+                                maxlength="4"
+                                pattern="[A-Z0-9]{1,4}"
+                                title="4 caractères maximum, lettres et chiffres uniquement"
+                                required
+                                placeholder="ex: VT"
+                            >
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
@@ -380,7 +389,7 @@
                         <div class="row g-3">
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Code Journal * (4 caractères max)</label>
-                               <input
+                              <input
                                 type="text"
                                 id="update_code_journal"
                                 name="code_journal"
@@ -390,6 +399,7 @@
                                 title="4 caractères maximum, lettres et chiffres uniquement"
                                 required
                             >
+
                                 <script>
                                 function formatCodeJournal(input) {
                                     // Convertir en majuscules et ne garder que les lettres et chiffres
@@ -504,19 +514,30 @@
     <script>
         const accounting_journalsUpdateBaseUrl = "{{ route('accounting_journals.update', ['id' => '__ID__']) }}";
         const accounting_journalsDeleteUrl = "{{ route('accounting_journals.destroy', ['id' => '__ID__']) }}";
-       
 
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 SCRIPT JOURNAUX INITIALISÉ");
-         const input = document.getElementById("update_code_journal");
 
-         
-    input.addEventListener("input", () => {
-        input.value = input.value
-            .replace(/[^A-Z0-9]/gi, '') // lettres + chiffres uniquement
-            .toUpperCase()              // majuscules
-            .slice(0, 4);               // max 4 caractères
-    });
+            // Fonction pour forcer le format du code journal
+            function enforceCodeJournal(input) {
+                if (!input) return;
+                
+                input.addEventListener("input", () => {
+                    input.value = input.value
+                        .replace(/[^A-Z0-9]/gi, '')
+                        .toUpperCase()
+                        .slice(0, 4);
+                });
+            }
+
+            // Gestion du champ de mise à jour
+            const updateInput = document.getElementById("update_code_journal");
+            enforceCodeJournal(updateInput);
+
+            // Gestion du champ de création
+            const createInput = document.querySelector('#modalCreateCodeJournal input[name="code_journal"]');
+            enforceCodeJournal(createInput);
+
             const initDataTable = () => {
                 if (typeof $ !== 'undefined' && $.fn.dataTable) {
                     const table = $('#JournalTable').DataTable({
