@@ -57,7 +57,7 @@
                         </div>
 
                         <!-- KPI 3: Plans Comptables créés -->
-                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                        <!-- <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
                                     <i class="fa-solid fa-file-lines text-white text-xl"></i>
@@ -66,10 +66,10 @@
                             </div>
                             <h6 class="text-gray-600 font-medium mb-2">Plans Comptables</h6>
                             <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($plansToday ?? 0) }}</h3>
-                        </div>
+                        </div> -->
 
                         <!-- KPI 4: Exercices comptables créés -->
-                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                        <!-- <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
                                     <i class="fa-solid fa-calendar-days text-white text-xl"></i>
@@ -78,7 +78,7 @@
                             </div>
                             <h6 class="text-gray-600 font-medium mb-2">Exercices Comptables</h6>
                             <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($exercicesToday ?? 0) }}</h3>
-                        </div>
+                        </div> -->
                     </div>
 
 
