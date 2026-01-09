@@ -633,16 +633,15 @@
                                         <input type="text" id="reference_piece" name="reference_piece" class="form-control" placeholder="N° Facture, Chèque..." />
                                         <small class="form-text text-muted">Commun à toutes les lignes</small>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label for="Compte_Trésorerie" class="form-label">
-                                            <i class="bx bx-receipt"></i>Compte  Trésorerie
+                                                                    <div class="col-md-4" id="div_compte_tresorerie" style="display: none;"> <label for="compte_tresorerie" class="form-label">
+                                            <i class="bx bx-receipt"></i>Compte Trésorerie
                                         </label>
-                                     <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2">
-        <option value="" selected disabled>Sélectionner le compte de trésorerie</option>
-        @foreach($comptesTresorerie as $treso)
-            <option value="{{ $treso->id }}">{{ $treso->name }}</option>
-        @endforeach
-    </select>
+                                        <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2">
+                                            <option value="" selected disabled>Chargement...</option>
+                                            @foreach($comptesTresorerie as $treso)
+                                                <option value="{{ $treso->id }}">{{ $treso->name }}</option>
+                                            @endforeach
+                                        </select>
                                         <small class="form-text text-muted">Compte automatique pour ce journal</small>
                                     </div>
                                     <div class="col-md-8">
@@ -1456,6 +1455,56 @@ function ajouterEcriture() {
         const journalId = document.getElementById('imputation').value;
         if(journalId) {
             chargerCompteTresorerie(journalId);
+        }
+        
+        // 1. Récupérer le code du journal actuel
+        const codeJournalInput = document.getElementById('code_journal_affiche');
+        if (codeJournalInput) {
+            const codeJournal = codeJournalInput.value;
+            const divTreso = document.getElementById('div_compte_tresorerie');
+            
+            // 2. Définir les préfixes considérés comme "trésorerie"
+            const prefixesTresorerie = ['BQ', 'CA', 'CH', 'CS', 'BANQUE', 'CAISSE'];
+            
+            // 3. Fonction de vérification
+            function verifierTypeJournal(code) {
+                // Vérifie si le code commence par un des préfixes de trésorerie
+                const estTresorerie = prefixesTresorerie.some(prefix => 
+                    code && code.toUpperCase().startsWith(prefix)
+                );
+                
+                if (divTreso) {
+                    if (estTresorerie) {
+                        divTreso.style.display = 'block'; // Afficher
+                        // Rendre le champ requis s'il est affiché
+                        const compteTresorerie = document.getElementById('compte_tresorerie');
+                        if (compteTresorerie) {
+                            compteTresorerie.setAttribute('required', 'required');
+                        }
+                    } else {
+                        divTreso.style.display = 'none';  // Cacher
+                        const compteTresorerie = document.getElementById('compte_tresorerie');
+                        if (compteTresorerie) {
+                            compteTresorerie.removeAttribute('required');
+                        }
+                    }
+                }
+            }
+            
+            // Exécuter la vérification immédiatement
+            if (codeJournal && codeJournal !== 'N/A') {
+                verifierTypeJournal(codeJournal);
+            }
+            
+            // Ajouter un écouteur sur le changement de journal
+            const imputationSelect = document.getElementById('imputation');
+            if (imputationSelect) {
+                imputationSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const codeJournal = selectedOption.getAttribute('data-code') || '';
+                    verifierTypeJournal(codeJournal);
+                });
+            }
         }
 
         // Gérer l'exclusivité entre débit et crédit
