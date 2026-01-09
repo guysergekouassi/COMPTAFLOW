@@ -699,24 +699,30 @@
                                 
                                 <div class="row g-4">
                                     <div class="col-md-6">
-                                        <label for="compte_general" class="form-label">
-                                            <i class="bx bx-folder-open"></i>Compte Général <span class="text-danger">*</span>
-                                        </label>
-                                        <select id="compte_general" name="compte_general"
-                                            class="form-select select2 w-100" data-live-search="true"
-                                            title="Sélectionner un compte général" required>
-                                            <option value="" selected disabled>Sélectionner un compte</option>
-                                            @if(isset($plansComptables))
-                                                @foreach ($plansComptables as $plan)
-                                                    <option value="{{ $plan->id }}"
-                                                        data-intitule_compte_general="{{ $plan->numero_de_compte }}">
-                                                        {{ $plan->numero_de_compte }} -
-                                                        {{ $plan->intitule }}
-                                                    </option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
+    <label for="compte_general" class="form-label fw-bold text-dark">
+        <i class="bx bx-folder-open text-primary"></i> Compte Général <span class="text-danger">*</span>
+    </label>
+    <div class="input-group input-group-merge">
+        <span class="input-group-text"><i class="bx bx-search-alt text-primary"></i></span>
+        <select id="compte_general" name="compte_general"
+            class="form-select select2 w-100" 
+            required
+            data-placeholder="Rechercher par numéro ou intitulé..."
+            style="width: 100%;">
+            <option value=""></option> @if(isset($plansComptables))
+                @foreach ($plansComptables as $plan)
+                    <option value="{{ $plan->id }}"
+                        data-intitule_compte_general="{{ $plan->numero_de_compte }}"
+                        data-numero="{{ $plan->numero_de_compte }}"
+                        data-intitule="{{ $plan->intitule }}">
+                        {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                    </option>
+                @endforeach
+            @endif
+        </select>
+    </div>
+    <div class="form-text text-muted" style="font-size: 0.75rem;">Tapez les premiers chiffres pour filtrer rapidement.</div>
+</div>
                                     <div class="col-md-6">
                                         <label for="compte_tiers" class="form-label">
                                             <i class="bx bx-user"></i>Compte Tiers (Le cas échéant)
