@@ -198,6 +198,17 @@
                                                         const compteGeneralValue = compteGeneral.options[compteGeneral.selectedIndex].text;
                                                         const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
                                                         
+                                                        // Détermination automatique du type de flux
+                                                        const debitVal = parseFloat(document.getElementById('debit').value) || 0;
+                                                        const creditVal = parseFloat(document.getElementById('credit').value) || 0;
+                                                        let typeFluxAutomatique = '';
+
+                                                        if (creditVal > 0) {
+                                                            typeFluxAutomatique = 'decaissement';
+                                                        } else if (debitVal > 0) {
+                                                            typeFluxAutomatique = 'encaissement';
+                                                        }
+                                                        
                                                         // Créer la nouvelle ligne
                                                         const tbody = document.querySelector('#ecrituresTable tbody');
                                                         const newRow = tbody.insertRow();

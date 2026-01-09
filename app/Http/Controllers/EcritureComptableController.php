@@ -194,17 +194,16 @@ class EcritureComptableController extends Controller
             $data['piece_justificatif'] = $filename;
         }
 
-        // --- LOGIQUE AUTOMATIQUE DU TYPE DE FLUX ---
-        $debitValue = $request->debit ?? 0;
-        $creditValue = $request->credit ?? 0;
+        // Déterminer automatiquement le type de flux en fonction des montants
+        $debit = $data['debit'] ?? 0;
+        $credit = $data['credit'] ?? 0;
         $typeFlux = null;
 
-        if ($creditValue > 0) {
-            $typeFlux = 'decaissement'; // Crédit rempli = Décaissement
-        } elseif ($debitValue > 0) {
-            $typeFlux = 'encaissement';  // Débit rempli = Encaissement
+        if ($credit > 0) {
+            $typeFlux = 'decaissement'; // Une sortie d'argent est un crédit en trésorerie
+        } elseif ($debit > 0) {
+            $typeFlux = 'encaissement';  // Une entrée d'argent est un débit en trésorerie
         }
-
         // Préparer les données pour la création
         $ecritureData = [
             'company_id' => $activeCompanyId,
@@ -217,11 +216,11 @@ class EcritureComptableController extends Controller
             'reference_piece' => $data['reference_piece'] ?? null,
             'plan_comptable_id' => $data['plan_comptable_id'],
             'plan_tiers_id' => $data['plan_tiers_id'] ?? null,
-            'debit' => $debitValue,
-            'credit' => $creditValue,
-            'type_flux' => $typeFlux, // Ajout du type_flux automatisé
+            'debit' => $debit,
+            'credit' => $credit,
+            'type_flux' => $typeFlux, // Utilisation de la variable calculée
             'plan_analytique' => $data['plan_analytique'] ?? false,
-            'compte_tresorerie_id' => $request->compte_tresorerie_id, // On force la récupération directe
+            'compte_tresorerie_id' => $request->compte_tresorerie_id ?? $data['compte_tresorerie_id'] ?? null,
             'piece_justificatif' => $data['piece_justificatif'] ?? null,
         ];
 
