@@ -457,7 +457,7 @@
 
                     <div class="grid grid-cols-2 gap-4 pt-8">
                         <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">Annuler</button>
-                       <button type="submit" class="btn-save-premium shadow-blue-200">Enregistrer</button>
+                        <button type="submit" class="btn-save-premium" style="background-color: #1e40af !important; color: white !important; border: none !important; padding: 0.75rem 1.5rem !important; border-radius: 12px !important; font-weight: 600 !important; transition: all 0.2s ease-in-out !important;">Enregistrer</button>
                     </div>
                 </form>
             </div>
