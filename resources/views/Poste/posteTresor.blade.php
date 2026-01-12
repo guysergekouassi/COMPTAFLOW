@@ -492,25 +492,31 @@
 
     <!-- Modal : Prévisualisation PDF (XL) -->
     <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content premium-modal-content" style="max-width: 90% !important;">
-                <div class="flex justify-between items-center mb-4">
-                    <h5 class="text-lg font-bold text-slate-800 uppercase tracking-tight">Aperçu du Plan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <iframe id="pdfPreviewFrame" class="w-full h-[75vh] border-0 rounded-2xl bg-slate-50" src=""></iframe>
-                <div class="flex justify-end gap-3 mt-6">
-                    <a href="#" id="exportCsvLink" class="px-6 py-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-xs uppercase tracking-widest transition flex items-center gap-2 border border-emerald-100 shadow-sm" target="_blank">
-                        <i class="fas fa-file-csv"></i> Exporter CSV
-                    </a>
-                    <a href="#" id="downloadPdfLink" class="btn-save-premium !w-auto px-8 flex items-center justify-center gap-2" target="_blank">
-                        <i class="fas fa-file-pdf"></i> Télécharger PDF
-                    </a>
-                    <button type="button" class="btn-cancel-premium !w-auto px-8" data-bs-dismiss="modal">Fermer</button>
-                </div>
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
+        <div class="modal-content premium-modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h5 class="text-lg font-bold text-slate-800 uppercase tracking-tight">Aperçu du Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <iframe id="pdfPreviewFrame"
+                style="width:100%; height:85vh; border:0; border-radius:16px; background:#f8fafc;"
+                src="">
+            </iframe>
+
+            <div class="flex justify-end gap-3 mt-4">
+                <a href="#" id="exportCsvLink" class="px-6 py-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-xs uppercase tracking-widest transition flex items-center gap-2 border border-emerald-100 shadow-sm" target="_blank">
+                    <i class="fas fa-file-csv"></i> Exporter CSV
+                </a>
+                <a href="#" id="downloadPdfLink" class="btn-save-premium !w-auto px-8 flex items-center justify-center gap-2" target="_blank">
+                    <i class="fas fa-file-pdf"></i> Télécharger PDF
+                </a>
+                <button type="button" class="btn-cancel-premium !w-auto px-8" data-bs-dismiss="modal">Fermer</button>
             </div>
         </div>
     </div>
+</div>
+
 
     @include('components.footer')
 
