@@ -547,9 +547,13 @@ public function generatePdf(Request $request)
 
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
+        
+        // Récupérer le nom de la compagnie
+        $company = \App\Models\Company::find($companyId);
+        $companyName = $company ? $company->name : 'Compagnie inconnue';
 
         // 2. Charger la vue Blade avec les données
-        $data = compact('cashFlowData', 'totals', 'startDate', 'endDate');
+        $data = compact('cashFlowData', 'totals', 'startDate', 'endDate', 'companyName');
         $pdf = Pdf::loadView('Tresor.cashflow_pdf', $data); // Assurez-vous que la vue 'cashflow_pdf' existe
 
         // 3. Retourner la réponse en streaming

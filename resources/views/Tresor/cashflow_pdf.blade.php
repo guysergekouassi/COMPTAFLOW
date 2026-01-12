@@ -123,10 +123,20 @@
         .detail-amount {
             width: 80px; /* Largeur fixe pour Débit/Crédit */
         }
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1a365d;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
     <div class="header">
+        <div class="company-name">{{ $companyName ?? 'Compagnie non spécifiée' }}</div>
         <h1>PLAN DE TRÉSORERIE - FLUX MENSUELS</h1>
         <div class="period">Période du {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} au {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</div>
     </div>
