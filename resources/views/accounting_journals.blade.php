@@ -366,7 +366,7 @@
                     </div>
                     <div class="modal-footer border-0 pt-0">
                         <button type="button" class="btn bg-slate-100 text-slate-500 font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn bg-blue-700 text-white font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0 shadow-lg shadow-blue-200 hover:bg-blue-800 transition">Enregistrer</button>
+                        <button type="submit" class="btn font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0 shadow-lg shadow-blue-200 hover:bg-blue-800 transition" style="color: white; background-color: #1d4ed8;">Enregistrer</button>
                     </div>
                 </form>
             </div>
@@ -785,6 +785,37 @@
             };
 
             initDataTable();
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            function toggleTresorerie(selectEl) {
+                const value = $(selectEl).val();
+                const isTresorerie = value === "Tresorerie";
+
+                const optionsId = $(selectEl).attr('id') === 'type_select'
+                    ? '#tresorerie_options'
+                    : '#update_tresorerie_options';
+
+                if (isTresorerie) {
+                    $(optionsId).removeClass('d-none');
+                } else {
+                    $(optionsId).addClass('d-none');
+                }
+            }
+
+            // Au changement
+            $('#type_select, #update_type').on('change', function () {
+                toggleTresorerie(this);
+            });
+
+            // Quand le modal s'ouvre, on force la vérification
+            $('#createJournalModal, #updateJournalModal').on('shown.bs.modal', function () {
+                $('#type_select, #update_type').each(function () {
+                    toggleTresorerie(this);
+                });
+            });
         });
     </script>
 </body>
