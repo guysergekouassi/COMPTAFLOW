@@ -457,7 +457,7 @@
 
                     <div class="grid grid-cols-2 gap-4 pt-8">
                         <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn-save-premium shadow-blue-200">Enregistrer</button>
+                       <button type="submit" class="btn-save-premium bg-blue-600 text-white px-4 py-2 rounded shadow-blue-200 hover:bg-blue-700"> Enregistrer</button>
                     </div>
                 </form>
             </div>
