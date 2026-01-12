@@ -402,7 +402,7 @@
                             </div>
                         </div>
 
-                        <div>
+                        <!-- <div>
                             <label class="input-label-premium">Compte de contrepartie *</label>
                             <select name="compte_de_contrepartie" class="input-field-premium" required>
                                 <option value="" disabled selected>-- Sélectionner --</option>
@@ -412,7 +412,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                        </div>
+                        </div> -->
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
