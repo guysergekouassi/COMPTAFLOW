@@ -443,6 +443,9 @@
                                                         </td>
                                                         <td class="px-4 py-3 text-center whitespace-nowrap" rowspan="{{ $rowCount }}">
                                                             <div class="flex items-center justify-center space-x-2">
+                                                                <a href="#" class="p-1.5 text-warning hover:text-yellow-700 transition-colors duration-200" title="Modifier l'écriture" data-id="{{ $ecriture->id }}">
+                                                                    <i class="bx bx-edit-alt"></i>
+                                                                </a>
                                                                 <a href="{{ route('ecriture.show', $ecriture->id) }}" class="p-1.5 text-info hover:text-blue-800 transition-colors duration-200" title="Voir l'écriture complète">
                                                                     <i class="bx bx-show text-xl"></i>
                                                                 </a>
@@ -625,6 +628,120 @@
           </div>
       </div>
 
+      <!-- Modal de modification d'écriture -->
+      <div class="modal fade" id="editEcritureModal" tabindex="-1" aria-labelledby="editEcritureModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" style="max-width: 98vw; width: 98vw; margin: auto;">
+              <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem; max-height: 90vh; overflow-y: auto;">
+                  <form id="formEditEcriture" method="POST">
+                      @csrf
+                      @method('PUT')
+                      <input type="hidden" id="edit_ecriture_id" name="id">
+
+                      <div class="text-center mb-3 position-relative">
+                          <h5 class="modal-title fw-bold" id="editEcritureModalLabel">Modifier l'écriture comptable</h5>
+                          <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+
+                      <div class="modal-body" style="padding: 0;">
+                          <div class="row g-2 mb-3">
+                              <div class="col-md-4">
+                                  <label for="edit_date" class="input-label-premium" style="font-size: 0.7rem;">Date</label>
+                                  <input type="date" id="edit_date" name="date" class="input-field-premium" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
+                              </div>
+                              <div class="col-md-4">
+                                  <label for="edit_n_saisie" class="input-label-premium" style="font-size: 0.7rem;">N° de saisie</label>
+                                  <input type="text" id="edit_n_saisie" name="n_saisie" class="input-field-premium" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" readonly />
+                              </div>
+                              <div class="col-md-4">
+                                  <label for="edit_code_journal_id" class="input-label-premium" style="font-size: 0.7rem;">Code Journal</label>
+                                  <select id="edit_code_journal_id" name="code_journal_id" class="input-field-premium" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
+                                      @foreach($codeJournaux ?? [] as $journal)
+                                          <option value="{{ $journal->id }}">{{ $journal->code_journal }} - {{ $journal->libelle }}</option>
+                                      @endforeach
+                                  </select>
+                              </div>
+                          </div>
+
+                          <div class="row g-2 mb-3">
+                              <div class="col-12">
+                                  <label for="edit_description_operation" class="input-label-premium" style="font-size: 0.7rem;">Description</label>
+                                  <input type="text" id="edit_description_operation" name="description_operation" class="input-field-premium" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
+                              </div>
+                          </div>
+
+                          <div class="row g-2 mb-3">
+                              <div class="col-md-6">
+                                  <label for="edit_plan_comptable_id" class="input-label-premium" style="font-size: 0.7rem;">Compte Général</label>
+                                  <select id="edit_plan_comptable_id" name="plan_comptable_id" class="input-field-premium" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
+                                      <option value="">Sélectionner un compte</option>
+                                      @foreach($plansComptables ?? [] as $compte)
+                                          <option value="{{ $compte->id }}">{{ $compte->numero_de_compte }} - {{ $compte->intitule }}</option>
+                                      @endforeach
+                                  </select>
+                              </div>
+                              <div class="col-md-6">
+                                  <label for="edit_plan_tiers_id" class="input-label-premium" style="font-size: 0.7rem;">Compte Tiers</label>
+                                  <select id="edit_plan_tiers_id" name="plan_tiers_id" class="input-field-premium" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
+                                      <option value="">Sélectionner un tiers</option>
+                                      @foreach($plansTiers ?? [] as $tiers)
+                                          <option value="{{ $tiers->id }}">{{ $tiers->numero_de_tiers }} - {{ $tiers->intitule }}</option>
+                                      @endforeach
+                                  </select>
+                              </div>
+                          </div>
+
+                          <div class="row g-2 mb-3">
+                              <div class="col-md-3">
+                                  <label for="edit_debit" class="input-label-premium" style="font-size: 0.7rem;">Débit</label>
+                                  <input type="number" step="0.01" id="edit_debit" name="debit" class="input-field-premium" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
+                              </div>
+                              <div class="col-md-3">
+                                  <label for="edit_credit" class="input-label-premium" style="font-size: 0.7rem;">Crédit</label>
+                                  <input type="number" step="0.01" id="edit_credit" name="credit" class="input-field-premium" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
+                              </div>
+                              <div class="col-md-3">
+                                  <label for="edit_reference_piece" class="input-label-premium" style="font-size: 0.7rem;">Référence Pièce</label>
+                                  <input type="text" id="edit_reference_piece" name="reference_piece" class="input-field-premium" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;" />
+                              </div>
+                              <div class="col-md-3">
+                                  <label for="edit_plan_analytique" class="input-label-premium" style="font-size: 0.7rem;">Analytique</label>
+                                  <select id="edit_plan_analytique" name="plan_analytique" class="input-field-premium" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
+                                      <option value="0">Non</option>
+                                      <option value="1">Oui</option>
+                                  </select>
+                              </div>
+                          </div>
+
+                          <div class="row g-2 mb-3">
+                              <div class="col-md-6">
+                                  <label for="edit_compte_tresorerie_id" class="input-label-premium" style="font-size: 0.7rem;">Compte de trésorerie</label>
+                                  <select id="edit_compte_tresorerie_id" name="compte_tresorerie_id" class="input-field-premium" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
+                                      <option value="">Sélectionner un compte</option>
+                                      @foreach($comptesTresorerie ?? [] as $compte)
+                                          <option value="{{ $compte->id }}">{{ $compte->name }} ({{ $compte->type }})</option>
+                                      @endforeach
+                                  </select>
+                              </div>
+                              <div class="col-md-6">
+                                  <label for="edit_piece_justificative" class="input-label-premium" style="font-size: 0.7rem;">Pièce justificative</label>
+                                  <input type="file" id="edit_piece_justificative" name="piece_justificative" class="input-field-premium" accept=".pdf,.jpg,.jpeg,.png" style="padding: 0.5rem 0.875rem; font-size: 0.8rem;" />
+                                  <div id="current_piece" class="mt-1 text-sm text-slate-500"></div>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div class="d-flex gap-2 mt-3 pt-3" style="border-top: 1px solid #e2e8f0;">
+                          <button type="button" class="btn btn-cancel-premium flex-fill" data-bs-dismiss="modal" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
+                              <i class="bx bx-x me-1"></i>Annuler
+                          </button>
+                          <button type="submit" class="btn-save-premium flex-fill" style="padding: 0.75rem 1rem; font-size: 0.8rem;">
+                              <i class="bx bx-check me-1"></i>Enregistrer les modifications
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      </div>
     </body>
 
 </html>
@@ -909,6 +1026,101 @@
             document.getElementById('libelleEcriture').value = selectedItem.dataset.libelle;
         }
     }
+
+    // Fonction pour charger les données d'une écriture dans le modal de modification
+    function loadEcritureData(ecritureId) {
+        fetch(`/ecriture/${ecritureId}/edit`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.ecriture) {
+                    const ecriture = data.ecriture;
+                    
+                    // Formater la date au format YYYY-MM-DD
+                    const formatDate = (dateString) => {
+                        if (!dateString) return '';
+                        const date = new Date(dateString);
+                        return date.toISOString().split('T')[0];
+                    };
+                    
+                    // Remplir le formulaire avec les données de l'écriture
+                    document.getElementById('edit_ecriture_id').value = ecriture.id;
+                    document.getElementById('edit_date').value = formatDate(ecriture.date);
+                    document.getElementById('edit_n_saisie').value = ecriture.n_saisie || '';
+                    document.getElementById('edit_code_journal_id').value = ecriture.code_journal_id || '';
+                    document.getElementById('edit_description_operation').value = ecriture.description_operation || '';
+                    document.getElementById('edit_plan_comptable_id').value = ecriture.plan_comptable_id || '';
+                    document.getElementById('edit_plan_tiers_id').value = ecriture.plan_tiers_id || '';
+                    document.getElementById('edit_debit').value = ecriture.debit || '0.00';
+                    document.getElementById('edit_credit').value = ecriture.credit || '0.00';
+                    document.getElementById('edit_reference_piece').value = ecriture.reference_piece || '';
+                    document.getElementById('edit_plan_analytique').value = ecriture.plan_analytique ? '1' : '0';
+                    document.getElementById('edit_compte_tresorerie_id').value = ecriture.compte_tresorerie_id || '';
+                    
+                    // Afficher la pièce jointe actuelle si elle existe
+                    const currentPiece = document.getElementById('current_piece');
+                    if (ecriture.piece_justificatif) {
+                        currentPiece.innerHTML = `Pièce jointe actuelle: <a href="/justificatifs/${ecriture.piece_justificatif}" target="_blank" class="text-blue-600 hover:underline">Voir le fichier</a>`;
+                    } else {
+                        currentPiece.textContent = 'Aucune pièce jointe';
+                    }
+                    
+                    // Afficher le modal
+                    const modal = new bootstrap.Modal(document.getElementById('editEcritureModal'));
+                    modal.show();
+                } else {
+                    alert(data.message || 'Erreur lors du chargement des données de l\'écriture');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue lors du chargement des données. Veuillez réessayer.');
+            });
+    }
+
+    // Gestion de la soumission du formulaire de modification
+    document.getElementById('formEditEcriture').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const ecritureId = document.getElementById('edit_ecriture_id').value;
+        
+        fetch(`/ecriture/${ecritureId}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-HTTP-Method-Override': 'PUT'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Écriture mise à jour avec succès');
+                window.location.reload();
+            } else {
+                alert('Erreur lors de la mise à jour: ' + (data.message || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Une erreur est survenue lors de la mise à jour');
+        });
+    });
+
+    // Gestion du clic sur le bouton Modifier
+    document.addEventListener('click', function(e) {
+        const editButton = e.target.closest('a[title="Modifier l\'écriture"]');
+        if (editButton) {
+            e.preventDefault();
+            const ecritureId = editButton.getAttribute('data-id');
+            loadEcritureData(ecritureId);
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
         initSearchSelect('compteGeneralSearch', 'compteGeneralDropdown', 'compteGeneralEcriture');

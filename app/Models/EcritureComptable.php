@@ -30,7 +30,7 @@ class EcritureComptable extends Model
         'debit',
         'credit',
         'compte_tresorerie_id',
-        // 'type_flux',
+        //  'type_flux',
         'user_id',
         'company_id',
     ];

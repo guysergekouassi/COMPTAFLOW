@@ -74,21 +74,34 @@ public function index()
         ->get();
 
 
-    // 7. On passe la variable ENRICHIE ($code_journaux) à la vue.
-    // 🔑 FIX : Utilisez $code_journaux dans compact()
-    return view('accounting_journals', compact('code_journaux', 'totalJournauxCompany', 'userCreatedJournaux', 'comptesTresorerie'));
+    // Récupérer les comptes commençant par 5 (comptes de trésorerie)
+    $comptesCinq = PlanComptable::where('numero_de_compte', 'like', '5%')
+        ->where('company_id', $this->getCurrentCompanyId())
+        ->get();
+
+    // 7. On passe les variables à la vue
+    return view('accounting_journals', compact(
+        'code_journaux', 
+        'totalJournauxCompany', 
+        'userCreatedJournaux', 
+        'comptesTresorerie',
+        'comptesCinq'
+    ));
 }
 
     public function store(Request $request)
     {
         $request->validate([
-            'code_journal' => 'required|string|max:50',
+            'code_journal' => ['required', 'string', 'max:4', 'regex:/^[A-Z0-9]{1,4}$/'],
             'intitule' => 'required|string|max:255',
             'traitement_analytique' => 'required|in:oui,non',
             'type' => 'nullable|string',
             'compte_de_contrepartie' => 'nullable|string',
             'compte_de_tresorerie' => 'nullable|exists:plan_comptables,id',
             'rapprochement_sur' => 'nullable|string|in:Contrepartie,tresorerie',
+        ], [
+            'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
+            'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'
         ]);
 
         try {
@@ -128,13 +141,16 @@ public function index()
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'code_journal' => 'required|string|max:50',
+            'code_journal' => ['required', 'string', 'max:4', 'regex:/^[A-Z0-9]{1,4}$/'],
             'intitule' => 'required|string|max:255',
             'traitement_analytique' => 'nullable|in:0,1',
             'type' => 'nullable|string',
             'compte_de_contrepartie' => 'nullable|string',
             'compte_de_tresorerie' => 'nullable|exists:plan_comptables,id',
             'rapprochement_sur' => 'nullable|string|in:Contrepartie,tresorerie',
+        ], [
+            'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
+            'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'
         ]);
 
         try {

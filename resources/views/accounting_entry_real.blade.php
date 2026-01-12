@@ -633,14 +633,16 @@
                                         <input type="text" id="reference_piece" name="reference_piece" class="form-control" placeholder="N° Facture, Chèque..." />
                                         <small class="form-text text-muted">Commun à toutes les lignes</small>
                                     </div>
-                                    <div class="col-md-4" id="container_compte_tresorerie" style="display: none;">
-                                        <label for="compte_tresorerie" class="form-label">
-                                            <i class="bx bx-wallet"></i>Compte de Trésorerie
+                                                                    <div class="col-md-4" id="div_compte_tresorerie" style="display: none;"> <label for="compte_tresorerie" class="form-label">
+                                            <i class="bx bx-receipt"></i>Compte Trésorerie
                                         </label>
                                         <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2">
                                             <option value="" selected disabled>Chargement...</option>
+                                            @foreach($comptesTresorerie as $treso)
+                                                <option value="{{ $treso->id }}">{{ $treso->name }}</option>
+                                            @endforeach
                                         </select>
-                                        <small class="form-text text-primary">Compte automatique pour ce journal</small>
+                                        <small class="form-text text-muted">Compte automatique pour ce journal</small>
                                     </div>
                                     <div class="col-md-8">
                                         <label for="piece_justificatif" class="form-label">
@@ -1056,6 +1058,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     const createTiersModalEl = document.getElementById('createTiersModal');
+ 
     if (!createTiersModalEl) return;
 
     // Use Bootstrap's Modal instance
@@ -1249,6 +1252,12 @@ function ajouterEcriture() {
             alert('Tableau des écritures introuvable.');
             return;
         }
+        
+        // Récupérer l'ID du compte de trésorerie s'il est visible
+        const compteTresorerieSelect = document.getElementById('compte_tresorerie');
+        const compteTresorerieId = compteTresorerieSelect && 
+                                 window.getComputedStyle(compteTresorerieSelect.parentElement).display !== 'none' ? 
+                                 compteTresorerieSelect.value : '';
 
         const newRow = tbody.insertRow();
 
@@ -1260,6 +1269,11 @@ function ajouterEcriture() {
 
         // Stocker le fichier globalement pour la visualisation
         let globalPieceFile = null;
+        
+        // Stocker l'ID du compte de trésorerie dans la ligne
+        if (compteTresorerieId) {
+            newRow.setAttribute('data-compte-tresorerie-id', compteTresorerieId);
+        }
         
         // Créer les cellules une par une pour pouvoir ajouter des attributs
         const cells = [
@@ -1273,7 +1287,8 @@ function ajouterEcriture() {
             debit.value || '',
             credit.value || '',
             '', // Pièce justificative - sera rempli avec le bouton Voir
-            analytiqueValue
+            analytiqueValue,
+            compteTresorerieId // Ajout de l'ID du compte de trésorerie
         ];
 
         // Ajouter chaque cellule avec son contenu
@@ -1448,6 +1463,62 @@ function ajouterEcriture() {
     document.addEventListener('DOMContentLoaded', function() {
         fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
         
+        // Détection du journal au chargement
+        const journalId = document.getElementById('imputation').value;
+        if(journalId) {
+            chargerCompteTresorerie(journalId);
+        }
+        
+        // 1. Récupérer le code du journal actuel
+        const codeJournalInput = document.getElementById('code_journal_affiche');
+        if (codeJournalInput) {
+            const codeJournal = codeJournalInput.value;
+            const divTreso = document.getElementById('div_compte_tresorerie');
+            
+            // 2. Définir les préfixes considérés comme "trésorerie"
+            const prefixesTresorerie = ['BQ', 'CA', 'CH', 'CS', 'BANQUE', 'CAISSE'];
+            
+            // 3. Fonction de vérification
+            function verifierTypeJournal(code) {
+                // Vérifie si le code commence par un des préfixes de trésorerie
+                const estTresorerie = prefixesTresorerie.some(prefix => 
+                    code && code.toUpperCase().startsWith(prefix)
+                );
+                
+                if (divTreso) {
+                    if (estTresorerie) {
+                        divTreso.style.display = 'block'; // Afficher
+                        // Rendre le champ requis s'il est affiché
+                        const compteTresorerie = document.getElementById('compte_tresorerie');
+                        if (compteTresorerie) {
+                            compteTresorerie.setAttribute('required', 'required');
+                        }
+                    } else {
+                        divTreso.style.display = 'none';  // Cacher
+                        const compteTresorerie = document.getElementById('compte_tresorerie');
+                        if (compteTresorerie) {
+                            compteTresorerie.removeAttribute('required');
+                        }
+                    }
+                }
+            }
+            
+            // Exécuter la vérification immédiatement
+            if (codeJournal && codeJournal !== 'N/A') {
+                verifierTypeJournal(codeJournal);
+            }
+            
+            // Ajouter un écouteur sur le changement de journal
+            const imputationSelect = document.getElementById('imputation');
+            if (imputationSelect) {
+                imputationSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const codeJournal = selectedOption.getAttribute('data-code') || '';
+                    verifierTypeJournal(codeJournal);
+                });
+            }
+        }
+
         // Gérer l'exclusivité entre débit et crédit
         const debitField = document.getElementById('debit');
         const creditField = document.getElementById('credit');
@@ -1512,6 +1583,9 @@ function ajouterEcriture() {
             const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
             
+            // Récupérer l'ID du compte de trésorerie depuis l'attribut de la ligne
+            const compteTresorerieId = row.getAttribute('data-compte-tresorerie-id');
+            
             ecritures.push({
                 date: dateCommune, // Utiliser la date commune
                 n_saisie: nSaisie,
@@ -1525,7 +1599,8 @@ function ajouterEcriture() {
                 piece_justificatif: pieceFileName, // Utiliser le nom du fichier commun
                 plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
                 id_exercice: formData.get('id_exercice'),
-                journaux_saisis_id: formData.get('journaux_saisis_id')
+                journaux_saisis_id: formData.get('journaux_saisis_id'),
+                compte_tresorerie_id: compteTresorerieId || null // Ajout de l'ID du compte de trésorerie
             });
         });
 
@@ -1848,6 +1923,24 @@ function ajouterEcriture() {
     }
     
     // Fonction pour modifier une écriture
+    // Fonction pour charger le compte de trésorerie en fonction du journal sélectionné
+    function chargerCompteTresorerie(journalId) {
+        fetch(`/api/journal/compte-treso/${journalId}`)
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    const selectTreso = document.getElementById('compte_tresorerie');
+                    if (selectTreso) {
+                        selectTreso.value = data.compte.id;
+                        if (typeof $(selectTreso).select2 === 'function') {
+                            $(selectTreso).trigger('change'); // Si Select2 est utilisé
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Erreur lors du chargement du compte de trésorerie:', error));
+    }
+
     function modifierEcriture(row) {
         // Récupérer les données de la ligne
         const cells = row.cells;

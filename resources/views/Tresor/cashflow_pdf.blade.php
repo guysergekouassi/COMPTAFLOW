@@ -123,10 +123,20 @@
         .detail-amount {
             width: 80px; /* Largeur fixe pour Débit/Crédit */
         }
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1a365d;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
     <div class="header">
+        <!-- <div class="company-name">{{ $companyName ?? 'Compagnie non spécifiée' }}</div> -->
         <h1>PLAN DE TRÉSORERIE - FLUX MENSUELS</h1>
         <div class="period">Période du {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} au {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</div>
     </div>
@@ -147,6 +157,19 @@
             </tr>
         </thead>
         <tbody>
+            <!-- Solde initial -->
+            <tr class="flow-line">
+                <td class="description-column">Solde initial de trésorerie</td>
+                @foreach($periods as $key => $period)
+                    @if($key === 0)
+                        <td>{{ number_format($cashFlowData[0]['solde_initial'] ?? 0, 2, ',', ' ') }} F</td>
+                    @else
+                        <td>—</td>
+                    @endif
+                @endforeach
+                <td class="total-column">{{ number_format($cashFlowData[0]['solde_initial'] ?? 0, 2, ',', ' ') }} F</td>
+            </tr>
+            
             {{-- 1. Flux de trésorerie des activités opérationnelles --}}
             <tr class="group-header">
                 <td colspan="{{ $totalColumns }}">1. Flux de trésorerie des activités opérationnelles</td>

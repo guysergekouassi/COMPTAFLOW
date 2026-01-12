@@ -28,10 +28,17 @@ class ComptaDashboardController extends Controller
 
         // Récupérer les données comptables réelles
         $dashboardData = $this->getDashboardData($currentCompanyId);
+        
+        // Récupérer l'exercice en cours
+        $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
+            ->where('cloturer', 0)
+            ->orderBy('date_debut', 'desc')
+            ->first();
 
         return view('comptable.comptdashboard', array_merge($dashboardData, [
             'currentCompany' => $currentCompany,
-            'habilitations' => $habilitations
+            'habilitations' => $habilitations,
+            'exerciceEnCours' => $exerciceEnCours
         ]));
     }
 
