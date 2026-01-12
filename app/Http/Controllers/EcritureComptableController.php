@@ -199,12 +199,14 @@ class EcritureComptableController extends Controller
         $debit = $data['debit'] ?? 0;
         $credit = $data['credit'] ?? 0;
         $typeFlux = null;
+            if ($debit > 0) {
+                $typeFlux = 'encaissement';   // entrée d’argent
+            } elseif ($credit > 0) {
+                $typeFlux = 'decaissement';   // sortie d’argent
+            } else {
+                $typeFlux = null;
+            }
 
-        if ($credit > 0) {
-            $typeFlux = 'decaissement'; // Une sortie d'argent est un crédit en trésorerie
-        } elseif ($debit > 0) {
-            $typeFlux = 'encaissement';  // Une entrée d'argent est un débit en trésorerie
-        }
         // Préparer les données pour la création
         $ecritureData = [
             'company_id' => $activeCompanyId,
