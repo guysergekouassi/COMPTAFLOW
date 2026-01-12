@@ -147,6 +147,19 @@
             </tr>
         </thead>
         <tbody>
+            <!-- Solde initial -->
+            <tr class="flow-line">
+                <td class="description-column">Solde initial de trésorerie</td>
+                @foreach($periods as $key => $period)
+                    @if($key === 0)
+                        <td>{{ number_format($cashFlowData[0]['solde_initial'] ?? 0, 2, ',', ' ') }} F</td>
+                    @else
+                        <td>—</td>
+                    @endif
+                @endforeach
+                <td class="total-column">{{ number_format($cashFlowData[0]['solde_initial'] ?? 0, 2, ',', ' ') }} F</td>
+            </tr>
+            
             {{-- 1. Flux de trésorerie des activités opérationnelles --}}
             <tr class="group-header">
                 <td colspan="{{ $totalColumns }}">1. Flux de trésorerie des activités opérationnelles</td>
