@@ -35,7 +35,7 @@ class PlanComptableController extends Controller
 
         $plansComptables = PlanComptable::where('company_id', $companyId)
     ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-    ->get(['id', 'numero_de_compte', 'intitule', 'adding_strategy', 'created_at', 'user_id', 'company_id']);
+    ->get(['id', 'numero_de_compte', 'intitule', 'adding_strategy', 'classe', 'created_at', 'user_id', 'company_id']);
 
         // 3. CALCUL DES STATISTIQUES RÉELLES
         // Nombre total
@@ -99,23 +99,23 @@ class PlanComptableController extends Controller
         
         switch($premierChiffre) {
             case '1':
-                return 'Classe 1: Comptes de capitaux';
+                return 1; // Classe 1: Comptes de capitaux
             case '2':
-                return 'Classe 2: Comptes d\'immobilisations';
+                return 2; // Classe 2: Comptes d'immobilisations
             case '3':
-                return 'Classe 3: Comptes de stocks';
+                return 3; // Classe 3: Comptes de stocks
             case '4':
-                return 'Classe 4: Comptes de tiers';
+                return 4; // Classe 4: Comptes de tiers
             case '5':
-                return 'Classe 5: Comptes financiers';
+                return 5; // Classe 5: Comptes financiers
             case '6':
-                return 'Classe 6: Comptes de charges';
+                return 6; // Classe 6: Comptes de charges
             case '7':
-                return 'Classe 7: Comptes de produits';
+                return 7; // Classe 7: Comptes de produits
             case '8':
-                return 'Classe 8: Comptes spéciaux';
+                return 8; // Classe 8: Comptes spéciaux
             default:
-                return 'Autres';
+                return 1; // Autres - par défaut classe 1
         }
     }
 

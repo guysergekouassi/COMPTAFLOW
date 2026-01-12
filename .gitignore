@@ -27,3 +27,16 @@ Thumbs.db
 /storage/framework/cache/*
 /bootstrap/cache/*
 .env
+# Fichiers de test temporaires
+test_*.php
+verification_comptes.php
+ia_traitement_standalone.php
+
+# Images de factures
+*.jpg
+*.jpeg
+*.png
+
+# Autres fichiers de débogage
+.DS_Store
+Thumbs.db

@@ -300,11 +300,22 @@
                                         <tr class="bg-slate-50/50 border-b border-slate-100">
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Numéro</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Classe</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Mode</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de création</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
+                                        @php
+                                            // Debug pour voir les données
+                                            if(isset($plansComptables) && $plansComptables->count() > 0) {
+                                                $firstPlan = $plansComptables->first();
+                                                echo "<!-- DEBUG: Premier plan - Classe: '" . ($firstPlan->classe ?? 'NULL') . "', Strategy: '" . ($firstPlan->adding_strategy ?? 'NULL') . "' -->";
+                                                echo "<!-- DEBUG: Strategy comparaison - Manuel: " . ($firstPlan->adding_strategy == 'Manuel' ? 'TRUE' : 'FALSE') . " -->";
+                                            }
+                                        @endphp
+                                        
                                         @forelse ($plansComptables as $plan)
                                         <tr class="table-row group">
                                             <td class="px-8 py-6">
@@ -315,36 +326,57 @@
                                             </td>
 
                                             <td class="px-8 py-6">
-    @php
-        $typeClasses = [
-            'Classe 1: Comptes de capitaux' => 'bg-green-100 text-green-800',
-            'Classe 2: Comptes d\'immobilisations' => 'bg-blue-100 text-blue-800',
-            'Classe 3: Comptes de stocks' => 'bg-purple-100 text-purple-800',
-            'Classe 4: Comptes de tiers' => 'bg-yellow-100 text-yellow-800',
-            'Classe 5: Comptes financiers' => 'bg-red-100 text-red-800',
-            'Classe 6: Comptes de charges' => 'bg-orange-100 text-orange-800',
-            'Classe 7: Comptes de produits' => 'bg-teal-100 text-teal-800',
-            'Classe 8: Comptes spéciaux' => 'bg-gray-100 text-gray-800',
-            'Autres' => 'bg-gray-100 text-gray-800'
-        ];
-        $typeClass = $typeClasses[$plan->classe] ?? 'bg-gray-100 text-gray-800';
-        
-        // Extraire juste le numéro de classe pour l'affichage
-        $classeAffiche = substr($plan->classe, 0, 8);
-    @endphp
-    <span class="px-3 py-1 text-xs font-medium rounded-full {{ $typeClass }}">
-        {{ $classeAffiche }}
-    </span>
-    <span class="hidden strategy-value">{{ $plan->adding_strategy }}</span>
-</td>
+                                                @php
+                                                    $classeValue = $plan->classe;
+                                                    if (empty($classeValue)) {
+                                                        $numero = $plan->numero_de_compte;
+                                                        $premierChiffre = substr($numero, 0, 1);
+                                                        $classeValue = 'Classe ' . $premierChiffre;
+                                                    }
+                                                    $classeAffiche = substr($classeValue, 0, 8);
+                                                @endphp
+                                                <span class="px-3 py-1 text-xs font-medium rounded-full" style="background-color: #3b82f6; color: white;">
+                                                    {{ $classeAffiche }}
+                                                </span>
+                                            </td>
+
+                                            <td class="px-8 py-6">
+                                                @php
+                                                    $strategy = $plan->adding_strategy ?? 'Manuel';
+                                                    $isManuel = (strtolower($strategy) === 'manuel' || strtolower($strategy) === 'manual');
+                                                    $color = $isManuel ? '#3b82f6' : '#10b981';
+                                                @endphp
+                                                <span class="px-3 py-1 text-xs font-medium rounded-full" style="background-color: {{ $color }}; color: white;">
+                                                    {{ $strategy }}
+                                                </span>
+                                            </td>
 
                                             <td class="px-8 py-6">
                                                 <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
                                             </td>
+                                            <td class="px-8 py-6">
+                                                <div class="btn-group" role="group">
+                                                    <!-- Bouton Modifier -->
+                                                    <button type="button" 
+                                                        class="btn btn-sm btn-outline-primary"
+                                                        onclick="modifierPlanComptable({{ $plan->id }})"
+                                                        title="Modifier le plan comptable">
+                                                        <i class='bx bx-edit-alt'></i>
+                                                    </button>
+                                                    
+                                                    <!-- Bouton Supprimer -->
+                                                    <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        onclick="supprimerPlanComptable({{ $plan->id }})"
+                                                        title="Supprimer le plan comptable">
+                                                        <i class='bx bx-trash'></i>
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                         @empty
                                         <tr>
-                                            <td colspan="4" class="text-center py-8 text-muted">Aucun plan comptable par défaut trouvé.</td>
+                                            <td colspan="6" class="text-center py-8 text-muted">Aucun plan comptable par défaut trouvé.</td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -565,45 +597,67 @@
 
     <!-- Custom Logic for New Design -->
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let table;
-            
-            if (typeof $ !== 'undefined' && $.fn.DataTable) {
-                // Initialisation du DataTable
-                table = $('#planComptableTable').DataTable({
-                    dom: 't',
-                    pageLength: 5,
-                    // Activer le débogage
-                    // debug: true,
-                    // Afficher les logs de débogage
-                    // "language": {
-                    //     "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/French.json"
-                    // },
-                    // Afficher toutes les données dans la console
-                    "initComplete": function(settings, json) {
-                        console.log('Données chargées :', this.api().data().toArray());
-                    },
-                    order: [[0, 'asc']],
-                    language: {
-                        search: "Rechercher:",
-                        zeroRecords: "Aucun compte trouvé",
-                        info: "Affichage de _START_ à _END_ sur _TOTAL_ comptes",
-                        infoEmpty: "Aucun compte disponible",
-                        infoFiltered: "(filtré sur _MAX_ comptes au total)",
-                        paginate: {
-                            first: "Premier",
-                            last: "Dernier",
-                            next: "Suivant",
-                            previous: "Précédent"
-                        }
-                    },
-                    columnDefs: [
-                        { width: "15%", targets: 0 },
-                        { width: "55%", targets: 1 },
-                        { width: "15%", targets: 2 },
-                        { width: "15%", targets: 3 }
-                    ]
-                });
+        // Attendre que tout soit chargé avant d'initialiser DataTables
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                let table;
+                
+                // Vérifier si DataTables est disponible
+                if (typeof $ !== 'undefined' && $.fn.DataTable) {
+                    // Détruire toute instance existante pour éviter les conflits
+                    if ($.fn.DataTable.isDataTable('#planComptableTable')) {
+                        $('#planComptableTable').DataTable().destroy();
+                    }
+                    
+                    // Vérifier que le tableau a bien 6 colonnes
+                    var columnCount = $('#planComptableTable thead th').length;
+                    console.log('Colonnes détectées dans le HTML :', columnCount);
+                    
+                    if (columnCount !== 6) {
+                        console.error('Le tableau HTML n\'a pas 6 colonnes !');
+                        return;
+                    }
+                    
+                    // Initialisation du DataTable
+                    table = $('#planComptableTable').DataTable({
+                        dom: 't',
+                        pageLength: 5,
+                        // Activer le débogage
+                        // debug: true,
+                        // Afficher les logs de débogage
+                        // "language": {
+                        //     "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/French.json"
+                        // },
+                        // Afficher toutes les données dans la console
+                        "initComplete": function(settings, json) {
+                            console.log('Données chargées :', this.api().data().toArray());
+                            console.log('Nombre de colonnes DataTables :', this.api().columns().count());
+                        },
+                        order: [[0, 'asc']],
+                        language: {
+                            search: "Rechercher:",
+                            zeroRecords: "Aucun compte trouvé",
+                            info: "Affichage de _START_ à _END_ sur _TOTAL_ comptes",
+                            infoEmpty: "Aucun compte disponible",
+                            infoFiltered: "(filtré sur _MAX_ comptes au total)",
+                            paginate: {
+                                first: "Premier",
+                                last: "Dernier",
+                                next: "Suivant",
+                                previous: "Précédent"
+                            }
+                        },
+                        columnDefs: [
+                            { width: "12%", targets: 0 },  // Numéro
+                            { width: "35%", targets: 1 },  // Intitulé
+                            { width: "12%", targets: 2 },  // Classe
+                            { width: "12%", targets: 3 },  // Mode
+                            { width: "12%", targets: 4 },  // Date
+                            { width: "17%", targets: 5 }   // Actions
+                        ],
+                        // Désactiver la détection automatique du nombre de colonnes
+                        "autoWidth": false
+                    });
 
                 // Fonction pour basculer l'affichage du panneau de filtre
                 function toggleFilterPanel() {
@@ -629,7 +683,7 @@
                 const filterMap = {
                     'filterNumero': 0,
                     'filterIntitule': 1,
-                    'filterClasse': 0  // Le filtre par classe doit chercher dans la colonne numéro (index 0)
+                    'filterClasse': 0  // Le filtre par classe cherche dans la colonne numéro (index 0)
                 };
 
                 // Gestion des champs de filtre
@@ -637,13 +691,13 @@
                     const column = filterMap[$(this).attr('id')];
                     if (column !== undefined) {
                         if ($(this).attr('id') === 'filterClasse') {
-                            // Pour le filtre par classe, utiliser une recherche par préfixe (commence par)
+                            // Pour le filtre par classe, chercher les numéros qui commencent par ce chiffre
                             const searchValue = this.value.trim();
                             if (searchValue) {
-                                // Utiliser une expression régulière pour chercher les numéros qui commencent par la valeur saisie
-                                table.column(column).search('^' + searchValue, true, false).draw();
+                                // Chercher dans la colonne numéro tous les comptes qui commencent par searchValue
+                                table.column(0).search('^' + searchValue, true, false).draw();
                             } else {
-                                table.column(column).search('').draw();
+                                table.column(0).search('').draw();
                             }
                         } else {
                             // Pour les autres filtres, utiliser la recherche normale
@@ -677,10 +731,10 @@
                         table.column(2).search('').draw();
                     },
                     '#filter-manuel': function() { 
-                        table.column(2).search('manuel').draw();
+                        table.column(3).search('manuel').draw();  // Mode est maintenant colonne 3
                     },
                     '#filter-auto': function() { 
-                        table.column(2).search('auto').draw();
+                        table.column(3).search('auto').draw();   // Mode est maintenant colonne 3
                     }
                 };
 
@@ -759,12 +813,14 @@ switch(filterType) {
         break;
     default: // 'all'
         table.column(2).search('').draw();
-}
+        break;
+    }
                     
-                    // Afficher toutes les données pour débogage
-                    console.log('Données du tableau après filtrage :', table.data().toArray());
+    // Afficher toutes les données pour débogage
+    console.log('Données du tableau après filtrage :', table.data().toArray());
                 });
             }
+        }, 500); // Attendre 500ms après le chargement complet
         });
     </script>
     

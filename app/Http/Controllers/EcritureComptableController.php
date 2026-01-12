@@ -382,6 +382,7 @@ class EcritureComptableController extends Controller
         ]);
     }
 
+<<<<<<< Updated upstream
     public function getCompteParJournal(){
         // On cherche le compte de trésorerie lié au journal
         $journal = CodeJournal::with('compteTresorerie')->find($journalId);
@@ -396,4 +397,54 @@ class EcritureComptableController extends Controller
     }
 
 
+=======
+    /**
+     * Affiche la modal de saisie directe
+     */
+    public function showSaisieModal(Request $request)
+    {
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id', $user->company_id);
+
+        // Récupérer les données nécessaires pour la modal
+        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
+            ->where('company_id', $activeCompanyId)
+            ->orderBy('numero_de_compte')
+            ->get();
+
+        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+            ->where('company_id', $activeCompanyId)
+            ->with('compte')
+            ->get();
+
+        $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')
+            ->where('company_id', $activeCompanyId)
+            ->orderBy('name')
+            ->get();
+
+        $code_journaux = CodeJournal::where('company_id', $activeCompanyId)->get();
+
+        // Obtenir le prochain numéro de saisie
+        $lastSaisie = EcritureComptable::where('company_id', $activeCompanyId)->max('id');
+        $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
+
+        // Récupérer l'exercice actif
+        $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+            ->where('cloturer', 0)
+            ->orderBy('date_debut', 'desc')
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'html' => view('partials.saisie_directe_modal', [
+                'plansComptables' => $plansComptables,
+                'plansTiers' => $plansTiers,
+                'comptesTresorerie' => $comptesTresorerie,
+                'code_journaux' => $code_journaux,
+                'nextSaisieNumber' => $nextSaisieNumber,
+                'exerciceActif' => $exerciceActif
+            ])->render()
+        ]);
+    }
+>>>>>>> Stashed changes
 }

@@ -16,6 +16,7 @@ class PlanComptable extends Model
         'intitule',
         'type_de_compte',
         'adding_strategy',
+        'classe',
         'user_id',
         'company_id'
     ];

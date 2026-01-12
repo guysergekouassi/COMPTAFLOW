@@ -30,6 +30,43 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+// Fonction pour modifier un plan comptable
+function modifierPlanComptable(id) {
+    // Rediriger vers la page de modification
+    window.location.href = `/plan_comptable/${id}/edit`;
+}
+
+// Fonction pour supprimer un plan comptable
+function supprimerPlanComptable(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce plan comptable ?')) {
+        // Créer un formulaire pour la suppression
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/plan_comptable/${id}`;
+        
+        // Ajouter le token CSRF
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+        }
+        
+        // Ajouter le champ pour la méthode DELETE
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+        
+        // Soumettre le formulaire
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
 // --- Gestion de la mise à jour (Update) ---
 document.addEventListener("DOMContentLoaded", function () {
     const editButtons = document.querySelectorAll(

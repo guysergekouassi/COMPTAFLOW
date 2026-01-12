@@ -8,8 +8,56 @@ header('Content-Type: application/json');
 
 // --- CONFIGURATION ---
 $api_key = $_ENV['GEMINI_API_KEY'] ?? "AIzaSyDuwMm9cdo_vTqBe9j3degykq4rL-kOKVU";
-$model = $_ENV['GEMINI_MODEL'] ?? "gemini-flash-latest"; 
-$url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$api_key}";
+
+// Liste des modèles à essayer dans l'ordre (du plus rapide au plus puissant)
+$models = [
+    "gemini-flash-latest",    // Premier choix - le plus rapide
+    "gemini-2.5-flash",      // Deuxième choix - rapide et économique
+    "gemini-1.5-flash",      // Troisième choix - alternative rapide
+    "gemini-1.5-pro",        // Quatrième choix - plus puissant
+    "gemini-pro"             // Cinquième choix - le plus puissant
+];
+
+// Fonction pour essayer un modèle et passer au suivant si quota dépassé
+function tryGeminiModel($model, $api_key, $payload) {
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$api_key}";
+    
+    error_log("Tentative avec le modèle: $model");
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    error_log("Modèle $model - HTTP: $http_code, Error: " . ($error ?: 'None'));
+
+    if ($http_code === 200) {
+        $result = json_decode($response, true);
+        if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+            $json_comptable = $result['candidates'][0]['content']['parts'][0]['text'];
+            error_log("Succès avec le modèle: $model");
+            return ['success' => true, 'data' => $json_comptable, 'model_used' => $model];
+        }
+    } elseif ($http_code == 429) {
+        error_log("Quota dépassé pour le modèle: $model");
+        return ['success' => false, 'error' => 'QUOTA_EXCEEDED', 'model' => $model];
+    } else {
+        error_log("Erreur avec le modèle $model: $http_code - $error");
+        return ['success' => false, 'error' => 'HTTP_ERROR', 'http_code' => $http_code, 'model' => $model];
+    }
+    
+    return ['success' => false, 'error' => 'UNKNOWN_ERROR', 'model' => $model];
+}
 
 // Fonction de mapping SYSCOHADA CI vers comptes 8 chiffres
 function mapCompteSyscohada($compte) {
@@ -152,7 +200,22 @@ $mime_type = $_FILES['facture']['type'];
 
 // 2. Prompt Expert SYSCOHADA Côte d'Ivoire
 $prompt = <<<PROMPT
-Tu es un expert-comptable SYSCOHADA Côte d'Ivoire. Analyse cette facture.
+Tu es un expert-comptable SYSCOHADA Côte d'Ivoire. Analyse cette facture ATTENTIVEMENT.
+
+RÈGLES CRUCIALES :
+1. DÉTECTE si la facture contient de la TVA :
+   - Cherche les mots : "TVA", "Taxe", "HT", "TTC", "18%"
+   - Vérifie s'il y a des montants séparés HT/TTC
+
+2. SI TVA DÉTECTÉE :
+   - Ajoute une ligne de TVA déductible (compte 445100)
+   - Mets montant_tva > 0
+   - Le montant TTC doit inclure la TVA
+
+3. SI PAS DE TVA DÉTECTÉE :
+   - N'ajoute PAS de ligne de TVA
+   - Mets montant_tva = 0
+   - Le montant HT = montant TTC
 
 FORMAT JSON EXIGÉ :
 {
@@ -165,10 +228,11 @@ FORMAT JSON EXIGÉ :
   "montant_ttc": 0,
   "ecriture": [
     {"compte": "601000", "intitule": "Achats marchandises", "debit": 10000, "credit": 0},
-    {"compte": "445100", "intitule": "TVA déductible", "debit": 1800, "credit": 0},
-    {"compte": "401000", "intitule": "Fournisseurs", "debit": 0, "credit": 11800}
+    {"compte": "401000", "intitule": "Fournisseurs", "debit": 0, "credit": 10000}
   ]
 }
+
+ATTENTION : N'ajoute la ligne 445100 (TVA) QUE SI la facture contient réellement de la TVA !
 PROMPT;
 
 // 3. Payload pour Gemini
@@ -193,94 +257,157 @@ $payload = [
     ]
 ];
 
-// 4. Appel API avec retry intelligent anti-429
-            $max_retries = 5;
-            $retry_count = 0;
-            $base_delay = 5; // 5 secondes de base pour éviter le 429
+// 4. Appel API Gemini avec fallback automatique entre modèles
+error_log("Appel API Gemini avec fallback automatique entre modèles...");
 
-while ($retry_count < $max_retries) {
-    try {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+$api_success = false;
+$json_comptable = null;
+$model_used = null;
+$models_tried = [];
 
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($http_code == 429) {
-            $retry_count++;
-            if ($retry_count >= $max_retries) {
-                echo json_encode([
-                    'error' => 'Quota Gemini dépassé. Réessayez dans quelques minutes.',
-                    'retry_count' => $retry_count
-                ]);
-                exit;
-            }
-            $delay = $base_delay * pow(2, $retry_count);
-            sleep($delay);
-            continue;
-        }
-
-        if ($http_code === 200) {
-            $result = json_decode($response, true);
-            if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-                $json_comptable = $result['candidates'][0]['content']['parts'][0]['text'];
-                
-                // Nettoyage du JSON
-                $json_comptable = preg_replace('/```json\s*/', '', $json_comptable);
-                $json_comptable = preg_replace('/```\s*$/', '', $json_comptable);
-                $json_comptable = trim($json_comptable);
-                
-                // Validation et retour
-                $data = json_decode($json_comptable, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    // Appliquer le mapping SYSCOHADA vers comptes 8 chiffres
-                    if (isset($data['ecriture']) && is_array($data['ecriture'])) {
-                        foreach ($data['ecriture'] as &$ligne) {
-                            if (isset($ligne['compte'])) {
-                                $ligne['compte'] = mapCompteSyscohada($ligne['compte']);
-                            }
-                        }
-                    }
-                    
-                    // Ajouter une information sur la TVA pour l'interface
-                    $data['hasVAT'] = isset($data['montant_tva']) && $data['montant_tva'] > 0;
-                    
-                    echo json_encode($data);
-                } else {
-                    echo json_encode([
-                        'error' => 'JSON invalide généré par l\'IA',
-                        'raw_response' => $json_comptable,
-                        'json_error' => json_last_error_msg()
-                    ]);
-                }
-                exit;
-            }
-        }
-
-        // Erreur HTTP
-        echo json_encode([
-            'error' => "Erreur API ($http_code)",
-            'details' => json_decode($response, true),
-            'curl_error' => $error
-        ]);
-        exit;
-
-    } catch (Exception $e) {
-        $retry_count++;
-        if ($retry_count >= $max_retries) {
-            echo json_encode(['error' => $e->getMessage()]);
-            exit;
-        }
-        sleep($base_delay * $retry_count);
+// Essayer chaque modèle dans l'ordre
+foreach ($models as $model) {
+    $models_tried[] = $model;
+    $result = tryGeminiModel($model, $api_key, $payload);
+    
+    if ($result['success']) {
+        $json_comptable = $result['data'];
+        $model_used = $result['model_used'];
+        $api_success = true;
+        break;
+    } elseif ($result['error'] === 'QUOTA_EXCEEDED') {
+        // Passer au modèle suivant
+        error_log("Quota dépassé pour $model, passage au modèle suivant...");
+        continue;
+    } else {
+        // Erreur autre que quota, essayer le modèle suivant
+        error_log("Erreur avec $model, passage au modèle suivant...");
+        continue;
     }
 }
+
+// Si tous les modèles ont échoué, utiliser le fallback local
+if (!$api_success) {
+    error_log("Tous les modèles Gemini ont échoué. Modèles essayés: " . implode(', ', $models_tried));
+    error_log("Utilisation du fallback local...");
+    
+    $response_data = [
+        "type_document" => "Facture",
+        "tiers" => "Fournisseur (à compléter)",
+        "date" => date("Y-m-d"),
+        "reference" => "FACT-" . date("YmdHis"),
+        "montant_ht" => 10000,
+        "montant_tva" => 0,
+        "montant_ttc" => 10000,
+        "ecriture" => [
+            ["compte" => "601000", "intitule" => "Achats marchandises", "debit" => 10000, "credit" => 0],
+            ["compte" => "401000", "intitule" => "Fournisseurs", "debit" => 0, "credit" => 10000]
+        ],
+        "fallback" => true,
+        "models_tried" => $models_tried,
+        "message" => "Tous les modèles Gemini indisponibles. Données générées localement."
+    ];
+    
+    echo json_encode($response_data);
+    exit;
+}
+
+// Si un modèle a fonctionné, traiter la réponse
+if ($json_comptable) {
+    error_log("Traitement de la réponse du modèle: $model_used");
+    
+    error_log("Raw response from $model_used: " . substr($json_comptable, 0, 500));
+    
+    // Nettoyage du JSON
+    $json_comptable = preg_replace('/```json\s*/', '', $json_comptable);
+    $json_comptable = preg_replace('/```\s*$/', '', $json_comptable);
+    $json_comptable = trim($json_comptable);
+    
+    // Validation et retour
+    $data = json_decode($json_comptable, true);
+    if (json_last_error() === JSON_ERROR_NONE) {
+        error_log("JSON valide reçu de $model_used");
+        
+        // Appliquer le mapping SYSCOHADA vers comptes 8 chiffres
+        if (isset($data['ecriture']) && is_array($data['ecriture'])) {
+            foreach ($data['ecriture'] as &$ligne) {
+                if (isset($ligne['compte'])) {
+                    $ligne['compte'] = mapCompteSyscohada($ligne['compte']);
+                }
+            }
+        }
+        
+        // Ajouter une information sur la TVA pour l'interface
+        $hasVATAmount = isset($data['montant_tva']) && $data['montant_tva'] > 0;
+        $hasVATLine = false;
+        
+        // DEBUG : Logs PHP
+        error_log("=== ANALYSE TVA GEMINI ($model_used) ===");
+        error_log("montant_tva brut: " . (isset($data['montant_tva']) ? $data['montant_tva'] : 'NON'));
+        error_log("hasVATAmount: " . ($hasVATAmount ? 'TRUE' : 'FALSE'));
+        
+        // Vérifier s'il y a une ligne TVA dans les écritures
+        if (isset($data['ecriture']) && is_array($data['ecriture'])) {
+            foreach ($data['ecriture'] as $index => $ligne) {
+                $compte = $ligne['compte'] ?? '';
+                $intitule = $ligne['intitule'] ?? '';
+                $isVATLine = strpos($compte, '445') === 0 || 
+                           strpos($compte, 'TVA') !== false ||
+                           strpos(strtolower($intitule), 'tva') !== false;
+                
+                error_log("Ligne $index: compte=$compte, intitule=$intitule, isVATLine=" . ($isVATLine ? 'TRUE' : 'FALSE'));
+                
+                if ($isVATLine) {
+                    $hasVATLine = true;
+                }
+            }
+        }
+        
+        error_log("hasVATLine: " . ($hasVATLine ? 'TRUE' : 'FALSE'));
+        
+        // La TVA est présente si montant_tva > 0 ET/OU ligne TVA présente
+        $data['hasVAT'] = $hasVATAmount || $hasVATLine;
+        
+        error_log("hasVAT final: " . ($data['hasVAT'] ? 'TRUE' : 'FALSE'));
+        error_log("========================");
+        
+        // Si pas de TVA détectée mais qu'une ligne TVA existe, la supprimer
+        if (!$data['hasVAT'] && $hasVATLine && isset($data['ecriture'])) {
+            error_log("Suppression des lignes TVA car hasVAT=FALSE");
+            $data['ecriture'] = array_filter($data['ecriture'], function($ligne) {
+                $compte = $ligne['compte'] ?? '';
+                $intitule = $ligne['intitule'] ?? '';
+                return !(strpos($compte, '445') === 0 || 
+                       strpos($compte, 'TVA') !== false ||
+                       strpos(strtolower($intitule), 'tva') !== false);
+            });
+            // Réindexer le tableau
+            $data['ecriture'] = array_values($data['ecriture']);
+            error_log("Nombre d'écritures après suppression: " . count($data['ecriture']));
+        }
+        
+        // Ajouter des infos sur le modèle utilisé
+        $data['model_used'] = $model_used;
+        $data['models_tried'] = $models_tried;
+        
+        echo json_encode($data);
+        exit;
+    } else {
+        error_log("JSON invalide de $model_used: " . json_last_error_msg());
+        echo json_encode([
+            'error' => 'JSON invalide généré par l\'IA',
+            'model_used' => $model_used,
+            'raw_response' => $json_comptable,
+            'json_error' => json_last_error_msg()
+        ]);
+        exit;
+    }
+}
+
+echo json_encode([
+    'error' => 'Erreur de traitement',
+    'models_tried' => $models_tried,
+    'message' => 'Impossible de traiter la facture avec aucun modèle.'
+]);
+exit;
 ?>

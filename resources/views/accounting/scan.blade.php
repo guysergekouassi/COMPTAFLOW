@@ -503,14 +503,18 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                     
                     // Manage VAT button state
                     const btnVAT = document.getElementById('btnApplyVAT');
-                    if (data.hasVAT) {
+                    if (result.hasVAT) {
+                        // La facture contient déjà la TVA → cacher et griser le bouton
                         btnVAT.classList.add('d-none');
+                        btnVAT.disabled = true;
                     } else {
+                        // La facture ne contient pas de TVA → rendre le bouton visible et actif
                         btnVAT.classList.remove('d-none');
+                        btnVAT.disabled = false;
+                        btnVAT.innerHTML = '<i class="bx bx-plus me-1"></i>APPLIQUER TVA 18%';
                     }
-                    btnVAT.disabled = false;
 
-                    renderTable(data);
+                    renderTable(result);
                 } catch (e) { 
                     alert("Erreur: " + e.message); 
                     resetUI();
