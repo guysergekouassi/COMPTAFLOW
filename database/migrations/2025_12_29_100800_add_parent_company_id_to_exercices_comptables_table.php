@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -21,7 +22,7 @@ return new class extends Migration
             });
             
             // Update existing records to set parent_company_id based on company's parent
-            \DB::statement('UPDATE exercices_comptables ec
+            DB::statement('UPDATE exercices_comptables ec
                 JOIN companies c ON ec.company_id = c.id
                 SET ec.parent_company_id = COALESCE(c.parent_company_id, c.id)');
         }
