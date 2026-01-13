@@ -835,8 +835,8 @@
                                             Brouillon
                                         </button>
                                         <ul class="dropdown-menu" aria-labelledby="dropdownBrouillon">
-                                            <li><a class="dropdown-item" href="#" data-action="charger"><i class="bx bx-folder-open me-2"></i>Charger le brouillon</a></li>
-                                            <li><a class="dropdown-item" href="#" data-action="effacer"><i class="bx bx-trash me-2"></i>Effacer le brouillon</a></li>
+                                            <li><a class="dropdown-item" href="{{ route('brouillons.index') }}"><i class="bx bx-folder-open me-2"></i>Charger le brouillon</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="effacerBrouillon()"><i class="bx bx-trash me-2"></i>Effacer le brouillon</a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -1341,13 +1341,10 @@ function ajouterEcriture() {
             credit.value = '';
             if (planAnalytique) planAnalytique.value = '0';
             
-            // Réinitialisation des états et styles (si nécessaire)
-            debit.disabled = false;
-            credit.disabled = false;
-            debit.style.backgroundColor = '';
-            credit.style.backgroundColor = '';
-            debit.style.cursor = '';
-            credit.style.cursor = '';
+            // Réinitialisation des états et styles via notre fonction globale
+            if (typeof window.resetExclusivity === 'function') {
+                window.resetExclusivity();
+            }
 
         // Mise à jour des totaux
         updateTotals();
@@ -1459,6 +1456,28 @@ function ajouterEcriture() {
         }
     }
 
+    // --- DÉTECTION TYPE DE JOURNAL (TRÉSORERIE) ---
+    const prefixesTresorerie = ['BQ', 'CA', 'CH', 'CS', 'BANQUE', 'CAISSE'];
+    
+    function verifierTypeJournal(code) {
+        const divTreso = document.getElementById('div_compte_tresorerie');
+        const estTresorerie = prefixesTresorerie.some(prefix => 
+            code && code.toUpperCase().startsWith(prefix)
+        );
+        
+        if (divTreso) {
+            if (estTresorerie) {
+                divTreso.style.display = 'block';
+                const compteTresorerie = document.getElementById('compte_tresorerie');
+                if (compteTresorerie) compteTresorerie.setAttribute('required', 'required');
+            } else {
+                divTreso.style.display = 'none';
+                const compteTresorerie = document.getElementById('compte_tresorerie');
+                if (compteTresorerie) compteTresorerie.removeAttribute('required');
+            }
+        }
+    }
+
     // Initialisation
     document.addEventListener('DOMContentLoaded', function() {
         fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
@@ -1468,45 +1487,11 @@ function ajouterEcriture() {
         if(journalId) {
             chargerCompteTresorerie(journalId);
         }
-        
-        // 1. Récupérer le code du journal actuel
         const codeJournalInput = document.getElementById('code_journal_affiche');
-        if (codeJournalInput) {
-            const codeJournal = codeJournalInput.value;
-            const divTreso = document.getElementById('div_compte_tresorerie');
-            
-            // 2. Définir les préfixes considérés comme "trésorerie"
-            const prefixesTresorerie = ['BQ', 'CA', 'CH', 'CS', 'BANQUE', 'CAISSE'];
-            
-            // 3. Fonction de vérification
-            function verifierTypeJournal(code) {
-                // Vérifie si le code commence par un des préfixes de trésorerie
-                const estTresorerie = prefixesTresorerie.some(prefix => 
-                    code && code.toUpperCase().startsWith(prefix)
-                );
-                
-                if (divTreso) {
-                    if (estTresorerie) {
-                        divTreso.style.display = 'block'; // Afficher
-                        // Rendre le champ requis s'il est affiché
-                        const compteTresorerie = document.getElementById('compte_tresorerie');
-                        if (compteTresorerie) {
-                            compteTresorerie.setAttribute('required', 'required');
-                        }
-                    } else {
-                        divTreso.style.display = 'none';  // Cacher
-                        const compteTresorerie = document.getElementById('compte_tresorerie');
-                        if (compteTresorerie) {
-                            compteTresorerie.removeAttribute('required');
-                        }
-                    }
-                }
-            }
-            
-            // Exécuter la vérification immédiatement
-            if (codeJournal && codeJournal !== 'N/A') {
-                verifierTypeJournal(codeJournal);
-            }
+        const codeJournal = codeJournalInput ? codeJournalInput.value : null;
+        if (codeJournal && codeJournal !== 'N/A') {
+            verifierTypeJournal(codeJournal);
+        }
             
             // Ajouter un écouteur sur le changement de journal
             const imputationSelect = document.getElementById('imputation');
@@ -1515,38 +1500,198 @@ function ajouterEcriture() {
                     const selectedOption = this.options[this.selectedIndex];
                     const codeJournal = selectedOption.getAttribute('data-code') || '';
                     verifierTypeJournal(codeJournal);
+                    
+                    // Charger aussi le compte de trésorerie si journal sélectionné
+                    const journalId = this.value;
+                    if(journalId) {
+                        chargerCompteTresorerie(journalId);
+                    }
                 });
             }
-        }
-
-        // Gérer l'exclusivité entre débit et crédit
-        const debitField = document.getElementById('debit');
-        const creditField = document.getElementById('credit');
         
-        if (debitField && creditField) {
-            debitField.addEventListener('input', function() {
-                if (this.value && parseFloat(this.value) > 0) {
-                    creditField.value = '';
-                    creditField.disabled = true;
-                    creditField.style.backgroundColor = '#f8f9fa';
+        // --- EXCLUSIVITÉ DÉBIT / CRÉDIT ---
+        const debitInput = document.getElementById('debit');
+        const creditInput = document.getElementById('credit');
+        if (debitInput && creditInput) {
+            const toggleExclusivity = (source, target) => {
+                const val = parseFloat(source.value) || 0;
+                if (val > 0) {
+                    target.value = '';
+                    target.setAttribute('readonly', 'readonly');
+                    target.style.backgroundColor = '#f1f5f9';
+                    target.style.cursor = 'not-allowed';
                 } else {
-                    creditField.disabled = false;
-                    creditField.style.backgroundColor = '';
+                    target.removeAttribute('readonly');
+                    target.style.backgroundColor = '';
+                    target.style.cursor = '';
                 }
-            });
+            };
+
+            debitInput.addEventListener('input', () => toggleExclusivity(debitInput, creditInput));
+            creditInput.addEventListener('input', () => toggleExclusivity(creditInput, debitInput));
             
-            creditField.addEventListener('input', function() {
-                if (this.value && parseFloat(this.value) > 0) {
-                    debitField.value = '';
-                    debitField.disabled = true;
-                    debitField.style.backgroundColor = '#f8f9fa';
-                } else {
-                    debitField.disabled = false;
-                    debitField.style.backgroundColor = '';
-                }
-            });
+            // Exécuter une fois pour initialiser (utile lors de l'ajout d'une ligne ou chargement)
+            window.resetExclusivity = () => {
+                debitInput.removeAttribute('readonly');
+                debitInput.style.backgroundColor = '';
+                debitInput.style.cursor = '';
+                creditInput.removeAttribute('readonly');
+                creditInput.style.backgroundColor = '';
+                creditInput.style.cursor = '';
+            };
+        }
+        
+        // Initialisation pour charger un brouillon via URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const batchId = urlParams.get('batch_id');
+        if (batchId) {
+            chargerBrouillonBackend(batchId);
         }
     });
+
+    async function chargerBrouillonBackend(id) {
+        try {
+            const btnEnregistrer = document.getElementById('btnEnregistrer');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            if (btnText) btnText.textContent = 'CHARGEMENT...';
+            if (btnEnregistrer) btnEnregistrer.disabled = true;
+            if (btnSpinner) btnSpinner.classList.remove('d-none');
+
+            const res = await fetch(`/api/brouillons/${id}`);
+            const json = await res.json();
+            
+            if (json.success) {
+                const tbody = document.querySelector('#tableEcritures tbody');
+                if (tbody) tbody.innerHTML = '';
+                
+                // Remplir les champs communs
+                if (json.summary.date) document.getElementById('date').value = json.summary.date;
+                if (json.summary.description) document.getElementById('description_operation').value = json.summary.description;
+                if (json.summary.reference) document.getElementById('reference_piece').value = json.summary.reference;
+                
+                // Journal
+                if (json.summary.code_journal_id) {
+                    const imputationHidden = document.getElementById('imputation');
+                    const codeJournalAffiche = document.getElementById('code_journal_affiche');
+                    if (imputationHidden) imputationHidden.value = json.summary.code_journal_id;
+                    if (codeJournalAffiche) codeJournalAffiche.value = json.summary.journal_code;
+                    
+                    // Déclencher la vérification du type de journal (pour afficher le compte de trésorerie si nécessaire)
+                    if (typeof verifierTypeJournal === 'function') {
+                        verifierTypeJournal(json.summary.journal_code);
+                    }
+                }
+
+                // N° de Saisie
+                if (json.summary.n_saisie) {
+                    const nSaisieInput = document.getElementById('n_saisie');
+                    if (nSaisieInput) nSaisieInput.value = json.summary.n_saisie;
+                }
+
+                // Compte Trésorerie
+                if (json.summary.compte_tresorerie_id) {
+                    const selectTreso = document.getElementById('compte_tresorerie');
+                    if (selectTreso) {
+                        selectTreso.value = json.summary.compte_tresorerie_id;
+                        if (typeof $(selectTreso).select2 === 'function') {
+                            $(selectTreso).trigger('change');
+                        }
+                    }
+                }
+
+                // Pièce jointe (si elle existe dans le brouillon)
+                if (json.summary.piece_justificatif) {
+                    const form = document.getElementById('formEcriture');
+                    let hiddenPiece = document.getElementById('draft_piece_filename');
+                    if (!hiddenPiece) {
+                        hiddenPiece = document.createElement('input');
+                        hiddenPiece.type = 'hidden';
+                        hiddenPiece.id = 'draft_piece_filename';
+                        hiddenPiece.name = 'draft_piece_filename';
+                        form.appendChild(hiddenPiece);
+                    }
+                    hiddenPiece.value = json.summary.piece_justificatif;
+                }
+
+                json.brouillons.forEach(b => {
+                    ajouterLigneBrouillon(b);
+                });
+                
+                updateTotals();
+                showAlert('success', 'Brouillon chargé avec succès');
+            } else {
+                showAlert('danger', "Erreur: " + (json.message || "Impossible de charger le brouillon"));
+            }
+        } catch (e) {
+            showAlert('danger', "Erreur lors du chargement: " + e.message);
+        } finally {
+            const btnEnregistrer = document.getElementById('btnEnregistrer');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            if (btnText) btnText.textContent = 'VALIDER & ENREGISTRER';
+            if (btnEnregistrer) btnEnregistrer.disabled = false;
+            if (btnSpinner) btnSpinner.classList.add('d-none');
+            updateTotals();
+        }
+    }
+
+    function ajouterLigneBrouillon(b) {
+        const tbody = document.querySelector('#tableEcritures tbody');
+        const newRow = tbody.insertRow();
+        
+        const date = b.date || document.getElementById('date').value;
+        const nSaisie = b.n_saisie || document.getElementById('n_saisie').value;
+        const imputation = document.getElementById('code_journal_affiche').value;
+        const description = b.description_operation || '';
+        const reference = b.reference_piece || '';
+        const compteText = b.plan_comptable ? `${b.plan_comptable.numero_de_compte} - ${b.plan_comptable.intitule}` : '-';
+        const tiersText = b.plan_tiers ? `${b.plan_tiers.numero_de_tiers} - ${b.plan_tiers.intitule}` : '';
+        const debit = b.debit || 0;
+        const credit = b.credit || 0;
+        const analytique = b.plan_analytique ? 'Oui' : 'Non';
+        const pieceFileName = b.piece_justificatif || '';
+
+        if (b.compte_tresorerie_id) {
+            newRow.setAttribute('data-compte-tresorerie-id', b.compte_tresorerie_id);
+        }
+
+        const cells = [
+            date, nSaisie, imputation, description, reference,
+            compteText, tiersText, debit, credit, '', analytique
+        ];
+
+        cells.forEach((content, index) => {
+            const cell = newRow.insertCell();
+            if (index === 5) {
+                cell.textContent = compteText;
+                cell.setAttribute('data-plan-comptable-id', b.plan_comptable_id);
+            } else if (index === 6 && b.plan_tiers_id) {
+                cell.textContent = tiersText;
+                cell.setAttribute('data-tiers-id', b.plan_tiers_id);
+            } else if (index === 9) {
+                if (pieceFileName) {
+                    cell.innerHTML = `<button class="btn btn-sm btn-primary-premium btn-premium" onclick="voirPieceJustificative('${pieceFileName}')" style="border-radius: 10px;">
+                        <i class="bx bx-eye me-1"></i>Voir
+                    </button>`;
+                    cell.setAttribute('data-piece-filename', pieceFileName);
+                } else {
+                    cell.textContent = '';
+                }
+            } else {
+                cell.textContent = content;
+            }
+        });
+
+        const modifierCell = document.createElement('td');
+        modifierCell.innerHTML = `<button class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;"><i class="bx bx-edit"></i></button>`;
+        newRow.appendChild(modifierCell);
+
+        const supprimerCell = document.createElement('td');
+        supprimerCell.innerHTML = `<button class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;"><i class="bx bx-trash"></i></button>`;
+        newRow.appendChild(supprimerCell);
+    }
 
     // ... (rest of local/draft logic can be kept or minimized if needed)
 
@@ -1570,13 +1715,16 @@ function ajouterEcriture() {
         const dateCommune = document.getElementById('date').value;
         const descriptionCommune = document.getElementById('description_operation').value;
         const referencePieceCommune = document.getElementById('reference_piece').value;
+        const urlParams = new URLSearchParams(window.location.search);
+        const batchId = urlParams.get('batch_id');
         
-        // Récupérer le fichier juste avant l'envoi pour éviter qu'il soit perdu
+        // Récupérer le fichier ou le nom du fichier du brouillon
         const pieceFile = document.getElementById('piece_justificatif').files[0];
+        const draftPieceFilename = document.getElementById('draft_piece_filename')?.value || '';
         
         // Construction du payload correct pour le contrôleur
         const ecritures = [];
-        const pieceFileName = pieceFile ? pieceFile.name : '';
+        const pieceFileName = pieceFile ? pieceFile.name : draftPieceFilename;
         
         Array.from(tbody.rows).forEach(row => {
             const cells = row.cells;
@@ -1609,6 +1757,9 @@ function ajouterEcriture() {
         formDataToSend.append('ecritures', JSON.stringify(ecritures));
         if (pieceFile) {
             formDataToSend.append('piece_justificatif', pieceFile);
+        }
+        if (batchId) {
+            formDataToSend.append('batch_id', batchId);
         }
 
         const btnEnregistrer = document.getElementById('btnEnregistrer');
@@ -1713,89 +1864,77 @@ function ajouterEcriture() {
         return tr;
     }
     
-    // Fonction pour sauvegarder le brouillon dans le stockage local
-    function sauvegarderBrouillon() {
+    // Fonction pour sauvegarder le brouillon dans le backend
+    async function sauvegarderBrouillon() {
         const tbody = document.querySelector('#tableEcritures tbody');
-        if (!tbody) return;
-        
-        const lignes = [];
-        const rows = tbody.getElementsByTagName('tr');
-        
-        for (let row of rows) {
-            const cells = row.cells;
-            if (cells.length >= 10) { // Vérifier que c'est une ligne valide
-                const ligne = {
-                    date: cells[0].textContent.trim(),
-                    piece: cells[1].textContent.trim(),
-                    journal: cells[2].textContent.trim(),
-                    compte: cells[3].textContent.trim(),
-                    libelle: cells[4].textContent.trim(),
-                    tiers: cells[5].textContent.trim(),
-                    debit: cells[6].textContent.trim(),
-                    credit: cells[7].textContent.trim(),
-                    analytique: cells[8].querySelector('input[type="checkbox"]')?.checked ? 'Oui' : 'Non'
-                };
-                lignes.push(ligne);
-            }
+        if (!tbody || tbody.rows.length === 0) {
+            showAlert('warning', 'Aucune ligne à enregistrer en brouillon.');
+            return;
         }
         
-        // Sauvegarder dans le stockage local avec une date d'expiration (7 jours)
-        const brouillon = {
-            date: new Date().toISOString(),
-            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            lignes: lignes
-        };
+        const btnBrouillon = document.getElementById('btnBrouillon');
+        const originalContent = btnBrouillon.innerHTML;
+        btnBrouillon.disabled = true;
+        btnBrouillon.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>EN COURS...';
+
+        const form = document.getElementById('formEcriture');
+        const formData = new FormData(form);
+        const pieceFile = document.getElementById('piece_justificatif').files[0];
         
-        localStorage.setItem('brouillon_ecritures', JSON.stringify(brouillon));
-        showAlert('success', 'Brouillon sauvegardé avec succès !');
-        
-        // Mettre à jour l'indicateur de brouillon
-        updateBrouillonIndicator(true);
-    }
-    
-    // Fonction pour charger le brouillon
-    function chargerBrouillon() {
-        const brouillonData = localStorage.getItem('brouillon_ecritures');
-        if (!brouillonData) return false;
-        
+        const ecritures = [];
+        Array.from(tbody.rows).forEach(row => {
+            const cells = row.cells;
+            const debit = parseFloat(cells[7].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            const credit = parseFloat(cells[8].textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+            const compteTresorerieId = row.getAttribute('data-compte-tresorerie-id');
+            
+            ecritures.push({
+                date: cells[0].textContent.trim(),
+                n_saisie: cells[1].textContent.trim(),
+                description_operation: cells[3].textContent.trim(),
+                reference_piece: cells[4].textContent.trim(),
+                plan_comptable_id: cells[5].getAttribute('data-plan-comptable-id'),
+                plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
+                debit: debit,
+                credit: credit,
+                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
+                exercices_comptables_id: formData.get('id_exercice'),
+                code_journal_id: formData.get('code_journal_id'),
+                journaux_saisis_id: formData.get('journaux_saisis_id'),
+                compte_tresorerie_id: compteTresorerieId || null,
+                source: 'manuel'
+            });
+        });
+
+        const formDataToSend = new FormData();
+        formDataToSend.append('ecritures', JSON.stringify(ecritures));
+        formDataToSend.append('source', 'manuel');
+        if (pieceFile) {
+            formDataToSend.append('piece_justificatif', pieceFile);
+        }
+
         try {
-            const brouillon = JSON.parse(brouillonData);
+            const res = await fetch("{{ route('api.brouillons.store') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: formDataToSend
+            });
             
-            // Vérifier si le brouillon est toujours valide
-            if (new Date(brouillon.expires) < new Date()) {
-                localStorage.removeItem('brouillon_ecritures');
-                return false;
-            }
-            
-            // Demander confirmation avant de charger
-            if (confirm('Un brouillon a été trouvé. Voulez-vous le charger ?')) {
-                // Vider le tableau actuel
-                const tbody = document.querySelector('#tableEcritures tbody');
-                if (tbody) tbody.innerHTML = '';
-                
-                // Ajouter les lignes du brouillon
-                brouillon.lignes.forEach(ligne => {
-                    // Utiliser la fonction existante pour ajouter les lignes
-                    // (à adapter selon votre implémentation actuelle)
-                    ajouterLigneEcriture(ligne);
-                });
-                
-                showAlert('info', `Brouillon du ${new Date(brouillon.date).toLocaleString()} chargé`);
-                updateBrouillonIndicator(true);
-                return true;
+            const json = await res.json();
+            if (json.success) {
+                showAlert('success', 'Brouillon sauvegardé avec succès !');
+                window.location.href = "{{ route('brouillons.index') }}";
+            } else {
+                throw new Error(json.error || json.message || 'Erreur lors de la sauvegarde');
             }
         } catch (e) {
-            console.error('Erreur lors du chargement du brouillon:', e);
-            localStorage.removeItem('brouillon_ecritures');
-        }
-        return false;
-    }
-    
-    // Fonction pour mettre à jour l'indicateur de brouillon
-    function updateBrouillonIndicator(hasBrouillon) {
-        const indicator = document.getElementById('brouillonIndicator');
-        if (indicator) {
-            indicator.style.display = hasBrouillon ? 'inline' : 'none';
+            showAlert('danger', 'Erreur: ' + e.message);
+        } finally {
+            btnBrouillon.disabled = false;
+            btnBrouillon.innerHTML = originalContent;
         }
     }
     
@@ -1925,6 +2064,8 @@ function ajouterEcriture() {
     // Fonction pour modifier une écriture
     // Fonction pour charger le compte de trésorerie en fonction du journal sélectionné
     function chargerCompteTresorerie(journalId) {
+        if (!journalId || journalId === 'N/A' || journalId === 'null') return;
+        
         fetch(`/api/journal/compte-treso/${journalId}`)
             .then(response => response.json())
             .then(data => {

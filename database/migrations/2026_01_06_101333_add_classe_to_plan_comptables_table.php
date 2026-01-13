@@ -9,11 +9,13 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up()
+    public function up()
 {
-    Schema::table('plan_comptables', function (Blueprint $table) {
-        $table->string('classe')->after('intitule')->nullable();
-    });
+    if (!Schema::hasColumn('plan_comptables', 'classe')) {
+        Schema::table('plan_comptables', function (Blueprint $table) {
+            $table->string('classe')->after('intitule')->nullable();
+        });
+    }
 }
 
     /**

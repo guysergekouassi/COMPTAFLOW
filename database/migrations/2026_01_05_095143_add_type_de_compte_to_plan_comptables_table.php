@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('plan_comptables', function (Blueprint $table) {
-            $table->string('type_de_compte')->nullable()->after('intitule');
-        });
+        if (!Schema::hasColumn('plan_comptables', 'type_de_compte')) {
+            Schema::table('plan_comptables', function (Blueprint $table) {
+                $table->string('type_de_compte')->nullable()->after('intitule');
+            });
+        }
     }
 
     /**

@@ -1,20 +1,18 @@
 <?php
 /**
  * Script de traitement IA pour COMPTAFLOW - Expert SYSCOHADA Côte d'Ivoire
- * Version autonome - OPTIMISÉE AVEC NOUVELLE CLÉ
+ * Version autonome sans Laravel - DEBUG & ROBUST VERSION
  */
 
 header('Content-Type: application/json');
 
 // --- CONFIGURATION ---
-// Nouvelle clé fournie par l'utilisateur
-$api_key = trim("AIzaSyDZn0tXVdsy5CW_H_HAcg0hpv3VhwZVykQ");
+$api_key = trim("AIzaSyDuwMm9cdo_vTqBe9j3degykq4rL-kOKVU");
 
-// Liste des modèles (gemini-1.5-flash est la cible principale désormais)
+// Liste des modèles à tenter - Ordre basé sur les tests (2.0-flash-exp a renvoyé 429 = autorisé)
 $models = [
-    'gemini-1.5-flash',
     'gemini-2.0-flash-exp',
-    'gemini-1.5-flash-8b',
+    'gemini-2.0-flash',
     'gemini-flash-latest'
 ];
 
@@ -46,7 +44,7 @@ $payload = [
 ];
 
 $payload_json = json_encode($payload);
-$errors = [];
+$last_attempt = null;
 
 foreach ($models as $model) {
     $url = "https://generativelanguage.googleapis.com/{$api_version}/models/{$model}:generateContent?key={$api_key}";
@@ -74,16 +72,28 @@ foreach ($models as $model) {
         }
     }
 
+    $last_attempt = [
+        'model' => $model,
+        'http_code' => $http_code,
+        'curl_error' => $curl_error,
+        'api_response' => json_decode($response, true)
+    ];
+
     if ($http_code === 429) {
-        continue; // Essayer le modèle suivant si quota atteint
+        echo json_encode([
+            'error' => "Quota Google dépassé pour le modèle {$model}.",
+            'details' => "Veuillez attendre 1 minute. Cette erreur confirme que la clé est valide mais saturée.",
+            'api_message' => $last_attempt['api_response']['error']['message'] ?? ''
+        ]);
+        exit;
     }
 
-    $errors[] = "Modèle {$model} : Code {$http_code} " . ($curl_error ?: "");
+    // On continue la boucle si 404 (modèle non trouvé) ou 403 (pas autorisé pour ce modèle spécifique)
 }
 
 echo json_encode([
-    'error' => "Échec de l'analyse avec la nouvelle clé.",
-    'details' => "Veuillez vérifier que la clé est bien activée dans Google AI Studio.",
-    'diagnostics' => $errors
+    'error' => "Échec de l'analyse : Aucun modèle autorisé trouvé.",
+    'diagnostic' => "Dernier test sur {$last_attempt['model']} : Code {$last_attempt['http_code']}",
+    'debug' => $last_attempt
 ]);
 ?>

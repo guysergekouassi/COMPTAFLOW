@@ -176,6 +176,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/accounting_entry_real', [EcritureComptableController::class, 'index'])->name('accounting_entry_real');
     Route::get('/ecriture/{id}', [EcritureComptableController::class, 'show'])->name('ecriture.show');
     Route::get('/accounting_entry_list', [EcritureComptableController::class, 'list'])->name('accounting_entry_list');
+
+    // Brouillons
+    Route::get('/brouillons', [App\Http\Controllers\BrouillonController::class, 'index'])->name('brouillons.index');
+    Route::post('/api/brouillons', [App\Http\Controllers\BrouillonController::class, 'store'])->name('api.brouillons.store')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::get('/api/brouillons/{batchId}', [App\Http\Controllers\BrouillonController::class, 'load'])->name('api.brouillons.load');
+    Route::delete('/brouillons/{batchId}', [App\Http\Controllers\BrouillonController::class, 'destroy'])->name('brouillons.destroy');
     
     Route::middleware(['auth'])->group(function () {
         Route::post('/accounting_entry_real', [EcritureComptableController::class, 'storeMultiple'])->name('storeMultiple.storeMultiple');

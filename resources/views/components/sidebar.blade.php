@@ -414,6 +414,10 @@ if ($user->role === 'super_admin') {
                     <i class="fa-solid fa-list"></i>
                     <span>Liste des écritures</span>
                 </a>
+                <a href="{{ route('brouillons.index') }}" class="menu-link-new {{ request()->routeIs('brouillons.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-file-pen"></i>
+                    <span>Brouillons</span>
+                </a>
                 @endif
                 @if($show_all || in_array('exercice_comptable', $habilitations))
                 <a href="{{ route('exercice_comptable') }}" class="menu-link-new {{ request()->routeIs('exercice_comptable') ? 'active' : '' }}">

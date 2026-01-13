@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EcritureComptableController extends Controller
 {
@@ -240,70 +241,106 @@ class EcritureComptableController extends Controller
     }
 }
 
-   public function storeMultiple(Request $request)
-{
-    try {
-        $user = Auth::user();
-        $activeCompanyId = session('current_company_id', $user->company_id);
-        
-        // --- AJOUT : Récupérer l'exercice actif par défaut ---
-        $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
-            ->where('cloturer', 0)
-            ->orderBy('date_debut', 'desc')
-            ->first();
+    public function storeMultiple(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['success' => false, 'error' => 'Utilisateur non authentifié'], 401);
+            }
 
-        if (!$exerciceActif) {
-            return response()->json(['success' => false, 'message' => 'Aucun exercice actif trouvé.'], 422);
-        }
-        // -----------------------------------------------------
+            $activeCompanyId = session('current_company_id', $user->company_id);
+            
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
 
-        $ecritures = $request->input('ecritures');
-        
-        if (is_string($ecritures)) {
-            $ecritures = json_decode($ecritures, true);
-        }
-        
-        if (empty($ecritures) || !is_array($ecritures)) {
-            return response()->json(['success' => false, 'message' => 'Aucune écriture à enregistrer.'], 400);
-        }
+            if (!$exerciceActif) {
+                return response()->json(['success' => false, 'error' => 'Aucun exercice actif trouvé.'], 422);
+            }
 
-        $pieceFilename = null;
-        if ($request->hasFile('piece_justificatif')) {
-            $file = $request->file('piece_justificatif');
-            $pieceFilename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('justificatifs'), $pieceFilename);
-        }
+            $ecritures = $request->input('ecritures');
+            if (is_string($ecritures)) {
+                $ecritures = json_decode($ecritures, true);
+            }
+            
+            if (empty($ecritures) || !is_array($ecritures)) {
+                return response()->json(['success' => false, 'error' => 'Aucune écriture à enregistrer.'], 400);
+            }
 
-        DB::beginTransaction();
-        foreach ($ecritures as $data) {
-            EcritureComptable::create([
-                'date' => $data['date'] ?? now()->format('Y-m-d'),
-                'n_saisie' => $data['n_saisie'] ?? $data['numero_saisie'] ?? null,
-                'description_operation' => $data['description_operation'] ?? $data['description'] ?? '',
-                'reference_piece' => $data['reference_piece'] ?? $data['reference'] ?? null,
-                'plan_comptable_id' => $data['plan_comptable_id'] ?? $data['compte_general'] ?? null,
-                'plan_tiers_id' => $data['plan_tiers_id'] ?? $data['compte_tiers'] ?? null,
-                'debit' => $data['debit'] ?? 0,
-                'credit' => $data['credit'] ?? 0,
-                'plan_analytique' => (isset($data['plan_analytique']) && $data['plan_analytique'] == 1) ? 1 : 0,
-                'code_journal_id' => $data['code_journal_id'] ?? $data['journal_id'] ?? null,
-                'company_id' => $activeCompanyId,
-                'user_id' => $user->id,
-                'piece_justificatif' => $pieceFilename,
-                // MODIFICATION : Utilise l'ID fourni ou l'exercice actif détecté
-                'exercices_comptables_id' => $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? $exerciceActif->id,
-                'journaux_saisis_id' => $data['journaux_saisis_id'] ?? $data['journal_saii_id'] ?? null,
-                'compte_tresorerie_id' => $data['compte_tresorerie_id'] ?? null
-            ]);
-        }
-        DB::commit();
+            // Gestion du fichier justificatif (priorité au champ global, sinon le premier de la liste)
+            $pieceFilename = null;
+            $file = $request->file('piece_justificatif') ?? $request->file('ecritures.0.piece_justificatif');
+            
+            if ($file) {
+                $pieceFilename = time() . '_' . preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
+                $file->move(public_path('justificatifs'), $pieceFilename);
+            }
 
-        return response()->json(['success' => true, 'message' => 'Écritures enregistrées avec succès.']);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            DB::beginTransaction();
+            foreach ($ecritures as $data) {
+                // Conversion des chaînes vides en null pour les FK
+                $planComptableId = !empty($data['plan_comptable_id']) ? $data['plan_comptable_id'] : ($data['compte_general'] ?? null);
+                if (!$planComptableId) {
+                    throw new \Exception("Un compte général est requis pour chaque ligne.");
+                }
+
+                $codeJournalId = !empty($data['code_journal_id']) ? $data['code_journal_id'] : ($data['journal_id'] ?? null);
+                if (!$codeJournalId) {
+                    throw new \Exception("Un code journal est requis.");
+                }
+
+                $dateString = !empty($data['date']) ? $data['date'] : now()->format('Y-m-d');
+                $date = \Carbon\Carbon::parse($dateString);
+                $exerciceId = $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? $exerciceActif->id;
+
+                // --- RÉSOLUTION AUTOMATIQUE DU JOURNAL SAISI ---
+                // On cherche ou on crée le journal correspondant au mois/année de l'écriture
+                $journalSaisi = \App\Models\JournalSaisi::firstOrCreate([
+                    'annee' => $date->year,
+                    'mois' => $date->month,
+                    'exercices_comptables_id' => $exerciceId,
+                    'code_journals_id' => $codeJournalId,
+                    'company_id' => $activeCompanyId,
+                ], [
+                    'user_id' => $user->id,
+                ]);
+
+                $ecriture = new EcritureComptable();
+                $ecriture->date = $dateString;
+                $ecriture->n_saisie = $data['n_saisie'] ?? $data['numero_saisie'] ?? null;
+                $ecriture->description_operation = $data['description_operation'] ?? $data['description'] ?? '';
+                $ecriture->reference_piece = $data['reference_piece'] ?? $data['reference'] ?? null;
+                $ecriture->plan_comptable_id = $planComptableId;
+                $ecriture->plan_tiers_id = !empty($data['plan_tiers_id']) ? $data['plan_tiers_id'] : ($data['compte_tiers'] ?? null);
+                $ecriture->debit = $data['debit'] ?? 0;
+                $ecriture->credit = $data['credit'] ?? 0;
+                $ecriture->plan_analytique = (isset($data['plan_analytique']) && $data['plan_analytique'] == 1) ? 1 : 0;
+                $ecriture->code_journal_id = $codeJournalId;
+                $ecriture->company_id = $activeCompanyId;
+                $ecriture->user_id = $user->id;
+                $ecriture->piece_justificatif = $pieceFilename;
+                $ecriture->exercices_comptables_id = $exerciceId;
+                $ecriture->journaux_saisis_id = $journalSaisi->id;
+                $ecriture->save();
+            }
+            DB::commit();
+
+            // S'il s'agissait d'un brouillon, on le supprime
+            $batchId = $request->input('batch_id');
+            if ($batchId) {
+                \App\Models\Brouillon::where('batch_id', $batchId)
+                    ->where('company_id', $activeCompanyId)
+                    ->delete();
+            }
+
+            return response()->json(['success' => true, 'message' => 'Écritures enregistrées avec succès.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
     }
-}
 
     public function getComptesParFlux(Request $request)
     {

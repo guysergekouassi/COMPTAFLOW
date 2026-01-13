@@ -212,9 +212,18 @@
                                         </div>
                                     </div>
                                     <div class="col-md-5">
-                                        <button id="btnSave" class="btn btn-primary w-100 py-3 rounded-pivot shadow-sm fw-bold fs-5" disabled>
-                                            VALIDER & ENREGISTRER L'ÉCRITURE
-                                        </button>
+                                        <div class="row g-2">
+                                            <div class="col-12">
+                                                <button id="btnSave" class="btn btn-primary w-100 py-3 rounded-pivot shadow-sm fw-bold fs-5" disabled>
+                                                    VALIDER & ENREGISTRER L'ÉCRITURE
+                                                </button>
+                                            </div>
+                                            <div class="col-12">
+                                                <button id="btnSaveDraft" class="btn btn-outline-primary w-100 py-2 rounded-pivot shadow-sm fw-bold" disabled onclick="window.sauvegarderEnBrouillon()">
+                                                    ENREGISTRER EN BROUILLON
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -272,6 +281,45 @@
             // Reset file input and spinner on load to prevent auto-triggering
             fileInput.value = '';
             processingUI.classList.add('d-none');
+
+            // Vérifier si un batch_id est présent pour charger un brouillon
+            const urlParams = new URLSearchParams(window.location.search);
+            const batchId = urlParams.get('batch_id');
+            if (batchId) {
+                chargerBrouillon(batchId);
+            }
+
+            async function chargerBrouillon(id) {
+                processingUI.classList.remove('d-none');
+                processingUI.querySelector('h6').innerText = "CHARGEMENT DU BROUILLON...";
+                try {
+                    const res = await fetch(`/api/brouillons/${id}`);
+                    const json = await res.json();
+                    if (json.success) {
+                        // On simule une structure proche de celle de l'IA pour renderTable
+                        const data = {
+                            ecriture: json.brouillons.map(b => ({
+                                compte: b.plan_comptable ? b.plan_comptable.numero_de_compte : '',
+                                debit: b.debit,
+                                credit: b.credit,
+                                libelle: b.description_operation,
+                                type: b.credit > 0 ? 'SOURCE' : 'DESTINATION'
+                            })),
+                            reference: json.summary.reference,
+                            date: json.summary.date,
+                            fournisseur: json.summary.description
+                        };
+                        renderTable(data);
+                    } else {
+                        alert("Erreur: " + json.message);
+                    }
+                } catch (e) {
+                    alert("Erreur lors du chargement: " + e.message);
+                } finally {
+                    processingUI.classList.add('d-none');
+                    processingUI.querySelector('h6').innerText = "ANALYSE...";
+                }
+            }
 
             dropZone.onclick = () => fileInput.click();
             fileInput.onchange = e => {
@@ -369,21 +417,23 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                         // Préparer les données à envoyer
                         const requestData = {
                             prompt: payload.contents[0].parts[0].text,
-                            image: null
+                            image: payload.contents[0].parts[1]?.inlineData?.data
                         };
                         
-                        // Si une image est présente dans le payload
-                        if (payload.contents[0].parts[1]?.inlineData?.data) {
-                            requestData.image = payload.contents[0].parts[1].inlineData.data;
-                        }
-
                         try {
                             // Créer FormData pour l'upload de fichier
                             const formData = new FormData();
                             
-                            // Convertir l'image base64 en blob
-                            const imageBlob = await fetch(`data:image/jpeg;base64,${requestData.image}`).then(r => r.blob());
-                            formData.append('facture', imageBlob, 'facture.jpg');
+                            // Envoyer aussi le prompt au script standalone
+                            if (requestData.prompt) {
+                                formData.append('prompt', requestData.prompt);
+                            }
+                            
+                            if (requestData.image) {
+                                // Convertir l'image base64 en blob
+                                const imageBlob = await fetch(`data:image/jpeg;base64,${requestData.image}`).then(r => r.blob());
+                                formData.append('facture', imageBlob, 'facture.jpg');
+                            }
                             
                             const response = await fetch(API_URL, { 
                                 method: 'POST', 
@@ -488,10 +538,21 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                         throw new Error("Format JSON invalide. L'IA n'a pas pu structurer les données correctement.");
                     }
                     
+                    // GESTION DES ERREURS RETOURNÉES PAR LE SCRIPT (comme Quota dépassé)
+                    if (result.error) {
+                        let fullMsg = result.error;
+                        if (result.message) fullMsg += "\n" + result.message;
+                        if (result.details) fullMsg += "\n" + result.details;
+                        if (result.api_message) fullMsg += "\nGoogle API: " + result.api_message;
+                        if (result.curl_error) fullMsg += "\ncURL: " + result.curl_error;
+                        throw new Error(fullMsg);
+                    }
+                    
                     // Validation des données critiques
-                    const ecritures = result.ecriture || result.lignes;
+                    const ecritures = result.ecriture || result.ecritures || result.lignes || result.lines;
                     if (!ecritures || !Array.isArray(ecritures) || ecritures.length === 0) {
-                        throw new Error("Aucune ligne d'écriture trouvée dans la réponse.");
+                        console.error('Réponse IA sans lignes:', result);
+                        throw new Error("Aucune ligne d'écriture trouvée dans la réponse. (Vérifiez la qualité de l'image)");
                     }
                     
                     // Validation de l'équilibre Débit/Crédit
@@ -659,19 +720,27 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
             };
 
             window.updateTotals = () => {
-                let d = 0, c = 0, hasNull = false;
+                let d = 0, c = 0, hasNull = false, hasRows = false;
+                const btnSave = document.getElementById('btnSave');
+                const btnSaveDraft = document.getElementById('btnSaveDraft');
+                
                 document.querySelectorAll('#entriesBody tr').forEach(tr => {
                     const rowAcc = tr.querySelector('.row-acc'); if (!rowAcc) return;
+                    hasRows = true;
                     const dVal = parseFloat(tr.querySelector('.row-debit').value) || 0;
                     const cVal = parseFloat(tr.querySelector('.row-credit').value) || 0;
                     d += dVal; c += cVal;
                     if (!rowAcc.value) hasNull = true;
                 });
+                
                 document.getElementById('summaryDebit').innerText = d.toLocaleString() + ' FCFA';
                 document.getElementById('summaryCredit').innerText = c.toLocaleString() + ' FCFA';
+                
                 const balanced = Math.abs(d - c) < 1;
                 document.getElementById('statusIndicator').innerHTML = balanced ? '<i class="bx bx-check-circle text-success fs-3 animate__animated animate__bounceIn"></i>' : '<i class="bx bx-error-circle text-danger fs-3"></i>';
-                btnSave.disabled = !balanced || hasNull || document.querySelectorAll('#entriesBody tr').length === 0;
+                
+                btnSave.disabled = !balanced || hasNull || !hasRows;
+                btnSaveDraft.disabled = !hasRows;
             };
 
             const resetUI = () => {
@@ -683,15 +752,20 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
             };
             document.getElementById('btnReset').onclick = resetUI;
 
-            btnSave.onclick = async () => {
+            window.enregistrerEcritures = async () => {
+                const btnSave = document.getElementById('btnSave');
                 const formData = new FormData();
-                const file = fileInput.files[0];
+                const file = document.getElementById('fileInput').files[0];
                 const rows = Array.from(document.querySelectorAll('#entriesBody tr'));
                 
                 if (rows.length === 0) return;
 
-                rows.forEach((tr, index) => {
-                    const rowData = {
+                if (file) {
+                    formData.append('piece_justificatif', file);
+                }
+
+                const ecritures = rows.map((tr) => {
+                    return {
                         date: tr.querySelector('.row-date').value,
                         n_saisie: NEXT_SAISIE,
                         description_operation: tr.querySelector('.row-lib').value,
@@ -703,17 +777,9 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                         exercices_comptables_id: CONTEXT.id_exercice,
                         code_journal_id: CONTEXT.id_code
                     };
-
-                    // Add row fields to FormData
-                    Object.keys(rowData).forEach(key => {
-                        formData.append(`ecritures[${index}][${key}]`, rowData[key] || '');
-                    });
-
-                    // Attach file to each row for consistency in the DB
-                    if (file) {
-                        formData.append(`ecritures[${index}][piece_justificatif]`, file);
-                    }
                 });
+
+                formData.append('ecritures', JSON.stringify(ecritures));
 
                 try {
                     btnSave.disabled = true; 
@@ -721,18 +787,75 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                     
                     const res = await fetch(SAVE_ROUTE, { 
                         method: 'POST', 
-                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }, // Don't set Content-Type for FormData
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
                         body: formData 
                     });
                     
                     const json = await res.json();
                     if (json.success) { 
                         window.location.href = "{{ route('accounting_entry_list') }}?success=1"; 
-                    } else throw new Error(json.error);
+                    } else {
+                        throw new Error(json.error || json.message || "Erreur inconnue lors de l'enregistrement");
+                    }
                 } catch (e) { 
                     alert("Erreur: " + e.message); 
+                    console.error('Save error:', e);
                     btnSave.disabled = false; 
                     btnSave.innerText = "VALIDER & ENREGISTRER L'ÉCRITURE"; 
+                }
+            };
+
+            btnSave.onclick = window.enregistrerEcritures;
+
+            window.sauvegarderEnBrouillon = async () => {
+                const btnDraft = document.getElementById('btnSaveDraft');
+                const formData = new FormData();
+                const file = document.getElementById('fileInput').files[0];
+                const rows = Array.from(document.querySelectorAll('#entriesBody tr'));
+                
+                if (rows.length === 0) return;
+
+                if (file) {
+                    formData.append('piece_justificatif', file);
+                }
+
+                const ecritures = rows.map((tr) => {
+                    return {
+                        date: tr.querySelector('.row-date').value,
+                        description_operation: tr.querySelector('.row-lib').value,
+                        reference_piece: tr.querySelector('.row-ref').value,
+                        plan_comptable_id: tr.querySelector('.row-acc').value,
+                        plan_tiers_id: tr.querySelector('.row-tier').value || null,
+                        debit: tr.querySelector('.row-debit').value,
+                        credit: tr.querySelector('.row-credit').value,
+                        exercices_comptables_id: CONTEXT.id_exercice,
+                        code_journal_id: CONTEXT.id_code,
+                        source: 'scan'
+                    };
+                });
+
+                formData.append('ecritures', JSON.stringify(ecritures));
+
+                try {
+                    btnDraft.disabled = true;
+                    btnDraft.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>EN COURS...';
+                    
+                    const res = await fetch("{{ route('api.brouillons.store') }}", {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: formData
+                    });
+                    
+                    const json = await res.json();
+                    if (json.success) {
+                        window.location.href = "{{ route('brouillons.index') }}?success=Brouillon enregistré avec succès";
+                    } else {
+                        throw new Error(json.error || json.message || "Erreur lors de l'enregistrement du brouillon");
+                    }
+                } catch (e) {
+                    alert("Erreur: " + e.message);
+                    btnDraft.disabled = false;
+                    btnDraft.innerText = "ENREGISTRER EN BROUILLON";
                 }
             };
 
