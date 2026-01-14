@@ -22,7 +22,7 @@ class GeminiController extends Controller
 
         try {
             // Déterminer le modèle à utiliser
-            $model = $image ? 'gemini-flash-latest' : 'gemini-flash-latest';
+            $model = $image ? 'gemini-1.5-flash' : 'gemini-1.5-flash';
 
             // Préparer les parties du contenu
             $parts = [
