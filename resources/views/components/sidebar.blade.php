@@ -388,7 +388,7 @@ if ($user->role === 'super_admin') {
             </div>
             @endif
 
-            {{-- Section Traitement --}}
+            <!-- {{-- Section Traitement --}}
             @php
                 $traitement_permissions = [
                     'nouvelle_saisie', 'exercice_comptable', 'rapprochement', 'gestion_tresorerie',
@@ -396,7 +396,7 @@ if ($user->role === 'super_admin') {
                     'gestion_stocks', 'gestion_reportings'
                 ];
                 $show_traitement_header = $show_all || count(array_intersect($traitement_permissions, $habilitations)) > 0;
-            @endphp
+            @endphp -->
 
             @if ($show_traitement_header)
             <div class="menu-section">
