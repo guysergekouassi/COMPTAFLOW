@@ -318,6 +318,9 @@ if ($user->role === 'super_admin') {
 
 
 <!-- Nouveau Sidebar Design -->
+@if (auth()->check() && auth()->user()->isSuperAdmin())
+    @include('components.superadmin_sidebar')
+@else
 <div class="sidebar-new">
     <div class="sidebar-header">
         <div class="brand-container">
@@ -566,6 +569,7 @@ if ($user->role === 'super_admin') {
     </div>
     @endauth
 </div>
+@endif
 
 <!-- Ancien sidebar (caché) -->
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme" style="display: none;">
@@ -1071,4 +1075,5 @@ if ($user->role === 'super_admin') {
         @endif {{-- Fin de la condition @if ($isComptaAccountActive && !auth()->user()->isSuperAdmin()) --}}
 
     </ul>
+</ul>
 </aside>

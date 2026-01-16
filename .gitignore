@@ -27,6 +27,7 @@ Thumbs.db
 /storage/framework/cache/*
 /bootstrap/cache/*
 .env
+temp_design_assets/
 # Fichiers de test temporaires
 test_*.php
 verification_comptes.php

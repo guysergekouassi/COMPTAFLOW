@@ -127,37 +127,50 @@
                             </div>
                         @endif
 
-                        <!-- KPI Summary Cards (Style Mirror) -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filter-active" data-type="all">
+                        <!-- KPI Summary Cards (Style Plan Tiers) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filtre-journaux" data-type="all">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <i class="fas fa-book text-2xl"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm text-slate-500">Total Journaux</p>
-                                    <h3 class="text-2xl font-bold text-slate-800">{{ $code_journaux->count() }}</h3>
-                                </div>
-                            </div>
-                            
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-type="Tresorerie">
-                                <div class="p-3 rounded-full bg-emerald-100 text-emerald-600 mr-4">
-                                    <i class="fas fa-university text-2xl"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-slate-500">Trésorerie</p>
-                                    <h3 class="text-2xl font-bold text-slate-800">{{ $code_journaux->where('type', 'Tresorerie')->count() }}</h3>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $stats['total'] }}</h3>
                                 </div>
                             </div>
 
-                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-type="Ventes">
-                                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
-                                    <i class="fas fa-exchange-alt text-2xl"></i>
+                            @foreach ($journauxParType as $type => $count)
+                                @php
+                                    $color = 'blue';
+                                    $icon = 'fas fa-book';
+                                    
+                                    if (strtolower($type) === 'tresorerie') {
+                                        $color = 'emerald';
+                                        $icon = 'fas fa-university';
+                                    } elseif (strtolower($type) === 'achats') {
+                                        $color = 'purple';
+                                        $icon = 'fas fa-shopping-cart';
+                                    } elseif (strtolower($type) === 'ventes') {
+                                        $color = 'indigo';
+                                        $icon = 'fas fa-chart-line';
+                                    } elseif (strtolower($type) === 'general') {
+                                        $color = 'orange';
+                                        $icon = 'fas fa-cogs';
+                                    } elseif (strtolower($type) === 'situation') {
+                                        $color = 'slate';
+                                        $icon = 'fas fa-balance-scale';
+                                    }
+                                @endphp
+                                <div class="glass-card !p-6 flex items-center cursor-pointer filter-card filtre-journaux" data-type="{{ $type }}">
+                                    <div class="p-3 rounded-full bg-{{ $color }}-100 text-{{ $color }}-600 mr-4">
+                                        <i class="{{ $icon }} text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-slate-500">{{ ucfirst($type) }}</p>
+                                        <h3 class="text-2xl font-bold text-slate-800">{{ $count }}</h3>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="text-sm text-slate-500">Achats / Ventes</p>
-                                    <h3 class="text-2xl font-bold text-slate-800">{{ $code_journaux->whereIn('type', ['Achats', 'Ventes'])->count() }}</h3>
-                                </div>
-                            </div>
+                            @endforeach
                         </div>
 
                         <!-- Actions Bar -->
@@ -173,6 +186,12 @@
                             
                             <!-- Right: New Journal -->
                             <div class="flex flex-wrap items-center justify-end gap-3">
+                                <!-- Success Message Container -->
+                                <div id="successMessage" class="hidden fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    <span id="successText">Code journal enregistré</span>
+                                </div>
+                                
                                 <button type="button" data-bs-toggle="modal" data-bs-target="#modalCreateCodeJournal"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
                                     <i class="fas fa-plus"></i>
@@ -307,6 +326,7 @@
                                 <label class="input-label-premium">Code Journal *</label>
                                <input
                                 type="text"
+                                id="code_journal_input"
                                 name="code_journal"
                                 class="input-field-premium uppercase-input"
                                 maxlength="4"
@@ -314,7 +334,9 @@
                                 title="4 caractères maximum, lettres et chiffres uniquement"
                                 required
                                 placeholder="ex: VT"
+                                oninput="formatCodeJournal(this)"
                             >
+                            <div id="code_journal_error" class="text-danger small mt-1" style="display: none;"></div>
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
@@ -805,6 +827,19 @@
                 }
             }
 
+            // 5. Delete Modal Logic
+            $('#deleteConfirmationModal').on('show.bs.modal', function(e) {
+                const button = $(e.relatedTarget);
+                const id = button.data('id');
+                const name = button.data('name');
+                
+                $('#journalToDeleteName').text(name);
+                
+                // Construire l'URL directement depuis les attributs data
+                const deleteUrl = `/accounting_journals/${id}`;
+                $('#deleteJournalForm').attr('action', deleteUrl);
+            });
+
             // Au changement
             $('#type_select, #update_type').on('change', function () {
                 toggleTresorerie(this);
@@ -816,6 +851,148 @@
                     toggleTresorerie(this);
                 });
             });
+        });
+    </script>
+
+    <script>
+        // Validation personnalisée pour le code journal
+        function formatCodeJournal(input) {
+            // Supprimer tous les caractères non alphanumériques
+            let value = input.value.replace(/[^A-Za-z0-9]/g, '');
+            
+            // Convertir en majuscules
+            value = value.toUpperCase();
+            
+            // Limiter à 4 caractères
+            if (value.length > 4) {
+                value = value.substring(0, 4);
+            }
+            
+            input.value = value;
+            
+            // Validation en temps réel
+            validateCodeJournal(input);
+        }
+        
+        function validateCodeJournal(input) {
+            const errorDiv = document.getElementById('code_journal_error');
+            const value = input.value.trim();
+            
+            if (value.length === 0) {
+                errorDiv.style.display = 'none';
+                input.setCustomValidity('');
+                return true;
+            }
+            
+            if (value.length > 4) {
+                errorDiv.textContent = 'Le code journal ne peut pas dépasser 4 caractères';
+                errorDiv.style.display = 'block';
+                input.setCustomValidity('Le code journal ne peut pas dépasser 4 caractères');
+                return false;
+            }
+            
+            if (!/^[A-Z0-9]{1,4}$/.test(value)) {
+                errorDiv.textContent = 'Le code journal doit contenir uniquement des lettres majuscules et des chiffres';
+                errorDiv.style.display = 'block';
+                input.setCustomValidity('Format invalide');
+                return false;
+            }
+            
+            errorDiv.style.display = 'none';
+            input.setCustomValidity('');
+            return true;
+        }
+        
+        // Fonction pour afficher le message de succès
+        function showSuccessMessage(message) {
+            const successDiv = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            
+            successText.textContent = message;
+            successDiv.classList.remove('hidden');
+            
+            // Masquer le message après 3 secondes
+            setTimeout(() => {
+                successDiv.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // Validation au submit du formulaire
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('formCodeJournal');
+            if (form) {
+                // Supprimer tous les gestionnaires d'événements existants
+                form.removeEventListener('submit', form.submitHandler);
+                
+                form.submitHandler = function(e) {
+                    e.preventDefault();
+                    
+                    const codeInput = document.getElementById('code_journal_input');
+                    if (!validateCodeJournal(codeInput)) {
+                        codeInput.focus();
+                        return false;
+                    }
+                    
+                    // Soumission AJAX
+                    const formData = new FormData(form);
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
+                    
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // Afficher le message de succès
+                            showSuccessMessage(data.message || 'Code journal enregistré');
+                            
+                            // Fermer le modal
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCreateCodeJournal'));
+                            if (modal) {
+                                modal.hide();
+                            }
+                            
+                            // Réinitialiser le formulaire
+                            form.reset();
+                            form.classList.remove('was-validated');
+                            
+                            // Recharger la page après un court délai
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            // Afficher un message d'erreur plus clair
+                            const errorMessage = data.message || 'Erreur lors de l\'enregistrement';
+                            alert(errorMessage);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Afficher un message d'erreur plus informatif
+                        alert('Erreur lors de l\'enregistrement: ' + error.message);
+                    })
+                    .finally(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    });
+                };
+                
+                // Ajouter le nouveau gestionnaire d'événements
+                form.addEventListener('submit', form.submitHandler);
+            }
         });
     </script>
 </body>

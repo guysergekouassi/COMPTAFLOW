@@ -17,7 +17,7 @@ use ManagesCompany;
 
 // Dans votre CodeJournalController ou similaire...
 
-public function index()
+public function index(Request $request)
 {
     $user = Auth::user();
 
@@ -29,7 +29,26 @@ public function index()
         $query->where('user_id', $user->id);
     }
 
-    $code_journaux = $query->get();
+    // FILTRAGE PAR TYPE (depuis les cartes KPI)
+    if ($request->has('type') && $request->type !== 'all') {
+        if ($request->type === 'Ventes') {
+            $query->whereIn('type', ['Achats', 'Ventes']);
+        } else {
+            $query->where('type', $request->type);
+        }
+    }
+
+    // FILTRAGE PAR CODE JOURNAL
+    if ($request->has('code') && !empty($request->code)) {
+        $query->where('code_journal', 'LIKE', '%' . $request->code . '%');
+    }
+
+    // FILTRAGE PAR INTITULE
+    if ($request->has('intitule') && !empty($request->intitule)) {
+        $query->where('intitule', 'LIKE', '%' . $request->intitule . '%');
+    }
+
+    $code_journaux = $query->paginate(5);
 
 
     // =============================================================
@@ -48,7 +67,7 @@ public function index()
         ->keyBy('id');
 
     // C. Parcourir et enrichir la collection $code_journaux
-    $code_journaux->map(function ($journal) use ($tresoreriesData, $planComptableAccounts) {
+    $code_journaux->getCollection()->map(function ($journal) use ($tresoreriesData, $planComptableAccounts) {
         $codeTresorerie = null;
 
         if ($tresoreriesData->has($journal->code_journal)) {
@@ -62,7 +81,18 @@ public function index()
         return $journal;
     });
 
-    // 5. Calculs statistiques
+    // 5. Calculs statistiques pour les cartes (requêtes séparées pour éviter les conflits de pagination)
+    $stats = [
+        'total' => CodeJournal::where('company_id', $this->getCurrentCompanyId())->count(),
+        'tresorerie' => CodeJournal::where('company_id', $this->getCurrentCompanyId())->where('type', 'Tresorerie')->count(),
+        'achatsVentes' => CodeJournal::where('company_id', $this->getCurrentCompanyId())->whereIn('type', ['Achats', 'Ventes'])->count(),
+    ];
+
+    // 6. Regrouper les journaux par type pour affichage dynamique des cartes
+    $journauxParType = CodeJournal::where('company_id', $this->getCurrentCompanyId())
+        ->get()
+        ->groupBy('type')
+        ->map(fn($group) => $group->count());
     $allJournauxForStats = CodeJournal::get();
     $totalJournauxCompany = $allJournauxForStats->count();
 
@@ -79,14 +109,28 @@ public function index()
         ->where('company_id', $this->getCurrentCompanyId())
         ->get();
 
-    // 7. On passe les variables à la vue
-    return view('accounting_journals', compact(
-        'code_journaux', 
-        'totalJournauxCompany', 
-        'userCreatedJournaux', 
-        'comptesTresorerie',
-        'comptesCinq'
-    ));
+    // 7. Récupérer les postes de trésorerie distincts avec leur catégorie (uniquement les postes créés)
+    $postesTresorerieData = \App\Models\tresoreries\Tresoreries::select('poste_tresorerie', 'categorie')
+        ->distinct()
+        ->whereNotNull('poste_tresorerie')
+        ->where('poste_tresorerie', '!=', '')
+        ->whereNotNull('categorie')
+        ->where('categorie', '!=', '')
+        ->where('company_id', $this->getCurrentCompanyId())
+        ->get()
+        ->keyBy('poste_tresorerie');
+
+    // 8. On passe les variables à la vue
+        return view('accounting_journals', compact(
+            'code_journaux', 
+            'totalJournauxCompany', 
+            'userCreatedJournaux', 
+            'comptesTresorerie',
+            'comptesCinq',
+            'postesTresorerieData',
+            'stats',
+            'journauxParType'
+        ));
 }
 
     public function store(Request $request)
@@ -98,7 +142,7 @@ public function index()
             'type' => 'nullable|string',
             'compte_de_contrepartie' => 'nullable|string',
             'compte_de_tresorerie' => 'nullable|exists:plan_comptables,id',
-            'rapprochement_sur' => 'nullable|string|in:Contrepartie,tresorerie',
+            'poste_tresorerie' => 'nullable|string',
         ], [
             'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
             'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'
@@ -109,9 +153,10 @@ public function index()
                 ->first();
 
             if ($existing) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Ce code journal existe déjà pour votre entreprise.');
+                return response()->json([
+                'success' => false,
+                'message' => 'Ce code journal existe déjà pour votre entreprise.'
+            ], 422);
             }
 
             $intitule_formate = ucfirst(strtolower($request->intitule));
@@ -125,14 +170,20 @@ public function index()
                 'type' => $request->type,
                 'compte_de_contrepartie' => $request->compte_de_contrepartie,
                 'compte_de_tresorerie' => $request->compte_de_tresorerie,
-                'rapprochement_sur' => $request->rapprochement_sur,
+                'poste_tresorerie' => $request->poste_tresorerie,
                 'user_id' => $user->id,
                 'company_id' => $currentCompanyId,
             ]);
 
-            return redirect()->back()->with('success', 'Code journal créé avec succès.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Code journal enregistré'
+            ]);
         } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Une erreur s\'est produite : ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur s\'est produite : ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -147,7 +198,7 @@ public function index()
             'type' => 'nullable|string',
             'compte_de_contrepartie' => 'nullable|string',
             'compte_de_tresorerie' => 'nullable|exists:plan_comptables,id',
-            'rapprochement_sur' => 'nullable|string|in:Contrepartie,tresorerie',
+            'poste_tresorerie' => 'nullable|string',
         ], [
             'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
             'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'

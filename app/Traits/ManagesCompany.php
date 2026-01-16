@@ -38,6 +38,9 @@ trait ManagesCompany
     protected function getCurrentCompanyId(): int
     {
         $user = Auth::user();
-        return session('current_company_id', $user->company_id);
+        $companyId = session('current_company_id', $user->company_id);
+        
+        // S'assurer que nous retournons toujours un entier
+        return (int) $companyId;
     }
 }

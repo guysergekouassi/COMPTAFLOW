@@ -405,8 +405,11 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
 
-    // Tableau de Bord Super Admin
+    // Tableau de Bord Super Admin (Statistiques Globales)
     Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('superadmin.dashboard');
+
+    // Gestion des Entités (Ancien Dashboard)
+    Route::get('/entities', [SuperAdminDashboardController::class, 'entities'])->name('superadmin.entities');
 
 
      Route::put('/{company}/toggle', [SuperAdminCompanyController::class, 'toggleStatus'])->name('toggle');

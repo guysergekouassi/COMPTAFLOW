@@ -1,0 +1,20 @@
+{
+  "fournisseur": "Soulemane",
+  "date": "2020-06-15",
+  "reference": "2",
+  "montant_ttc": 45000,
+  "ecriture": [
+    {
+      "compte": "625",
+      "libelle": "Entretien et réparations (Maintenance SPLIT)",
+      "debit": 45000,
+      "credit": 0
+    },
+    {
+      "compte": "571",
+      "libelle": "Caisse (Règlement Prestataire)",
+      "debit": 0,
+      "credit": 45000
+    }
+  ]
+}
