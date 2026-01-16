@@ -38,18 +38,12 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header')
+                @include('components.header', ['page_title' => 'Dashboard <span class="text-gradient-gov">Master</span>'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
                     
-                    <!-- En-tête -->
-                    <div class="flex items-center justify-between mb-8">
-                        <div>
-                            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-                                Dashboard <span class="text-gradient-gov">Master</span>
-                            </h1>
-                            <p class="text-slate-500 font-medium">Vue globale de l'écosystème ComptaFlow</p>
-                        </div>
+                    <!-- En-tête (Informations temporelles uniquement) -->
+                    <div class="d-flex justify-content-end mb-8">
                         <div class="flex gap-3">
                             <span class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold border border-slate-200 flex items-center gap-2">
                                 <i class="fa-solid fa-calendar"></i> {{ now()->format('F Y') }}

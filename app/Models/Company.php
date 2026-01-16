@@ -11,10 +11,13 @@ class Company extends Model
         'company_name', 'activity', 'juridique_form', 'social_capital',
         'adresse', 'code_postal', 'city', 'country', 'phone_number',
         'email_adresse', 'identification_TVA','is_active','user_id','parent_company_id',
+        'is_blocked', 'block_reason', 'blocked_at', 'blocked_by',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_blocked' => 'boolean',
+        'blocked_at' => 'datetime',
     ];
 
     public function users()

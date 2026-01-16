@@ -67,17 +67,29 @@ public function index(Request $request)
         ->keyBy('id');
 
     // C. Parcourir et enrichir la collection $code_journaux
-    $code_journaux->getCollection()->map(function ($journal) use ($tresoreriesData, $planComptableAccounts) {
+    $code_journaux->getCollection()->transform(function ($journal) use ($tresoreriesData, $planComptableAccounts) {
         $codeTresorerie = null;
+        $posteTresorerie = null;
 
+        // Priorité 1: Vérifier si c'est un journal de trésorerie dans la table tresoreries
         if ($tresoreriesData->has($journal->code_journal)) {
-            $codeTresorerie = $tresoreriesData[$journal->code_journal]->compte_de_contrepartie;
-        } elseif ($journal->compte_de_tresorerie && $planComptableAccounts->has($journal->compte_de_tresorerie)) {
-            $compte = $planComptableAccounts[$journal->compte_de_tresorerie];
-            $codeTresorerie = $compte->numero_de_compte ?? null;
+            $tresorerieData = $tresoreriesData[$journal->code_journal];
+            $codeTresorerie = $tresorerieData->compte_de_contrepartie;
+            $posteTresorerie = $tresorerieData->poste_tresorerie;
+        }
+        // Priorité 2: Sinon, utiliser les données de la table code_journals
+        else {
+            if ($journal->compte_de_tresorerie && $planComptableAccounts->has($journal->compte_de_tresorerie)) {
+                $compte = $planComptableAccounts[$journal->compte_de_tresorerie];
+                $codeTresorerie = $compte->numero_de_compte ?? null;
+            }
+            // Utiliser le poste de trésorerie de la table code_journals
+            $posteTresorerie = $journal->poste_tresorerie;
         }
 
         $journal->code_tresorerie_display = $codeTresorerie;
+        $journal->poste_tresorerie_display = $posteTresorerie;
+        
         return $journal;
     });
 
@@ -117,8 +129,7 @@ public function index(Request $request)
         ->whereNotNull('categorie')
         ->where('categorie', '!=', '')
         ->where('company_id', $this->getCurrentCompanyId())
-        ->get()
-        ->keyBy('poste_tresorerie');
+        ->pluck('categorie', 'poste_tresorerie');
 
     // 8. On passe les variables à la vue
         return view('accounting_journals', compact(
@@ -163,7 +174,7 @@ public function index(Request $request)
             $user = Auth::user();
             $currentCompanyId = session('current_company_id', $user->company_id);
 
-            CodeJournal::create([
+            $journal = CodeJournal::create([
                 'code_journal' => strtoupper($request->code_journal),
                 'intitule' => $intitule_formate,
                 'traitement_analytique' => $request->traitement_analytique === 'oui' ? 1 : 0,
@@ -174,6 +185,17 @@ public function index(Request $request)
                 'user_id' => $user->id,
                 'company_id' => $currentCompanyId,
             ]);
+
+            // Si c'est un journal de trésorerie, créer une entrée dans la table tresoreries
+            if ($request->type === 'Tresorerie') {
+                Tresoreries::create([
+                    'code_journal' => strtoupper($request->code_journal),
+                    'intitule' => $intitule_formate,
+                    'compte_de_contrepartie' => $request->compte_de_contrepartie,
+                    'poste_tresorerie' => $request->poste_tresorerie,
+                    'company_id' => $currentCompanyId,
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -209,6 +231,25 @@ public function index(Request $request)
 
             $journal = CodeJournal::findOrFail($id);
             $journal->update($validated);
+
+            // Si c'est un journal de trésorerie, créer/mettre à jour l'entrée dans la table tresoreries
+            if ($journal->type === 'Tresorerie') {
+                $tresorerie = Tresoreries::where('code_journal', $journal->code_journal)->first();
+                
+                $data = [
+                    'code_journal' => $journal->code_journal,
+                    'intitule' => $journal->intitule,
+                    'compte_de_contrepartie' => $validated['compte_de_contrepartie'] ?? null,
+                    'poste_tresorerie' => $validated['poste_tresorerie'] ?? null,
+                    'company_id' => $this->getCurrentCompanyId(),
+                ];
+                
+                if ($tresorerie) {
+                    $tresorerie->update($data);
+                } else {
+                    Tresoreries::create($data);
+                }
+            }
 
             return redirect()->back()->with('success', 'Code journal mis à jour avec succès.');
         } catch (\Exception $e) {

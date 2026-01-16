@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr" class="layout-menu-fixed layout-compact">
+@include('components.head')
+<body>
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            @include('components.sidebar')
+            <div class="layout-page">
+                @include('components.header', ['page_title' => 'Contrôle d\'Accès'])
+                <div class="content-wrapper" style="padding: 32px;">
+
+
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible fade show">
+                            <i class="fa-solid fa-check-circle me-2"></i>{{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
+                    <!-- Entreprises -->
+                    <div class="bg-white rounded-xl shadow-sm border mb-4">
+                        <div class="p-4 border-bottom"><h5 class="fw-semibold mb-0">Gestion des Entreprises</h5></div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th>Entreprise</th><th>Statut</th><th>Raison</th><th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($companies as $company)
+                                        <tr class="{{ $company->is_blocked ? 'table-danger' : '' }}">
+                                            <td><strong>{{ $company->company_name }}</strong></td>
+                                            <td>
+                                                @if($company->is_blocked)
+                                                    <span class="badge bg-danger">Bloqué</span>
+                                                @else
+                                                    <span class="badge bg-success">Actif</span>
+                                                @endif
+                                            </td>
+                                            <td><small>{{ $company->block_reason ?? '-' }}</small></td>
+                                            <td class="text-end">
+                                                @if($company->is_blocked)
+                                                    <form action="{{ route('superadmin.access.unblock.company', $company->id) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-success">
+                                                            <i class="fa-solid fa-unlock me-1"></i>Débloquer
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#blockC{{ $company->id }}">
+                                                        <i class="fa-solid fa-ban me-1"></i>Bloquer
+                                                    </button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        <!-- Modal -->
+                                        <div class="modal fade" id="blockC{{ $company->id }}">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5>Bloquer {{ $company->company_name }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form action="{{ route('superadmin.access.block.company', $company->id) }}" method="POST">
+                                                        @csrf
+                                                        <div class="modal-body">
+                                                            <select class="form-select" name="reason" required>
+                                                                <option value="">Raison...</option>
+                                                                <option>Abonnement expiré</option>
+                                                                <option>Non-paiement</option>
+                                                                <option>Violation des CGU</option>
+                                                                <option>Sanction</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                            <button type="submit" class="btn btn-danger">Bloquer</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Utilisateurs -->
+                    <div class="bg-white rounded-xl shadow-sm border">
+                        <div class="p-4 border-bottom"><h5 class="fw-semibold mb-0">Gestion des Utilisateurs</h5></div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th>Utilisateur</th><th>Entreprise</th><th>Statut</th><th>Raison</th><th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($users as $user)
+                                        <tr class="{{ $user->is_blocked ? 'table-danger' : '' }}">
+                                            <td><strong>{{ $user->name }}</strong></td>
+                                            <td>{{ $user->company->company_name ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($user->is_blocked)
+                                                    <span class="badge bg-danger">Bloqué</span>
+                                                @else
+                                                    <span class="badge bg-success">Actif</span>
+                                                @endif
+                                            </td>
+                                            <td><small>{{ $user->block_reason ?? '-' }}</small></td>
+                                            <td class="text-end">
+                                                @if($user->is_blocked)
+                                                    <form action="{{ route('superadmin.access.unblock.user', $user->id) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-success">
+                                                            <i class="fa-solid fa-unlock me-1"></i>Débloquer
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#blockU{{ $user->id }}">
+                                                        <i class="fa-solid fa-ban me-1"></i>Bloquer
+                                                    </button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        <!-- Modal -->
+                                        <div class="modal fade" id="blockU{{ $user->id }}">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5>Bloquer {{ $user->name }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form action="{{ route('superadmin.access.block.user', $user->id) }}" method="POST">
+                                                        @csrf
+                                                        <div class="modal-body">
+                                                            <select class="form-select" name="reason" required>
+                                                                <option value="">Raison...</option>
+                                                                <option>Violation des CGU</option>
+                                                                <option>Activité suspecte</option>
+                                                                <option>Sanction</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                            <button type="submit" class="btn btn-danger">Bloquer</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                @include('components.footer')
+            </div>
+        </div>
+    </div>
+</body>
+</html>

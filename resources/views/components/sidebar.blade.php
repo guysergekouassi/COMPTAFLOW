@@ -377,12 +377,6 @@ if ($user->role === 'super_admin') {
                 </a>
                 @endif
                 @if($show_all || in_array('tresorerie', $habilitations))
-                <a href="{{ route('indextresorerie') }}" class="menu-link-new {{ request()->routeIs('indextresorerie') ? 'active' : '' }}">
-                    <i class="fa-solid fa-money-bill-wave"></i>
-                    <span>Journal Trésorerie</span>
-                </a>
-                @endif
-                @if($show_all || in_array('tresorerie', $habilitations))
                 <a href="{{ route('postetresorerie.index') }}" class="menu-link-new {{ request()->routeIs('postetresorerie.index') ? 'active' : '' }}">
                     <i class="fa-solid fa-wallet"></i>
                     <span>Poste Trésorerie</span>
@@ -512,10 +506,6 @@ if ($user->role === 'super_admin') {
                     <a href="{{ route('accounting_journals') }}" class="menu-link-new {{ request()->routeIs('accounting_journals') ? 'active' : '' }}">
                         <i class="fa-solid fa-book-open"></i>
                         <span>Journaux</span>
-                    </a>
-                    <a href="{{ route('indextresorerie') }}" class="menu-link-new {{ request()->routeIs('indextresorerie') ? 'active' : '' }}">
-                        <i class="fa-solid fa-money-bill-wave"></i>
-                        <span>Journal Trésorerie</span>
                     </a>
                     <a href="{{ route('postetresorerie.index') }}" class="menu-link-new {{ request()->routeIs('postetresorerie.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-wallet"></i>
@@ -740,7 +730,7 @@ if ($user->role === 'super_admin') {
 
        @if (auth()->user()->isSuperAdmin())
         <li class="menu-item menu-param {{ request()->routeIs('postetresorerie.index') ? 'active' : '' }}">
-            <a href="postetresorerie.index" class="menu-link">
+            <a href="{{ route('postetresorerie.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-news"></i>
                 <div class="text-truncate" data-i18n="Email">Poste de trésorerie</div>
             </a>
@@ -847,15 +837,7 @@ if ($user->role === 'super_admin') {
         </li>
         @endif
 
-        @if(in_array('tresorerie', $habilitations))
-        <li class="menu-item menu-param {{ request()->routeIs('indextresorerie') ? 'active' : '' }}">
-            <a href="{{ route('indextresorerie') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-news"></i>
-                <div class="text-truncate" data-i18n="Email">Journal Trésorerie</div>
-            </a>
-        </li>
-        @endif
-        @if(in_array('tresorerie', $habilitations))
+                @if(in_array('tresorerie', $habilitations))
         <li class="menu-item menu-param {{ request()->routeIs('postetresorerie.index') ? 'active' : '' }}">
             <a href="{{ route('postetresorerie.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-news"></i>

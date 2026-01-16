@@ -411,14 +411,47 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
     // Gestion des Entités (Ancien Dashboard)
     Route::get('/entities', [SuperAdminDashboardController::class, 'entities'])->name('superadmin.entities');
 
+    // Gestion des Entreprises
+    Route::get('/superadmin/companies/create', [\App\Http\Controllers\Super\SuperAdminCompanyController::class, 'create'])->name('superadmin.companies.create');
+    Route::post('/superadmin/companies', [\App\Http\Controllers\Super\SuperAdminCompanyController::class, 'store'])->name('superadmin.companies.store');
+    Route::get('/superadmin/companies/{id}/edit', [\App\Http\Controllers\Super\SuperAdminCompanyController::class, 'edit'])->name('superadmin.companies.edit');
+    Route::put('/{company}/toggle', [SuperAdminCompanyController::class, 'toggleStatus'])->name('toggle');
+    Route::put('/companies/{company}/update', [SuperAdminCompanyController::class, 'update'])->name('superadmin.companies.update');
 
-     Route::put('/{company}/toggle', [SuperAdminCompanyController::class, 'toggleStatus'])->name('toggle');
-     Route::put('/companies/{company}/update', [SuperAdminCompanyController::class, 'update'])->name('superadmin.companies.update');
+    // Gestion des Comptabilités
+    Route::get('/superadmin/accounting', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'index'])->name('superadmin.accounting.index');
+    Route::get('/superadmin/accounting/create', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'create'])->name('superadmin.accounting.create');
+    Route::post('/superadmin/accounting', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'store'])->name('superadmin.accounting.store');
+
+    // Administration des Utilisateurs
+    Route::get('/superadmin/users', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'index'])->name('superadmin.users');
+    Route::get('/superadmin/users/create', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'create'])->name('superadmin.users.create');
+    Route::post('/superadmin/users', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'store'])->name('superadmin.users.store');
+    Route::put('/superadmin/users/{id}', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'update'])->name('superadmin.users.update');
+    Route::delete('/superadmin/users/{id}', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'destroy'])->name('superadmin.users.destroy');
+
+    // Suivi des Activités
+    Route::get('/superadmin/activities', [\App\Http\Controllers\Super\SuperAdminActivityController::class, 'index'])->name('superadmin.activities');
+
+    // Rapports de Performance
+    Route::get('/superadmin/reports', [\App\Http\Controllers\Super\SuperAdminReportController::class, 'index'])->name('superadmin.reports');
+
+    // Switch Entreprise/Utilisateur
+    Route::get('/superadmin/switch', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'index'])->name('superadmin.switch');
+    Route::post('/superadmin/switch/company/{id}', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'switchToCompany'])->name('superadmin.switch.company');
+    Route::post('/superadmin/switch/user/{id}', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'switchToUser'])->name('superadmin.switch.user');
+    Route::post('/superadmin/switch/return', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'returnToSuperAdmin'])->name('superadmin.switch.return');
+
+    // Contrôle d'Accès (Blocage/Déblocage)
+    Route::get('/superadmin/access-control', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'index'])->name('superadmin.access');
+    Route::post('/superadmin/access/block-company/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'blockCompany'])->name('superadmin.access.block.company');
+    Route::post('/superadmin/access/unblock-company/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'unblockCompany'])->name('superadmin.access.unblock.company');
+    Route::post('/superadmin/access/block-user/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'blockUser'])->name('superadmin.access.block.user');
+    Route::post('/superadmin/access/unblock-user/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'unblockUser'])->name('superadmin.access.unblock.user');
 
     // Route::resource('companies', SuperAdminCompanyController::class)->except(['index', 'show']);
     Route::resource('companies', SuperAdminCompanyController::class);
     // Page de configuration avancée*
-
 
     Route::get('/advanced-settings', [SuperAdminSetupController::class, 'index'])->name('settings');
 

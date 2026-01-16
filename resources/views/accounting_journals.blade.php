@@ -244,6 +244,8 @@
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Code</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Compte</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Poste</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -267,6 +269,12 @@
                                                     <span class="font-mono text-lg font-bold text-blue-700">{{ $journal->code_journal }}</span>
                                                 </td>
                                                 <td class="px-8 py-6 font-semibold text-slate-800">{{ $journal->intitule }}</td>
+                                                <td class="px-8 py-6 font-mono text-sm text-slate-600">
+                                                    {{ $journal->code_tresorerie_display ?? '-' }}
+                                                </td>
+                                                <td class="px-8 py-6 font-semibold text-slate-700">
+                                                    {{ !empty($journal->poste_tresorerie_display) ? $journal->poste_tresorerie_display : (!empty($journal->poste_tresorerie) ? $journal->poste_tresorerie : '-') }}
+                                                </td>
                                                 <td class="px-8 py-6 text-right">
                                                     <div class="flex justify-end gap-2">
                                                         <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm"
@@ -277,8 +285,7 @@
                                                             data-intitule="{{ $journal->intitule }}"
                                                             data-traitement="{{ $journal->traitement_analytique }}"
                                                             data-compte_de_contrepartie="{{ $journal->compte_de_contrepartie }}"
-                                                            data-compte_de_tresorerie="{{ $journal->compte_de_tresorerie }}"
-                                                            data-rapprochement_sur="{{ $journal->rapprochement_sur }}">
+                                                            data-poste_tresorerie="{{ $journal->poste_tresorerie_display }}">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm"
@@ -330,9 +337,6 @@
                                 name="code_journal"
                                 class="input-field-premium uppercase-input"
                                 maxlength="4"
-                                pattern="[A-Z0-9]{1,4}"
-                                title="4 caractères maximum, lettres et chiffres uniquement"
-                                required
                                 placeholder="ex: VT"
                                 oninput="formatCodeJournal(this)"
                             >
@@ -352,6 +356,17 @@
                                 <label class="input-label-premium">Intitulé *</label>
                                 <input type="text" name="intitule" class="input-field-premium" required placeholder="ex: Journal des Ventes">
                             </div>
+                            <div class="col-md-6 text-start d-none" id="compte_field">
+                                <label class="input-label-premium">Compte</label>
+                                <select name="compte_de_contrepartie" class="input-field-premium">
+                                    <option value="">-- Sélectionner --</option>
+                                    @foreach($comptesCinq as $compte)
+                                        <option value="{{ $compte->numero_de_compte }}">
+                                            {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Traitement analytique</label>
                                 <select name="traitement_analytique" class="input-field-premium">
@@ -363,24 +378,15 @@
                             <div class="col-12 text-start d-none" id="tresorerie_options">
                                 <div class="row g-3">
                                     <div class="col-md-12">
-                                        <label class="input-label-premium">Compte de trésorerie associés</label>
-                                        <select name="compte_de_tresorerie" class="input-field-premium">
-                                            <option value="">-- Choisir --</option>
-                                            @foreach ($comptesTresorerie as $compte)
-                                                <option value="{{ $compte->id }}">{{ $compte->numero_de_compte }} - {{ $compte->intitule }}</option>
-                                            @endforeach
+                                        <label class="input-label-premium">Poste de trésorerie</label>
+                                        <select name="poste_tresorerie" class="input-field-premium">
+                                            <option value="">-- Aucun --</option>
+                                            @if(isset($postesTresorerieData) && count($postesTresorerieData) > 0)
+                                                @foreach($postesTresorerieData as $poste => $categorie)
+                                                    <option value="{{ $poste }}">{{ $poste }} ({{ $categorie }})</option>
+                                                @endforeach
+                                            @endif
                                         </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="input-label-premium">Rapprochement</label>
-                                        <select name="rapprochement_sur" class="input-field-premium">
-                                            <option value="Contrepartie">Auto</option>
-                                            <option value="tresorerie">Manuel</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="input-label-premium">Contrepartie</label>
-                                        <input type="text" name="compte_de_contrepartie" class="input-field-premium" placeholder="ex: 521000">
                                     </div>
                                 </div>
                             </div>
@@ -389,97 +395,6 @@
                     <div class="modal-footer border-0 pt-0">
                         <button type="button" class="btn bg-slate-100 text-slate-500 font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0" data-bs-dismiss="modal">Annuler</button>
                         <button type="submit" class="btn font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0 shadow-lg shadow-blue-200 hover:bg-blue-800 transition" style="color: white; background-color: #1d4ed8;">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Tresorerie Modal -->
-    <div class="modal fade" id="createTresorerieModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
-            <div class="modal-content premium-modal-content">
-                <form action="{{ route('storetresorerie') }}" method="POST">
-                    @csrf
-                    <div class="text-center mb-6 position-relative">
-                        <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal"></button>
-                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
-                            Nouveau <span class="text-gradient">Journal</span>
-                        </h1>
-                        <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="input-label-premium">Code Journal *</label>
-                                <input type="text" name="code_journal" class="input-field-premium uppercase-input" 
-                                    maxlength="4" pattern="[A-Z0-9]{1,4}" required 
-                                    oninput="this.value = this.value.replace(/[^A-Z0-9]/g, '').toUpperCase()"
-                                    placeholder="ex: BQ01">
-                            </div>
-                            <div>
-                                <label class="input-label-premium">Intitulé *</label>
-                                <input type="text" name="intitule" class="input-field-premium" required placeholder="ex: Banque SG">
-                            </div>
-                        </div>
-
-                        <!-- <div>
-                            <label class="input-label-premium">Compte de contrepartie *</label>
-                            <select name="compte_de_contrepartie" class="input-field-premium" required>
-                                <option value="" disabled selected>-- Sélectionner --</option>
-                                @foreach($comptesCinq as $compte)
-                                    <option value="{{ $compte->numero_de_compte }}">
-                                        {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div> -->
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="input-label-premium">Flux / Type</label>
-                                <select name="type_flux" class="input-field-premium" required>
-                                    <option value="Encaissement">Encaissement</option>
-                                    <option value="Décaissement">Décaissement</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="input-label-premium">Analytique</label>
-                                <select name="traitement_analytique" class="input-field-premium" required>
-                                    <option value="non">Non</option>
-                                    <option value="oui">Oui</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="input-label-premium">Poste Trésorerie</label>
-                                <select name="poste_tresorerie" class="input-field-premium">
-                                    <option value="">-- Aucun --</option>
-                                    @if(isset($comptesTresorerie) && count($comptesTresorerie) > 0)
-                                        @foreach($comptesTresorerie as $compte)
-                                            <option value="{{ $compte->name }}">
-                                                {{ $compte->name }}
-                                            </option>
-                                        @endforeach
-                                    @endif
-                                </select>
-                            </div>
-                            <div>
-                                <label class="input-label-premium">Rapprochement</label>
-                                <select name="rapprochement_sur" class="input-field-premium" required>
-                                    <option value="manuel">Manuel</option>
-                                    <option value="automatique">Automatique</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 pt-8">
-                        <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn-save-premium" style="background-color: #1e40af !important; color: white !important; border: none !important; padding: 0.75rem 1.5rem !important; border-radius: 12px !important; font-weight: 600 !important; transition: all 0.2s ease-in-out !important;">Enregistrer</button>
                     </div>
                 </form>
             </div>
@@ -508,32 +423,12 @@
                                 name="code_journal"
                                 class="input-field-premium uppercase-input"
                                 maxlength="4"
-                                pattern="[A-Z0-9]{1,4}"
-                                title="4 caractères maximum, lettres et chiffres uniquement"
+                                pattern="[A-Z]{1,4}"
+                                title="4 caractères maximum, lettres uniquement"
                                 required
                             >
 
-                                <script>
-                                function formatCodeJournal(input) {
-                                    // Convertir en majuscules et ne garder que les lettres et chiffres
-                                    input.value = input.value.replace(/[^A-Z0-9]/g, '').toUpperCase();
-                                    // Limiter à 4 caractères
-                                    if (input.value.length > 4) {
-                                        input.value = input.value.substring(0, 4);
-                                    }
-                                }
-                                
-                                // Ajouter un gestionnaire pour le formulaire
-                                document.getElementById('formCodeJournalUpdate').addEventListener('submit', function(e) {
-                                    const codeInput = document.getElementById('update_code_journal');
-                                    if (!/^[A-Z0-9]{1,4}$/.test(codeInput.value)) {
-                                        e.preventDefault();
-                                        alert('Le code journal doit contenir entre 1 et 4 caractères alphanumériques');
-                                        codeInput.focus();
-                                    }
-                                });
-                                </script>
-                            </div>
+                                                            </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
                                 <select id="update_type" name="type" class="input-field-premium" required>
@@ -548,6 +443,17 @@
                                 <label class="input-label-premium">Intitulé *</label>
                                 <input type="text" id="update_intitule" name="intitule" class="input-field-premium" required>
                             </div>
+                            <div class="col-md-6 text-start d-none" id="update_compte_field">
+                                <label class="input-label-premium">Compte</label>
+                                <select id="update_compte_de_contrepartie" name="compte_de_contrepartie" class="input-field-premium">
+                                    <option value="">-- Sélectionner --</option>
+                                    @foreach($comptesCinq as $compte)
+                                        <option value="{{ $compte->numero_de_compte }}">
+                                            {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Traitement analytique</label>
                                 <select id="update_traitement_analytique" name="traitement_analytique" class="input-field-premium">
@@ -558,24 +464,15 @@
                             <div class="col-12 text-start d-none" id="update_tresorerie_options">
                                 <div class="row g-3">
                                     <div class="col-md-12">
-                                        <label class="input-label-premium">Compte de trésorerie associés</label>
-                                        <select id="update_compte_de_tresorerie" name="compte_de_tresorerie" class="input-field-premium">
-                                            <option value="">-- Choisir --</option>
-                                            @foreach ($comptesTresorerie as $compte)
-                                                <option value="{{ $compte->id }}">{{ $compte->numero_de_compte }} - {{ $compte->intitule }}</option>
-                                            @endforeach
+                                        <label class="input-label-premium">Poste de trésorerie</label>
+                                        <select id="update_poste_tresorerie" name="poste_tresorerie" class="input-field-premium">
+                                            <option value="">-- Aucun --</option>
+                                            @if(isset($postesTresorerieData) && count($postesTresorerieData) > 0)
+                                                @foreach($postesTresorerieData as $poste => $categorie)
+                                                    <option value="{{ $poste }}">{{ $poste }} ({{ $categorie }})</option>
+                                                @endforeach
+                                            @endif
                                         </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="input-label-premium">Rapprochement</label>
-                                        <select id="update_rapprochement_sur" name="rapprochement_sur" class="input-field-premium">
-                                            <option value="Contrepartie">Auto</option>
-                                            <option value="tresorerie">Manuel</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="input-label-premium">Contrepartie</label>
-                                        <input type="text" id="update_compte_de_contrepartie" name="compte_de_contrepartie" class="input-field-premium">
                                     </div>
                                 </div>
                             </div>
@@ -630,66 +527,6 @@
 
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 SCRIPT JOURNAUX INITIALISÉ");
-
-            // Gestion du clic sur le bouton d'ajout
-            document.querySelectorAll('[data-bs-target="#modalCreateCodeJournal"]').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    // Afficher d'abord le modal de sélection du type
-                    e.preventDefault();
-                    
-                    // Créer un modal de sélection si non existant
-                    if (!document.getElementById('selectJournalTypeModal')) {
-                        const modalHTML = `
-                            <div class="modal fade" id="selectJournalTypeModal" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content premium-modal-content">
-                                        <div class="text-center p-6">
-                                            <h3 class="text-lg font-bold text-slate-800 mb-4">Sélectionnez le type de journal</h3>
-                                            <div class="grid gap-4 mt-6">
-                                                <button type="button" class="btn-type-journal" data-type="standard">
-                                                    <i class="fas fa-book text-blue-500 text-2xl mb-2"></i>
-                                                    <span>Journal Standard</span>
-                                                    <small class="text-slate-500">Achats, Ventes, Général, etc.</small>
-                                                </button>
-                                                <button type="button" class="btn-type-journal" data-type="tresorerie">
-                                                    <i class="fas fa-money-bill-wave text-green-500 text-2xl mb-2"></i>
-                                                    <span>Journal de Trésorerie</span>
-                                                    <small class="text-slate-500">Banques, Caisses, etc.</small>
-                                                </button>
-                                            </div>
-                                            <div class="mt-6">
-                                                <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">Annuler</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        document.body.insertAdjacentHTML('beforeend', modalHTML);
-                        
-                        // Ajouter les gestionnaires d'événements
-                        document.querySelectorAll('.btn-type-journal').forEach(btn => {
-                            btn.addEventListener('click', function() {
-                                const type = this.getAttribute('data-type');
-                                const selectModal = bootstrap.Modal.getInstance(document.getElementById('selectJournalTypeModal'));
-                                selectModal.hide();
-                                
-                                if (type === 'tresorerie') {
-                                    const modal = new bootstrap.Modal(document.getElementById('createTresorerieModal'));
-                                    modal.show();
-                                } else {
-                                    const modal = new bootstrap.Modal(document.getElementById('modalCreateCodeJournal'));
-                                    modal.show();
-                                }
-                            });
-                        });
-                    }
-                    
-                    // Afficher le modal de sélection
-                    const selectModal = new bootstrap.Modal(document.getElementById('selectJournalTypeModal'));
-                    selectModal.show();
-                });
-            });
 
             // Fonction pour forcer le format du code journal
             function enforceCodeJournal(input) {
@@ -795,16 +632,7 @@
                     });
 
                     // 4. Modal Interactions (Treasury Toggle)
-                    $('#type_select, #update_type').on('change', function() {
-                        const isTresorerie = $(this).val() === 'Tresorerie';
-                        const optionsId = $(this).attr('id') === 'type_select' ? '#tresorerie_options' : '#update_tresorerie_options';
-                        if (isTresorerie) $(optionsId).removeClass('d-none');
-                        else $(optionsId).addClass('d-none');
-                    });
-                    document.getElementById("update_code_journal").addEventListener("input", () => {
-                        
-                }
-            };
+                    // Ce gestionnaire est maintenant géré par la fonction toggleTresorerie plus bas
 
             initDataTable();
         });
@@ -819,11 +647,17 @@
                 const optionsId = $(selectEl).attr('id') === 'type_select'
                     ? '#tresorerie_options'
                     : '#update_tresorerie_options';
+                    
+                const compteFieldId = $(selectEl).attr('id') === 'type_select'
+                    ? '#compte_field'
+                    : '#update_compte_field';
 
                 if (isTresorerie) {
                     $(optionsId).removeClass('d-none');
+                    $(compteFieldId).removeClass('d-none');
                 } else {
                     $(optionsId).addClass('d-none');
+                    $(compteFieldId).addClass('d-none');
                 }
             }
 
@@ -838,6 +672,41 @@
                 // Construire l'URL directement depuis les attributs data
                 const deleteUrl = `/accounting_journals/${id}`;
                 $('#deleteJournalForm').attr('action', deleteUrl);
+            });
+
+            // 6. Update Modal Logic
+            $('#modalCenterUpdate').on('show.bs.modal', function(e) {
+                const button = $(e.relatedTarget);
+                const id = button.data('id');
+                const code = button.data('code');
+                const type = button.data('type');
+                const intitule = button.data('intitule');
+                const traitement = button.data('traitement');
+                const posteTresorerie = button.data('poste_tresorerie');
+                const compteDeContrepartie = button.data('compte_de_contrepartie');
+                
+                // Remplir les champs du formulaire
+                $('#update_journal_id').val(id);
+                $('#update_code_journal').val(code);
+                $('#update_type').val(type);
+                $('#update_intitule').val(intitule);
+                $('#update_traitement_analytique').val(traitement);
+                $('#update_compte_de_contrepartie').val(compteDeContrepartie || '');
+                $('#update_poste_tresorerie').val(posteTresorerie || '');
+                
+                // Afficher/masquer les options de trésorerie et le champ compte
+                const isTresorerie = type === 'Tresorerie';
+                if (isTresorerie) {
+                    $('#update_tresorerie_options').removeClass('d-none');
+                    $('#update_compte_field').removeClass('d-none');
+                } else {
+                    $('#update_tresorerie_options').addClass('d-none');
+                    $('#update_compte_field').addClass('d-none');
+                }
+                
+                // Mettre à jour l'action du formulaire
+                const updateUrl = accounting_journalsUpdateBaseUrl.replace('__ID__', id);
+                $('#formCodeJournalUpdate').attr('action', updateUrl);
             });
 
             // Au changement
@@ -870,13 +739,15 @@
             
             input.value = value;
             
-            // Validation en temps réel
-            validateCodeJournal(input);
+            // Ne pas appeler validateCodeJournal ici pour éviter les conflits
         }
         
         function validateCodeJournal(input) {
             const errorDiv = document.getElementById('code_journal_error');
             const value = input.value.trim();
+            
+            // Débogage temporaire
+            console.log('Validation - valeur:', value, 'longueur:', value.length);
             
             if (value.length === 0) {
                 errorDiv.style.display = 'none';
@@ -885,6 +756,7 @@
             }
             
             if (value.length > 4) {
+                console.log('Erreur: longueur > 4');
                 errorDiv.textContent = 'Le code journal ne peut pas dépasser 4 caractères';
                 errorDiv.style.display = 'block';
                 input.setCustomValidity('Le code journal ne peut pas dépasser 4 caractères');
@@ -892,12 +764,14 @@
             }
             
             if (!/^[A-Z0-9]{1,4}$/.test(value)) {
+                console.log('Erreur: format invalide');
                 errorDiv.textContent = 'Le code journal doit contenir uniquement des lettres majuscules et des chiffres';
                 errorDiv.style.display = 'block';
-                input.setCustomValidity('Format invalide');
+                input.setCustomValidity('Le code journal doit contenir uniquement des lettres majuscules et des chiffres');
                 return false;
             }
             
+            console.log('Validation OK');
             errorDiv.style.display = 'none';
             input.setCustomValidity('');
             return true;
@@ -924,7 +798,7 @@
                 // Supprimer tous les gestionnaires d'événements existants
                 form.removeEventListener('submit', form.submitHandler);
                 
-                form.submitHandler = function(e) {
+                const form.submitHandler = function(e) {
                     e.preventDefault();
                     
                     const codeInput = document.getElementById('code_journal_input');
