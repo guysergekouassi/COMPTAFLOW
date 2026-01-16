@@ -628,7 +628,7 @@
                                     'nouvelle_saisie',
                                     'grand_livre_tiers',
                                     'poste',
-                                    'Balance_Tiers'
+                                    'Balance_Tiers',
 
                                 ];
                             @endphp
