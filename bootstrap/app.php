@@ -11,7 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'check.blocked' => \App\Http\Middleware\CheckBlockedStatus::class,
+        ]);
+        
+        $middleware->web(append: [
+            \App\Http\Middleware\CheckBlockedStatus::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

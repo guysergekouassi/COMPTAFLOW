@@ -18,11 +18,17 @@ class User extends Authenticatable
         'role',
         'is_online',
         'company_id',
-        'habilitations'
+        'habilitations',
+        'is_blocked',
+        'block_reason',
+        'blocked_at',
+        'blocked_by',
     ];
 
     protected $casts = [
         'habilitations' => 'array',
+        'is_blocked' => 'boolean',
+        'blocked_at' => 'datetime',
     ];
 
 
