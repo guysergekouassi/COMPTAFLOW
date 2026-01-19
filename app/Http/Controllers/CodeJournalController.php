@@ -109,13 +109,11 @@ public function index(Request $request)
         ->where('company_id', $this->getCurrentCompanyId())
         ->get();
 
-    // 7. Récupérer les postes de trésorerie distincts avec leur catégorie (uniquement les postes créés)
-    $postesTresorerieData = \App\Models\tresoreries\Tresoreries::select('poste_tresorerie', 'categorie')
+    // 7. Récupérer les postes de trésorerie distincts (uniquement les postes créés)
+    $postesTresorerieData = \App\Models\tresoreries\Tresoreries::select('poste_tresorerie')
         ->distinct()
         ->whereNotNull('poste_tresorerie')
         ->where('poste_tresorerie', '!=', '')
-        ->whereNotNull('categorie')
-        ->where('categorie', '!=', '')
         ->where('company_id', $this->getCurrentCompanyId())
         ->get()
         ->keyBy('poste_tresorerie');
