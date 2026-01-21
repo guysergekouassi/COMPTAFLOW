@@ -91,8 +91,23 @@
     }
 
     .uppercase-input {
-    text-transform: uppercase;
-}
+        text-transform: uppercase;
+    }
+
+    .text-blue-gradient-premium {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+    }
+    
+    .blue-bar-premium {
+        height: 4px;
+        width: 32px;
+        background-color: #1e40af;
+        margin: 8px auto 0;
+        border-radius: 9999px;
+    }
 </style>
 
 <body>
@@ -186,6 +201,15 @@
                             
                             <!-- Right: New Journal -->
                             <div class="flex flex-wrap items-center justify-end gap-3">
+                                <!-- Bouton Charger depuis l'Admin [NOUVEAU] -->
+                                @if (session('current_company_id') && session('current_company_id') != auth()->user()->company_id)
+                                <button type="button" id="btnSyncAdminJournals"
+                                    class="btn-action flex items-center gap-2 px-6 py-3 bg-indigo-50 border border-indigo-200 rounded-2xl text-indigo-700 font-semibold text-sm">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Charger Modèle Admin
+                                </button>
+                                @endif
+
                                 <!-- Success Message Container -->
                                 <div id="successMessage" class="hidden fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300">
                                     <i class="fas fa-check-circle mr-2"></i>
@@ -245,14 +269,14 @@
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Code</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Compte</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Poste</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">ETAT DE RAPPROCHEMENT BANCAIRE</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
                                         @foreach ($code_journaux as $journal)
                                             <tr class="table-row">
-                                                <td class="px-8 py-6">
+                                                <td class="px-8 py-6" data-filter="{{ $journal->type }}">
                                                     @php
                                                         $badge = match($journal->type) {
                                                             'Achats' => 'bg-purple-100 text-purple-700 border-purple-200',
@@ -273,19 +297,18 @@
                                                     {{ $journal->code_tresorerie_display ?? '-' }}
                                                 </td>
                                                 <td class="px-8 py-6 font-semibold text-slate-700">
-                                                    {{ !empty($journal->poste_tresorerie_display) ? $journal->poste_tresorerie_display : (!empty($journal->poste_tresorerie) ? $journal->poste_tresorerie : '-') }}
+                                                    {{ !empty($journal->rapprochement_sur) ? $journal->rapprochement_sur : '-' }}
                                                 </td>
                                                 <td class="px-8 py-6 text-right">
                                                     <div class="flex justify-end gap-2">
-                                                        <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm"
-                                                            data-bs-toggle="modal" data-bs-target="#modalCenterUpdate"
+                                                        <button type="button" class="btn-edit-journal w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm"
                                                             data-id="{{ $journal->id }}"
                                                             data-code="{{ $journal->code_journal }}"
                                                             data-type="{{ $journal->type }}"
                                                             data-intitule="{{ $journal->intitule }}"
                                                             data-traitement="{{ $journal->traitement_analytique }}"
                                                             data-compte_de_contrepartie="{{ $journal->compte_de_contrepartie }}"
-                                                            data-poste_tresorerie="{{ $journal->poste_tresorerie_display }}">
+                                                            data-rapprochement_sur="{{ $journal->rapprochement_sur }}">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm"
@@ -323,24 +346,21 @@
             <div class="modal-content premium-modal-content">
                 <form id="formCodeJournal" method="POST" action="{{ route('accounting_journals.store') }}">
                     @csrf
-                    <div class="modal-header border-0 pb-0">
-                        <h5 class="text-xl font-extrabold text-blue-900 uppercase tracking-tight">Nouveau Journal</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <!-- Header -->
+                    <div class="text-center mb-6 position-relative pt-4">
+                        <button type="button" class="btn-close position-absolute end-0 top-0 mt-2 me-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                            Nouveau <span class="text-blue-gradient-premium">Journal</span>
+                        </h1>
+                        <div class="blue-bar-premium"></div>
                     </div>
-                    <div class="modal-body py-4">
+
+                    <div class="modal-body py-0">
                         <div class="row g-3">
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Code Journal *</label>
-                               <input
-                                type="text"
-                                id="code_journal_input"
-                                name="code_journal"
-                                class="input-field-premium uppercase-input"
-                                maxlength="4"
-                                placeholder="ex: VT"
-                                oninput="formatCodeJournal(this)"
-                            >
-                            <div id="code_journal_error" class="text-danger small mt-1" style="display: none;"></div>
+                                <input type="text" id="code_journal_input" name="code_journal" class="input-field-premium uppercase-input" maxlength="4" placeholder="ex: VT" oninput="formatCodeJournal(this)">
+                                <div id="code_journal_error" class="text-danger small mt-1" style="display: none;"></div>
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
@@ -378,14 +398,11 @@
                             <div class="col-12 text-start d-none" id="tresorerie_options">
                                 <div class="row g-3">
                                     <div class="col-md-12">
-                                        <label class="input-label-premium">Poste de trésorerie</label>
-                                        <select name="poste_tresorerie" class="input-field-premium">
-                                            <option value="">-- Aucun --</option>
-                                            @if(isset($postesTresorerieData) && count($postesTresorerieData) > 0)
-                                                @foreach($postesTresorerieData as $poste => $categorie)
-                                                    <option value="{{ $poste }}">{{ $poste }} ({{ $categorie }})</option>
-                                                @endforeach
-                                            @endif
+                                        <label class="input-label-premium">ETAT DE RAPPROCHEMENT BANCAIRE</label>
+                                        <select name="rapprochement_sur" class="input-field-premium">
+                                            <option value="">-- Sélectionner --</option>
+                                            <option value="Manuel">Manuel</option>
+                                            <option value="Automatique">Automatique</option>
                                         </select>
                                     </div>
                                 </div>
@@ -402,33 +419,28 @@
     </div>
 
     <!-- Update Modal -->
-    <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalEditJournalUnique" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content premium-modal-content">
-                <form id="formCodeJournalUpdate" method="POST" action="">
+                <form id="formEditJournalUnique" method="POST" action="">
                     @csrf
                     @method('PUT')
-                    <div class="modal-header border-0 pb-0">
-                        <h5 class="text-xl font-extrabold text-blue-900 uppercase tracking-tight">Modifier Journal</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <!-- Header -->
+                    <div class="text-center mb-6 position-relative pt-4">
+                        <button type="button" class="btn-close position-absolute end-0 top-0 mt-2 me-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                            Modifier <span class="text-blue-gradient-premium">Journal</span>
+                        </h1>
+                        <div class="blue-bar-premium"></div>
                     </div>
-                    <div class="modal-body py-4">
+
+                    <div class="modal-body py-0">
                         <input type="hidden" name="journal_id" id="update_journal_id">
                         <div class="row g-3">
                             <div class="col-md-6 text-start">
-                                <label class="input-label-premium">Code Journal * (4 caractères max)</label>
-                              <input
-                                type="text"
-                                id="update_code_journal"
-                                name="code_journal"
-                                class="input-field-premium uppercase-input"
-                                maxlength="4"
-                                pattern="[A-Z]{1,4}"
-                                title="4 caractères maximum, lettres uniquement"
-                                required
-                            >
-
-                                                            </div>
+                                <label class="input-label-premium">Code Journal *</label>
+                                <input type="text" id="update_code_journal" name="code_journal" class="input-field-premium uppercase-input" maxlength="4" required>
+                            </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
                                 <select id="update_type" name="type" class="input-field-premium" required>
@@ -461,55 +473,64 @@
                                     <option value="1">Oui</option>
                                 </select>
                             </div>
+                            <!-- Conditional Fields Group -->
                             <div class="col-12 text-start d-none" id="update_tresorerie_options">
                                 <div class="row g-3">
                                     <div class="col-md-12">
-                                        <label class="input-label-premium">Poste de trésorerie</label>
-                                        <select id="update_poste_tresorerie" name="poste_tresorerie" class="input-field-premium">
-                                            <option value="">-- Aucun --</option>
-                                            @if(isset($postesTresorerieData) && count($postesTresorerieData) > 0)
-                                                @foreach($postesTresorerieData as $poste => $categorie)
-                                                    <option value="{{ $poste }}">{{ $poste }} ({{ $categorie }})</option>
-                                                @endforeach
-                                            @endif
+                                        <label class="input-label-premium">ETAT DE RAPPROCHEMENT BANCAIRE</label>
+                                        <select id="update_rapprochement_sur" name="rapprochement_sur" class="input-field-premium">
+                                            <option value="">-- Sélectionner --</option>
+                                            <option value="Manuel">Manuel</option>
+                                            <option value="Automatique">Automatique</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer border-0 pt-0">
+                    <div class="modal-footer border-0 pt-6">
                         <button type="button" class="btn bg-slate-100 text-slate-500 font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn bg-blue-700 text-white font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0 shadow-lg shadow-blue-200">Mettre à jour</button>
+                        <button type="submit" class="btn font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0 shadow-lg shadow-blue-200 hover:bg-blue-800 transition" style="color: white; background-color: #1d4ed8;">Enregistrer les modifications</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Delete Modal -->
+    <!-- Modal de confirmation de suppression -->
     <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div class="modal-content premium-modal-content border-0">
-                <div class="bg-red-600 p-8 text-center text-white -m-5 rounded-t-2xl mb-4">
-                    <i class="fas fa-trash-alt text-4xl mb-4"></i>
-                    <h3 class="text-xl font-black uppercase tracking-widest">Confirmation</h3>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content premium-modal-content">
+                <!-- Header -->
+                <div class="text-center mb-6 position-relative">
+                    <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                        Confirmer la <span class="text-red-600">Suppression</span>
+                    </h1>
                 </div>
-                <div class="p-4 text-center text-slate-600">
-                    <p class="text-sm font-bold">Supprimer ce journal ?</p>
-                    <div id="journalToDeleteName" class="mt-4 p-3 bg-red-50 text-red-600 rounded-xl font-mono text-xs font-black"></div>
+
+                <div class="text-center space-y-3 mb-8">
+                    <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                        Êtes-vous sûr de vouloir supprimer ce journal ? Cette action est irréversible.
+                    </p>
+                    <div id="journalToDeleteName" class="text-slate-900 font-bold"></div>
                 </div>
-                <div class="flex flex-col gap-2 mt-4">
-                    <form id="deleteJournalForm" method="POST" action="">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="w-full py-4 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition shadow-xl shadow-red-100">
-                            Confirmer
-                        </button>
-                    </form>
-                    <button type="button" data-bs-dismiss="modal" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest">
+
+                <!-- Actions -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
                         Annuler
                     </button>
+                    <form id="deleteJournalForm" method="POST" action="" class="w-full">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-save-premium !bg-red-600 hover:!bg-red-700 shadow-red-200">
+                            Supprimer
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -517,357 +538,229 @@
 
     @include('components.footer')
 
-    <!-- Plugins JS -->
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-
     <script>
+        // Global variables
         const accounting_journalsUpdateBaseUrl = "{{ route('accounting_journals.update', ['id' => '__ID__']) }}";
-        const accounting_journalsDeleteUrl = "{{ route('accounting_journals.destroy', ['id' => '__ID__']) }}";
-
-        document.addEventListener("DOMContentLoaded", function() {
-            console.log("🚀 SCRIPT JOURNAUX INITIALISÉ");
-
-            // Fonction pour forcer le format du code journal
-            function enforceCodeJournal(input) {
-                if (!input) return;
-                
-                input.addEventListener("input", () => {
-                    input.value = input.value
-                        .replace(/[^A-Z0-9]/gi, '')
-                        .toUpperCase()
-                        .slice(0, 4);
-                });
+        
+        // Wait for jQuery and DataTables to be ready
+        function initJournalsPage() {
+            if (typeof $ === 'undefined' || typeof $.fn.DataTable === 'undefined') {
+                console.log("⏳ En attente de jQuery/DataTables...");
+                setTimeout(initJournalsPage, 100);
+                return;
             }
 
-            // Gestion du champ de mise à jour
-            const updateInput = document.getElementById("update_code_journal");
-            enforceCodeJournal(updateInput);
-
-            // Gestion du champ de création
-            const createInput = document.querySelector('#modalCreateCodeJournal input[name="code_journal"]');
-            enforceCodeJournal(createInput);
-
-            const initDataTable = () => {
-                if (typeof $ !== 'undefined' && $.fn.dataTable) {
-                    const table = $('#JournalTable').DataTable({
-                        dom: 't',
-                        pageLength: 5,
-                        language: { 
-                            zeroRecords: "Aucun journal trouvé",
-                            infoEmpty: "Aucun journal à afficher"
-                        }
-                    });
-
-                    // 2. Pagination Logic
-                    const updatePagination = () => {
-                        const info = table.page.info();
-                        if (info.recordsDisplay > 0) {
-                            $('#tableInfo').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> journaux`);
-                            let html = '';
-                            html += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                            html += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold font-mono shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                            html += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                            $('#customPagination').html(html);
-                        } else {
-                            $('#tableInfo').html('Aucun journal trouvé');
-                            $('#customPagination').empty();
-                        }
-                    };
-
-                    table.on('draw', updatePagination);
-                    $(document).on('click', '#prevPage', function() { table.page('previous').draw('page'); });
-                    $(document).on('click', '#nextPage', function() { table.page('next').draw('page'); });
-                    updatePagination();
-
-                    // 3. Filters Logic
-                    function applyCustomFilters() {
-                        table.column(0).search($('#filterType').val());
-                        table.column(1).search($('#filterCode').val());
-                        table.column(2).search($('#filterIntitule').val());
-                        table.draw();
-                    }
-
-                    // Live search
-                    $('#filterType, #filterCode, #filterIntitule').on('keyup change', function() {
-                        applyCustomFilters();
-                    });
-
-                    // Search Button
-                    $('#applyFilterBtn').on('click', function(e) {
-                        e.preventDefault();
-                        applyCustomFilters();
-                    });
-
-                    // Reset Button
-                    $('#resetFilterBtn').on('click', function(e) {
-                        e.preventDefault();
-                        $('#filterType, #filterCode, #filterIntitule').val('');
-                        $('.filter-card').removeClass('filter-active');
-                        $('#filter-all').addClass('filter-active');
-                        table.columns().search('').draw();
-                    });
-
-                    // Filter Panel Toggle
-                    $('#toggleFilterBtn').on('click', function(e) {
-                        e.preventDefault();
-                        const panel = $('#advancedFilterPanel');
-                        panel.toggleClass('hidden');
-                        $(this).toggleClass('bg-blue-50 border-blue-200 text-blue-700');
-                    });
-
-                    // KPI Cards
-                    $('.filter-card').on('click', function() {
-                        $('.filter-card').removeClass('filter-active');
-                        $(this).addClass('filter-active');
-                        const type = $(this).data('type');
-                        
-                        if (type === 'Ventes') {
-                            // Pour la carte "Achats/Ventes", filtrer sur "Achats" ET "Ventes"
-                            table.column(0).search('Achats|Ventes', true, false).draw();
-                        } else {
-                            // Pour les autres types, recherche normale
-                            table.column(0).search(type === 'all' ? '' : type).draw();
-                        }
-                    });
-
-                    // 4. Modal Interactions (Treasury Toggle)
-                    // Ce gestionnaire est maintenant géré par la fonction toggleTresorerie plus bas
-
-            initDataTable();
-        });
-    </script>
-
-    <script>
-        $(document).ready(function () {
-            function toggleTresorerie(selectEl) {
-                const value = $(selectEl).val();
-                const isTresorerie = value === "Tresorerie";
-
-                const optionsId = $(selectEl).attr('id') === 'type_select'
-                    ? '#tresorerie_options'
-                    : '#update_tresorerie_options';
-                    
-                const compteFieldId = $(selectEl).attr('id') === 'type_select'
-                    ? '#compte_field'
-                    : '#update_compte_field';
-
-                if (isTresorerie) {
-                    $(optionsId).removeClass('d-none');
-                    $(compteFieldId).removeClass('d-none');
-                } else {
-                    $(optionsId).addClass('d-none');
-                    $(compteFieldId).addClass('d-none');
+            console.log("🚀 Initialisation de la page des journaux...");
+            
+            /** 1. DataTable Initialization **/
+            const table = $('#JournalTable').DataTable({
+                dom: 't',
+                pageLength: 5,
+                order: [], // Conserver l'ordre du serveur (trié par créé_le DESC)
+                language: {
+                    zeroRecords: "Aucun journal trouvé",
+                    infoEmpty: "Aucun journal à afficher"
                 }
-            }
+            });
 
-            // 5. Delete Modal Logic
+            const updatePagination = () => {
+                const info = table.page.info();
+                if (info.recordsDisplay > 0) {
+                    $('#tableInfo').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> journaux`);
+                    let html = `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                    html += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold font-mono shadow-lg shadow-blue-200">${info.page + 1}</button>`;
+                    html += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                    $('#customPagination').html(html);
+                } else {
+                    $('#tableInfo').html('Aucun journal trouvé');
+                    $('#customPagination').empty();
+                }
+            };
+
+            table.on('draw', updatePagination);
+            $(document).on('click', '#prevPage', function() { table.page('previous').draw('page'); });
+            $(document).on('click', '#nextPage', function() { table.page('next').draw('page'); });
+            updatePagination();
+
+            /** 2. Filtering Logic **/
+            const applyCustomFilters = () => {
+                table.column(0).search($('#filterType').val());
+                table.column(1).search($('#filterCode').val());
+                table.column(2).search($('#filterIntitule').val());
+                table.draw();
+            };
+
+            $('#filterType, #filterCode, #filterIntitule').on('keyup change', applyCustomFilters);
+            $('#applyFilterBtn').on('click', (e) => { e.preventDefault(); applyCustomFilters(); });
+
+            $('#toggleFilterBtn').on('click', function(e) {
+                e.preventDefault();
+                $('#advancedFilterPanel').toggleClass('hidden');
+                $(this).toggleClass('bg-blue-50 border-blue-200 text-blue-700');
+            });
+
+            $('.filter-card').on('click', function() {
+                $('.filter-card').removeClass('filter-active');
+                $(this).addClass('filter-active');
+                const type = $(this).data('type');
+                
+                if (type === 'all') {
+                    table.column(0).search('').draw();
+                } else {
+                    // Utilisation d'une regex exacte pour correspondre au data-filter
+                    table.column(0).search('^' + type + '$', true, false).draw();
+                }
+            });
+
+            $('#resetFilterBtn').on('click', function(e) {
+                e.preventDefault();
+                $('#filterType, #filterCode, #filterIntitule').val('');
+                $('.filter-card').removeClass('filter-active');
+                $('#filter-all').addClass('filter-active');
+                table.columns().search('').draw();
+            });
+
+            /** 3. Modal & Form Logic **/
+            const toggleTresorerieFields = (selectEl) => {
+                const isTres = $(selectEl).val() === "Tresorerie";
+                const root = $(selectEl).closest('.modal-content');
+                if (isTres) {
+                    root.find('[id$="tresorerie_options"], [id$="compte_field"]').removeClass('d-none');
+                } else {
+                    root.find('[id$="tresorerie_options"], [id$="compte_field"]').addClass('d-none');
+                }
+            };
+
+            $('#type_select, #update_type').on('change', function() { toggleTresorerieFields(this); });
+
+            // Create Form Submission
+            $('#formCodeJournal').on('submit', function(e) {
+                e.preventDefault();
+                const form = $(this);
+                const btn = form.find('button[type="submit"]');
+                const originalText = btn.html();
+                
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Traitement...');
+
+                $.ajax({
+                    url: form.attr('action'),
+                    method: 'POST',
+                    data: new FormData(this),
+                    processData: false,
+                    contentType: false,
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                    success: function(res) {
+                        if (res.success) {
+                            window.location.reload();
+                        } else {
+                            alert(res.message || "Erreur lors de l'enregistrement");
+                        }
+                    },
+                    error: function(xhr) {
+                        const msg = xhr.responseJSON ? xhr.responseJSON.message : "Erreur serveur";
+                        alert("Erreur: " + msg);
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
+
+            // Update Form Submission
+            $('#formEditJournalUnique').on('submit', function(e) {
+                e.preventDefault();
+                const form = $(this);
+                const btn = form.find('button[type="submit"]');
+                const originalText = btn.html();
+                
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Mise à jour...');
+
+                $.ajax({
+                    url: form.attr('action'),
+                    method: 'POST', 
+                    data: new FormData(this),
+                    processData: false,
+                    contentType: false,
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                    success: function(res) {
+                        if (res.success) {
+                            window.location.reload();
+                        } else {
+                            alert(res.message || "Erreur lors de la modification");
+                        }
+                    },
+                    error: function(xhr) {
+                        const msg = xhr.responseJSON ? xhr.responseJSON.message : "Erreur serveur";
+                        alert("Erreur: " + msg);
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
+
+            // Update Trigger (Direct Click for Reliability)
+            $(document).on('click', '.btn-edit-journal', function() {
+                const btn = $(this);
+                const id = btn.data('id');
+                const modal = $('#modalEditJournalUnique');
+                
+                if (!id) return;
+
+                // Pre-fill fields
+                modal.find('#update_journal_id').val(id);
+                modal.find('#update_code_journal').val(btn.data('code'));
+                modal.find('#update_type').val(btn.data('type'));
+                modal.find('#update_intitule').val(btn.data('intitule'));
+                modal.find('#update_traitement_analytique').val(btn.data('traitement'));
+                modal.find('#update_compte_de_contrepartie').val(btn.data('compte_de_contrepartie') || '');
+                modal.find('#update_rapprochement_sur').val(btn.data('rapprochement_sur') || '');
+                
+                toggleTresorerieFields(modal.find('#update_type')[0]);
+                
+                // Set Action URL
+                const url = accounting_journalsUpdateBaseUrl.replace('__ID__', id);
+                modal.find('#formEditJournalUnique').attr('action', url);
+
+                // Open Modal
+                const bsModal = new bootstrap.Modal(document.getElementById('modalEditJournalUnique'));
+                bsModal.show();
+            });
+
+            // Delete Modal Load
             $('#deleteConfirmationModal').on('show.bs.modal', function(e) {
-                const button = $(e.relatedTarget);
-                const id = button.data('id');
-                const name = button.data('name');
-                
-                $('#journalToDeleteName').text(name);
-                
-                // Construire l'URL directement depuis les attributs data
-                const deleteUrl = `/accounting_journals/${id}`;
-                $('#deleteJournalForm').attr('action', deleteUrl);
+                const btn = $(e.relatedTarget);
+                $('#journalToDeleteName').text(btn.data('name'));
+                $('#deleteJournalForm').attr('action', `/accounting_journals/${btn.data('id')}`);
             });
 
-            // 6. Update Modal Logic
-            $('#modalCenterUpdate').on('show.bs.modal', function(e) {
-                const button = $(e.relatedTarget);
-                const id = button.data('id');
-                const code = button.data('code');
-                const type = button.data('type');
-                const intitule = button.data('intitule');
-                const traitement = button.data('traitement');
-                const posteTresorerie = button.data('poste_tresorerie');
-                const compteDeContrepartie = button.data('compte_de_contrepartie');
-                
-                // Remplir les champs du formulaire
-                $('#update_journal_id').val(id);
-                $('#update_code_journal').val(code);
-                $('#update_type').val(type);
-                $('#update_intitule').val(intitule);
-                $('#update_traitement_analytique').val(traitement);
-                $('#update_compte_de_contrepartie').val(compteDeContrepartie || '');
-                $('#update_poste_tresorerie').val(posteTresorerie || '');
-                
-                // Afficher/masquer les options de trésorerie et le champ compte
-                const isTresorerie = type === 'Tresorerie';
-                if (isTresorerie) {
-                    $('#update_tresorerie_options').removeClass('d-none');
-                    $('#update_compte_field').removeClass('d-none');
-                } else {
-                    $('#update_tresorerie_options').addClass('d-none');
-                    $('#update_compte_field').addClass('d-none');
-                }
-                
-                // Mettre à jour l'action du formulaire
-                const updateUrl = accounting_journalsUpdateBaseUrl.replace('__ID__', id);
-                $('#formCodeJournalUpdate').attr('action', updateUrl);
-            });
-
-            // Au changement
-            $('#type_select, #update_type').on('change', function () {
-                toggleTresorerie(this);
-            });
-
-            // Quand le modal s'ouvre, on force la vérification
-            $('#createJournalModal, #updateJournalModal').on('shown.bs.modal', function () {
-                $('#type_select, #update_type').each(function () {
-                    toggleTresorerie(this);
+            // Sync Admin Journals
+            $('#btnSyncAdminJournals').on('click', function(e) {
+                e.preventDefault();
+                if (!confirm("Synchroniser les codes journaux ?")) return;
+                const btn = $(this);
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sync...');
+                $.ajax({
+                    url: '/admin/config/sync/journals',
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                    success: function() { window.location.reload(); },
+                    error: function() { alert("Erreur de synchronisation"); btn.prop('disabled', false).html('Synchroniser'); }
                 });
             });
-        });
-    </script>
 
-    <script>
-        // Validation personnalisée pour le code journal
-        function formatCodeJournal(input) {
-            // Supprimer tous les caractères non alphanumériques
-            let value = input.value.replace(/[^A-Za-z0-9]/g, '');
-            
-            // Convertir en majuscules
-            value = value.toUpperCase();
-            
-            // Limiter à 4 caractères
-            if (value.length > 4) {
-                value = value.substring(0, 4);
-            }
-            
-            input.value = value;
-            
-            // Ne pas appeler validateCodeJournal ici pour éviter les conflits
+            /** 4. Input Formatting **/
+            const enforceUpperAlpha = (selector) => {
+                $(selector).on('input', function() {
+                    this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
+                });
+            };
+            enforceUpperAlpha('#code_journal_input');
+            enforceUpperAlpha('#update_code_journal');
         }
-        
-        function validateCodeJournal(input) {
-            const errorDiv = document.getElementById('code_journal_error');
-            const value = input.value.trim();
-            
-            // Débogage temporaire
-            console.log('Validation - valeur:', value, 'longueur:', value.length);
-            
-            if (value.length === 0) {
-                errorDiv.style.display = 'none';
-                input.setCustomValidity('');
-                return true;
-            }
-            
-            if (value.length > 4) {
-                console.log('Erreur: longueur > 4');
-                errorDiv.textContent = 'Le code journal ne peut pas dépasser 4 caractères';
-                errorDiv.style.display = 'block';
-                input.setCustomValidity('Le code journal ne peut pas dépasser 4 caractères');
-                return false;
-            }
-            
-            if (!/^[A-Z0-9]{1,4}$/.test(value)) {
-                console.log('Erreur: format invalide');
-                errorDiv.textContent = 'Le code journal doit contenir uniquement des lettres majuscules et des chiffres';
-                errorDiv.style.display = 'block';
-                input.setCustomValidity('Le code journal doit contenir uniquement des lettres majuscules et des chiffres');
-                return false;
-            }
-            
-            console.log('Validation OK');
-            errorDiv.style.display = 'none';
-            input.setCustomValidity('');
-            return true;
-        }
-        
-        // Fonction pour afficher le message de succès
-        function showSuccessMessage(message) {
-            const successDiv = document.getElementById('successMessage');
-            const successText = document.getElementById('successText');
-            
-            successText.textContent = message;
-            successDiv.classList.remove('hidden');
-            
-            // Masquer le message après 3 secondes
-            setTimeout(() => {
-                successDiv.classList.add('hidden');
-            }, 3000);
-        }
-        
-        // Validation au submit du formulaire
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('formCodeJournal');
-            if (form) {
-                // Supprimer tous les gestionnaires d'événements existants
-                form.removeEventListener('submit', form.submitHandler);
-                
-                const form.submitHandler = function(e) {
-                    e.preventDefault();
-                    
-                    const codeInput = document.getElementById('code_journal_input');
-                    if (!validateCodeJournal(codeInput)) {
-                        codeInput.focus();
-                        return false;
-                    }
-                    
-                    // Soumission AJAX
-                    const formData = new FormData(form);
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    const originalText = submitBtn.innerHTML;
-                    
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
-                    
-                    fetch(form.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            // Afficher le message de succès
-                            showSuccessMessage(data.message || 'Code journal enregistré');
-                            
-                            // Fermer le modal
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCreateCodeJournal'));
-                            if (modal) {
-                                modal.hide();
-                            }
-                            
-                            // Réinitialiser le formulaire
-                            form.reset();
-                            form.classList.remove('was-validated');
-                            
-                            // Recharger la page après un court délai
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1000);
-                        } else {
-                            // Afficher un message d'erreur plus clair
-                            const errorMessage = data.message || 'Erreur lors de l\'enregistrement';
-                            alert(errorMessage);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        // Afficher un message d'erreur plus informatif
-                        alert('Erreur lors de l\'enregistrement: ' + error.message);
-                    })
-                    .finally(() => {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalText;
-                    });
-                };
-                
-                // Ajouter le nouveau gestionnaire d'événements
-                form.addEventListener('submit', form.submitHandler);
-            }
-        });
+
+        // Run initialization
+        initJournalsPage();
     </script>
 </body>
 </html>

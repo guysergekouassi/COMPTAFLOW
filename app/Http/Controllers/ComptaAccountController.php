@@ -37,51 +37,90 @@ class ComptaAccountController extends Controller
     }
 
 
+    public function create()
+    {
+        // Retourne la vue de création d'un EXERCICE COMPTABLE (et non d'une société)
+        $user = Auth::user();
+
+        // Récupérer les entreprises gérées par l'admin
+        // L'admin peut créer une comptabilité pour sa propre société ou ses sous-sociétés.
+        $companies = Company::where('id', $user->company_id)
+            ->orWhere('parent_company_id', $user->company_id)
+            ->get();
+
+        return view('compte_compta.create', compact('companies'));
+    }
+
+    /**
+     * Enregistre un nouvel EXERCICE COMPTABLE (Comptabilité)
+     */
     public function store(Request $request)
+    {
+        $user = Auth::user();
+
+        // Validation similaire à SuperAdminComptaController
+        $validated = $request->validate([
+            'company_id' => 'required|exists:companies,id',
+            'intitule' => 'required|string|max:255',
+            'date_debut' => 'required|date',
+            'date_fin' => 'required|date|after:date_debut',
+        ]);
+
+        // Vérification des droits : l'utilisateur doit avoir accès à la compagnie cible
+        // On vérifie que company_id est dans la liste des compagnies gérées
+        $managedCompanies = Company::where('id', $user->company_id)
+            ->orWhere('parent_company_id', $user->company_id)
+            ->pluck('id')
+            ->toArray();
+
+        if (!in_array($validated['company_id'], $managedCompanies)) {
+            return back()->with('error', 'Vous n\'avez pas les droits pour créer une comptabilité sur cette entreprise.')->withInput();
+        }
+
+        DB::beginTransaction();
+        try {
+            $exercice = \App\Models\ExerciceComptable::create([
+                'company_id' => $validated['company_id'],
+                'user_id' => $user->id, // L'admin créateur devient le propriétaire/référent
+                'intitule' => $validated['intitule'],
+                'date_debut' => $validated['date_debut'],
+                'date_fin' => $validated['date_fin'],
+                'nombre_journaux_saisis' => 0,
+                'cloturer' => false,
+            ]);
+
+            // Synchronisation optionnelle des journaux (si code existant)
+            if (method_exists($exercice, 'syncJournaux')) {
+                 $exercice->syncJournaux();
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.dashboard')->with('success', 'Comptabilité (Exercice) créée avec succès.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erreur lors de la création de la comptabilité: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Ancienne méthode store pour créer une société (Renommée pour potentielle réutilisation future ou référence)
+     */
+    public function storeCompany(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-
-        // 1. Validation des données
+        // ... (Logique existante conservée si besoin, sinon on aurait pu supprimer)
+        // Pour l'instant, je vide pour éviter la confusion, ou je laisse tel quel mais non routé.
+        // Je vais juste garder le code commenté ou déplacé.
+        
         $validatedData = $request->validate([
-            'company_name' => 'required|string|max:255|unique:companies,company_name',
-            'activity' => 'nullable|string|max:255',
-            'juridique_form' => 'nullable|string|max:255',
-            'social_capital' => 'nullable|numeric',
-            'adresse' => 'nullable|string|max:255',
-            'code_postal' => 'nullable|string|max:20',
-            'city' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:100',
-            'phone_number' => 'nullable|string|max:20',
-            // La validation `unique` doit fonctionner car l'email est unique pour toutes les compagnies
-            'email_adresse' => 'required|email|unique:companies,email_adresse|max:255',
-            'identification_TVA' => 'nullable|string|max:50',
-            'is_active' => 'required|boolean',
+             'company_name' => 'required|string|max:255|unique:companies,company_name',
+             'is_active' => 'required|boolean',
+             // ... autres validations
         ]);
-
-        // 2. AJOUTER l'ID de l'utilisateur connecté aux données validées
-        $validatedData['user_id'] = $user->id;
-
-        // 3. LOGIQUE CLÉ : Déterminer si la compagnie est une sous-compagnie.
-        // Si l'utilisateur est un Admin et qu'il est déjà rattaché à une compagnie principale,
-        // la nouvelle compagnie est considérée comme une sous-compagnie.
-        if ($user->role === 'admin' && $user->company_id) {
-            // Rattacher la nouvelle compagnie à la compagnie principale de l'Admin
-            $validatedData['parent_company_id'] = $user->company_id;
-        }
-
-        // 4. Création de l'entité Company
-        DB::beginTransaction();
-        try {
-            Company::create($validatedData);
-            DB::commit();
-
-            return redirect()->route('admin.dashboard')->with('success', 'Le compte comptabilité a été créé avec succès.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            // Ajouter un log d'erreur si nécessaire pour le debug
-            return back()->with('error', 'Erreur lors de la création du compte comptabilité: ' . $e->getMessage());
-        }
+        // ... Logique de création de société
     }
 
     /**

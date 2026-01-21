@@ -1,0 +1,220 @@
+/* premium_admin.css */
+:root {
+    --premium-primary: #6366f1;
+    --premium-primary-soft: rgba(99, 102, 241, 0.1);
+    --premium-secondary: #64748b;
+    --premium-bg: #f8fafc;
+    --premium-card-bg: rgba(255, 255, 255, 0.8);
+    --premium-glass-border: rgba(255, 255, 255, 0.3);
+    --premium-glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    --premium-gradient-1: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    --premium-success: #10b981;
+    --premium-warning: #f59e0b;
+    --premium-danger: #ef4444;
+}
+
+/* Glassmorphism Classes */
+.glass-card {
+    background: var(--premium-card-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid var(--premium-glass-border);
+    box-shadow: var(--premium-glass-shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.12);
+}
+
+/* Premium Typography */
+.text-premium-gradient {
+    background: var(--premium-gradient-1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+/* Status Badges */
+.badge-premium {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-premium-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-premium-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-premium-danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-premium-info {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+/* Company Card Grid */
+.company-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.company-card-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: var(--premium-gradient-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+/* User Management Styles */
+.user-card {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    gap: 16px;
+}
+
+.user-card-initials {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--premium-primary-soft);
+    color: var(--premium-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* Interactive elements */
+.btn-premium {
+    background: var(--premium-gradient-1);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: opacity 0.3s;
+}
+
+.btn-premium:hover {
+    opacity: 0.9;
+    color: white;
+}
+
+/* Table Enhancements */
+.table-premium {
+    border-collapse: separate;
+    border-spacing: 0 12px;
+    background: transparent;
+}
+
+.table-premium tr {
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    border-radius: 12px;
+}
+
+.table-premium td {
+    padding: 16px;
+    border: none;
+}
+
+.table-premium td:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.table-premium td:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Timeline Styles */
+.timeline-premium {
+    position: relative;
+    padding-left: 3rem;
+    margin: 20px 0;
+}
+
+.timeline-premium::before {
+    content: '';
+    position: absolute;
+    left: 1.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e5e7eb;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--premium-primary);
+    z-index: 1;
+}
+
+/* Split-screen Layout */
+.split-layout {
+    display: flex;
+    gap: 24px;
+    min-height: calc(100vh - 200px);
+}
+
+.split-aside {
+    flex: 0 0 350px;
+    height: fit-content;
+}
+
+.split-main {
+    flex: 1;
+}
+
+.list-group-premium .list-group-item {
+    border: none;
+    border-radius: 12px !important;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    background: transparent;
+}
+
+.list-group-premium .list-group-item.active {
+    background: var(--premium-primary-soft);
+    color: var(--premium-primary);
+    font-weight: 600;
+}
+
+.list-group-premium .list-group-item:hover:not(.active) {
+    background: rgba(0, 0, 0, 0.02);
+}

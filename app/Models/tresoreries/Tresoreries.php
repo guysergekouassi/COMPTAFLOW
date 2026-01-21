@@ -19,6 +19,7 @@ use HasFactory;
         'compte_de_contrepartie',
         'rapprochement_sur',
         'poste_tresorerie',
+        'categorie',
         'type_flux',
         'user_id',
         'company_id',

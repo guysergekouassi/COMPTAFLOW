@@ -12,43 +12,20 @@
                 @include('components.header', ['page_title' => 'Créer une Comptabilité'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    
+                    <form action="{{ route('superadmin.accounting.store') }}" method="POST">
+                        @csrf
 
-
-                    <!-- Formulaire de création -->
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                
-                                @if(session('success'))
-                                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                        <i class="fa-solid fa-check-circle me-2"></i>
-                                        {{ session('success') }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                    </div>
-                                @endif
-
-                                @if($errors->any())
-                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
-                                        <strong>Erreur :</strong> Veuillez corriger les erreurs ci-dessous.
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                    </div>
-                                @endif
-
-                                <form action="{{ route('superadmin.accounting.store') }}" method="POST">
-                                    @csrf
-
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                                        <i class="fa-solid fa-calendar-check me-2"></i>Configuration de l'Exercice
+                                    </h5>
+                                    
                                     <div class="row g-4">
-                                        <!-- Sélection de l'entreprise -->
                                         <div class="col-md-12">
-                                            <label for="company_id" class="form-label fw-semibold">
-                                                Entreprise <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select @error('company_id') is-invalid @enderror" 
-                                                    id="company_id" 
-                                                    name="company_id"
-                                                    required>
+                                            <label for="company_id" class="form-label fw-semibold">Entreprise Client <span class="text-danger">*</span></label>
+                                            <select class="form-select @error('company_id') is-invalid @enderror" id="company_id" name="company_id" required>
                                                 <option value="">Sélectionner une entreprise</option>
                                                 @foreach($companies as $company)
                                                     <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
@@ -56,118 +33,70 @@
                                                     </option>
                                                 @endforeach
                                             </select>
-                                            @error('company_id')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            @error('company_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
-                                        <!-- Nom du compte comptable -->
                                         <div class="col-md-12">
-                                            <label for="account_name" class="form-label fw-semibold">
-                                                Nom du compte comptable <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" 
-                                                   class="form-control @error('account_name') is-invalid @enderror" 
-                                                   id="account_name" 
-                                                   name="account_name" 
-                                                   value="{{ old('account_name') }}"
-                                                   placeholder="Ex: Comptabilité Générale 2026"
-                                                   required>
-                                            @error('account_name')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-
-                                        <!-- Type de comptabilité -->
-                                        <div class="col-md-12">
-                                            <label for="account_type" class="form-label fw-semibold">
-                                                Type de comptabilité <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select @error('account_type') is-invalid @enderror" 
-                                                    id="account_type" 
-                                                    name="account_type"
-                                                    required>
-                                                <option value="">Sélectionner un type</option>
-                                                <option value="SYSCOHADA" {{ old('account_type') == 'SYSCOHADA' ? 'selected' : '' }}>SYSCOHADA</option>
-                                                <option value="PCG" {{ old('account_type') == 'PCG' ? 'selected' : '' }}>Plan Comptable Général (PCG)</option>
-                                                <option value="IFRS" {{ old('account_type') == 'IFRS' ? 'selected' : '' }}>IFRS</option>
-                                                <option value="Personnalisé" {{ old('account_type') == 'Personnalisé' ? 'selected' : '' }}>Personnalisé</option>
+                                            <label for="user_id" class="form-label fw-semibold">Administrateur Référent <span class="text-danger">*</span></label>
+                                            <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id" required>
+                                                <option value="">Sélectionner l'admin responsable</option>
+                                                @foreach($users as $user)
+                                                    <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
+                                                        {{ $user->last_name }} {{ $user->name }} ({{ $user->company->company_name ?? 'N/A' }})
+                                                    </option>
+                                                @endforeach
                                             </select>
-                                            @error('account_type')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <small class="text-muted">L'utilisateur qui sera le propriétaire principal de cet exercice.</small>
+                                            @error('user_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
-                                        <!-- Exercice comptable -->
-                                        <div class="col-md-6">
-                                            <label for="fiscal_year_start" class="form-label fw-semibold">
-                                                Début d'exercice <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="date" 
-                                                   class="form-control @error('fiscal_year_start') is-invalid @enderror" 
-                                                   id="fiscal_year_start" 
-                                                   name="fiscal_year_start" 
-                                                   value="{{ old('fiscal_year_start') }}"
-                                                   required>
-                                            @error('fiscal_year_start')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                        <div class="col-md-12">
+                                            <label for="intitule" class="form-label fw-semibold">Intitulé de l'Exercice <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('intitule') is-invalid @enderror" id="intitule" name="intitule" value="{{ old('intitule') }}" required placeholder="Ex: Exercice Comptable 2026">
+                                            @error('intitule') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
                                         <div class="col-md-6">
-                                            <label for="fiscal_year_end" class="form-label fw-semibold">
-                                                Fin d'exercice <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="date" 
-                                                   class="form-control @error('fiscal_year_end') is-invalid @enderror" 
-                                                   id="fiscal_year_end" 
-                                                   name="fiscal_year_end" 
-                                                   value="{{ old('fiscal_year_end') }}"
-                                                   required>
-                                            @error('fiscal_year_end')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <label for="date_debut" class="form-label fw-semibold">Date d'Ouverture <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control @error('date_debut') is-invalid @enderror" id="date_debut" name="date_debut" value="{{ old('date_debut') }}" required>
+                                            @error('date_debut') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="date_fin" class="form-label fw-semibold">Date de Clôture <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control @error('date_fin') is-invalid @enderror" id="date_fin" name="date_fin" value="{{ old('date_fin') }}" required>
+                                            @error('date_fin') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
                                     </div>
 
-                                    <!-- Boutons d'action -->
                                     <div class="d-flex justify-content-end gap-3 mt-5">
                                         <a href="{{ route('superadmin.dashboard') }}" class="btn btn-outline-secondary">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fa-solid fa-save me-2"></i>Créer la comptabilité
+                                        <button type="submit" class="btn btn-primary px-4">
+                                            <i class="fa-solid fa-save me-2"></i>Créer l'exercice
                                         </button>
                                     </div>
-                                </form>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="bg-green-50 rounded-xl border border-green-200 p-4">
+                                    <h6 class="fw-bold text-green-900 mb-3">
+                                        <i class="fa-solid fa-circle-info me-2"></i>Fonctionnement
+                                    </h6>
+                                    <p class="text-sm text-green-800 mb-3">
+                                        La création d'un exercice initialise automatiquement la structure de données pour l'année fiscale concernée.
+                                    </p>
+                                    <ul class="text-xs text-green-700 ps-3 mb-0">
+                                        <li class="mb-1">Période standard de 12 mois recommandée.</li>
+                                        <li class="mb-1">L'administrateur référent aura les pleins pouvoirs de validation.</li>
+                                        <li>Possibilité de synchroniser les journaux immédiatement après création.</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Aide contextuelle -->
-                        <div class="col-lg-4">
-                            <div class="bg-blue-50 rounded-xl border border-blue-200 p-4">
-                                <h6 class="fw-bold text-blue-900 mb-3">
-                                    <i class="fa-solid fa-info-circle me-2"></i>Informations
-                                </h6>
-                                <ul class="text-sm text-blue-800 mb-0 ps-3">
-                                    <li class="mb-2">Sélectionnez l'entreprise pour laquelle créer la comptabilité</li>
-                                    <li class="mb-2">Le type SYSCOHADA est recommandé pour les entreprises en Afrique</li>
-                                    <li class="mb-2">L'exercice comptable dure généralement 12 mois</li>
-                                    <li class="mb-2">Vous pourrez créer plusieurs exercices après la création</li>
-                                </ul>
-                            </div>
-
-                            <div class="bg-green-50 rounded-xl border border-green-200 p-4 mt-3">
-                                <h6 class="fw-bold text-green-900 mb-3">
-                                    <i class="fa-solid fa-lightbulb me-2"></i>Conseil
-                                </h6>
-                                <p class="text-sm text-green-800 mb-0">
-                                    Assurez-vous que l'entreprise existe déjà dans le système avant de créer sa comptabilité.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
+                    </form>
                 </div>
 
                 @include('components.footer')

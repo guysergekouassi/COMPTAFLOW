@@ -117,6 +117,30 @@
         color: white;
     }
 
+    .menu-link-quick {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        color: #374151;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+    }
+
+    .menu-link-quick:hover {
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    .menu-link-quick.active {
+        background: #1e40af;
+        color: white !important;
+        box-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
+    }
+
     .menu-link-new i {
         width: 20px;
         margin-right: 12px;
@@ -232,13 +256,24 @@
 
     .company-name-sidebar {
         font-size: 0.75rem;
-        color: #6c757d;
-        margin-top: -3px;
-        max-width: 140px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        color: #64748b;
+        margin-top: 2px;
+        font-weight: 600;
         display: block;
+        line-height: 1.2;
+    }
+
+    .role-badge-sidebar {
+        font-size: 0.65rem;
+        color: #1e40af;
+        background: #eff6ff;
+        padding: 2px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.025em;
+        display: inline-block;
+        margin-top: 4px;
     }
 
     /* Cacher l'ancien design */
@@ -304,6 +339,35 @@ if ($user->role === 'super_admin') {
      }
 
      $companies = $companies_for_switch;
+
+     // Définition des habilitations et visibilité des sections
+     $habilitations = $user->habilitations ?? [];
+     // Normalisation pour supporter les tableaux associatifs {"perm": "1"}
+     if (!empty($habilitations) && !isset($habilitations[0])) {
+         $habilitations = array_keys(array_filter($habilitations, fn($v) => $v == "1" || $v === true));
+     }
+     if ($user->isAdmin() && !$user->isSuperAdmin()) {
+         // L'admin a accès à tout par défaut dans sa gestion
+         $show_all = true; 
+     }
+
+     $traitement_permissions = [
+         'nouvelle_saisie', 'exercice_comptable', 'rapprochement', 'gestion_tresorerie',
+         'gestion_comptes', 'gestion_tiers', 'gestion_analytique', 'gestion_immobilisations',
+         'gestion_stocks', 'gestion_reportings', 'modal_saisie_direct'
+     ];
+     $show_traitement_header = $show_all || count(array_intersect($traitement_permissions, $habilitations)) > 0;
+
+     $rapports_permissions = [
+         'grand_livre', 'grand_livre_tiers', 'balance', 'balance_tiers',
+         'accounting_ledger', 'accounting_ledger_tiers', 'accounting_balance', 'accounting_balance_tiers',
+         'compte_exploitation', 'flux_tresorerie', 'tableau_amortissements',
+         'etat_tiers', 'compte_resultat', 'bilan', 'etats_analytiques', 'etats_previsionnels'
+     ];
+     $show_rapports_header = $show_all || count(array_intersect($rapports_permissions, $habilitations)) > 0;
+
+     $parametrage_permissions = ['plan_comptable', 'plan_tiers', 'journaux', 'accounting_journals', 'tresorerie'];
+     $show_parametrage_header = $show_all || count(array_intersect($parametrage_permissions, $habilitations)) > 0;
 @endphp
 
 @include('components.modal_saisie_direct', [
@@ -330,31 +394,189 @@ if ($user->role === 'super_admin') {
             <div class="brand-text">
                 <h1 class="brand-title">Flow Compta</h1>
                 @if ($currentCompany)
-                    <small class="company-name-sidebar fw-semibold">
+                    <div class="company-name-sidebar">
                         {{ $currentCompany->company_name }}
-                    </small>
+                    </div>
+                    <div class="role-badge-sidebar">
+                        {{ auth()->user()->role === 'comptable' ? 'Comptable' : (auth()->user()->role === 'super_admin' ? 'Super Admin' : auth()->user()->role) }}
+                    </div>
                 @else
-                    <small class="text-muted fw-semibold">Super Admin</small>
+                    <div class="role-badge-sidebar mt-1">Super Admin</div>
                 @endif
             </div>
         </div>
     </div>
 
     <nav class="sidebar-nav">
+        {{-- SECTION 1 : PILOTAGE --}}
         <div class="menu-section">
-            <a href="{{ $isComptaAccountActive && !auth()->user()->isSuperAdmin() ? route('compta.dashboard') : route('admin.dashboard') }}" class="menu-link-new {{ ($isComptaAccountActive && !auth()->user()->isSuperAdmin() && request()->routeIs('compta.dashboard')) || (!$isComptaAccountActive || auth()->user()->isSuperAdmin()) && request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                <i class="fa-solid fa-home"></i>
-                <span>Tableau de bord</span>
-            </a>
+            @if(auth()->user()->isAdmin())
+                <div class="menu-section-header">Pilotage</div>
+            @endif
+            
+            @php
+                $dashboardRoute = route('admin.dashboard');
+                if (auth()->user()->isComptable()) {
+                    $dashboardRoute = route('comptable.comptdashboard');
+                } elseif ($isComptaAccountActive) {
+                    $dashboardRoute = route('compta.dashboard');
+                }
+            @endphp
+
+            @if(auth()->user()->hasPermission('compta.dashboard'))
+                <a href="{{ $dashboardRoute }}" class="menu-link-new {{ request()->routeIs('admin.dashboard', 'comptable.comptdashboard', 'compta.dashboard') ? 'active' : '' }}">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Tableau de bord</span>
+                </a>
+            @endif
+
+            @if(auth()->user()->hasPermission('admin.performance'))
+                <a href="{{ route('admin.performance') }}" class="menu-link-new {{ request()->routeIs('admin.performance') ? 'active' : '' }}">
+                    <i class="fa-solid fa-rocket"></i>
+                    <span>Tableau de bord Admin</span>
+                </a>
+            @endif
         </div>
 
-        @if ($isComptaAccountActive && !auth()->user()->isSuperAdmin())
-            {{-- Section Paramétrage --}}
-            <!-- @php
-                $parametrage_permissions = ['plan_comptable', 'plan_tiers', 'accounting_journals', 'indextresorerie','postetresorerie.index'];
-                $show_parametrage_header = $show_all || count(array_intersect($parametrage_permissions, $habilitations)) > 0;
-            @endphp -->
+            @if(auth()->user()->hasPermission('admin.config.hub'))
+            {{-- SECTION 2 : CONFIGURATION ENTREPRISE [NOUVEAU] --}}
+            <div class="menu-section">
+                <div class="menu-section-header">Configuration Entreprise</div>
+                @if(auth()->user()->hasPermission('admin.config.hub'))
+                <a href="{{ route('admin.config.hub') }}" class="menu-link-new {{ request()->routeIs('admin.config.hub') ? 'active' : '' }}">
+                    <i class="fa-solid fa-gears"></i>
+                    <span>Dossier de Configuration</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('admin.config.plan_comptable'))
+                <a href="{{ route('admin.config.plan_comptable') }}" class="menu-link-new {{ request()->routeIs('admin.config.plan_comptable') ? 'active' : '' }}">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                    <span>Modèle de Plan</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('admin.config.plan_tiers'))
+                <a href="{{ route('admin.config.plan_tiers') }}" class="menu-link-new {{ request()->routeIs('admin.config.plan_tiers') ? 'active' : '' }}">
+                    <i class="fa-solid fa-address-book"></i>
+                    <span>Modèle de Tiers</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('admin.config.journals'))
+                <a href="{{ route('admin.config.journals') }}" class="menu-link-new {{ request()->routeIs('admin.config.journals') ? 'active' : '' }}">
+                    <i class="fa-solid fa-swatchbook"></i>
+                    <span>Structure des Journaux</span>
+                </a>
+                @endif
+            </div>
+            @endif
 
+            {{-- SECTION 3 : GOUVERNANCE --}}
+            @php
+                $hasGouvernance = auth()->user()->hasPermission('compta_accounts.index') || 
+                                  auth()->user()->hasPermission('admin.companies.create') || 
+                                  auth()->user()->hasPermission('user_management') || 
+                                  auth()->user()->hasPermission('admin.switch');
+            @endphp
+            @if($hasGouvernance)
+            <div class="menu-section">
+                <div class="menu-section-header">Gouvernance</div>
+                @if(auth()->user()->hasPermission('compta_accounts.index'))
+                <a href="{{ route('compta_accounts.index') }}" class="menu-link-new {{ request()->routeIs('compta_accounts.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-sitemap"></i>
+                    <span>Gestion des Entités</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('admin.companies.create'))
+                <a href="{{ route('admin.companies.create') }}" class="menu-link-new {{ request()->routeIs('admin.companies.create') ? 'active' : '' }}">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Créer Entreprise</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('user_management'))
+                <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Équipe & Permissions</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('admin.switch'))
+                <a href="{{ route('admin.switch') }}" class="menu-link-new {{ request()->routeIs('admin.switch') ? 'active' : '' }}">
+                    <i class="fa-solid fa-repeat"></i>
+                    <span>Switch Comptabilité</span>
+                </a>
+                @endif
+
+                {{-- Quick Actions Sub-Section --}}
+                @if(auth()->user()->isAdmin())
+                <div class="mt-2 pt-2 border-top border-light">
+                    <small class="text-muted text-uppercase px-3 mb-2 d-block" style="font-size: 0.65rem;">Création Rapide</small>
+                    <a href="{{ route('compta.create') }}" class="menu-link-quick {{ request()->routeIs('compta.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Créer Comptabilité</span>
+                    </a>
+                    <a href="{{ route('admin.admins.create') }}" class="menu-link-quick {{ request()->routeIs('admin.admins.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Créer Administrateur</span>
+                    </a>
+                    <a href="{{ route('admin.secondary_admins.create') }}" class="menu-link-quick {{ request()->routeIs('admin.secondary_admins.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>Créer Admin Sécondaire</span>
+                    </a>
+                    <a href="{{ route('admin.users.create') }}" class="menu-link-quick {{ request()->routeIs('admin.users.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Créer Utilisateur</span>
+                    </a>
+                </div>
+                @endif
+            </div>
+            @endif
+
+            {{-- SECTION 3 : OPÉRATIONS --}}
+            @php
+                $hasOperations = auth()->user()->hasPermission('admin.audit') || 
+                                 auth()->user()->hasPermission('admin.access') || 
+                                 auth()->user()->hasPermission('admin.tasks');
+            @endphp
+            @if($hasOperations)
+            <div class="menu-section">
+                <div class="menu-section-header">Opérations</div>
+                @if(auth()->user()->hasPermission('admin.audit'))
+                <a href="{{ route('admin.audit') }}" class="menu-link-new {{ request()->routeIs('admin.audit') ? 'active' : '' }}">
+                    <i class="fa-solid fa-history"></i>
+                    <span>Archives & Audit</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('admin.access'))
+                <a href="{{ route('admin.access') }}" class="menu-link-new {{ request()->routeIs('admin.access') ? 'active' : '' }}">
+                    <i class="fa-solid fa-lock-open"></i>
+                    <span>Contrôle d'Accès</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('admin.tasks'))
+                <a href="{{ route('admin.tasks') }}" class="menu-link-new {{ request()->routeIs('admin.tasks') ? 'active' : '' }}">
+                    <i class="fa-solid fa-tasks"></i>
+                    <span>Assignation de Tâches</span>
+                </a>
+                @endif
+            </div>
+            @endif
+
+            {{-- SECTION 4 : VALIDATION --}}
+            @if(auth()->user()->hasPermission('admin.approvals'))
+            <div class="menu-section">
+                <div class="menu-section-header">Validation</div>
+                <a href="{{ route('admin.approvals') }}" class="menu-link-new {{ request()->routeIs('admin.approvals') ? 'active' : '' }}">
+                    <i class="fa-solid fa-stamp"></i>
+                    <span>Approbations</span>
+                    <span class="badge bg-soft-warning text-warning ms-auto">
+                        {{ $pendingApprovalsCount }}
+                    </span>
+                </a>
+            </div>
+            @endif
+
+        @if ($isComptaAccountActive && !auth()->user()->isSuperAdmin())
+            {{-- MODE COMPTABILITÉ ACTIVE --}}
+
+            {{-- Paramétrage --}}
             @if ($show_parametrage_header)
             <div class="menu-section">
                 <div class="menu-section-header">Paramétrage</div>
@@ -370,7 +592,7 @@ if ($user->role === 'super_admin') {
                     <span>Plan tiers</span>
                 </a>
                 @endif
-                @if($show_all || in_array('journaux', $habilitations))
+                @if($show_all || in_array('journaux', $habilitations) || in_array('accounting_journals', $habilitations))
                 <a href="{{ route('accounting_journals') }}" class="menu-link-new {{ request()->routeIs('accounting_journals') ? 'active' : '' }}">
                     <i class="fa-solid fa-book-open"></i>
                     <span>Journaux</span>
@@ -385,30 +607,17 @@ if ($user->role === 'super_admin') {
             </div>
             @endif
 
-            {{-- Section Traitement --}}
-            @php
-                $traitement_permissions = [
-                    'nouvelle_saisie', 'exercice_comptable', 'rapprochement', 'gestion_tresorerie',
-                    'gestion_comptes', 'gestion_tiers', 'gestion_analytique', 'gestion_immobilisations',
-                    'gestion_stocks', 'gestion_reportings'
-                ];
-                $show_traitement_header = $show_all || count(array_intersect($traitement_permissions, $habilitations)) > 0;
-            @endphp
-
+            {{-- Traitement --}}
             @if ($show_traitement_header)
             <div class="menu-section">
                 <div class="menu-section-header">Traitement</div>
                 @if($show_all || in_array('modal_saisie_direct', $habilitations))
-                <a href="{{ route('modal_saisie_direct') }}" class="menu-link-new {{ request()->routeIs('modal_saisie_direct') ? 'active' : '' }}" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal">
+                <a href="#" class="menu-link-new" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal">
                     <i class="fa-solid fa-plus-circle"></i>
                     <span>Nouvelle saisie</span>
                 </a>
-                @endif
-
-                <!-- Afficher le bouton Liste des écritures si l'utilisateur a modal_saisie_direct -->
-                @if($show_all || in_array('modal_saisie_direct', $habilitations))
                 <a href="{{ route('accounting_entry_list') }}" class="menu-link-new {{ request()->routeIs('accounting_entry_list') ? 'active' : '' }}">
-                    <i class="fa-solid fa-list"></i>
+                    <i class="fa-solid fa-list-check"></i>
                     <span>Liste des écritures</span>
                 </a>
                 <a href="{{ route('brouillons.index') }}" class="menu-link-new {{ request()->routeIs('brouillons.index') ? 'active' : '' }}">
@@ -418,122 +627,69 @@ if ($user->role === 'super_admin') {
                 @endif
                 @if($show_all || in_array('exercice_comptable', $habilitations))
                 <a href="{{ route('exercice_comptable') }}" class="menu-link-new {{ request()->routeIs('exercice_comptable') ? 'active' : '' }}">
-                    <i class="fa-solid fa-calendar-alt"></i>
+                    <i class="fa-solid fa-calendar-check"></i>
                     <span>Exercice comptable</span>
-                </a>
-                @endif
-                @if(in_array('accounting_entry_real', $habilitations))
-                <a href="#" class="menu-link-new">
-                    <i class="fa-solid fa-list"></i>
-                    <span>Liste des écritures</span>
                 </a>
                 @endif
             </div>
             @endif
 
-            {{-- Section Rapports Comptables --}}
-            @php
-                $rapports_permissions = [
-                    'grand_livre', 'grand_livre_tiers', 'balance', 'balance_tiers',
-                    'compte_exploitation', 'flux_tresorerie', 'tableau_amortissements',
-                    'etat_tiers', 'compte_resultat', 'bilan', 'etats_analytiques', 'etats_previsionnels'
-                ];
-                $show_rapports_header = $show_all || count(array_intersect($rapports_permissions, $habilitations)) > 0;
-            @endphp
-
+            {{-- Rapports Comptables --}}
             @if ($show_rapports_header)
             <div class="menu-section">
-                <div class="menu-section-header">Rapports Comptables</div>
-                @if($show_all || in_array('grand_livre', $habilitations))
+                <div class="menu-section-header">Rapports</div>
+                @if($show_all || in_array('grand_livre', $habilitations) || in_array('accounting_ledger', $habilitations))
                 <a href="{{ route('accounting_ledger') }}" class="menu-link-new {{ request()->is('accounting_ledger') ? 'active' : '' }}">
-                    <i class="fa-solid fa-book-open"></i>
+                    <i class="fa-solid fa-file-invoice"></i>
                     <span>Grand livre</span>
                 </a>
                 @endif
-                @if($show_all || in_array('balance', $habilitations))
+                @if($show_all || in_array('balance', $habilitations) || in_array('accounting_balance', $habilitations))
                 <a href="{{ route('accounting_balance') }}" class="menu-link-new {{ request()->is('accounting_balance') ? 'active' : '' }}">
-                    <i class="fa-solid fa-balance-scale"></i>
+                    <i class="fa-solid fa-scale-balanced"></i>
                     <span>Balance</span>
                 </a>
                 @endif
             </div>
             @endif
 
-            {{-- Section Paramètres pour Admin --}}
-            @if (Auth::check() && Auth::user()->role === 'admin')
-            <div class="menu-section">
-                <div class="menu-section-header">Paramètres</div>
-                @if($show_all || in_array('user_management', $habilitations))
-                <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
-                    <i class="fa-solid fa-users-cog"></i>
-                    <span>Gestion des utilisateurs</span>
-                </a>
-                @endif
-                @if($show_all || in_array('compagny_information', $habilitations))
-                <a href="{{ route('compagny_information') }}" class="menu-link-new {{ request()->routeIs('compagny_information') ? 'active' : '' }}">
-                    <i class="fa-solid fa-building"></i>
-                    <span>Information de l'entreprise</span>
-                </a>
-                @endif
-            </div>
-            @endif
+
         @else
-            {{-- Menu pour Super Admin et autres rôles sans compte comptable actif --}}
-            @if (auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin() && !session('current_compta_account_id'))
+            {{-- MODE GOUVERNANCE (Pas de compte actif) --}}
+            @if (auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin())
             <div class="menu-section">
-                <div class="menu-section-header">Compta Accounts</div>
+                <div class="menu-section-header">Organisation</div>
                 <a href="{{ route('compta_accounts.index') }}" class="menu-link-new {{ request()->routeIs('compta_accounts.index') ? 'active' : '' }}">
-                    <i class="fa-solid fa-plus-circle"></i>
-                    <span>Créer compte-comptabilité</span>
+                    <i class="fa-solid fa-building"></i>
+                    <span>Mes Compagnies</span>
                 </a>
-                <a href="{{ route('compta_accounts.index') }}" class="menu-link-new {{ request()->routeIs('compta_accounts.index') ? 'active' : '' }}">
-                    <i class="fa-solid fa-list"></i>
-                    <span>Liste/Modifier compte-comptabilité</span>
+                <a href="{{ route('admin.companies.create') }}" class="menu-link-new {{ request()->routeIs('admin.companies.create') ? 'active' : '' }}">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Créer Entreprise</span>
+                </a>
+                <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
+                    <i class="fa-solid fa-user-group"></i>
+                    <span>Équipe & Permissions</span>
+                </a>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-section-header">Support</div>
+                <a href="#" class="menu-link-new text-muted" title="Bientôt disponible">
+                    <i class="fa-solid fa-history"></i>
+                    <span>Archives & Audit</span>
+                    <span class="badge bg-soft-primary text-primary ms-auto" style="font-size: 10px;">Pro</span>
                 </a>
             </div>
             @endif
+
             @if (auth()->user()->isSuperAdmin())
+                {{-- Garder l'existant pour Super Admin si non géré par superadmin_sidebar --}}
                 <div class="menu-section">
                     <div class="menu-section-header">Paramétrage</div>
-                    <a href="{{ route('plan_comptable') }}" class="menu-link-new {{ request()->routeIs('plan_comptable*') ? 'active' : '' }}">
+                    <a href="{{ route('plan_comptable') }}" class="menu-link-new">
                         <i class="fa-solid fa-book"></i>
                         <span>Plan comptable</span>
-                    </a>
-                    <a href="{{ route('plan_tiers') }}" class="menu-link-new {{ request()->routeIs('plan_tiers*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-users"></i>
-                        <span>Plan tiers</span>
-                    </a>
-                    <a href="{{ route('accounting_journals') }}" class="menu-link-new {{ request()->routeIs('accounting_journals') ? 'active' : '' }}">
-                        <i class="fa-solid fa-book-open"></i>
-                        <span>Journaux</span>
-                    </a>
-                    <a href="{{ route('postetresorerie.index') }}" class="menu-link-new {{ request()->routeIs('postetresorerie.index') ? 'active' : '' }}">
-                        <i class="fa-solid fa-wallet"></i>
-                        <span>Poste Trésorerie</span>
-                    </a>
-                </div>
-
-                <div class="menu-section">
-                    <div class="menu-section-header">Traitement</div>
-                    <a href="{{ route('modal_saisie_direct') }}" class="menu-link-new {{ request()->routeIs('modal_saisie_direct') ? 'active' : '' }}" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal">
-                        <i class="fa-solid fa-plus-circle"></i>
-                        <span>Nouvelle saisie</span>
-                    </a>
-                    <a href="{{ route('exercice_comptable') }}" class="menu-link-new {{ request()->routeIs('exercice_comptable') ? 'active' : '' }}">
-                        <i class="fa-solid fa-calendar-alt"></i>
-                        <span>Exercice comptable</span>
-                    </a>
-                </div>
-
-                <div class="menu-section">
-                    <div class="menu-section-header">Rapports Comptables</div>
-                    <a href="{{ route('accounting_ledger') }}" class="menu-link-new {{ request()->is('accounting_ledger') ? 'active' : '' }}">
-                        <i class="fa-solid fa-book-open"></i>
-                        <span>Grand livre</span>
-                    </a>
-                    <a href="{{ route('accounting_balance') }}" class="menu-link-new {{ request()->is('accounting_balance') ? 'active' : '' }}">
-                        <i class="fa-solid fa-balance-scale"></i>
-                        <span>Balance</span>
                     </a>
                 </div>
             @endif

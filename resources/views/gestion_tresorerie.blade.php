@@ -439,36 +439,40 @@
 
                             {{-- Modal de suppression --}}
                             <div class="modal fade" id="modalDeleteFlux" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered" role="document">
-                                    <form id="formDeleteFlux" method="POST"
-                                        action="{{ route('gestion_tresorerie.destroy') }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" id="delete_id" name="id">
-
-                                        <div class="modal-content premium-modal-content">
-                                            <div class="text-center mb-6">
-                                                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <i class="bx bx-trash text-3xl text-red-500"></i>
-                                                </div>
-                                                <h4 class="text-xl font-bold text-slate-800 mb-2">Confirmer la suppression</h4>
-                                                <p class="text-slate-500 text-sm">
-                                                    Êtes-vous sûr de vouloir supprimer le flux <strong id="delete_label" class="text-slate-700"></strong> ?
-                                                    <br>
-                                                    <span class="text-red-500 font-medium mt-1 block">Cette action est irréversible.</span>
-                                                </p>
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content premium-modal-content">
+                                        <!-- Header -->
+                                        <div class="text-center mb-6 position-relative">
+                                            <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                            <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                                <i class="fas fa-trash-alt text-red-600 text-xl"></i>
                                             </div>
-                                            
-                                            <div class="flex items-center justify-center gap-3 mt-4">
-                                                <button type="button" class="px-5 py-2.5 rounded-xl text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors w-1/3" data-bs-dismiss="modal">
-                                                    Annuler
-                                                </button>
-                                                <button type="submit" class="px-6 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-200 hover:bg-red-600 hover:shadow-red-300 transition-all transform hover:-translate-y-0.5 w-1/3">
+                                            <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                                                Confirmer la <span class="text-red-600">Suppression</span>
+                                            </h1>
+                                        </div>
+
+                                        <div class="text-center space-y-3 mb-8">
+                                            <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                                                Êtes-vous sûr de vouloir supprimer le flux <strong id="delete_label" class="text-slate-900"></strong> ? Cette action est irréversible.
+                                            </p>
+                                        </div>
+
+                                        <!-- Actions -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                                                Annuler
+                                            </button>
+                                            <form id="formDeleteFlux" method="POST" action="{{ route('gestion_tresorerie.destroy') }}" class="w-full">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" id="delete_id" name="id">
+                                                <button type="submit" class="btn-save-premium !bg-red-600 hover:!bg-red-700 shadow-red-200">
                                                     Supprimer
                                                 </button>
-                                            </div>
+                                            </form>
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
 

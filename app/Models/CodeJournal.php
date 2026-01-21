@@ -23,7 +23,9 @@ class CodeJournal extends Model
         'type',
         'compte_de_contrepartie',
         'compte_de_tresorerie',
+        'poste_tresorerie',
         'rapprochement_sur',
+        'etat_rapprochement',
         'user_id',
         'company_id',
     ];

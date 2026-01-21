@@ -55,7 +55,8 @@ class ComptaDashboardController extends Controller
         $exerciceId = $currentExercice ? $currentExercice->id : null;
 
         // KPI 1: Total des revenus (classes 7)
-        $totalRevenue = EcritureComptable::when($exerciceId, function($query) use ($exerciceId) {
+        $totalRevenue = EcritureComptable::where('user_id', auth()->id()) // Filtre utilisateur
+            ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
             ->whereHas('planComptable', function($query) {
@@ -65,6 +66,7 @@ class ComptaDashboardController extends Controller
 
         // KPI 2: Total des charges (classes 6)
         $totalExpenses = EcritureComptable::where('company_id', $companyId)
+            ->where('user_id', auth()->id()) // Filtre utilisateur
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -77,18 +79,62 @@ class ComptaDashboardController extends Controller
         $netResult = $totalRevenue - $totalExpenses;
 
         // KPI 4: Écritures du mois (Nombre d'écritures pour le mois en cours)
-        $monthlyEntries = EcritureComptable::whereMonth('date', Carbon::now()->month)
+        $monthlyEntries = EcritureComptable::where('user_id', auth()->id()) // Filtre utilisateur
+            ->whereMonth('date', Carbon::now()->month)
             ->whereYear('date', Carbon::now()->year)
             ->count();
 
         // KPI 5: Solde Trésorerie (Somme des comptes classe 5)
-        $cashBalance = EcritureComptable::whereHas('planComptable', function($query) {
+        $cashBalance = EcritureComptable::where('user_id', auth()->id()) // Filtre utilisateur
+            ->whereHas('planComptable', function($query) {
                 $query->where('numero_de_compte', 'like', '5%');
             })
             ->selectRaw('SUM(debit) - SUM(credit) as balance')
             ->first()
             ->balance ?? 0;
 
+        // KPI 6 & 7 restent globaux car liés aux entités ou à l'exercice défini par l'admin/système.
+
+        // ...
+
+        // Dernières écritures
+        $recentEntries = EcritureComptable::with(['planComptable', 'planTiers'])
+            ->where('user_id', auth()->id()) // Filtre utilisateur
+            ->orderBy('date', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($entry) {
+                $isIncome = $entry->credit > 0;
+                return [
+                    'description' => $entry->description_operation,
+                    'date' => Carbon::parse($entry->date)->translatedFormat('d M Y'),
+                    'journal' => $entry->codeJournal->libelle ?? 'Journal',
+                    'amount' => $isIncome ? $entry->credit : $entry->debit,
+                    'type' => $isIncome ? 'income' : 'expense'
+                ];
+            });
+
+        // Dernières opérations de trésorerie
+        $recentTreasuryEntries = EcritureComptable::with(['planComptable', 'codeJournal'])
+            ->where('company_id', $companyId)
+            ->where('user_id', auth()->id()) // Filtre utilisateur
+            ->whereHas('planComptable', function($query) {
+                $query->where('numero_de_compte', 'like', '5%');
+            })
+            ->orderBy('date', 'desc')
+            ->limit(3)
+            ->get()
+            ->map(function($entry) {
+                // ... map logic
+                $isCredit = $entry->credit > 0;
+                return [
+                    'title' => $entry->planComptable->intitule ?? 'Opération Trésorerie',
+                    'poste' => $entry->description_operation,
+                    'date' => Carbon::parse($entry->date)->translatedFormat('d M Y'),
+                    'amount' => $isCredit ? -$entry->credit : $entry->debit,
+                    'icon' => str_contains(strtolower($entry->planComptable->intitule ?? ''), 'banque') ? 'university' : 'money-bill-wave'
+                ];
+            });
         // KPI 6: Tiers Actifs (Clients et Fournisseurs)
         $clientCount = PlanTiers::where('company_id', $companyId)
             ->where(function($q) {
@@ -116,45 +162,9 @@ class ComptaDashboardController extends Controller
             }
         }
 
-        // Données pour les graphiques
+        // Données pour les graphiques (Filtre utilisateur pour le tableau de bord standard)
         $revenueChartData = $this->getRevenueChartData($companyId, $exerciceId);
         $expenseChartData = $this->getExpenseChartData($companyId, $exerciceId);
-
-        // Dernières écritures
-        $recentEntries = EcritureComptable::with(['planComptable', 'planTiers'])
-            ->orderBy('date', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function($entry) {
-                $isIncome = $entry->credit > 0;
-                return [
-                    'description' => $entry->description_operation,
-                    'date' => Carbon::parse($entry->date)->translatedFormat('d M Y'),
-                    'journal' => $entry->codeJournal->libelle ?? 'Journal',
-                    'amount' => $isIncome ? $entry->credit : $entry->debit,
-                    'type' => $isIncome ? 'income' : 'expense'
-                ];
-            });
-
-        // Dernières opérations de trésorerie
-        $recentTreasuryEntries = EcritureComptable::with(['planComptable', 'codeJournal'])
-            ->where('company_id', $companyId)
-            ->whereHas('planComptable', function($query) {
-                $query->where('numero_de_compte', 'like', '5%');
-            })
-            ->orderBy('date', 'desc')
-            ->limit(3)
-            ->get()
-            ->map(function($entry) {
-                $isCredit = $entry->credit > 0;
-                return [
-                    'title' => $entry->planComptable->intitule ?? 'Opération Trésorerie',
-                    'poste' => $entry->description_operation,
-                    'date' => Carbon::parse($entry->date)->translatedFormat('d M Y'),
-                    'amount' => $isCredit ? -$entry->credit : $entry->debit,
-                    'icon' => str_contains(strtolower($entry->planComptable->intitule ?? ''), 'banque') ? 'university' : 'money-bill-wave'
-                ];
-            });
 
         // Alertes comptables
         $alerts = $this->getAccountingAlerts($companyId, $exerciceId);
@@ -180,6 +190,7 @@ class ComptaDashboardController extends Controller
     private function getRevenueChartData($companyId, $exerciceId)
     {
         $revenues = EcritureComptable::where('company_id', $companyId)
+            ->where('user_id', auth()->id())
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -209,6 +220,7 @@ class ComptaDashboardController extends Controller
     private function getExpenseChartData($companyId, $exerciceId)
     {
         $expenses = EcritureComptable::where('ecriture_comptables.company_id', $companyId)
+            ->where('ecriture_comptables.user_id', auth()->id()) // Filtre utilisateur
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -253,6 +265,7 @@ class ComptaDashboardController extends Controller
 
         // Alerte 1: Écritures sans pièce justificative
         $entriesWithoutDocs = EcritureComptable::where('company_id', $companyId)
+            ->where('user_id', auth()->id()) // Filtre utilisateur
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -268,7 +281,7 @@ class ComptaDashboardController extends Controller
             ];
         }
 
-        // Alerte 2: Exercice proche de la clôture
+        // Alerte 2: Exercice proche de la clôture (Globale)
         if ($currentExercice = ExerciceComptable::find($exerciceId)) {
             $endDate = Carbon::parse($currentExercice->date_fin);
             $daysUntilEnd = $endDate->diffInDays(Carbon::now());
@@ -283,8 +296,9 @@ class ComptaDashboardController extends Controller
             }
         }
 
-        // Alerte 3: Solde des comptes de trésorerie négatif
+        // Alerte 3: Solde des comptes de trésorerie négatif (Global ou Perso? "Tous ce que l'admin passe" -> Perso pour le dashboard standard)
         $negativeBalances = EcritureComptable::where('company_id', $companyId)
+            ->where('user_id', auth()->id()) // Filtre utilisateur
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -298,7 +312,7 @@ class ComptaDashboardController extends Controller
 
         if ($negativeBalances > 0) {
             $alerts[] = [
-                'title' => 'Soldes négatifs',
+                'title' => 'Soldes négatifs (Vos écritures)',
                 'description' => "$negativeBalances comptes présentent un solde négatif",
                 'priority' => 'high',
                 'icon' => 'exclamation-triangle'

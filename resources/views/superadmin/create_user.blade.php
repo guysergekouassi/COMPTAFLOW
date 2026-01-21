@@ -12,102 +12,54 @@
                 @include('components.header', ['page_title' => 'Créer un Utilisateur'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    
+                    <form action="{{ route('superadmin.users.store') }}" method="POST">
+                        @csrf
 
-
-                    <!-- Formulaire de création -->
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                
-                                @if($errors->any())
-                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
-                                        <strong>Erreur :</strong> Veuillez corriger les erreurs ci-dessous.
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                    </div>
-                                @endif
-
-                                <form action="{{ route('superadmin.users.store') }}" method="POST">
-                                    @csrf
-
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <!-- Section 1: Profil et Identité -->
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                                        <i class="fa-solid fa-user-circle me-2"></i>Identité de l'Utilisateur
+                                    </h5>
+                                    
                                     <div class="row g-4">
-                                        <!-- Prénom et Nom -->
                                         <div class="col-md-6">
-                                            <label for="first_name" class="form-label fw-semibold">
-                                                Prénom <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" 
-                                                   class="form-control @error('first_name') is-invalid @enderror" 
-                                                   id="first_name" 
-                                                   name="first_name" 
-                                                   value="{{ old('first_name') }}"
-                                                   placeholder="Ex: Jean"
-                                                   required>
-                                            @error('first_name')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <label for="name" class="form-label fw-semibold">Prénom <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required>
+                                            @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
                                         <div class="col-md-6">
-                                            <label for="last_name" class="form-label fw-semibold">
-                                                Nom <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" 
-                                                   class="form-control @error('last_name') is-invalid @enderror" 
-                                                   id="last_name" 
-                                                   name="last_name" 
-                                                   value="{{ old('last_name') }}"
-                                                   placeholder="Ex: Dupont"
-                                                   required>
-                                            @error('last_name')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <label for="last_name" class="form-label fw-semibold">Nom <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('last_name') is-invalid @enderror" id="last_name" name="last_name" value="{{ old('last_name') }}" required>
+                                            @error('last_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
-                                        <!-- Email -->
                                         <div class="col-md-12">
-                                            <label for="email" class="form-label fw-semibold">
-                                                Email <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="email" 
-                                                   class="form-control @error('email') is-invalid @enderror" 
-                                                   id="email" 
-                                                   name="email" 
-                                                   value="{{ old('email') }}"
-                                                   placeholder="utilisateur@entreprise.com"
-                                                   required>
-                                            @error('email')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <label for="email_adresse" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control @error('email_adresse') is-invalid @enderror" id="email_adresse" name="email_adresse" value="{{ old('email_adresse') }}" required>
+                                            @error('email_adresse') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
-                                        <!-- Mot de passe -->
                                         <div class="col-md-12">
-                                            <label for="password" class="form-label fw-semibold">
-                                                Mot de passe <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="password" 
-                                                   class="form-control @error('password') is-invalid @enderror" 
-                                                   id="password" 
-                                                   name="password" 
-                                                   placeholder="Minimum 5 caractères"
-                                                   required>
-                                            @error('password')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                            <small class="text-muted">Le mot de passe doit contenir au moins 5 caractères</small>
+                                            <label for="password" class="form-label fw-semibold">Mot de passe <span class="text-danger">*</span></label>
+                                            <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required>
+                                            @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
+                                    </div>
+                                </div>
 
-                                        <!-- Entreprise -->
+                                <!-- Section 2: Assignation et Rôle -->
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                                        <i class="fa-solid fa-briefcase me-2"></i>Assignation et Rôle
+                                    </h5>
+                                    
+                                    <div class="row g-4">
                                         <div class="col-md-6">
-                                            <label for="company_id" class="form-label fw-semibold">
-                                                Entreprise <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select @error('company_id') is-invalid @enderror" 
-                                                    id="company_id" 
-                                                    name="company_id"
-                                                    required>
+                                            <label for="company_id" class="form-label fw-semibold">Entreprise <span class="text-danger">*</span></label>
+                                            <select class="form-select @error('company_id') is-invalid @enderror" id="company_id" name="company_id" required>
                                                 <option value="">Sélectionner une entreprise</option>
                                                 @foreach($companies as $company)
                                                     <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
@@ -115,66 +67,85 @@
                                                     </option>
                                                 @endforeach
                                             </select>
-                                            @error('company_id')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            @error('company_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
-                                        <!-- Rôle -->
                                         <div class="col-md-6">
-                                            <label for="role" class="form-label fw-semibold">
-                                                Rôle <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select @error('role') is-invalid @enderror" 
-                                                    id="role" 
-                                                    name="role"
-                                                    required>
-                                                <option value="">Sélectionner un rôle</option>
-                                                <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrateur</option>
+                                            <label for="role" class="form-label fw-semibold">Rôle Plateforme <span class="text-danger">*</span></label>
+                                            <select class="form-select @error('role') is-invalid @enderror" id="role" name="role" required>
+                                                <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>Utilisateur Standard</option>
                                                 <option value="comptable" {{ old('role') == 'comptable' ? 'selected' : '' }}>Comptable</option>
-                                                <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>Utilisateur</option>
+                                                <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrateur Entreprise</option>
                                             </select>
-                                            @error('role')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            @error('role') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="pack_id" class="form-label fw-semibold">Pack d'Abonnement</label>
+                                            <select class="form-select @error('pack_id') is-invalid @enderror" id="pack_id" name="pack_id">
+                                                <option value="">Aucun Pack spécifique</option>
+                                                @foreach($packs as $pack)
+                                                    <option value="{{ $pack->id }}" {{ old('pack_id') == $pack->id ? 'selected' : '' }}>
+                                                        {{ $pack->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('pack_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="is_active" class="form-label fw-semibold">Statut Compte <span class="text-danger">*</span></label>
+                                            <select class="form-select @error('is_active') is-invalid @enderror" id="is_active" name="is_active" required>
+                                                <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Actif</option>
+                                                <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Suspendu</option>
+                                            </select>
+                                            @error('is_active') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
                                     </div>
+                                </div>
 
-                                    <!-- Boutons d'action -->
-                                    <div class="d-flex justify-content-end gap-3 mt-5">
+                                <!-- Section 3: Habilitatons (Permissions) -->
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                                        <i class="fa-solid fa-shield-halved me-2"></i>Habilitations Spécifiques
+                                    </h5>
+                                    
+                                    <div class="row">
+                                        @foreach($permissions as $key => $label)
+                                            <div class="col-md-4 mb-3">
+                                                <div class="form-check form-switch p-2 border rounded bg-light bg-opacity-50">
+                                                    <input class="form-check-input ms-0 me-2" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}" 
+                                                        {{ is_array(old('habilitations')) && isset(old('habilitations')[$key]) ? 'checked' : '' }}>
+                                                    <label class="form-check-label text-xs fw-bold text-slate-700" for="hab_{{ $key }}">
+                                                        {{ $label }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 100px;">
+                                    <h6 class="fw-bold text-blue-900 mb-3">
+                                        <i class="fa-solid fa-info-circle me-2"></i>Actions
+                                    </h6>
+                                    <p class="text-sm text-blue-800 mb-4">
+                                        L'utilisateur recevra ses accès immédiatement après la création. Assurez-vous d'avoir configuré les habilitations correctement.
+                                    </p>
+                                    <div class="d-grid gap-3">
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fa-solid fa-user-plus me-2"></i>Créer l'utilisateur
+                                        </button>
                                         <a href="{{ route('superadmin.users') }}" class="btn btn-outline-secondary">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fa-solid fa-save me-2"></i>Créer l'utilisateur
-                                        </button>
                                     </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- Aide contextuelle -->
-                        <div class="col-lg-4">
-                            <div class="bg-blue-50 rounded-xl border border-blue-200 p-4">
-                                <h6 class="fw-bold text-blue-900 mb-3">
-                                    <i class="fa-solid fa-info-circle me-2"></i>Informations sur les Rôles
-                                </h6>
-                                <div class="mb-3">
-                                    <strong class="text-blue-900">Administrateur</strong>
-                                    <p class="text-sm text-blue-800 mb-0">Accès complet à la gestion de l'entreprise et des utilisateurs</p>
-                                </div>
-                                <div class="mb-3">
-                                    <strong class="text-blue-900">Comptable</strong>
-                                    <p class="text-sm text-blue-800 mb-0">Accès aux fonctionnalités comptables et rapports</p>
-                                </div>
-                                <div>
-                                    <strong class="text-blue-900">Utilisateur</strong>
-                                    <p class="text-sm text-blue-800 mb-0">Accès limité selon les permissions définies</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
+                    </form>
                 </div>
 
                 @include('components.footer')

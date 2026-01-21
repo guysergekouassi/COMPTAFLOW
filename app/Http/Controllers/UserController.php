@@ -17,59 +17,52 @@ class UserController extends Controller
 {
 
 
-    private $allHabilitations = [
-        'dashboard',
-        'Analytics',
-        'plan_comptable',
-        'plan_tiers',
-        'journaux',
-        'grand_livre',
-        'balance',
-        'etats_financiers',
-        'fichier_joindre',
-        'tresorerie',
-        'parametre',
-        'modal_saisie_direct',
-        'accounting_journals',
-        'exercice_comptable',
-        'Etat_de_rapprochement_bancaire',
-        'Gestion_de_la_trésorerie',
-        'gestion_analytique',
-        'gestion_tiers',
-        'user_management',
-        'gestion_immobilisations',
-        'gestion_reportings',
-        'compagny_information',
-        'gestion_stocks',
-        'grand_livre_tiers',
-        'poste',
-        'Balance_Tiers',
-
-
-
-    ];
+    /**
+     * Get all available permissions from config (flattened)
+     */
+    private function getAllPermissions(): array
+    {
+        $groupedPermissions = config('accounting_permissions.permissions', []);
+        $flatPermissions = [];
+        
+        foreach ($groupedPermissions as $group => $permissions) {
+            if (is_array($permissions)) {
+                $flatPermissions = array_merge($flatPermissions, array_keys($permissions));
+            }
+        }
+        
+        return $flatPermissions;
+    }
 
 
 
     private function processHabilitations(string $role, array $input): array
     {
+        $allPermissions = $this->getAllPermissions();
+        
         // 1. Si admin, tout est activé.
         if ($role === 'admin') {
-            return array_fill_keys($this->allHabilitations, true);
+            $habilitations = [];
+            foreach ($allPermissions as $perm) {
+                $habilitations[$perm] = "1";
+            }
+            return $habilitations;
         }
 
-        // 2. Pour les autres rôles (comptable), on initialise tout à false.
-        $habilitations = array_fill_keys($this->allHabilitations, false);
-
-        // Les entrées du formulaire sont un tableau simple (e.g., [0 => "perm1", 1 => "perm2"])
-        $selectedHabilitations = array_values($input);
-
-        // 3. Active les permissions sélectionnées si elles sont valides.
-        foreach ($selectedHabilitations as $hab) {
-            if (in_array($hab, $this->allHabilitations)){
-                $habilitations[$hab] = true;
+        // 2. Pour les autres rôles (comptable), traiter les permissions sélectionnées
+        $habilitations = [];
+        
+        // Support for both formats: ['key' => '1'] and ['key']
+        foreach ($allPermissions as $perm) {
+            if (isset($input[$perm]) && $input[$perm] == "1") {
+                $habilitations[$perm] = "1";
+            } elseif (in_array($perm, $input)) {
+                $habilitations[$perm] = "1";
+            } else {
+                $habilitations[$perm] = "0";
             }
         }
+        
         return $habilitations;
     }
 
@@ -77,42 +70,59 @@ class UserController extends Controller
     public function dashboardStats()
     {
         $adminUser = Auth::user();
+
+        if (!$adminUser->isAdmin()) {
+            return redirect()->route('comptable.comptdashboard');
+        }
+
         $companyId = $adminUser->company_id;
 
-        // --- KPI 1: Total comptes créés (Total Users dans la compagnie) ---
-        $totalUsers = User::where('company_id', $companyId)->count();
+        // --- KPI 1: Total Utilisateurs rattachés ---
+        $managedCompanyIds = Company::where('id', $companyId)
+                                   ->orWhere('parent_company_id', $companyId)
+                                   ->pluck('id');
 
-        // --- KPI 2: Total comptes Connectés (dans sa compagnie) ---
-        $connectedUsers = User::where('company_id', $companyId)
+        $totalUsers = User::whereIn('company_id', $managedCompanyIds)->count();
+
+        // --- KPI 2: Utilisateurs en ligne ---
+        $connectedUsers = User::whereIn('company_id', $managedCompanyIds)
                               ->where('is_online', true)
                               ->count();
 
-        // --- KPI 3: Plan Comptable créé par un Comptable (aujourd'hui) ---
-        $plansToday = PlanComptable::where('company_id', $companyId)
-                                     ->whereDate('created_at', today()) // Filtre les créations du jour
-                                     ->count();
+        // --- KPI 3: Volume d'écritures (Total) ---
+        $totalEntries = \App\Models\EcritureComptable::whereIn('company_id', $managedCompanyIds)->count();
 
-        // --- KPI 4: Exercice Comptable créé par un Comptable (aujourd'hui) ---
-        $exercicesToday = ExerciceComptable::where('company_id', $companyId)
-                                         ->whereDate('created_at', today()) // Filtre les créations du jour
-                                         ->count();
+        // --- KPI 4: Écritures du jour ---
+        $entriesToday = \App\Models\EcritureComptable::whereIn('company_id', $managedCompanyIds)
+                                      ->whereDate('created_at', today())
+                                      ->count();
 
-        // Récupérer les habilitations de l'utilisateur connecté (pour le menu latéral)
-        if ($adminUser->role === 'admin') {
-            $habilitations = array_fill_keys($this->allHabilitations, true);
-        } else {
-            $habilitations = $adminUser->habilitations ?? [];
+        // Statistiques de l'équipe pour les graphiques
+        $teamStats = User::whereIn('company_id', $managedCompanyIds)
+                        ->where('role', 'comptable')
+                        ->withCount(['ecritures' => function($query) {
+                            $query->whereMonth('created_at', now()->month);
+                        }])
+                        ->get();
+
+        // Récupérer les habilitations (compatibilité sidebar)
+        $habilitations = $adminUser->habilitations ?? [];
+        if ($adminUser->isAdmin()) {
+            $allPermissions = $this->getAllPermissions();
+            $habilitations = array_fill_keys($allPermissions, true);
         }
 
         // Récupérer les comptes comptabilité de l'admin
-        $comptaAccounts = Company::where('user_id', $adminUser->id)->get();
+        $comptaAccounts = Company::where('user_id', $adminUser->id)
+                                 ->orWhere('parent_company_id', $adminUser->company_id)
+                                 ->get();
 
-        // Retourner la vue du tableau de bord avec les KPI
         return view('admin.dashboard', compact(
             'totalUsers',
             'connectedUsers',
-            'plansToday',
-            'exercicesToday',
+            'totalEntries',
+            'entriesToday',
+            'teamStats',
             'habilitations',
             'comptaAccounts'
         ));
@@ -125,7 +135,7 @@ public function stat_online()
     {
 
         $authUser = auth()->user();
-        $allHabilitations = $this->allHabilitations;
+        $allHabilitations = $this->getAllPermissions();
         $user = Auth::user();
         $userCompanyId = $user->company_id;
 
@@ -193,11 +203,25 @@ public function stat_online()
             'comptables' => $comptableUsers,
             'managedCompanies' => $managedCompanies,
             'userCompanyId' => $userCompanyId,
-            'allHabilitations' => $allHabilitations,
+            'allHabilitations' => $this->getAllPermissions(),
         ]);
     }
 
-public function store(Request $request)
+    public function create()
+    {
+        $admin = Auth::user();
+
+        // Récupérer les entreprises gérées
+        $managedCompanyIds = $this->getManagedCompanyIds($admin);
+        $companies = Company::whereIn('id', $managedCompanyIds)->get();
+
+        // Récupérer les permissions disponibles
+        $permissions = config('accounting_permissions.permissions');
+
+        return view('admin.users.create', compact('companies', 'permissions'));
+    }
+
+    public function store(Request $request)
 {
     $admin = Auth::user();
 
@@ -227,18 +251,13 @@ public function store(Request $request)
         'name' => 'required|string|max:255',
         'last_name' => 'required|string|max:255',
         'email_adresse' => 'required|email|unique:users,email_adresse',
-        'password' => 'required|string|min:8', // min:8 est plus sûr pour un mot de passe
+        'password' => 'required|string|min:8',
         'role' => 'required|in:admin,comptable',
-        'is_online' => 'nullable|boolean',
-        'company_id' => 'required',
-        'habilitations' => 'nullable|array',
-
-        'habilitations.*' => 'in:' . implode(',', $this->allHabilitations),
-
+        'is_active' => 'required|boolean',
         'company_id' => 'required|in:'. implode(',', $allowedCompanyIds),
-        // 'new_company_name' => 'nullable|string|max:255',
+        'habilitations' => 'nullable|array',
+        'habilitations.*' => 'string',
         'new_company_name' => 'required_if:company_id,new|nullable|string|max:255',
-
     ]);
 
     // Si la validation réussit, le script continue ici.
@@ -281,8 +300,119 @@ public function store(Request $request)
     return redirect()->route('user_management')->with('success', 'Utilisateur créé avec succès.');
 }
 
+    /**
+     * Affiche le formulaire de création d'un administrateur (Vue Premium Style SuperAdmin)
+     */
+    public function createAdmin()
+    {
+        $admin = Auth::user();
+        $managedCompanyIds = $this->getManagedCompanyIds($admin);
+        $companies = Company::whereIn('id', $managedCompanyIds)->get(); // Renommé $companies pour correspondre à la vue
+        
+        return view('admin.users.create_admin', compact('companies'));
+    }
 
- private function getManagedCompanyIds(User $admin): array
+    /**
+     * Affiche le formulaire de création d'un administrateur secondaire avec habilitations.
+     */
+    public function createSecondaryAdmin()
+    {
+        $admin = Auth::user();
+        $managedCompanyIds = $this->getManagedCompanyIds($admin);
+        $companies = Company::whereIn('id', $managedCompanyIds)->get();
+        
+        return view('admin.users.create_secondary_admin', compact('companies'));
+    }
+
+    /**
+     * Enregistre un nouvel administrateur avec toutes les habilitations par défaut
+     */
+    public function storeAdmin(Request $request)
+    {
+        $admin = Auth::user();
+        
+        // Validation stricte
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email_adresse' => 'required|email|max:191|unique:users,email_adresse',
+            'password' => 'required|string|min:8',
+            'company_id' => 'required|exists:companies,id',
+        ]);
+
+        // Vérification des droits sur la compagnie cible
+        $managedCompanyIds = $this->getManagedCompanyIds($admin);
+        if (!in_array($validated['company_id'], $managedCompanyIds)) {
+            return back()->with('error', 'Vous n\'avez pas les droits sur cette entreprise.')->withInput();
+        }
+
+        // Un administrateur a toutes les habilitations par défaut
+        $allPermissions = $this->getAllPermissions();
+        $habilitations = [];
+        foreach ($allPermissions as $perm) {
+            $habilitations[$perm] = "1"; // Format string "1" pour compatibilité
+        }
+
+        User::create([
+            'name' => $validated['name'],
+            'last_name' => $validated['last_name'],
+            'email_adresse' => $validated['email_adresse'],
+            'password' => Hash::make($validated['password']),
+            'company_id' => $validated['company_id'],
+            'role' => 'admin',
+            'is_active' => true, // Actif par défaut
+            'habilitations' => $habilitations,
+        ]);
+
+        return redirect()->route('user_management')
+            ->with('success', 'Administrateur créé avec succès avec toutes les habilitations !');
+    }
+
+    /**
+     * Enregistre un administrateur secondaire avec des habilitations personnalisées.
+     */
+    public function storeSecondaryAdmin(Request $request)
+    {
+        $admin = Auth::user();
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email_adresse' => 'required|email|max:191|unique:users,email_adresse',
+            'password' => 'required|string|min:8',
+            'company_id' => 'required|exists:companies,id',
+            'habilitations' => 'required|array',
+            'habilitations.*' => 'in:1',
+        ]);
+
+        $managedCompanyIds = $this->getManagedCompanyIds($admin);
+        if (!in_array($validated['company_id'], $managedCompanyIds)) {
+            return back()->with('error', 'Vous n\'avez pas les droits sur cette entreprise.')->withInput();
+        }
+
+        // Normalisation des habilitations
+        $habilitations = [];
+        $allPermissions = $this->getAllPermissions();
+        foreach ($allPermissions as $perm) {
+            $habilitations[$perm] = isset($validated['habilitations'][$perm]) ? "1" : "0";
+        }
+
+        User::create([
+            'name' => $validated['name'],
+            'last_name' => $validated['last_name'],
+            'email_adresse' => $validated['email_adresse'],
+            'password' => Hash::make($validated['password']),
+            'company_id' => $validated['company_id'],
+            'role' => 'admin',
+            'is_active' => true,
+            'habilitations' => $habilitations,
+        ]);
+
+        return redirect()->route('user_management')
+            ->with('success', 'Administrateur secondaire créé avec succès.');
+    }
+
+    private function getManagedCompanyIds(User $admin): array
     {
         // L'Admin peut gérer :
         // 1. Sa compagnie principale ($admin->company_id)
@@ -326,7 +456,7 @@ public function store(Request $request)
             'email_adresse' => 'required|email|unique:users,email_adresse,' . $id,
             'role' => 'required|in:admin,comptable',
             'habilitations' => 'nullable|array',
-            'habilitations.*' => 'in:' . implode(',', $this->allHabilitations), // Validation contre la liste complète
+            'habilitations.*' => 'string', // Accept any string value
         ]);
 
         $user = User::findOrFail($id);
@@ -354,40 +484,51 @@ public function store(Request $request)
         return redirect()->back()->with('success', 'Utilisateur supprimé avec succès.');
     }
     public function getAllHabilitations(): array
-{
-    return $this->allHabilitations;
-}
-
-public function switchCompany(Request $request, $companyId)
-{
-
-    $user = Auth::user();
-
-    // 1. Sécurité: Trouver l'ID de la compagnie mère de l'Admin
-    $admin_primary_company_id = $user->company_id;
-
-    // 2. Trouver la compagnie cible
-    $company = Company::find($companyId);
-
-    // 3. Vérification des permissions
-    $is_super_admin = ($user->role === 'super_admin');
-    $is_admin_manager = (
-        $company->id == $admin_primary_company_id || // La compagnie principale de l'Admin
-        $company->parent_company_id == $admin_primary_company_id ||// Une sous-compagnie créée
-        $company->user_id == $user->id
-    );
-
-    if (!$company || (!$is_super_admin && !$is_admin_manager)) {
-        return redirect()->back()->with('error', 'Accès non autorisé à cette comptabilité.');
+    {
+        return $this->getAllPermissions();
     }
 
-    // 4. Basculer le contexte dans la session
-    session(['current_company_id' => $companyId]);
+    public function switchCompany(Request $request, $companyId)
+    {
 
-    // 5. Redirection vers le tableau de bord
-    // Assurez-vous que cette route existe
-    return redirect()->route('admin.dashboard')->with('success', 'Context changé: ' . $company->company_name);
-}
+        $user = Auth::user();
+
+        // 1. Sécurité: Trouver l'ID de la compagnie mère de l'Admin
+        $admin_primary_company_id = $user->company_id;
+
+        // 2. Trouver la compagnie cible
+        $company = Company::find($companyId);
+
+        // 3. Vérification des permissions
+        $is_super_admin = ($user->role === 'super_admin');
+        $is_admin_manager = (
+            $company->id == $admin_primary_company_id || // La compagnie principale de l'Admin
+            $company->parent_company_id == $admin_primary_company_id ||// Une sous-compagnie créée
+            $company->user_id == $user->id
+        );
+
+        if (!$company || (!$is_super_admin && !$is_admin_manager)) {
+            return redirect()->back()->with('error', 'Accès non autorisé à cette comptabilité.');
+        }
+
+        // 4. Basculer le contexte dans la session
+        session(['current_company_id' => $companyId]);
+
+        // 5. Redirection vers le tableau de bord
+        // Assurez-vous que cette route existe
+        return redirect()->route('admin.dashboard')->with('success', 'Context changé: ' . $company->company_name);
+    }
+
+    /**
+     * Quitter le mode switch (revenir à la vue par défaut de l'admin)
+     */
+    public function resetContext()
+    {
+        session()->forget('current_company_id');
+        // Vérifier si admin.dashboard existe, sinon dashboard-compta
+        $route = Route::has('admin.dashboard') ? 'admin.dashboard' : 'compta.dashboard';
+        return redirect()->route($route)->with('success', 'Vous êtes revenu à votre vue principale.');
+    }
 
 
 public function impersonate(User $user)

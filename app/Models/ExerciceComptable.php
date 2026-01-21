@@ -30,7 +30,7 @@ class ExerciceComptable extends Model
         'cloturer',
         'user_id',
         'company_id',
-        
+        'parent_company_id',
     ];
     
     protected $dates = [

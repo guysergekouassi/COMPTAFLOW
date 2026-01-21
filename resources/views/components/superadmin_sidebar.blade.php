@@ -8,7 +8,7 @@
             </div>
             <div class="brand-text">
                 <h1 class="brand-title">Flow Compta</h1>
-                <small class="brand-subtitle">Super Admin</small>
+                <div class="role-badge-sidebar">Super Admin</div>
             </div>
         </div>
     </div>
@@ -35,9 +35,17 @@
                 <i class="fa-solid fa-calculator"></i>
                 <span>Créer Comptabilité</span>
             </a>
-            <a href="{{ route('superadmin.users') }}" class="menu-link-new {{ request()->routeIs('superadmin.users*') ? 'active' : '' }}">
+            <a href="{{ route('superadmin.users') }}" class="menu-link-new {{ request()->routeIs('superadmin.users') ? 'active' : '' }}">
                 <i class="fa-solid fa-users-cog"></i>
-                <span>Admin. Utilisateurs</span>
+                <span>Gestion Utilisateurs</span>
+            </a>
+            <a href="{{ route('superadmin.users.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.users.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-plus"></i>
+                <span>Créer Utilisateur</span>
+            </a>
+            <a href="{{ route('superadmin.admins.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.admins.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Créer Administrateur</span>
             </a>
             <a href="{{ route('superadmin.switch') }}" class="menu-link-new {{ request()->routeIs('superadmin.switch*') ? 'active' : '' }}">
                 <i class="fa-solid fa-exchange-alt"></i>

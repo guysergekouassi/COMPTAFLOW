@@ -135,13 +135,29 @@ document.addEventListener("DOMContentLoaded", function () {
             const lastName = button.getAttribute("data-user-lastname");
             const email = button.getAttribute("data-user-email");
             const role = button.getAttribute("data-user-role");
+            const company = button.getAttribute("data-user-company-name");
 
-            // Injection dans le modal
-            document.getElementById("seeFirstName").value = name;
-            document.getElementById("seeLastName").value = lastName;
-            document.getElementById("seeEmail").value = email;
-            document.getElementById("seeRole").value =
-                role.charAt(0).toUpperCase() + role.slice(1);
+            // Injection dans les champs cachés pour Compatibilité Ascendante
+            const fnElem = document.getElementById("seeFirstName");
+            const lnElem = document.getElementById("seeLastName");
+            const emElem = document.getElementById("seeEmail");
+            const rlElem = document.getElementById("seeRole");
+
+            if(fnElem) fnElem.value = name;
+            if(lnElem) lnElem.value = lastName;
+            if(emElem) emElem.value = email;
+            if(rlElem) rlElem.value = role;
+
+            // Injection Visuelle Premium
+            const identElem = document.getElementById("seeIdentite");
+            const emailDisp = document.getElementById("seeEmailDisplay");
+            const roleDisp = document.getElementById("seeRoleDisplay");
+            const compDisp = document.getElementById("seeCompanyDisplay");
+
+            if(identElem) identElem.textContent = `${name} ${lastName}`;
+            if(emailDisp) emailDisp.textContent = email;
+            if(roleDisp) roleDisp.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+            if(compDisp) compDisp.textContent = company || "Non assigné";
         });
     });
 });
@@ -369,10 +385,26 @@ document.addEventListener("DOMContentLoaded", function () {
             "data-user-habilitations"
         );
 
-        document.getElementById("seeFirstName").value = userFirstName;
-        document.getElementById("seeLastName").value = userLastName;
-        document.getElementById("seeEmail").value = userEmail;
-        document.getElementById("seeRole").value = userRole;
+        const fnElem = document.getElementById("seeFirstName");
+        const lnElem = document.getElementById("seeLastName");
+        const emElem = document.getElementById("seeEmail");
+        const rlElem = document.getElementById("seeRole");
+
+        if(fnElem) fnElem.value = userFirstName;
+        if(lnElem) lnElem.value = userLastName;
+        if(emElem) emElem.value = userEmail;
+        if(rlElem) rlElem.value = userRole;
+
+        // Visuel Premium
+        const identElem = document.getElementById("seeIdentite");
+        const emailDisp = document.getElementById("seeEmailDisplay");
+        const roleDisp = document.getElementById("seeRoleDisplay");
+        const compDisp = document.getElementById("seeCompanyDisplay");
+
+        if(identElem) identElem.textContent = `${userFirstName} ${userLastName}`;
+        if(emailDisp) emailDisp.textContent = userEmail;
+        if(roleDisp) roleDisp.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+        if(compDisp) compDisp.textContent = button.getAttribute("data-user-company-name") || "N/A";
 
         // Traitement des habilitations
         let habilitations = {};

@@ -108,6 +108,33 @@
         margin: auto;
         padding: 1.5rem !important;
     }
+
+    /* Correction spécifique pour bootstrap-select dans le modal */
+    .bootstrap-select .dropdown-menu {
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        z-index: 10001 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .bootstrap-select .dropdown-item {
+        padding: 0.6rem 1rem !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        color: #475569 !important;
+    }
+
+    .bootstrap-select .dropdown-item:hover {
+        background-color: #f1f5f9 !important;
+        color: #1e40af !important;
+    }
+
+    .bootstrap-select .inner {
+        max-height: 250px !important;
+    }
 </style>
 
 <body>
@@ -175,11 +202,6 @@
                     <div class="container-fluid flex-grow-1 container-p-y">
                         
                         <!-- Badge Section -->
-                        <div class="text-center mb-8 -mt-4">
-                            <p class="text-slate-500 font-medium max-w-xl mx-auto">
-                                Consultez l'historique détaillé de tous les mouvements comptables, compte par compte.
-                            </p>
-                        </div>
 
                         @if (session('success'))
                             <div class="alert alert-success alert-dismissible fade show mb-6 rounded-2xl shadow-sm border-0 bg-green-50 text-green-800" role="alert">
@@ -205,7 +227,7 @@
                         <div class="flex justify-between items-center mb-8 w-full gap-4">
                             <!-- Left Group: Filter -->
                             <div class="flex items-center">
-                                <button type="button" id="toggleFilterBtn" onclick="window.toggleAdvancedFilter()"
+                                <button type="button" id="toggleFilterBtn"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm">
                                     <i class="fas fa-filter text-blue-600"></i>
                                     Filtrer
@@ -241,10 +263,10 @@
                                         <i class="fas fa-tag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                     </div>
                                     <div class="flex justify-end gap-3">
-                                        <button type="button" class="btn btn-secondary rounded-xl px-6 font-semibold" onclick="window.resetAdvancedFilters()">
+                                        <button type="button" class="btn btn-secondary rounded-xl px-6 font-semibold" id="reset-filters">
                                             <i class="fas fa-undo me-2"></i>Réinitialiser
                                         </button>
-                                        <button type="button" class="btn btn-primary rounded-xl px-6 font-semibold" id="apply-filters" onclick="window.applyAdvancedFilters()">
+                                        <button type="button" class="btn btn-primary rounded-xl px-6 font-semibold" id="apply-filters">
                                             <i class="fas fa-search me-2"></i>Rechercher
                                         </button>
                                     </div>
@@ -401,27 +423,42 @@
                                                 <i class="bx bx-list-ul" style="font-size: 20px; color: white;"></i>
                                             </div>
                                             <h6 class="mb-0" style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">Plage de comptes</h6>
+                                            <div class="ms-auto">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="selectAllAccounts">
+                                                    <label class="form-check-label text-xs font-bold text-slate-500 uppercase" for="selectAllAccounts">Tout sélectionner</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-12 text-center">
+                                                <div class="relative w-full max-w-md mx-auto">
+                                                    <input type="text" id="accountSearch" placeholder="Rechercher par classe (ex: 6)..." 
+                                                        class="input-field-premium pl-10" style="border-radius: 50px !important;">
+                                                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="row g-3">
                                             <div class="col-md-6">
-                                                <label for="plan_comptable_id_1" class="input-label-premium">Compte de début</label>
-                                                <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="true" required>
+                                                <label for="plan_comptable_id_1" class="input-label-premium">Compte de début ({{ count($PlanComptable) }})</label>
+                                                <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10" required>
                                                     <option value="">-- Sélectionnez un compte --</option>
                                                     @foreach ($PlanComptable as $plan)
                                                         <option value="{{ $plan->id }}">
-                                                            {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                                            {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
                                                         </option>
                                                     @endforeach
                                                 </select>
                                                 <div class="invalid-feedback">Veuillez sélectionner un compte.</div>
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="plan_comptable_id_2" class="input-label-premium">Compte de fin</label>
-                                                <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="true" required>
+                                                <label for="plan_comptable_id_2" class="input-label-premium">Compte de fin ({{ count($PlanComptable) }})</label>
+                                                <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10"  required>
                                                     <option value="">-- Sélectionnez un compte --</option>
                                                     @foreach ($PlanComptable as $plan)
                                                         <option value="{{ $plan->id }}">
-                                                            {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                                            {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
                                                         </option>
                                                     @endforeach
                                                 </select>
@@ -478,14 +515,14 @@
 
     {{-- previsualisation avant sauvegarde --}}
     <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Prévisualisation du Grand Livre</h5>
+        <div class="modal-dialog modal-fullscreen" role="document">
+            <div class="modal-content overflow-hidden" style="border-radius: 0;">
+                <div class="modal-header border-b border-slate-200 px-6 py-4">
+                    <h5 class="modal-title font-extrabold text-xl">Prévisualisation du Grand Livre</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <div class="modal-body">
-                    <iframe id="pdfPreviewFrame" style="width:100%;height:80vh;" frameborder="0"></iframe>
+                <div class="modal-body p-0" style="background: #525659;">
+                    <iframe id="pdfPreviewFrame" style="width:100%; height: calc(100vh - 70px);" frameborder="0"></iframe>
                 </div>
             </div>
         </div>
@@ -596,39 +633,7 @@
         const accounting_ledgerpreviewGrandLivreUrl = "{{ route('accounting_ledger.previewGrandLivre') }}";
     </script>
 
-
     <script src="{{ asset('js/acc_ledger.js') }}"></script>
-
-    <script>
-        window.toggleAdvancedFilter = function() {
-            const panel = document.getElementById('advancedFilterPanel');
-            if (!panel) return;
-            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-        };
-
-        window.applyAdvancedFilters = function() {
-            const q = (document.getElementById('filter-client')?.value || '').toLowerCase();
-            const status = (document.getElementById('filter-status')?.value || '').toLowerCase();
-
-            const rows = document.querySelectorAll('table.table-premium tbody tr');
-            rows.forEach((tr) => {
-                const text = (tr.textContent || '').toLowerCase();
-                const matchQ = !q || text.includes(q);
-                const matchStatus = !status || text.includes(status);
-                tr.style.display = (matchQ && matchStatus) ? '' : 'none';
-            });
-        };
-
-        window.resetAdvancedFilters = function() {
-            const q = document.getElementById('filter-client');
-            const s = document.getElementById('filter-status');
-            if (q) q.value = '';
-            if (s) s.value = '';
-            window.applyAdvancedFilters();
-        };
-    </script>
-
-
 </body>
 
 </html>

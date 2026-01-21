@@ -40,7 +40,19 @@
 
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/apex-charts/apex-charts.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/premium_admin.css') }}" />
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <!-- Core JS (Moved to head for guaranteed availability) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- DataTables CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
     <script src="{{ asset('assets/js/config.js') }}"></script>
 
@@ -116,95 +128,32 @@
             white-space: nowrap;
         }
 
-        /* CORRECTION GLOBALE DES CARTES DEFORMEES */
-        .content-wrapper .bg-white,
-        .content-wrapper .card,
-        .content-wrapper [class*="bg-white"] {
-            border-radius: 0.75rem !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24) !important;
-            border: 1px solid #e5e7eb !important;
-            overflow: hidden !important;
-            transition: all 0.3s ease !important;
-            background: white !important;
+        /* CORRECTION GLOBALE DES CARTES (UNIQUEMENT POUR LE CONTENU ANCIEN) */
+        .content-wrapper:not(.premium-mode) .bg-white,
+        .content-wrapper:not(.premium-mode) .card,
+        .content-wrapper:not(.premium-mode) [class*="bg-white"] {
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: white;
         }
 
-        .content-wrapper .bg-white:hover,
-        .content-wrapper .card:hover {
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06) !important;
-            transform: translateY(-1px) !important;
+        /* Typography spacing (non-premium only) */
+        .content-wrapper:not(.premium-mode) h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin: 0;
+            color: #111827;
         }
 
-        .content-wrapper .w-12,
-        .content-wrapper [class*="w-12"] {
-            width: 3rem !important;
-            height: 3rem !important;
-            border-radius: 0.5rem !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            flex-shrink: 0 !important;
-        }
-
-        .content-wrapper .badge {
-            font-size: 0.75rem !important;
-            padding: 0.25rem 0.5rem !important;
-            border-radius: 0.25rem !important;
-            font-weight: 500 !important;
-            white-space: nowrap !important;
-        }
-
-        .content-wrapper h3 {
-            font-size: 2rem !important;
-            font-weight: 700 !important;
-            line-height: 1.2 !important;
-            margin: 0 !important;
-            color: #111827 !important;
-        }
-
-        .content-wrapper h6 {
-            font-size: 0.875rem !important;
-            font-weight: 500 !important;
-            color: #6b7280 !important;
-            margin: 0 0 0.5rem 0 !important;
-        }
-
-        .content-wrapper h5 {
-            font-size: 1.125rem !important;
-            font-weight: 600 !important;
-            color: #111827 !important;
-            margin: 0 !important;
-        }
-
-        .content-wrapper .d-flex {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-        }
-
-        .content-wrapper .row {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            margin-right: -1rem !important;
-            margin-left: -1rem !important;
-        }
-
-        .content-wrapper .col-md-3,
-        .content-wrapper .col-md-6 {
-            position: relative !important;
-            width: 100% !important;
-            padding-right: 1rem !important;
-            padding-left: 1rem !important;
-        }
-
-        @media (min-width: 768px) {
-            .content-wrapper .col-md-3 {
-                flex: 0 0 25% !important;
-                max-width: 25% !important;
-            }
-            .content-wrapper .col-md-6 {
-                flex: 0 0 50% !important;
-                max-width: 50% !important;
-            }
+        .content-wrapper:not(.premium-mode) h6 {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6b7280;
+            margin: 0 0 0.5rem 0;
         }
 
         /* FORCER LES COULEURS DE FOND */
@@ -217,5 +166,24 @@
         .text-purple-600 { color: #9333ea !important; }
         .text-success { color: #10b981 !important; }
         .text-orange-600 { color: #ea580c !important; }
+
+        /* Stabilisation du layout */
+        .layout-page, .content-wrapper {
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        /* Skeleton loading placeholder color */
+        .glass-card:empty {
+            min-height: 200px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 </head>

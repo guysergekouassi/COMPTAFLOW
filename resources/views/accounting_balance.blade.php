@@ -108,6 +108,19 @@
         margin: auto;
         padding: 1.5rem !important;
     }
+
+    /* Fix bootstrap-select inside modal */
+    .bootstrap-select .dropdown-menu {
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        z-index: 10001 !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+    .bootstrap-select .dropdown-item {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.8rem !important;
+    }
 </style>
 
 <body>
@@ -300,13 +313,13 @@
                                                     </a>
                                                 </td>
                                                 <td class="px-8 py-4 text-right">
-                                                    <form action="{{ route('accounting_balance.destroy', $balances->id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette Balance ?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-lg border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 transition shadow-sm bg-white ml-auto">
-                                                            <i class="bx bx-trash"></i>
-                                                        </button>
-                                                    </form>
+                                                    <button type="button" 
+                                                            class="w-8 h-8 flex items-center justify-center rounded-lg border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 transition shadow-sm bg-white ml-auto"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#deleteConfirmationModal"
+                                                            data-id="{{ $balances->id }}">
+                                                        <i class="bx bx-trash"></i>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         @empty
@@ -396,32 +409,47 @@
                             <div class="col-12">
                                 <div class="card border-0 shadow-sm" style="border-radius: 16px; background: #f8fafc;">
                                     <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); border-radius: 10px;">
-                                                <i class="bx bx-list-ul" style="font-size: 20px; color: white;"></i>
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); border-radius: 10px;">
+                                                    <i class="bx bx-list-ul" style="font-size: 20px; color: white;"></i>
+                                                </div>
+                                                <h6 class="mb-0" style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">Plage de comptes</h6>
                                             </div>
-                                            <h6 class="mb-0" style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">Plage de comptes</h6>
+                                            <!-- Toggle Tout Sélectionner -->
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input select-all-switch-premium" type="checkbox" id="selectAllAccounts">
+                                                <label class="form-check-label text-xs font-bold text-slate-500 uppercase tracking-wider" for="selectAllAccounts">Tout sélectionner</label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Nouveau : Barre de recherche par classe -->
+                                        <div class="mb-4">
+                                            <div class="relative">
+                                                <input type="text" id="accountSearch" class="input-field-premium pl-10" placeholder="Rechercher par classe (ex: 6) ou par texte...">
+                                                <i class="bx bx-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                            </div>
                                         </div>
                                         <div class="row g-3">
                                             <div class="col-md-6">
-                                                <label for="plan_comptable_id_1" class="input-label-premium">Compte de début</label>
-                                                <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="true" required>
+                                                <label for="plan_comptable_id_1" class="input-label-premium">Compte de début ({{ count($PlanComptable) }})</label>
+                                                <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10" required>
                                                     <option value="">-- Sélectionnez un compte --</option>
                                                     @foreach ($PlanComptable as $plan)
                                                         <option value="{{ $plan->id }}">
-                                                            {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                                            {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
                                                         </option>
                                                     @endforeach
                                                 </select>
                                                 <div class="invalid-feedback">Veuillez sélectionner un compte.</div>
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="plan_comptable_id_2" class="input-label-premium">Compte de fin</label>
-                                                <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="true" required>
+                                                <label for="plan_comptable_id_2" class="input-label-premium">Compte de fin ({{ count($PlanComptable) }})</label>
+                                                <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10" required>
                                                     <option value="">-- Sélectionnez un compte --</option>
                                                     @foreach ($PlanComptable as $plan)
                                                         <option value="{{ $plan->id }}">
-                                                            {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                                            {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
                                                         </option>
                                                     @endforeach
                                                 </select>
@@ -488,14 +516,27 @@
 
     {{-- previsualisation avant sauvegarde --}}
     <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Prévisualisation du Grand Livre</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        <div class="modal-dialog modal-fullscreen" role="document">
+            <div class="modal-content border-0">
+                <div class="modal-header bg-slate-900 border-0 py-3 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                            <i class="bx bxs-file-pdf text-white fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title text-white font-bold mb-0">Aperçu du Rapport - Balance</h5>
+                            <p class="text-slate-400 mb-0 text-xs">Veuillez vérifier les informations avant l'exportation</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <div class="modal-body">
-                    <iframe id="pdfPreviewFrame" style="width:100%;height:80vh;" frameborder="0"></iframe>
+                <div class="modal-body p-0 bg-slate-800">
+                    <iframe id="pdfPreviewFrame" style="width:100%;height:100%;border:none;" src="about:blank"></iframe>
+                </div>
+                <div class="modal-footer bg-slate-900 border-0 py-3 px-4">
+                    <button type="button" class="btn btn-label-secondary px-4 py-2 font-bold" data-bs-dismiss="modal">
+                        <i class="bx bx-x me-2"></i>Fermer l'aperçu
+                    </button>
                 </div>
             </div>
         </div>
@@ -503,13 +544,18 @@
 
     {{-- modal pdf --}}
     <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl" style="max-width:90%;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="pdfModalLabel">Prévisualisation du PDF</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content border-0">
+                <div class="modal-header bg-slate-900 border-0 py-3 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                            <i class="bx bxs-file-pdf text-white fs-4"></i>
+                        </div>
+                        <h5 class="modal-title text-white font-bold mb-0" id="pdfModalLabel">Visualisation du Document</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <div class="modal-body" style="height: 80vh;">
+                <div class="modal-body p-0 bg-slate-800">
                     <iframe id="pdfViewer" src="" frameborder="0" style="width: 100%; height: 100%;"></iframe>
                 </div>
             </div>
@@ -596,37 +642,7 @@
 
     <script>
         const accounting_balanceDeleteUrl = "{{ route('accounting_balance.destroy', ['id' => '__ID__']) }}";
-        const accounting_ledgerpreviewBalanceUrl = "{{ route('accounting_balance.previewBalance') }}";
-
-    </script>
-
-    <script>
-        window.toggleAdvancedFilter = function() {
-            const panel = document.getElementById('advancedFilterPanel');
-            if (!panel) return;
-            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-        };
-
-        window.applyAdvancedFilters = function() {
-            const q = (document.getElementById('filter-client')?.value || '').toLowerCase();
-            const status = (document.getElementById('filter-status')?.value || '').toLowerCase();
-
-            const rows = document.querySelectorAll('table.table-premium tbody tr');
-            rows.forEach((tr) => {
-                const text = (tr.textContent || '').toLowerCase();
-                const matchQ = !q || text.includes(q);
-                const matchStatus = !status || text.includes(status);
-                tr.style.display = (matchQ && matchStatus) ? '' : 'none';
-            });
-        };
-
-        window.resetAdvancedFilters = function() {
-            const q = document.getElementById('filter-client');
-            const s = document.getElementById('filter-status');
-            if (q) q.value = '';
-            if (s) s.value = '';
-            window.applyAdvancedFilters();
-        };
+        const accounting_balancePreviewUrl = "{{ route('accounting_balance.previewBalance') }}";
     </script>
     <script src="{{ asset('js/acc_balance.js') }}"></script>
 

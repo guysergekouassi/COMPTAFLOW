@@ -12,14 +12,11 @@
                 @include('components.header', ['page_title' => 'Créer une Entreprise'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    
+                    <form action="{{ route('superadmin.companies.store') }}" method="POST">
+                        @csrf
 
-
-                    <!-- Formulaire de création -->
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                
+                        <div class="row">
+                            <div class="col-lg-8">
                                 @if(session('success'))
                                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                                         <i class="fa-solid fa-check-circle me-2"></i>
@@ -35,137 +32,150 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                                     </div>
                                 @endif
-
-                                <form action="{{ route('superadmin.companies.store') }}" method="POST">
-                                    @csrf
-
+                                <!-- Section 1: Informations Générales -->
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                                        <i class="fa-solid fa-building me-2"></i>Informations Générales
+                                    </h5>
+                                    
                                     <div class="row g-4">
-                                        <!-- Nom de l'entreprise -->
                                         <div class="col-md-12">
-                                            <label for="company_name" class="form-label fw-semibold">
-                                                Nom de l'entreprise <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" 
-                                                   class="form-control @error('company_name') is-invalid @enderror" 
-                                                   id="company_name" 
-                                                   name="company_name" 
-                                                   value="{{ old('company_name') }}"
-                                                   placeholder="Ex: SARL ComptaFlow CI"
-                                                   required>
-                                            @error('company_name')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-
-                                        <!-- Adresse -->
-                                        <div class="col-md-12">
-                                            <label for="address" class="form-label fw-semibold">Adresse</label>
-                                            <textarea class="form-control @error('address') is-invalid @enderror" 
-                                                      id="address" 
-                                                      name="address" 
-                                                      rows="3"
-                                                      placeholder="Adresse complète de l'entreprise">{{ old('address') }}</textarea>
-                                            @error('address')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-
-                                        <!-- Téléphone et Email -->
-                                        <div class="col-md-6">
-                                            <label for="phone" class="form-label fw-semibold">Téléphone</label>
-                                            <input type="text" 
-                                                   class="form-control @error('phone') is-invalid @enderror" 
-                                                   id="phone" 
-                                                   name="phone" 
-                                                   value="{{ old('phone') }}"
-                                                   placeholder="+225 XX XX XX XX XX">
-                                            @error('phone')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <label for="company_name" class="form-label fw-semibold">Nom de l'entreprise <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('company_name') is-invalid @enderror" id="company_name" name="company_name" value="{{ old('company_name') }}" required placeholder="Ex: Ma Super Entreprise">
+                                            @error('company_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
                                         <div class="col-md-6">
-                                            <label for="email" class="form-label fw-semibold">Email</label>
-                                            <input type="email" 
-                                                   class="form-control @error('email') is-invalid @enderror" 
-                                                   id="email" 
-                                                   name="email" 
-                                                   value="{{ old('email') }}"
-                                                   placeholder="contact@entreprise.com">
-                                            @error('email')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <label for="activity" class="form-label fw-semibold">Secteur d'Activité <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('activity') is-invalid @enderror" id="activity" name="activity" value="{{ old('activity') }}" required placeholder="Ex: Informatique, Commerce">
+                                            @error('activity') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
-                                        <!-- Secteur d'activité -->
                                         <div class="col-md-6">
-                                            <label for="sector" class="form-label fw-semibold">Secteur d'activité</label>
-                                            <select class="form-select @error('sector') is-invalid @enderror" 
-                                                    id="sector" 
-                                                    name="sector">
-                                                <option value="">Sélectionner un secteur</option>
-                                                <option value="Commerce" {{ old('sector') == 'Commerce' ? 'selected' : '' }}>Commerce</option>
-                                                <option value="Services" {{ old('sector') == 'Services' ? 'selected' : '' }}>Services</option>
-                                                <option value="Industrie" {{ old('sector') == 'Industrie' ? 'selected' : '' }}>Industrie</option>
-                                                <option value="BTP" {{ old('sector') == 'BTP' ? 'selected' : '' }}>BTP</option>
-                                                <option value="Agriculture" {{ old('sector') == 'Agriculture' ? 'selected' : '' }}>Agriculture</option>
-                                                <option value="Technologie" {{ old('sector') == 'Technologie' ? 'selected' : '' }}>Technologie</option>
-                                                <option value="Santé" {{ old('sector') == 'Santé' ? 'selected' : '' }}>Santé</option>
-                                                <option value="Éducation" {{ old('sector') == 'Éducation' ? 'selected' : '' }}>Éducation</option>
-                                                <option value="Autre" {{ old('sector') == 'Autre' ? 'selected' : '' }}>Autre</option>
+                                            <label for="juridique_form" class="form-label fw-semibold">Forme Juridique <span class="text-danger">*</span></label>
+                                            <select class="form-select @error('juridique_form') is-invalid @enderror" id="juridique_form" name="juridique_form" required>
+                                                <option value="">Sélectionner...</option>
+                                                <option value="SARL" {{ old('juridique_form') == 'SARL' ? 'selected' : '' }}>SARL</option>
+                                                <option value="SA" {{ old('juridique_form') == 'SA' ? 'selected' : '' }}>SA</option>
+                                                <option value="SAS" {{ old('juridique_form') == 'SAS' ? 'selected' : '' }}>SAS</option>
+                                                <option value="SCI" {{ old('juridique_form') == 'SCI' ? 'selected' : '' }}>SCI</option>
+                                                <option value="EIRL" {{ old('juridique_form') == 'EIRL' ? 'selected' : '' }}>EIRL</option>
+                                                <option value="Auto-entrepreneur" {{ old('juridique_form') == 'Auto-entrepreneur' ? 'selected' : '' }}>Auto-entrepreneur</option>
                                             </select>
-                                            @error('sector')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            @error('juridique_form') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
 
-                                        <!-- Statut -->
                                         <div class="col-md-6">
-                                            <label for="status" class="form-label fw-semibold">
-                                                Statut <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select @error('status') is-invalid @enderror" 
-                                                    id="status" 
-                                                    name="status"
-                                                    required>
-                                                <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
-                                                <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                            <label for="social_capital" class="form-label fw-semibold">Capital Social <span class="text-danger">*</span></label>
+                                            <input type="number" step="0.01" class="form-control @error('social_capital') is-invalid @enderror" id="social_capital" name="social_capital" value="{{ old('social_capital') }}" required>
+                                            @error('social_capital') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="is_active" class="form-label fw-semibold">Statut <span class="text-danger">*</span></label>
+                                            <select class="form-select @error('is_active') is-invalid @enderror" id="is_active" name="is_active" required>
+                                                <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Actif</option>
+                                                <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Inactif</option>
                                             </select>
-                                            @error('status')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            @error('is_active') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
                                     </div>
+                                </div>
 
-                                    <!-- Boutons d'action -->
-                                    <div class="d-flex justify-content-end gap-3 mt-5">
+                                <!-- Section 2: Localisation et Contact -->
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                                        <i class="fa-solid fa-location-dot me-2"></i>Adresse et Contact
+                                    </h5>
+                                    
+                                    <div class="row g-4">
+                                        <div class="col-md-12">
+                                            <label for="adresse" class="form-label fw-semibold">Adresse Siège Social <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('adresse') is-invalid @enderror" id="adresse" name="adresse" value="{{ old('adresse') }}" required>
+                                            @error('adresse') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label for="code_postal" class="form-label fw-semibold">Code Postal <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('code_postal') is-invalid @enderror" id="code_postal" name="code_postal" value="{{ old('code_postal') }}" required>
+                                            @error('code_postal') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label for="city" class="form-label fw-semibold">Ville <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('city') is-invalid @enderror" id="city" name="city" value="{{ old('city') }}" required>
+                                            @error('city') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label for="country" class="form-label fw-semibold">Pays <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('country') is-invalid @enderror" id="country" name="country" value="{{ old('country', 'Côte d\'Ivoire') }}" required>
+                                            @error('country') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="phone_number" class="form-label fw-semibold">Téléphone <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('phone_number') is-invalid @enderror" id="phone_number" name="phone_number" value="{{ old('phone_number') }}" required>
+                                            @error('phone_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="email_adresse" class="form-label fw-semibold">Email Professionnel <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control @error('email_adresse') is-invalid @enderror" id="email_adresse" name="email_adresse" value="{{ old('email_adresse') }}" required>
+                                            @error('email_adresse') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section 3: Fiscalité et Structure -->
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                                        <i class="fa-solid fa-file-invoice-dollar me-2"></i>Fiscalité et Hiérarchie
+                                    </h5>
+                                    
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label for="identification_TVA" class="form-label fw-semibold">Numéro TVA / Client</label>
+                                            <input type="text" class="form-control @error('identification_TVA') is-invalid @enderror" id="identification_TVA" name="identification_TVA" value="{{ old('identification_TVA') }}">
+                                            @error('identification_TVA') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="parent_company_id" class="form-label fw-semibold">Société Parente (Optionnel)</label>
+                                            <select class="form-select @error('parent_company_id') is-invalid @enderror" id="parent_company_id" name="parent_company_id">
+                                                <option value="">Aucune (Société Mère)</option>
+                                                @foreach(\App\Models\Company::whereNull('parent_company_id')->get() as $pCompany)
+                                                    <option value="{{ $pCompany->id }}" {{ old('parent_company_id') == $pCompany->id ? 'selected' : '' }}>
+                                                        {{ $pCompany->company_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('parent_company_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 100px;">
+                                    <h6 class="fw-bold text-blue-900 mb-3">
+                                        <i class="fa-solid fa-keyboard me-2"></i>Validation
+                                    </h6>
+                                    <p class="text-sm text-blue-800 mb-4">
+                                        Veuillez vérifier toutes les informations avant de valider. Les champs marqués d'une astérisque (*) sont obligatoires.
+                                    </p>
+                                    <div class="d-grid gap-3">
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fa-solid fa-save me-2"></i>Enregistrer l'entreprise
+                                        </button>
                                         <a href="{{ route('superadmin.entities') }}" class="btn btn-outline-secondary">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fa-solid fa-save me-2"></i>Créer l'entreprise
-                                        </button>
                                     </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Aide contextuelle -->
-                        <div class="col-lg-4">
-                            <div class="bg-blue-50 rounded-xl border border-blue-200 p-4">
-                                <h6 class="fw-bold text-blue-900 mb-3">
-                                    <i class="fa-solid fa-info-circle me-2"></i>Informations
-                                </h6>
-                                <ul class="text-sm text-blue-800 mb-0 ps-3">
-                                    <li class="mb-2">Le nom de l'entreprise est obligatoire</li>
-                                    <li class="mb-2">Les autres champs sont optionnels mais recommandés</li>
-                                    <li class="mb-2">Une entreprise inactive ne pourra pas se connecter</li>
-                                    <li class="mb-2">Vous pourrez modifier ces informations ultérieurement</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
+                    </form>
                 </div>
 
                 @include('components.footer')

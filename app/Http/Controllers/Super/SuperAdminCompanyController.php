@@ -24,21 +24,22 @@ class SuperAdminCompanyController extends Controller
     {
         $validated = $request->validate([
             'company_name' => 'required|string|max:255',
-            'address' => 'nullable|string|max:500',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'sector' => 'nullable|string|max:255',
-            'status' => 'required|in:active,inactive',
+            'activity' => 'required|string|max:255',
+            'juridique_form' => 'required|string|max:255',
+            'social_capital' => 'required|numeric|min:0',
+            'adresse' => 'required|string|max:500',
+            'code_postal' => 'required|string|max:20',
+            'city' => 'required|string|max:100',
+            'country' => 'required|string|max:100',
+            'phone_number' => 'required|string|max:20',
+            'email_adresse' => 'required|email|max:191|unique:companies,email_adresse',
+            'identification_TVA' => 'nullable|string|max:255',
+            'parent_company_id' => 'nullable|exists:companies,id',
+            'is_active' => 'required|boolean',
         ]);
 
-        $company = Company::create([
-            'company_name' => $validated['company_name'],
-            'address' => $validated['address'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'email' => $validated['email'] ?? null,
-            'sector' => $validated['sector'] ?? null,
-            'is_active' => $validated['status'] === 'active' ? 1 : 0,
-        ]);
+        $validated['user_id'] = Auth::id();
+        $company = Company::create($validated);
 
         return redirect()->route('superadmin.entities')
             ->with('success', 'Entreprise créée avec succès !');
@@ -62,21 +63,21 @@ class SuperAdminCompanyController extends Controller
 
         $validated = $request->validate([
             'company_name' => 'required|string|max:255',
-            'address' => 'nullable|string|max:500',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'sector' => 'nullable|string|max:255',
-            'status' => 'required|in:active,inactive',
+            'activity' => 'required|string|max:255',
+            'juridique_form' => 'required|string|max:255',
+            'social_capital' => 'required|numeric|min:0',
+            'adresse' => 'required|string|max:500',
+            'code_postal' => 'required|string|max:20',
+            'city' => 'required|string|max:100',
+            'country' => 'required|string|max:100',
+            'phone_number' => 'required|string|max:20',
+            'email_adresse' => 'required|email|max:191|unique:companies,email_adresse,' . $id,
+            'identification_TVA' => 'nullable|string|max:255',
+            'parent_company_id' => 'nullable|exists:companies,id',
+            'is_active' => 'required|boolean',
         ]);
 
-        $company->update([
-            'company_name' => $validated['company_name'],
-            'address' => $validated['address'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'email' => $validated['email'] ?? null,
-            'sector' => $validated['sector'] ?? null,
-            'is_active' => $validated['status'] === 'active' ? 1 : 0,
-        ]);
+        $company->update($validated);
 
         return redirect()->route('superadmin.entities')
             ->with('success', 'Entreprise mise à jour avec succès !');

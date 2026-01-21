@@ -443,7 +443,7 @@
                                                         </td>
                                                         <td class="px-4 py-3 text-center whitespace-nowrap" rowspan="{{ $rowCount }}">
                                                             <div class="flex items-center justify-center space-x-2">
-                                                                <a href="#" class="p-1.5 text-warning hover:text-yellow-700 transition-colors duration-200" title="Modifier l'écriture" data-id="{{ $ecriture->id }}">
+                                                                <a href="{{ route('accounting_entry_real') }}?n_saisie={{ $ecriture->n_saisie }}" class="p-1.5 text-warning hover:text-yellow-700 transition-colors duration-200" title="Modifier l'écriture">
                                                                     <i class="bx bx-edit-alt"></i>
                                                                 </a>
                                                                 <a href="{{ route('ecriture.show', $ecriture->id) }}" class="p-1.5 text-info hover:text-blue-800 transition-colors duration-200" title="Voir l'écriture complète">
@@ -1027,61 +1027,6 @@
         }
     }
 
-    // Fonction pour charger les données d'une écriture dans le modal de modification
-    function loadEcritureData(ecritureId) {
-        fetch(`/ecriture/${ecritureId}/edit`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Erreur réseau');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success && data.ecriture) {
-                    const ecriture = data.ecriture;
-                    
-                    // Formater la date au format YYYY-MM-DD
-                    const formatDate = (dateString) => {
-                        if (!dateString) return '';
-                        const date = new Date(dateString);
-                        return date.toISOString().split('T')[0];
-                    };
-                    
-                    // Remplir le formulaire avec les données de l'écriture
-                    document.getElementById('edit_ecriture_id').value = ecriture.id;
-                    document.getElementById('edit_date').value = formatDate(ecriture.date);
-                    document.getElementById('edit_n_saisie').value = ecriture.n_saisie || '';
-                    document.getElementById('edit_code_journal_id').value = ecriture.code_journal_id || '';
-                    document.getElementById('edit_description_operation').value = ecriture.description_operation || '';
-                    document.getElementById('edit_plan_comptable_id').value = ecriture.plan_comptable_id || '';
-                    document.getElementById('edit_plan_tiers_id').value = ecriture.plan_tiers_id || '';
-                    document.getElementById('edit_debit').value = ecriture.debit || '0.00';
-                    document.getElementById('edit_credit').value = ecriture.credit || '0.00';
-                    document.getElementById('edit_reference_piece').value = ecriture.reference_piece || '';
-                    document.getElementById('edit_plan_analytique').value = ecriture.plan_analytique ? '1' : '0';
-                    document.getElementById('edit_compte_tresorerie_id').value = ecriture.compte_tresorerie_id || '';
-                    
-                    // Afficher la pièce jointe actuelle si elle existe
-                    const currentPiece = document.getElementById('current_piece');
-                    if (ecriture.piece_justificatif) {
-                        currentPiece.innerHTML = `Pièce jointe actuelle: <a href="/justificatifs/${ecriture.piece_justificatif}" target="_blank" class="text-blue-600 hover:underline">Voir le fichier</a>`;
-                    } else {
-                        currentPiece.textContent = 'Aucune pièce jointe';
-                    }
-                    
-                    // Afficher le modal
-                    const modal = new bootstrap.Modal(document.getElementById('editEcritureModal'));
-                    modal.show();
-                } else {
-                    alert(data.message || 'Erreur lors du chargement des données de l\'écriture');
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Une erreur est survenue lors du chargement des données. Veuillez réessayer.');
-            });
-    }
-
     // Gestion de la soumission du formulaire de modification
     document.getElementById('formEditEcriture').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1110,16 +1055,6 @@
             console.error('Erreur:', error);
             alert('Une erreur est survenue lors de la mise à jour');
         });
-    });
-
-    // Gestion du clic sur le bouton Modifier
-    document.addEventListener('click', function(e) {
-        const editButton = e.target.closest('a[title="Modifier l\'écriture"]');
-        if (editButton) {
-            e.preventDefault();
-            const ecritureId = editButton.getAttribute('data-id');
-            loadEcritureData(ecritureId);
-        }
     });
 
     document.addEventListener('DOMContentLoaded', function() {

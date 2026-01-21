@@ -38,9 +38,18 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Dashboard <span class="text-gradient-gov">Master</span>'])
+                @include('components.header')
 
-                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Tableau de Bord / Vue d'ensemble Globale</h5>
+                                <p class="text-muted small mb-0">Statistiques consolidées et indicateurs de performance du réseau.</p>
+                            </div>
+                        </div>
                     
                     <!-- En-tête (Informations temporelles uniquement) -->
                     <div class="d-flex justify-content-end mb-8">

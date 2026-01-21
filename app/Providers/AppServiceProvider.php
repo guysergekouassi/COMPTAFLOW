@@ -31,14 +31,27 @@ class AppServiceProvider extends ServiceProvider
     {
 
         View::composer('components.sidebar', function ($view) {
-        if (Auth::check()) {
-            // Assurez-vous d'avoir la relation définie sur le modèle User
-            $company = Auth::user()->company;
-        } else {
-            $company = null; // Gérer le cas où l'utilisateur n'est pas connecté
-        }
-        $view->with('company', $company);
-    });
+            if (Auth::check()) {
+                $user = Auth::user();
+                $company = $user->company;
+                
+                // Données spécifiques à l'admin
+                $pendingApprovalsCount = 0;
+                if ($user->isAdmin()) {
+                    $pendingApprovalsCount = \App\Models\Approval::where('status', 'pending')->count();
+                }
+
+                $view->with([
+                    'company' => $company,
+                    'pendingApprovalsCount' => $pendingApprovalsCount
+                ]);
+            } else {
+                $view->with([
+                    'company' => null,
+                    'pendingApprovalsCount' => 0
+                ]);
+            }
+        });
         // Appliquer à toutes les vues du dossier Tresor
         View::composer('Tresor.*', function ($view) {
             $comptesClasse5 = PlanComptable::where('numero_de_compte', 5)->get();

@@ -1,9 +1,112 @@
-<!DOCTYPE html>
-
-<html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/"
-    data-template="vertical-menu-template-free">
-
 @include('components.head')
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #0f172a;
+    }
+    .glass-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+    .glass-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .text-premium-gradient {
+        background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+    }
+    .badge-premium {
+        padding: 6px 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .badge-premium-success { background-color: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+    .badge-premium-danger { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fee2e2; }
+    .badge-premium-info { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+    
+    .company-card-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+    }
+    .company-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 2rem;
+    }
+    .btn-premium {
+        background: #0f172a;
+        color: white !important;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 14px;
+        font-weight: 700;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none !important;
+    }
+    .btn-premium:hover {
+        background: #1e293b;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+    }
+    .premium-modal-content {
+        background: #ffffff;
+        border: none;
+        border-radius: 28px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        padding: 2rem !important;
+    }
+    .input-field-premium {
+        transition: all 0.2s ease;
+        border: 2px solid #f1f5f9 !important;
+        background-color: #f8fafc !important;
+        border-radius: 14px !important;
+        padding: 0.85rem 1.25rem !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        color: #0f172a !important;
+        width: 100%;
+    }
+    .input-field-premium:focus {
+        border-color: #3b82f6 !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+        outline: none !important;
+    }
+    .input-label-premium {
+        font-size: 0.75rem !important;
+        font-weight: 800 !important;
+        color: #64748b !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        margin-bottom: 0.5rem !important;
+        display: block !important;
+    }
+</style>
 
 <body>
     <div class="layout-wrapper layout-content-navbar">
@@ -11,74 +114,51 @@
             {{-- La sidebar est incluse --}}
             @include('components.sidebar', ['habilitations' => []])
             <div class="layout-page">
-                @include('components.header')
-
+                @include('components.header', ['page_title' => 'Gestion des <span class="text-gradient">Entités</span>'])
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
-                        <h4 class="py-3 mb-4">
-                            <span class="text-muted fw-light">Paramétrage /</span> Gestion des Comptes Comptabilité
-                        </h4>
+                        
+                        <!-- Header de Section Premium -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-8 gap-4">
+                            <div>
+                                <h1 class="text-3xl font-black text-slate-900 mb-2">Gouvernance des <span class="text-blue-600">Structures</span></h1>
+                                <p class="text-slate-500 font-medium">Administration centrale et pilotage de vos entités comptables.</p>
+                            </div>
+                            <div>
+                                <button type="button" class="btn-premium" data-bs-toggle="modal" data-bs-target="#modalCreateComptaAccount">
+                                    <i class="fa-solid fa-plus-circle"></i> Ajouter une Entité
+                                </button>
+                            </div>
+                        </div>
 
-                        <div class="row g-6 mb-6">
+                        <!-- KPIs Premium -->
+                        <div class="row g-6 mb-8">
                             <div class="col-sm-6 col-xl-4">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start justify-content-between">
-                                            <div class="content-left">
-                                                <span class="text-heading">Total Comptes Comptabilité</span>
-                                                <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2">{{ number_format($totalAccounts ?? 0) }}</h4>
-                                                </div>
-                                                <small class="mb-0">Total des entités gérées</small>
-                                            </div>
-                                            <div class="avatar">
-                                                <span class="avatar-initial rounded bg-label-primary">
-                                                    <i class="icon-base bx bx-building-house icon-lg"></i>
-                                                </span>
-                                            </div>
+                                <div class="glass-card p-6">
+                                    <div class="d-flex align-items-center justify-content-between mb-4">
+                                        <div class="stats-icon bg-emerald-50 text-emerald-600">
+                                            <i class="fa-solid fa-check-double"></i>
                                         </div>
+                                        <span class="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Opérationnel</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-3xl font-black text-slate-800 mb-1">{{ number_format($activeAccounts ?? 0) }}</h3>
+                                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0">Comptes Actifs</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-sm-6 col-xl-4">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start justify-content-between">
-                                            <div class="content-left">
-                                                <span class="text-heading">Comptes Actifs</span>
-                                                <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2">{{ number_format($activeAccounts ?? 0) }}</h4>
-                                                </div>
-                                                <small class="mb-0">Actuellement utilisés</small>
-                                            </div>
-                                            <div class="avatar">
-                                                <span class="avatar-initial rounded bg-label-success">
-                                                    <i class="icon-base bx bx-check-circle icon-lg"></i>
-                                                </span>
-                                            </div>
+                                <div class="glass-card p-6">
+                                    <div class="d-flex align-items-center justify-content-between mb-4">
+                                        <div class="stats-icon bg-amber-50 text-amber-600">
+                                            <i class="fa-solid fa-pause-circle"></i>
                                         </div>
+                                        <span class="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded">En sommeil</span>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="col-sm-6 col-xl-4">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start justify-content-between">
-                                            <div class="content-left">
-                                                <span class="text-heading">Comptes Inactifs</span>
-                                                <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2">{{ number_format($inactiveAccounts ?? 0) }}</h4>
-                                                </div>
-                                                <small class="mb-0">Désactivés ou en attente</small>
-                                            </div>
-                                            <div class="avatar">
-                                                <span class="avatar-initial rounded bg-label-warning">
-                                                    <i class="icon-base bx bx-power-off icon-lg"></i>
-                                                </span>
-                                            </div>
-                                        </div>
+                                    <div>
+                                        <h3 class="text-3xl font-black text-slate-800 mb-1">{{ number_format($inactiveAccounts ?? 0) }}</h3>
+                                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0">Comptes Inactifs</p>
                                     </div>
                                 </div>
                             </div>
@@ -105,349 +185,330 @@
                         @endif
 
 
-                        <div class="card">
-                                {{-- MODIFICATION : Remplacement du h5.card-header par une div pour inclure le bouton --}}
-                                        <div class="card-header d-flex justify-content-between align-items-center">
-                                            <h5 class="mb-0">Liste des Comptes Comptabilités</h5>
-                                            {{-- BOUTON CRÉER --}}
-                                          <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                                data-bs-target="#modalCreateComptaAccount">
-                                            <i class="bx bx-plus me-1"></i> Créer un Compte
-                                        </button>
-                                            {{-- FIN BOUTON CRÉER --}}
-                                        </div>
-                                <div class="table-responsive text-nowrap">
-
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>Nom de l'Entreprise</th>
-                                                <th>Forme Juridique</th>
-                                                <th>Activité</th>
-                                                <th>Ville</th>
-                                                <th>Statut</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="table-border-bottom-0">
-                                            {{-- Parcourir la liste des comptes --}}
-                                            @forelse ($comptaAccounts as $comptaAccount)
-                                                {{-- Rendre la ligne cliquable. La route 'compta_accounts.access' est à définir --}}
-                                                <tr class="clickable-row"
-                                                    data-href="{{ route('compta_accounts.access', ['companyId' => $comptaAccount->id]) }}"
-                                                    style="cursor: pointer;"
-                                                >
-                                                    {{-- Suppression des onclick redondants dans les TD, la gestion est faite par JS --}}
-                                                    <td>
-                                                        <i class="bx bx-buildings me-2"></i>
-                                                        <strong>{{ $comptaAccount->company_name }}</strong>
-                                                    </td>
-                                                    <td>
-                                                        {{ $comptaAccount->juridique_form ?? 'N/A' }}
-                                                    </td>
-                                                    <td>
-                                                        {{ $comptaAccount->activity ?? 'N/A' }}
-                                                    </td>
-                                                    <td>
-                                                        {{ $comptaAccount->city ?? 'N/A' }}
-                                                    </td>
-                                                    <td>
-                                                        @if ($comptaAccount->is_active)
-                                                            <span class="badge bg-label-success me-1">Actif</span>
-                                                        @else
-                                                            <span class="badge bg-label-danger me-1">Inactif</span>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <div class="dropdown">
-                                                            <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                                                <i class="bx bx-dots-vertical-rounded"></i>
-                                                            </button>
-                                                            <div class="dropdown-menu">
-                                                                {{-- Correction: Les data-bs-target pointent vers le bon ID de modal --}}
-                                                                <a class="dropdown-item details-btn" href="javascript:void(0);"
-                                                                    data-bs-toggle="modal" data-bs-target="#modalSeeComptaAccount"
-                                                                    data-company-name="{{ $comptaAccount->company_name }}"
-                                                                    data-activity="{{ $comptaAccount->activity }}"
-                                                                    data-juridique-form="{{ $comptaAccount->juridique_form }}"
-                                                                    data-social-capital="{{ $comptaAccount->social_capital }}"
-                                                                    data-adresse="{{ $comptaAccount->adresse }}"
-                                                                    data-code-postal="{{ $comptaAccount->code_postal }}"
-                                                                    data-city="{{ $comptaAccount->city }}"
-                                                                    data-country="{{ $comptaAccount->country }}"
-                                                                    data-phone-number="{{ $comptaAccount->phone_number }}"
-                                                                    data-email-adresse="{{ $comptaAccount->email_adresse }}"
-                                                                    data-identification-tva="{{ $comptaAccount->identification_TVA }}"
-                                                                    data-is-active="{{ $comptaAccount->is_active }}">
-                                                                    <i class="bx bx-show me-1"></i> Détails
-                                                                </a>
-                                                                <a class="dropdown-item edit-btn" href="javascript:void(0);"
-                                                                    data-bs-toggle="modal" data-bs-target="#modalUpdateComptaAccount"
-                                                                    data-account-id="{{ $comptaAccount->id }}"
-                                                                    data-company-name="{{ $comptaAccount->company_name }}"
-                                                                    data-activity="{{ $comptaAccount->activity }}"
-                                                                    data-juridique-form="{{ $comptaAccount->juridique_form }}"
-                                                                    data-social-capital="{{ $comptaAccount->social_capital }}"
-                                                                    data-adresse="{{ $comptaAccount->adresse }}"
-                                                                    data-code-postal="{{ $comptaAccount->code_postal }}"
-                                                                    data-city="{{ $comptaAccount->city }}"
-                                                                    data-country="{{ $comptaAccount->country }}"
-                                                                    data-phone-number="{{ $comptaAccount->phone_number }}"
-                                                                    data-email-adresse="{{ $comptaAccount->email_adresse }}"
-                                                                    data-identification-tva="{{ $comptaAccount->identification_TVA }}"
-                                                                    data-is-active="{{ $comptaAccount->is_active }}">
-                                                                    <i class="bx bx-edit-alt me-1"></i> Éditer
-                                                                </a>
-                                                                <a class="dropdown-item delete-btn" href="javascript:void(0);"
-                                                                    data-bs-toggle="modal" data-bs-target="#deleteAccountModal"
-                                                                    data-account-id="{{ $comptaAccount->id }}"
-                                                                    data-company-name="{{ $comptaAccount->company_name }}">
-                                                                    <i class="bx bx-trash me-1"></i> Supprimer
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="6" class="text-center">Aucun compte comptabilité trouvé.</td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        <div class="modal fade" id="modalCreateComptaAccount" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Créer un nouveau Compte Comptabilité</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Fermer"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <form id="createAccountForm" method="POST" action="{{ route('compta_accounts.store') }}">
-                                            @csrf
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label for="company_name" class="form-label">Nom de la Société <span class="text-danger">*</span></label>
-                                                    <input type="text" id="company_name" name="company_name" class="form-control" value="{{ old('company_name') }}" required />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="activity" class="form-label">Secteur d'activité</label>
-                                                    <input type="text" id="activity" name="activity" class="form-control" value="{{ old('activity') }}" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="juridique_form" class="form-label">Forme Juridique</label>
-                                                    <input type="text" id="juridique_form" name="juridique_form" class="form-control" value="{{ old('juridique_form') }}" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="social_capital" class="form-label">Capital Social</label>
-                                                    <input type="number" step="0.01" id="social_capital" name="social_capital" class="form-control" value="{{ old('social_capital') }}" />
-                                                </div>
-                                                <div class="col-12">
-                                                    <label for="adresse" class="form-label">Adresse Complète</label>
-                                                    <input type="text" id="adresse" name="adresse" class="form-control" value="{{ old('adresse') }}" />
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="code_postal" class="form-label">Code Postal</label>
-                                                    <input type="text" id="code_postal" name="code_postal" class="form-control" value="{{ old('code_postal') }}" />
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="city" class="form-label">Ville</label>
-                                                    <input type="text" id="city" name="city" class="form-control" value="{{ old('city') }}" />
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="country" class="form-label">Pays</label>
-                                                    <input type="text" id="country" name="country" class="form-control" value="{{ old('country') }}" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="email_adresse_create" class="form-label">Email de contact <span class="text-danger">*</span></label>
-                                                    <input type="email" id="email_adresse_create" name="email_adresse" class="form-control" value="{{ old('email_adresse') }}" required />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="phone_number" class="form-label">Numéro de Téléphone</label>
-                                                    <input type="text" id="phone_number" name="phone_number" class="form-control" value="{{ old('phone_number') }}" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="identification_TVA" class="form-label">Identification TVA</label>
-                                                    <input type="text" id="identification_TVA" name="identification_TVA" class="form-control" value="{{ old('identification_TVA') }}" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="is_active_create" class="form-label">Statut</label>
-                                                    <select id="is_active_create" name="is_active" class="form-select">
-                                                        <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Actif</option>
-                                                        <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Inactif</option>
-                                                    </select>
-                                                </div>
+                        <!-- Section Grille des Entités Premium -->
+                        <div class="company-grid">
+                            @forelse ($comptaAccounts as $comptaAccount)
+                                <div class="glass-card">
+                                    <div class="p-6">
+                                        <div class="d-flex justify-content-between align-items-start mb-6">
+                                            <div class="company-card-avatar">
+                                                {{ strtoupper(substr($comptaAccount->company_name, 0, 1)) }}
                                             </div>
-
-                                            <div class="modal-footer justify-content-end mt-4">
-                                                <button type="button" class="btn btn-label-secondary"
-                                                    data-bs-dismiss="modal">Fermer</button>
-                                                <button type="submit" class="btn btn-primary">
-                                                    Enregistrer le Compte
+                                            <div class="dropdown">
+                                                <button class="btn p-2 rounded-xl hover:bg-slate-50 transition-colors dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                                    <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i>
                                                 </button>
+                                                <div class="dropdown-menu dropdown-menu-end p-2 border-0 shadow-xl rounded-2xl">
+                                                    <a class="dropdown-item py-2 rounded-xl details-btn" href="javascript:void(0);"
+                                                        data-bs-toggle="modal" data-bs-target="#modalSeeComptaAccount"
+                                                        data-company-name="{{ $comptaAccount->company_name }}"
+                                                        data-activity="{{ $comptaAccount->activity }}"
+                                                        data-juridique-form="{{ $comptaAccount->juridique_form }}"
+                                                        data-social-capital="{{ $comptaAccount->social_capital }}"
+                                                        data-adresse="{{ $comptaAccount->adresse }}"
+                                                        data-code-postal="{{ $comptaAccount->code_postal }}"
+                                                        data-city="{{ $comptaAccount->city }}"
+                                                        data-country="{{ $comptaAccount->country }}"
+                                                        data-phone-number="{{ $comptaAccount->phone_number }}"
+                                                        data-email-adresse="{{ $comptaAccount->email_adresse }}"
+                                                        data-identification-tva="{{ $comptaAccount->identification_TVA }}"
+                                                        data-is-active="{{ $comptaAccount->is_active }}">
+                                                        <i class="fa-solid fa-eye me-2 text-slate-400"></i> <span class="fw-bold text-slate-600">Détails complets</span>
+                                                    </a>
+                                                    <a class="dropdown-item py-2 rounded-xl edit-btn" href="javascript:void(0);"
+                                                        data-bs-toggle="modal" data-bs-target="#modalUpdateComptaAccount"
+                                                        data-account-id="{{ $comptaAccount->id }}"
+                                                        data-company-name="{{ $comptaAccount->company_name }}"
+                                                        data-activity="{{ $comptaAccount->activity }}"
+                                                        data-juridique-form="{{ $comptaAccount->juridique_form }}"
+                                                        data-social-capital="{{ $comptaAccount->social_capital }}"
+                                                        data-adresse="{{ $comptaAccount->adresse }}"
+                                                        data-code-postal="{{ $comptaAccount->code_postal }}"
+                                                        data-city="{{ $comptaAccount->city }}"
+                                                        data-country="{{ $comptaAccount->country }}"
+                                                        data-phone-number="{{ $comptaAccount->phone_number }}"
+                                                        data-email-adresse="{{ $comptaAccount->email_adresse }}"
+                                                        data-identification-tva="{{ $comptaAccount->identification_TVA }}"
+                                                        data-is-active="{{ $comptaAccount->is_active }}">
+                                                        <i class="fa-solid fa-pen-to-square me-2 text-blue-500"></i> <span class="fw-bold text-slate-600">Modifier</span>
+                                                    </a>
+                                                    <div class="dropdown-divider opacity-50"></div>
+                                                    <a class="dropdown-item py-2 rounded-xl delete-btn text-danger" href="javascript:void(0);"
+                                                        data-bs-toggle="modal" data-bs-target="#deleteAccountModal"
+                                                        data-account-id="{{ $comptaAccount->id }}"
+                                                        data-company-name="{{ $comptaAccount->company_name }}">
+                                                        <i class="fa-solid fa-trash-can me-2"></i> <span class="fw-bold">Supprimer</span>
+                                                    </a>
+                                                </div>
                                             </div>
-                                        </form>
+                                        </div>
+
+                                        <h4 class="text-xl font-black text-slate-800 mb-1">{{ $comptaAccount->company_name }}</h4>
+                                        <p class="text-slate-400 text-sm font-semibold mb-4 d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-tag text-xs"></i> {{ $comptaAccount->activity ?: 'Secteur non défini' }}
+                                        </p>
+
+                                        <div class="d-flex flex-wrap gap-2 mb-6">
+                                            <span class="badge-premium {{ $comptaAccount->is_active ? 'badge-premium-success' : 'badge-premium-danger' }}">
+                                                {{ $comptaAccount->is_active ? 'Actif' : 'Inactif' }}
+                                            </span>
+                                            <span class="badge-premium badge-premium-info">
+                                                {{ $comptaAccount->juridique_form ?: 'SARL' }}
+                                            </span>
+                                        </div>
+
+                                        <div class="row g-4 mb-6">
+                                            <div class="col-6">
+                                                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Écritures</p>
+                                                    <p class="text-lg font-extrabold text-slate-700 mb-0">--</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Équipe</p>
+                                                    <p class="text-lg font-extrabold text-slate-700 mb-0">--</p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
+                                    <div class="px-6 pb-6 mt-auto">
+                                        <a href="{{ route('compta_accounts.access', ['companyId' => $comptaAccount->id]) }}" 
+                                           class="btn w-100 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg shadow-blue-200">
+                                            <i class="fa-solid fa-door-open me-2"></i> Accéder au dossier
+                                        </a>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="col-12 text-center py-5 glass-card">
+                                    <i class="fa-solid fa-building-circle-exclamation fa-3x text-muted mb-3"></i>
+                                    <h5>Aucune entité trouvée</h5>
+                                    <p class="text-muted">Commencez par créer votre première structure comptable</p>
+                                </div>
+                            @endforelse
+                        </div>
+                        <div class="modal fade" id="modalCreateComptaAccount" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content premium-modal-content">
+                                    <div class="text-center mb-8">
+                                        <h2 class="text-2xl font-black text-slate-800 mb-2">Nouvelle <span class="text-blue-600">Entité</span></h2>
+                                        <p class="text-slate-400 font-medium">Configurez une nouvelle structure comptable</p>
+                                    </div>
+                                    
+                                    <form id="createAccountForm" method="POST" action="{{ route('compta_accounts.store') }}">
+                                        @csrf
+                                        <div class="row g-4">
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Nom de la Société <span class="text-danger">*</span></label>
+                                                <input type="text" name="company_name" class="input-field-premium" value="{{ old('company_name') }}" required placeholder="Ex: Ma Structure SARL" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Secteur d'activité</label>
+                                                <input type="text" name="activity" class="input-field-premium" value="{{ old('activity') }}" placeholder="Ex: Commerce, Conseil..." />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Forme Juridique</label>
+                                                <input type="text" name="juridique_form" class="input-field-premium" value="{{ old('juridique_form') }}" placeholder="Ex: SARL, SAS, SA..." />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Capital Social</label>
+                                                <input type="number" step="0.01" name="social_capital" class="input-field-premium" value="{{ old('social_capital') }}" placeholder="0.00" />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="input-label-premium">Adresse Complète</label>
+                                                <input type="text" name="adresse" class="input-field-premium" value="{{ old('adresse') }}" placeholder="N°, Rue, Quartier..." />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="input-label-premium">Code Postal</label>
+                                                <input type="text" name="code_postal" class="input-field-premium" value="{{ old('code_postal') }}" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="input-label-premium">Ville</label>
+                                                <input type="text" name="city" class="input-field-premium" value="{{ old('city') }}" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="input-label-premium">Pays</label>
+                                                <input type="text" name="country" class="input-field-premium" value="{{ old('country') }}" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Email de contact <span class="text-danger">*</span></label>
+                                                <input type="email" name="email_adresse" class="input-field-premium" value="{{ old('email_adresse') }}" required placeholder="contact@entreprise.com" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Numéro de Téléphone</label>
+                                                <input type="text" name="phone_number" class="input-field-premium" value="{{ old('phone_number') }}" placeholder="+225 ..." />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Identification TVA</label>
+                                                <input type="text" name="identification_TVA" class="input-field-premium" value="{{ old('identification_TVA') }}" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Statut Initial</label>
+                                                <select name="is_active" class="input-field-premium">
+                                                    <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Actif</option>
+                                                    <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Inactif</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-3 justify-content-end mt-10">
+                                            <button type="button" class="btn px-6 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition-all border-0" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn px-8 py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                                                Créer l'entité
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
 
 
                         <div class="modal fade" id="modalUpdateComptaAccount" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Modifier le Compte Comptabilité</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Fermer"></button>
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content premium-modal-content">
+                                    <div class="text-center mb-8">
+                                        <h2 class="text-2xl font-black text-slate-800 mb-2">Modifier l'<span class="text-blue-600">Entité</span></h2>
+                                        <p class="text-slate-400 font-medium">Mise à jour des informations structurelles</p>
                                     </div>
-                                    <div class="modal-body">
-                                        {{-- L'action sera mise à jour par JS pour inclure l'ID --}}
-                                        <form id="updateAccountForm" method="POST" action="">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="id" id="updateAccountId" />
+                                    
+                                    <form id="updateAccountForm" method="POST" action="">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="hidden" name="id" id="updateAccountId" />
 
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label for="update_company_name" class="form-label">Nom de la Société <span class="text-danger">*</span></label>
-                                                    <input type="text" id="update_company_name" name="company_name" class="form-control" required />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="update_activity" class="form-label">Secteur d'activité</label>
-                                                    <input type="text" id="update_activity" name="activity" class="form-control" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="update_juridique_form" class="form-label">Forme Juridique</label>
-                                                    <input type="text" id="update_juridique_form" name="juridique_form" class="form-control" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="update_social_capital" class="form-label">Capital Social</label>
-                                                    <input type="number" step="0.01" id="update_social_capital" name="social_capital" class="form-control" />
-                                                </div>
-                                                <div class="col-12">
-                                                    <label for="update_adresse" class="form-label">Adresse Complète</label>
-                                                    <input type="text" id="update_adresse" name="adresse" class="form-control" />
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="update_code_postal" class="form-label">Code Postal</label>
-                                                    <input type="text" id="update_code_postal" name="code_postal" class="form-control" />
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="update_city" class="form-label">Ville</label>
-                                                    <input type="text" id="update_city" name="city" class="form-control" />
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="update_country" class="form-label">Pays</label>
-                                                    <input type="text" id="update_country" name="country" class="form-control" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="update_email_adresse" class="form-label">Email de contact <span class="text-danger">*</span></label>
-                                                    <input type="email" id="update_email_adresse" name="email_adresse" class="form-control" required />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="update_phone_number" class="form-label">Numéro de Téléphone</label>
-                                                    <input type="text" id="update_phone_number" name="phone_number" class="form-control" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="update_identification_TVA" class="form-label">Identification TVA</label>
-                                                    <input type="text" id="update_identification_TVA" name="identification_TVA" class="form-control" />
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="update_is_active" class="form-label">Statut</label>
-                                                    <select id="update_is_active" name="is_active" class="form-select">
-                                                        <option value="1">Actif</option>
-                                                        <option value="0">Inactif</option>
-                                                    </select>
-                                                </div>
+                                        <div class="row g-4">
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Nom de la Société <span class="text-danger">*</span></label>
+                                                <input type="text" id="update_company_name" name="company_name" class="input-field-premium" required />
                                             </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Secteur d'activité</label>
+                                                <input type="text" id="update_activity" name="activity" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Forme Juridique</label>
+                                                <input type="text" id="update_juridique_form" name="juridique_form" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Capital Social</label>
+                                                <input type="number" step="0.01" id="update_social_capital" name="social_capital" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="input-label-premium">Adresse Complète</label>
+                                                <input type="text" id="update_adresse" name="adresse" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="input-label-premium">Code Postal</label>
+                                                <input type="text" id="update_code_postal" name="code_postal" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="input-label-premium">Ville</label>
+                                                <input type="text" id="update_city" name="city" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="input-label-premium">Pays</label>
+                                                <input type="text" id="update_country" name="country" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Email de contact <span class="text-danger">*</span></label>
+                                                <input type="email" id="update_email_adresse" name="email_adresse" class="input-field-premium" required />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Numéro de Téléphone</label>
+                                                <input type="text" id="update_phone_number" name="phone_number" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Identification TVA</label>
+                                                <input type="text" id="update_identification_TVA" name="identification_TVA" class="input-field-premium" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="input-label-premium">Statut</label>
+                                                <select id="update_is_active" name="is_active" class="input-field-premium">
+                                                    <option value="1">Actif</option>
+                                                    <option value="0">Inactif</option>
+                                                </select>
+                                            </div>
+                                        </div>
 
-                                            <div class="modal-footer justify-content-end mt-4">
-                                                <button type="button" class="btn btn-label-secondary"
-                                                    data-bs-dismiss="modal">Fermer</button>
-                                                <button type="submit" class="btn btn-primary">
-                                                    Enregistrer les modifications
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
+                                        <div class="d-flex gap-3 justify-content-end mt-10">
+                                            <button type="button" class="btn px-6 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition-all border-0" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn px-8 py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                                                Sauvegarder
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
 
                         <div class="modal fade" id="modalSeeComptaAccount" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="seeAccountTitle">Détails du Compte</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Fermer"></button>
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content premium-modal-content">
+                                    <div class="text-center mb-8">
+                                        <h2 class="text-2xl font-black text-slate-800 mb-2" id="seeAccountTitle">Détails de l'entité</h2>
+                                        <div class="h-1 w-12 bg-blue-600 mx-auto rounded-full"></div>
                                     </div>
-                                    <div class="modal-body">
-                                        <div class="row g-3">
-                                            <div class="col-12">
-                                                <h6 class="border-bottom pb-2 mb-3 text-primary">Informations Générales</h6>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Nom de la Société</label>
-                                                <input type="text" id="see_company_name" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Secteur d'activité</label>
-                                                <input type="text" id="see_activity" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Forme Juridique</label>
-                                                <input type="text" id="see_juridique_form" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Capital Social</label>
-                                                <input type="text" id="see_social_capital" class="form-control" readonly />
-                                            </div>
+                                    
+                                    <div class="row g-4">
+                                        <div class="col-12">
+                                            <h6 class="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2 px-1">Informations Générales</h6>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="input-label-premium text-slate-400">Nom de la Société</label>
+                                            <input type="text" id="see_company_name" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="input-label-premium text-slate-400">Secteur d'activité</label>
+                                            <input type="text" id="see_activity" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="input-label-premium text-slate-400">Forme Juridique</label>
+                                            <input type="text" id="see_juridique_form" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="input-label-premium text-slate-400">Capital Social</label>
+                                            <input type="text" id="see_social_capital" class="input-field-premium" readonly />
+                                        </div>
 
-                                            <div class="col-12 mt-4">
-                                                <h6 class="border-bottom pb-2 mb-3 text-primary">Coordonnées</h6>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Adresse</label>
-                                                <input type="text" id="see_adresse" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Code Postal</label>
-                                                <input type="text" id="see_code_postal" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Ville</label>
-                                                <input type="text" id="see_city" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Pays</label>
-                                                <input type="text" id="see_country" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Email de contact</label>
-                                                <input type="email" id="see_email_adresse" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Numéro de Téléphone</label>
-                                                <input type="text" id="see_phone_number" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Identification TVA</label>
-                                                <input type="text" id="see_identification_TVA" class="form-control" readonly />
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Statut</label>
-                                                <input type="text" id="see_is_active" class="form-control" readonly />
-                                            </div>
+                                        <div class="col-12 mt-6">
+                                            <h6 class="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2 px-1">Coordonnées & Fiscalité</h6>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="input-label-premium text-slate-400">Adresse</label>
+                                            <input type="text" id="see_adresse" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="input-label-premium text-slate-400">Code Postal</label>
+                                            <input type="text" id="see_code_postal" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="input-label-premium text-slate-400">Ville</label>
+                                            <input type="text" id="see_city" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="input-label-premium text-slate-400">Pays</label>
+                                            <input type="text" id="see_country" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="input-label-premium text-slate-400">Email de contact</label>
+                                            <input type="email" id="see_email_adresse" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="input-label-premium text-slate-400">Numéro de Téléphone</label>
+                                            <input type="text" id="see_phone_number" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="input-label-premium text-slate-400">Identification TVA</label>
+                                            <input type="text" id="see_identification_TVA" class="input-field-premium" readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="input-label-premium text-slate-400">Statut</label>
+                                            <input type="text" id="see_is_active" class="input-field-premium" readonly />
                                         </div>
                                     </div>
-                                    <div class="modal-footer justify-content-end">
-                                        <button type="button" class="btn btn-label-secondary"
-                                            data-bs-dismiss="modal">Fermer</button>
+                                    
+                                    <div class="d-flex justify-content-end mt-10">
+                                        <button type="button" class="btn px-10 py-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-900 transition-all shadow-lg" data-bs-dismiss="modal">Fermer</button>
                                     </div>
                                 </div>
                             </div>

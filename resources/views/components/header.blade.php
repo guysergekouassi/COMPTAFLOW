@@ -361,12 +361,119 @@
         width: 20px;
         text-align: center;
     }
+
+    /* Switch Mode Banner */
+    .switch-mode-banner {
+        background: linear-gradient(135deg, #1e1b4b 0%, #1e40af 100%);
+        color: #f1f5f9;
+        padding: 10px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 500;
+        font-size: 14px;
+        border-bottom: 2px solid #3b82f6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1002;
+        position: sticky;
+        top: 0;
+    }
+
+    .switch-mode-badge {
+        background: #3b82f6;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 6px;
+        margin-right: 15px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .btn-return-admin {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 6px 18px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none !important;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        backdrop-filter: blur(4px);
+    }
+
+    .btn-return-admin:hover {
+        background: white;
+        color: #1e1b4b;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+    }
 </style>
-    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 d-xl-none">
-        <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)">
-            <i class="icon-base bx bx-menu icon-md"></i>
-        </a>
+
+@php
+    $isSuperAdminSwitch = session('original_super_admin_id');
+    $isAdminImpersonation = session('original_admin_id');
+    $isContextSwitch = session('current_company_id') && auth()->user()->company_id != session('current_company_id');
+    
+    $showBanner = $isSuperAdminSwitch || $isAdminImpersonation || $isContextSwitch;
+    
+    // Déterminer la route de retour
+    $returnRoute = '#'; // Valeur par défaut sûre
+    
+    if ($isSuperAdminSwitch) {
+        $returnRoute = route('superadmin.switch.return');
+    } elseif ($isAdminImpersonation) {
+        $returnRoute = route('admin.leave_impersonation');
+    } elseif ($isContextSwitch) {
+        $returnRoute = route('admin.context.reset'); 
+    }
+@endphp
+
+@if($showBanner)
+    <div class="switch-mode-banner">
+        <div class="d-flex align-items-center">
+            <span class="switch-mode-badge">Mode Switch Actif</span>
+            <span class="text-white d-flex align-items-center gap-2">
+                Connecté en tant que : <strong>{{ auth()->user()->name }}</strong>
+                
+                <span class="mx-2 opacity-50">|</span>
+                <span class="fw-bold">{{ strtoupper(auth()->user()->role === 'comptable' ? 'Comptable' : (auth()->user()->role === 'super_admin' ? 'Super Admin' : auth()->user()->role)) }}</span>
+
+                @php 
+                    $switchedId = session('current_company_id') ?? session('switched_company_id');
+                    $switchedCompany = $switchedId ? \App\Models\Company::find($switchedId) : null; 
+                @endphp
+
+                @if($switchedCompany)
+                    <span class="mx-2 opacity-50">|</span>
+                    <i class="fa-solid fa-building opacity-50 small"></i>
+                    <span><strong>{{ $switchedCompany->company_name }}</strong></span>
+                @endif
+            </span>
+        </div>
+        
+        <form action="{{ $returnRoute }}" method="{{ $isSuperAdminSwitch ? 'POST' : 'GET' }}" class="m-0">
+            @if($isSuperAdminSwitch) @csrf @endif
+            <button type="submit" class="btn-return-admin">
+                <i class="fa-solid fa-arrow-left"></i>
+                Quitter le mode switch
+            </button>
+        </form>
     </div>
+@endif
+
+<div class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 d-xl-none">
+    <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)">
+        <i class="icon-base bx bx-menu icon-md"></i>
+    </a>
+</div>
 
 <div class="global-header-minimal">
     <div class="header-dynamic-title">

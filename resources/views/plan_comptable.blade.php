@@ -244,6 +244,15 @@
                                 </button>
                                 @endif
 
+                                <!-- Bouton Charger depuis l'Admin [NOUVEAU] -->
+                                @if (session('current_company_id') && session('current_company_id') != auth()->user()->company_id)
+                                <button type="button" id="btnSyncAdmin"
+                                    class="btn-action flex items-center gap-2 px-6 py-3 bg-indigo-50 border border-indigo-200 rounded-2xl text-indigo-700 font-semibold text-sm">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Charger Modèle Admin
+                                </button>
+                                @endif
+
                                 <button type="button" data-bs-toggle="modal" data-bs-target="#modalCenterCreate"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
                                     <i class="fas fa-plus"></i>
@@ -587,241 +596,203 @@
     </script>
 
     @include('components.footer')
-
-    <!-- Plugins JS -->
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-
-    <!-- App Scripts -->
-    <script src="{{ asset('js/plan_comptable.js') }}"></script>
+    <!-- Diagnostic Script -->
+    <script>
+        (function() {
+            window.checkJSLoad = function(context) {
+                console.log(`[Diagnostic] ${context}: jQuery=${typeof jQuery}, $=${typeof $}`);
+                if (typeof jQuery !== 'undefined') {
+                    console.log(`[Diagnostic] ${context}: DataTables Plugin=${typeof jQuery.fn.DataTable}`);
+                }
+            };
+            checkJSLoad("App Scripts Start");
+        })();
+    </script>
 
     <!-- Custom Logic for New Design -->
+    <!-- Custom Logic for New Design -->
     <script>
-        // Attendre que tout soit chargé avant d'initialiser DataTables
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                let table;
+        (function($) {
+            "use strict";
+            
+            // --- FONCTIONS GLOBALES (Exposées sur window) ---
+            window.modifierPlanComptable = function(id) {
+                const btn = $(`.btn-outline-primary[onclick*="modifierPlanComptable(${id})"]`);
+                const row = btn.closest('tr');
+                const numero = row.find('td:first-child span').text().trim();
+                const intitule = row.find('td:nth-child(2) p').text().trim();
                 
-                // Vérifier si DataTables est disponible
-                if (typeof $ !== 'undefined' && $.fn.DataTable) {
-                    // Détruire toute instance existante pour éviter les conflits
-                    if ($.fn.DataTable.isDataTable('#planComptableTable')) {
-                        $('#planComptableTable').DataTable().destroy();
-                    }
-                    
-                    // Vérifier que le tableau a bien 6 colonnes
-                    var columnCount = $('#planComptableTable thead th').length;
-                    console.log('Colonnes détectées dans le HTML :', columnCount);
-                    
-                    if (columnCount !== 6) {
-                        console.error('Le tableau HTML n\'a pas 6 colonnes !');
-                        return;
-                    }
-                    
-                    // Initialisation du DataTable
-                    table = $('#planComptableTable').DataTable({
-                        dom: 't',
-                        pageLength: 5,
-                        // Activer le débogage
-                        // debug: true,
-                        // Afficher les logs de débogage
-                        // "language": {
-                        //     "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/French.json"
-                        // },
-                        // Afficher toutes les données dans la console
-                        "initComplete": function(settings, json) {
-                            console.log('Données chargées :', this.api().data().toArray());
-                            console.log('Nombre de colonnes DataTables :', this.api().columns().count());
-                        },
-                        order: [[0, 'asc']],
-                        language: {
-                            search: "Rechercher:",
-                            zeroRecords: "Aucun compte trouvé",
-                            info: "Affichage de _START_ à _END_ sur _TOTAL_ comptes",
-                            infoEmpty: "Aucun compte disponible",
-                            infoFiltered: "(filtré sur _MAX_ comptes au total)",
-                            paginate: {
-                                first: "Premier",
-                                last: "Dernier",
-                                next: "Suivant",
-                                previous: "Précédent"
-                            }
-                        },
-                        columnDefs: [
-                            { width: "12%", targets: 0 },  // Numéro
-                            { width: "35%", targets: 1 },  // Intitulé
-                            { width: "12%", targets: 2 },  // Classe
-                            { width: "12%", targets: 3 },  // Mode
-                            { width: "12%", targets: 4 },  // Date
-                            { width: "17%", targets: 5 }   // Actions
-                        ],
-                        // Désactiver la détection automatique du nombre de colonnes
-                        "autoWidth": false
-                    });
+                $('#update_planId').val(id);
+                $('#update_numero_de_compte').val(numero);
+                $('#update_intitule').val(intitule);
+                $('#updatePlanForm').attr('action', planComptableUpdateBaseUrl.replace('__ID__', id));
+                
+                new bootstrap.Modal(document.getElementById('modalCenterUpdate')).show();
+            };
 
-                // Fonction pour basculer l'affichage du panneau de filtre
-                function toggleFilterPanel() {
-                    const panel = $('#advancedFilterPanel');
-                    const button = $('#toggleFilterBtn');
-                    
-                    if (panel.hasClass('hidden')) {
-                        panel.removeClass('hidden');
-                        button.addClass('bg-blue-50 border-blue-200 text-blue-700');
+            window.supprimerPlanComptable = function(id) {
+                const btn = $(`.btn-outline-danger[onclick*="supprimerPlanComptable(${id})"]`);
+                const row = btn.closest('tr');
+                const intitule = row.find('td:nth-child(2) p').text().trim();
+                
+                $('#planToDeleteName').text(intitule);
+                $('#deletePlanForm').attr('action', plan_comptableDeleteUrl.replace('__ID__', id));
+                
+                new bootstrap.Modal(document.getElementById('deleteConfirmationModal')).show();
+            };
+
+            // --- INITIALISATION SÉCURISÉE ---
+            function initDataTable(retryCount = 0) {
+                if (typeof $.fn.DataTable !== 'function') {
+                    if (retryCount < 5) {
+                        console.warn(`[PlanComptable] DataTable non trouvé, tentative ${retryCount + 1}/5...`);
+                        setTimeout(() => initDataTable(retryCount + 1), 200);
                     } else {
-                        panel.addClass('hidden');
-                        button.removeClass('bg-blue-50 border-blue-200 text-blue-700');
+                        console.error("[PlanComptable] ÉCHEC CRITIQUE : DataTables n'est pas chargé après 5 tentatives.");
                     }
+                    return;
                 }
 
-                // Gestion du clic sur le bouton de filtre
-                $(document).on('click', '#toggleFilterBtn', function(e) {
-                    e.preventDefault();
-                    toggleFilterPanel();
+                console.log("[PlanComptable] Initialisation DataTables...");
+                const table = $('#planComptableTable').DataTable({
+                    destroy: true,
+                    dom: 't',
+                    pageLength: 5,
+                    order: [], 
+                    language: {
+                        zeroRecords: "Aucun compte trouvé",
+                        infoEmpty: "Aucun compte disponible",
+                    },
+                    columnDefs: [
+                        { width: "15%", targets: 0 },
+                        { width: "35%", targets: 1 },
+                        { targets: [2,3,4,5], width: "12.5%" }
+                    ],
+                    autoWidth: false,
+                    drawCallback: function() { updatePagination(this.api()); }
                 });
 
-                // Mappage des champs de filtre vers les colonnes
-                const filterMap = {
-                    'filterNumero': 0,
-                    'filterIntitule': 1,
-                    'filterClasse': 0  // Le filtre par classe cherche dans la colonne numéro (index 0)
-                };
+                window.comptableDataTable = table;
+                setupEventListeners(table);
+            }
 
-                // Gestion des champs de filtre
-                $(document).on('keyup change', '#filterNumero, #filterIntitule, #filterClasse', function() {
-                    const column = filterMap[$(this).attr('id')];
-                    if (column !== undefined) {
-                        if ($(this).attr('id') === 'filterClasse') {
-                            // Pour le filtre par classe, chercher les numéros qui commencent par ce chiffre
-                            const searchValue = this.value.trim();
-                            if (searchValue) {
-                                // Chercher dans la colonne numéro tous les comptes qui commencent par searchValue
-                                table.column(0).search('^' + searchValue, true, false).draw();
-                            } else {
-                                table.column(0).search('').draw();
-                            }
-                        } else {
-                            // Pour les autres filtres, utiliser la recherche normale
-                            table.column(column).search(this.value).draw();
-                        }
+            function setupEventListeners(table) {
+                // Navigation vers écritures
+                $(document).off('click', '.donnees-plan-comptable').on('click', '.donnees-plan-comptable', function() {
+                    const id = $(this).data('id');
+                    const intitule = $(this).data('intitule');
+                    const numero = $(this).data('numero_de_compte');
+                    const params = new URLSearchParams({ id_plan_comptable: id, intitule, numero_de_compte: numero });
+                    window.location.href = `${plan_comptable_ecrituresSaisisUrl}?${params.toString()}`;
+                });
+
+                // Filtrage avancé
+                $(document).off('click', '#applyFilterBtn').on('click', '#applyFilterBtn', function() {
+                    const numero = $('#filterNumero').val().trim();
+                    const intitule = $('#filterIntitule').val().trim();
+                    const classe = $('#filterClasse').val().trim();
+                    
+                    // Filtrage Intitulé (Colonne 1)
+                    table.column(1).search(intitule);
+                    
+                    // Filtrage Numéro & Classe (Colonne 0)
+                    let searchCol0 = "";
+                    if (classe && numero) {
+                        // Regex : Commence par 'classe' ET contient 'numero'
+                        // On échappe les caractères spéciaux au cas où
+                        const escClasse = classe.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                        const escNumero = numero.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                        searchCol0 = '^' + escClasse + '.*' + escNumero;
+                    } else if (classe) {
+                        // Regex : Commence par 'classe'
+                        searchCol0 = '^' + classe.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                    } else if (numero) {
+                        // Recherche standard pour le numéro
+                        searchCol0 = numero;
                     }
-                });
-
-                // Bouton Appliquer les filtres
-                $(document).on('click', '#applyFilterBtn', function(e) {
-                    e.preventDefault();
+                    
+                    // Le second paramètre 'true' active le mode Regex
+                    table.column(0).search(searchCol0, searchCol0.startsWith('^'));
                     table.draw();
                 });
 
-                // Bouton Réinitialiser
-                $(document).on('click', '#resetFilterBtn', function(e) {
-                    e.preventDefault();
+                $(document).off('click', '#resetFilterBtn').on('click', '#resetFilterBtn', function() {
                     $('#filterNumero, #filterIntitule, #filterClasse').val('');
                     table.search('').columns().search('').draw();
                 });
 
-                // Gestion des cartes de filtre
-                function activateCard(cardId) {
-                    $('.filter-card').removeClass('filter-active');
-                    $(cardId).addClass('filter-active');
-                }
+                $(document).off('click', '#toggleFilterBtn').on('click', '#toggleFilterBtn', function(e) {
+                    e.preventDefault();
+                    $('#advancedFilterPanel').toggleClass('hidden');
+                    $(this).toggleClass('bg-blue-50 border-blue-200 text-blue-700');
+                });
 
-                // Gestion des filtres rapides
-                const filterHandlers = {
-                    '#filter-all': function() { 
-                        table.column(2).search('').draw();
-                    },
-                    '#filter-manuel': function() { 
-                        table.column(3).search('manuel').draw();  // Mode est maintenant colonne 3
-                    },
-                    '#filter-auto': function() { 
-                        table.column(3).search('auto').draw();   // Mode est maintenant colonne 3
+                // KPI Cards
+                $(document).off('click', '.filter-card').on('click', '.filter-card', function() {
+                    const type = $(this).data('filter-type');
+                    $('.filter-card').removeClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
+                    $(this).addClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
+                    
+                    if (type === 'user') table.column(3).search('manuel').draw();
+                    else if (type === 'system') table.column(3).search('auto').draw();
+                    else table.column(3).search('').draw();
+                });
+            }
+
+            function updatePagination(table) {
+                const info = table.page.info();
+                const $info = $('.table-info');
+                const $container = $('.pagination-container');
+
+                if (info.recordsDisplay > 0) {
+                    $info.html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
+                    
+                    let pagHtml = `<button class="px-4 py-2 border rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50' : ''}" onclick="window.comptableDataTable.page('previous').draw('page')" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                    for (let i = 0; i < info.pages; i++) {
+                        if (i === info.page) pagHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold">${i + 1}</button>`;
+                        else if (i === 0 || i === info.pages - 1 || (i >= info.page - 1 && i <= info.page + 1)) {
+                            pagHtml += `<button class="px-4 py-2 border rounded-xl bg-white text-slate-600 hover:bg-slate-50" onclick="window.comptableDataTable.page(${i}).draw('page')">${i + 1}</button>`;
+                        }
                     }
-                };
+                    pagHtml += `<button class="px-4 py-2 border rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50' : ''}" onclick="window.comptableDataTable.page('next').draw('page')" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                    $container.html(pagHtml);
+                } else {
+                    $info.html('Aucun compte trouvé');
+                    $container.empty();
+                }
+            }
 
-                // Configuration des gestionnaires d'événements pour les filtres rapides
-                Object.keys(filterHandlers).forEach(function(selector) {
-                    $(document).on('click', selector, function(e) {
-                        e.preventDefault();
-                        filterHandlers[selector]();
-                        activateCard(selector);
+            // --- AJAX & SYNC ---
+            $(function() {
+                initDataTable();
+
+                let lastPaddedVal = "";
+                $("#numero_de_compte").on("input", function() {
+                    let raw = $(this).val().replace(/\D/g, "");
+                    let padded = raw.padEnd(8, "0");
+                    if (raw.length === 0) { $("#numero_compte_feedback").text(""); return; }
+                    if (padded === lastPaddedVal) return;
+                    lastPaddedVal = padded;
+
+                    $.post(verifierNumeroUrl, { _token: "{{ csrf_token() }}", numero_de_compte: padded }, function(res) {
+                        if (res.exists) $("#numero_compte_feedback").text("❌ Ce numéro existe déjà.").removeClass("text-success").addClass("text-danger");
+                        else $("#numero_compte_feedback").text("✅ Numéro disponible.").removeClass("text-danger").addClass("text-success");
                     });
                 });
 
-                // Fonction de mise à jour de la pagination
-                function updatePagination() {
-                    const info = table.page.info();
-                    console.log("📊 Mise à jour pagination:", info);
-
-                    if (info.recordsDisplay > 0) {
-                        $('.table-info').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> comptes`);
-
-                        let paginationHtml = '';
-                        paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" id="prevPage" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                        paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                        paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" id="nextPage" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                        $('.pagination-container').html(paginationHtml);
-                    } else {
-                        $('.table-info').html('Aucun compte trouvé');
-                        $('.pagination-container').empty();
+                $('#btnSyncAdmin').on('click', function() {
+                    if (confirm("Charger les comptes manquants depuis le modèle admin ?")) {
+                        const btn = $(this);
+                        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>...');
+                        $.post('/admin/config/sync/plan-comptable', { _token: "{{ csrf_token() }}" })
+                            .done(res => { if(res.success) window.location.reload(); else alert(res.message); })
+                            .fail(() => alert('Erreur serveur'))
+                            .always(() => btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Charger Modèle Admin'));
                     }
-                }
-
-                // Gestion de l'événement de dessin du tableau
-                table.on('draw', function() {
-                    console.log("🎨 Tableau redessiné");
-                    updatePagination();
                 });
+            });
 
-                // Gestion de la pagination
-                $(document).on('click', '#nextPage', function() { 
-                    table.page('next').draw('page');
-                });
-                
-                $(document).on('click', '#prevPage', function() { 
-                    table.page('previous').draw('page');
-                });
-
-                // Initialisation de la pagination
-                updatePagination();
-
-                // Gestion des filtres par carte KPI
-                $('.filter-card').on('click', function() {
-                    // Retourner si le bouton est déjà actif
-                    if ($(this).hasClass('filter-active')) return;
-                    
-                    // Retirer la classe active de toutes les cartes
-                    $('.filter-card').removeClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
-                    
-                    // Ajouter la classe active à la carte cliquée
-                    $(this).addClass('filter-active bg-blue-50 border-blue-200 text-blue-700');
-                    
-                    // Récupérer le type de filtre
-                    const filterType = $(this).data('filter-type');
-                    
-                    console.log('Filtre appliqué :', filterType);
-                    
-                    // Appliquer le filtre approprié
-                  // Appliquer le filtre approprié
-switch(filterType) {
-    case 'user':
-        // On cherche le mot 'manuel' à l'intérieur de la colonne 2
-        table.column(2).search('manuel').draw();
-        break;
-    case 'system':
-        // On cherche le mot 'auto' à l'intérieur de la colonne 2
-        table.column(2).search('auto').draw();
-        break;
-    default: // 'all'
-        table.column(2).search('').draw();
-        break;
-    }
-                    
-    // Afficher toutes les données pour débogage
-    console.log('Données du tableau après filtrage :', table.data().toArray());
-                });
-            }
-        }, 500); // Attendre 500ms après le chargement complet
-        });
+        })(jQuery);
     </script>
     
     <style>

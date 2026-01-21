@@ -1,6 +1,203 @@
     @include('components.head')
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <style>
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .filter-card:hover {
+            transform: translateY(-5px);
+            border-color: #3b82f6;
+            cursor: pointer;
+        }
+
+        .btn-action {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+        }
+
+        /* Styles spécifiques pour les boutons d'action */
+        .btn-action-edit {
+            transition: all 0.2s ease !important;
+        }
+        .btn-action-edit:hover {
+            background-color: #2563eb !important;
+            color: white !important;
+            border-color: #2563eb !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-action-delete {
+            transition: all 0.2s ease !important;
+        }
+        .btn-action-delete:hover {
+            background-color: #dc2626 !important;
+            color: white !important;
+            border-color: #dc2626 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-action-view {
+            transition: all 0.2s ease !important;
+        }
+        .btn-action-view:hover {
+            background-color: #4f46e5 !important;
+            color: white !important;
+            border-color: #4f46e5 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .table-row {
+            transition: background-color 0.2s;
+        }
+
+        .table-row:hover {
+            background-color: #f1f5f9;
+        }
+
+        #tiersTable_wrapper .dataTables_length,
+        #tiersTable_wrapper .dataTables_filter {
+            display: none;
+        }
+
+        #tiersTable {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+
+        #tiersTable thead th {
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* Nouveau Design Premium pour les Modaux */
+        .premium-modal-content-tiers {
+            background: rgba(255, 255, 255, 0.98) !important;
+            backdrop-filter: blur(15px) !important;
+            border: 1px solid rgba(255, 255, 255, 1) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1) !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            width: 400px !important;
+            max-width: 400px !important;
+            margin: auto !important;
+            padding: 1.25rem !important;
+            overflow: hidden !important;
+        }
+
+        .premium-modal-dialog {
+            width: 400px !important;
+            max-width: 400px !important;
+            margin: 1.75rem auto !important;
+        }
+
+        @media (max-width: 576px) {
+            .premium-modal-dialog {
+                width: 95% !important;
+                max-width: 95% !important;
+                margin: 0.5rem auto !important;
+            }
+            .premium-modal-content-tiers {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        .input-field-premium {
+            transition: all 0.2s ease;
+            border: 2px solid #f1f5f9 !important;
+            background-color: #f8fafc !important;
+            border-radius: 12px !important;
+            padding: 0.75rem 1rem !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            color: #0f172a !important;
+            width: 100%;
+        }
+
+        .input-field-premium:focus {
+            border-color: #1e40af !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.05) !important;
+            outline: none !important;
+        }
+
+        .text-blue-gradient-premium {
+            background: linear-gradient(to right, #1e40af, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .input-label-premium {
+            font-size: 0.7rem !important;
+            font-weight: 800 !important;
+            color: #64748b !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            margin-left: 0.1rem !important;
+            margin-bottom: 0.35rem !important;
+            display: block !important;
+        }
+
+        .btn-save-premium {
+            padding: 0.75rem 1rem !important;
+            border-radius: 12px !important;
+            background-color: #1e40af !important;
+            color: white !important;
+            font-weight: 800 !important;
+            font-size: 0.7rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1) !important;
+            transition: all 0.2s ease !important;
+            border: none !important;
+        }
+
+        .btn-save-premium:hover {
+            background-color: #1e3a8a !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .btn-cancel-premium {
+            padding: 0.75rem 1rem !important;
+            border-radius: 12px !important;
+            color: #94a3b8 !important;
+            font-weight: 700 !important;
+            font-size: 0.7rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            transition: all 0.2s ease !important;
+            border: none !important;
+            background: transparent !important;
+        }
+
+        .btn-cancel-premium:hover {
+            background-color: #f8fafc !important;
+            color: #475569 !important;
+        }
+
+        select.input-field-premium {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 1rem center !important;
+            background-size: 1.2em !important;
+        }
+    </style>
+
 
     <body>
         <!-- Layout wrapper -->
@@ -24,182 +221,7 @@
                     <div class="content-wrapper">
                         <!-- Version Marker for debugging -->
                         <span id="view-version" data-version="1.0.5" style="display:none;"></span>
-                        <style>
-                            .glass-card {
-                                background: #ffffff;
-                                border: 1px solid #e2e8f0;
-                                border-radius: 16px;
-                                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-                                transition: all 0.3s ease;
-                            }
 
-                            .filter-card:hover {
-                                transform: translateY(-5px);
-                                border-color: #3b82f6;
-                                cursor: pointer;
-                            }
-
-                            .btn-action {
-                                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                            }
-
-                            .btn-action:hover {
-                                transform: translateY(-2px);
-                                box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
-                            }
-
-                            /* Styles spécifiques pour les boutons d'action */
-                            .btn-action-edit {
-                                transition: all 0.2s ease !important;
-                            }
-                            .btn-action-edit:hover {
-                                background-color: #2563eb !important;
-                                color: white !important;
-                                border-color: #2563eb !important;
-                                transform: translateY(-2px);
-                                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-                            }
-
-                            .btn-action-delete {
-                                transition: all 0.2s ease !important;
-                            }
-                            .btn-action-delete:hover {
-                                background-color: #dc2626 !important;
-                                color: white !important;
-                                border-color: #dc2626 !important;
-                                transform: translateY(-2px);
-                                box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-                            }
-
-                            .btn-action-view {
-                                transition: all 0.2s ease !important;
-                            }
-                            .btn-action-view:hover {
-                                background-color: #4f46e5 !important;
-                                color: white !important;
-                                border-color: #4f46e5 !important;
-                                transform: translateY(-2px);
-                                box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-                            }
-
-                            .table-row {
-                                transition: background-color 0.2s;
-                            }
-
-                            .table-row:hover {
-                                background-color: #f1f5f9;
-                            }
-
-                            #tiersTable_wrapper .dataTables_length,
-                            #tiersTable_wrapper .dataTables_filter {
-                                display: none;
-                            }
-
-                            #tiersTable {
-                                border-collapse: separate !important;
-                                border-spacing: 0 !important;
-                            }
-
-                            #tiersTable thead th {
-                                background-color: #f8fafc;
-                                border-bottom: 1px solid #e2e8f0;
-                            }
-
-                            /* Nouveau Design Premium pour les Modaux */
-                            .premium-modal-content {
-                                background: rgba(255, 255, 255, 0.98);
-                                backdrop-filter: blur(15px);
-                                border: 1px solid rgba(255, 255, 255, 1);
-                                border-radius: 20px;
-                                box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
-                                font-family: 'Plus Jakarta Sans', sans-serif;
-                                max-width: 400px;
-                                margin: auto;
-                                padding: 1.25rem !important;
-                            }
-
-                            .input-field-premium {
-                                transition: all 0.2s ease;
-                                border: 2px solid #f1f5f9 !important;
-                                background-color: #f8fafc !important;
-                                border-radius: 12px !important;
-                                padding: 0.75rem 1rem !important;
-                                font-size: 0.8rem !important;
-                                font-weight: 600 !important;
-                                color: #0f172a !important;
-                                width: 100%;
-                            }
-
-                            .input-field-premium:focus {
-                                border-color: #1e40af !important;
-                                background-color: #ffffff !important;
-                                box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.05) !important;
-                                outline: none !important;
-                            }
-
-                            .text-blue-gradient-premium {
-                                background: linear-gradient(to right, #1e40af, #3b82f6);
-                                -webkit-background-clip: text;
-                                -webkit-text-fill-color: transparent;
-                                font-weight: 800;
-                            }
-
-                            .input-label-premium {
-                                font-size: 0.7rem !important;
-                                font-weight: 800 !important;
-                                color: #64748b !important;
-                                text-transform: uppercase !important;
-                                letter-spacing: 0.05em !important;
-                                margin-left: 0.1rem !important;
-                                margin-bottom: 0.35rem !important;
-                                display: block !important;
-                            }
-
-                            .btn-save-premium {
-                                padding: 0.75rem 1rem !important;
-                                border-radius: 12px !important;
-                                background-color: #1e40af !important;
-                                color: white !important;
-                                font-weight: 800 !important;
-                                font-size: 0.7rem !important;
-                                text-transform: uppercase !important;
-                                letter-spacing: 0.05em !important;
-                                box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1) !important;
-                                transition: all 0.2s ease !important;
-                                border: none !important;
-                            }
-
-                            .btn-save-premium:hover {
-                                background-color: #1e3a8a !important;
-                                transform: translateY(-2px) !important;
-                            }
-
-                            .btn-cancel-premium {
-                                padding: 0.75rem 1rem !important;
-                                border-radius: 12px !important;
-                                color: #94a3b8 !important;
-                                font-weight: 700 !important;
-                                font-size: 0.7rem !important;
-                                text-transform: uppercase !important;
-                                letter-spacing: 0.05em !important;
-                                transition: all 0.2s ease !important;
-                                border: none !important;
-                                background: transparent !important;
-                            }
-
-                            .btn-cancel-premium:hover {
-                                background-color: #f8fafc !important;
-                                color: #475569 !important;
-                            }
-
-                            select.input-field-premium {
-                                appearance: none;
-                                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
-                                background-repeat: no-repeat !important;
-                                background-position: right 1rem center !important;
-                                background-size: 1.2em !important;
-                            }
-                        </style>
 
                     <div class="container-xxl flex-grow-1 container-p-y">
 
@@ -264,7 +286,7 @@
                         <div class="flex justify-between items-center mb-8 w-full gap-4">
                             <!-- Left Group: Filter -->
                             <div class="flex items-center">
-                                <button type="button" id="toggleFilterBtn" onclick="window.toggleAdvancedFilter()"
+                                <button type="button" id="toggleFilterBtn"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm">
                                     <i class="fas fa-filter text-blue-600"></i>
                                     Filtrer
@@ -273,6 +295,15 @@
 
                             <!-- Right Group: Actions -->
                             <div class="flex flex-wrap items-center justify-end gap-3">
+                                <!-- Bouton Charger depuis l'Admin [NOUVEAU] -->
+                                @if (session('current_company_id') && session('current_company_id') != auth()->user()->company_id)
+                                <button type="button" id="btnSyncAdminTiers"
+                                    class="btn-action flex items-center gap-2 px-6 py-3 bg-indigo-50 border border-indigo-200 rounded-2xl text-indigo-700 font-semibold text-sm">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Charger Modèle Admin
+                                </button>
+                                @endif
+
                                 <button type="button" data-bs-toggle="modal" data-bs-target="#modalCenterCreate"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
                                     <i class="fas fa-plus"></i>
@@ -305,10 +336,10 @@
                                     </div>
                                 </div>
                                 <div class="flex justify-end gap-3 mt-4">
-                                    <button type="button" class="btn btn-secondary rounded-xl px-6 font-semibold" id="reset-filters" onclick="window.resetAdvancedFilters()">
+                                    <button type="button" class="btn btn-secondary rounded-xl px-6 font-semibold" id="reset-filters">
                                         <i class="fas fa-undo me-2"></i>Réinitialiser
                                     </button>
-                                    <button type="button" class="btn btn-primary rounded-xl px-6 font-semibold" id="apply-filters" onclick="window.applyAdvancedFilters()">
+                                    <button type="button" class="btn btn-primary rounded-xl px-6 font-semibold" id="apply-filters">
                                         <i class="fas fa-search me-2"></i>Rechercher
                                     </button>
                                 </div>
@@ -426,10 +457,10 @@
 
                                 <!-- Nouveau Tiers (Premium Redesign) -->
                                 <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                    <div class="modal-dialog modal-dialog-centered premium-modal-dialog" role="document">
                                         <form id="planTiersForm" method="POST" action="{{ route('plan_tiers.store') }}" class="w-full">
                                             @csrf
-                                            <div class="modal-content premium-modal-content">
+                                            <div class="modal-content premium-modal-content-tiers">
                                                 
                                                 <!-- En-tête -->
                                                 <div class="text-center mb-6 position-relative">
@@ -495,13 +526,13 @@
 
                                 <!-- Modal Modification Plan Tiers (Premium Redesign) -->
                                 <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                    <div class="modal-dialog modal-dialog-centered premium-modal-dialog" role="document">
                                         <form method="POST" action="{{ route('plan_tiers.update', ['id' => '__ID__']) }}" id="updateTiersForm" class="w-full">
                                             @csrf
                                             @method('PUT')
                                             <input type="hidden" id="update_id" name="id">
                                             
-                                            <div class="modal-content premium-modal-content">
+                                            <div class="modal-content premium-modal-content-tiers">
                                                 <!-- En-tête -->
                                                 <div class="text-center mb-6 position-relative">
                                                     <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
@@ -567,22 +598,35 @@
 
                                 <!-- Modal de confirmation de suppression -->
                                 <div class="modal fade" id="deleteConfirmationModalTiers" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered modal-sm">
-                                        <div class="modal-content premium-modal-content">
-                                            <div class="text-center">
-                                                <div class="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                                    <div class="modal-dialog modal-dialog-centered premium-modal-dialog">
+                                        <div class="modal-content premium-modal-content-tiers">
+                                            <!-- Header -->
+                                            <div class="text-center mb-6 position-relative">
+                                                <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                                    <i class="fas fa-trash-alt text-red-600 text-xl"></i>
                                                 </div>
-                                                <h3 class="text-lg font-bold text-slate-900 mb-2">Supprimer ce tiers ?</h3>
-                                                <p class="text-sm text-slate-500 mb-6">
-                                                    Êtes-vous sûr de vouloir supprimer <span id="planToDeleteNameTiers" class="font-bold text-slate-900"></span> ?
+                                                <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                                                    Confirmer la <span class="text-red-600">Suppression</span>
+                                                </h1>
+                                            </div>
+
+                                            <div class="text-center space-y-3 mb-8">
+                                                <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                                                    Êtes-vous sûr de vouloir supprimer ce tiers ? Cette action est irréversible.
                                                 </p>
-                                                
-                                                <form method="POST" id="deletePlanFormTiers" class="grid grid-cols-2 gap-3">
+                                                <p class="text-slate-900 font-bold" id="planToDeleteNameTiers"></p>
+                                            </div>
+
+                                            <!-- Actions -->
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                                                    Annuler
+                                                </button>
+                                                <form method="POST" id="deletePlanFormTiers" class="w-full">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="button" class="btn-cancel-premium !p-3" data-bs-dismiss="modal">Annuler</button>
-                                                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-2xl transition shadow-lg shadow-red-100">
+                                                    <button type="submit" class="btn-save-premium !bg-red-600 hover:!bg-red-700 shadow-red-200" style="background-color: #dc2626 !important;">
                                                         Supprimer
                                                     </button>
                                                 </form>
@@ -618,194 +662,170 @@
 
             <!-- Core JS Interactivity -->
             <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    // --- 1. CONFIGURATION & DATA ---
-                    const correspondances = @json($correspondances);
-                    const getDernierNumeroUrl = "{{ url('/plan_tiers') }}";
-                    const updateBaseUrl = "{{ route('plan_tiers.update', ['id' => '__ID__']) }}";
-                    const deleteBaseUrl = "{{ route('plan_tiers.destroy', ['id' => '__ID__']) }}";
+                (function($) {
+                    "use strict";
 
-                    // --- 2. MODAL HELPER FUNCTIONS ---
-                    const genererNumero = (numeroCompte, targetInput) => {
-                        if (!numeroCompte) {
-                            targetInput.value = '';
-                            return;
-                        }
+                    // --- FONCTIONS GLOBALES (Exposées sur window) ---
+                    window.genererNumero = (numeroCompte, targetInput) => {
+                        if (!numeroCompte) { targetInput.value = ''; return; }
                         targetInput.value = 'Calcul...';
                         const racine = numeroCompte.replace(/0+$/, '');
-                        fetch(`${getDernierNumeroUrl}/${racine}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.numero) {
-                                    targetInput.value = data.numero;
-                                } else {
-                                    targetInput.value = '';
-                                }
-                            })
-                            .catch(error => {
-                                console.error("[ERREUR] génération numéro:", error);
-                                targetInput.value = '';
-                            });
+                        fetch(`/plan_tiers/${racine}`)
+                            .then(r => r.json())
+                            .then(data => { targetInput.value = data.numero || ''; })
+                            .catch(e => { console.error(e); targetInput.value = ''; });
                     };
 
-                    const updateAccountOptions = (typeSelect, accountSelect, targetNumeroInput, autoSelect = true) => {
+                    window.updateAccountOptions = (typeSelect, accountSelect, targetInput, autoSelect = true) => {
+                        if (!typeSelect || !accountSelect) return;
                         const selectedType = typeSelect.value;
-                        const comptes = correspondances[selectedType] || [];
-                        
+                        const comptes = window.correspondancesTiers[selectedType] || [];
                         accountSelect.innerHTML = `<option value="" disabled selected>-- Sélectionnez un compte --</option>`;
-                        comptes.forEach(compte => {
-                            const option = document.createElement('option');
-                            option.value = compte.id;
-                            option.setAttribute('data-numero', compte.numero);
-                            option.textContent = `${compte.numero} - ${compte.intitule}`;
-                            accountSelect.appendChild(option);
+                        comptes.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.id;
+                            opt.setAttribute('data-numero', c.numero);
+                            opt.textContent = `${c.numero} - ${c.intitule}`;
+                            accountSelect.appendChild(opt);
                         });
-
                         if (autoSelect && comptes.length > 0) {
                             accountSelect.selectedIndex = 1;
-                            genererNumero(comptes[0].numero, targetNumeroInput);
-                        }
-                    };
-
-                    // --- 3. CREATE MODAL LOGIC ---
-                    const createTypeTiers = document.getElementById('type_de_tiers');
-                    const createCompteGeneral = document.getElementById('compte_general');
-                    const createNumeroTiers = document.getElementById('numero_de_tiers');
-
-                    createTypeTiers?.addEventListener('change', () => {
-                        updateAccountOptions(createTypeTiers, createCompteGeneral, createNumeroTiers);
-                    });
-
-                    createCompteGeneral?.addEventListener('change', function() {
-                        const numeroCompte = this.options[this.selectedIndex].getAttribute('data-numero');
-                        if (numeroCompte) genererNumero(numeroCompte, createNumeroTiers);
-                    });
-
-                    // --- 4. UPDATE MODAL LOGIC ---
-                    const updateModal = document.getElementById('modalCenterUpdate');
-                    const updateForm = document.getElementById('updateTiersForm');
-                    const updateTypeTiers = document.getElementById('update_type_de_tiers');
-                    const updateCompteGeneral = document.getElementById('update_compte');
-                    const updateNumeroTiers = document.getElementById('update_numero');
-
-                    updateModal?.addEventListener('show.bs.modal', function(event) {
-                        const btn = event.relatedTarget;
-                        const id = btn.getAttribute('data-id');
-                        const numero = btn.getAttribute('data-numero');
-                        const intitule = btn.getAttribute('data-intitule');
-                        const type = btn.getAttribute('data-type');
-                        const compteId = btn.getAttribute('data-compte');
-
-                        // Fill basic fields
-                        document.getElementById('update_id').value = id;
-                        document.getElementById('update_intitule').value = intitule;
-                        updateNumeroTiers.value = numero;
-                        updateTypeTiers.value = type;
-
-                        // Update account list based on type
-                        updateAccountOptions(updateTypeTiers, updateCompteGeneral, updateNumeroTiers, false);
-                        updateCompteGeneral.value = compteId;
-
-                        // Set form action
-                        updateForm.action = updateBaseUrl.replace('__ID__', id);
-                    });
-
-                    updateTypeTiers?.addEventListener('change', () => {
-                        updateAccountOptions(updateTypeTiers, updateCompteGeneral, updateNumeroTiers);
-                    });
-
-                    updateCompteGeneral?.addEventListener('change', function() {
-                        const numeroCompte = this.options[this.selectedIndex].getAttribute('data-numero');
-                        if (numeroCompte) genererNumero(numeroCompte, updateNumeroTiers);
-                    });
-
-                    // --- 5. DELETE MODAL LOGIC ---
-                    const deleteModal = document.getElementById('deleteConfirmationModalTiers');
-                    const deleteForm = document.getElementById('deletePlanFormTiers');
-                    const deleteNameDisplay = document.getElementById('planToDeleteNameTiers');
-
-                    deleteModal?.addEventListener('show.bs.modal', function(event) {
-                        const btn = event.relatedTarget;
-                        const id = btn.getAttribute('data-id');
-                        const name = btn.getAttribute('data-name');
-                        
-                        deleteNameDisplay.textContent = name;
-                        deleteForm.action = deleteBaseUrl.replace('__ID__', id);
-                    });
-
-                    // --- 6. DATATABLES INITIALIZATION ---
-                    const initDataTable = () => {
-                        if (typeof $ !== 'undefined' && $.fn.dataTable) {
-                            window.tiersTable = $('#tiersTable').DataTable({
-                                pageLength: 5,
-                                lengthMenu: [5, 10, 25, 50],
-                                language: {
-                                    search: "Rechercher :",
-                                    lengthMenu: "_MENU_",
-                                    info: "Affichage de _START_ à _END_ sur _TOTAL_ tiers",
-                                    paginate: { first: "Premier", last: "Dernier", next: "Suivant", previous: "Précédent" },
-                                },
-                                dom: '<"top">rt<"bottom"ip><"clear">',
-                                drawCallback: function() {
-                                    $('#tableFooter').html($('#tiersTable_paginate').detach());
-                                    $('.dataTables_paginate').addClass('flex gap-2');
-                                }
-                            });
-
-                            $('.filtre-tiers').on('click', function() {
-                                const type = $(this).data('type');
-                                $('.filtre-tiers').removeClass('ring-2 ring-blue-500 bg-blue-50/50');
-                                $(this).addClass('ring-2 ring-blue-500 bg-blue-50/50');
-                                if (type === 'all') {
-                                    window.tiersTable.column(2).search('').draw();
-                                } else {
-                                    window.tiersTable.column(2).search('^' + type + '$', true, false).draw();
-                                }
-                            });
-
-                        } else {
-                            setTimeout(initDataTable, 100);
-                        }
-                    };
-
-                    initDataTable();
-
-                    // --- 7. ADVANCED FILTERS ---
-                    window.applyAdvancedFilters = function() {
-                        const idVal = document.getElementById('filter-id').value;
-                        const intituleVal = document.getElementById('filter-intitule').value;
-                        const typeVal = document.getElementById('filter-type').value;
-                        if (window.tiersTable) {
-                            window.tiersTable.column(0).search(idVal);
-                            window.tiersTable.column(1).search(intituleVal);
-                            window.tiersTable.column(2).search(typeVal);
-                            window.tiersTable.draw();
-                        }
-                    };
-
-                    window.resetAdvancedFilters = function() {
-                        document.getElementById('filter-id').value = '';
-                        document.getElementById('filter-intitule').value = '';
-                        document.getElementById('filter-type').value = '';
-                        if (window.tiersTable) {
-                            window.tiersTable.column(0).search('');
-                            window.tiersTable.column(1).search('');
-                            window.tiersTable.column(2).search('');
-                            window.tiersTable.draw();
+                            window.genererNumero(comptes[0].numero, targetInput);
                         }
                     };
 
                     window.toggleAdvancedFilter = function() {
-                        const panel = document.getElementById('advancedFilterPanel');
-                        if (panel) {
-                            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-                        }
+                        $('#advancedFilterPanel').slideToggle();
                     };
-                });
+
+                    // --- INITIALISATION SÉCURISÉE ---
+                    function initDataTable(retryCount = 0) {
+                        if (typeof $.fn.DataTable !== 'function') {
+                            if (retryCount < 5) {
+                                console.warn(`[PlanTiers] DataTable non trouvé, tentative ${retryCount + 1}/5...`);
+                                setTimeout(() => initDataTable(retryCount + 1), 200);
+                            } else {
+                                console.error("[PlanTiers] ÉCHEC CRITIQUE : DataTables n'est pas chargé.");
+                            }
+                            return;
+                        }
+
+                        console.log("[PlanTiers] Initialisation DataTables...");
+                        const table = $('#tiersTable').DataTable({
+                            destroy: true,
+                            pageLength: 5,
+                            order: [], 
+                            language: {
+                                zeroRecords: "Aucun tiers trouvé",
+                                info: "Affichage de _START_ à _END_ sur _TOTAL_ tiers",
+                                paginate: { next: "Suivant", previous: "Précédent" }
+                            },
+                            dom: 't',
+                            drawCallback: function() { updatePagination(this.api()); }
+                        });
+
+                        window.tiersDataTable = table;
+                        setupEventListeners(table);
+                    }
+
+                    function setupEventListeners(table) {
+                        // Filtres KPI
+                        $(document).off('click', '.filtre-tiers').on('click', '.filtre-tiers', function() {
+                            const type = $(this).data('type');
+                            $('.filtre-tiers').removeClass('filter-active ring-2 ring-blue-500 bg-blue-50/50');
+                            $(this).addClass('filter-active ring-2 ring-blue-500 bg-blue-50/50');
+                            
+                            if (type === 'all') table.column(2).search('').draw();
+                            else table.column(2).search(type).draw();
+                        });
+
+                        // Filtres avancés
+                        $(document).off('click', '#apply-filters').on('click', '#apply-filters', function() {
+                            table.column(0).search($('#filter-id').val().trim());
+                            table.column(1).search($('#filter-intitule').val().trim());
+                            table.column(2).search($('#filter-type').val().trim());
+                            table.draw();
+                        });
+
+                        $(document).off('click', '#reset-filters').on('click', '#reset-filters', function() {
+                            $('#filter-id, #filter-intitule, #filter-type').val('');
+                            table.search('').columns().search('').draw();
+                        });
+
+                        // Navigation UI
+                        $(document).off('click', '#toggleFilterBtn').on('click', '#toggleFilterBtn', function() {
+                            $('#advancedFilterPanel').slideToggle();
+                        });
+                    }
+
+                    function updatePagination(table) {
+                        const info = table.page.info();
+                        const $footer = $('#tableFooter');
+                        if (info.recordsDisplay > 0) {
+                            $footer.html(`
+                                <div class="flex items-center justify-between w-full mt-4">
+                                    <div class="text-sm text-slate-500 italic">Affichage de ${info.start + 1} à ${info.end} sur ${info.recordsDisplay} tiers</div>
+                                    <div class="flex gap-2">
+                                        <button class="px-4 py-2 border rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" onclick="window.tiersDataTable.page('previous').draw('page')" ${info.page === 0 ? 'disabled' : ''}>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold">${info.page + 1}</button>
+                                        <button class="px-4 py-2 border rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" onclick="window.tiersDataTable.page('next').draw('page')" ${info.page >= info.pages - 1 ? 'disabled' : ''}>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `);
+                        } else {
+                            $footer.html('<div class="text-center text-slate-500 py-6 font-medium italic">Aucun tiers ne correspond à votre recherche</div>');
+                        }
+                    }
+
+                    // --- LIFE CYCLE ---
+                    $(function() {
+                        window.correspondancesTiers = @json($correspondances);
+                        initDataTable();
+
+                        $('#type_de_tiers').on('change', function() {
+                            window.updateAccountOptions(this, document.getElementById('compte_general'), document.getElementById('numero_de_tiers'));
+                        });
+
+                        $('#compte_general').on('change', function() {
+                            const num = $(this).find(':selected').data('numero');
+                            if (num) window.genererNumero(num, document.getElementById('numero_de_tiers'));
+                        });
+
+                        // Modal logic
+                        const updateModal = document.getElementById('modalCenterUpdate');
+                        if(updateModal) {
+                            updateModal.addEventListener('show.bs.modal', function(event) {
+                                const btn = $(event.relatedTarget);
+                                const id = btn.data('id');
+                                $('#update_id').val(id);
+                                $('#update_intitule').val(btn.data('intitule'));
+                                $('#update_numero').val(btn.data('numero'));
+                                $('#update_type_de_tiers').val(btn.data('type'));
+                                window.updateAccountOptions(document.getElementById('update_type_de_tiers'), document.getElementById('update_compte'), document.getElementById('update_numero'), false);
+                                $('#update_compte').val(btn.data('compte'));
+                                $('#updateTiersForm').attr('action', plan_tiersUpdateBaseUrl.replace('__ID__', id));
+                            });
+                        }
+
+                        const deleteModal = document.getElementById('deleteConfirmationModalTiers');
+                        if(deleteModal) {
+                            deleteModal.addEventListener('show.bs.modal', function(event) {
+                                const btn = $(event.relatedTarget);
+                                $('#planToDeleteNameTiers').text(btn.data('name'));
+                                $('#deletePlanFormTiers').attr('action', plan_tiersDeleteUrl.replace('__ID__', btn.data('id')));
+                            });
+                        }
+                    });
+
+                })(jQuery);
             </script>
 
             <!-- Plan Tiers JavaScript - Chargé après tout le reste -->
-            <script src="{{ asset('js/plan_tiers.js') }}"></script>
+            <!-- App Scripts consolidated in Blade to avoid conflicts -->
 
             @if(session('reload'))
             <script>

@@ -1,7 +1,17 @@
-<!DOCTYPE html>
-<html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/" data-template="vertical-menu-template-free">
-
 @include('components.head')
+
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: 'Inter', sans-serif;
+    }
+    .text-premium-gradient {
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+    }
+</style>
 
 <body>
     <div class="layout-wrapper layout-content-navbar">
@@ -9,16 +19,21 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Administration des Utilisateurs'])
+                @include('components.header')
 
-                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    
-                    <!-- Bouton d'action -->
-                    <div class="d-flex justify-content-end mb-4">
-                        <a href="{{ route('superadmin.users.create') }}" class="btn btn-primary">
-                            <i class="fa-solid fa-plus me-2"></i>Nouvel utilisateur
-                        </a>
-                    </div>
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Administration des Utilisateurs</h5>
+                                <p class="text-muted small mb-0">Gérez les accès et les rôles de tous les collaborateurs de la plateforme.</p>
+                            </div>
+                            <a href="{{ route('superadmin.users.create') }}" class="btn btn-primary rounded-pill px-4">
+                                <i class="fa-solid fa-plus me-2"></i> Nouvel Utilisateur
+                            </a>
+                        </div>
 
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -141,9 +156,9 @@
                                             <td class="text-end">
                                                 @if($user->role !== 'super_admin')
                                                     <div class="btn-group btn-group-sm">
-                                                        <button type="button" class="btn btn-outline-primary" title="Modifier">
+                                                        <a href="{{ route('superadmin.users.edit', $user->id) }}" class="btn btn-outline-primary" title="Modifier">
                                                             <i class="fa-solid fa-edit"></i>
-                                                        </button>
+                                                        </a>
                                                         <form action="{{ route('superadmin.users.destroy', $user->id) }}" 
                                                               method="POST" 
                                                               class="d-inline"

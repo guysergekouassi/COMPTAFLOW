@@ -246,7 +246,7 @@
                         <div class="flex justify-between items-center mb-8 w-full gap-4">
                             <!-- Left Group: Filter -->
                             <div class="flex items-center">
-                                <button type="button" id="toggleFilterBtn" onclick="window.toggleAdvancedFilter()"
+                                <button type="button" id="toggleFilterBtn"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm">
                                     <i class="fas fa-filter text-blue-600"></i>
                                     Filtrer
@@ -369,7 +369,7 @@
                         </div>
 
                         <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-dialog modal-dialog-centered">
                                 <form method="POST" id="deleteForm" action="" class="w-full">
                                     @csrf
                                     @method('DELETE')
@@ -377,11 +377,11 @@
                                         <!-- Header -->
                                         <div class="text-center mb-6 position-relative">
                                             <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                            <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4" style="width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; background-color: #fef2f2; border-radius: 1rem; margin: 0 auto 1rem;">
-                                                <i class="fas fa-trash-alt text-red-600 text-xl" style="color: #dc2626; font-size: 1.25rem;"></i>
+                                            <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                                <i class="fas fa-trash-alt text-red-600 text-xl"></i>
                                             </div>
                                             <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
-                                                Confirmer la <span style="color: #dc2626; font-weight: 800;">Suppression</span>
+                                                Confirmer la <span class="text-red-600">Suppression</span>
                                             </h1>
                                         </div>
 
@@ -397,7 +397,7 @@
                                             <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
                                                 Annuler
                                             </button>
-                                            <button type="submit" class="btn-save-premium" id="confirmDeleteBtn" style="background-color: #dc2626 !important;">
+                                            <button type="submit" class="btn-save-premium !bg-red-600 hover:!bg-red-700 shadow-red-200" id="confirmDeleteBtn">
                                                 Supprimer
                                             </button>
                                         </div>
@@ -474,25 +474,14 @@
                 const intituleInput = document.getElementById('intitule_exercice');
                 let dataTable;
 
-                // Toggle filtre (doit être défini avant initDataTable au cas où DataTables plante)
-                window.toggleAdvancedFilter = function() {
-                    const panel = document.getElementById('advancedFilterPanel');
-                    if (!panel) return;
-                    panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-                };
-
-                // Initialisation safe du modal (évite un crash si bootstrap n'est pas chargé)
-                const modalInstance = (modalCreate && window.bootstrap?.Modal)
-                    ? bootstrap.Modal.getOrCreateInstance(modalCreate)
-                    : null;
-
-                // Binding robuste (en plus du onclick inline)
+                // Binding robuste
                 const toggleBtn = document.getElementById('toggleFilterBtn');
                 if (toggleBtn) {
                     toggleBtn.addEventListener('click', function(e) {
                         e.preventDefault();
-                        if (typeof window.toggleAdvancedFilter === 'function') {
-                            window.toggleAdvancedFilter();
+                        const panel = document.getElementById('advancedFilterPanel');
+                        if (panel) {
+                            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
                         }
                     });
                 }
@@ -571,20 +560,6 @@
                                 render: function(data, type, row) {
                                     return `
                                         <div class="d-flex gap-2">
-                                            <button type="button"
-                                                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-view view-btn"
-                                                    data-id="${row.id}"
-                                                    data-bs-toggle="tooltip"
-                                                    title="Voir">
-                                                <i class="bx bx-show fs-5"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-edit edit-btn"
-                                                    data-id="${row.id}"
-                                                    data-bs-toggle="tooltip"
-                                                    title="Modifier">
-                                                <i class="bx bx-edit-alt fs-5"></i>
-                                            </button>
                                             ${!row.cloturer ? `
                                                 <button type="button"
                                                         class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-delete delete-btn"

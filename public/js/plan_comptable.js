@@ -43,7 +43,7 @@ function supprimerPlanComptable(id) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/plan_comptable/${id}`;
-        
+
         // Ajouter le token CSRF
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         if (csrfToken) {
@@ -53,14 +53,14 @@ function supprimerPlanComptable(id) {
             csrfInput.value = csrfToken;
             form.appendChild(csrfInput);
         }
-        
+
         // Ajouter le champ pour la méthode DELETE
         const methodInput = document.createElement('input');
         methodInput.type = 'hidden';
         methodInput.name = '_method';
         methodInput.value = 'DELETE';
         form.appendChild(methodInput);
-        
+
         // Soumettre le formulaire
         document.body.appendChild(form);
         form.submit();
@@ -209,6 +209,43 @@ $(document).ready(function () {
             },
         });
     });
+});
+
+// --- Synchronisation avec le Modèle Admin [NOUVEAU] ---
+document.addEventListener("DOMContentLoaded", function () {
+    const btnSync = document.getElementById("btnSyncAdmin");
+    if (btnSync) {
+        btnSync.addEventListener("click", function () {
+            if (confirm("Voulez-vous charger les comptes manquants depuis le modèle défini par l'administrateur ?")) {
+                btnSync.disabled = true;
+                const originalText = btnSync.innerHTML;
+                btnSync.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Synchronisation...';
+
+                $.ajax({
+                    url: '/admin/config/sync/plan-comptable',
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            alert(response.message);
+                            window.location.reload();
+                        } else {
+                            alert(response.message || 'Erreur lors de la synchronisation.');
+                            btnSync.disabled = false;
+                            btnSync.innerHTML = originalText;
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Erreur serveur lors de la synchronisation.');
+                        btnSync.disabled = false;
+                        btnSync.innerHTML = originalText;
+                    }
+                });
+            }
+        });
+    }
 });
 
 // --- Fin du fichier ---

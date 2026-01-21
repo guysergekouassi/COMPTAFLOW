@@ -145,14 +145,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // --- 6. REDIRECTION VERS ÉCRITURES ---
     console.log("Configuration du gestionnaire pour les boutons .donnees-plan-tiers...");
-    
+
     // Utiliser la délégation d'événements pour gérer les boutons dynamiques
-    document.addEventListener("click", function(event) {
+    document.addEventListener("click", function (event) {
         const button = event.target.closest(".donnees-plan-tiers");
         if (button) {
             console.log("Clic sur le bouton voir détecté via délégation!");
             event.preventDefault();
-            
+
             const params = {
                 id_plan_tiers: button.getAttribute("data-id"),
                 intitule: button.getAttribute("data-intitule"),
@@ -171,4 +171,43 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
     });
+
+    // --- 8. SYNCHRONISATION AVEC LE MODÈLE ADMIN [NOUVEAU] ---
+    const btnSyncTiers = document.getElementById("btnSyncAdminTiers");
+    if (btnSyncTiers) {
+        btnSyncTiers.addEventListener("click", function () {
+            if (confirm("Voulez-vous charger les fiches tiers manquantes depuis le modèle défini par l'administrateur ?")) {
+                btnSyncTiers.disabled = true;
+                const originalText = btnSyncTiers.innerHTML;
+                btnSyncTiers.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Synchronisation...';
+
+                // Utilisation de fetch au lieu de jQuery pour garder la cohérence du fichier
+                fetch('/admin/config/sync/plan-tiers', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert(data.message || 'Erreur lors de la synchronisation.');
+                            btnSyncTiers.disabled = false;
+                            btnSyncTiers.innerHTML = originalText;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Erreur sync tiers:", error);
+                        alert('Erreur réseau lors de la synchronisation.');
+                        btnSyncTiers.disabled = false;
+                        btnSyncTiers.innerHTML = originalText;
+                    });
+            }
+        });
+    }
 });

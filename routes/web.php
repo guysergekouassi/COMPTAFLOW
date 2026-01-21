@@ -167,10 +167,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/plan_tiers/{id}', [PlanTiersController::class, 'destroy'])->name('plan_tiers.destroy');
 
     // *****************ROUTE GESTION DES CODE JOURNAL
-    Route::get('/accounting_journals', [CodeJournalController::class, 'index'])->name('accounting_journals');
-    Route::post('/accounting_journals', [CodeJournalController::class, 'store'])->name('accounting_journals.store');
-    Route::put('/accounting_journals/{id}', [CodeJournalController::class, 'update'])->name('accounting_journals.update');
-    Route::delete('/accounting_journals/{id}', [CodeJournalController::class, 'destroy'])->name('accounting_journals.destroy');
+    Route::get('/accounting_journals', [CodeJournalController::class, 'index'])->name('accounting_journals')->middleware(['auth', 'company.session']);
+    Route::post('/accounting_journals', [CodeJournalController::class, 'store'])->name('accounting_journals.store')->middleware(['auth', 'company.session']);
+    Route::put('/accounting_journals/{id}', [CodeJournalController::class, 'update'])->name('accounting_journals.update')->middleware(['auth', 'company.session']);
+    Route::delete('/accounting_journals/{id}', [CodeJournalController::class, 'destroy'])->name('accounting_journals.destroy')->middleware(['auth', 'company.session']);
 
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE
     Route::get('/accounting_entry_real', [EcritureComptableController::class, 'index'])->name('accounting_entry_real');
@@ -185,6 +185,7 @@ Route::middleware('auth')->group(function () {
     
     Route::middleware(['auth'])->group(function () {
         Route::post('/accounting_entry_real', [EcritureComptableController::class, 'storeMultiple'])->name('storeMultiple.storeMultiple');
+        Route::post('/superadmin/switch/return', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'returnToSuperAdmin'])->name('superadmin.switch.return');
     });
     
     Route::post('/api/ecritures', [EcritureComptableController::class, 'store'])->name('api.ecriture.store')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
@@ -213,6 +214,7 @@ Route::get('/test-saisie-number', function() {
     return $controller->getNextSaisieNumber(request());
 });
     Route::get('/ecriture/{ecriture}/edit', [EcritureComptableController::class, 'edit'])->name('ecriture.edit');
+    Route::get('/api/ecriture/load-by-saisie/{n_saisie}', [EcritureComptableController::class, 'loadBySaisie'])->name('api.ecriture.load-by-saisie');
     Route::put('/ecriture/{ecriture}', [EcritureComptableController::class, 'update'])->name('ecriture.update');
     Route::delete('/ecriture/{ecriture}', [EcritureComptableController::class, 'destroy'])->name('ecriture.destroy');
 
@@ -304,8 +306,54 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
     // *****************ROUTE FLUX DE TRESORERIE
     Route::get('/flux_tresorerie', [FluxTresorerieController::class, 'index'])->name('flux_tresorerie');
 
-    // Dashboard Admin
-    Route::get('/admin/dashboards', [UserController::class, 'dashboardStats'])->name('admin.dashboard');
+    // Dashboard Admin (Performance par défaut)
+    Route::get('/admin/dashboard', [App\Http\Controllers\Admin\PerformanceController::class, 'index'])->name('admin.dashboard');
+
+    // Administration Avancée
+    Route::prefix('admin')->name('admin.')->group(function() {
+        // Approbations
+        Route::get('/approvals', [App\Http\Controllers\Admin\ApprovalController::class, 'index'])->name('approvals');
+        Route::post('/approvals/{id}/approve', [App\Http\Controllers\Admin\ApprovalController::class, 'approve'])->name('approvals.approve');
+        Route::post('/approvals/{id}/reject', [App\Http\Controllers\Admin\ApprovalController::class, 'reject'])->name('approvals.reject');
+
+        // Audit & Suivi
+        Route::get('/audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit');
+        
+        // Contrôle d'Accès
+        Route::get('/access-control', [App\Http\Controllers\Admin\AccessController::class, 'index'])->name('access');
+        Route::post('/access/toggle-user/{id}', [App\Http\Controllers\Admin\AccessController::class, 'toggleUser'])->name('access.toggle_user');
+
+        // Performance (Tableau de bord Admin)
+        Route::get('/performance', [App\Http\Controllers\Admin\PerformanceController::class, 'index'])->name('performance');
+
+        // Assignation de Tâches
+        Route::get('/tasks', [App\Http\Controllers\Admin\TaskController::class, 'index'])->name('tasks');
+        Route::post('/tasks', [App\Http\Controllers\Admin\TaskController::class, 'store'])->name('tasks.store');
+
+        // Switch Comptabilité (Nouvelle Route)
+        Route::get('/switch', [App\Http\Controllers\Admin\SwitchController::class, 'index'])->name('switch');
+
+        // Configuration Entreprise (Modèles & Hub)
+        Route::prefix('config')->name('config.')->group(function() {
+            Route::get('/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'hub'])->name('hub');
+            Route::get('/plan-comptable', [App\Http\Controllers\Admin\AdminConfigController::class, 'planComptable'])->name('plan_comptable');
+            Route::get('/plan-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'planTiers'])->name('plan_tiers');
+            Route::get('/journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'journals'])->name('journals');
+            Route::post('/update-settings', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateSettings'])->name('update_settings');
+            Route::post('/load-syscohada', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohadaPlan'])->name('load_syscohada');
+            Route::post('/store-account', [App\Http\Controllers\Admin\AdminConfigController::class, 'storeAccount'])->name('store_account');
+            Route::post('/import-accounts', [App\Http\Controllers\Admin\AdminConfigController::class, 'importAccounts'])->name('import_accounts');
+            Route::post('/load-standard-journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadStandardJournals'])->name('load_standard_journals');
+            Route::post('/store-journal', [App\Http\Controllers\Admin\AdminConfigController::class, 'storeJournal'])->name('store_journal');
+            Route::post('/import-journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'importJournals'])->name('import_journals');
+            Route::post('/import-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'importTiers'])->name('import_tiers');
+            
+            // Actions de synchronisation (Charger pour les comptables)
+            Route::post('/sync/plan-comptable', [App\Http\Controllers\Admin\AdminConfigController::class, 'syncPlanComptable'])->name('sync.plan_comptable');
+            Route::post('/sync/plan-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'syncPlanTiers'])->name('sync.plan_tiers');
+            Route::post('/sync/journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'syncJournals'])->name('sync.journals');
+        });
+    });
 
     // Dashboard Comptable
     Route::get('/comptable/dashboard', function () {
@@ -348,7 +396,10 @@ Route::get('/tresorerie/plan/export-csv', [TresorerieController::class, 'exportC
 
 // 2. Route Index (Racine)
 
-Route::get('/tresorerie', [\App\Http\Controllers\TresorerieContro\TresorerieController::class, 'index'])->name('indextresorerie');
+// Rediriger l'ancienne page trésorerie vers la page journaux unifiée
+Route::get('/tresorerie', function() {
+    return redirect()->route('accounting_journals.index');
+})->name('indextresorerie');
 
 // 3. Routes Paramétrées (celles qui ont /{id}) - DOIVENT être à la fin
 Route::get('/tresorerie/{id}', [TresorerieController::class, 'show'])->name('showtresorerie');
@@ -394,9 +445,31 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
 });
 
 Route::middleware(['auth'])->group(function () {
+    // Routes de context switching pour l'Admin
+    Route::get('/admin/context/reset', [UserController::class, 'resetContext'])->name('admin.context.reset');
+
     // Laissez votre route d'impersonation ici (avec son nom existant)
-    Route::get('/impersonate/{user}', [UserController::class, 'impersonate'])->name('admin.impersonate');
     Route::get('/impersonate/leave', [UserController::class, 'leaveImpersonation'])->name('admin.leave_impersonation');
+    Route::get('/impersonate/{user}', [UserController::class, 'impersonate'])->name('admin.impersonate');
+
+    // Routes de création d'utilisateurs pour l'Admin
+    Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+
+    // Routes de création d'administrateurs pour l'Admin (Style SuperAdmin)
+    Route::get('/admin/admins/create', [UserController::class, 'createAdmin'])->name('admin.admins.create');
+    Route::post('/admin/admins', [UserController::class, 'storeAdmin'])->name('admin.admins.store');
+
+    Route::get('/admin/secondary-admins/create', [UserController::class, 'createSecondaryAdmin'])->name('admin.secondary_admins.create');
+    Route::post('/admin/secondary-admins/store', [UserController::class, 'storeSecondaryAdmin'])->name('admin.secondary_admins.store');
+    
+    // Routes de création de sous-entreprises pour l'Admin
+    Route::get('/admin/companies/create-entity', [CompanyController::class, 'adminCreateCompany'])->name('admin.companies.create');
+    Route::post('/admin/companies/store-entity', [CompanyController::class, 'adminStoreCompany'])->name('admin.companies.store');
+
+    // Routes de création de comptabilité (Style SuperAdmin) - Exercices
+    Route::get('/admin/companies/create', [ComptaAccountController::class, 'create'])->name('compta.create');
+    Route::post('/admin/companies', [ComptaAccountController::class, 'store'])->name('compta.store');
 });
 
 // **********************************************
@@ -422,13 +495,21 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
     Route::get('/superadmin/accounting', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'index'])->name('superadmin.accounting.index');
     Route::get('/superadmin/accounting/create', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'create'])->name('superadmin.accounting.create');
     Route::post('/superadmin/accounting', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'store'])->name('superadmin.accounting.store');
+    Route::get('/superadmin/accounting/{id}/edit', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'edit'])->name('superadmin.accounting.edit');
+    Route::put('/superadmin/accounting/{id}', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'update'])->name('superadmin.accounting.update');
+    Route::delete('/superadmin/accounting/{id}', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'destroy'])->name('superadmin.accounting.destroy');
 
     // Administration des Utilisateurs
     Route::get('/superadmin/users', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'index'])->name('superadmin.users');
     Route::get('/superadmin/users/create', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'create'])->name('superadmin.users.create');
     Route::post('/superadmin/users', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'store'])->name('superadmin.users.store');
+    Route::get('/superadmin/users/{id}/edit', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'edit'])->name('superadmin.users.edit');
     Route::put('/superadmin/users/{id}', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'update'])->name('superadmin.users.update');
     Route::delete('/superadmin/users/{id}', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'destroy'])->name('superadmin.users.destroy');
+
+    // Administration des Administrateurs (Dédié)
+    Route::get('/superadmin/admins/create', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'createAdmin'])->name('superadmin.admins.create');
+    Route::post('/superadmin/admins', [\App\Http\Controllers\Super\SuperAdminUserController::class, 'storeAdmin'])->name('superadmin.admins.store');
 
     // Suivi des Activités
     Route::get('/superadmin/activities', [\App\Http\Controllers\Super\SuperAdminActivityController::class, 'index'])->name('superadmin.activities');
@@ -440,7 +521,6 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
     Route::get('/superadmin/switch', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'index'])->name('superadmin.switch');
     Route::post('/superadmin/switch/company/{id}', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'switchToCompany'])->name('superadmin.switch.company');
     Route::post('/superadmin/switch/user/{id}', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'switchToUser'])->name('superadmin.switch.user');
-    Route::post('/superadmin/switch/return', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'returnToSuperAdmin'])->name('superadmin.switch.return');
 
     // Contrôle d'Accès (Blocage/Déblocage)
     Route::get('/superadmin/access-control', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'index'])->name('superadmin.access');

@@ -6,19 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class pack extends Model
 {
-    //
+    protected $table = 'pack';
+
     protected $fillable = [
         'name',
         'price',
         'max_users',
         'duration',
-        'desciption',
+        'description',
         'features',
-
     ];
 
     protected $casts = [
         'features' => 'array',
-        'price_monthly' => 'float',
+        'price' => 'float',
     ];
 }

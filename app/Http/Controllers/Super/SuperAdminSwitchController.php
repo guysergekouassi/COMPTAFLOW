@@ -45,7 +45,14 @@ class SuperAdminSwitchController extends Controller
             ->first();
         
         if ($admin) {
+            // Stocker les infos de switch
             Session::put('switched_user_id', $admin->id);
+            Session::put('switched_company_id', $companyId);
+            Session::put('current_company_id', $companyId);
+            
+            // Connexion réelle en tant qu'administrateur de l'entreprise
+            Auth::loginUsingId($admin->id);
+            
             return redirect()->route('admin.dashboard')
                 ->with('success', "Vous êtes maintenant connecté à l'entreprise : {$company->company_name}");
         }
@@ -71,6 +78,9 @@ class SuperAdminSwitchController extends Controller
         Session::put('switched_company_id', $user->company_id);
         Session::put('current_company_id', $user->company_id);
         
+        // Connexion réelle en tant qu'utilisateur cible
+        Auth::loginUsingId($userId);
+        
         // Rediriger selon le rôle
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard')
@@ -89,13 +99,22 @@ class SuperAdminSwitchController extends Controller
      */
     public function returnToSuperAdmin()
     {
-        // Nettoyer les sessions de switch
-        Session::forget('switched_company_id');
-        Session::forget('switched_user_id');
-        Session::forget('original_super_admin_id');
-        Session::forget('current_company_id');
+        $originalAdminId = Session::get('original_super_admin_id');
         
-        return redirect()->route('superadmin.dashboard')
-            ->with('success', 'Vous êtes de retour dans l\'interface Super Admin');
+        if ($originalAdminId) {
+            // Nettoyer les sessions de switch
+            Session::forget('switched_company_id');
+            Session::forget('switched_user_id');
+            Session::forget('original_super_admin_id');
+            Session::forget('current_company_id');
+            
+            // Reconnecter le Super Admin
+            Auth::loginUsingId($originalAdminId);
+            
+            return redirect()->route('superadmin.dashboard')
+                ->with('success', 'Vous êtes de retour dans l\'interface Super Admin');
+        }
+        
+        return redirect()->route('index');
     }
 }

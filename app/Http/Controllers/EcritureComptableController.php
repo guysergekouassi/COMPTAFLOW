@@ -119,6 +119,53 @@ class EcritureComptableController extends Controller
         }
     }
 
+    public function loadBySaisie($n_saisie)
+    {
+        try {
+            $user = Auth::user();
+            $activeCompanyId = session('current_company_id', $user->company_id);
+            
+            // Récupérer toutes les lignes d'écriture pour ce n_saisie
+            $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+                ->where('company_id', $activeCompanyId)
+                ->where('n_saisie', $n_saisie)
+                ->orderBy('id')
+                ->get();
+            
+            if ($ecritures->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aucune écriture trouvée pour ce numéro de saisie.'
+                ], 404);
+            }
+            
+            // Préparer les données dans le même format que les brouillons
+            $first = $ecritures->first();
+            
+            $summary = [
+                'date' => $first->date,
+                'description' => $first->description_operation,
+                'reference' => $first->reference_piece,
+                'code_journal_id' => $first->code_journal_id,
+                'journal_code' => $first->codeJournal ? $first->codeJournal->code_journal : '',
+                'n_saisie' => $first->n_saisie,
+                'compte_tresorerie_id' => $first->compte_tresorerie_id,
+                'piece_justificatif' => $first->piece_justificatif
+            ];
+                
+            return response()->json([
+                'success' => true,
+                'summary' => $summary,
+                'brouillons' => $ecritures
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des données : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function deleteBySaisie($n_saisie)
     {
         try {

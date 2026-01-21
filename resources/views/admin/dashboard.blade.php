@@ -32,32 +32,109 @@
 
                     <!-- Stats Section -->
                     <div class="w-full overflow-x-auto pb-4">
-    <div id="stats-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 min-w-max">
-        <!-- KPI 1: Nombre total d'utilisateurs -->
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full min-w-[280px]">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                    <i class="fa-solid fa-users text-white text-xl"></i>
-                </div>
-                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">+12.5%</span>
-            </div>
-            <h6 class="text-gray-600 font-medium mb-2">Utilisateurs Total</h6>
-            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($totalUsers ?? 0) }}</h3>
-        </div>
+                        <div id="stats-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 min-w-max">
+                            <!-- KPI 1: Utilisateurs rattachés -->
+                            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full min-w-[260px]">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                                        <i class="fa-solid fa-users text-white text-xl"></i>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Équipe</span>
+                                    </div>
+                                </div>
+                                <h6 class="text-gray-500 font-medium text-sm mb-1">Membres rattachés</h6>
+                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ number_format($totalUsers ?? 0) }}</h3>
+                            </div>
 
-        <!-- KPI 2: Comptes Connectés -->
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full min-w-[280px]">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <i class="fa-solid fa-user-check text-white text-xl"></i>
-                </div>
-                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold">-3.2%</span>
-            </div>
-            <h6 class="text-gray-600 font-medium mb-2">Comptes Connectés</h6>
-            <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ number_format($connectedUsers ?? 0) }}</h3>
-        </div>
-    </div>
-</div>
+                            <!-- KPI 2: En Ligne -->
+                            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full min-w-[260px]">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
+                                        <i class="fa-solid fa-signal text-white text-xl"></i>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="flex h-2 w-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                                        <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Live</span>
+                                    </div>
+                                </div>
+                                <h6 class="text-gray-500 font-medium text-sm mb-1">Collaborateurs actifs</h6>
+                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ number_format($connectedUsers ?? 0) }}</h3>
+                            </div>
+
+                            <!-- KPI 3: Volume Écritures -->
+                            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full min-w-[260px]">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200">
+                                        <i class="fa-solid fa-database text-white text-xl"></i>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Volume</span>
+                                    </div>
+                                </div>
+                                <h6 class="text-gray-500 font-medium text-sm mb-1">Total des écritures</h6>
+                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ number_format($totalEntries ?? 0) }}</h3>
+                            </div>
+
+                            <!-- KPI 4: Activité du jour -->
+                            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full min-w-[260px]">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                                        <i class="fa-solid fa-bolt text-white text-xl"></i>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Aujourd'hui</span>
+                                    </div>
+                                </div>
+                                <h6 class="text-gray-500 font-medium text-sm mb-1">Saisies réalisées</h6>
+                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ number_format($entriesToday ?? 0) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <!-- Chart: Team Activity -->
+                        <div class="lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h5 class="text-xl font-semibold text-gray-900">Performance de l'équipe</h5>
+                                    <p class="text-gray-500 text-sm">Volume de saisie par collaborateur (Mois en cours)</p>
+                                </div>
+                                <i class="fa-solid fa-ellipsis-vertical text-gray-400 cursor-pointer"></i>
+                            </div>
+                            <div class="h-80">
+                                <canvas id="teamPerformanceChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Team List Mini -->
+                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6">
+                            <h5 class="text-xl font-semibold text-gray-900 mb-6">Collaborateurs Proactifs</h5>
+                            <div class="space-y-4">
+                                @forelse ($teamStats->sortByDesc('ecritures_count')->take(5) as $member)
+                                    <div class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold mr-3">
+                                                {{ strtoupper(substr($member->name, 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-semibold text-gray-900">{{ $member->name }}</div>
+                                                <div class="text-xs text-gray-500">{{ $member->role }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-bold text-gray-900">{{ $member->ecritures_count }}</div>
+                                            <div class="text-xs text-gray-400">écritures</div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-center text-gray-500 py-4">Aucun collaborateur trouvé.</p>
+                                @endforelse
+                            </div>
+                            <a href="{{ route('user_management') }}" class="block text-center mt-6 text-blue-600 hover:text-blue-800 text-sm font-medium">Voir toute l'équipe</a>
+                        </div>
+                    </div>
 
 
 
@@ -348,22 +425,24 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // ===================================
-            // CHART 1: Performance des Revenus (Ligne - Chart.js)
+            // CHART: Team Performance (Bar Chart)
             // ===================================
-            const ctxRevenue = document.getElementById('revenueChart');
-            if (ctxRevenue) {
-                new Chart(ctxRevenue, {
-                    type: 'line',
+            const ctxTeam = document.getElementById('teamPerformanceChart');
+            if (ctxTeam) {
+                const teamData = @json($teamStats->map(fn($u) => ['name' => $u->name, 'count' => $u->ecritures_count]));
+                
+                new Chart(ctxTeam, {
+                    type: 'bar',
                     data: {
-                        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
+                        labels: teamData.map(d => d.name),
                         datasets: [{
-                            label: 'Revenus Mensuels (€)',
-                            data: [12000, 15000, 18000, 22000, 25000, 28000, 26000, 31000, 35000, 32000, 38000, 42000],
-                            borderColor: 'rgb(0, 192, 192)',
-                            backgroundColor: 'rgba(0, 192, 192, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            pointRadius: 4
+                            label: 'Nombre d\'écritures',
+                            data: teamData.map(d => d.count),
+                            backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                            borderColor: 'rgb(30, 64, 175)',
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            barThickness: 40
                         }]
                     },
                     options: {
@@ -373,19 +452,13 @@
                             legend: {
                                 display: false
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.dataset.label + ': ' + context.formattedValue + ' €';
-                                    }
-                                }
-                            }
                         },
                         scales: {
                             y: {
                                 beginAtZero: true,
                                 grid: {
-                                    drawBorder: false
+                                    drawBorder: false,
+                                    color: 'rgba(0, 0, 0, 0.05)'
                                 }
                             },
                             x: {
@@ -396,69 +469,6 @@
                         }
                     }
                 });
-            }
-
-            // ===================================
-            // CHART 2: Répartition des Dépenses (Donut - ApexCharts)
-            // ===================================
-            // NOTE: ApexCharts est inclus dans votre fichier footer.blade.php
-            const expensesChartEl = document.querySelector('#expensesChart');
-            if (expensesChartEl) {
-                const expensesChartOptions = {
-                    series: [45, 25, 15, 10, 5], // Pourcentages de dépenses
-                    labels: ['Fournisseurs', 'Salaires', 'Marketing', 'Loyer/Frais fixes', 'Autres'],
-                    chart: {
-                        height: 300,
-                        type: 'donut',
-                        toolbar: {
-                            show: false
-                        }
-                    },
-                    legend: {
-                        position: 'bottom'
-                    },
-                    plotOptions: {
-                        pie: {
-                            donut: {
-                                size: '70%',
-                                labels: {
-                                    show: true,
-                                    name: {
-                                        show: true,
-                                        fontSize: '1rem',
-                                        color: '#adb5bd',
-                                        offsetY: -10
-                                    },
-                                    value: {
-                                        show: true,
-                                        fontSize: '1.5rem',
-                                        fontWeight: 'bold',
-                                        color: '#344050',
-                                        offsetY: 10,
-                                        formatter: function(val) {
-                                            return val + '%'
-                                        }
-                                    },
-                                    total: {
-                                        show: true,
-                                        label: 'Total',
-                                        formatter: function(w) {
-                                            // Afficher le total des pourcentages
-                                            return w.globals.seriesTotals.reduce((a, b) => a + b, 0) + '%';
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    colors: ['#00a76f', '#1890ff', '#ffc107', '#ff4d4f', '#72e128'],
-                    dataLabels: {
-                        enabled: false,
-                    }
-                };
-
-                const expensesChart = new ApexCharts(expensesChartEl, expensesChartOptions);
-                expensesChart.render();
             }
 
             // --- Logique pour la LIGNE CLICABLE ---

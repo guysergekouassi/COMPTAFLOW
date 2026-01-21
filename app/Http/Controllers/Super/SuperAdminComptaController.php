@@ -4,18 +4,19 @@ namespace App\Http\Controllers\Super;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
-use App\Models\ComptaAccount;
+use App\Models\ExerciceComptable;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class SuperAdminComptaController extends Controller
 {
     /**
-     * Affiche la liste des comptabilités
+     * Affiche la liste des comptabilités (exercices)
      */
     public function index()
     {
-        $comptaAccounts = ComptaAccount::with('company')->get();
-        return view('superadmin.accounting_list', compact('comptaAccounts'));
+        $exercices = ExerciceComptable::with(['company', 'user'])->get();
+        return view('superadmin.accounting_list', compact('exercices'));
     }
 
     /**
@@ -24,7 +25,8 @@ class SuperAdminComptaController extends Controller
     public function create()
     {
         $companies = Company::where('is_active', 1)->get();
-        return view('superadmin.create_accounting', compact('companies'));
+        $users = User::where('is_active', 1)->get();
+        return view('superadmin.create_accounting', compact('companies', 'users'));
     }
 
     /**
@@ -34,22 +36,71 @@ class SuperAdminComptaController extends Controller
     {
         $validated = $request->validate([
             'company_id' => 'required|exists:companies,id',
-            'account_name' => 'required|string|max:255',
-            'account_type' => 'required|string|max:100',
-            'fiscal_year_start' => 'required|date',
-            'fiscal_year_end' => 'required|date|after:fiscal_year_start',
+            'user_id' => 'required|exists:users,id',
+            'intitule' => 'required|string|max:255',
+            'date_debut' => 'required|date',
+            'date_fin' => 'required|date|after:date_debut',
         ]);
 
-        $comptaAccount = ComptaAccount::create([
+        $exercice = ExerciceComptable::create([
             'company_id' => $validated['company_id'],
-            'account_name' => $validated['account_name'],
-            'account_type' => $validated['account_type'],
-            'fiscal_year_start' => $validated['fiscal_year_start'],
-            'fiscal_year_end' => $validated['fiscal_year_end'],
-            'is_active' => true,
+            'user_id' => $validated['user_id'],
+            'intitule' => $validated['intitule'],
+            'date_debut' => $validated['date_debut'],
+            'date_fin' => $validated['date_fin'],
+            'nombre_journaux_saisis' => 0,
+            'cloturer' => false,
         ]);
+
+        // Optionnel: Déclencher la synchronisation des journaux si nécessaire
+        // $exercice->syncJournaux();
 
         return redirect()->route('superadmin.accounting.index')
-            ->with('success', 'Comptabilité créée avec succès !');
+            ->with('success', 'Exercice comptable créé avec succès !');
+    }
+
+    /**
+     * Affiche le formulaire d'édition d'exercice
+     */
+    public function edit($id)
+    {
+        $exercice = ExerciceComptable::findOrFail($id);
+        $companies = Company::where('is_active', 1)->get();
+        $users = User::where('is_active', 1)->get();
+        return view('superadmin.edit_accounting', compact('exercice', 'companies', 'users'));
+    }
+
+    /**
+     * Met à jour un exercice
+     */
+    public function update(Request $request, $id)
+    {
+        $exercice = ExerciceComptable::findOrFail($id);
+
+        $validated = $request->validate([
+            'company_id' => 'required|exists:companies,id',
+            'user_id' => 'required|exists:users,id',
+            'intitule' => 'required|string|max:255',
+            'date_debut' => 'required|date',
+            'date_fin' => 'required|date|after:date_debut',
+            'cloturer' => 'required|boolean',
+        ]);
+
+        $exercice->update($validated);
+
+        return redirect()->route('superadmin.accounting.index')
+            ->with('success', 'Exercice comptable mis à jour avec succès !');
+    }
+
+    /**
+     * Supprime un exercice
+     */
+    public function destroy($id)
+    {
+        $exercice = ExerciceComptable::findOrFail($id);
+        $exercice->delete();
+
+        return redirect()->route('superadmin.accounting.index')
+            ->with('success', 'Exercice comptable supprimé avec succès !');
     }
 }

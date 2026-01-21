@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Route;
 use App\Models\Company; // Utiliser le modèle Company au lieu de ComptaAccount
 
 class AccountingSwitchController extends Controller
@@ -52,6 +53,8 @@ class AccountingSwitchController extends Controller
         Session::put('current_company_id', Auth::user()->company_id);
 
 
-        return redirect()->route('admin.dashboard')->with('info', 'Vous avez quitté le compte de comptabilité.');
+        $route = Route::has('admin.dashboard') ? 'admin.dashboard' : 'compta.dashboard';
+
+        return redirect()->route($route)->with('info', 'Vous avez quitté le compte de comptabilité.');
     }
 }

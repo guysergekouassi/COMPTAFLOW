@@ -1,233 +1,241 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const modal = document.getElementById("modalCenterCreate");
-    const btnSave = document.getElementById("btnSaveModal");
-    const btnClose = document.getElementById("btnCloseModal");
-    const inputs = modal.querySelectorAll("input[required], select[required]");
+    // === ÉLÉMENTS DU DOM ===
+    const modalCreate = document.getElementById("modalCenterCreate");
+    const grandLivreForm = document.getElementById("grandLivreForm");
+    const btnSaveModal = document.getElementById("btnSaveModal");
+    const btnCloseModal = document.getElementById("btnCloseModal");
+    const btnPreview = document.getElementById("btnPreview");
 
-    // ✅ Vérification avant enregistrement
-    btnSave.addEventListener("click", function () {
-        let isValid = true;
+    const accountSearch = document.getElementById("accountSearch");
+    const selectAllCheck = document.getElementById("selectAllAccounts");
+    const accountSelects = [
+        document.getElementById("plan_comptable_id_1"),
+        document.getElementById("plan_comptable_id_2")
+    ];
 
-        inputs.forEach((input) => {
-            if (!input.value.trim()) {
-                input.classList.add("is-invalid");
-                isValid = false;
-            } else {
-                input.classList.remove("is-invalid");
-            }
-        });
+    const toggleFilterBtn = document.getElementById("toggleFilterBtn");
+    const applyFiltersBtn = document.getElementById("apply-filters");
+    const resetFiltersBtn = document.getElementById("reset-filters");
+    const advancedFilterPanel = document.getElementById("advancedFilterPanel");
 
-        // Si tous les champs sont valides, ici tu peux soumettre
-        if (isValid) {
-            console.log(
-                "Formulaire valide. Soumission ou traitement à faire ici.",
-            );
-            // Ex : $('#modalCenterCreate').modal('hide'); après envoi
-        }
-    });
-
-    // Réinitialisation quand on ferme via bouton ou croix
-    const resetFormFields = () => {
-        inputs.forEach((input) => {
-            input.value = "";
-            input.classList.remove("is-invalid");
-            $('#plan_comptable_id_1').selectpicker('val', '');
-            $('#plan_comptable_id_2').selectpicker('val', '');
-            document.getElementById("compte2-error").style.display = "none";
-        });
-    };
-
-    btnClose.addEventListener("click", resetFormFields);
-    modal.addEventListener("hidden.bs.modal", resetFormFields);
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-    const form = document.getElementById("grandLivreForm");
-
-    form.addEventListener("submit", function (event) {
-        const compte1Select = document.getElementById("plan_comptable_id_1");
-        const compte2Select = document.getElementById("plan_comptable_id_2");
-        const errorDiv = document.getElementById("compte2-error");
-
-        const compte1Text =
-            compte1Select.options[compte1Select.selectedIndex]?.text || "";
-        const compte2Text =
-            compte2Select.options[compte2Select.selectedIndex]?.text || "";
-
-        const compte1Num = compte1Text.split(" - ")[0].trim();
-        const compte2Num = compte2Text.split(" - ")[0].trim();
-
-        if (compte1Num && compte2Num && compte1Num > compte2Num) {
-            event.preventDefault();
-
-            compte2Select.classList.add("is-invalid");
-            errorDiv.innerText =
-                "Le compte général 2 doit être supérieur ou égal au compte général 1.";
-            errorDiv.style.display = "block";
-        } else {
-            compte2Select.classList.remove("is-invalid");
-            errorDiv.style.display = "none";
-        }
-    });
-});
-
-// document.addEventListener("DOMContentLoaded", function () {
-//     const modal = document.getElementById("modalCenterCreate");
-//     const form = document.getElementById("grandLivreForm");
-
-//     modal.addEventListener("hidden.bs.modal", function () {
-//         // Réinitialise les champs du formulaire
-//         form.reset();
-
-//         // // Réinitialise les selectpicker
-//         // if (window.jQuery) {
-//         //     $(".selectpicker").val("").selectpicker("refresh");
-//         // }
-
-//         // Supprime les classes d'erreur Bootstrap
-//         form.querySelectorAll(".is-invalid").forEach((el) => {
-//             el.classList.remove("is-invalid");
-//         });
-
-//         // Réinitialise les messages d’erreur personnalisés
-//         const customErrors = form.querySelectorAll(".invalid-feedback");
-//         customErrors.forEach((error) => (error.style.display = "none"));
-//     });
-// });
-
-//   suppression
-
-// Récupère l'URL de suppression avec un ID fictif à remplacer dynamiquement
-
-const deleteModal = document.getElementById("deleteConfirmationModal");
-deleteModal.addEventListener("show.bs.modal", function (event) {
-    const button = event.relatedTarget;
-    const id = button.getAttribute("data-id");
-    const filename = button.getAttribute("data-filename");
-
-    const deleteForm = document.getElementById("deleteForm");
-
-    // Remplace __ID__ dans l’URL Laravel par l’ID réel
-    const url = accounting_ledgerDeleteUrl.replace('__ID__', id);
-    deleteForm.action = url;
-
-    // Affiche le nom de fichier dans le texte du modal
-    const fileNameText = document.getElementById("fileNameToDelete");
-    fileNameText.textContent = filename;
-});
-
-
-
-
-// previsualiser le pdf 
-
-// document.addEventListener('DOMContentLoaded', function () {
-//     const previewButtons = document.querySelectorAll('.btn-preview-pdf');
-//     const pdfViewer = document.getElementById('pdfViewer');
-
-//     previewButtons.forEach(button => {
-//         button.addEventListener('click', function () {
-//             const pdfUrl = this.getAttribute('data-pdf-url');
-//             if (pdfUrl) {
-//                 pdfViewer.src = pdfUrl;
-//             }
-//         });
-//     });
-
-//     // Vider l'iframe à la fermeture pour éviter conflits PDF
-//     const pdfModal = document.getElementById('pdfPreviewModal');
-//     pdfModal.addEventListener('hidden.bs.modal', function () {
-//         pdfViewer.src = '';
-//     });
-// });
-
-document.addEventListener('DOMContentLoaded', function () {
-    const previewButtons = document.querySelectorAll('.btn-preview-file');
-    const fileViewer = document.getElementById('fileViewer');
-
-    previewButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const fileUrl = this.getAttribute('data-file-url');
-            const fileType = this.getAttribute('data-file-type').toLowerCase();
-
-            if (!fileUrl) return;
-
-            if (fileType === 'pdf') {
-                fileViewer.src = fileUrl;
-            } else if (fileType === 'xlsx' || fileType === 'csv') {
-                // rediriger vers Google Docs Viewer
-                fileViewer.src = `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`;
-            } else {
-                fileViewer.src = '';
-                alert("Aperçu non disponible pour ce type de fichier");
-            }
-        });
-    });
-
-    const modal = document.getElementById('filePreviewModal');
-    modal.addEventListener('hidden.bs.modal', function () {
-        fileViewer.src = '';
-    });
-});
-
-
-// previsualiser le pdf avant sauvegarde
-document.getElementById("btnPreview").addEventListener("click", function (event) {
-    event.preventDefault(); // on empêche l’envoi normal du formulaire
-    let form = document.getElementById("grandLivreForm");
-    let formData = new FormData(form);
-
-    const compte1Select = document.getElementById("plan_comptable_id_1");
-    const compte2Select = document.getElementById("plan_comptable_id_2");
-    const errorDiv = document.getElementById("compte2-error");
-
-    const compte1Text =
-        compte1Select.options[compte1Select.selectedIndex]?.text || "";
-    const compte2Text =
-        compte2Select.options[compte2Select.selectedIndex]?.text || "";
-
-    const compte1Num = compte1Text.split(" - ")[0].trim();
-    const compte2Num = compte2Text.split(" - ")[0].trim();
-
-    if (compte1Num && compte2Num && compte1Num > compte2Num) {
-        event.preventDefault();
-
-        compte2Select.classList.add("is-invalid");
-        errorDiv.innerText =
-            "Le compte général 2 doit être supérieur ou égal au compte général 1.";
-        errorDiv.style.display = "block";
-        return;
-    } else {
-        compte2Select.classList.remove("is-invalid");
-        errorDiv.style.display = "none";
+    // === INITIALISATION ===
+    if (window.jQuery && $.fn.selectpicker) {
+        console.log("AccLedger: Initialisation des selectpickers...");
+        $('.selectpicker').selectpicker('destroy'); // Nettoyage au cas où
+        $('.selectpicker').selectpicker();
     }
 
-
-
-    fetch(accounting_ledgerpreviewGrandLivreUrl, {   // Mets bien la bonne URL
-        method: "POST",
-        body: formData,
-        headers: {
-            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
-        }
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Charger directement l’URL dans l’iframe
-                document.getElementById("pdfPreviewFrame").src = data.url;
-
-                // Afficher le modal
-                let modal = new bootstrap.Modal(document.getElementById("modalPreviewPDF"));
-                modal.show();
-            } else {
-                alert(data.error || "Erreur lors de la prévisualisation.");
+    // === GESTION DES FILTRES AVANCÉS (TABLEAU PRINCIPAL) ===
+    if (toggleFilterBtn) {
+        toggleFilterBtn.addEventListener("click", function () {
+            if (advancedFilterPanel) {
+                const isHidden = advancedFilterPanel.style.display === 'none' || advancedFilterPanel.style.display === '';
+                advancedFilterPanel.style.display = isHidden ? 'block' : 'none';
             }
-        })
-        .catch(err => {
-            console.error("Erreur :", err);
-            alert("Impossible de générer la prévisualisation.");
         });
+    }
+
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener("click", function () {
+            const q = (document.getElementById('filter-client')?.value || '').toLowerCase();
+            const status = (document.getElementById('filter-status')?.value || '').toLowerCase();
+            const rows = document.querySelectorAll('table.table-premium tbody tr');
+            rows.forEach((tr) => {
+                const text = (tr.textContent || '').toLowerCase();
+                const matchQ = !q || text.includes(q);
+                const matchStatus = !status || text.includes(status);
+                tr.style.display = (matchQ && matchStatus) ? '' : 'none';
+            });
+        });
+    }
+
+    if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener("click", function () {
+            const qInput = document.getElementById('filter-client');
+            const statusSelect = document.getElementById('filter-status');
+            if (qInput) qInput.value = '';
+            if (statusSelect) statusSelect.value = '';
+            if (applyFiltersBtn) applyFiltersBtn.click();
+        });
+    }
+
+    // === GESTION DU MODAL (PLAGE DE COMPTES) ===
+    if (modalCreate) {
+        // Recherche par classe ou texte
+        if (accountSearch) {
+            accountSearch.addEventListener("input", function () {
+                const query = this.value.trim().toLowerCase();
+                console.log("Recherche lancée pour :", query);
+
+                accountSelects.forEach(select => {
+                    if (!select) return;
+                    const options = Array.from(select.querySelectorAll('option'));
+                    let visibleCount = 0;
+
+                    options.forEach(option => {
+                        const val = option.value;
+                        if (val === "") return;
+
+                        const text = option.text.toLowerCase();
+                        // Match si commence par (classe) OU contient (recherche textuelle)
+                        const isMatch = !query || text.startsWith(query) || text.includes(query);
+
+                        if (isMatch) {
+                            option.disabled = false;
+                            option.hidden = false;
+                            option.style.display = "";
+                            visibleCount++;
+                        } else {
+                            option.disabled = true;
+                            option.hidden = true;
+                            option.style.display = "none";
+                        }
+                    });
+
+                    console.log(`Select ${select.id}: ${visibleCount} options visibles sur ${options.length - 1}`);
+
+                    if (window.jQuery && $.fn.selectpicker) {
+                        $(select).selectpicker('refresh');
+                    }
+                });
+            });
+        }
+
+        // Validation Range
+        if (grandLivreForm) {
+            grandLivreForm.addEventListener("submit", function (e) {
+                if (selectAllCheck && selectAllCheck.checked) return;
+                const v1 = accountSelects[0]?.options[accountSelects[0].selectedIndex]?.text.split(" - ")[0].trim();
+                const v2 = accountSelects[1]?.options[accountSelects[1].selectedIndex]?.text.split(" - ")[0].trim();
+                if (v1 && v2 && v1 > v2) {
+                    e.preventDefault();
+                    accountSelects[1].classList.add("is-invalid");
+                    const errorDiv = document.getElementById("compte2-error");
+                    if (errorDiv) {
+                        errorDiv.innerText = "Le compte de fin doit être >= au compte de début.";
+                        errorDiv.style.display = "block";
+                    }
+                    if (window.jQuery && $.fn.selectpicker) $(accountSelects[1]).selectpicker('refresh');
+                }
+            });
+        }
+
+        // Tout sélectionner
+        if (selectAllCheck) {
+            selectAllCheck.addEventListener("change", function () {
+                const isChecked = this.checked;
+                accountSelects.forEach(select => {
+                    if (!select) return;
+                    select.disabled = isChecked;
+                    if (window.jQuery && $.fn.selectpicker) $(select).selectpicker('refresh');
+                });
+                if (isChecked && accountSelects[0] && accountSelects[1]) {
+                    const validOptions = Array.from(accountSelects[0].options).filter(opt => opt.value !== "");
+                    if (validOptions.length > 0) {
+                        const vFirst = validOptions[0].value;
+                        const vLast = validOptions[validOptions.length - 1].value;
+                        if (window.jQuery && $.fn.selectpicker) {
+                            $(accountSelects[0]).selectpicker('val', vFirst);
+                            $(accountSelects[1]).selectpicker('val', vLast);
+                        } else {
+                            accountSelects[0].value = vFirst;
+                            accountSelects[1].value = vLast;
+                        }
+                    }
+                }
+                if (accountSearch) {
+                    accountSearch.disabled = isChecked;
+                    if (isChecked) {
+                        // Reset search logic to show everything for class selection hidden in background
+                        accountSearch.value = "";
+                        accountSearch.dispatchEvent(new Event('input'));
+                    }
+                }
+            });
+        }
+
+        // Prévisualisation
+        if (btnPreview) {
+            btnPreview.addEventListener("click", function (e) {
+                e.preventDefault();
+
+                // Validation minimale avant l'envoi
+                const dateD = document.getElementById("date_debut")?.value;
+                const dateF = document.getElementById("date_fin")?.value;
+                if (!dateD || !dateF) {
+                    alert("Veuillez renseigner les dates de début et de fin.");
+                    return;
+                }
+
+                const formData = new FormData(grandLivreForm);
+                if (selectAllCheck?.checked) {
+                    accountSelects.forEach(select => {
+                        if (select) {
+                            if (!select.value) {
+                                // Forcer la valeur si vide alors que Tout Sélectionner est coché (cas limite)
+                                const validOptions = Array.from(select.options).filter(opt => opt.value !== "");
+                                if (validOptions.length > 0) {
+                                    const val = (select.id === "plan_comptable_id_1") ? validOptions[0].value : validOptions[validOptions.length - 1].value;
+                                    formData.set(select.name, val);
+                                }
+                            } else {
+                                formData.set(select.name, select.value);
+                            }
+                        }
+                    });
+                }
+
+                // Vérifier si les comptes sont présents
+                if (!formData.get("plan_comptable_id_1") || !formData.get("plan_comptable_id_2")) {
+                    alert("Veuillez sélectionner une plage de comptes valide.");
+                    return;
+                }
+
+                fetch(accounting_ledgerpreviewGrandLivreUrl, {
+                    method: "POST",
+                    body: formData,
+                    headers: { "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content") }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const frame = document.getElementById("pdfPreviewFrame");
+                            if (frame) frame.src = data.url;
+                            const modalEl = document.getElementById("modalPreviewPDF");
+                            if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                        } else { alert(data.error || "Erreur lors de la prévisualisation."); }
+                    })
+                    .catch(err => { console.error("Erreur :", err); alert("Impossible de générer la prévisualisation."); });
+            });
+        }
+
+        // Reset
+        const resetForm = () => {
+            if (grandLivreForm) grandLivreForm.reset();
+            if (selectAllCheck) { selectAllCheck.checked = false; selectAllCheck.dispatchEvent(new Event('change')); }
+            accountSelects.forEach(select => {
+                if (!select) return;
+                select.classList.remove("is-invalid");
+                if (window.jQuery && $.fn.selectpicker) $(select).selectpicker('val', '').selectpicker('refresh');
+            });
+            const errorDiv = document.getElementById("compte2-error");
+            if (errorDiv) errorDiv.style.display = "none";
+        };
+        if (btnCloseModal) btnCloseModal.addEventListener("click", resetForm);
+        modalCreate.addEventListener("hidden.bs.modal", resetForm);
+    }
+
+    // Modal de suppression
+    const deleteModal = document.getElementById("deleteConfirmationModal");
+    if (deleteModal) {
+        deleteModal.addEventListener("show.bs.modal", function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute("data-id");
+            const filename = button.getAttribute("data-filename");
+            const deleteForm = document.getElementById("deleteForm");
+            const fileNameText = document.getElementById("fileNameToDelete");
+            if (deleteForm) deleteForm.action = accounting_ledgerDeleteUrl.replace('__ID__', id);
+            if (fileNameText) fileNameText.textContent = filename;
+        });
+    }
 });
-
-

@@ -130,6 +130,14 @@ class CompanyController extends Controller
         return back()->with('success', 'Informations de l\'entreprise mises à jour avec succès.');
     }
 
+    /**
+     * Affiche la vue de création de sous-compagnie pour l'Admin.
+     */
+    public function adminCreateCompany()
+    {
+        return view('admin.companies.create');
+    }
+
 
     /**
      * Permet à un Admin (non SuperAdmin) de créer une sous-compagnie/comptabilité (B', B'', etc.).
@@ -159,7 +167,6 @@ class CompanyController extends Controller
             'phone_number' => 'nullable|string|min:10',
             'email_adresse' => 'nullable|email|max:191|unique:companies,email_adresse',
             'identification_TVA' => 'nullable|string|max:50',
-
         ]);
 
         DB::beginTransaction();
@@ -180,22 +187,19 @@ class CompanyController extends Controller
                 'identification_TVA' => $request->identification_TVA,
                 // Le lien clé ! La compagnie B' est rattachée à la compagnie B de l'Admin Manager
                 'parent_company_id' => $user->company_id,
-                // L'utilisateur 'user_id' de la sous-compagnie n'est pas nécessaire, car elle est gérée par l'Admin parent
             ]);
 
             DB::commit();
 
-            // Basculer automatiquement vers la nouvelle compagnie (optionnel mais pratique)
+            // Basculer automatiquement vers la nouvelle compagnie
             session(['current_company_id' => $company->id]);
 
 
-            return redirect()->back()
-                ->with('success', 'La sous-compagnie/comptabilité "' . $company->company_name . '" a été créée et sélectionnée avec succès !');
+            return redirect()->route('compagny_information')
+                ->with('success', 'La sous-compagnie "' . $company->company_name . '" a été créée et sélectionnée avec succès !');
         } catch (\Exception $e) {
             DB::rollBack();
-            // Log de l'erreur pour le debug
-            // Log::error('Erreur lors de la création de la sous-compagnie : ' . $e->getMessage());
-            return back()->with('error', 'Erreur lors de la création de la sous-compagnie.');
+            return back()->with('error', 'Erreur lors de la création de la sous-compagnie : ' . $e->getMessage())->withInput();
         }
     }
 

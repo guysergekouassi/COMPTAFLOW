@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'check.blocked' => \App\Http\Middleware\CheckBlockedStatus::class,
+            'company.session' => \App\Http\Middleware\CompanySession::class,
         ]);
         
         $middleware->web(append: [

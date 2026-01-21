@@ -33,9 +33,6 @@ public function index()
         return redirect()->route('login')->with('error', 'Aucune entreprise associée.');
     }
 
-    // RÉCUPÉRATION DES EXERCICES
-    // On ajoute withoutGlobalScopes() pour être sûr que Laravel ne filtre pas 
-    // par l'ID de l'admin au lieu de l'ID de la société choisie.
     $exercices = ExerciceComptable::withoutGlobalScopes()
         ->where('company_id', $companyId)
         ->orderBy('date_debut', 'desc')
@@ -73,7 +70,7 @@ public function index()
             return response()->json(['data' => []]);
         }
 
-        $query = ExerciceComptable::where('company_id', $companyId);
+        $query = ExerciceComptable::withoutGlobalScopes()->where('company_id', $companyId);
 
         if ($request->filled('date_debut')) {
             try {

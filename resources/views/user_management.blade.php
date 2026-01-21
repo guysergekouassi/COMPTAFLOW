@@ -1,907 +1,435 @@
-<!DOCTYPE html>
-
-<html lang="en" class="layout-menu-fixed layout-compact" data-assets-path="../assets/"
-    data-template="vertical-menu-template-free">
-
 @include('components.head')
-{{-- @if (session()->has('original_admin_id'))
-    <div class="alert alert-danger text-center mb-0 rounded-0" role="alert" style="z-index: 1000;">
-        <i class="bx bx-shield-alt-2 me-2"></i>
 
-        <a href="{{ route('admin.leave_impersonation') }}" class="alert-link text-decoration-underline ms-3 fw-bold">
-            Quitter le compte
-        </a>
-    </div>
-@endif --}}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap');
+
+    :root {
+        --premium-blue: #1e40af;
+        --premium-blue-light: #3b82f6;
+        --premium-slate-900: #0f172a;
+        --premium-slate-800: #1e293b;
+        --premium-slate-400: #94a3b8;
+        --glass-bg: rgba(255, 255, 255, 0.8);
+        --glass-border: rgba(226, 232, 240, 0.8);
+    }
+
+    body {
+        background: #f8fafc url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 86c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm66 3c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm-46-45c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm54 24c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM57 11c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM25 34c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm23 40c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-3-47c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm47 9c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM9 53c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm28 24c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm33-47c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-8 48c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-48-8c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm54-32c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM22 63c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm30-26c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm28-4c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM59 71c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM33 18c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm44 64c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM9 29c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm28 3c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm37 13c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM61 81c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM4 62c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm35 24c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm47-9c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm7-48c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1z' fill='%23e2e8f0' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--premium-slate-800);
+        min-height: 100vh;
+    }
+
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.08);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.12);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .stats-card-premium {
+        position: relative;
+        overflow: hidden;
+    }
+    .stats-card-premium::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 150px;
+        height: 150px;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        z-index: 0;
+    }
+
+    .avatar-premium-initial {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 0.95rem;
+        background: linear-gradient(135deg, var(--premium-blue) 0%, var(--premium-blue-light) 100%);
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    }
+
+    .badge-premium {
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+    .badge-premium-admin { background-color: #dbeafe; color: #1e40af; }
+    .badge-premium-comptable { background-color: #f1f5f9; color: #475569; }
+    .badge-premium-online { background-color: #dcfce7; color: #166534; }
+    .badge-premium-offline { background-color: #fee2e2; color: #991b1b; }
+
+    .premium-table thead th {
+        background-color: #f8fafc;
+        border-bottom: 2px solid #f1f5f9;
+        color: var(--premium-slate-400);
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        padding: 1.25rem 1.5rem;
+    }
+    .premium-table tbody td {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-weight: 500;
+        color: var(--premium-slate-800);
+    }
+    .premium-table tbody tr:last-child td { border-bottom: none; }
+    .premium-table tbody tr:hover { background-color: rgba(248, 250, 252, 0.8); }
+
+    .btn-premium-add {
+        background: linear-gradient(135deg, var(--premium-blue) 0%, var(--premium-blue-light) 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.75rem;
+        border-radius: 16px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+    }
+    .btn-premium-add:hover {
+        transform: scale(1.02);
+        box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4);
+        color: white;
+    }
+
+    .search-input-premium {
+        border-radius: 16px;
+        border: 2px solid transparent;
+        background-color: #f1f5f9;
+        padding: 0.65rem 1.25rem 0.65rem 3rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        width: 100%;
+        max-width: 300px;
+    }
+    .search-input-premium:focus {
+        background-color: white;
+        border-color: var(--premium-blue-light);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .premium-modal-content {
+        background: #ffffff;
+        border: none;
+        border-radius: 28px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        padding: 2rem !important;
+    }
+    .input-field-premium {
+        transition: all 0.2s ease;
+        border: 2px solid #f1f5f9 !important;
+        background-color: #f8fafc !important;
+        border-radius: 14px !important;
+        padding: 0.85rem 1.25rem !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        color: #0f172a !important;
+        width: 100%;
+    }
+    .input-field-premium:focus {
+        border-color: #3b82f6 !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+        outline: none !important;
+    }
+    .input-label-premium {
+        font-size: 0.75rem !important;
+        font-weight: 800 !important;
+        color: #64748b !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        margin-bottom: 0.5rem !important;
+        display: block !important;
+    }
+
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+</style>
+
 <body>
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
-         {{-- <pre>
-    @php dd($habilitations); @endphp
-</pre> --}}
             @include('components.sidebar', ['habilitations'=> $habilitations])
             <div class="layout-page">
-                @include('components.header')
+                @include('components.header', ['page_title' => 'Équipe & <span class="text-gradient">Permissions</span>'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
-                        <div class="row g-6 mb-6">
-                            <div class="col-sm-6 col-xl-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start justify-content-between">
-                                            <div class="content-left">
-                                                <span class="text-heading">Nombre d'utilisateurs</span>
-                                                <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2">{{ number_format($totalUsers) }}</h4>
-                                                </div>
-                                                <small class="mb-0">Total Users</small>
-                                            </div>
-                                            <div class="avatar">
-                                                <span class="avatar-initial rounded bg-label-primary">
-                                                    <i class="icon-base bx bx-group icon-lg"></i>
-                                                </span>
-                                            </div>
+                        
+                        <!-- Header & Action -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4 mb-8">
+                            <div>
+                                <h4 class="text-2xl font-black text-slate-800 mb-1">Gouvernance de l'équipe</h4>
+                                <p class="text-slate-400 font-semibold mb-0">Pilotez vos collaborateurs et leurs accès sécurisés.</p>
+                            </div>
+                            <div>
+                                <button type="button" class="btn-premium-add" data-bs-toggle="modal" data-bs-target="#modalCenterCreate">
+                                    <i class="fa-solid fa-plus"></i> Nouveau Membre
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KPIs Grid -->
+                        <div class="row g-4 mb-8">
+                            <div class="col-sm-6 col-xl-4">
+                                <div class="glass-card p-6 h-100 stats-card-premium">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Effectif Total</p>
+                                            <h2 class="mb-0 font-black text-slate-800">{{ number_format($totalUsers) }}</h2>
+                                        </div>
+                                        <div class="avatar-premium-initial" style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%);">
+                                            <i class="fa-solid fa-users"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="progress rounded-pill" style="height: 6px; background-color: #f1f5f9;">
+                                            <div class="progress-bar rounded-pill bg-slate-800" style="width: 100%"></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="col-sm-6 col-xl-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start justify-content-between">
-                                            <div class="content-left">
-                                                <span class="text-heading">Utilisateurs connectés</span>
-                                                <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2">{{ number_format($connectedUsers) }}</h4>
-                                                </div>
-                                                <small class="mb-0">En ligne</small>
-                                            </div>
-                                            <div class="avatar">
-                                                <span class="avatar-initial rounded bg-label-danger">
-                                                    <i class="icon-base bx bx-user-plus icon-lg"></i>
-                                                </span>
-                                            </div>
+                            <div class="col-sm-6 col-xl-4">
+                                <div class="glass-card p-6 h-100 stats-card-premium">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Session Active</p>
+                                            <h2 class="mb-0 font-black text-success">{{ number_format($connectedUsers) }}</h2>
+                                        </div>
+                                        <div class="avatar-premium-initial" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                                            <i class="fa-solid fa-signal"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="progress rounded-pill" style="height: 6px; background-color: #f1f5f9;">
+                                            @php $onlinePct = $totalUsers > 0 ? ($connectedUsers / $totalUsers) * 100 : 0; @endphp
+                                            <div class="progress-bar rounded-pill bg-success" style="width: {{ $onlinePct }}%"></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="col-sm-6 col-xl-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start justify-content-between">
-                                            <div class="content-left">
-                                                <span class="text-heading">Utilisateurs hors ligne</span>
-                                                <div class="d-flex align-items-center my-1">
-                                                    <h4 class="mb-0 me-2">{{ number_format($offlineUsers) }}</h4>
-                                                </div>
-                                                <small class="mb-0">Hors ligne</small>
-                                            </div>
-                                            <div class="avatar">
-                                                <span class="avatar-initial rounded bg-label-warning">
-                                                    <i class="icon-base bx bx-user-voice icon-lg"></i>
-                                                </span>
-                                            </div>
+                            <div class="col-sm-6 col-xl-4">
+                                <div class="glass-card p-6 h-100 stats-card-premium">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Indisponibles</p>
+                                            <h2 class="mb-0 font-black text-slate-400">{{ number_format($offlineUsers) }}</h2>
+                                        </div>
+                                        <div class="avatar-premium-initial" style="background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);">
+                                            <i class="fa-solid fa-moon"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="progress rounded-pill" style="height: 6px; background-color: #f1f5f9;">
+                                            @php $offlinePct = $totalUsers > 0 ? ($offlineUsers / $totalUsers) * 100 : 0; @endphp
+                                            <div class="progress-bar rounded-pill bg-slate-300" style="width: {{ $offlinePct }}%"></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-
                         @if(session('success'))
-                            <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
-                                {{ session('success') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                    aria-label="Fermer"></button>
+                            <div class="alert alert-success border-0 shadow-sm rounded-2xl mb-6 d-flex align-items-center p-4">
+                                <i class="fa-solid fa-circle-check fa-lg me-3"></i>
+                                <span class="font-bold">{{ session('success') }}</span>
+                                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
                         @endif
 
-
-                        <div class="card mb-5">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">Administrateurs ({{ $admins->count() }})</h5>
+                        <!-- Main Table Glass Card -->
+                        <div class="glass-card overflow-hidden">
+                            <div class="p-6 border-bottom bg-white/50 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
                                 <div>
-                                    <button class="btn btn-outline-primary me-2 btn-sm" data-bs-toggle="collapse"
-                                        data-bs-target="#filterPanel">
-                                        <i class="bx bx-filter-alt me-1"></i> Filtrer
-                                    </button>
-                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#modalCenterCreate">
-                                        Ajouter un utilisateur
-                                    </button>
+                                    <h5 class="mb-0 font-black text-slate-800">Membres de l'organisation</h5>
+                                    <p class="text-xs text-slate-400 font-bold uppercase mt-1">Liste consolidée des accès</p>
+                                </div>
+                                <div class="position-relative">
+                                    <i class="fa-solid fa-magnifying-glass position-absolute text-slate-400" style="left: 1.25rem; top: 50%; transform: translateY(-50%);"></i>
+                                    <input type="text" id="filter-name" class="search-input-premium" placeholder="Rechercher un membre...">
                                 </div>
                             </div>
-
-                            <div class="collapse px-3 pt-2" id="filterPanel">
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <input type="text" id="filter-name" class="form-control"
-                                            placeholder="Filtrer par nom..." />
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            <div class="table-responsive text-nowrap mt-3">
-                                <table class="table">
+                            <div class="table-responsive">
+                                <table class="table premium-table mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Nom complet</th>
-                                            <th>Email</th>
-                                            <th>Rôle</th>
-
-                                            <th>Statut</th>
-                                            <th>Actions</th>
+                                            <th>Membre</th>
+                                            <th>Rôle & Accès</th>
+                                            <th>Entité Rattachée</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="adminTableBody">
-                                        @foreach($admins as $user)
+                                    <tbody id="userTableBody">
+                                        @php $allUsers = $admins->merge($comptables); @endphp
+                                        @foreach($allUsers as $user)
                                             <tr>
-                                                <td>{{ $user->name }} {{ $user->last_name }}</td>
-                                                <td>{{ $user->email_adresse }}</td>
                                                 <td>
-                                                    <span
-                                                        class="badge bg-label-{{ $user->role === 'admin' ? 'warning' : 'info' }}">
-                                                        {{ ucfirst($user->role) }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span
-                                                        class="badge bg-label-{{ $user->is_online ? 'success' : 'secondary' }}">
-                                                        {{ $user->is_online ? 'Actif' : 'Inactif' }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                <div class="d-flex gap-2">
-                                                <button
-                                                        class="btn p-0 border-0 bg-transparent text-primary btn-see-user"
-                                                        data-bs-toggle="modal" data-bs-target="#modalCenterSee"
-                                                        data-user-id="{{ $user->id }}"
-                                                        data-user-name="{{ $user->name }}"
-                                                        data-user-lastname="{{ $user->last_name }}"
-                                                        data-user-email="{{ $user->email_adresse }}"
-                                                        data-user-role="{{ $user->role }}"
-                                                        data-user-habilitations='@json($user->habilitations)'
-                                                        data-user-company-id="{{ $user->company->id ?? '' }}"
-                                                        data-user-company-name="{{ $user->company->company_name ?? 'N/A' }}">
-                                                        <i class="bx bx-user-circle fs-5"></i>
-                                                    </button>
-
-
-                                                    <button type="button"
-                                                        class="btn p-0 border-0 bg-transparent text-primary btn-edit-user"
-                                                        data-bs-toggle="modal" data-bs-target="#modalCenterUpdate"
-                                                        data-user-id="{{ $user->id }}"
-                                                        data-user-name="{{ $user->name }}"
-                                                        data-user-lastname="{{ $user->last_name }}"
-                                                        data-user-email="{{ $user->email_adresse }}"
-                                                        data-user-role="{{ $user->role }}"
-                                                        data-user-habilitations='@json($user->habilitations)'
-                                                        data-user-company-id="{{ $user->company->id ?? '' }}"
-                                                        data-user-company-name="{{ $user->company->company_name ?? 'N/A' }}">
-                                                        <i class="bx bx-edit-alt fs-5"></i>
-                                                    </button>
-
-
-
-                                                            <button class="btn p-0 border-0 bg-transparent text-danger"
-                                                                data-bs-toggle="modal" data-bs-target="#deleteUserModal"
-                                                                data-user-id="{{ $user->id }}"
-                                                                data-user-name="{{ $user->name }} {{ $user->last_name }}">
-                                                                <i class="bx bx-trash fs-5"></i>
-                                                            </button>
-
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar-premium-initial me-4" style="{{ $user->role === 'admin' ? '' : 'background: linear-gradient(135deg, #334155 0%, #475569 100%);' }}">
+                                                            {{ strtoupper(substr($user->name, 0, 1)) }}{{ strtoupper(substr($user->last_name, 0, 1)) }}
                                                         </div>
-                                                     </td>
-                                            </tr>
-                                        @endforeach
-
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">Comptables ({{ $comptables->count() }})</h5>
-                            </div>
-
-                            <div class="table-responsive text-nowrap mt-3">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Nom complet</th>
-                                            <th>Email</th>
-                                            <th>Rôle</th>
-                                            <th>statut</th>
-                                            <th>Comptabilte</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="comptableTableBody">
-                                        @foreach($comptables as $user)
-                                            <tr>
-                                                <td>{{ $user->name }} {{ $user->last_name }}</td>
-                                                <td>{{ $user->email_adresse }}</td>
-                                                <td>
-                                                    <span
-                                                        class="badge bg-label-{{ $user->role === 'admin' ? 'warning' : 'info' }}">
-                                                        {{ ucfirst($user->role) }}
-                                                    </span>
+                                                        <div>
+                                                            <div class="font-black text-slate-800">{{ $user->name }} {{ $user->last_name }}</div>
+                                                            <div class="text-xs text-slate-400 font-bold uppercase">{{ $user->email_adresse }}</div>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                                 <td>
-                                                    <span
-                                                        class="badge bg-label-{{ $user->is_online ? 'success' : 'secondary' }}">
-                                                        {{ $user->is_online ? 'Actif' : 'Inactif' }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                        @if ($user->company)
-                                                            {{ $user->company->company_name }}
-                                                        @else
-                                                            N/A
+                                                    <div class="d-flex flex-column gap-1">
+                                                        <span class="badge-premium {{ $user->role === 'admin' ? 'badge-premium-admin' : 'badge-premium-comptable' }}">
+                                                            <i class="fa-solid {{ $user->role === 'admin' ? 'fa-crown' : 'fa-calculator' }} me-2"></i>
+                                                            {{ $user->role === 'admin' ? 'Administrateur' : 'Comptable' }}
+                                                        </span>
+                                                        @if($user->role !== 'admin')
+                                                            <div class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                                                                {{ is_array($user->habilitations) ? count(array_filter($user->habilitations)) : 0 }} modules actifs
+                                                            </div>
                                                         @endif
-                                                    </td>
+                                                    </div>
+                                                </td>
                                                 <td>
-                                                    <div class="d-flex gap-2">
-                                                       <button
-                                                            class="btn p-0 border-0 bg-transparent text-primary btn-see-user"
-                                                            data-bs-toggle="modal" data-bs-target="#modalCenterSee"
-                                                            data-user-id="{{ $user->id }}"
-                                                            data-user-name="{{ $user->name }}"
-                                                            data-user-lastname="{{ $user->last_name }}"
-                                                            data-user-email="{{ $user->email_adresse }}"
-                                                            data-user-role="{{ $user->role }}"
-                                                            data-user-habilitations='@json($user->habilitations)'
-                                                            data-user-company-id="{{ $user->company->id ?? '' }}"
-                                                            data-user-company-name="{{ $user->company->company_name ?? 'N/A' }}">
-                                                            <i class="bx bx-user-circle fs-5"></i>
+                                                    @if($user->company)
+                                                        <div class="bg-blue-50/50 p-2 rounded-xl d-inline-flex align-items-center">
+                                                            <i class="fa-solid fa-building text-blue-500 me-2"></i>
+                                                            <span class="text-sm font-black text-blue-900">{{ $user->company->company_name }}</span>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-slate-400 italic text-sm">Non assigné</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if($user->is_online)
+                                                        <span class="badge-premium badge-premium-online">
+                                                            <span class="status-indicator bg-success"></span> Connecté
+                                                        </span>
+                                                    @else
+                                                        <span class="badge-premium badge-premium-offline">
+                                                            <span class="status-indicator bg-danger"></span> Hors ligne
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-end">
+                                                    <div class="dropdown">
+                                                        <button class="btn p-2 rounded-xl hover:bg-slate-50 transition-colors dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                                            <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i>
                                                         </button>
-
-
-                                                        <button type="button"
-                                                                class="btn p-0 border-0 bg-transparent text-primary btn-edit-user"
-                                                                data-bs-toggle="modal" data-bs-target="#modalCenterUpdate"
-                                                                data-user-id="{{ $user->id }}"
-                                                                data-user-name="{{ $user->name }}"
-                                                                data-user-lastname="{{ $user->last_name }}"
-                                                                data-user-email="{{ $user->email_adresse }}"
-                                                                data-user-role="{{ $user->role }}"
-                                                                data-user-habilitations='@json($user->habilitations)'
-                                                                data-user-company-id="{{ $user->company->id ?? '' }}"
-                                                                data-user-company-name="{{ $user->company->company_name ?? 'N/A' }}">
-                                                                <i class="bx bx-edit-alt fs-5"></i>
-                                                            </button>
-
-
-
-                                                        <button class="btn p-0 border-0 bg-transparent text-danger"
-                                                            data-bs-toggle="modal" data-bs-target="#deleteUserModal"
-                                                            data-user-id="{{ $user->id }}"
-                                                            data-user-name="{{ $user->name }} {{ $user->last_name }}">
-                                                            <i class="bx bx-trash fs-5"></i>
-                                                        </button>
-
+                                                        <div class="dropdown-menu dropdown-menu-end p-2 border-0 shadow-xl rounded-2xl">
+                                                            <a class="dropdown-item py-2 rounded-xl btn-see-user" href="javascript:void(0);"
+                                                               data-bs-toggle="modal" data-bs-target="#modalCenterSee"
+                                                               data-user-id="{{ $user->id }}"
+                                                               data-user-name="{{ $user->name }}"
+                                                               data-user-lastname="{{ $user->last_name }}"
+                                                               data-user-email="{{ $user->email_adresse }}"
+                                                               data-user-role="{{ $user->role }}"
+                                                               data-user-habilitations='@json($user->habilitations)'
+                                                               data-user-company-id="{{ $user->company->id ?? '' }}"
+                                                               data-user-company-name="{{ $user->company->company_name ?? 'N/A' }}">
+                                                                <i class="fa-solid fa-address-card me-2 text-slate-400"></i> <span class="fw-bold text-slate-600">Profil & Accès</span>
+                                                            </a>
+                                                            <a class="dropdown-item py-2 rounded-xl btn-edit-user" href="javascript:void(0);"
+                                                               data-bs-toggle="modal" data-bs-target="#modalCenterUpdate"
+                                                               data-user-id="{{ $user->id }}"
+                                                               data-user-name="{{ $user->name }}"
+                                                               data-user-lastname="{{ $user->last_name }}"
+                                                               data-user-email="{{ $user->email_adresse }}"
+                                                               data-user-role="{{ $user->role }}"
+                                                               data-user-habilitations='@json($user->habilitations)'
+                                                               data-user-company-id="{{ $user->company->id ?? '' }}"
+                                                               data-user-company-name="{{ $user->company->company_name ?? 'N/A' }}">
+                                                                <i class="fa-solid fa-user-pen me-2 text-blue-500"></i> <span class="fw-bold text-slate-600">Modifier</span>
+                                                            </a>
+                                                            @if(auth()->id() !== $user->id)
+                                                                <div class="dropdown-divider opacity-50"></div>
+                                                                <a class="dropdown-item py-2 rounded-xl text-danger" href="javascript:void(0);"
+                                                                   data-bs-toggle="modal" data-bs-target="#deleteUserModal"
+                                                                   data-user-id="{{ $user->id }}"
+                                                                   data-user-name="{{ $user->name }} {{ $user->last_name }}">
+                                                                    <i class="fa-solid fa-trash-can me-2"></i> <span class="fw-bold">Supprimer</span>
+                                                                </a>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>
                                         @endforeach
-
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="modalCenterTitle">
-                                            Fiche utilisateur
-                                        </h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Fermer"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <form id="createUserForm" method="POST" action="{{ route('users.store') }}"
-                                            novalidate>
-                                            @csrf
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label for="name" class="form-label">Nom</label>
-                                                    <input type="text" id="name" name="name" class="form-control"
-                                                        required  />
-                                                    <div class="invalid-feedback" id="errorFirstName"></div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="last_name" class="form-label">Prénom</label>
-                                                    <input type="text" id="last_name" name="last_name"
-                                                        class="form-control" required />
-                                                    <div class="invalid-feedback" id="errorLastName"></div>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label for="email_adresse" class="form-label">Email</label>
-                                                    <input type="email" id="email_adresse" name="email_adresse"
-                                                        class="form-control" required />
-                                                    <div class="invalid-feedback" id="errorEmail"></div>
-                                                </div>
-                                                <div class="col-6">
-                                                    <label for="password" class="form-label">Mot de passe</label>
-                                                    <input type="password" id="password" name="password"
-                                                        class="form-control" required />
-                                                    <div class="form-text">
-                                                        8 caractères minimum, une majuscule, un chiffre.
-                                                    </div>
-                                                    <div class="invalid-feedback" id="errorPassword"></div>
-                                                </div>
-                                                <div class="col-6">
-                                                    <label for="confirmPassword" class="form-label">Confirmer le mot de
-                                                        passe</label>
-                                                    <input type="password" id="confirmPassword" class="form-control"
-                                                        required />
-                                                    <div class="invalid-feedback" id="errorConfirmPassword"></div>
-                                                </div>
 
+                        <!-- Modals Included -->
+                        @include('user_management.modals') 
 
-
-                                                    <div class="col-12 mt-3" id="newCompanyNameField" style="display: none;">
-                                                        <label for="new_company_name" class="form-label">Nom de la comptabilite</label>
-                                                        <input type="text" id="new_company_name" name="new_company_name" class="form-control" placeholder="Entrez le nom de la comptabilité." />
-                                                    </div>
-                                                     <div class="col-6">
-                                                     <label for="company_id" class="form-label">Comptabilite rattachéé a l'utilisateur</label>
-                                                        <select name="company_id" id="company_id" class="form-select">
-                                                            <option value="new">-- selectionnez une comptabilité --</option>
-
-                                                            {{-- Cette boucle va maintenant utiliser la liste filtrée du contrôleur --}}
-                                                            @foreach($managedCompanies as $company)
-                                                                <option value="{{ $company->id }}"
-                                                                    {{ $company->id == $currentCompanyId ? 'selected' : '' }}>
-                                                                    {{ $company->company_name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                     </div>
-                                                <div class="col-6">
-                                                    <label for="role" class="form-label">Rôle</label>
-                                                    <select id="role" name="role" class="form-select" required>
-                                                        <option value="">Sélectionner un rôle</option>
-                                                        <option value="admin">Administrateur</option>
-                                                        <option value="comptable">Comptable</option>
-                                                    </select>
-                                                    <div class="invalid-feedback" id="errorRole"></div>
-                                                </div>
-                                                <div id="habilitationsGroup" class="row g-3 mt-3 d-none">
-                                                    <label class="form-label fw-bold">Habilitations</label>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="dashboard"
-                                                                id="hab_dashboard">
-                                                            <label class="form-check-label"
-                                                                for="hab_dashboard">Dashboard</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="plan_comptable"
-                                                                id="hab_plan_comptable">
-                                                            <label class="form-check-label"
-                                                                for="hab_plan_comptable">Plan comptable</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="plan_tiers"
-                                                                id="hab_plan_tiers">
-                                                            <label class="form-check-label" for="hab_plan_tiers">Plan
-                                                                tiers</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="journaux"
-                                                                id="hab_journaux">
-                                                            <label class="form-check-label"
-                                                                for="hab_journaux">Journaux</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="grand_livre"
-                                                                id="hab_grand_livre">
-                                                            <label class="form-check-label" for="hab_grand_livre">Grand
-                                                                livre</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="balance" id="hab_balance">
-                                                            <label class="form-check-label"
-                                                                for="hab_balance">Balance</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="etats_financiers"
-                                                                id="hab_etats_financiers">
-                                                            <label class="form-check-label"
-                                                                for="hab_etats_financiers">États financiers</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="fichier_joindre"
-                                                                id="hab_fichier_joindre">
-                                                            <label class="form-check-label"
-                                                                for="hab_fichier_joindre">Fichier à joindre</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="parametre"
-                                                                id="hab_parametre">
-                                                            <label class="form-check-label"
-                                                                for="hab_parametre">Paramètre</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="tresorerie"
-                                                                id="hab_tresorerie">
-                                                            <label class="form-check-label"
-                                                                for="hab_tresorerie">Trésorerie</label>
-                                                        </div>
-                                                    </div>
-                                                     <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="poste"
-                                                                id="hab_poste">
-                                                            <label class="form-check-label"
-                                                                for="hab_poste">Poste de trésorerie </label>
-                                                        </div>
-                                                    </div>
-                                                     <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="modal_saisie_direct"
-                                                                id="hab_modal_saisie_direct">
-                                                            <label class="form-check-label"
-                                                                for="hab_modal_saisie_direct">Nouvelle saisie</label>
-                                                        </div>
-                                                    </div>
-                                                      <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="exercice_comptable"
-                                                                id="hab_exercice_comptable">
-                                                            <label class="form-check-label"
-                                                                for="hab_exercice_comptable">Exercice comptable</label>
-                                                        </div>
-                                                    </div>
-                                                     <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="Balance_Tiers"
-                                                                id="hab_Balance_Tiers">
-                                                            <label class="form-check-label"
-                                                                for="hab_Balance_Tiers">Balance Des Tiers</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="habilitations[]" value="grand_livre_tiers"
-                                                                id="hab_grand_livre_tiers">
-                                                            <label class="form-check-label"
-                                                                for="hab_grand_livre_tiers">Grand Livre Tiers</label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                </div>
-
-
-
-                                            </div>
-                                            <div class="modal-footer justify-content-end">
-                                                <button type="button" class="btn btn-label-secondary"
-                                                    data-bs-dismiss="modal">
-                                                    Fermer
-                                                </button>
-                                                <button type="submit" class="btn btn-primary"
-                                                    onclick="return validerCreationUtilisateur(event)">
-                                                    Enregistrer
-                                                </button>
-                                            </div>
-
-                                        </form>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-
-{{-- Modification --}}
- <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            {{-- ATTENTION : L'action de la route doit être mise à jour par JS avant l'envoi --}}
-            <form id="updateUserForm" method="POST"
-                action="{{ route('users.update', ['id' => '__ID__']) }}">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="id" id="updateUserId" />
-
-                <div class="modal-header">
-                    <h5 class="modal-title">Modification de l'utilisateur</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        aria-label="Fermer"></button>
+                    </div>
                 </div>
-
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="updateFirstName" class="form-label">Prénom</label>
-                        <input type="text" id="updateFirstName" name="name" class="form-control"
-                            placeholder="Entrer le prénom" />
-                        <div class="invalid-feedback" id="updateFirstNameError"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="updateLastName" class="form-label">Nom de famille</label>
-                        <input type="text" id="updateLastName" name="last_name"
-                            class="form-control" placeholder="Entrer le nom de famille" />
-                        <div class="invalid-feedback" id="updateLastNameError"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="updateEmail" class="form-label">Email</label>
-                        <input type="email" id="updateEmail" name="email_adresse"
-                            class="form-control" placeholder="exemple@email.com" />
-                        <div class="invalid-feedback" id="updateEmailError"></div>
-                    </div>
-
-                    {{-- Champ Rôle --}}
-                    <div class="mb-3">
-                        <label for="updateRole" class="form-label">Rôle</label>
-                        <select id="updateRole" name="role" class="form-select">
-                            <option value="">-- Sélectionner un rôle --</option>
-                            <option value="admin">Administrateur</option>
-                            <option value="comptable">Comptable</option>
-                        </select>
-                        <div class="invalid-feedback" id="updateRoleError"></div>
-                    </div>
-
-                    {{-- **AJOUT DU CHAMP COMPAGNIE** --}}
-                    <div class="mb-3" id="updateCompanyField">
-                        <label for="updateCompanyId" class="form-label">Comptabilite rattachée</label>
-                        <select name="company_id" id="updateCompanyId" class="form-select">
-                            <option value="">-- Sélectionner une comptabilité --</option>
-                            @foreach($managedCompanies as $company)
-                                <option value="{{ $company->id }}">
-                                    {{ $company->company_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- Section Habilitations (CORRECTION APPLIQUÉE ICI) --}}
-                    <div id="updateHabilitationsSection" class="mt-4">
-                        <h6 class="mb-2">Habilitations</h6>
-                        <div class="row">
-                            @php
-                                // Liste complète des habilitations
-                                $habilitations = [
-                                    'dashboard',
-                                    'plan_comptable',
-                                    'plan_tiers',
-                                    'journaux',
-                                    'grand_livre',
-                                    'balance',
-                                    'tresorerie',
-                                    'etats_financiers',
-                                    'fichier_joindre',
-                                    'parametre',
-                                    'accounting_journals',
-                                    'exercice_comptable',
-                                    'Etat de rapprochement bancaire',
-                                    'Gestion de la trésorerie',
-                                    'gestion_analytique',
-                                    'gestion_tiers',
-                                    'user_management',
-                                    'gestion_immobilisations',
-                                    'gestion_reportings',
-                                    'compagny_information',
-                                    'gestion_stocks',
-                                    'modal_saisie_direct',
-                                    'nouvelle_saisie',
-                                    'grand_livre_tiers',
-                                    'poste',
-                                    'Balance_Tiers',
-
-                                ];
-                            @endphp
-
-                            @foreach ($habilitations as $habilitation)
-                                <div class="mb-2 col-md-4">
-                                    <div class="form-check">
-                                        {{-- CHAMP CACHÉ DE SÉCURITÉ (SOLUTION) --}}
-                                        <input type="hidden" name="habilitations[{{ $habilitation }}]" value="0">
-
-                                        <input class="form-check-input" type="checkbox"
-                                            id="update_{{ $habilitation }}"
-                                            name="habilitations[{{ $habilitation }}]" value="1">
-                                        <label class="form-check-label"
-                                            for="update_{{ $habilitation }}">
-                                            {{ ucfirst(str_replace('_', ' ', $habilitation)) }}
-                                        </label>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary"
-                        data-bs-dismiss="modal">Fermer</button>
-                    <button type="submit" class="btn btn-primary">Enregistrer les
-                        modifications</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="modal fade" id="modalCenterSee" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Informations de l'utilisateur</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                    aria-label="Fermer"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="mb-3 col-md-6">
-                        <label for="seeFirstName" class="form-label">Prénom</label>
-                        <input type="text" id="seeFirstName" class="form-control" readonly />
-                    </div>
-
-                    <div class="mb-3 col-md-6">
-                        <label for="seeLastName" class="form-label">Nom de famille</label>
-                        <input type="text" id="seeLastName" class="form-control" readonly />
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="mb-3 col-md-6">
-                        <label for="seeEmail" class="form-label">Email</label>
-                        <input type="email" id="seeEmail" class="form-control" readonly />
-                    </div>
-
-                    {{-- Le champ Compagnie et Rôle sont maintenant correctement dans le même row que l'Email --}}
-                    <div class="mb-3 col-md-6">
-                        <label for="seeRole" class="form-label">Rôle</label>
-                        <input type="text" id="seeRole" class="form-control" readonly />
-                    </div>
-                </div>
-
-                <div class="row">
-                    {{-- Le champ Compagnie est dans un nouveau row pour une meilleure disposition (ou déplacez-le dans le row précédent si vous voulez 3 champs) --}}
-                    <div class="mb-3 col-md-6">
-                        <label for="seeCompany" class="form-label">Comptabilite rattachée</label>
-                        <input type="text" id="seeCompany" class="form-control" readonly />
-                    </div>
-                </div>
-
-
-                <div id="seeHabilitationsSection" class="mt-4" style="display: none;">
-                    <h6 class="mb-2">Habilitations</h6>
-                    <div class="row">
-                        @php
-                            $habilitations = [
-                                        'dashboard',
-                                        'plan_comptable',
-                                        'plan_tiers',
-                                        'journaux',
-                                        'grand_livre',
-                                        'balance',
-                                        'etats_financiers',
-                                        'fichier_joindre',
-                                        'tresorerie',
-                                        'parametre',
-                                        'accounting_journals',
-                                        'exercice_comptable',
-                                        'Etat de rapprochement bancaire',
-                                        'Gestion de la trésorerie',
-                                        'gestion_analytique',
-                                        'gestion_tiers',
-                                        'user_management',
-                                        'gestion_immobilisations',
-                                        'gestion_reportings',
-                                        'compagny_information',
-                                        'gestion_stocks',
-                                        'gestion_reportings',
-                                        'modal_saisie_direct',
-                                        'nouvelle_saisie',
-                                        'grand_livre_tiers',
-                                        'poste',
-                                        'Balance_Tiers',
-                            ];
-                        @endphp
-
-                        @foreach ($habilitations as $habilitation)
-                            <div class="mb-2 col-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                        id="see_{{ $habilitation }}" disabled >
-                                    <label class="form-check-label" for="see_{{ $habilitation }}">
-                                        {{ ucfirst(str_replace('_', ' ', $habilitation)) }}
-                                    </label>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-
-                                    <div class="modal-footer justify-content-end">
-                                        <button type="button" class="btn btn-label-secondary"
-                                            data-bs-dismiss="modal">Fermer</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-                        <div class="modal fade" id="deleteUserModal" tabindex="-1"
-                            aria-labelledby="deleteUserModalLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-sm">
-                                <div class="modal-content border-0 shadow">
-                                    <form id="deleteUserForm" method="POST">
-                                        @csrf
-                                        @method('DELETE')
-
-                                        <div class="modal-header text-dark justify-content-center">
-                                            <h5 class="modal-title" id="deleteUserModalLabel">
-                                                <i class="bx bx-error-circle me-2"></i>Confirmer la suppression
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Fermer"></button>
-                                        </div>
-
-                                        <div class="modal-body text-center">
-                                            <p class="mb-0">
-                                                Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est
-                                                <strong>irréversible</strong>.
-                                            </p>
-                                            <p class="fw-bold text-danger mt-2" id="userToDelete">Nom Prénom</p>
-                                        </div>
-
-                                        <div class="modal-footer justify-content-center">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                Annuler
-                                            </button>
-                                            <button type="submit" class="btn btn-danger" id="confirmDeleteUserBtn">
-                                                Supprimer
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-                </div>
-            </div>
-
-        <div class="layout-overlay layout-menu-toggle"></div>
-    </div>
     @include('components.footer')
-
+    
+    <!-- JS Variables for External Script -->
     <script>
         const usersUpdateBaseUrl = "{{ route('users.update', ['id' => '__ID__']) }}";
         const usersDeleteUrl = "{{ route('users.destroy', ['id' => '__ID__']) }}";
     </script>
     <script src="{{ asset('js/user_m.js') }}"></script>
-
+    
     <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const companySelect = document.getElementById('company_id');
-    const newCompanyNameField = document.getElementById('newCompanyNameField');
-    const newCompanyNameInput = document.getElementById('new_company_name');
-
-    // Fonction pour basculer l'affichage
-    function toggleNewCompanyField() {
-        if (companySelect.value === 'new') {
-            newCompanyNameField.style.display = 'block';
-            newCompanyNameInput.setAttribute('required', 'required'); // Rendez le champ obligatoire
-        } else {
-            newCompanyNameField.style.display = 'none';
-            newCompanyNameInput.removeAttribute('required'); // Supprimez l'obligation
-            newCompanyNameInput.value = ''; // Réinitialisez la valeur
-        }
-    }
-
-    // Écouteur d'événement sur le changement de sélection
-    companySelect.addEventListener('change', toggleNewCompanyField);
-
-    // Initialisation au chargement de la modale/page
-    toggleNewCompanyField();
-});
-    </script>
-    <script>
-    // 1. Convertir les données PHP en JavaScript
-    // Assurez-vous que les utilisateurs sont passés avec leurs habilitations (user.habilitations)
-    const allHabilitations = @json($allHabilitations);
-    const allUsersData = @json($users->keyBy('id'));
-    const usersUpdateBaseUrl = "{{ route('users.update', ['id' => '__ID__']) }}";
-
-    // 2. Gestion de l'ouverture de la modale d'Update
-    $('#modalCenterUpdate').on('show.bs.modal', function (event) {
-        const button = $(event.relatedTarget);
-        const userId = button.data('id');
-        const user = allUsersData[userId]; // Récupérer les données complètes de l'utilisateur
-
-        const modal = $(this);
-        const form = modal.find('#updateForm');
-        const container = modal.find('#habilitations-container-update'); // Assurez-vous que ce conteneur existe
-
-        // Mise à jour de l'action du formulaire
-        form.attr('action', usersUpdateBaseUrl.replace('__ID__', userId));
-
-        // 3. Génération et pré-sélection des checkboxes
-        container.empty();
-
-        // Récupérer l'objet des habilitations de l'utilisateur
-        const userHabilitations = user.habilitations || {};
-
-        allHabilitations.forEach(function(permissionKey) {
-            // VÉRIFICATION CRUCIALE : est-ce que cette clé existe et a la valeur TRUE pour cet utilisateur ?
-            const isChecked = userHabilitations[permissionKey] === true;
-
-            // Rendre le nom de la permission lisible (ex: grand_livre -> Grand Livre)
-            const readableLabel = permissionKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-            // Créer la structure HTML de la checkbox
-            const html = `
-                <div class="form-check me-3">
-                    <input
-                        class="form-check-input"
-                        type="checkbox"
-                        name="habilitations[]"
-                        value="${permissionKey}"
-                        id="perm_update_${permissionKey}"
-                        ${isChecked ? 'checked' : ''} />
-                    <label class="form-check-label" for="perm_update_${permissionKey}">
-                        ${readableLabel}
-                    </label>
-                </div>
-            `;
-            container.append(html);
+        // Inline JS for complex behaviors if needed
+        document.addEventListener('DOMContentLoaded', function () {
+            // Search filter
+            const searchInput = document.getElementById('filter-name');
+            const tableBody = document.getElementById('userTableBody');
+            
+            if(searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const filter = searchInput.value.toLowerCase();
+                    const rows = tableBody.getElementsByTagName('tr');
+                    
+                    for (let i = 0; i < rows.length; i++) {
+                        const name = rows[i].cells[0].textContent.toLowerCase();
+                        const email = rows[i].cells[0].querySelector('.text-xs').textContent.toLowerCase();
+                        if (name.includes(filter) || email.includes(filter)) {
+                            rows[i].style.display = "";
+                        } else {
+                            rows[i].style.display = "none";
+                        }
+                    }
+                });
+            }
         });
-
-        // N'oubliez pas de mettre à jour les autres champs de la modale (nom, email, rôle)
-        modal.find('#name_update').val(user.name);
-        modal.find('#last_name_update').val(user.last_name);
-        modal.find('#email_update').val(user.email);
-        // ... (etc. pour les autres champs)
-    });
-</script>
+    </script>
 </body>
-
 </html>

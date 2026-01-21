@@ -1320,7 +1320,7 @@ function ajouterEcriture() {
 
         const modifierCell = document.createElement('td');
         modifierCell.innerHTML = `
-            <button class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;">
+            <button type="button" class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Modifier cette ligne">
                 <i class="bx bx-edit"></i>
             </button>
         `;
@@ -1328,7 +1328,7 @@ function ajouterEcriture() {
 
         const supprimerCell = document.createElement('td');
         supprimerCell.innerHTML = `
-            <button class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;">
+            <button type="button" class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Supprimer cette ligne">
                 <i class="bx bx-trash"></i>
             </button>
         `;
@@ -1544,8 +1544,11 @@ function ajouterEcriture() {
         // Initialisation pour charger un brouillon via URL
         const urlParams = new URLSearchParams(window.location.search);
         const batchId = urlParams.get('batch_id');
+        const nSaisie = urlParams.get('n_saisie');
         if (batchId) {
             chargerBrouillonBackend(batchId);
+        } else if (nSaisie) {
+            chargerEcritureBackend(nSaisie);
         }
     });
 
@@ -1637,6 +1640,95 @@ function ajouterEcriture() {
         }
     }
 
+    async function chargerEcritureBackend(nSaisie) {
+        try {
+            const btnEnregistrer = document.getElementById('btnEnregistrer');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            if (btnText) btnText.textContent = 'CHARGEMENT...';
+            if (btnEnregistrer) btnEnregistrer.disabled = true;
+            if (btnSpinner) btnSpinner.classList.remove('d-none');
+
+            const res = await fetch(`/api/ecriture/load-by-saisie/${nSaisie}`);
+            const json = await res.json();
+            
+            if (json.success) {
+                const tbody = document.querySelector('#tableEcritures tbody');
+                if (tbody) tbody.innerHTML = '';
+                
+                // Remplir les champs communs
+                if (json.summary.date) document.getElementById('date').value = json.summary.date;
+                if (json.summary.description) document.getElementById('description_operation').value = json.summary.description;
+                if (json.summary.reference) document.getElementById('reference_piece').value = json.summary.reference;
+                
+                // Journal
+                if (json.summary.code_journal_id) {
+                    const imputationHidden = document.getElementById('imputation');
+                    const codeJournalAffiche = document.getElementById('code_journal_affiche');
+                    if (imputationHidden) imputationHidden.value = json.summary.code_journal_id;
+                    if (codeJournalAffiche) codeJournalAffiche.value = json.summary.journal_code;
+                    
+                    // Déclencher la vérification du type de journal (pour afficher le compte de trésorerie si nécessaire)
+                    if (typeof verifierTypeJournal === 'function') {
+                        verifierTypeJournal(json.summary.journal_code);
+                    }
+                }
+
+                // N° de Saisie
+                if (json.summary.n_saisie) {
+                    const nSaisieInput = document.getElementById('n_saisie');
+                    if (nSaisieInput) nSaisieInput.value = json.summary.n_saisie;
+                }
+
+                // Compte Trésorerie
+                if (json.summary.compte_tresorerie_id) {
+                    const selectTreso = document.getElementById('compte_tresorerie');
+                    if (selectTreso) {
+                        selectTreso.value = json.summary.compte_tresorerie_id;
+                        if (typeof $(selectTreso).select2 === 'function') {
+                            $(selectTreso).trigger('change');
+                        }
+                    }
+                }
+
+                // Pièce jointe (si elle existe dans l'écriture)
+                if (json.summary.piece_justificatif) {
+                    const form = document.getElementById('formEcriture');
+                    let hiddenPiece = document.getElementById('draft_piece_filename');
+                    if (!hiddenPiece) {
+                        hiddenPiece = document.createElement('input');
+                        hiddenPiece.type = 'hidden';
+                        hiddenPiece.id = 'draft_piece_filename';
+                        hiddenPiece.name = 'draft_piece_filename';
+                        form.appendChild(hiddenPiece);
+                    }
+                    hiddenPiece.value = json.summary.piece_justificatif;
+                }
+
+                // Ajouter les lignes d'écriture
+                json.brouillons.forEach(b => {
+                    ajouterLigneBrouillon(b);
+                });
+                
+                updateTotals();
+                showAlert('success', 'Écriture chargée avec succès pour modification');
+            } else {
+                showAlert('danger', "Erreur: " + (json.message || "Impossible de charger l'écriture"));
+            }
+        } catch (e) {
+            showAlert('danger', "Erreur lors du chargement: " + e.message);
+        } finally {
+            const btnEnregistrer = document.getElementById('btnEnregistrer');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            if (btnText) btnText.textContent = 'VALIDER & ENREGISTRER';
+            if (btnEnregistrer) btnEnregistrer.disabled = false;
+            if (btnSpinner) btnSpinner.classList.add('d-none');
+            updateTotals();
+        }
+    }
+
     function ajouterLigneBrouillon(b) {
         const tbody = document.querySelector('#tableEcritures tbody');
         const newRow = tbody.insertRow();
@@ -1685,11 +1777,11 @@ function ajouterEcriture() {
         });
 
         const modifierCell = document.createElement('td');
-        modifierCell.innerHTML = `<button class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;"><i class="bx bx-edit"></i></button>`;
+        modifierCell.innerHTML = `<button type="button" class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Modifier cette ligne"><i class="bx bx-edit"></i></button>`;
         newRow.appendChild(modifierCell);
 
         const supprimerCell = document.createElement('td');
-        supprimerCell.innerHTML = `<button class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;"><i class="bx bx-trash"></i></button>`;
+        supprimerCell.innerHTML = `<button type="button" class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Supprimer cette ligne"><i class="bx bx-trash"></i></button>`;
         newRow.appendChild(supprimerCell);
     }
 
@@ -1717,6 +1809,7 @@ function ajouterEcriture() {
         const referencePieceCommune = document.getElementById('reference_piece').value;
         const urlParams = new URLSearchParams(window.location.search);
         const batchId = urlParams.get('batch_id');
+        const nSaisieParam = urlParams.get('n_saisie');
         
         // Récupérer le fichier ou le nom du fichier du brouillon
         const pieceFile = document.getElementById('piece_justificatif').files[0];
@@ -1752,6 +1845,48 @@ function ajouterEcriture() {
             });
         });
 
+        const btnEnregistrer = document.getElementById('btnEnregistrer');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        
+        btnText.textContent = 'VALIDATION EN COURS...';
+        btnEnregistrer.disabled = true;
+        btnSpinner.classList.remove('d-none');
+
+        // Si on est en mode modification (n_saisie param présent), supprimer d'abord les anciennes écritures
+        if (nSaisieParam) {
+            fetch(`/ecriture-delete-by-saisie/${nSaisieParam}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(deleteResult => {
+                if (deleteResult.success) {
+                    // Ensuite, créer les nouvelles écritures
+                    creerNouvellesEcritures(ecritures, pieceFile, batchId);
+                } else {
+                    showAlert('danger', 'Erreur lors de la suppression des anciennes écritures: ' + (deleteResult.message || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la suppression:', error);
+                showAlert('danger', 'Une erreur est survenue lors de la mise à jour.');
+            })
+            .finally(() => {
+                btnText.textContent = 'VALIDER & ENREGISTRER';
+                btnEnregistrer.disabled = false;
+                btnSpinner.classList.add('d-none');
+            });
+        } else {
+            // Mode création : créer directement les écritures
+            creerNouvellesEcritures(ecritures, pieceFile, batchId);
+        }
+    }
+
+    function creerNouvellesEcritures(ecritures, pieceFile, batchId) {
         // Créer FormData pour l'envoi avec fichier
         const formDataToSend = new FormData();
         formDataToSend.append('ecritures', JSON.stringify(ecritures));
@@ -1761,14 +1896,6 @@ function ajouterEcriture() {
         if (batchId) {
             formDataToSend.append('batch_id', batchId);
         }
-
-        const btnEnregistrer = document.getElementById('btnEnregistrer');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
-        
-        btnText.textContent = 'VALIDATION EN COURS...';
-        btnEnregistrer.disabled = true;
-        btnSpinner.classList.remove('d-none');
 
         fetch('/api/ecritures/multiple', {
             method: 'POST',
@@ -1784,10 +1911,18 @@ function ajouterEcriture() {
                 throw new Error(body?.message || JSON.stringify(body?.errors) || 'Erreur serveur');
             }
             if (body?.success) {
-                showAlert('success', 'Écritures enregistrées avec succès !');
+                const urlParams = new URLSearchParams(window.location.search);
+                const nSaisieParam = urlParams.get('n_saisie');
+                
+                if (nSaisieParam) {
+                    showAlert('success', 'Écriture mise à jour avec succès !');
+                } else {
+                    showAlert('success', 'Écritures enregistrées avec succès !');
+                }
                 
                 // Mettre à jour les boutons "Voir" avec le nom de fichier sauvegardé
                 if (body.piece_filename) {
+                    const tbody = document.querySelector('#tableEcritures tbody');
                     const rows = tbody.querySelectorAll('tr');
                     rows.forEach(row => {
                         const pieceCell = row.cells[9]; // Cellule pièce justificative
@@ -1804,6 +1939,13 @@ function ajouterEcriture() {
                 updateTotals();
                 fetchNextSaisieNumber(); // Rafraîchir le numéro depuis le serveur
                 viderFormulaireComplet(); // Vider complètement le formulaire après succès
+                
+                // Si on était en mode modification, rediriger vers la liste des écritures
+                if (nSaisieParam) {
+                    setTimeout(() => {
+                        window.location.href = '/accounting_entry_list';
+                    }, 1500);
+                }
             } else {
                 throw new Error(body?.message || 'Erreur inconnue');
             }
@@ -1813,7 +1955,10 @@ function ajouterEcriture() {
             showAlert('danger', 'Erreur lors de l\'enregistrement: ' + error.message);
         })
         .finally(() => {
-            btnText.textContent = 'Enregistrer';
+            const btnEnregistrer = document.getElementById('btnEnregistrer');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            btnText.textContent = 'VALIDER & ENREGISTRER';
             btnEnregistrer.disabled = false;
             btnSpinner.classList.add('d-none');
         });
@@ -2086,21 +2231,120 @@ function ajouterEcriture() {
         // Récupérer les données de la ligne
         const cells = row.cells;
         
-        // Mettre à jour le formulaire avec les valeurs de la ligne
-        document.getElementById('date').value = cells[0].textContent.trim();
-        document.getElementById('piece').value = cells[1].textContent.trim();
+        // Extraire les données de chaque cellule
+        const date = cells[0].textContent.trim();
+        const nSaisie = cells[1].textContent.trim();
+        const journal = cells[2].textContent.trim();
+        const libelle = cells[3].textContent.trim();
+        const referencePiece = cells[4].textContent.trim();
         
-        // Mettre à jour les sélecteurs (journal, compte, etc.)
-        // Note: Vous devrez peut-être adapter cette partie selon votre implémentation
+        // Pour le compte général, lire depuis l'attribut data-plan-comptable-id et le texte
+        const compteGeneralCell = cells[5];
+        const compteGeneral = compteGeneralCell.textContent.trim();
+        const compteGeneralId = compteGeneralCell.getAttribute('data-plan-comptable-id');
         
-        // Supprimer la ligne modifiée
+        // Pour le compte tiers, lire depuis l'attribut data-tiers-id et le texte
+        const compteTiersCell = cells[6];
+        const compteTiers = compteTiersCell.textContent.trim();
+        const compteTiersId = compteTiersCell.getAttribute('data-tiers-id');
+        
+        const debit = cells[7].textContent.trim();
+        const credit = cells[8].textContent.trim();
+        
+        // Pour la case analytique, elle est dans la cellule 9 (index 9)
+        let analytique = false;
+        if (cells[9]) {
+            const checkbox = cells[9].querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                analytique = checkbox.checked;
+            } else {
+                // Si pas de checkbox, vérifier si le texte contient "Oui"
+                const text = cells[9].textContent.trim();
+                analytique = text === 'Oui' || text === 'true' || text === '1';
+            }
+        }
+        
+        // Mettre à jour le formulaire principal avec les valeurs de la ligne
+        document.getElementById('date').value = date;
+        document.getElementById('n_saisie').value = nSaisie;
+        document.getElementById('description_operation').value = libelle;
+        document.getElementById('reference_piece').value = referencePiece;
+        
+        // Pour le journal, chercher dans le selecteur
+        const journalSelect = document.getElementById('code_journal_affiche');
+        if (journalSelect && journalSelect.options) {
+            // Chercher l'option qui correspond au texte du journal
+            const options = journalSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].text.includes(journal)) {
+                    journalSelect.value = options[i].value;
+                    // Déclencher le changement pour mettre à jour le champ caché
+                    journalSelect.dispatchEvent(new Event('change'));
+                    break;
+                }
+            }
+        }
+        
+        // Pour le compte général, utiliser l'ID si disponible, sinon le texte
+        if (compteGeneralId) {
+            const compteGeneralSelect = document.getElementById('compte_general');
+            if (compteGeneralSelect) {
+                compteGeneralSelect.value = compteGeneralId;
+                // Déclencher le changement pour mettre à jour les champs
+                compteGeneralSelect.dispatchEvent(new Event('change'));
+            }
+        } else {
+            // Fallback avec le champ de recherche
+            const compteGeneralInput = document.getElementById('compteGeneralSearch');
+            if (compteGeneralInput && compteGeneral !== '-') {
+                compteGeneralInput.value = compteGeneral;
+                setTimeout(() => {
+                    compteGeneralInput.dispatchEvent(new Event('input'));
+                }, 100);
+            }
+        }
+        
+        // Pour le compte tiers, utiliser l'ID si disponible
+        if (compteTiersId) {
+            const compteTiersSelect = document.getElementById('compte_tiers');
+            if (compteTiersSelect) {
+                compteTiersSelect.value = compteTiersId;
+                // Déclencher le changement
+                compteTiersSelect.dispatchEvent(new Event('change'));
+            }
+        } else if (compteTiers !== '-') {
+            // Fallback avec le texte
+            const compteTiersSelect = document.getElementById('compte_tiers');
+            if (compteTiersSelect && compteTiersSelect.options) {
+                const options = compteTiersSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].text.includes(compteTiers)) {
+                        compteTiersSelect.value = options[i].value;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Mettre à jour les montants dans les champs temporaires
+        const debitInput = document.getElementById('debit');
+        const creditInput = document.getElementById('credit');
+        if (debitInput) debitInput.value = debit.replace(/\s/g, '').replace(',', '.');
+        if (creditInput) creditInput.value = credit.replace(/\s/g, '').replace(',', '.');
+        
+        // Cocher la case analytique si nécessaire
+        const analytiqueCheckbox = document.getElementById('plan_analytique');
+        if (analytiqueCheckbox) analytiqueCheckbox.checked = analytique;
+        
+        // Supprimer la ligne modifiée du tableau
         row.remove();
         updateTotals();
         
         // Mettre le focus sur le premier champ
-        document.getElementById('date').focus();
+        document.getElementById('description_operation').focus();
         
-        alert('Modifiez les champs et cliquez sur "Ajouter une ligne" pour valider');
+        // Afficher un message d'aide
+        showAlert('info', 'Ligne chargée dans le formulaire. Modifiez si nécessaire et cliquez sur "Ajouter une ligne".');
     }
 
     // Fonction pour supprimer une écriture
@@ -2108,7 +2352,7 @@ function ajouterEcriture() {
         if (confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')) {
             row.remove();
             updateTotals();
-            alert('Écriture supprimée avec succès !');
+            showAlert('success', 'Écriture supprimée avec succès !');
         }
     }
 

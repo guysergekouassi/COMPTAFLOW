@@ -20,19 +20,19 @@ class BalanceController extends Controller
 {
     public function index(Request $request)
     {
-
         $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
 
-        // Tous les journaux de la compagnie du user
-        $PlanComptable = PlanComptable::where('company_id', $user->company_id)
-            ->orderByRaw('LEFT(numero_de_compte, 1) ASC') // trie par la classe comptable (1 à 8)
-            ->orderBy('numero_de_compte') // trie ensuite par ordre croissant dans chaque classe
+        // Récupère TOUS les comptes sans exception, triés simplement par numéro
+        $PlanComptable = PlanComptable::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->orderBy('numero_de_compte', 'asc')
             ->get();
 
-        $Balance = Balance::where('company_id', $user->company_id)
+        $Balance = Balance::withoutGlobalScopes()
+            ->where('company_id', $companyId)
             ->orderByDesc('created_at')
             ->get();
-
 
         return view('accounting_balance', compact('PlanComptable', 'Balance'));
     }
@@ -131,17 +131,21 @@ class BalanceController extends Controller
             // dd($request->format_fichier);
 
             $user = Auth::user();
-            $companyName = Auth::user()->company->company_name ?? 'Entreprise inconnue';
+            $companyId = session('current_company_id', $user->company_id);
 
+            $compte1 = PlanComptable::withoutGlobalScopes()->where('company_id', $companyId)->findOrFail($request->plan_comptable_id_1);
+            $compte2 = PlanComptable::withoutGlobalScopes()->where('company_id', $companyId)->findOrFail($request->plan_comptable_id_2);
 
-            $compte1 = PlanComptable::findOrFail($request->plan_comptable_id_1);
-            $compte2 = PlanComptable::findOrFail($request->plan_comptable_id_2);
+            // Comparaison de chaînes pour la plage de comptes (important pour SYSCOHADA)
+            $v1 = (string)$compte1->numero_de_compte;
+            $v2 = (string)$compte2->numero_de_compte;
+            $min = $v1 < $v2 ? $v1 : $v2;
+            $max = $v1 < $v2 ? $v2 : $v1;
 
-            $min = min($compte1->numero_de_compte, $compte2->numero_de_compte);
-            $max = max($compte1->numero_de_compte, $compte2->numero_de_compte);
-
-            $comptesIds = PlanComptable::where('company_id', $user->company_id)
-                ->whereBetween('numero_de_compte', [$min, $max])
+            $comptesIds = PlanComptable::withoutGlobalScopes()
+                ->where('company_id', $companyId)
+                ->where('numero_de_compte', '>=', $min)
+                ->where('numero_de_compte', '<=', $max)
                 ->pluck('id');
 
             $ecritures = EcritureComptable::with([
@@ -153,7 +157,7 @@ class BalanceController extends Controller
                 'user',
                 'company'
             ])
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $companyId)
                 ->whereIn('plan_comptable_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin])
                 ->get();
@@ -182,7 +186,7 @@ class BalanceController extends Controller
                     'format' => $format_fichier,
                     'balance' => $filename,
                     'user_id' => $user->id,
-                    'company_id' => $user->company_id,
+                    'company_id' => $companyId,
                 ]);
 
                 return back()->with('success', "Excel Balance généré avec succès ! ($count écritures)");
@@ -203,7 +207,7 @@ class BalanceController extends Controller
                     'format' => $format_fichier,
                     'balance' => $filename,
                     'user_id' => $user->id,
-                    'company_id' => $user->company_id,
+                    'company_id' => $companyId,
                 ]);
 
                 return back()->with('success', "CSV Balance généré avec succès ! ($count écritures)");
@@ -236,7 +240,7 @@ class BalanceController extends Controller
                 'format' => $format_fichier,
                 'balance' => $filename,
                 'user_id' => $user->id,
-                'company_id' => $user->company_id,
+                'company_id' => $companyId,
             ]);
 
             return back()->with('success', "PDF Balance généré avec succès ! ($count écritures)");
@@ -340,17 +344,22 @@ class BalanceController extends Controller
             ]);
 
             $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
 
             // --- Détermination des bornes de comptes ---
-            $compte1 = PlanComptable::findOrFail($request->plan_comptable_id_1);
-            $compte2 = PlanComptable::findOrFail($request->plan_comptable_id_2);
+            $compte1 = PlanComptable::withoutGlobalScopes()->where('company_id', $companyId)->findOrFail($request->plan_comptable_id_1);
+            $compte2 = PlanComptable::withoutGlobalScopes()->where('company_id', $companyId)->findOrFail($request->plan_comptable_id_2);
 
-            $min = min($compte1->numero_de_compte, $compte2->numero_de_compte);
-            $max = max($compte1->numero_de_compte, $compte2->numero_de_compte);
+            $v1 = (string)$compte1->numero_de_compte;
+            $v2 = (string)$compte2->numero_de_compte;
+            $min = $v1 < $v2 ? $v1 : $v2;
+            $max = $v1 < $v2 ? $v2 : $v1;
 
             // --- Récupération des comptes concernés ---
-            $comptesIds = PlanComptable::where('company_id', $user->company_id)
-                ->whereBetween('numero_de_compte', [$min, $max])
+            $comptesIds = PlanComptable::withoutGlobalScopes()
+                ->where('company_id', $companyId)
+                ->where('numero_de_compte', '>=', $min)
+                ->where('numero_de_compte', '<=', $max)
                 ->pluck('id');
 
             // --- Récupération des écritures ---
@@ -363,13 +372,13 @@ class BalanceController extends Controller
                 'user',
                 'company'
             ])
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $companyId)
                 ->whereIn('plan_comptable_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin])
                 ->get();
 
             if ($ecritures->isEmpty()) {
-                return back()->with('error', 'Aucune écriture trouvée pour cette période.');
+                return response()->json(['success' => false, 'error' => 'Aucune écriture trouvée pour cette période.']);
             }
 
             // --- Définition du titre ---
@@ -416,8 +425,14 @@ class BalanceController extends Controller
                 'url' => $url
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Données invalides : ' . implode(', ', collect($e->errors())->flatten()->all())
+            ], 422);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('Balance Preview Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 

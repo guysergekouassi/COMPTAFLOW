@@ -38,7 +38,7 @@ class PlanTiersController extends Controller
             $currentCompanyId = session('current_company_id', $user->company_id);
             $tiers = PlanTiers::with('compte')
                 ->where('company_id', $currentCompanyId)
-                ->orderByRaw("LPAD(numero_de_tiers, 20, '0')")
+                ->orderByDesc('created_at')
                 ->get();
                 
             // Debug: Afficher le nombre de tiers trouvés

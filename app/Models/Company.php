@@ -3,15 +3,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\LogsActivity;
+
 class Company extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'company_name', 'activity', 'juridique_form', 'social_capital',
         'adresse', 'code_postal', 'city', 'country', 'phone_number',
         'email_adresse', 'identification_TVA','is_active','user_id','parent_company_id',
         'is_blocked', 'block_reason', 'blocked_at', 'blocked_by',
+        'account_digits', 'accounting_system',
     ];
 
     protected $casts = [

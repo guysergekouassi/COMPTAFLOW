@@ -53,10 +53,15 @@
                                         <h5 class="mb-0">Informations sur l'entreprise</h5>
                                         <small class="text-muted">Détails enregistrés dans le système</small>
                                     </div>
-                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                                        data-bs-target="#editCompanyModal">
-                                        <i class="fas fa-edit me-1"></i> Modifier
-                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ route('admin.companies.create') }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-plus-circle me-1"></i> Créer entreprise
+                                        </a>
+                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                            data-bs-target="#editCompanyModal">
+                                            <i class="fas fa-edit me-1"></i> Modifier
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="card-body pt-4">
                                     <div class="row g-4">

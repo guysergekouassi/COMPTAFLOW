@@ -19,16 +19,19 @@ class GrandLivreController extends Controller
     {
         $user = Auth::user();
 
-        $PlanComptable = PlanComptable::where('company_id', $user->company_id)
-            ->orderByRaw('LEFT(numero_de_compte, 1) ASC')
-            ->orderBy('numero_de_compte')
-            ->get();
+        $companyId = session('current_company_id', $user->company_id);
+        
+        $PlanComptable = PlanComptable::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->orderBy('numero_de_compte', 'asc')
+            ->get(); // Récupère TOUS les résultats sans limite Laravel
 
-        $grandLivre = GrandLivre::where('company_id', $user->company_id)
+        $grandLivre = GrandLivre::withoutGlobalScopes()
+            ->where('company_id', $companyId)
             ->orderByDesc('created_at')
             ->get();
 
-        return view('accounting_ledger', compact('PlanComptable', 'grandLivre'));
+        return view('accounting_ledger', compact('PlanComptable', 'grandLivre', 'companyId'));
     }
 
     
@@ -41,22 +44,24 @@ class GrandLivreController extends Controller
                 'date_fin' => 'required|date|after_or_equal:date_debut',
                 'plan_comptable_id_1' => 'required|exists:plan_comptables,id',
                 'plan_comptable_id_2' => 'required|exists:plan_comptables,id',
-                'format' => 'nullable|in:pdf,excel,csv' // ✅ on accepte le format
+                'format_fichier' => 'nullable|in:pdf,excel,csv' 
             ]);
 
             // dd($request->format_fichier);
 
             $user = Auth::user();
-            $companyName = Auth::user()->company->company_name ?? 'Entreprise inconnue';
+            $companyId = session('current_company_id', $user->company_id);
+            $companyName = $user->company->company_name ?? 'Entreprise inconnue';
 
+            $compte1 = PlanComptable::withoutGlobalScopes()->findOrFail($request->plan_comptable_id_1);
+            $compte2 = PlanComptable::withoutGlobalScopes()->findOrFail($request->plan_comptable_id_2);
 
-            $compte1 = PlanComptable::findOrFail($request->plan_comptable_id_1);
-            $compte2 = PlanComptable::findOrFail($request->plan_comptable_id_2);
+            // On compare en tant que chaînes (SYSCOHADA : longueur fixe 8 conseillée)
+            $min = $compte1->numero_de_compte < $compte2->numero_de_compte ? $compte1->numero_de_compte : $compte2->numero_de_compte;
+            $max = $compte1->numero_de_compte > $compte2->numero_de_compte ? $compte1->numero_de_compte : $compte2->numero_de_compte;
 
-            $min = min($compte1->numero_de_compte, $compte2->numero_de_compte);
-            $max = max($compte1->numero_de_compte, $compte2->numero_de_compte);
-
-            $comptesIds = PlanComptable::where('company_id', $user->company_id)
+            $comptesIds = PlanComptable::withoutGlobalScopes()
+                ->where('company_id', $companyId)
                 ->whereBetween('numero_de_compte', [$min, $max])
                 ->pluck('id');
 
@@ -69,7 +74,7 @@ class GrandLivreController extends Controller
                 'user',
                 'company'
             ])
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $companyId)
                 ->whereIn('plan_comptable_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin])
                 ->get();
@@ -179,14 +184,16 @@ class GrandLivreController extends Controller
             ]);
 
             $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
 
-            $compte1 = PlanComptable::findOrFail($request->plan_comptable_id_1);
-            $compte2 = PlanComptable::findOrFail($request->plan_comptable_id_2);
+            $compte1 = PlanComptable::withoutGlobalScopes()->findOrFail($request->plan_comptable_id_1);
+            $compte2 = PlanComptable::withoutGlobalScopes()->findOrFail($request->plan_comptable_id_2);
 
-            $min = min((int) $compte1->numero_de_compte, (int) $compte2->numero_de_compte);
-            $max = max((int) $compte1->numero_de_compte, (int) $compte2->numero_de_compte);
+            $min = $compte1->numero_de_compte < $compte2->numero_de_compte ? $compte1->numero_de_compte : $compte2->numero_de_compte;
+            $max = $compte1->numero_de_compte > $compte2->numero_de_compte ? $compte1->numero_de_compte : $compte2->numero_de_compte;
 
-            $comptesIds = PlanComptable::where('company_id', $user->company_id)
+            $comptesIds = PlanComptable::withoutGlobalScopes()
+                ->where('company_id', $companyId)
                 ->whereBetween('numero_de_compte', [$min, $max])
                 ->pluck('id');
 
@@ -199,13 +206,13 @@ class GrandLivreController extends Controller
                 'user',
                 'company'
             ])
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $companyId)
                 ->whereIn('plan_comptable_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin])
                 ->get();
 
             if ($ecritures->count() === 0) {
-                return response()->json(['error' => 'Aucune écriture trouvée pour cette période.'], 404);
+                return response()->json(['success' => false, 'error' => 'Aucune écriture trouvée pour cette période.']);
             }
 
             $titre = "Prévisualisation Grand-livre des comptes";
@@ -241,8 +248,14 @@ class GrandLivreController extends Controller
                 'success' => true,
                 'url' => $url
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Données invalides : ' . implode(', ', collect($e->errors())->flatten()->all())
+            ], 422);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('GrandLivre Preview Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 

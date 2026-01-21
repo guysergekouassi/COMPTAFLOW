@@ -1,7 +1,17 @@
-<!DOCTYPE html>
-<html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/" data-template="vertical-menu-template-free">
-
 @include('components.head')
+
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: 'Inter', sans-serif;
+    }
+    .text-premium-gradient {
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+    }
+</style>
 
 <body>
     <div class="layout-wrapper layout-content-navbar">
@@ -9,9 +19,18 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Switch Entreprise / Utilisateur'])
+                @include('components.header')
 
-                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Switch Entreprise</h5>
+                                <p class="text-muted small mb-0">Basculez entre les contextes entreprises ou incarnez un collaborateur.</p>
+                            </div>
+                        </div>
                     
 
 

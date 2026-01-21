@@ -135,18 +135,16 @@
                     @endif
 
 
-                    <!-- Companies Table Section -->
-                    <div class="mb-8">
-                        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-                            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                                <i class="fa-solid fa-list-check text-blue-600"></i>
-                                Gestion des Entités
-                            </h2>
-                            <button class="btn-save-premium flex items-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#createCompanyModal">
-                                <i class="fa-solid fa-plus-circle"></i>
-                                Nouvelle Compagnie / Admin
-                            </button>
+                    <!-- Header Standardisé -->
+                    <div class="d-flex justify-content-between align-items-center mb-6">
+                        <div>
+                            <h5 class="mb-1 text-premium-gradient">Gouvernance / Gestion des Entités</h5>
+                            <p class="text-muted small mb-0">Pilotez les structures et les administrateurs du réseau.</p>
                         </div>
+                        <a href="{{ route('superadmin.companies.create') }}" class="btn btn-primary rounded-pill px-4">
+                            <i class="fa-solid fa-plus-circle me-2"></i> Nouvelle Entité
+                        </a>
+                    </div>
 
                         <div class="glass-card overflow-hidden">
                             <div class="table-responsive">
@@ -306,7 +304,14 @@
                                                         </div>
                                                         <div class="space-y-1">
                                                             <label class="input-label-premium">Forme Juridique</label>
-                                                            <input type="text" name="juridique_form" class="input-field-premium" value="{{ $company->juridique_form }}" required>
+                                                            <select name="juridique_form" class="input-field-premium" required>
+                                                                <option value="SARL" {{ $company->juridique_form == 'SARL' ? 'selected' : '' }}>SARL</option>
+                                                                <option value="SA" {{ $company->juridique_form == 'SA' ? 'selected' : '' }}>SA</option>
+                                                                <option value="SAS" {{ $company->juridique_form == 'SAS' ? 'selected' : '' }}>SAS</option>
+                                                                <option value="SCI" {{ $company->juridique_form == 'SCI' ? 'selected' : '' }}>SCI</option>
+                                                                <option value="EIRL" {{ $company->juridique_form == 'EIRL' ? 'selected' : '' }}>EIRL</option>
+                                                                <option value="Auto-entrepreneur" {{ $company->juridique_form == 'Auto-entrepreneur' ? 'selected' : '' }}>Auto-entrepreneur</option>
+                                                            </select>
                                                         </div>
                                                         <div class="space-y-1">
                                                             <label class="input-label-premium">Activité</label>
@@ -314,15 +319,18 @@
                                                         </div>
                                                         <div class="space-y-1">
                                                             <label class="input-label-premium">Capital Social</label>
-                                                            <input type="number" name="social_capital" class="input-field-premium" value="{{ $company->social_capital }}" required>
+                                                            <input type="number" step="0.01" name="social_capital" class="input-field-premium" value="{{ $company->social_capital }}" required>
+                                                        </div>
+                                                        <div class="space-y-1">
+                                                            <label class="input-label-premium">Statut</label>
+                                                            <select name="is_active" class="input-field-premium" required>
+                                                                <option value="1" {{ $company->is_active == 1 ? 'selected' : '' }}>Actif</option>
+                                                                <option value="0" {{ $company->is_active == 0 ? 'selected' : '' }}>Inactif</option>
+                                                            </select>
                                                         </div>
                                                         <div class="space-y-1">
                                                             <label class="input-label-premium">Ville</label>
                                                             <input type="text" name="city" class="input-field-premium" value="{{ $company->city }}" required>
-                                                        </div>
-                                                        <div class="space-y-1">
-                                                            <label class="input-label-premium">TVA (Identification)</label>
-                                                            <input type="text" name="identification_TVA" class="input-field-premium" value="{{ $company->identification_TVA }}">
                                                         </div>
                                                         <div class="md:col-span-2 space-y-1">
                                                             <label class="input-label-premium">Adresse</label>
@@ -335,6 +343,27 @@
                                                         <div class="space-y-1">
                                                             <label class="input-label-premium">Pays</label>
                                                             <input type="text" name="country" class="input-field-premium" value="{{ $company->country }}" required>
+                                                        </div>
+                                                        <div class="space-y-1">
+                                                            <label class="input-label-premium">Téléphone</label>
+                                                            <input type="text" name="phone_number" class="input-field-premium" value="{{ $company->phone_number }}" required>
+                                                        </div>
+                                                        <div class="space-y-1">
+                                                            <label class="input-label-premium">Email Pro</label>
+                                                            <input type="email" name="email_adresse" class="input-field-premium" value="{{ $company->email_adresse }}" required>
+                                                        </div>
+                                                        <div class="space-y-1">
+                                                            <label class="input-label-premium">TVA (Identification)</label>
+                                                            <input type="text" name="identification_TVA" class="input-field-premium" value="{{ $company->identification_TVA }}">
+                                                        </div>
+                                                        <div class="md:col-span-2 space-y-1">
+                                                            <label class="input-label-premium">Société Parente</label>
+                                                            <select name="parent_company_id" class="input-field-premium">
+                                                                <option value="">Aucune (Société Mère)</option>
+                                                                @foreach($companies->where('id', '!=', $company->id) as $pComp)
+                                                                    <option value="{{ $pComp->id }}" {{ $company->parent_company_id == $pComp->id ? 'selected' : '' }}>{{ $pComp->company_name }}</option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -377,35 +406,10 @@
                                                     </h6>
                                                     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 max-h-60 overflow-y-auto">
                                                         @php
-                                                            $habilitations = [
-                                                                'dashboard' => 'Dashboard',
-                                                                'plan_comptable' => 'Plan Comptable',
-                                                                'plan_tiers' => 'Plan Tiers',
-                                                                'journaux' => 'Journaux',
-                                                                'tresorerie' => 'Trésorerie',
-                                                                'grand_livre' => 'Grand Livre',
-                                                                'balance' => 'Balance',
-                                                                'etats_financiers' => 'États Financiers',
-                                                                'fichier_joindre' => 'Fichiers',
-                                                                'parametre' => 'Paramètres',
-                                                                'accounting_journals' => 'Codes Journaux',
-                                                                'exercice_comptable' => 'Exercice',
-                                                                'Etat de rapprochement bancaire' => 'Rapprochement',
-                                                                'Gestion de la trésorerie' => 'Gestion Trésor',
-                                                                'gestion_analytique' => 'Analytique',
-                                                                'gestion_tiers' => 'Gestion Tiers',
-                                                                'user_management' => 'Utilisateurs',
-                                                                'gestion_immobilisations' => 'Immos',
-                                                                'gestion_reportings' => 'Reportings',
-                                                                'gestion_stocks' => 'Stocks',
-                                                                'grand_livre_tiers' => 'GL Tiers',
-                                                                'poste' => 'Postes',
-                                                                'Balance_Tiers' => 'Balance Tiers',
-                                                                'modal_saisie_direct' => 'Saisie Directe'
-                                                            ];
+                                                            $allPermissions = config('accounting_permissions.permissions');
                                                             $currentHabs = $company->admin->habilitations ?? [];
                                                         @endphp
-                                                        @foreach ($habilitations as $key => $label)
+                                                        @foreach ($allPermissions as $key => $label)
                                                             <label class="flex items-center gap-3 cursor-pointer group">
                                                                 <input type="checkbox" name="habilitations[{{ $key }}]" value="1" 
                                                                     class="w-5 h-5 rounded-md border-2 border-slate-200 text-blue-600 focus:ring-blue-500 transition-all checked:bg-blue-600"
@@ -531,157 +535,6 @@
 
 
 
-    <div class="modal fade" id="createCompanyModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-            <div class="modal-content premium-modal-content">
-                <div class="text-center mb-8 position-relative">
-                    <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 border-0">
-                        Nouvelle <span class="text-gradient">Entité</span>
-                    </h1>
-                    <p class="text-slate-500 font-medium text-sm mt-1">Créez une compagnie et son compte administrateur</p>
-                    <div class="h-1 w-12 bg-blue-600 mx-auto mt-3 rounded-full"></div>
-                </div>
-
-                <form id="createCompanyForm" method="POST" action="{{ route('companies.store') }}" novalidate>
-                    @csrf
-                    
-                    <div class="space-y-8">
-                        @if ($errors->any())
-                            <div class="bg-red-50 border border-red-100 text-red-700 px-6 py-4 rounded-2xl mb-6 shadow-sm">
-                                <p class="font-bold mb-2 flex items-center gap-2">
-                                    <i class="fa-solid fa-triangle-exclamation"></i>
-                                    Veuillez corriger les points suivants :
-                                </p>
-                                <ul class="list-disc list-inside text-sm">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
-
-                        {{-- COMPAGNIE --}}
-                        <div>
-                            <h6 class="text-[11px] font-black uppercase tracking-widest text-blue-600 mb-6 flex items-center gap-2">
-                                <i class="fa-solid fa-building text-sm"></i>
-                                Détails de la Compagnie
-                            </h6>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Nom de l'entreprise</label>
-                                    <input type="text" name="company_name" class="input-field-premium" value="{{ old('company_name') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Forme Juridique</label>
-                                    <input type="text" name="juridique_form" class="input-field-premium" value="{{ old('juridique_form') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Activité</label>
-                                    <input type="text" name="activity" class="input-field-premium" value="{{ old('activity') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Capital Social</label>
-                                    <input type="text" name="social_capital" class="input-field-premium" value="{{ old('social_capital') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Ville</label>
-                                    <input type="text" name="city" class="input-field-premium" value="{{ old('city') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Identification TVA</label>
-                                    <input type="text" name="identification_TVA" class="input-field-premium" value="{{ old('identification_TVA') }}" placeholder="Ex: CI**************">
-                                </div>
-                                <div class="md:col-span-2 space-y-1">
-                                    <label class="input-label-premium">Adresse Complète</label>
-                                    <input type="text" name="adresse" class="input-field-premium" value="{{ old('adresse') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Code Postal</label>
-                                    <input type="text" name="code_postal" class="input-field-premium" value="{{ old('code_postal') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Pays</label>
-                                    <input type="text" name="country" class="input-field-premium" value="{{ old('country') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Téléphone</label>
-                                    <input type="text" name="phone_number" class="input-field-premium" value="{{ old('phone_number') }}">
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- ADMIN --}}
-                        <div>
-                            <h6 class="text-[11px] font-black uppercase tracking-widest text-blue-600 mb-6 mt-4 flex items-center gap-2">
-                                <i class="fa-solid fa-user-shield text-sm"></i>
-                                Compte Administrateur
-                            </h6>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Nom</label>
-                                    <input type="text" name="admin_name" class="input-field-premium" value="{{ old('admin_name') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Prénom</label>
-                                    <input type="text" name="admin_last_name" class="input-field-premium" value="{{ old('admin_last_name') }}" required>
-                                </div>
-                                <div class="md:col-span-2 space-y-1">
-                                    <label class="input-label-premium">Email Pro</label>
-                                    <input type="email" name="admin_email_adresse" class="input-field-premium" value="{{ old('admin_email_adresse') }}" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Mot de Passe</label>
-                                    <input type="password" name="admin_password" class="input-field-premium" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="input-label-premium">Confirmation</label>
-                                    <input type="password" name="admin_password_confirmation" class="input-field-premium" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- HABILITATIONS --}}
-                        <div>
-                            <h6 class="text-[11px] font-black uppercase tracking-widest text-blue-600 mb-6 mt-4 flex items-center gap-2">
-                                <i class="fa-solid fa-lock text-sm"></i>
-                                Habilitations par Défaut
-                            </h6>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-                                @php
-                                    $allHabilitations = [
-                                        'COMPTABILITE' => 'Comptabilité',
-                                        'COMMERCIAL' => 'Commercial',
-                                        'STOCKS' => 'Stocks',
-                                        'PAIE' => 'Paie',
-                                        'TRESORERIE' => 'Trésorerie',
-                                        'IMMOBILISATIONS' => 'Immos',
-                                        'AUDIT' => 'Audit',
-                                        'FISCALITE' => 'Fiscalité'
-                                    ];
-                                @endphp
-                                @foreach ($allHabilitations as $key => $label)
-                                    <label class="flex items-center gap-3 cursor-pointer group">
-                                        <input type="checkbox" name="habilitations[{{ $key }}]" value="1" checked
-                                            class="w-5 h-5 rounded-md border-2 border-slate-200 text-blue-600 focus:ring-blue-500 transition-all checked:bg-blue-600">
-                                        <span class="text-sm font-bold text-slate-600 group-hover:text-blue-600 transition-colors">{{ $label }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <input type="hidden" name="role" value="admin">
-
-                        <!-- Actions -->
-                        <div class="grid grid-cols-2 gap-4 pt-4">
-                            <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">Annuler</button>
-                            <button type="submit" class="btn-save-premium">Créer l'entité</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

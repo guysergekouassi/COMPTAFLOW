@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 use App\Traits\BelongsToTenant;
 
+use App\Traits\LogsActivity;
+
 class EcritureComptable extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, LogsActivity;
 
     // Nom de la table (optionnel si la table s'appelle "ecriture_comptables" par convention)
     protected $table = 'ecriture_comptables';

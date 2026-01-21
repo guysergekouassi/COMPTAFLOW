@@ -6,16 +6,12 @@ use App\Models\CodeJournal;
 use App\Models\PlanComptable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\tresoreries\Tresoreries;
 use App\Traits\ManagesCompany;
 class CodeJournalController extends Controller
 {
-    //
-use ManagesCompany;
-
-// Dans votre CodeJournalController ou similaire...
-
-// Dans votre CodeJournalController ou similaire...
+    use ManagesCompany;
 
 public function index(Request $request)
 {
@@ -48,7 +44,7 @@ public function index(Request $request)
         $query->where('intitule', 'LIKE', '%' . $request->intitule . '%');
     }
 
-    $code_journaux = $query->paginate(5);
+    $code_journaux = $query->get();
 
 
     // =============================================================
@@ -67,7 +63,7 @@ public function index(Request $request)
         ->keyBy('id');
 
     // C. Parcourir et enrichir la collection $code_journaux
-    $code_journaux->getCollection()->transform(function ($journal) use ($tresoreriesData, $planComptableAccounts) {
+    $code_journaux->transform(function ($journal) use ($tresoreriesData, $planComptableAccounts) {
         $codeTresorerie = null;
         $posteTresorerie = null;
 
@@ -150,7 +146,7 @@ public function index(Request $request)
             'traitement_analytique' => 'required|in:oui,non',
             'type' => 'nullable|string',
             'compte_de_contrepartie' => 'nullable|string',
-            'compte_de_tresorerie' => 'nullable|exists:plan_comptables,id',
+            'rapprochement_sur' => 'nullable|in:Manuel,Automatique',
             'poste_tresorerie' => 'nullable|string',
         ], [
             'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
@@ -163,9 +159,9 @@ public function index(Request $request)
 
             if ($existing) {
                 return response()->json([
-                'success' => false,
-                'message' => 'Ce code journal existe déjà pour votre entreprise.'
-            ], 422);
+                    'success' => false,
+                    'message' => 'Ce code journal existe déjà pour votre entreprise.'
+                ], 422);
             }
 
             $intitule_formate = ucfirst(strtolower($request->intitule));
@@ -178,7 +174,7 @@ public function index(Request $request)
                 'traitement_analytique' => $request->traitement_analytique === 'oui' ? 1 : 0,
                 'type' => $request->type,
                 'compte_de_contrepartie' => $request->compte_de_contrepartie,
-                'compte_de_tresorerie' => $request->compte_de_tresorerie,
+                'rapprochement_sur' => $request->rapprochement_sur,
                 'poste_tresorerie' => $request->poste_tresorerie,
                 'user_id' => $user->id,
                 'company_id' => $currentCompanyId,
@@ -186,23 +182,34 @@ public function index(Request $request)
 
             // Si c'est un journal de trésorerie, créer une entrée dans la table tresoreries
             if ($request->type === 'Tresorerie') {
+                $categorie = Tresoreries::where('poste_tresorerie', $request->poste_tresorerie)
+                    ->whereNotNull('categorie')
+                    ->value('categorie');
+
                 Tresoreries::create([
                     'code_journal' => strtoupper($request->code_journal),
                     'intitule' => $intitule_formate,
                     'compte_de_contrepartie' => $request->compte_de_contrepartie,
                     'poste_tresorerie' => $request->poste_tresorerie,
+                    'categorie' => $categorie,
+                    'user_id' => $user->id,
                     'company_id' => $currentCompanyId,
                 ]);
             }
 
+            // Pour l'affichage AJAX sans rechargement
+            $journal->code_tresorerie_display = $journal->compte_de_contrepartie; 
+
             return response()->json([
                 'success' => true,
-                'message' => 'Code journal enregistré'
+                'message' => 'Code journal enregistré avec succès',
+                'journal' => $journal
             ]);
         } catch (\Exception $e) {
+            \Log::error('Erreur store journal: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Une erreur s\'est produite : ' . $e->getMessage()
+                'message' => 'Une erreur est survenue : ' . $e->getMessage()
             ], 500);
         }
     }
@@ -219,6 +226,7 @@ public function index(Request $request)
             'compte_de_contrepartie' => 'nullable|string',
             'compte_de_tresorerie' => 'nullable|exists:plan_comptables,id',
             'poste_tresorerie' => 'nullable|string',
+            'rapprochement_sur' => 'nullable|in:Manuel,Automatique',
         ], [
             'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
             'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'
@@ -249,8 +257,21 @@ public function index(Request $request)
                 }
             }
 
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Code journal mis à jour avec succès.'
+                ]);
+            }
+
             return redirect()->back()->with('success', 'Code journal mis à jour avec succès.');
         } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Une erreur est survenue : ' . $e->getMessage()
+                ], 500);
+            }
             return redirect()->back()->withInput()->with('error', 'Une erreur est survenue : ' . $e->getMessage());
         }
     }
