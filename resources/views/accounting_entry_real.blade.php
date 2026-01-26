@@ -1920,9 +1920,10 @@ function ajouterEcriture() {
                     showAlert('success', 'Écritures enregistrées avec succès !');
                 }
                 
+                const tbody = document.querySelector('#tableEcritures tbody');
+                
                 // Mettre à jour les boutons "Voir" avec le nom de fichier sauvegardé
-                if (body.piece_filename) {
-                    const tbody = document.querySelector('#tableEcritures tbody');
+                if (body.piece_filename && tbody) {
                     const rows = tbody.querySelectorAll('tr');
                     rows.forEach(row => {
                         const pieceCell = row.cells[9]; // Cellule pièce justificative
@@ -1935,7 +1936,7 @@ function ajouterEcriture() {
                     });
                 }
                 
-                tbody.innerHTML = '';
+                if (tbody) tbody.innerHTML = '';
                 updateTotals();
                 fetchNextSaisieNumber(); // Rafraîchir le numéro depuis le serveur
                 viderFormulaireComplet(); // Vider complètement le formulaire après succès

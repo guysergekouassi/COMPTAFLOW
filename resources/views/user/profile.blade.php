@@ -1,267 +1,236 @@
 <!DOCTYPE html>
-<html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/"
-    data-template="vertical-menu-template-free">
+<html lang="fr" class="layout-menu-fixed layout-compact">
 
 @include('components.head')
+
+<!-- Inclusions supplémentaires pour le profil premium -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .premium-profile-card {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+    .profile-header-bg {
+        height: 200px;
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        position: relative;
+    }
+    .avatar-wrapper {
+        margin-top: -80px;
+        position: relative;
+        z-index: 2;
+    }
+    .img-profile-large {
+        width: 160px;
+        height: 160px;
+        border: 7px solid #fff;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        object-fit: cover;
+    }
+    .stat-card {
+        background: #fff;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        transform: translateY(-5px);
+    }
+    .activity-item {
+        position: relative;
+        padding-left: 30px;
+        padding-bottom: 20px;
+        border-left: 2px solid #e2e8f0;
+    }
+    .activity-item::before {
+        content: '';
+        position: absolute;
+        left: -7px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #3b82f6;
+    }
+</style>
 
 <body>
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
-            @include('components.sidebar', ['habilitations' => $habilitations])
+            @include('components.sidebar')
             
             <div class="layout-page">
-                @include('components.header')
+                @include('components.header', ['page_title' => 'Mon <span class="text-blue-600">Profil</span>'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
                         
-                        {{-- Messages de succès/erreur --}}
-                        @if(session('success'))
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                {{ session('success') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                            </div>
-                        @endif
-
-                        @if($errors->any())
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <ul class="mb-0">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                            </div>
-                        @endif
-
-                        {{-- En-tête avec avatar --}}
-                        <div class="card mb-4 border-0 shadow-sm overflow-hidden">
-                            <!-- Background Decoration -->
-                            <div class="card-header border-0 p-0" style="height: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                            
-                            <div class="card-body position-relative pt-0 px-4 pb-4">
-                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center align-items-md-end">
-                                    
-                                    <!-- Avatar & Basic Info Wrapper -->
-                                    <div class="d-flex flex-column flex-md-row align-items-center gap-4" style="margin-top: -50px;">
-                                        
-                                        <!-- Avatar Section -->
-                                        <form action="{{ route('settings.avatar') }}" method="POST" enctype="multipart/form-data" id="avatarForm" class="flex-shrink-0">
-                                            @csrf
-                                            <div class="position-relative d-inline-block">
-                                                @if($user->profile_photo_path)
-                                                    <img src="{{ asset('storage/' . $user->profile_photo_path) }}" id="avatarPreview" alt="Avatar" class="rounded-circle shadow-lg bg-white" style="width: 140px; height: 140px; object-fit: cover; border: 4px solid #fff;">
-                                                @else
-                                                    <!-- Placeholder for preview if no image exists initially -->
-                                                    <img id="avatarPreview" src="" class="rounded-circle shadow-lg bg-white d-none" style="width: 140px; height: 140px; object-fit: cover; border: 4px solid #fff;">
-                                                    
-                                                    <div id="avatarInitials" class="avatar avatar-xl rounded-circle d-inline-flex align-items-center justify-content-center bg-white text-primary shadow-lg"
-                                                        style="width: 140px; height: 140px; font-size: 3.5rem; font-weight: bold; border: 4px solid #fff;">
-                                                        {{ $user->initiales }}
-                                                    </div>
-                                                @endif
-                                                
-                                                <label for="avatarInput" class="position-absolute bottom-0 end-0 bg-white rounded-circle shadow p-2 mb-2 me-2" style="cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid #e7e9ed; transition: all 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                                                    <i class="bx bx-camera text-primary"></i>
-                                                    <input type="file" name="avatar" id="avatarInput" class="d-none" accept="image/*" onchange="previewAndSubmit(this)">
-                                                </label>
-                                            </div>
-                                        </form>
-
-                                        <script>
-                                            function previewAndSubmit(input) {
-                                                if (input.files && input.files[0]) {
-                                                    var reader = new FileReader();
-                                                    
-                                                    reader.onload = function(e) {
-                                                        // Show preview image
-                                                        var preview = document.getElementById('avatarPreview');
-                                                        var initials = document.getElementById('avatarInitials');
-                                                        
-                                                        preview.src = e.target.result;
-                                                        preview.classList.remove('d-none');
-                                                        if(initials) initials.classList.add('d-none');
-                                                        
-                                                        // Submit form after a brief delay to allow UI update
-                                                        setTimeout(() => {
-                                                            document.getElementById('avatarForm').submit();
-                                                        }, 500);
-                                                    }
-                                                    
-                                                    reader.readAsDataURL(input.files[0]);
-                                                }
-                                            }
-                                        </script>
-
-                                        <!-- User Info -->
-                                        <div class="text-center text-md-start mt-3 mt-md-5 pt-md-2">
-                                            <h3 class="mb-1 text-dark fw-bold">{{ $user->last_name }} {{ $user->name }}</h3>
-                                            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2 text-muted">
-                                                <span class="badge bg-label-{{ $user->role === 'admin' ? 'warning' : ($user->role === 'super_admin' ? 'danger' : 'info') }} rounded-pill px-3">
-                                                    {{ $user->role === 'super_admin' ? 'Super Admin' : ucfirst($user->role) }}
-                                                </span>
-                                                <span class="d-flex align-items-center"><i class="bx bx-envelope me-1"></i>{{ $user->email_adresse }}</span>
-                                                @if($company)
-                                                    <span class="d-none d-sm-inline mx-1">•</span>
-                                                    <span class="d-flex align-items-center"><i class="bx bx-buildings me-1"></i>{{ $company->company_name }}</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Right Side Actions/Stats -->
-                                    <div class="d-flex gap-3 mt-4 mt-md-0 pb-2">
-                                        <div class="text-center px-3 border-end d-none d-sm-block">
-                                            <div class="small text-muted text-uppercase fw-bold">Statut</div>
-                                            <div class="fw-bold text-success"><i class="bx bxs-circle me-1 small"></i>En ligne</div>
-                                        </div>
-                                        <div class="text-center px-3 d-none d-sm-block">
-                                            <div class="small text-muted text-uppercase fw-bold">Inscrit le</div>
-                                            <div class="fw-bold text-dark">{{ $user->created_at->format('d/m/Y') }}</div>
-                                        </div>
-                                        <a href="{{ route('settings') }}" class="btn btn-primary d-flex align-items-center shadow-sm">
-                                            <i class="bx bx-cog me-2"></i> Éditer
-                                        </a>
-                                    </div>
-
+                        <!-- Header Profil Premium -->
+                        <div class="card premium-profile-card shadow-lg mb-5">
+                            <div class="profile-header-bg">
+                                <div class="position-absolute bottom-0 end-0 p-4 opacity-10">
+                                    <i class="fa-solid fa-user-tie fa-9x text-white"></i>
                                 </div>
                             </div>
-                        </div>
-
-                        {{-- Grille de cartes --}}
-                        <div class="row g-4">
-                            
-                            {{-- Informations personnelles --}}
-                            <div class="col-md-6">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between">
-                                        <h5 class="mb-0"><i class="bx bx-user me-2"></i>Informations personnelles</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small">Prénom</label>
-                                            <p class="mb-0 fw-semibold">{{ $user->name }}</p>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small">Nom de famille</label>
-                                            <p class="mb-0 fw-semibold">{{ $user->last_name }}</p>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small">Adresse email</label>
-                                            <p class="mb-0 fw-semibold">{{ $user->email_adresse }}</p>
-                                        </div>
-                                        <div class="mb-0">
-                                            <label class="form-label text-muted small">Rôle</label>
-                                            <p class="mb-0 fw-semibold">
-                                                {{ $user->role === 'super_admin' ? 'Super Administrateur' : ($user->role === 'admin' ? 'Administrateur' : 'Comptable') }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Entreprise --}}
-                            <div class="col-md-6">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between">
-                                        <h5 class="mb-0"><i class="bx bx-buildings me-2"></i>Entreprise</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        @if($company)
-                                            <div class="mb-3">
-                                                <label class="form-label text-muted small">Nom de l'entreprise</label>
-                                                <p class="mb-0 fw-semibold">{{ $company->company_name }}</p>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label text-muted small">Activité</label>
-                                                <p class="mb-0 fw-semibold">{{ $company->activity ?? 'Non renseigné' }}</p>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label text-muted small">Ville</label>
-                                                <p class="mb-0 fw-semibold">{{ $company->city ?? 'Non renseigné' }}</p>
-                                            </div>
-                                            <div class="mb-0">
-                                                <label class="form-label text-muted small">Email entreprise</label>
-                                                <p class="mb-0 fw-semibold">{{ $company->email_adresse ?? 'Non renseigné' }}</p>
-                                            </div>
-                                        @else
-                                            <p class="text-muted">Aucune entreprise rattachée</p>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Statistiques --}}
-                            <div class="col-md-6">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between">
-                                        <h5 class="mb-0"><i class="bx bx-bar-chart me-2"></i>Statistiques</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small">Membre depuis</label>
-                                            <p class="mb-0 fw-semibold">{{ $stats['member_since']->format('d/m/Y') }}</p>
-                                            <small class="text-muted">{{ $stats['member_since']->diffForHumans() }}</small>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small">Dernière activité</label>
-                                            <p class="mb-0 fw-semibold">{{ $stats['last_activity']->format('d/m/Y H:i') }}</p>
-                                            <small class="text-muted">{{ $stats['last_activity']->diffForHumans() }}</small>
-                                        </div>
-                                        <div class="mb-0">
-                                            <label class="form-label text-muted small">Statut</label>
-                                            <p class="mb-0">
-                                                <span class="badge bg-label-{{ $user->is_online ? 'success' : 'secondary' }}">
-                                                    {{ $user->is_online ? 'En ligne' : 'Hors ligne' }}
-                                                </span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Habilitations (si comptable) --}}
-                            @if($user->role === 'comptable')
-                            <div class="col-md-6">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between">
-                                        <h5 class="mb-0"><i class="bx bx-shield-alt me-2"></i>Mes habilitations</h5>
-                                        <span class="badge bg-primary">{{ $stats['habilitations_count'] }} permissions</span>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            @foreach($habilitations as $key => $value)
-                                                @if($value)
-                                                <div class="col-12 mb-2">
-                                                    <i class="bx bx-check-circle text-success me-2"></i>
-                                                    <span>{{ ucfirst(str_replace('_', ' ', $key)) }}</span>
+                            <div class="card-body pb-5">
+                                <div class="row align-items-end">
+                                    <div class="col-auto">
+                                        <div class="avatar-wrapper ms-4">
+                                            @if($user->profile_photo_path)
+                                                <img src="{{ asset('storage/' . $user->profile_photo_path) }}" class="rounded-circle img-profile-large bg-white">
+                                            @else
+                                                <div class="rounded-circle img-profile-large bg-blue-500 d-flex align-items-center justify-content-center text-white fs-1 fw-bold">
+                                                    {{ $user->initiales }}
                                                 </div>
-                                                @endif
-                                            @endforeach
+                                            @endif
+                                            <label for="avatarInput" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle p-2 cursor-pointer shadow-sm border border-white border-3">
+                                                <i class="fa-solid fa-camera"></i>
+                                                <form action="{{ route('user.settings.avatar') }}" method="POST" enctype="multipart/form-data" id="avatarForm">
+                                                    @csrf
+                                                    <input type="file" name="avatar" id="avatarInput" class="d-none" onchange="document.getElementById('avatarForm').submit()">
+                                                </form>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col mt-3 mt-md-0">
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                                            <div>
+                                                <h2 class="fw-black mb-1 text-slate-800">{{ $user->name }} {{ $user->last_name }}</h2>
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <span class="badge bg-blue-50 text-blue-600 px-3 py-2 rounded-pill font-bold">
+                                                        <i class="fa-solid fa-shield-halved me-2"></i>{{ ucfirst($user->role) }}
+                                                    </span>
+                                                    <span class="text-slate-500"><i class="fa-solid fa-envelope me-2"></i>{{ $user->email_adresse }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 mt-md-0">
+                                                <a href="{{ route('user.settings') }}" class="btn btn-primary px-4 py-2 rounded-xl fw-bold shadow-blue-200">
+                                                    <i class="fa-solid fa-user-gear me-2"></i>Paramètres
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            @endif
-
                         </div>
 
-                        {{-- Boutons d'action --}}
-                        <div class="mt-4 d-flex gap-2">
-                            <a href="{{ route('user.settings') }}" class="btn btn-primary">
-                                <i class="bx bx-cog me-2"></i>Paramètres
-                            </a>
+                        <div class="row g-4">
+                            <!-- Statistiques & Chart -->
+                            <div class="col-lg-8">
+                                <div class="card h-100 border-0 shadow-sm rounded-20 p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                        <h5 class="fw-bold m-0 text-slate-800">Analyse de l'activité</h5>
+                                        <select class="form-select w-auto border-0 bg-slate-50 fw-bold text-slate-500 rounded-pill">
+                                            <option>7 derniers jours</option>
+                                            <option>30 derniers jours</option>
+                                        </select>
+                                    </div>
+                                    <canvas id="activityChart" style="max-height: 350px;"></canvas>
+                                    
+                                    <div class="row g-3 mt-4">
+                                        <div class="col-md-4">
+                                            <div class="stat-card">
+                                                <div class="text-blue-500 mb-2"><i class="fa-solid fa-file-invoice fa-lg"></i></div>
+                                                <h3 class="fw-black m-0">124</h3>
+                                                <p class="text-slate-400 small m-0 uppercase font-black">Écritures saisies</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="stat-card">
+                                                <div class="text-emerald-500 mb-2"><i class="fa-solid fa-check-double fa-lg"></i></div>
+                                                <h3 class="fw-black m-0">98%</h3>
+                                                <p class="text-slate-400 small m-0 uppercase font-black">Précision IA</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="stat-card">
+                                                <div class="text-purple-500 mb-2"><i class="fa-solid fa-clock-rotate-left fa-lg"></i></div>
+                                                <h3 class="fw-black m-0">12h</h3>
+                                                <p class="text-slate-400 small m-0 uppercase font-black">Temps actif / sem</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <!-- Infos & Habilitations -->
+                            <div class="col-lg-4">
+                                <div class="card border-0 shadow-sm rounded-20 mb-4 p-4">
+                                    <h5 class="fw-bold mb-4 text-slate-800">Détails Professionnels</h5>
+                                    <div class="space-y-4">
+                                        <div class="d-flex justify-content-between align-items-center p-3 rounded-15 bg-slate-50 mb-3">
+                                            <span class="text-slate-500 fw-bold">Entreprise</span>
+                                            <span class="fw-black text-slate-800">{{ $company->company_name ?? 'N/A' }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center p-3 rounded-15 bg-slate-50 mb-3">
+                                            <span class="text-slate-500 fw-bold">Compte id</span>
+                                            <span class="fw-black text-slate-800">#{{ $user->id }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center p-3 rounded-15 bg-slate-50">
+                                            <span class="text-slate-500 fw-bold">Inscrit le</span>
+                                            <span class="fw-black text-slate-800">{{ $user->created_at->format('d/m/Y') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card border-0 shadow-sm rounded-20 p-4">
+                                    <h5 class="fw-bold mb-4 text-slate-800">Habilitations Actives</h5>
+                                    <div style="max-height: 300px; overflow-y: auto;">
+                                        @foreach($habilitations as $key => $value)
+                                            @if($value)
+                                                <div class="d-flex align-items-center gap-3 mb-3 p-2 hover-bg-slate-50 rounded-10 transition-all">
+                                                    <div class="bg-emerald-100 text-emerald-600 p-2 rounded-8">
+                                                        <i class="fa-solid fa-check fs-small"></i>
+                                                    </div>
+                                                    <span class="text-slate-600 fw-bold small">{{ ucfirst(str_replace(['_', '.'], ' ', $key)) }}</span>
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
 
-    @include('components.footer')
+    <script>
+        // Graphique d'activité Premium
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                datasets: [{
+                    label: 'Opérations effectuées',
+                    data: [12, 19, 3, 5, 2, 3, 10],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

@@ -51,6 +51,7 @@ class PerformanceController extends Controller
 
         // KPI 1: Total Revenus (Global)
         $totalRevenue = EcritureComptable::where('company_id', $companyId)
+            ->where('statut', 'approved')
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -61,6 +62,7 @@ class PerformanceController extends Controller
 
         // KPI 2: Total Charges (Global)
         $totalExpenses = EcritureComptable::where('company_id', $companyId)
+            ->where('statut', 'approved')
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -73,12 +75,14 @@ class PerformanceController extends Controller
 
         // KPI 4: Écritures du mois (Global)
         $monthlyEntries = EcritureComptable::where('company_id', $companyId)
+            ->where('statut', 'approved')
             ->whereMonth('date', Carbon::now()->month)
             ->whereYear('date', Carbon::now()->year)
             ->count();
 
         // KPI 5: Solde Trésorerie (Global)
         $cashBalance = EcritureComptable::where('company_id', $companyId)
+            ->where('statut', 'approved')
             ->whereHas('planComptable', function($query) {
                 $query->where('numero_de_compte', 'like', '5%');
             })
@@ -118,6 +122,7 @@ class PerformanceController extends Controller
         // Dernières Écritures (Globales - toutes celles de l'entreprise)
         $recentEntries = EcritureComptable::with(['planComptable', 'planTiers', 'user']) // + User info
             ->where('company_id', $companyId)
+            ->where('statut', 'approved')
             ->orderBy('date', 'desc')
             ->limit(10) // Plus d'historique pour l'admin
             ->get()
@@ -152,6 +157,7 @@ class PerformanceController extends Controller
     private function getGlobalRevenueChartData($companyId, $exerciceId)
     {
         $revenues = EcritureComptable::where('company_id', $companyId)
+            ->where('statut', 'approved')
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -178,6 +184,7 @@ class PerformanceController extends Controller
     private function getGlobalExpenseChartData($companyId, $exerciceId)
     {
         $expenses = EcritureComptable::where('ecriture_comptables.company_id', $companyId)
+            ->where('ecriture_comptables.statut', 'approved')
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })

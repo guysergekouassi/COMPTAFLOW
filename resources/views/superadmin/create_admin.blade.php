@@ -28,10 +28,19 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Nouveau Administrateur'])
+                @include('components.header', ['page_title' => $title ?? 'Nouveau Administrateur'])
 
-                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    <form action="{{ route('superadmin.admins.store') }}" method="POST">
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Nouveau Administrateur</h5>
+                                <p class="text-muted small mb-0">Créez un profil administrateur pour gérer une entité spécifique.</p>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('superadmin.admins.store') }}" method="POST">
                         @csrf
 
                         <div class="row">
@@ -112,7 +121,8 @@
                                 </div>
                             </div>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 @include('components.footer')

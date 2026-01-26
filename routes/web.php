@@ -107,8 +107,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Pages principales
-    Route::get('/', function () { return view('index'); })->name('index');
-    Route::get('/index', function () { return view('index'); })->name('index_page');
+    Route::get('/', function () { return redirect()->route('app.dashboard'); })->name('index');
+    Route::get('/index', function () { return redirect()->route('app.dashboard'); })->name('index_page');
     Route::get('/accounting_balance', function () { return view('accounting_balance'); })->name('accounting_balance');
     Route::get('/accounting_entry', function () { return view('accounting_entry'); })->name('accounting_entry');
     Route::get('/file_management', function () { return view('file_management'); })->name('file_management');
@@ -120,6 +120,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/account', [UserController::class, 'updateAccount'])->name('user.settings.account');
     Route::put('/settings/password', [UserController::class, 'updatePassword'])->name('user.settings.password');
     Route::post('/settings/avatar', [UserController::class, 'updateAvatar'])->name('user.settings.avatar');
+    Route::post('/ui/toggle-sidebar', [App\Http\Controllers\UserSessionController::class, 'toggleSidebarSection'])->name('ui.toggle_sidebar');
+
+    // ROUTES NOTIFICATIONS INTERNES
+    Route::get('/notifications', [App\Http\Controllers\InternalNotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications', [App\Http\Controllers\InternalNotificationController::class, 'store'])->name('notifications.store');
+    Route::post('/notifications/{id}/read', [App\Http\Controllers\InternalNotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::get('/api/notifications/unread-count', [App\Http\Controllers\InternalNotificationController::class, 'unreadCount'])->name('api.notifications.unread_count');
 
     // *****************ROUTE GESTION DE COMPANY
     Route::get('/compagny_information', [CompanyController::class, 'index'])->name('compagny_information');
@@ -176,6 +183,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/accounting_entry_real', [EcritureComptableController::class, 'index'])->name('accounting_entry_real');
     Route::get('/ecriture/{id}', [EcritureComptableController::class, 'show'])->name('ecriture.show');
     Route::get('/accounting_entry_list', [EcritureComptableController::class, 'list'])->name('accounting_entry_list');
+    Route::get('/ecritures/rejetees', [EcritureComptableController::class, 'rejectedList'])->name('ecriture.rejected');
+    Route::delete('/ecritures/saisie/{n_saisie}', [EcritureComptableController::class, 'deleteBySaisie'])->name('ecriture.delete_saisie');
 
     // Brouillons
     Route::get('/brouillons', [App\Http\Controllers\BrouillonController::class, 'index'])->name('brouillons.index');
@@ -242,6 +251,7 @@ Route::get('/test-saisie-number', function() {
     Route::put('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'update'])->name('exercice_comptable.update');
     Route::delete('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'destroy'])->name('exercice_comptable.destroy');
     Route::patch('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'cloturer'])->name('exercice_comptable.cloturer');
+    Route::post('/exercice_comptable/{exercice_comptable}/activate', [ExerciceComptableController::class, 'activate'])->name('exercice_comptable.activate');
 
     // *****************ROUTE GESTION DES JOURNAUX DE SAISIS
     Route::get('/journaux_saisis', [JournauxSaisisController::class, 'index'])->name('journaux_saisis');
@@ -318,6 +328,7 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
 
         // Audit & Suivi
         Route::get('/audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit');
+    Route::get('/audit/export', [App\Http\Controllers\Admin\AuditController::class, 'export'])->name('audit.export');
         
         // Contrôle d'Accès
         Route::get('/access-control', [App\Http\Controllers\Admin\AccessController::class, 'index'])->name('access');
@@ -339,20 +350,55 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
             Route::get('/plan-comptable', [App\Http\Controllers\Admin\AdminConfigController::class, 'planComptable'])->name('plan_comptable');
             Route::get('/plan-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'planTiers'])->name('plan_tiers');
             Route::get('/journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'journals'])->name('journals');
+            Route::get('/external-import', [App\Http\Controllers\Admin\AdminConfigController::class, 'externalImport'])->name('external_import');
+            Route::post('/charge-imports', [App\Http\Controllers\Admin\AdminConfigController::class, 'chargeImports'])->name('charge_imports');
             Route::post('/update-settings', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateSettings'])->name('update_settings');
             Route::post('/load-syscohada', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohadaPlan'])->name('load_syscohada');
+            Route::post('/load-syscohada-4', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohada4'])->name('load_syscohada4');
+            Route::post('/load-syscohada-6', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohada6'])->name('load_syscohada6');
+            Route::post('/load-syscohada-8', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohada8'])->name('load_syscohada8');
+            Route::post('/generate-custom-plan', [App\Http\Controllers\Admin\AdminConfigController::class, 'generateCustomPlan'])->name('generate_custom');
+            
+            Route::post('/reset-plan', [App\Http\Controllers\Admin\AdminConfigController::class, 'resetPlanComptable'])->name('reset_plan');
+            Route::post('/reset-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'resetPlanTiers'])->name('reset_tiers');
+            Route::post('/reset-journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'resetJournals'])->name('master_reset_journals');
+
             Route::post('/store-account', [App\Http\Controllers\Admin\AdminConfigController::class, 'storeAccount'])->name('store_account');
             Route::post('/import-accounts', [App\Http\Controllers\Admin\AdminConfigController::class, 'importAccounts'])->name('import_accounts');
-            Route::post('/load-standard-journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadStandardJournals'])->name('load_standard_journals');
-            Route::post('/store-journal', [App\Http\Controllers\Admin\AdminConfigController::class, 'storeJournal'])->name('store_journal');
-            Route::post('/import-journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'importJournals'])->name('import_journals');
-            Route::post('/import-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'importTiers'])->name('import_tiers');
+            Route::put('/update-account/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateAccount'])->name('update_account');
+            Route::delete('/delete-account/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'deleteAccount'])->name('delete_account');
             
-            // Actions de synchronisation (Charger pour les comptables)
-            Route::post('/sync/plan-comptable', [App\Http\Controllers\Admin\AdminConfigController::class, 'syncPlanComptable'])->name('sync.plan_comptable');
-            Route::post('/sync/plan-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'syncPlanTiers'])->name('sync.plan_tiers');
-            Route::post('/sync/journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'syncJournals'])->name('sync.journals');
+            Route::post('/load-standard-journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadStandardJournals'])->name('master_load_journals');
+            Route::post('/store-tier', [App\Http\Controllers\Admin\AdminConfigController::class, 'storeTier'])->name('store_tier');
+            Route::put('/update-tier/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateTier'])->name('update_tier');
+            Route::delete('/delete-tier/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'deleteTier'])->name('delete_tier');
+            // Journaux Master
+            Route::post('/store-journal', [App\Http\Controllers\Admin\AdminConfigController::class, 'storeJournal'])->name('master_store_journal');
+            Route::put('/update-journal/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateJournal'])->name('master_update_journal');
+            Route::delete('/delete-journal/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'deleteJournal'])->name('master_delete_journal');
+            
+            Route::get('/get-next-tier', [App\Http\Controllers\Admin\AdminConfigController::class, 'getNextTierNumber'])->name('get_next_tier');
+
         });
+
+    // Route de secours pour compatibilité (Evite Erreur 500)
+    Route::get('/admin/export/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportHub'])->name('export.hub')->middleware(['auth']);
+
+        // --- MODULE EXPORTATION (DÉPLACÉ HORS CONFIG) ---
+        Route::get('/export/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportHub'])->name('export.hub');
+        Route::post('/export/process', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportProcess'])->name('export.process');
+
+        // --- NOUVEAUX TUNNEL D'IMPORTATION (DÉPLACÉ HORS CONFIG) ---
+        Route::get('/import/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'importHub'])->name('import.hub');
+        Route::post('/import/upload', [App\Http\Controllers\Admin\AdminConfigController::class, 'importUpload'])->name('import.upload');
+        Route::get('/import/mapping/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'importMapping'])->name('import.mapping');
+        Route::post('/import/process-mapping/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'processMapping'])->name('import.process_mapping');
+        Route::get('/import/staging/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'importStaging'])->name('import.staging');
+        Route::post('/import/commit/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'commitImport'])->name('import.commit');
+        Route::delete('/import/cancel/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'cancelImport'])->name('import.cancel');
+        Route::post('/import/quick-account', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickAccountCreate'])->name('import.quick_account');
+        Route::post('/import/update-row/{id}/{index}', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateRow'])->name('import.update_row');
+        Route::delete('/import/delete-row/{id}/{index}', [App\Http\Controllers\Admin\AdminConfigController::class, 'deleteRow'])->name('import.delete_row');
     });
 
     // Dashboard Comptable
@@ -366,8 +412,6 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
 
 
 
-// Route pour afficher la vue de sélection des packs
-        Route::get('/packs/subscription', [SubscriptionController::class, 'showPricing'])->name('pricing.show');
 
 
         // Routes Tresorerie (ressource complète)
@@ -440,11 +484,24 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
     // Assurez-vous que cette ligne existe si vous utilisez 'companies.store'
     Route::get('/companies', [CompanyController::class, 'index'])->name('companies');
     // Route::post('/companies/store', [CompanyController::class, 'store'])->name('companies.store');
-
-
+    Route::post('/admin/companies/store', [CompanyController::class, 'adminStoreCompany'])->name('admin.store_sub_company');
+    Route::get('/switch-company/{company_id}', [UserController::class, 'switchCompany'])->name('switch_company');
 });
 
 Route::middleware(['auth'])->group(function () {
+    // Tâches
+    Route::prefix('admin')->name('admin.')->group(function () {
+        // Tâches
+        Route::get('/tasks/assign', [App\Http\Controllers\Admin\TaskController::class, 'index'])->name('tasks.index'); // Assigner Tâche
+        Route::post('/tasks/store', [App\Http\Controllers\Admin\TaskController::class, 'store'])->name('tasks.store');
+        Route::get('/tasks/daily', [App\Http\Controllers\Admin\TaskController::class, 'dailyTasks'])->name('tasks.daily'); // Tâche Quotidienne
+        Route::patch('/tasks/{task}/complete', [App\Http\Controllers\Admin\TaskController::class, 'markAsCompleted'])->name('tasks.complete');
+
+        // Habilitations (Gouvernance)
+        Route::get('/habilitations', [App\Http\Controllers\Admin\HabilitationController::class, 'index'])->name('habilitations.index');
+        Route::put('/habilitations/{user}', [App\Http\Controllers\Admin\HabilitationController::class, 'update'])->name('habilitations.update');
+    });
+
     // Routes de context switching pour l'Admin
     Route::get('/admin/context/reset', [UserController::class, 'resetContext'])->name('admin.context.reset');
 
@@ -469,7 +526,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Routes de création de comptabilité (Style SuperAdmin) - Exercices
     Route::get('/admin/companies/create', [ComptaAccountController::class, 'create'])->name('compta.create');
-    Route::post('/admin/companies', [ComptaAccountController::class, 'store'])->name('compta.store');
+    Route::post('/admin/companies', [ComptaAccountController::class, 'storeExercice'])->name('compta.store');
 });
 
 // **********************************************
@@ -479,7 +536,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
 
     // Tableau de Bord Super Admin (Statistiques Globales)
-    Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('superadmin.dashboard');
+    Route::get('/superadmin/dashboard', [SuperAdminDashboardController::class, 'index'])->name('superadmin.dashboard');
 
     // Gestion des Entités (Ancien Dashboard)
     Route::get('/entities', [SuperAdminDashboardController::class, 'entities'])->name('superadmin.entities');
@@ -528,6 +585,11 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
     Route::post('/superadmin/access/unblock-company/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'unblockCompany'])->name('superadmin.access.unblock.company');
     Route::post('/superadmin/access/block-user/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'blockUser'])->name('superadmin.access.block.user');
     Route::post('/superadmin/access/unblock-user/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'unblockUser'])->name('superadmin.access.unblock.user');
+    Route::delete('/superadmin/access/company/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'destroyCompany'])->name('superadmin.access.destroy.company');
+    Route::delete('/superadmin/access/user/{id}', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'destroyUser'])->name('superadmin.access.destroy.user');
+
+    // Gestion des Packs/Abonnements
+    Route::get('/activation', [SubscriptionController::class, 'showPricing'])->name('pricing.show');
 
     // Route::resource('companies', SuperAdminCompanyController::class)->except(['index', 'show']);
     Route::resource('companies', SuperAdminCompanyController::class);

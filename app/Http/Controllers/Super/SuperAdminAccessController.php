@@ -106,4 +106,36 @@ class SuperAdminAccessController extends Controller
         return redirect()->route('superadmin.access')
             ->with('success', "L'utilisateur {$user->name} a été débloqué");
     }
+
+    /**
+     * Supprime une entreprise
+     */
+    public function destroyCompany($id)
+    {
+        $company = Company::findOrFail($id);
+        
+        // Supprimer l'entreprise
+        $company->delete();
+        
+        return redirect()->route('superadmin.access')
+            ->with('success', "L'entreprise {$company->company_name} a été supprimée définitivement.");
+    }
+
+    /**
+     * Supprime un utilisateur
+     */
+    public function destroyUser($id)
+    {
+        $user = User::findOrFail($id);
+        
+        if ($user->role === 'super_admin') {
+            return redirect()->route('superadmin.access')
+                ->with('error', 'Impossible de supprimer un super administrateur');
+        }
+        
+        $user->delete();
+        
+        return redirect()->route('superadmin.access')
+            ->with('success', "L'utilisateur {$user->name} a été supprimé définitivement.");
+    }
 }

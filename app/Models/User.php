@@ -27,6 +27,7 @@ class User extends Authenticatable
         'blocked_by',
         'is_active',
         'pack_id',
+        'created_by_id',
     ];
 
     protected $casts = [
@@ -35,6 +36,16 @@ class User extends Authenticatable
         'is_active' => 'boolean',
         'blocked_at' => 'datetime',
     ];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    public function createdUsers()
+    {
+        return $this->hasMany(User::class, 'created_by_id');
+    }
 
 
     protected $hidden = ['password'];
@@ -75,13 +86,11 @@ class User extends Authenticatable
 
     public function getHabilitations(): array
     {
-        // Si l'utilisateur est Super Admin (au niveau plateforme), il a toutes les permissions.
+        // Si l'utilisateur est Super Admin, il a accès à toutes les sections de configuration.
         if ($this->isSuperAdmin()) {
             return Config::get('accounting_permissions.permissions', []);
         }
 
-        // Pour les utilisateurs des comptes comptabilité ('admin' de compagnie, 'comptable', etc.),
-        // on retourne les habilitations spécifiques stockées dans la colonne 'habilitations'.
         return $this->habilitations ?? [];
     }
 
@@ -90,14 +99,22 @@ class User extends Authenticatable
      */
     public function hasPermission(string $permission): bool
     {
-        // Super admins and admins have all permissions
-        if ($this->isAdmin()) {
+        // Les Super Admins ont tous les droits.
+        if ($this->isSuperAdmin()) {
             return true;
         }
         
-        // For comptables, check their specific habilitations
+        // Pour les Admins de compagnie, ils ont tous les droits dans leur contexte,
+        // SAUF s'ils sont des "Admins Secondaires" (ce qui sera déterminé par leurs habilitations).
+        // Si l'habilitation est explicitement définie à "0", on refuse l'accès.
         $habilitations = $this->habilitations ?? [];
-        return isset($habilitations[$permission]) && $habilitations[$permission] === "1";
+        
+        // Si l'utilisateur est Admin et n'a pas d'habilitations définies, il a tout par défaut (Admin principal)
+        if ($this->role === 'admin' && empty($habilitations)) {
+            return true;
+        }
+
+        return isset($habilitations[$permission]) && ($habilitations[$permission] === "1" || $habilitations[$permission] === true);
     }
 
 }

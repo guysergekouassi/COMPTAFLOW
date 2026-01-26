@@ -20,11 +20,6 @@ public function index(Request $request)
     // La requête est maintenant automatiquement filtrée par TenantScope (Session current_company_id ou User company_id)
     $query = CodeJournal::orderByDesc('created_at');
 
-    // FILTRAGE PAR RÔLE
-    if ($user->role !== 'admin' && $user->role !== 'super_admin') {
-        $query->where('user_id', $user->id);
-    }
-
     // FILTRAGE PAR TYPE (depuis les cartes KPI)
     if ($request->has('type') && $request->type !== 'all') {
         if ($request->type === 'Ventes') {
@@ -118,8 +113,7 @@ public function index(Request $request)
         ->get();
 
     // 7. Récupérer les postes de trésorerie distincts (uniquement les postes créés)
-    $postesTresorerieData = \App\Models\tresoreries\Tresoreries::select('poste_tresorerie')
-        ->distinct()
+    $postesTresorerieData = \App\Models\tresoreries\Tresoreries::distinct()
         ->whereNotNull('poste_tresorerie')
         ->where('poste_tresorerie', '!=', '')
         ->where('company_id', $this->getCurrentCompanyId())
@@ -168,11 +162,19 @@ public function index(Request $request)
             $user = Auth::user();
             $currentCompanyId = session('current_company_id', $user->company_id);
 
+            $compteId = null;
+            if ($request->compte_de_contrepartie) {
+                $compteId = PlanComptable::where('company_id', $currentCompanyId)
+                    ->where('numero_de_compte', $request->compte_de_contrepartie)
+                    ->value('id');
+            }
+
             $journal = CodeJournal::create([
                 'code_journal' => strtoupper($request->code_journal),
                 'intitule' => $intitule_formate,
                 'traitement_analytique' => $request->traitement_analytique === 'oui' ? 1 : 0,
                 'type' => $request->type,
+                'compte_de_tresorerie' => $compteId,
                 'compte_de_contrepartie' => $request->compte_de_contrepartie,
                 'rapprochement_sur' => $request->rapprochement_sur,
                 'poste_tresorerie' => $request->poste_tresorerie,

@@ -9,11 +9,12 @@ use App\Models\CodeJournal;
 use App\Models\Company;
 
 use App\Traits\BelongsToTenant;
+use App\Traits\BelongsToUser;
 
 
 class ExerciceComptable extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, BelongsToUser;
     protected $table = 'exercices_comptables';
     
     public static $rules = [
@@ -31,6 +32,7 @@ class ExerciceComptable extends Model
         'user_id',
         'company_id',
         'parent_company_id',
+        'is_active',
     ];
     
     protected $dates = [
@@ -44,6 +46,7 @@ class ExerciceComptable extends Model
         'date_debut' => 'date:Y-m-d',
         'date_fin' => 'date:Y-m-d',
         'cloturer' => 'boolean',
+        'is_active' => 'boolean',
         'nombre_journaux_saisis' => 'integer',
     ];
     
@@ -81,11 +84,16 @@ class ExerciceComptable extends Model
         $userId = $this->user_id;
 
         $start = \Carbon\Carbon::parse($this->date_debut)->startOfMonth();
-        $end = \Carbon\Carbon::parse($this->date_fin)->startOfMonth();
-
+        $realEnd = \Carbon\Carbon::parse($this->date_fin);
         $codeJournals = CodeJournal::where('company_id', $companyId)->get();
-
-        while ($start->lte($end)) {
+        
+        // On s'arrête si le mois de début dépasse le mois de fin réel
+        while ($start->lte($realEnd->copy()->startOfMonth())) {
+            // Si la date de fin est le 1er du mois, et que ce n'est pas le même mois que le début, 
+            // on considère souvent que c'est une limite exclusive pour un exercice de 12 mois.
+            if ($start->isSameMonth($realEnd) && $realEnd->day == 1 && !$start->isSameMonth(\Carbon\Carbon::parse($this->date_debut))) {
+                break;
+            }
             foreach ($codeJournals as $codeJournal) {
                 // Vérifie si le journal existe déjà pour éviter doublons
                 $exists = JournalSaisi::where('exercices_comptables_id', $this->id)

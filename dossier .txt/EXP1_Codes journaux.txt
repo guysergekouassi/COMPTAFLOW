@@ -1,0 +1,9 @@
+ACH   0Achat                              
+BQ    2Banque                             
+CSE   2Caisse                             
+DJAMO 2DJAMO                              
+OD    3Opérations Diverses                
+OM    2Orange Money                       
+PP    2PRO & PAY                          
+RAN   3Report à Nouveau                   
+VTE   1Vente                              

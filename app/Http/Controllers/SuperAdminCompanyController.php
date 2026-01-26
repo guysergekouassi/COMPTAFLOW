@@ -70,8 +70,9 @@ class SuperAdminCompanyController extends Controller
                 'password' => Hash::make($request->admin_password),
                 'role' => 'admin',
                 'company_id' => $company->id,
-                'is_active' => true,
-                'habilitations' => array_fill_keys($userController->getAllHabilitations(), true),
+            'is_active' => true,
+            'created_by_id' => Auth::id(),
+            'habilitations' => array_fill_keys($userController->getAllHabilitations(), true),
                 'is_online' => false,
             ]);
 

@@ -32,13 +32,13 @@ class ApprovalController extends Controller
         DB::beginTransaction();
         try {
             // Logic to apply changes based on type
-            switch ($approval->type) {
-                case 'new_user':
-                    // Logic to activate user
-                    break;
-                case 'accounting_entry':
-                    // Logic to validate entry
-                    break;
+            if ($approval->type === 'accounting_entry') {
+                $nSaisie = $approval->data['n_saisie'] ?? null;
+                if ($nSaisie) {
+                    EcritureComptable::where('n_saisie', $nSaisie)
+                        ->where('company_id', auth()->user()->company_id)
+                        ->update(['statut' => 'approved']);
+                }
             }
 
             $approval->update([
@@ -47,7 +47,7 @@ class ApprovalController extends Controller
             ]);
 
             DB::commit();
-            return back()->with('success', 'Approbation réussie.');
+            return back()->with('success', 'Écriture validée avec succès.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Erreur lors de l\'approbation: ' . $e->getMessage());
@@ -58,12 +58,28 @@ class ApprovalController extends Controller
     {
         $approval = Approval::findOrFail($id);
         
-        $approval->update([
-            'status' => 'rejected',
-            'handled_by' => auth()->id(),
-            'comment' => $request->comment
-        ]);
+        DB::beginTransaction();
+        try {
+            if ($approval->type === 'accounting_entry') {
+                $nSaisie = $approval->data['n_saisie'] ?? null;
+                if ($nSaisie) {
+                    EcritureComptable::where('n_saisie', $nSaisie)
+                        ->where('company_id', auth()->user()->company_id)
+                        ->update(['statut' => 'rejected']);
+                }
+            }
 
-        return back()->with('success', 'Demande rejetée.');
+            $approval->update([
+                'status' => 'rejected',
+                'handled_by' => auth()->id(),
+                'comment' => $request->comment
+            ]);
+
+            DB::commit();
+            return back()->with('success', 'Écriture rejetée avec motif : ' . $request->comment);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erreur lors du rejet : ' . $e->getMessage());
+        }
     }
 }

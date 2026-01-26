@@ -14,7 +14,7 @@ class Company extends Model
         'adresse', 'code_postal', 'city', 'country', 'phone_number',
         'email_adresse', 'identification_TVA','is_active','user_id','parent_company_id',
         'is_blocked', 'block_reason', 'blocked_at', 'blocked_by',
-        'account_digits', 'accounting_system',
+        'account_digits', 'tier_digits', 'tier_id_type', 'accounting_system',
     ];
 
     protected $casts = [

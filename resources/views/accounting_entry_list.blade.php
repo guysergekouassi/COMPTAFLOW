@@ -270,7 +270,18 @@
                                     </div>
                                     <div class="text-left">
                                         <p class="text-[10px] font-bold uppercase tracking-wider leading-tight opacity-80 mb-0">Exercice en cours</p>
-                                        <p class="text-lg font-black leading-tight">{{ isset($exerciceActif) && data_get($exerciceActif, 'date_debut') ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('d/m/Y') : '-' }} - {{ isset($exerciceActif) && data_get($exerciceActif, 'date_fin') ? \Carbon\Carbon::parse($exerciceActif->date_fin)->format('d/m/Y') : '-' }}</p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-lg font-black leading-tight mb-0">
+                                                {{ $exerciceActif->intitule ?? '-' }}
+                                            </p>
+                                            @if(isset($exerciceActif) && $exerciceActif->is_active)
+                                                <div class="flex items-center gap-1.5 px-2 py-0.5 bg-green-100 border border-green-200 rounded-full">
+                                                    <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                                                    <span class="text-[9px] font-bold text-green-700 uppercase">Activé</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <p class="text-[10px] text-slate-500 font-medium italic mt-1 mb-0">{{ isset($exerciceActif) && data_get($exerciceActif, 'date_debut') ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('d/m/Y') : '-' }} - {{ isset($exerciceActif) && data_get($exerciceActif, 'date_fin') ? \Carbon\Carbon::parse($exerciceActif->date_fin)->format('d/m/Y') : '-' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -390,6 +401,7 @@
                                         <tr>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">N° Saisie</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Statut</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Code Journal</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Réf. Pièce</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
@@ -418,6 +430,30 @@
                                                     @if($index === 0)
                                                         <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->date }}</td>
                                                         <td class="px-4 py-3 text-sm font-semibold text-slate-800" rowspan="{{ $rowCount }}">{{ $ecriture->n_saisie }}</td>
+                                                        <td class="px-4 py-3 text-center" rowspan="{{ $rowCount }}">
+                                                            @php
+                                                                $status = $ecriture->statut ?? 'pending';
+                                                                $badgeClass = match($status) {
+                                                                    'valid', 'approved' => 'bg-green-100 text-green-700',
+                                                                    'rejected' => 'bg-red-100 text-red-700',
+                                                                    default => 'bg-slate-100 text-slate-700'
+                                                                };
+                                                                $statusLabel = match($status) {
+                                                                    'valid', 'approved' => 'Validé',
+                                                                    'rejected' => 'Rejeté',
+                                                                    default => 'En Attente'
+                                                                };
+                                                                $iconClass = match($status) {
+                                                                    'valid', 'approved' => 'bx-check-circle',
+                                                                    'rejected' => 'bx-x-circle',
+                                                                    default => 'bx-time'
+                                                                };
+                                                            @endphp
+                                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide {{ $badgeClass }}">
+                                                                <i class='bx {{ $iconClass }} text-sm'></i>
+                                                                {{ $statusLabel }}
+                                                            </span>
+                                                        </td>
                                                         <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</td>
                                                         <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->reference_piece }}</td>
                                                     @endif

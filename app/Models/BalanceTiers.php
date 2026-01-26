@@ -1,10 +1,14 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToTenant;
+use App\Traits\BelongsToUser;
 
 class BalanceTiers extends Model
 {
+    use BelongsToTenant, BelongsToUser;
     protected $table = 'balances_tiers';
 
     protected $fillable = [

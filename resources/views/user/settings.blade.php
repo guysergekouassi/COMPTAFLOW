@@ -1,194 +1,229 @@
 <!DOCTYPE html>
-<html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/"
-    data-template="vertical-menu-template-free">
+<html lang="fr" class="layout-menu-fixed layout-compact">
 
 @include('components.head')
+
+<style>
+    .settings-nav-card {
+        border: none;
+        border-radius: 20px;
+        background: #fff;
+    }
+    .settings-link {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px 20px;
+        color: #64748b;
+        text-decoration: none !important;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+    .settings-link:hover, .settings-link.active {
+        background-color: #eff6ff;
+        color: #2563eb;
+    }
+    .settings-link i {
+        font-size: 20px;
+    }
+    .form-premium .form-label {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        margin-bottom: 8px;
+    }
+    .form-premium .form-control {
+        border-radius: 12px;
+        padding: 12px 18px;
+        border: 1px solid #e2e8f0;
+        background-color: #f8fafc;
+        transition: all 0.3s ease;
+    }
+    .form-premium .form-control:focus {
+        background-color: #fff;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    .section-card {
+        border: none;
+        border-radius: 25px;
+        padding: 35px;
+    }
+</style>
 
 <body>
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
-            @include('components.sidebar', ['habilitations' => $habilitations])
+            @include('components.sidebar')
             
             <div class="layout-page">
-                @include('components.header')
+                @include('components.header', ['page_title' => 'Paramètres du <span class="text-blue-600">Compte</span>'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
                         
-                        <h4 class="mb-4"><i class="bx bx-cog me-2"></i>Paramètres du compte</h4>
-
-                        {{-- Messages de succès/erreur --}}
-                        @if(session('success'))
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                {{ session('success') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                            </div>
-                        @endif
-
-                        @if(session('info'))
-                            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                                {{ session('info') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                            </div>
-                        @endif
-
-                        {{-- Navigation par onglets --}}
-                        <div class="card">
-                            <ul class="nav nav-tabs nav-fill" role="tablist">
-                                <li class="nav-item">
-                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#account" role="tab">
-                                        <i class="bx bx-user me-1"></i>Mon Compte
-                                    </button>
-                                </li>
-                                <li class="nav-item">
-                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#security" role="tab">
-                                        <i class="bx bx-lock-alt me-1"></i>Sécurité
-                                    </button>
-                                </li>
-                                <li class="nav-item">
-                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#preferences" role="tab">
-                                        <i class="bx bx-palette me-1"></i>Préférences
-                                    </button>
-                                </li>
-                            </ul>
-
-                            <div class="tab-content p-4">
-                                
-                                {{-- Onglet Mon Compte --}}
-                                <div class="tab-pane fade show active" id="account" role="tabpanel">
-                                    <h5 class="mb-4">Informations du compte</h5>
-                                    
-                                    <form method="POST" action="{{ route('settings.account') }}">
-                                        @csrf
-                                        @method('PUT')
-                                        
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label for="name" class="form-label">Prénom <span class="text-danger">*</span></label>
-                                                <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror" 
-                                                    value="{{ old('name', $user->name) }}" required>
-                                                @error('name')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-
-                                            <div class="col-md-6">
-                                                <label for="last_name" class="form-label">Nom de famille <span class="text-danger">*</span></label>
-                                                <input type="text" id="last_name" name="last_name" class="form-control @error('last_name') is-invalid @enderror" 
-                                                    value="{{ old('last_name', $user->last_name) }}" required>
-                                                @error('last_name')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-
-                                            <div class="col-12">
-                                                <label for="email_adresse" class="form-label">Adresse email <span class="text-danger">*</span></label>
-                                                <input type="email" id="email_adresse" name="email_adresse" class="form-control @error('email_adresse') is-invalid @enderror" 
-                                                    value="{{ old('email_adresse', $user->email_adresse) }}" required>
-                                                @error('email_adresse')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-
-                                            <div class="col-12">
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="bx bx-save me-2"></i>Enregistrer les modifications
-                                                </button>
-                                                <a href="{{ route('profile') }}" class="btn btn-outline-secondary">
-                                                    Annuler
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-
-                                {{-- Onglet Sécurité --}}
-                                <div class="tab-pane fade" id="security" role="tabpanel">
-                                    <h5 class="mb-4">Changer le mot de passe</h5>
-                                    
-                                    <form method="POST" action="{{ route('settings.password') }}">
-                                        @csrf
-                                        @method('PUT')
-                                        
-                                        <div class="row g-3">
-                                            <div class="col-12">
-                                                <label for="current_password" class="form-label">Mot de passe actuel <span class="text-danger">*</span></label>
-                                                <input type="password" id="current_password" name="current_password" 
-                                                    class="form-control @error('current_password') is-invalid @enderror" required>
-                                                @error('current_password')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-
-                                            <div class="col-md-6">
-                                                <label for="password" class="form-label">Nouveau mot de passe <span class="text-danger">*</span></label>
-                                                <input type="password" id="password" name="password" 
-                                                    class="form-control @error('password') is-invalid @enderror" required>
-                                                <div class="form-text">Minimum 8 caractères</div>
-                                                @error('password')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-
-                                            <div class="col-md-6">
-                                                <label for="password_confirmation" class="form-label">Confirmer le mot de passe <span class="text-danger">*</span></label>
-                                                <input type="password" id="password_confirmation" name="password_confirmation" 
-                                                    class="form-control" required>
-                                            </div>
-
-                                            <div class="col-12">
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="bx bx-lock-alt me-2"></i>Changer le mot de passe
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-
-                                    <hr class="my-5">
-
-                                    <h5 class="mb-3">Sessions actives</h5>
-                                    <div class="alert alert-info">
-                                        <i class="bx bx-info-circle me-2"></i>
-                                        Fonctionnalité à venir : Gérez vos sessions actives et déconnectez-vous à distance.
+                        <div class="row g-5">
+                            <!-- Sidebar Paramètres -->
+                            <div class="col-lg-3">
+                                <div class="card settings-nav-card shadow-sm p-3">
+                                    <div class="nav flex-column nav-pills" id="settingsTabs" role="tablist">
+                                        <a class="settings-link active" data-bs-toggle="pill" href="#account" role="tab">
+                                            <i class="fa-solid fa-circle-user"></i>
+                                            <span>Profil & Identité</span>
+                                        </a>
+                                        <a class="settings-link" data-bs-toggle="pill" href="#security" role="tab">
+                                            <i class="fa-solid fa-shield-halved"></i>
+                                            <span>Sécurité & Accès</span>
+                                        </a>
+                                        <a class="settings-link" data-bs-toggle="pill" href="#preferences" role="tab">
+                                            <i class="fa-solid fa-sliders"></i>
+                                            <span>Préférences UI</span>
+                                        </a>
+                                        <a class="settings-link" data-bs-toggle="pill" href="#notifications" role="tab">
+                                            <i class="fa-solid fa-bell"></i>
+                                            <span>Alerte & Mails</span>
+                                        </a>
+                                    </div>
+                                    <hr class="my-4 opacity-50">
+                                    <div class="p-3 bg-slate-50 rounded-15 text-center">
+                                        <p class="text-slate-500 small mb-0">Dernière connexion :</p>
+                                        <span class="fw-bold text-slate-800 small">{{ now()->format('d/m/Y H:i') }}</span>
                                     </div>
                                 </div>
-
-                                {{-- Onglet Préférences --}}
-                                <div class="tab-pane fade" id="preferences" role="tabpanel">
-                                    <h5 class="mb-4">Préférences d'affichage</h5>
-                                    
-                                    <div class="alert alert-info">
-                                        <i class="bx bx-info-circle me-2"></i>
-                                        <strong>Fonctionnalités à venir :</strong>
-                                        <ul class="mb-0 mt-2">
-                                            <li>Choix de la langue (Français, Anglais)</li>
-                                            <li>Fuseau horaire</li>
-                                            <li>Format de date et heure</li>
-                                            <li>Thème (Clair, Sombre)</li>
-                                            <li>Notifications par email</li>
-                                        </ul>
-                                    </div>
-                                </div>
-
                             </div>
-                        </div>
 
-                        {{-- Retour au profil --}}
-                        <div class="mt-4">
-                            <a href="{{ route('user.profile') }}" class="btn btn-outline-primary">
-                                <i class="bx bx-arrow-back me-2"></i>Retour au profil
-                            </a>
+                            <!-- Contenu des Paramètres -->
+                            <div class="col-lg-9">
+                                <div class="tab-content border-0 p-0 shadow-none bg-transparent">
+                                    
+                                    {{-- IDENTITÉ --}}
+                                    <div class="tab-pane fade show active" id="account" role="tabpanel">
+                                        <div class="card section-card shadow-sm">
+                                            <div class="d-flex align-items-center gap-4 mb-5">
+                                                <div class="bg-blue-50 text-blue-600 p-4 rounded-20">
+                                                    <i class="fa-solid fa-user-pen fa-2x"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 class="fw-black m-0 text-slate-800">Votre Identité</h4>
+                                                    <p class="text-slate-500 m-0">Gérez vos informations personnelles et professionnelles.</p>
+                                                </div>
+                                            </div>
 
+                                            <form action="{{ route('user.settings.account') }}" method="POST" class="form-premium">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="row g-4">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Prénom</label>
+                                                        <input type="text" name="name" class="form-control" value="{{ $user->name }}" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Nom de famille</label>
+                                                        <input type="text" name="last_name" class="form-control" value="{{ $user->last_name }}" required>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label">Adresse Email Professionnelle</label>
+                                                        <input type="email" name="email_adresse" class="form-control" value="{{ $user->email_adresse }}" required>
+                                                        <div class="form-text text-slate-400 mt-2">Cette adresse est utilisée pour l'envoi de vos rapports et alertes système.</div>
+                                                    </div>
+                                                    <div class="col-12 mt-5">
+                                                        <button type="submit" class="btn btn-premium-blue">
+                                                            Enregistrer les modifications
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    {{-- SÉCURITÉ --}}
+                                    <div class="tab-pane fade" id="security" role="tabpanel">
+                                        <div class="card section-card shadow-sm">
+                                            <div class="d-flex align-items-center gap-4 mb-5">
+                                                <div class="bg-indigo-50 text-indigo-600 p-4 rounded-20">
+                                                    <i class="fa-solid fa-lock fa-2x"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 class="fw-black m-0 text-slate-800"> Protection du compte</h4>
+                                                    <p class="text-slate-500 m-0">Sécurisez vos accès à la plateforme ComptaFlow.</p>
+                                                </div>
+                                            </div>
+
+                                            <form action="{{ route('user.settings.password') }}" method="POST" class="form-premium">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="row g-4">
+                                                    <div class="col-12">
+                                                        <label class="form-label">Mot de passe actuel</label>
+                                                        <input type="password" name="current_password" class="form-control" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Nouveau mot de passe</label>
+                                                        <input type="password" name="password" class="form-control" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Confirmer le nouveau mot de passe</label>
+                                                        <input type="password" name="password_confirmation" class="form-control" required>
+                                                    </div>
+                                                    <div class="col-12 mt-5">
+                                                        <button type="submit" class="btn btn-premium-blue" style="background:#4f46e5 !important;">
+                                                            Mettre à jour la sécurité
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+
+                                            <hr class="my-5 opacity-50">
+                                            <div class="p-4 rounded-20 bg-rose-50 border border-rose-100">
+                                                <div class="d-flex gap-3">
+                                                    <i class="fa-solid fa-circle-exclamation text-rose-600 mt-1"></i>
+                                                    <div>
+                                                        <h6 class="fw-bold text-rose-800">Double authentification (2FA)</h6>
+                                                        <p class="text-rose-600 small m-0">Ajoutez une couche de sécurité supplémentaire. Cette option sera disponible dans la prochaine mise à jour.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- PRÉFÉRENCES --}}
+                                    <div class="tab-pane fade" id="preferences" role="tabpanel">
+                                        <div class="card section-card shadow-sm">
+                                            <h4 class="fw-black text-slate-800 mb-5">Configuration de l'interface</h4>
+                                            
+                                            <div class="space-y-6">
+                                                <div class="d-flex justify-content-between align-items-center p-4 rounded-20 bg-slate-50 mb-3">
+                                                    <div>
+                                                        <h6 class="fw-bold m-0">Mode Sombre</h6>
+                                                        <p class="text-slate-500 small m-0">Réduit la fatigue oculaire en soirée.</p>
+                                                    </div>
+                                                    <div class="form-check form-switch fs-4">
+                                                        <input class="form-check-input" type="checkbox" disabled>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center p-4 rounded-20 bg-slate-50">
+                                                    <div>
+                                                        <h6 class="fw-bold m-0">Langue de l'interface</h6>
+                                                        <p class="text-slate-500 small m-0">Français (par défaut)</p>
+                                                    </div>
+                                                    <i class="fa-solid fa-chevron-right text-slate-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
                         </div>
 
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
-
-    @include('components.footer')
 </body>
 </html>

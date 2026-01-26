@@ -9,10 +9,19 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Modifier l\'Exercice'])
+                @include('components.header', ['page_title' => $title ?? 'Modifier l\'Exercice'])
 
-                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    <form action="{{ route('superadmin.accounting.update', $exercice->id) }}" method="POST">
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Modifier l'Exercice</h5>
+                                <p class="text-muted small mb-0">Mettez à jour les paramètres de la période comptable.</p>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('superadmin.accounting.update', $exercice->id) }}" method="POST">
                         @csrf
                         @method('PUT')
 
@@ -113,7 +122,8 @@
                                 </div>
                             </div>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 @include('components.footer')

@@ -19,7 +19,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header')
+                @include('components.header', ['page_title' => 'Opérations / Contrôle d\'Accès'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
@@ -75,9 +75,13 @@
                                                         <i class="fa-solid fa-ban me-1"></i>Bloquer
                                                     </button>
                                                 @endif
+
+                                                <button class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteC{{ $company->id }}">
+                                                    <i class="fa-solid fa-trash me-1"></i>Supprimer
+                                                </button>
                                             </td>
                                         </tr>
-                                        <!-- Modal -->
+                                        <!-- Modal Bloquer -->
                                         <div class="modal fade" id="blockC{{ $company->id }}">
                                             <div class="modal-dialog">
                                                 <div class="modal-content">
@@ -101,6 +105,31 @@
                                                             <button type="submit" class="btn btn-danger">Bloquer</button>
                                                         </div>
                                                     </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Modal Supprimer -->
+                                        <div class="modal fade" id="deleteC{{ $company->id }}">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="text-danger">Supprimer l'entreprise</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center">
+                                                        <div class="mb-3 text-danger"><i class="fa-solid fa-triangle-exclamation fa-3x"></i></div>
+                                                        <p>Êtes-vous sûr de vouloir supprimer définitivement l'entreprise <strong>{{ $company->company_name }}</strong> ?</p>
+                                                        <p class="text-muted small">Toutes les données rattachées seront impactées. Cette action est irréversible.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                        <form action="{{ route('superadmin.access.destroy.company', $company->id) }}" method="POST">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-danger">Supprimer Définitivement</button>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -146,9 +175,13 @@
                                                         <i class="fa-solid fa-ban me-1"></i>Bloquer
                                                     </button>
                                                 @endif
+
+                                                <button class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteU{{ $user->id }}">
+                                                    <i class="fa-solid fa-trash me-1"></i>Supprimer
+                                                </button>
                                             </td>
                                         </tr>
-                                        <!-- Modal -->
+                                        <!-- Modal Bloquer -->
                                         <div class="modal fade" id="blockU{{ $user->id }}">
                                             <div class="modal-dialog">
                                                 <div class="modal-content">
@@ -171,6 +204,31 @@
                                                             <button type="submit" class="btn btn-danger">Bloquer</button>
                                                         </div>
                                                     </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Modal Supprimer -->
+                                        <div class="modal fade" id="deleteU{{ $user->id }}">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="text-danger">Supprimer l'utilisateur</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center">
+                                                        <div class="mb-3 text-danger"><i class="fa-solid fa-triangle-exclamation fa-3x"></i></div>
+                                                        <p>Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur <strong>{{ $user->name }}</strong> ?</p>
+                                                        <p class="text-muted small">Toutes les données rattachées seront perdues. Cette action est irréversible.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                        <form action="{{ route('superadmin.access.destroy.user', $user->id) }}" method="POST">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-danger">Supprimer Définitivement</button>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

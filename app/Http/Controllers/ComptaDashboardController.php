@@ -16,24 +16,30 @@ class ComptaDashboardController extends Controller
 {
     public function index()
     {
-        $currentCompanyId = session('current_company_id');
-        $currentCompany = Company::find($currentCompanyId);
         $user = auth()->user();
-
         if (!$user) {
             abort(403, 'Unauthorized access.');
         }
+
+        $currentCompanyId = session('current_company_id', $user->company_id);
+        $currentCompany = Company::find($currentCompanyId);
 
         $habilitations = $this->getUserHabilitations($user, $currentCompanyId);
 
         // Récupérer les données comptables réelles
         $dashboardData = $this->getDashboardData($currentCompanyId);
         
-        // Récupérer l'exercice en cours
+        // Récupérer l'exercice en cours (Priorité à l'exercice ACTIF)
         $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
-            ->where('cloturer', 0)
-            ->orderBy('date_debut', 'desc')
+            ->where('is_active', 1)
             ->first();
+
+        if (!$exerciceEnCours) {
+            $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
 
         return view('comptable.comptdashboard', array_merge($dashboardData, [
             'currentCompany' => $currentCompany,
@@ -44,18 +50,23 @@ class ComptaDashboardController extends Controller
 
     private function getDashboardData($companyId)
     {
-        try {
-            $currentExercice = ExerciceComptable::where('cloturer', 0)
+        // Récupérer l'exercice actif pour CETTE société
+        $currentExercice = ExerciceComptable::where('company_id', $companyId)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$currentExercice) {
+            $currentExercice = ExerciceComptable::where('company_id', $companyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
                 ->first();
-        } catch (\Exception $e) {
-            // If cloturer column doesn't exist, get the first exercise
-            $currentExercice = ExerciceComptable::first();
         }
 
         $exerciceId = $currentExercice ? $currentExercice->id : null;
 
         // KPI 1: Total des revenus (classes 7)
-        $totalRevenue = EcritureComptable::where('user_id', auth()->id()) // Filtre utilisateur
+        $totalRevenue = EcritureComptable::where('company_id', $companyId) // Filtre société crucial
+            ->where('statut', 'approved')
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -65,8 +76,8 @@ class ComptaDashboardController extends Controller
             ->sum('credit');
 
         // KPI 2: Total des charges (classes 6)
-        $totalExpenses = EcritureComptable::where('company_id', $companyId)
-            ->where('user_id', auth()->id()) // Filtre utilisateur
+        $totalExpenses = EcritureComptable::where('company_id', $companyId) // Filtre société crucial
+            ->where('statut', 'approved')
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -78,14 +89,16 @@ class ComptaDashboardController extends Controller
         // KPI 3: Résultat net
         $netResult = $totalRevenue - $totalExpenses;
 
-        // KPI 4: Écritures du mois (Nombre d'écritures pour le mois en cours)
-        $monthlyEntries = EcritureComptable::where('user_id', auth()->id()) // Filtre utilisateur
+        // KPI 4: Écritures du mois (Nombre d'écritures pour le mois en cours dans CETTE société)
+        $monthlyEntries = EcritureComptable::where('company_id', $companyId)
+            ->where('statut', 'approved')
             ->whereMonth('date', Carbon::now()->month)
             ->whereYear('date', Carbon::now()->year)
             ->count();
 
         // KPI 5: Solde Trésorerie (Somme des comptes classe 5)
-        $cashBalance = EcritureComptable::where('user_id', auth()->id()) // Filtre utilisateur
+        $cashBalance = EcritureComptable::where('company_id', $companyId)
+            ->where('statut', 'approved')
             ->whereHas('planComptable', function($query) {
                 $query->where('numero_de_compte', 'like', '5%');
             })
@@ -100,6 +113,7 @@ class ComptaDashboardController extends Controller
         // Dernières écritures
         $recentEntries = EcritureComptable::with(['planComptable', 'planTiers'])
             ->where('user_id', auth()->id()) // Filtre utilisateur
+            ->where('statut', 'approved')
             ->orderBy('date', 'desc')
             ->limit(5)
             ->get()
@@ -118,6 +132,7 @@ class ComptaDashboardController extends Controller
         $recentTreasuryEntries = EcritureComptable::with(['planComptable', 'codeJournal'])
             ->where('company_id', $companyId)
             ->where('user_id', auth()->id()) // Filtre utilisateur
+            ->where('statut', 'approved')
             ->whereHas('planComptable', function($query) {
                 $query->where('numero_de_compte', 'like', '5%');
             })
@@ -191,6 +206,7 @@ class ComptaDashboardController extends Controller
     {
         $revenues = EcritureComptable::where('company_id', $companyId)
             ->where('user_id', auth()->id())
+            ->where('statut', 'approved')
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })
@@ -221,6 +237,7 @@ class ComptaDashboardController extends Controller
     {
         $expenses = EcritureComptable::where('ecriture_comptables.company_id', $companyId)
             ->where('ecriture_comptables.user_id', auth()->id()) // Filtre utilisateur
+            ->where('ecriture_comptables.statut', 'approved')
             ->when($exerciceId, function($query) use ($exerciceId) {
                 return $query->where('exercices_comptables_id', $exerciceId);
             })

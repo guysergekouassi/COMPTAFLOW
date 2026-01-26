@@ -40,6 +40,19 @@ class CodeJournal extends Model
         return $this->belongsTo(Company::class, 'company_id');
     }
 
+    public function account()
+    {
+        return $this->belongsTo(PlanComptable::class, 'compte_de_tresorerie');
+    }
+
+    public function getCodeTresorerieDisplayAttribute()
+    {
+        if ($this->account) {
+            return $this->account->numero_de_compte;
+        }
+        return $this->compte_de_contrepartie ?? '-';
+    }
+
     protected static function booted()
     {
         static::created(function ($codeJournal) {

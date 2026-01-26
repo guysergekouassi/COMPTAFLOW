@@ -19,7 +19,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header')
+                @include('components.header', ['page_title' => 'Gouvernance / Liste des Exercices Comptables'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">

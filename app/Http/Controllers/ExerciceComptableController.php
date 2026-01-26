@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Company;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ExerciceComptableController extends Controller
 {
@@ -33,14 +34,15 @@ public function index()
         return redirect()->route('login')->with('error', 'Aucune entreprise associée.');
     }
 
-    $exercices = ExerciceComptable::withoutGlobalScopes()
-        ->where('company_id', $companyId)
+    $exercices = ExerciceComptable::where('company_id', $companyId)
         ->orderBy('date_debut', 'desc')
         ->get()
         ->map(function ($exercice) {
             $dateDebut = \Carbon\Carbon::parse($exercice->date_debut);
             $dateFin   = \Carbon\Carbon::parse($exercice->date_fin);
-            $exercice->nb_mois = (int) $dateDebut->diffInMonths($dateFin) + 1;
+            // Calcul plus précis : si c'est exactement un an (01/01 au 01/01 ou au 31/12), on veut 12 mois.
+            $exercice->nb_mois = (int) round($dateDebut->diffInMonths($dateFin));
+            if ($exercice->nb_mois == 0) $exercice->nb_mois = 1; // Minimum 1 mois
             return $exercice;
         });
 
@@ -70,7 +72,7 @@ public function index()
             return response()->json(['data' => []]);
         }
 
-        $query = ExerciceComptable::withoutGlobalScopes()->where('company_id', $companyId);
+        $query = ExerciceComptable::where('company_id', $companyId);
 
         if ($request->filled('date_debut')) {
             try {
@@ -101,7 +103,8 @@ public function index()
                     'date_debut' => $exercice->date_debut,
                     'date_fin' => $exercice->date_fin,
                     'intitule' => $exercice->intitule,
-                    'nb_mois' => (int) $dateDebut->diffInMonths($dateFin) + 1,
+                    'nb_mois' => (int) round($dateDebut->diffInMonths($dateFin)),
+                    'is_active' => (bool) $exercice->is_active,
                     'nombre_journaux_saisis' => $exercice->nombre_journaux_saisis ?? 0,
                     'cloturer' => (bool) $exercice->cloturer
                 ];
@@ -112,22 +115,42 @@ public function index()
 
     public function store(Request $request)
     {
+        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Action non autorisée. Seul un administrateur peut créer un exercice.'], 403);
+        }
         try {
             $user = Auth::user();
-            
-            // Récupération du contexte via 'current_company_id'
             $companyId = session('current_company_id', $user->company_id);
 
             $request->validate(ExerciceComptable::$rules);
 
+            // LOGIQUE DE RESTRICTION : On ne peut pas créer un exercice de plus que celui dans lequel nous sommes (+1 an max)
+            $dateDebut = Carbon::parse($request->date_debut);
+            $limitYear = Carbon::now()->year + 1;
+            
+            if ($dateDebut->year > $limitYear) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => "La logique comptable interdit de créer un exercice au-delà de l'année $limitYear."
+                ], 422);
+            }
+
+            // VÉRIFICATION DES DOUBLONS
+            $existing = ExerciceComptable::where('company_id', $companyId)
+                ->where('date_debut', $request->date_debut)
+                ->where('date_fin', $request->date_fin)
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Un exercice avec ces dates existe déjà pour cette entreprise."
+                ], 422);
+            }
+
             DB::beginTransaction();
 
-            Log::info('Tentative de création exercice', [
-                'intitule' => $request->intitule,
-                'company_id' => $companyId
-            ]);
-
-            // Création sans la colonne parent_company_id qui n'existe pas
+            // Création de l'exercice
             $exercice = new ExerciceComptable();
             $exercice->date_debut = $request->date_debut;
             $exercice->date_fin = $request->date_fin;
@@ -136,6 +159,7 @@ public function index()
             $exercice->company_id = $companyId;
             $exercice->nombre_journaux_saisis = 0;
             $exercice->cloturer = 0;
+            $exercice->is_active = 0; // Pas actif par défaut
             $exercice->save();
 
             if (method_exists($exercice, 'syncJournaux')) {
@@ -144,21 +168,71 @@ public function index()
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Exercice créé avec succès',
-                'exercice' => $exercice
-            ]);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Exercice créé avec succès',
+                    'exercice' => $exercice
+                ]);
+            }
 
+            return redirect()->route('exercice_comptable')->with('success', 'Exercice créé avec succès');
+
+        } catch (ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $e->errors(),
+                    'message' => 'Veuillez corriger les erreurs dans le formulaire.'
+                ], 422);
+            }
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Erreur insertion exercice : ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->withInput()->with('error', 'Erreur lors de la création : ' . $e->getMessage());
+        }
+    }
+
+    public function activate($id)
+    {
+        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+            return back()->with('error', 'Action non autorisée.');
+        }
+
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+
+        try {
+            DB::beginTransaction();
+
+            // Désactiver tous les autres exercices de la société
+            ExerciceComptable::where('company_id', $companyId)->update(['is_active' => false]);
+
+            // Activer l'exercice sélectionné
+            $exercice = ExerciceComptable::where('company_id', $companyId)->findOrFail($id);
+            $exercice->is_active = true;
+            $exercice->save();
+
+            DB::commit();
+
+            return back()->with('success', "L'exercice \"{$exercice->intitule}\" est désormais l'exercice actif de l'entreprise.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erreur lors de l\'activation.');
         }
     }
 
     public function cloturer($id)
     {
+        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+            return back()->with('error', 'Action non autorisée. Seul un administrateur peut clôturer un exercice.');
+        }
         $exercice = ExerciceComptable::findOrFail($id);
 
         if ($exercice->cloturer) {
@@ -172,6 +246,9 @@ public function index()
 
     public function destroy($id)
     {
+        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+            return back()->with('error', 'Action non autorisée. Seul un administrateur peut supprimer un exercice.');
+        }
         $exercice = ExerciceComptable::findOrFail($id);
         $exercice->delete();
 
@@ -215,6 +292,9 @@ public function index()
 
     public function update(Request $request, $id)
     {
+        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+            return back()->with('error', 'Action non autorisée. Seul un administrateur peut modifier un exercice.');
+        }
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
 

@@ -75,9 +75,17 @@ class SuperAdminCompanyController extends Controller
             'identification_TVA' => 'nullable|string|max:255',
             'parent_company_id' => 'nullable|exists:companies,id',
             'is_active' => 'required|boolean',
+            'habilitations' => 'nullable|array',
         ]);
 
         $company->update($validated);
+
+        // Mise à jour des habilitations de l'admin de la compagnie si présentes
+        if ($request->has('habilitations') && $company->admin) {
+            $company->admin->update([
+                'habilitations' => $request->input('habilitations')
+            ]);
+        }
 
         return redirect()->route('superadmin.entities')
             ->with('success', 'Entreprise mise à jour avec succès !');

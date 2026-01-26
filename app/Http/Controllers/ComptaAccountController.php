@@ -54,11 +54,11 @@ class ComptaAccountController extends Controller
     /**
      * Enregistre un nouvel EXERCICE COMPTABLE (Comptabilité)
      */
-    public function store(Request $request)
+    public function storeExercice(Request $request)
     {
         $user = Auth::user();
 
-        // Validation similaire à SuperAdminComptaController
+        // Validation pour l'exercice
         $validated = $request->validate([
             'company_id' => 'required|exists:companies,id',
             'intitule' => 'required|string|max:255',
@@ -101,6 +101,40 @@ class ComptaAccountController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Erreur lors de la création de la comptabilité: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Enregistre une nouvelle ENTITÉ (Société)
+     */
+    public function store(Request $request)
+    {
+        $userId = Auth::id();
+
+        $validatedData = $request->validate([
+            'company_name' => 'required|string|max:255|unique:companies,company_name',
+            'activity' => 'nullable|string|max:255',
+            'juridique_form' => 'nullable|string|max:255',
+            'social_capital' => 'nullable|numeric',
+            'adresse' => 'nullable|string|max:255',
+            'code_postal' => 'nullable|string|max:20',
+            'city' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'phone_number' => 'nullable|string|max:20',
+            'email_adresse' => 'required|email|max:255|unique:companies,email_adresse',
+            'identification_TVA' => 'nullable|string|max:50',
+            'is_active' => 'required|boolean',
+        ]);
+
+        $validatedData['user_id'] = $userId;
+        // Par défaut, on peut aussi lier au parent_company_id de l'admin si besoin, 
+        // mais ici on semble créer des entités racines pour l'utilisateur.
+
+        try {
+            Company::create($validatedData);
+            return redirect()->route('compta_accounts.index')->with('success', 'L\'entité a été créée avec succès.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erreur lors de la création de l\'entité : ' . $e->getMessage())->withInput();
         }
     }
 

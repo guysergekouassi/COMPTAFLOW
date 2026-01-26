@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Company;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 use App\Models\PlanComptable;
 use App\Models\ExerciceComptable;
@@ -295,7 +296,8 @@ public function stat_online()
 
     //  dd($validated);
     // 5. Création de l'utilisateur
-    User::create($validated);
+$validated['created_by_id'] = $admin->id;
+User::create($validated);
 
     return redirect()->route('user_management')->with('success', 'Utilisateur créé avec succès.');
 }
@@ -350,7 +352,7 @@ public function stat_online()
         $allPermissions = $this->getAllPermissions();
         $habilitations = [];
         foreach ($allPermissions as $perm) {
-            $habilitations[$perm] = "1"; // Format string "1" pour compatibilité
+            $habilitations[$perm] = "1";
         }
 
         User::create([
@@ -360,12 +362,12 @@ public function stat_online()
             'password' => Hash::make($validated['password']),
             'company_id' => $validated['company_id'],
             'role' => 'admin',
-            'is_active' => true, // Actif par défaut
+            'is_active' => true,
             'habilitations' => $habilitations,
         ]);
 
         return redirect()->route('user_management')
-            ->with('success', 'Administrateur créé avec succès avec toutes les habilitations !');
+            ->with('success', 'Administrateur créé avec toutes les habilitations.');
     }
 
     /**
@@ -490,7 +492,6 @@ public function stat_online()
 
     public function switchCompany(Request $request, $companyId)
     {
-
         $user = Auth::user();
 
         // 1. Sécurité: Trouver l'ID de la compagnie mère de l'Admin
@@ -499,24 +500,36 @@ public function stat_online()
         // 2. Trouver la compagnie cible
         $company = Company::find($companyId);
 
-        // 3. Vérification des permissions
+        if (!$company) {
+            return redirect()->back()->with('error', 'Compagnie introuvable.');
+        }
+
+        // 3. Vérification des permissions (Hiérarchie)
         $is_super_admin = ($user->role === 'super_admin');
+        
+        // Un Admin peut switcher si :
+        // - C'est sa propre compagnie
+        // - C'est une sous-compagnie rattachée (parent_company_id)
+        // - C'est une compagnie qu'il a lui-même créée (user_id)
         $is_admin_manager = (
-            $company->id == $admin_primary_company_id || // La compagnie principale de l'Admin
-            $company->parent_company_id == $admin_primary_company_id ||// Une sous-compagnie créée
+            $company->id == $admin_primary_company_id || 
+            $company->parent_company_id == $admin_primary_company_id ||
             $company->user_id == $user->id
         );
 
-        if (!$company || (!$is_super_admin && !$is_admin_manager)) {
+        if (!$is_super_admin && !$is_admin_manager) {
             return redirect()->back()->with('error', 'Accès non autorisé à cette comptabilité.');
         }
 
         // 4. Basculer le contexte dans la session
         session(['current_company_id' => $companyId]);
 
-        // 5. Redirection vers le tableau de bord
-        // Assurez-vous que cette route existe
-        return redirect()->route('admin.dashboard')->with('success', 'Context changé: ' . $company->company_name);
+        // 5. Redirection intelligente
+        if ($is_super_admin) {
+            return redirect()->route('superadmin.dashboard')->with('success', 'Contexte SuperAdmin changé : ' . $company->company_name);
+        }
+
+        return redirect()->route('admin.dashboard')->with('success', 'Contexte Admin changé : ' . $company->company_name);
     }
 
     /**
@@ -559,7 +572,7 @@ public function impersonate(User $user)
 
         if (!$originalAdminId) {
             // Si pas d'ID original, l'impersonation n'était pas active
-            return redirect('/')->with('error', "Session d'impersonation non active.");
+            return redirect()->route('app.dashboard')->with('error', "Session d'impersonation non active.");
         }
 
         $originalAdmin = User::find($originalAdminId);

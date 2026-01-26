@@ -22,6 +22,23 @@ class SuperAdminUserController extends Controller
     }
 
     /**
+     * Get flattened list of permission keys
+     */
+    private function getFlattenedPermissions(): array
+    {
+        $groupedPermissions = config('accounting_permissions.permissions', []);
+        $flat = [];
+        foreach ($groupedPermissions as $group => $perms) {
+            if (is_array($perms)) {
+                foreach ($perms as $key => $label) {
+                    $flat[] = $key;
+                }
+            }
+        }
+        return $flat;
+    }
+
+    /**
      * Affiche le formulaire de création d'utilisateur
      */
     public function create()
@@ -88,13 +105,13 @@ class SuperAdminUserController extends Controller
         ]);
 
         // Un administrateur a toutes les habilitations par défaut
-        $allPermissions = config('accounting_permissions.permissions');
+        $flatPermissions = $this->getFlattenedPermissions();
         $habilitations = [];
-        foreach ($allPermissions as $key => $label) {
+        foreach ($flatPermissions as $key) {
             $habilitations[$key] = "1";
         }
 
-        $user = User::create([
+        User::create([
             'name' => $validated['name'],
             'last_name' => $validated['last_name'],
             'email_adresse' => $validated['email_adresse'],
@@ -106,7 +123,7 @@ class SuperAdminUserController extends Controller
         ]);
 
         return redirect()->route('superadmin.users')
-            ->with('success', 'Administrateur créé avec succès avec toutes les habilitations !');
+            ->with('success', 'Administrateur créé avec toutes les habilitations.');
     }
 
     /**

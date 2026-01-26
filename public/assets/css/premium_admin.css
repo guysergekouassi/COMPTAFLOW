@@ -124,6 +124,48 @@
     color: white;
 }
 
+/* Nouvelles classes de boutons pour eviter les conflits */
+.btn-premium-blue {
+    background-color: #2563eb !important;
+    color: white !important;
+    border: none !important;
+    padding: 12px 32px !important;
+    border-radius: 14px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2) !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+}
+.btn-premium-blue:hover {
+    background-color: #1d4ed8 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.3) !important;
+    color: white !important;
+}
+.btn-premium-outline {
+    background-color: transparent !important;
+    color: #64748b !important;
+    border: 2px solid #f1f5f9 !important;
+    padding: 12px 24px !important;
+    border-radius: 14px !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+}
+.btn-premium-outline:hover {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+}
+
 /* Table Enhancements */
 .table-premium {
     border-collapse: separate;

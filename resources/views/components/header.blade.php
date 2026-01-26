@@ -489,6 +489,12 @@
     
     <div class="flex items-center gap-4">
         @auth
+        <!-- Notification Bell -->
+        <a href="{{ route('notifications.index') }}" class="position-relative me-3 text-slate-600 hover:text-blue-600 transition-colors" title="Notifications">
+            <i class="fa-solid fa-bell fs-4"></i>
+            <span id="unreadNotificationsCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.6rem; display: none;">0</span>
+        </a>
+
         <div class="user-init-circle-wrapper" onclick="toggleUserMenu(event)">
             <div class="user-init-circle" title="{{ auth()->user()->name }}">
                 {{ auth()->user()->initiales }}
@@ -500,6 +506,10 @@
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0">Compte</p>
                     <p class="text-sm font-semibold text-slate-700 truncate mb-0">{{ auth()->user()->name }}</p>
                 </div>
+                <a href="{{ route('notifications.index') }}" class="dropdown-link">
+                    <i class="fa-solid fa-bell"></i>
+                    <span>Notifications</span>
+                </a>
                 <a href="{{ route('user.profile') }}" class="dropdown-link">
                     <i class="fa-solid fa-user"></i>
                     <span>Mon profil</span>
@@ -508,6 +518,22 @@
                     <i class="fa-solid fa-user-gear"></i>
                     <span>Paramètres</span>
                 </a>
+
+                @php
+                    $canSeeAdminOptions = auth()->user()->isAdmin() || 
+                                          auth()->user()->isSuperAdmin() ||
+                                          auth()->user()->hasPermission('admin.config.hub') || 
+                                          auth()->user()->hasPermission('user_management');
+                    $isAdminHidden = session('sidebar_admin_hidden', false);
+                @endphp
+
+                @if($canSeeAdminOptions)
+                <a href="javascript:void(0)" class="dropdown-link" onclick="toggleSidebarSection('admin')">
+                    <i class="fa-solid {{ $isAdminHidden ? 'fa-eye' : 'fa-eye-slash' }}"></i>
+                    <span>{{ $isAdminHidden ? 'Afficher les options' : 'Masquer les options' }}</span>
+                </a>
+                @endif
+
                 <div class="h-px bg-slate-100 my-1"></div>
                 <a href="#" class="dropdown-link logout" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="fa-solid fa-sign-out-alt"></i>
@@ -540,6 +566,40 @@ document.addEventListener('click', function(event) {
     if (menu && menu.classList.contains('show')) {
         menu.classList.remove('show');
     }
+});
+
+function toggleSidebarSection(section) {
+    fetch("{{ route('ui.toggle_sidebar') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ section: section })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Charger le compteur de notifications au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    fetch("{{ route('api.notifications.unread_count') }}")
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('unreadNotificationsCount');
+            if (data.count > 0) {
+                badge.innerText = data.count > 99 ? '99+' : data.count;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        })
+        .catch(error => console.error('Error fetching unread count:', error));
 });
 </script>
 

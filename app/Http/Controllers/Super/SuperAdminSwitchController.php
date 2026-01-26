@@ -89,7 +89,7 @@ class SuperAdminSwitchController extends Controller
             return redirect()->route('compta.dashboard')
                 ->with('success', "Vous êtes maintenant connecté en tant que : {$user->name}");
         } else {
-            return redirect()->route('index')
+            return redirect()->route('app.dashboard')
                 ->with('success', "Vous êtes maintenant connecté en tant que : {$user->name}");
         }
     }
@@ -115,6 +115,6 @@ class SuperAdminSwitchController extends Controller
                 ->with('success', 'Vous êtes de retour dans l\'interface Super Admin');
         }
         
-        return redirect()->route('index');
+        return redirect()->route('app.dashboard');
     }
 }

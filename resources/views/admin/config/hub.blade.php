@@ -89,9 +89,22 @@
                         <div class="row mb-8">
                             <div class="col-12">
                                 <div class="bg-gradient-config p-8 rounded-[32px] shadow-2xl relative overflow-hidden">
-                                    <div class="position-relative z-index-2">
-                                        <h2 class="font-black mb-2">Dossier de Configuration</h2>
-                                        <p class="mb-0 opacity-80 font-medium">Définissez vos standards comptables une seule fois, propagez-les partout.</p>
+                                    <div class="position-relative z-index-2 flex justify-between items-center">
+                                        <div>
+                                            <h2 class="font-black mb-2">Dossier de Configuration</h2>
+                                            <p class="mb-0 opacity-80 font-medium">Définissez vos standards comptables une seule fois, propagez-les partout.</p>
+                                        </div>
+                                        @if(isset($exerciceActif) && $exerciceActif)
+                                            <div class="bg-white/20 backdrop-blur-md border border-white/30 px-6 py-3 rounded-2xl text-white">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]"></div>
+                                                    <div>
+                                                        <p class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-0">Exercice Actif</p>
+                                                        <h4 class="text-lg font-black mb-0">{{ $exerciceActif->intitule }}</h4>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                     <div class="position-absolute end-0 top-0 opacity-10" style="transform: translate(20%, -20%) scale(2);">
                                         <i class="fa-solid fa-gears fa-10x"></i>
@@ -139,84 +152,33 @@
                                     <a href="{{ route('admin.config.journals') }}" class="btn btn-config-action w-100">Définir les codes</a>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="row mt-12 mb-4">
-                            <div class="col-12">
-                                <h5 class="font-black border-start border-4 border-primary ps-4">Paramètres Globaux de l'Architecture</h5>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="config-card p-8 bg-white shadow-sm border-0">
-                                    <form action="{{ route('admin.config.update_settings') }}" method="POST">
-                                        @csrf
-                                        <div class="row g-6 align-items-end">
-                                            <div class="col-md-4">
-                                                <label class="form-label font-bold text-slate-700">Système Comptable</label>
-                                                <select name="accounting_system" class="form-select border-slate-200 focus:border-primary py-3 rounded-xl shadow-none">
-                                                    <option value="SYSCOHADA" {{ $mainCompany->accounting_system == 'SYSCOHADA' ? 'selected' : '' }}>SYSCOHADA (Afrique Centrale & Ouest)</option>
-                                                    <option value="PCG" {{ $mainCompany->accounting_system == 'PCG' ? 'selected' : '' }}>PCG (France/International)</option>
-                                                    <option value="CUSTOM" {{ $mainCompany->accounting_system == 'CUSTOM' ? 'selected' : '' }}>Personnalisé</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label font-bold text-slate-700">Nombre de chiffres (Comptes)</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text bg-slate-50 border-slate-200">
-                                                        <i class="fa-solid fa-hashtag text-slate-400"></i>
-                                                    </span>
-                                                    <input type="number" name="account_digits" value="{{ $mainCompany->account_digits ?? 8 }}" min="4" max="12" class="form-control border-slate-200 focus:border-primary py-3 rounded-e-xl shadow-none">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <button type="submit" class="btn btn-primary w-100 py-3 rounded-xl font-black shadow-lg shadow-primary/20">
-                                                    <i class="fa-solid fa-floppy-disk me-2"></i> Mettre à jour les paramètres
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <p class="text-xs text-slate-400 mt-4 mb-0">
-                                            <i class="fa-solid fa-circle-info me-1"></i> 
-                                            Ces paramètres influencent la génération automatique et l'importation de vos modèles.
-                                        </p>
-                                    </form>
+                            <!-- Écritures Importées -->
+                            <div class="col-md-4">
+                                <div class="config-card p-6 h-100">
+                                    <span class="stat-badge bg-emerald-100 text-emerald-700">
+                                        {{ $stats['imported'] }} écritures
+                                    </span>
+                                    <div class="icon-box bg-emerald-50 text-emerald-600">
+                                        <i class="fa-solid fa-file-invoice"></i>
+                                    </div>
+                                    <h5 class="font-black mb-3">Écritures Importées</h5>
+                                    <p class="text-sm text-slate-500 mb-6">Visualisez et intégrez les écritures provenant de logiciels externes (Sage, SAP).</p>
+                                    
+                                    @if($stats['imported'] > 0)
+                                        <form action="{{ route('admin.config.charge_imports') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-primary w-100 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200">
+                                                <i class="fa-solid fa-cloud-arrow-down me-2"></i>Charger au centre
+                                            </button>
+                                        </form>
+                                    @else
+                                        <a href="{{ route('admin.config.external_import') }}" class="btn btn-config-action w-100">
+                                            <i class="fa-solid fa-plus-circle me-2"></i>Importer des données
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="row mt-12 mb-4">
-                            <div class="col-12">
-                                <h5 class="font-black border-start border-4 border-primary ps-4">Guides & Outils d'Architecture</h5>
-                            </div>
-                        </div>
-
-                        <div class="row g-6">
-                            <div class="col-lg-6">
-                                <div class="config-card p-6 border-0 shadow-sm bg-white d-flex align-items-center gap-4">
-                                    <div class="bg-slate-100 p-4 rounded-xl">
-                                        <i class="fa-solid fa-shield-halved fa-2x text-slate-600"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="font-black mb-1">Standardisation SYSCOHADA</h6>
-                                        <p class="text-xs text-slate-400 mb-0">Appliquez les normes IAS/IFRS à votre configuration globale.</p>
-                                    </div>
-                                    <i class="fa-solid fa-chevron-right ms-auto text-slate-300"></i>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="config-card p-6 border-0 shadow-sm bg-white d-flex align-items-center gap-4">
-                                    <div class="bg-slate-100 p-4 rounded-xl">
-                                        <i class="fa-solid fa-arrows-spin fa-2x text-slate-600"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="font-black mb-1">Audit de Cohérence</h6>
-                                        <p class="text-xs text-slate-400 mb-0">Vérifiez l'alignement des filiales avec votre modèle Master.</p>
-                                    </div>
-                                    <i class="fa-solid fa-chevron-right ms-auto text-slate-300"></i>
-                                </div>
-                            </div>
-                        </div>
 
                     </div>
                     @include('components.footer')

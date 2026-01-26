@@ -9,10 +9,19 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Modifier l\'utilisateur'])
+                @include('components.header', ['page_title' => $title ?? 'Modifier l\'utilisateur'])
 
-                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    <form action="{{ route('superadmin.users.update', $user->id) }}" method="POST">
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Modifier l'Utilisateur</h5>
+                                <p class="text-muted small mb-0">Ajustez les informations de profil et les permissions d'accès.</p>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('superadmin.users.update', $user->id) }}" method="POST">
                         @csrf
                         @method('PUT')
 
@@ -134,15 +143,20 @@
                                     
                                     <div class="row g-3">
                                         @php $currentHabilitations = is_array($user->habilitations) ? $user->habilitations : (json_decode($user->habilitations, true) ?? []); @endphp
-                                        @foreach($permissions as $key => $label)
-                                            <div class="col-md-4 col-sm-6">
-                                                <div class="form-check form-switch p-2 border rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <input class="form-check-input ms-0 me-2" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}" {{ isset($currentHabilitations[$key]) && $currentHabilitations[$key] ? 'checked' : '' }}>
-                                                    <label class="form-check-label fw-medium text-gray-700" for="hab_{{ $key }}">
-                                                        {{ $label }}
-                                                    </label>
-                                                </div>
+                                        @foreach($permissions as $section => $groupPermissions)
+                                            <div class="col-12 mb-2 mt-3">
+                                                <h6 class="text-[10px] font-black uppercase text-slate-400 tracking-widest border-bottom pb-1">{{ $section }}</h6>
                                             </div>
+                                            @foreach($groupPermissions as $key => $label)
+                                                <div class="col-md-4 col-sm-6">
+                                                    <div class="form-check form-switch p-2 border rounded-lg hover:bg-gray-50 transition-colors">
+                                                        <input class="form-check-input ms-0 me-2" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}" {{ isset($currentHabilitations[$key]) && $currentHabilitations[$key] ? 'checked' : '' }}>
+                                                        <label class="form-check-label fw-medium text-gray-700" for="hab_{{ $key }}">
+                                                            {{ $label }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
                                         @endforeach
                                     </div>
                                 </div>
@@ -167,7 +181,8 @@
                                 </div>
                             </div>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 @include('components.footer')

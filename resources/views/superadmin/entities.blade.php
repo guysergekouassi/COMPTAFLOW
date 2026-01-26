@@ -101,7 +101,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header')
+                @include('components.header', ['page_title' => 'Gouvernance / Gestion des Entités'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
 
@@ -406,16 +406,21 @@
                                                     </h6>
                                                     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 max-h-60 overflow-y-auto">
                                                         @php
-                                                            $allPermissions = config('accounting_permissions.permissions');
+                                                            $groupedPermissions = config('accounting_permissions.permissions');
                                                             $currentHabs = $company->admin->habilitations ?? [];
                                                         @endphp
-                                                        @foreach ($allPermissions as $key => $label)
-                                                            <label class="flex items-center gap-3 cursor-pointer group">
-                                                                <input type="checkbox" name="habilitations[{{ $key }}]" value="1" 
-                                                                    class="w-5 h-5 rounded-md border-2 border-slate-200 text-blue-600 focus:ring-blue-500 transition-all checked:bg-blue-600"
-                                                                    {{ isset($currentHabs[$key]) && $currentHabs[$key] ? 'checked' : '' }}>
-                                                                <span class="text-sm font-bold text-slate-600 group-hover:text-blue-600 transition-colors">{{ $label }}</span>
-                                                            </label>
+                                                        @foreach ($groupedPermissions as $section => $permissions)
+                                                            <div class="col-12 mb-2 mt-2">
+                                                                <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">{{ $section }}</span>
+                                                            </div>
+                                                            @foreach ($permissions as $key => $label)
+                                                                <label class="flex items-center gap-3 cursor-pointer group">
+                                                                    <input type="checkbox" name="habilitations[{{ $key }}]" value="1" 
+                                                                        class="w-5 h-5 rounded-md border-2 border-slate-200 text-blue-600 focus:ring-blue-500 transition-all checked:bg-blue-600"
+                                                                        {{ isset($currentHabs[$key]) && $currentHabs[$key] ? 'checked' : '' }}>
+                                                                    <span class="text-sm font-bold text-slate-600 group-hover:text-blue-600 transition-colors">{{ $label }}</span>
+                                                                </label>
+                                                            @endforeach
                                                         @endforeach
                                                     </div>
                                                 </div>

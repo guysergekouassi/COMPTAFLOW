@@ -1,0 +1,145 @@
+Numéro de compte   Intitulé du compte
+
+101100       Capital souscrit, non appelé       G
+101200       Capital souscrit, appelé, non verséG
+101300       Capital souscrit, appelé, versé, noG
+121000       Report à Nouveau créditeur         G
+129100       Perte net a reporter               G
+130100       RIA : Bénéfice                     G
+130900       RIA : Perte                        G
+2000         Fr. quincaillerie                  G
+212200       Licences                           G
+213200       Sites internet                     G
+235100       Aménagement de bureaux             G
+235800       Autre Amenagement de bureaox       G
+244100       MATERIEL DE BUREAU                 G
+244200       Matériel informatique              G
+244500       Matériel et mobilier               G
+245100       Matériel automobile                G
+275000       Depôt et cautionnements            G
+281200       Amort. des brevets, licences, conceG
+281300       Amort. des logiciels et sites interG
+284400       Amortissement du matériel et mobiliG
+284500       Amortissemnt du matériel de transpoG
+40100000     Fr. LUKE INTERNATIONAL SCHOOL      G
+401000       Fournisseur                        G
+41100000     Cl. PHARMACIE EMERAUDE             G
+411000       Client                             G
+411          Cl. Pharmacie de M'batto sarl      G
+422000       Personnel, Remunerations dues      G
+431100       Prestations familliales            G
+431200       Accident de travail                G
+431300       Caisse de retraite obligatoire     G
+431400       Caisse de retraitre facultative    G
+431800       Autres cotisations sociales        G
+442100       impot et taxes d'Etat              G
+442800       Autres impôts et taxes             G
+447100       Impôt général sur le revenu        G
+447200       Impôts sur salaire                 G
+447210       FDFP/ Taxe d'apprentissage         G
+447220       FDFP/ FPC                          G
+447300       Contribution nationnale            G
+447800       Autres impôts et contributions     G
+461200       Apporteurs, apports en numéraire   G
+461300       Apporteurs, capital appelé, non verG
+462000       Associés comptes courants          G
+462001       PERFOM WAVE CONSULTING SRL         G
+462002       Associé (Mr Danielle Kouakou)      G
+462200       ASSOCIE  Dr KOFFI MARYSE           G
+462300       ASSOCIE Dr TANOE EMMA              G
+471100       Débiteurs  Divers                  G
+481000       Fournisseur D'investissement       G
+521000       Banque                             G
+552000       Monnaie electronique               G
+552001       Monaie électronique - OM           G
+552002       Monnaie électronique - MTN         G
+552003       Monnaie électronique - WAVE        G
+558000       Compte à créer                     G
+558001       Paiement Pro                       G
+558002       Paystack                           G
+571000       Caisse                             G
+585000       Virement de fonds                  G
+6041000      Achat de matières consommbales     G
+604100       ACHAT DE MATIERES CONSOMMABLES     G
+6042000      Compte à créer                     G
+604300       PROSUITS D'ENTRETIEN               G
+604700       Fournitures de bureau              G
+605100       Fournitures non stockables -Eau    G
+605200       Fournitures non Stockables-CIE     G
+6053000      Compte à créer                     G
+605300       Fournitures non stockables - AutresG
+605400       Fournitures d'entretien non stockabG
+605500       Fournitures de bureau non stockableG
+605600       Achat de petit matériel et outillagG
+605700       Achats d'études et prestations de sG
+605701       Salaire N'DOLI                     G
+605702       Location salle pour formation      G
+605703       Hebergement                        G
+605704       Frais d'inscription                G
+605800       Achats de travaux, matériels et équG
+605801       Achat de Fournitures de Formation  G
+605810       ACHAT DE FOURNITURES DE FORMATION  G
+605820       Consultant Stratégie               G
+605830       Test Diagnostic                    G
+607800       Compte à créer                     G
+608300       Compte à créer                     G
+616000       Transport de plis                  G
+618100       Voyages et déplacements            G
+6183000      Compte à créer                     G
+618300       Transport Administratif            G
+622000       Location, Charges Locatives        G
+622200       Loyer                              G
+622800       LOCATIONS ET CHARGES LOCATIVES DIVEG
+624100       Entretien et réparation de bien immG
+624200       Entretien et réparations des biens G
+624300       PRODUIT D'ENTRETIEN                G
+626500       Documentation générale             G
+626600       Documentation techniques           G
+627100       Annonces, insertions               G
+627300       CADEAU A LA CLIENTELLE             G
+627600       Cadeaux à la clientèle             G
+627800       Autres charges de publicité et relaG
+628100       Frais de télécommunication         G
+628200       SERVICE DE REPARATION              G
+6288000      Autres frais de télécomunications  G
+628800       AUTRES FRAIS DE TELECOM            G
+628801       Frais internet                     G
+631000       Frais bancaires                    G
+631700       Frais sur instruments monnaie électG
+6324000      Honoraires                         G
+632400       Honoraires des professions règlemenG
+632401       Honoraires Mr Kouakou              G
+632700       Rémunérations des autres prestatairG
+632800       FRAIS DIVERS                       G
+634300       Redevances pour logiciels          G
+634500       Redevances pour sites internet     G
+635100       Cotisations                        G
+638300       Réceptions                         G
+638400       Missions                           G
+641300       Taxes sur appointements et salairesG
+641400       Taxes d'apprentissage              G
+641500       Formation professionnelle continue G
+641800       Autres impôts et taxes directs     G
+646200       Droit de timbre                    G
+648001       Autres impots et taxes             G
+661100       Appoitements salaires et commissionG
+661200       Primes et Gratification            G
+661300       Congés payés                       G
+661400       Indemnités de préavis, licenciementG
+661700       Avantages en nature                G
+661800       Autres rémunérations directes      G
+662200       Primes et gratifications           G
+663400       Indemnités de transport            G
+663800       Autres indermités et avantages     G
+664100       Charges sociales sur remuneration dG
+664101       Charges sociale (CMU)              G
+668400       Médecine du travail et pharmacie   G
+681200       Dotations aux Amort. incorporelles G
+681300       Dotations Amort corporelles        G
+706000       Vente par la banque                G
+706001       Vente par carte paiement pro       G
+706002       Vente par Paystack                 G
+706003       Vente par Mobile Money             G
+706004       Vente par la caisse                G
+706101       Pharma Management                  G
+812000       Valeurs Compt. des Cession d'immo cG

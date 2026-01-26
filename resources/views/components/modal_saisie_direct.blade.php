@@ -118,8 +118,9 @@
                                         @foreach ($exercices as $exercice)
                                             <option value="{{ $exercice->id }}"
                                                 data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}"
-                                                {{ $exerciceActif && $exercice->id == $exerciceActif->id ? 'selected' : '' }}>
+                                                {{ (isset($exerciceActif) && $exercice->id == $exerciceActif->id) || (isset($data['id_exercice']) && $exercice->id == $data['id_exercice']) ? 'selected' : '' }}>
                                                 {{ $exercice->intitule }} ({{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }})
+                                                @if($exercice->is_active) - ACTIVÉ 🟢 @endif
                                             </option>
                                         @endforeach
                                     </select>

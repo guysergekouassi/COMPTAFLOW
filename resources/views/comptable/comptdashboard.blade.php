@@ -138,8 +138,11 @@
                                     </div>
                                 </div>
                                 @if(isset($exerciceEnCours) && $exerciceEnCours)
-                                    <p class="text-xs text-blue-700 mt-4 font-bold">
-                                        <span class="underline">Période :</span> 
+                                    <div class="flex items-center gap-2 mt-4">
+                                        <div class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></div>
+                                        <p class="text-xs text-blue-700 font-bold uppercase tracking-wider">Activé</p>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 mt-1 font-medium italic">
                                         du {{ \Carbon\Carbon::parse($exerciceEnCours->date_debut)->translatedFormat('d/m/Y') }}
                                         au {{ \Carbon\Carbon::parse($exerciceEnCours->date_fin)->translatedFormat('d/m/Y') }}
                                     </p>

@@ -1,0 +1,369 @@
+0                401000       Tiers à créer                      1
+10000            6053000      Tiers à créer                      3
+101005           40100000     RAMSY DEDZIA                       1
+401              401000       TOTAL ENERGIE PONT HKB MACORY      1
+401000           411000       Tiers à créer                      0
+401001           401000       JUCE SARL                          1
+401002           401000       STATION                            1
+4010029          401000       SOLUCIOL                           1
+401003           401000       ORANGE CI                          1
+401004           401000       ASSAHON EVENT                      1
+401005           401000       ECART SERVICES IVORY COAST         1
+401006           401000       YACOU PNEUMATIQUE                  1
+401007           401000       LA MAISON DU PHARMACIEN            1
+401008           401000       HOTEL AHO                          1
+401009           401000       SOPHACI                            1
+401010           401000       RESIDENCE OWEKEN                   1
+401011           401000       MATY PRESTATION                    1
+401012           401000       BUSINESS CENTER                    1
+401013           401000       ONEOPHILE SOCOCE                   1
+401014           401000       HYPER U                            1
+401015           401000       LIBRAIRIE DE FRANCE                1
+401016           401000       AGENT TANOH                        1
+401017           401000       FONDS D'ENTRETIEN ROUTIER          1
+401019           401000       JEAN MARC OUATTARA                 1
+401020           401000       CONSULTANT DANIEL KOUAKOU          1
+401021           401000       CONSULTANT ACHEFFON                1
+401022           401000       ADEPHARM                           1
+401023           401000       IGB                                1
+401024           401000       LIBRAIRIE ARTE'LETTRES             1
+401025           401000       JONPCI                             1
+401026           401000       WTS                                1
+401027           401000       SCI VERANO                         1
+401028           401000       CONSULTANT DJONDE CYRILLE          1
+401029           401000       PHOTOGRAPHE                        1
+401030           401000       CARREFOUR MARKET GOLF              1
+401031           401000       COUL SERVICES                      1
+401032           401000       SANDRAU RSTAURANT                  1
+401033           401000       CASINO                             1
+401034           401000       RIMCO-SETACI                       1
+4010342          401000       FOCUS RH ET COMMUNICATION          1
+401035           401000       ETS KEITA LASSINA                  1
+401036           401000       CHINA MALL                         1
+401037           401000       PONT HKB                           1
+401038           401000       N1 TECHNIQUE BETO                  1
+401039           401000       LES GOODIES SARL U                 1
+401040           401000       DIGITPRINT                         1
+401042           401000       MENTIMETER                         1
+401043           401000       FOCUS RH ET COMMUNCATION           1
+401044           401000       iDEES CADEAUX                      1
+401045           401000       Google                             1
+401046           401000       LEGALYS                            1
+401047           401000       CHAT GPT                           1
+401048           401000       Imprimerie Tee Shirt Chap Chap     1
+401049           401000       DYNAMIS                            1
+401050           401000       CIE                                1
+401051           401000       SODECI                             1
+401060           401000       Femme de ménage : AFFOU            1
+401062           401000       LUKE INTERNATIONAL SCHOOL          1
+401100           401000       Fournisseur Divers                 1
+40110231         40100000     LUKE INTERNATIONAL SCHOOL          1
+401103           401000       N'deni annick                      1
+401110           401000       liberte informatique               1
+401112           401000       Mr jaffet Yao                      1
+401114           401000       star oil                           1
+401115           401000       Daniel Kouakou                     1
+401117           401000       Kouamé tamia                       1
+401119           401000       seka monney                        1
+401120           401000       DGI                                1
+401121           401000       ORCA MALL                          1
+401122           401000       danielle debrimou                  1
+401123           401000       quincaillerie                      1
+4011230          401000       SERVICE DE REPARATION              1
+4011236          401000       N'DENI GRACE                       0
+401125           401000       FOCUS RH CONSULTING                0
+401127           401000       Burger king                        1
+401128           401000       Monney commercial                  1
+401129           401000       TCHIMOU JUNIOR                     1
+401130           401000       Developpement de plateforme        0
+401134           401000       LEWASPACE                          0
+401139           40100000     LOUKOU ANTOINE                     1
+401140           401000       FENI-FROID                         0
+401141           401000       LA BOITE POSTAL                    1
+401149           401000       PHARMACIE D'ASSINIE MAFIA          0
+401151           401000       ES JNK AUDIO                       0
+401156           401000       AMEUBLEMENT DU ROI                 0
+401162           401000       OPTION CRYSTAL                     0
+401163           401000       STATION TOTAL ENERGIE              1
+401164           401000       SUPERETTE                          1
+401165           401000       SERAPHIN                           2
+401166           401000       ZOOM.COM                           1
+401167           401000       DC-KNOVING CGA                     1
+401168           401000       LIBRAIRIE ARTE LETTRES NUEVO SAS   1
+401169           401000       COUCOUE LODGE CI                   1
+401170           401000       HABIBA                             0
+401171           401000       CHIC-SHOP                          1
+401172           401000       YANGO                              1
+401173           401000       POWER TECH                         1
+401174           401000       IMMEUBLE BAGOE                     1
+401175           401000       LEWASPACE                          1
+401176           401000       DYNAMYS                            1
+401177           401000       STATION SHELL                      1
+401178           401000       N'DENI ANNICK                      1
+401179           401000       AFFOU BINATE                       1
+401180           401000       GOOGLE INVOICE                     1
+401181           401000       AMAZONE .COM                       1
+401182           401000       SHOP CA ELECTROMENEGER             1
+401183           401000       EGRBAT                             1
+401184           401000       TAXI                               1
+401185           401000       BOUTIQUE NESPRESSO CAP NORD        1
+401186           401000       MENUISERIE                         1
+401187           401000       EBOH INNOCENT                      1
+401188           401000       PEAGE                              1
+401189           401000       JUICE SARL                         1
+401191           401000       PROSUMA                            1
+401192           401000       Pharmacie assinie                  1
+401193           401000       CAsino supermache                  1
+401194           401000       ES JNK AUDIO                       1
+401195           401000       DGI                                1
+401196           401000       SALON INTERNATIONNAL               1
+401197           401000       JARDINIER SERAPHIN                 1
+401198           401000       BON DE SORTIE                      1
+401199           401000       AMEUBLEMENT DU ROI                 1
+401200           401000       AMAZON .COM                        0
+401206           401000       Complexe Hôtelier                  1
+401207           401000       Société biblos                     1
+401208           401000       Sogepic                            1
+401209           401000       Danielle Kouakou                   1
+401210           401000       Immeuble Bagoe                     1
+401211           401000       Mr Lakpa boris                     1
+401213           401000       Mr Antoine                         1
+401214           401000       Hostinger                          1
+401215           401000       Station corlay                     1
+401216           401000       Microsoft                          1
+401217           401000       Danielle Debrimo                   1
+401227           401000       NSIA BANQUE                        0
+401228           401000       SGS SICTA                          0
+401229           401000       CNPS                               0
+401230           401000       MONEY COMMERCIAL                   0
+401231           401000       FREEPIK                            0
+401232           40100000     N'DENI BOLA GRACE                  1
+401233           40100000     ARCHANGES EXPRESS                  1
+401234           40100000     TIAMA SERGE ROMARIC                1
+401235           40100000     HABIBA                             1
+401236           401000       RAMSY                              0
+401237           40100000     AMOUZOU TIMOTEE                    1
+401239           40100000     LA BONNE FEE                       1
+401240           40100000     FREEPIK                            1
+401241           40100000     AOPI                               1
+401242           40100000     PUSH                               1
+401243           40100000     MHOUSE                             1
+401244           40100000     les gourmands disent               1
+401245           40100000     KONNECT NET WORKS                  1
+401247           41100000     DANIELLE RENEE                     0
+401248           401000       OIPI                               0
+401249           40100000     SANDRA MONNEY                      1
+401250           40100000     DFG DISTRIBUTION                   1
+401251           40100000     GTCO DISTRIBUTION                  1
+401252           40100000     GLOVO                              1
+401253           40100000     IBIS                               1
+401255           40100000     visa                               1
+401256           40100000     NOVOTEL                            1
+401257           40100000     NSIA BANQUE                        1
+401262           40100000     HILARION AFFIA                     1
+401263           40100000     KONAN JEAN MARCEL                  1
+401264           40100000     brou joel                          1
+401265           40100000     WAVE                               1
+401266           40100000     mr beugre                          1
+401267           40100000     Abidjan Capsules                   1
+401268           40100000     MTN MONEY                          1
+401289           40100000     palm location                      1
+401290           40100000     Oenophile Allabra                  1
+401291           40100000     SALES MANAGEMENT                   1
+401292           40100000     ordre national des pharmaciens     1
+401293           40100000     JCD CONCEPT                        1
+411000           411000       SO COTONIERE OLAM                  0
+411001           411000       Pharmacie ELIEL ANYAMA             0
+4110015          411000       Pharmace Magnficat des II Plateaux 0
+411002           411000       NOUVELLE PHARMACIE DE LA ME        0
+411003           411000       Phamarcie Notre De Fatima YAMOUSSOU0
+411004           411000       PHARMACIE DES FINANCES PLATEAU     0
+411005           411000       Nouvelle pharmacie de la cité SIR  0
+411006           411000       Pharmacie Eau Vive                 0
+411007           411000       Pharmacie Zanon Pierre             0
+411008           411000       PHARMACIE PENIEL                   0
+411009           411000       PHARMACIE MATY                     0
+411010           411000       PHARMACIE DES HALLES               0
+411011           411000       Pharmacie BERAKAH                  0
+411012           411000       UBIPHARM                           0
+411013           411000       Pharmacie ARC-EN-CIEL              0
+411014           411000       PHARMACIE SAINTE CECILE DES VALLONS0
+411016           411000       Pharmacie de Carrefour N4°         0
+411017           411000       Pharmacie Zanon Pierre             0
+411018           411000       Professeur SANGARE                 0
+411019           411000       Pharmacie Abobo Grand Marché       0
+411020           411000       Pharmacie TEHIA                    0
+411021           411000       Nouvelle Pharmacie Grand Carreffour0
+411022           411000       Pharmacie DI GEORGES               0
+411023           411000       Pharmacie Eau Vivi                 0
+411024           411000       Pharmacie du Millionnaire          0
+411025           411000       PHARMAMANAGEMENT Ed3 (Règlement)   0
+411030           411000       SOCAPHARM                          0
+4110301          411000       PHARMACIE KENNEYA                  0
+411031           411000       PHARMACIE DU VALLON                0
+411032           41100000     PHARMACIE EMERAUDE                 0
+41108            41100000     IDE Yelli marianne                 0
+411100           41100000      PHARMACIE EMERAUDE                0
+411101           41100000     PHARMACIE SAINT Gabriel            0
+411103           41100000     PHAMARCIE DU GRD MARCHE DE BONOUA  0
+411104           41100000     PHARMACIE SAINT ANGE               0
+411105           41100000     DIALLO Elizabeth                   0
+411106           41100000     DIBI Raissa                        0
+411107           41100000     ASSAMOA Prisca                     0
+411108           41100000     AMANGOUA Jean-luc                  0
+41111            411000       Pharmacie saint uriel              0
+411110           41100000     BALDE Ousmina                      0
+411111           41100000     MUKAMISHA Ghyslaine                0
+4111118          41100000     NEMLIN Céline                      0
+411112           41100000     ABODUNRIN Wilson                   0
+4111121          41100000     DEFO Anne Marie                    0
+411113           41100000     MABOPDA Judith                     0
+411114           411000       Pharmacie Africa Digital Connect   0
+411115           41100000     GLASSERY-cotruzzola Linda          0
+411116           41100000     DI Leone Norma                     0
+411117           41100000     YAO Christelle                     0
+411118           41100000     KOISSY Benedicte                   0
+411119           41100000     KOHONON née Sah Nathalie Olivia    0
+411120           41100000     TRAORE Lucie                       0
+411121           41100000     DEBRIMOU Mireille                  0
+411122           41100000     AVOAKA Jean Christian              0
+411123           41100000     SOSSOUHONTO Colombe Manuella       0
+411124           41100000     KOUASSI epse AHOUEGNY Annick rosine0
+411125           41100000     Christelle STROBEL                 0
+411126           41100000     AIME NDIZEYE                       0
+411127           411000       ESPARTNERS                         0
+411128           411000       Clients - Partculiers              0
+411129           411000       Client Divers                      0
+411130           411000       Pharmacie de M'batto SARL          0
+411131           411000       International Medical Service      0
+411132           411000       Pharmacie sokoura Aboisso          0
+411133           411000       Pharmacie de Cocody                0
+411134           411000       Pharmacie de la fraternité boundial0
+411135           411000       Pharmacie zeulayet                 0
+411136           411000       Grande Pharmacie Route de Dabou    0
+411137           411000       Grande Pharmacie Gesco  fourriere  0
+411138           411000       Pharmacie la Paix                  0
+411139           411000       Pharmacie Cephas                   0
+411140           411000       Depromhy                           0
+411141           411000       Pharmacie du château d'eau d'angre 0
+411142           411000       Pharmacie de la ME                 0
+411143           411000       Pharmacie Siporex                  0
+411144           411000       Pharmacie Madou                    0
+411145           411000       Pharmacie Siporex Tanoh Marie      0
+411146           41100000     DR Isabelle APELY                  0
+411147           411000       DR Blavo -Tsri  EHUI EPSE Kouame   0
+411148           411000       Pharmacie 4 Saisons                0
+411149           411000       FRANCIS                            0
+411150           411000       FATIMA                             3
+411151           411000       Pharmacie Resurrection de Toumodi  0
+411152           411000       PHARMACIE  SAINT AGATHE            0
+411153           411000       GABRIEL WEALTH MANAGEMENT SAS GWEN 0
+41120            411000       Pharmacie saint martin             0
+411200           411000       Nouvelle pharmacie de la cite sir  0
+411201           411000       Nouvelle pharmacie sainte odile    0
+411202           411000       Noiuvelle pharmacie m'pouto        0
+411203           411000       Grande pharmacie tsf de bouake     0
+411204           411000       Pharmacie mont carmel              0
+411206           411000       Nouvelle pharmacie de tabou        0
+411207           411000       Pharmacie du marche korogho        0
+411208           411000       Bomi pharma                        0
+411209           411000       Pharmacie ste marie d'elve         0
+41121            411000       Pharmacie katio                    0
+411210           411000       Pharmacie de kokrenou              0
+411214           411000       Pharmacie de soba/coulibaly gninlma0
+411215           411000       Pharmacie iduriel                  0
+411216           411000       Pharmacie christ emile             0
+411217           411000       Pharmacie du djuablin              0
+411218           411000       Pharmacie saint andre et marthe    0
+411219           411000       Pharmacie biabou mosque            0
+41122            411000       Pharmacie sainte marie majeure     0
+411220           411000       Pharmacie caducee moderne          0
+411221           411000       Lachiroy                           0
+411222           411000       Pharmacie assonvon                 0
+411223           411000       Pharmacie el nissi                 0
+411224           411000       Mademoiselle sy savane massira ines0
+411225           411000       Pharmacie d'ajahui                 0
+411226           411000       Pharmacie artemia                  0
+411227           411000       Pharmacie proximite de meagui      0
+411228           411000       Pharmacie saint antoine            0
+411229           411000       Pharmacie bethel beago             0
+41123            411000       Pharmacie bokosso nouvelle         0
+411230           411000       Pharmacie patrimoine               0
+411231           411000       Pharmacie antenne                  0
+411232           411000       Pharmacie vie divine               0
+411239           411000       Pharmacie BD carde                 0
+41124            411000       Pharmacie sainte anne d'abatta     0
+411243           411000       Pharmacie sainte marie d'eleve     0
+411244           411000       Pharmacie zone micao               0
+411245           411000       Dr diomende ahmed                  0
+411246           411000       Pharmacie florel                   0
+411247           411000       Pharmacie audelia                  0
+411248           411000       Pharmacie sainte marie de beatitude0
+41125            411000       Pharmacie fatima                   0
+41126            411000       Sarl pharamacie saint pio de la gar0
+41128            411000       Pharmacie sainte pauline           0
+41129            411000       Pharmacie louise                   0
+41130            411000       Pharmacie grand morie              0
+41131            411000       Nouvelle pharmacie notre dame      0
+41132            411000       Cmes sarl                          0
+41133            411000       Pharmacie tchergnim/korogho        0
+41134            411000       Pharmacie sanitas                  0
+41135            411000       Pharmacie marie esther palmeraie   0
+41136            411000       Pharmacie niangon lokoi            0
+41137            411000       Pharmacie d'arrah                  0
+41140            411000       Pharmacie du marche d'ayama        0
+41141            411000       Pharmacie vridi village            0
+41142            411000       Pharmacie eden sarl u              0
+41154            41100000     DPCI                               0
+41155            411000       Phcie elite                        0
+41156            411000       Pharmacie amina                    0
+41157            411000       Nouvelle pharmacie du nene kouto   0
+41158            411000       Grande pharmacie de la capitale    0
+41159            411000       Pharmacie nouvelle seguela         0
+41160            411000       Pharmacie de la cite d'abobo       0
+41161            411000       Pharmacie gnimah                   0
+41162            411000       Pharmacie du district sanitaire    0
+41163            411000       Pharmacie sait antoine sagbe cenes 0
+41164            411000       Pharmacie de l'etoile              0
+41165            411000       Pharmacie jubile tazibouo          0
+41166            411000       Pharmacie catleyas                 0
+41167            411000       Pharmacie de jacqueville           0
+41168            411000       Entreprise pharmacie du chateau d'e0
+41169            411000       Nouvelle pharmacie gabrielle gare  0
+41170            411000       Pharmacie du golf sarl u           0
+41171            411000       Grande pharmacie route de dabou    0
+41172            411000       Pharmacie du commerce agboville    0
+41173            411000       Phcie keneya bouake                0
+41174            411000       Pharmacie plaque anador            0
+41175            411000       Pharmacie gueyo                    0
+41176            411000       Pharmacie petit marche de belle vil0
+41177            411000       Pharmacie de dimbokro              0
+41178            411000       pharmacie des lacs                 0
+41179            411000       Phcie Tehoua                       0
+41180            411000       Pharmacie marie esther abobo       0
+41181            411000       Nouvelle pharmacie rue ministre    0
+41182            411000       Nouvelle pharmacie niene           0
+41183            411000       Nouvelle pharmacie d'ayama carrefou0
+41184            411000       Pharmacie paul et marie            0
+41185            411000       Pharmacie victor tenena            0
+41186            411000       Pharmacie seguela                  0
+41187            411000       Pharmacie matene                   0
+41188            411000       Sarl pharmacie bethel attoban      0
+41189            411000       Pharmacie al fatih                 0
+41190            411000       Pharmacie mariana d'allokoi        0
+41191            411000       Grande pharmacie du sud-ouest      0
+41192            411000       Pharmacie gnadou de fresco         0
+41193            411000       Furure grande pharmacie de l'est   0
+41194            411000       Pharmacie chigata                  0
+41195            411000       Pharmacie nour kadja de guepahouo  0
+41196            411000       Pharmacie principale de ferke      0
+41197            411000       Pharmacie magnificat de bouafle    0
+41198            411000       Pharmacie du millionnaire          0
+41199            411000       Nouvelle pharmacie nissi           0
+41225            411000       Total energie marketing ci         0
+481000           481000       Tiers à créer                      3
+481001           481000       Bailleur                           1
+481002           481000       SHOP CA ELECTROMENAGERS            1
+481003           481000       ACHAT DE MATERIEL INFORMATIQUE     1
+481004           481000       Société biblos                     1
+481182           401000       EXPERIENCE CREATIVE                1

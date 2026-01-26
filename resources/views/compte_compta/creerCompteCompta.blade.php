@@ -55,7 +55,7 @@
         grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
         gap: 2rem;
     }
-    .btn-premium {
+    .btn-flow-premium {
         background: #0f172a;
         color: white !important;
         border: none;
@@ -68,7 +68,7 @@
         gap: 10px;
         text-decoration: none !important;
     }
-    .btn-premium:hover {
+    .btn-flow-premium:hover {
         background: #1e293b;
         transform: translateY(-2px);
         box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
@@ -106,6 +106,7 @@
         margin-bottom: 0.5rem !important;
         display: block !important;
     }
+
 </style>
 
 <body>
@@ -125,7 +126,7 @@
                                 <p class="text-slate-500 font-medium">Administration centrale et pilotage de vos entités comptables.</p>
                             </div>
                             <div>
-                                <button type="button" class="btn-premium" data-bs-toggle="modal" data-bs-target="#modalCreateComptaAccount">
+                                <button type="button" class="btn-flow-premium" data-bs-toggle="modal" data-bs-target="#modalCreateComptaAccount">
                                     <i class="fa-solid fa-plus-circle"></i> Ajouter une Entité
                                 </button>
                             </div>
@@ -339,7 +340,7 @@
                                                 <input type="text" name="phone_number" class="input-field-premium" value="{{ old('phone_number') }}" placeholder="+225 ..." />
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="input-label-premium">Identification TVA</label>
+                                                <label class="input-label-premium">COMPTE CONTRIBUABLE</label>
                                                 <input type="text" name="identification_TVA" class="input-field-premium" value="{{ old('identification_TVA') }}" />
                                             </div>
                                             <div class="col-md-6">
@@ -352,8 +353,8 @@
                                         </div>
 
                                         <div class="d-flex gap-3 justify-content-end mt-10">
-                                            <button type="button" class="btn px-6 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition-all border-0" data-bs-dismiss="modal">Annuler</button>
-                                            <button type="submit" class="btn px-8 py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                                            <button type="button" class="btn btn-premium-outline" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn btn-premium-blue">
                                                 Créer l'entité
                                             </button>
                                         </div>
@@ -431,8 +432,8 @@
                                         </div>
 
                                         <div class="d-flex gap-3 justify-content-end mt-10">
-                                            <button type="button" class="btn px-6 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition-all border-0" data-bs-dismiss="modal">Annuler</button>
-                                            <button type="submit" class="btn px-8 py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                                            <button type="button" class="btn btn-premium-outline" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn btn-premium-blue">
                                                 Sauvegarder
                                             </button>
                                         </div>

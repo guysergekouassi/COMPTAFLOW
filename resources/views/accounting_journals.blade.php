@@ -159,7 +159,7 @@
                                     $color = 'blue';
                                     $icon = 'fas fa-book';
                                     
-                                    if (strtolower($type) === 'tresorerie') {
+                                    if (in_array(strtolower($type), ['banque', 'caisse', 'tresorerie'])) {
                                         $color = 'emerald';
                                         $icon = 'fas fa-university';
                                     } elseif (strtolower($type) === 'achats') {
@@ -168,7 +168,7 @@
                                     } elseif (strtolower($type) === 'ventes') {
                                         $color = 'indigo';
                                         $icon = 'fas fa-chart-line';
-                                    } elseif (strtolower($type) === 'general') {
+                                    } elseif (str_contains(strtolower($type), 'diverses') || strtolower($type) === 'general') {
                                         $color = 'orange';
                                         $icon = 'fas fa-cogs';
                                     } elseif (strtolower($type) === 'situation') {
@@ -281,9 +281,9 @@
                                                         $badge = match($journal->type) {
                                                             'Achats' => 'bg-purple-100 text-purple-700 border-purple-200',
                                                             'Ventes' => 'bg-blue-100 text-blue-700 border-blue-200',
-                                                            'Tresorerie' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                                                            'General' => 'bg-orange-100 text-orange-700 border-orange-200',
-                                                            'Situation' => 'bg-indigo-100 text-indigo-700 border-indigo-200',
+                                                            'Banque', 'Caisse', 'Tresorerie' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                                                            'Opérations Diverses', 'General' => 'bg-orange-100 text-orange-700 border-orange-200',
+                                                            'Situation' => 'bg-slate-100 text-slate-700 border-slate-200',
                                                             default => 'bg-slate-100 text-slate-600 border-slate-200'
                                                         };
                                                     @endphp
@@ -364,11 +364,12 @@
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
-                                <select id="type_select" name="type" class="input-field-premium" required>
+                                <select id="type_select" name="type" class="input-field-premium" required onchange="toggleTresorerieFields(this)">
                                     <option value="Achats">Achats</option>
                                     <option value="Ventes">Ventes</option>
-                                    <option value="Tresorerie">Trésorerie</option>
-                                    <option value="General" selected>Général</option>
+                                    <option value="Banque">Banque</option>
+                                    <option value="Caisse">Caisse</option>
+                                    <option value="Opérations Diverses">Opérations Diverses</option>
                                     <option value="Situation">Situation</option>
                                 </select>
                             </div>
@@ -443,11 +444,12 @@
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
-                                <select id="update_type" name="type" class="input-field-premium" required>
+                                <select id="update_type" name="type" class="input-field-premium" required onchange="toggleTresorerieFields(this)">
                                     <option value="Achats">Achats</option>
                                     <option value="Ventes">Ventes</option>
-                                    <option value="Tresorerie">Trésorerie</option>
-                                    <option value="General">Général</option>
+                                    <option value="Banque">Banque</option>
+                                    <option value="Caisse">Caisse</option>
+                                    <option value="Opérations Diverses">Opérations Diverses</option>
                                     <option value="Situation">Situation</option>
                                 </select>
                             </div>
@@ -622,7 +624,8 @@
 
             /** 3. Modal & Form Logic **/
             const toggleTresorerieFields = (selectEl) => {
-                const isTres = $(selectEl).val() === "Tresorerie";
+                const type = $(selectEl).val();
+                const isTres = ['Banque', 'Caisse', 'Tresorerie'].includes(type);
                 const root = $(selectEl).closest('.modal-content');
                 if (isTres) {
                     root.find('[id$="tresorerie_options"], [id$="compte_field"]').removeClass('d-none');

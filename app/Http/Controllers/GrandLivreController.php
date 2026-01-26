@@ -26,8 +26,7 @@ class GrandLivreController extends Controller
             ->orderBy('numero_de_compte', 'asc')
             ->get(); // Récupère TOUS les résultats sans limite Laravel
 
-        $grandLivre = GrandLivre::withoutGlobalScopes()
-            ->where('company_id', $companyId)
+        $grandLivre = GrandLivre::where('company_id', $companyId)
             ->orderByDesc('created_at')
             ->get();
 

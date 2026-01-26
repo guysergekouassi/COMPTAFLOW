@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use App\Traits\BelongsToTenant;
-
+use App\Traits\BelongsToUser;
 use App\Traits\LogsActivity;
 
 class EcritureComptable extends Model
 {
-    use HasFactory, BelongsToTenant, LogsActivity;
+    use HasFactory, BelongsToTenant, BelongsToUser, LogsActivity;
 
     // Nom de la table (optionnel si la table s'appelle "ecriture_comptables" par convention)
     protected $table = 'ecriture_comptables';
@@ -35,6 +35,7 @@ class EcritureComptable extends Model
         //  'type_flux',
         'user_id',
         'company_id',
+        'statut',
     ];
 
     // Si tu utilises des dates dans ce format et veux les cast automatiquement

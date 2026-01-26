@@ -33,25 +33,67 @@ class AppServiceProvider extends ServiceProvider
         View::composer('components.sidebar', function ($view) {
             if (Auth::check()) {
                 $user = Auth::user();
-                $company = $user->company;
+                $currentCompanyId = session('current_company_id', $user->company_id);
+                $currentCompany = \App\Models\Company::find($currentCompanyId);
                 
-                // Données spécifiques à l'admin
                 $pendingApprovalsCount = 0;
                 if ($user->isAdmin()) {
                     $pendingApprovalsCount = \App\Models\Approval::where('status', 'pending')->count();
                 }
 
+                // Logic moved from sidebar.blade.php
+                $isComptaAccountActive = session('plan_comptable', true) && session('current_compta_account_id', true);
+                
+                $exercices = \App\Models\ExerciceComptable::where('company_id', $currentCompanyId)
+                    ->orderBy('date_debut', 'desc')
+                    ->get()
+                    ->unique(function ($item) {
+                        return trim($item->intitule);
+                    });
+
+                $code_journaux = \App\Models\CodeJournal::where('company_id', $currentCompanyId)
+                    ->get()
+                    ->unique('code_journal');
+
+                $exerciceActif = $exercices->where('cloturer', 0)->first() ?? $exercices->first();
+
+                // Companies for switch
+                if ($user->role === 'super_admin') {
+                    $companies_for_switch = \App\Models\Company::all();
+                } elseif ($user->role === 'admin') {
+                    $companies_for_switch = \App\Models\Company::where('id', $user->company_id)
+                        ->orWhere('parent_company_id', $user->company_id)
+                        ->get();
+                } else {
+                    $companies_for_switch = \App\Models\Company::where('id', $user->company_id)->get();
+                }
+
                 $view->with([
-                    'company' => $company,
-                    'pendingApprovalsCount' => $pendingApprovalsCount
+                    'company' => $currentCompany,
+                    'currentCompany' => $currentCompany,
+                    'pendingApprovalsCount' => $pendingApprovalsCount,
+                    'isComptaAccountActive' => $isComptaAccountActive,
+                    'exercices' => $exercices,
+                    'code_journaux' => $code_journaux,
+                    'exerciceActif' => $exerciceActif,
+                    'companies' => $companies_for_switch,
+                    'currentCompanyId' => $currentCompanyId
                 ]);
             } else {
                 $view->with([
                     'company' => null,
-                    'pendingApprovalsCount' => 0
+                    'currentCompany' => null,
+                    'pendingApprovalsCount' => 0,
+                    'isComptaAccountActive' => false,
+                    'exercices' => collect(),
+                    'code_journaux' => collect(),
+                    'exerciceActif' => null,
+                    'companies' => collect(),
+                    'currentCompanyId' => null
                 ]);
             }
         });
+
         // Appliquer à toutes les vues du dossier Tresor
         View::composer('Tresor.*', function ($view) {
             $comptesClasse5 = PlanComptable::where('numero_de_compte', 5)->get();
@@ -60,27 +102,27 @@ class AppServiceProvider extends ServiceProvider
         // ------------------------------------------------------------------
         // NOUVEAU VIEW COMPOSER POUR LES HABILITATIONS (APPLIQUÉ À TOUTES LES VUES)
         // ------------------------------------------------------------------
-        View::composer('*', function ($view) {
+        // ------------------------------------------------------------------
+        // NOUVEAU VIEW COMPOSER POUR LES HABILITATIONS (OPTIMISÉ)
+        // ------------------------------------------------------------------
+        static $cachedHabilitations = null;
+        View::composer('*', function ($view) use (&$cachedHabilitations) {
             if (Auth::check()) {
-                // 1. Récupérer les habilitations (associatives) ou un tableau vide
-                $userHabilitations = Auth::user()->habilitations ?? [];
-
-                // 2. Transformer le tableau associatif (e.g., ['perm1' => true, 'perm2' => false])
-                //    en un tableau simple de clés activées (e.g., ['perm1'])
-                $enabledHabilitations = collect($userHabilitations)
-                    ->filter(function ($value) {
-                        return $value === true; // Garder uniquement celles qui sont true
-                    })
-                    ->keys()   // Récupérer les clés (les noms des habilitations)
-                    ->toArray();
-
-                // 3. Injecter la variable $habilitations dans toutes les vues
-                $view->with('habilitations', $enabledHabilitations);
+                if ($cachedHabilitations === null) {
+                    $userHabilitations = Auth::user()->habilitations ?? [];
+                    $cachedHabilitations = collect($userHabilitations)
+                        ->filter(function ($value) {
+                            return $value === true || $value === "1"; 
+                        })
+                        ->keys()
+                        ->toArray();
+                }
+                $view->with('habilitations', $cachedHabilitations);
             } else {
-                // Si l'utilisateur n'est pas connecté, passer un tableau vide pour éviter les erreurs
                 $view->with('habilitations', []);
             }
         });
+
 
          View::composer('layouts.sections.sidebar.company-menu', function ($view) {
             $isComptaAccountActive = false;

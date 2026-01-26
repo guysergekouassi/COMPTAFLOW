@@ -54,75 +54,72 @@
                                                 </div>
                                             @endif
 
-                                            <div class="row g-4">
+                                                                            <div class="row g-4">
                                                 @forelse($pendingApprovals as $approval)
                                                     <div class="col-md-6 col-lg-4">
-                                                        <div class="glass-card h-100 d-flex flex-column">
-                                                            <div class="p-4 border-bottom">
+                                                        <div class="glass-card h-100 d-flex flex-column border-0 shadow-sm overflow-hidden" style="border-radius: 15px;">
+                                                            <div class="p-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-bottom: 1px solid rgba(0,0,0,0.05);">
                                                                 <div class="d-flex justify-content-between align-items-start mb-3">
-                                                                    <span class="badge-premium badge-premium-info">
-                                                                        {{ strtoupper(str_replace('_', ' ', $approval->type)) }}
+                                                                    <span class="badge {{ $approval->type === 'accounting_entry' ? 'bg-label-primary text-primary' : 'bg-label-info text-info' }} px-3 py-2 rounded-pill fw-bold" style="font-size: 0.7rem;">
+                                                                        <i class="fa-solid fa-file-invoice-dollar me-1"></i> {{ strtoupper(str_replace('_', ' ', $approval->type)) }}
                                                                     </span>
-                                                                    <small class="text-muted bg-light px-2 py-1 rounded">
-                                                                        <i class="fa-regular fa-clock me-1"></i> {{ $approval->created_at->diffForHumans() }}
-                                                                    </small>
+                                                                    <div class="text-end">
+                                                                        <div class="small fw-bold text-dark"><i class="fa-regular fa-calendar me-1"></i> {{ $approval->created_at->format('d/m/Y') }}</div>
+                                                                        <div class="small text-muted"><i class="fa-regular fa-clock me-1"></i> {{ $approval->created_at->format('H:i') }}</div>
+                                                                    </div>
                                                                 </div>
-                                                                <div class="d-flex align-items-center mb-0">
-                                                                    <div class="user-card-initials me-3" style="width: 40px; height: 40px; font-size: 1rem;">
-                                                                        {{ substr($approval->requester->name ?? 'S', 0, 1) }}
+                                                                <div class="d-flex align-items-center">
+                                                                    <div class="avatar avatar-md me-3">
+                                                                        <div class="avatar-initial rounded-circle bg-label-secondary text-dark fw-bold">
+                                                                            {{ substr($approval->requester->name ?? 'S', 0, 1) }}
+                                                                        </div>
                                                                     </div>
                                                                     <div>
-                                                                        <div class="fw-bold text-dark">{{ $approval->requester->name ?? 'Système' }}</div>
-                                                                        <small class="text-muted">Demandeur</small>
+                                                                        <div class="fw-bold text-dark fs-6">{{ $approval->requester->name ?? 'Système' }}</div>
+                                                                        <small class="text-muted"><i class="fa-solid fa-user-tag me-1"></i> {{ $approval->requester->role ?? 'Collaborateur' }}</small>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             
-                                                            <div class="p-4 flex-grow-1 bg-light bg-opacity-50">
+                                                            <div class="p-4 flex-grow-1">
+                                                                @if($approval->type === 'accounting_entry')
+                                                                    <div class="p-3 bg-label-light rounded-3 mb-3 border border-dashed">
+                                                                        <div class="d-flex justify-content-between mb-2">
+                                                                            <span class="text-muted small">N° Saisie</span>
+                                                                            <span class="fw-bold text-primary">{{ $approval->data['n_saisie'] ?? 'N/A' }}</span>
+                                                                        </div>
+                                                                        @php
+                                                                            $totalDebit = \App\Models\EcritureComptable::where('n_saisie', $approval->data['n_saisie'] ?? '')->sum('debit');
+                                                                        @endphp
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <span class="text-muted small">Montant Total</span>
+                                                                            <span class="fw-bold text-dark">{{ number_format($totalDebit, 0, ',', ' ') }} FCFA</span>
+                                                                        </div>
+                                                                    </div>
+                                                                @endif
+
                                                                 @if($approval->data)
-                                                                    <ul class="list-unstyled mb-0 small">
+                                                                    <div class="small text-muted mb-2 text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">Détails de la demande</div>
+                                                                    <ul class="list-unstyled mb-0">
                                                                         @foreach(array_slice($approval->data, 0, 4) as $key => $value)
-                                                                            <li class="mb-2 d-flex justify-content-between border-bottom pb-1 border-light">
-                                                                                <span class="text-muted">{{ ucfirst(str_replace('_', ' ', $key)) }}</span>
-                                                                                <span class="fw-medium text-end text-truncate ms-2" style="max-width: 150px;">
-                                                                                    {{ is_array($value) ? 'Données complexes' : $value }}
-                                                                                </span>
+                                                                            <li class="mb-1 d-flex justify-content-between small">
+                                                                                <span class="text-muted">{{ ucfirst(str_replace('_', ' ', $key)) }} :</span>
+                                                                                <span class="fw-medium text-dark ms-2">{{ is_array($value) ? '...' : $value }}</span>
                                                                             </li>
                                                                         @endforeach
                                                                     </ul>
-                                                                    @if(count($approval->data) > 4)
-                                                                        <div class="text-center mt-2">
-                                                                            <small class="text-primary cursor-pointer" data-bs-toggle="collapse" data-bs-target="#more-{{$approval->id}}">
-                                                                                Voir plus <i class="fa-solid fa-chevron-down ms-1"></i>
-                                                                            </small>
-                                                                            <div class="collapse mt-2 text-start" id="more-{{$approval->id}}">
-                                                                                 <ul class="list-unstyled mb-0 small">
-                                                                                    @foreach(array_slice($approval->data, 4) as $key => $value)
-                                                                                        <li class="mb-2 d-flex justify-content-between border-bottom pb-1 border-light">
-                                                                                            <span class="text-muted">{{ ucfirst(str_replace('_', ' ', $key)) }}</span>
-                                                                                            <span class="fw-medium text-end text-truncate ms-2" style="max-width: 150px;">
-                                                                                                {{ is_array($value) ? 'Detail' : $value }}
-                                                                                            </span>
-                                                                                        </li>
-                                                                                    @endforeach
-                                                                                </ul>
-                                                                            </div>
-                                                                        </div>
-                                                                    @endif
-                                                                @else
-                                                                    <p class="text-muted small mb-0 fst-italic text-center">Aucun détail supplémentaire disponible.</p>
                                                                 @endif
                                                             </div>
 
-                                                            <div class="p-3 border-top d-flex gap-2 bg-white rounded-bottom">
+                                                            <div class="p-3 p-4 pt-0 d-flex gap-2">
                                                                 <form action="{{ route('admin.approvals.approve', $approval->id) }}" method="POST" class="w-100">
                                                                     @csrf
-                                                                    <button type="submit" class="btn btn-success w-100 shadow-sm">
-                                                                        <i class="fa-solid fa-check me-2"></i> Valider
+                                                                    <button type="submit" class="btn btn-success w-100 shadow-sm py-2">
+                                                                        <i class="fa-solid fa-check-circle me-2"></i> Valider
                                                                     </button>
                                                                 </form>
-                                                                <button class="btn btn-outline-danger w-100 shadow-sm" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $approval->id }}">
-                                                                    <i class="fa-solid fa-xmark me-2"></i> Rejeter
+                                                                <button class="btn btn-outline-danger w-100 shadow-sm py-2" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $approval->id }}">
+                                                                    <i class="fa-solid fa-times-circle me-2"></i> Rejeter
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -130,28 +127,54 @@
                                                         <!-- Reject Modal -->
                                                         <div class="modal fade" id="rejectModal{{ $approval->id }}" tabindex="-1" aria-hidden="true">
                                                             <div class="modal-dialog modal-dialog-centered">
-                                                                <div class="modal-content border-0 shadow-lg">
+                                                                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                                                                     <form action="{{ route('admin.approvals.reject', $approval->id) }}" method="POST">
                                                                         @csrf
-                                                                        <div class="modal-header border-bottom-0 pb-0">
-                                                                            <h5 class="modal-title fw-bold text-danger">Rejeter la demande</h5>
+                                                                        <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                                                                            <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-ban me-2"></i> Rejeter l'écriture</h5>
                                                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                         </div>
-                                                                        <div class="modal-body">
-                                                                            <div class="text-center mb-4">
-                                                                                <div class="avatar avatar-xl bg-label-danger rounded-circle mx-auto mb-3">
-                                                                                    <i class="fa-solid fa-triangle-exclamation fa-2x"></i>
+                                                                        <div class="modal-body p-4">
+                                                                            <div class="mb-4">
+                                                                                <label class="form-label fw-bold text-dark mb-3">Sélectionnez le motif du rejet :</label>
+                                                                                <div class="d-flex flex-column gap-2">
+                                                                                    <div class="form-check custom-option custom-option-basic">
+                                                                                        <label class="form-check-label custom-option-content p-2 border rounded-3 w-100 cursor-pointer hover-bg-light" for="motif1-{{$approval->id}}">
+                                                                                            <input type="radio" name="comment" value="Libellé incorrect" class="form-check-input" id="motif1-{{$approval->id}}" checked>
+                                                                                            <span class="ms-2">Libellé incorrect</span>
+                                                                                        </label>
+                                                                                    </div>
+                                                                                    <div class="form-check custom-option custom-option-basic">
+                                                                                        <label class="form-check-label custom-option-content p-2 border rounded-3 w-100 cursor-pointer hover-bg-light" for="motif2-{{$approval->id}}">
+                                                                                            <input type="radio" name="comment" value="Comptes incorrects" class="form-check-input" id="motif2-{{$approval->id}}">
+                                                                                            <span class="ms-2">Comptes incorrects</span>
+                                                                                        </label>
+                                                                                    </div>
+                                                                                    <div class="form-check custom-option custom-option-basic">
+                                                                                        <label class="form-check-label custom-option-content p-2 border rounded-3 w-100 cursor-pointer hover-bg-light" for="motif3-{{$approval->id}}">
+                                                                                            <input type="radio" name="comment" value="Comptes imprécis" class="form-check-input" id="motif3-{{$approval->id}}">
+                                                                                            <span class="ms-2">Comptes imprécis</span>
+                                                                                        </label>
+                                                                                    </div>
+                                                                                    <div class="form-check custom-option custom-option-basic">
+                                                                                        <label class="form-check-label custom-option-content p-2 border rounded-3 w-100 cursor-pointer hover-bg-light" for="motif4-{{$approval->id}}">
+                                                                                            <input type="radio" name="comment" value="Autre" class="form-check-input" id="motif4-{{$approval->id}}" onchange="toggleComment('{{$approval->id}}')">
+                                                                                            <span class="ms-2">Autre motif</span>
+                                                                                        </label>
+                                                                                    </div>
                                                                                 </div>
-                                                                                <p class="text-muted">Êtes-vous sûr de vouloir rejeter cette demande ? Cette action est irréversible.</p>
                                                                             </div>
-                                                                            <div class="mb-3 text-start">
-                                                                                <label class="form-label fw-bold small text-uppercase">Motif du rejet (Obligatoire)</label>
-                                                                                <textarea name="comment" class="form-control bg-light" rows="3" required placeholder="Expliquez pourquoi cette demande est rejetée..."></textarea>
+                                                                            
+                                                                            <div id="otherCommentDiv-{{$approval->id}}" style="display: none;">
+                                                                                <label class="form-label fw-bold small">Précisez le motif :</label>
+                                                                                <textarea id="otherComment-{{$approval->id}}" class="form-control bg-light" rows="2" placeholder="Saisissez le motif précis..."></textarea>
                                                                             </div>
                                                                         </div>
-                                                                        <div class="modal-footer border-top-0 pt-0">
-                                                                            <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                                            <button type="submit" class="btn btn-danger">Confirmer le rejet</button>
+                                                                        <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+                                                                            <button type="button" class="btn btn-label-secondary w-100" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $approval->id }}">Annuler</button>
+                                                                            <button type="button" onclick="submitRejection('{{$approval->id}}')" class="btn btn-danger w-100 shadow-sm py-2">
+                                                                                <i class="fa-solid fa-check me-1"></i> Confirmer le rejet
+                                                                            </button>
                                                                         </div>
                                                                     </form>
                                                                 </div>
@@ -221,5 +244,43 @@
             </div>
         </div>
     </div>
+    <script>
+        function toggleComment(id) {
+            const radioOther = document.getElementById('motif4-' + id);
+            const otherDiv = document.getElementById('otherCommentDiv-' + id);
+            if (radioOther.checked) {
+                otherDiv.style.display = 'block';
+            } else {
+                otherDiv.style.display = 'none';
+            }
+        }
+
+        function submitRejection(id) {
+            const form = document.querySelector(`#rejectModal${id} form`);
+            const radioOther = document.getElementById('motif4-' + id);
+            
+            if (radioOther.checked) {
+                const otherInput = document.getElementById('otherComment-' + id);
+                if (!otherInput.value.trim()) {
+                    alert('Veuillez préciser le motif du rejet.');
+                    return;
+                }
+                // Update the value of motif4 to the custom text
+                radioOther.value = otherInput.value.trim();
+            }
+            
+            form.submit();
+        }
+
+        // Add event listeners for radio buttons to hide 'Other' if needed
+        document.querySelectorAll('input[type=radio][name=comment]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const id = this.id.split('-')[1];
+                if (this.value !== 'Autre') {
+                    document.getElementById('otherCommentDiv-' + id).style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

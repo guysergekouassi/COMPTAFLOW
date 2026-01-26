@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
  use App\Models\tresoreries\Tresoreries;
  use Illuminate\Support\Facades\Auth;
 use App\Traits\BelongsToTenant;
+use App\Traits\BelongsToUser;
 
 class JournalSaisi extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, BelongsToUser;
 
     protected $table = 'journaux_saisis';
 
@@ -22,21 +23,6 @@ class JournalSaisi extends Model
         'user_id',
         'company_id',
     ];
-
-    public function scopeCurrentUser(Builder $query){
-            $user = Auth::user();
-
-            // Vérifie si un utilisateur est connecté ET s'il N'EST PAS administrateur
-            if($user && !$user->isAdmin()){
-
-               
-                 $query->where('user_id', $user->id);
-            }
-
-
-
-
-    }
 
     public function user()
     {

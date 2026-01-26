@@ -205,6 +205,40 @@
         padding: 1.5rem 2rem !important;
         vertical-align: middle !important;
     }
+
+    .status-active-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        background-color: #f0fdf4;
+        color: #166534;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid #dcfce7;
+    }
+
+    .active-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #22c55e;
+        border-radius: 50%;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+
+    .btn-action-activate {
+        transition: all 0.2s ease !important;
+    }
+    .btn-action-activate:hover {
+        background-color: #059669 !important;
+        color: white !important;
+        border-color: #059669 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
 </style>
 
 <body>
@@ -254,6 +288,7 @@
                             </div>
 
                             <!-- Right Group: Actions -->
+                            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
                             <div class="flex flex-wrap items-center justify-end gap-3">
                                 <button type="button" data-bs-toggle="modal" data-bs-target="#modalCenterCreate"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
@@ -261,6 +296,7 @@
                                     Nouvel exercice
                                 </button>
                             </div>
+                            @endif
                         </div>
 
                         <!-- Advanced Filter Panel (même modèle que Plan Tiers) -->
@@ -304,9 +340,12 @@
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de début</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date de fin</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Intitulé</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Statut</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Durée</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Journaux</th>
+                                            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                                            @endif
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
@@ -453,6 +492,11 @@
         </div>
         @include('components.footer')
 
+        <!-- Formulaire caché pour l'activation -->
+        <form id="activateForm" method="POST" action="" style="display: none;">
+            @csrf
+        </form>
+
         <script>
 
             const journauxSaisisUrl = "{{ route('journaux_saisis') }}";
@@ -460,6 +504,7 @@
             const exercice_comptableCloturerUrl = "{{ route('exercice_comptable.cloturer', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableShowUrl = "{{ route('exercice_comptable.show', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableEditUrl = "{{ route('exercice_comptable.edit', ['exercice_comptable' => '__ID__']) }}";
+            const exercice_comptableActivateUrl = "{{ route('exercice_comptable.activate', ['exercice_comptable' => '__ID__']) }}";
 
         </script>
         {{-- <script src="{{ asset('js/exercice_compt.js') }}"></script> --}}
@@ -473,6 +518,12 @@
                 const dateFinInput = document.getElementById('date_fin');
                 const intituleInput = document.getElementById('intitule_exercice');
                 let dataTable;
+                let modalInstance;
+
+                // Initialisation du modal Bootstrap
+                if (modalCreate && window.bootstrap) {
+                    modalInstance = bootstrap.Modal.getOrCreateInstance(modalCreate);
+                }
 
                 // Binding robuste
                 const toggleBtn = document.getElementById('toggleFilterBtn');
@@ -545,6 +596,21 @@
                             },
                             { data: 'intitule' },
                             {
+                                data: 'is_active',
+                                className: 'text-center',
+                                render: function(data, type, row) {
+                                    if (data) {
+                                        return `
+                                            <div class="status-active-badge mx-auto">
+                                                <span class="active-dot"></span>
+                                                Activé
+                                            </div>
+                                        `;
+                                    }
+                                    return '<span class="text-slate-400 text-xs font-bold uppercase tracking-widest">Inactif</span>';
+                                }
+                            },
+                            {
                                 data: 'nb_mois',
                                 render: function(data, type, row) {
                                     if (type === 'display' && data !== null) {
@@ -554,18 +620,28 @@
                                 }
                             },
                             { data: 'nombre_journaux_saisis' },
+                            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
                             {
                                 data: null,
                                 orderable: false,
+                                className: 'text-right',
                                 render: function(data, type, row) {
                                     return `
-                                        <div class="d-flex gap-2">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            ${!row.is_active ? `
+                                                <button type="button"
+                                                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-activate activate-btn"
+                                                        data-id="${row.id}"
+                                                        data-bs-toggle="tooltip"
+                                                        title="Activer cet exercice">
+                                                    <i class="bx bx-power-off fs-5"></i>
+                                                </button>` : ''
+                                            }
                                             ${!row.cloturer ? `
                                                 <button type="button"
                                                         class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-delete delete-btn"
                                                         data-id="${row.id}"
                                                         data-label="${row.intitule}"
-                                                        data-type="delete"
                                                         data-bs-toggle="tooltip"
                                                         title="Supprimer">
                                                     <i class="bx bx-trash fs-5"></i>
@@ -574,13 +650,12 @@
                                                         class="w-10 h-10 flex items-center justify-center rounded-xl border border-yellow-100 text-yellow-600 hover:bg-yellow-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-cloturer cloturer-btn"
                                                         data-id="${row.id}"
                                                         data-label="${row.intitule}"
-                                                        data-type="cloture"
                                                         data-bs-toggle="tooltip"
                                                         title="Clôturer">
                                                     <i class="bx bx-lock-alt fs-5"></i>
                                                 </button>` : ''
                                             }
-                                            ${row.cloturer ? `
+                                            ${row.cloturer && !row.is_active ? `
                                                 <button type="button"
                                                         class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition shadow-sm bg-white"
                                                         disabled
@@ -593,6 +668,7 @@
                                     `;
                                 }
                             }
+                            @endif
                         ],
                         language: {
                             emptyTable: 'Aucune donnée disponible dans le tableau',
@@ -696,13 +772,9 @@
                 // Gestion de la soumission du formulaire
                 if (formExercice) {
                     formExercice.addEventListener('submit', async function(e) {
-                        // Ne pas empêcher le comportement par défaut si JavaScript est désactivé
-                        const isAjax = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest();
+                        e.preventDefault();
 
-                        if (isAjax) {
-                            e.preventDefault();
-
-                            console.log('Soumission AJAX du formulaire');
+                        console.log('Soumission AJAX du formulaire');
                             const submitButton = this.querySelector('button[type="submit"]');
                             const originalText = submitButton.innerHTML;
 
@@ -806,14 +878,37 @@
                                     submitButton.innerHTML = originalText;
                                 }
                             }
-                        } else {
-                            // Soumission normale du formulaire (sans AJAX)
-                            console.log('Soumission normale du formulaire');
-                            // La validation HTML5 s'occupera de la validation côté client
-                            // Le serveur gérera la redirection et l'affichage des messages
+                        });
+                    }
+                // Gestionnaire d'activation
+                document.addEventListener('click', function(e) {
+                    if (e.target.closest('.activate-btn')) {
+                        const btn = e.target.closest('.activate-btn');
+                        const id = btn.getAttribute('data-id');
+                        const form = document.getElementById('activateForm');
+                        
+                        if (id && form) {
+                            Swal.fire({
+                                title: 'Activer l\'exercice ?',
+                                text: "Cet exercice deviendra l'exercice par défaut de l'entreprise pour toutes les saisies.",
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonText: 'Oui, activer',
+                                cancelButtonText: 'Annuler',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
+                                    cancelButton: 'btn btn-label-secondary rounded-xl px-4'
+                                },
+                                buttonsStyling: false
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    form.action = exercice_comptableActivateUrl.replace('__ID__', id);
+                                    form.submit();
+                                }
+                            });
                         }
-                    });
-                }
+                    }
+                });
 
                 // Gestion de la génération automatique de l'intitulé
                 if (dateFinInput) {

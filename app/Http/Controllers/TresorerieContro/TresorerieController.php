@@ -56,11 +56,6 @@ class TresorerieController extends Controller
             // Nous prenons l'ID de la compagnie actuelle pour les requêtes PlanComptable
             $companyIdForPlanComptable = $user->company_id;
 
-            // 3. FILTRAGE PAR RÔLE
-            if ($user->role !== 'admin' && $user->role !== 'super_admin') {
-                $query->where('user_id', $user->id);
-            }
-
             $tresoreries = $query->get();
         }
 

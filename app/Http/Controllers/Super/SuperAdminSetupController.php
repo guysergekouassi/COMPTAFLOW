@@ -33,7 +33,7 @@ class SuperAdminSetupController extends Controller
         // Vérification de sécurité (optionnel mais recommandé) :
         // Si un utilisateur avec un rôle "superadmin" ou une compagnie existe déjà, rediriger.
         if (User::where('role', 'superadmin')->exists() || Company::exists()) {
-             return redirect('/')->with('error', 'Le système est déjà configuré.');
+             return redirect()->route('app.dashboard')->with('error', 'Le système est déjà configuré.');
         }
 
         return view('auth.super_admin_setup'); // Créez cette vue (Super-Admin + infos Compagnie)
