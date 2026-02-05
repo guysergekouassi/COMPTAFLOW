@@ -388,7 +388,7 @@
                                             <!-- Intitulé -->
                                             <div class="space-y-1">
                                                 <label for="intitule_exercice" class="input-label-premium">Intitulé de l'exercice</label>
-                                                <input type="text" class="input-field-premium" id="intitule_exercice" name="intitule" placeholder="Ex : Exercice 2025">
+                                                <input type="text" class="input-field-premium bg-light" id="intitule_exercice" name="intitule" placeholder="Généré automatiquement" readonly>
                                                 <span id="error_intitule" class="text-danger small mt-1 d-block"></span>
                                             </div>
                                         </div>
@@ -555,6 +555,7 @@
                 // Éléments du DOM
                 const formExercice = document.getElementById('formCreateExercice');
                 const modalCreate = document.getElementById('modalCenterCreate');
+                const dateDebutInput = document.getElementById('date_debut');
                 const dateFinInput = document.getElementById('date_fin');
                 const intituleInput = document.getElementById('intitule_exercice');
                 let dataTable;
@@ -790,22 +791,21 @@
                     }
                 }
 
-                // Générer automatiquement l'intitulé à partir de la date de fin
+                // Générer automatiquement l'intitulé à partir de la date de début
                 function genererIntitule() {
-                    if (!dateFinInput || !intituleInput) return;
-
-                    const dateFinValue = dateFinInput.value;
-                    if (dateFinValue) {
+                    if (!dateDebutInput || !intituleInput) return;
+                    
+                    const dateValue = dateDebutInput.value;
+                    if (dateValue) {
                         try {
-                            const dateObj = new Date(dateFinValue);
+                            const dateObj = new Date(dateValue);
                             const annee = dateObj.getFullYear();
-                            // Ne générer l'intitulé que si le champ est vide ou contient un format d'exercice
-                            if (!intituleInput.value || /^Exercice \d{4}$/.test(intituleInput.value)) {
-                                intituleInput.value = `Exercice ${annee}`;
-                            }
+                            intituleInput.value = `EXERCICE ${annee}`;
                         } catch (e) {
                             console.error("Erreur de formatage de la date:", e);
                         }
+                    } else {
+                        intituleInput.value = '';
                     }
                 }
 
@@ -951,9 +951,9 @@
                 });
 
                 // Gestion de la génération automatique de l'intitulé
-                if (dateFinInput) {
-                    dateFinInput.addEventListener('change', genererIntitule);
-                    dateFinInput.addEventListener('input', genererIntitule);
+                if (dateDebutInput) {
+                    dateDebutInput.addEventListener('change', genererIntitule);
+                    dateDebutInput.addEventListener('input', genererIntitule);
                 }
 
                 // Fonction pour initialiser les gestionnaires d'événements
