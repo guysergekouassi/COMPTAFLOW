@@ -19,7 +19,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Opérations / Contrôle d\'Accès'])
+                @include('components.header', ['page_title' => 'Contrôle d\'Accès'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
@@ -27,7 +27,7 @@
                         <!-- Header Standardisé -->
                         <div class="d-flex justify-content-between align-items-center mb-6">
                             <div>
-                                <h5 class="mb-1 text-premium-gradient">Opérations / Contrôle d'Accès</h5>
+                                <h5 class="mb-1 text-premium-gradient">Contrôle d'Accès</h5>
                                 <p class="text-muted small mb-0">Sécurisez la plateforme en gérant les blocages et les restrictions d'accès.</p>
                             </div>
                         </div>

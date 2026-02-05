@@ -10,9 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        /*
         Schema::table('code_journals', function (Blueprint $table) {
             $table->dropColumn(['annee', 'mois']);
         });
+        */
     }
 
     public function down(): void

@@ -30,11 +30,25 @@ class MasterPlanImport implements ToModel, WithHeadingRow
     */
     public function model(array $row) 
     {
-        if (empty($row['numero_de_compte']) || empty($row['intitule'])) {
+        // Tentative de récupération intelligente des données (Slugified headers ou Index)
+        $num = $row['numero_de_compte'] ?? $row['numerodecompte'] ?? $row['compte'] ?? $row[0] ?? null;
+        $label = $row['intitule'] ?? $row['libelle'] ?? $row['nom'] ?? $row[1] ?? null;
+
+        if (empty($num) || empty($label)) {
             return null;
         }
 
-        $numero = str_pad($row['numero_de_compte'], $this->digits, '0', STR_PAD_RIGHT);
+        // Nettoyage : Si le numéro ne contient aucun chiffre, ce n'est probablement pas un compte
+        if (!preg_match('/[0-9]/', $num)) {
+            return null;
+        }
+
+        // Nettoyage sommaire si c'est l'entête qui est passée par erreur
+        if (str_contains(strtolower($num), 'compte') || str_contains(strtolower($label), 'intitule')) {
+            return null;
+        }
+
+        $numero = str_pad($num, $this->digits, '0', STR_PAD_RIGHT);
 
         $exists = PlanComptable::where('company_id', $this->companyId)
             ->where('numero_de_compte', $numero)
@@ -44,12 +58,19 @@ class MasterPlanImport implements ToModel, WithHeadingRow
             return null;
         }
 
+        // Calcul dynamique de la classe et du type
+        $prefix = substr($num, 0, 1);
+        $classe = is_numeric($prefix) ? (int)$prefix : 0;
+        $type = in_array($classe, [1, 2, 3, 4, 5, 9]) ? 'Bilan' : 'Compte de résultat';
+
         return new PlanComptable([
             'numero_de_compte' => $numero,
-            'intitule'         => $row['intitule'],
+            'intitule'         => mb_strtoupper($label),
+            'type_de_compte'   => $type,
+            'classe'           => $classe,
+            'adding_strategy'  => 'imported',
             'user_id'          => $this->userId,
             'company_id'       => $this->companyId,
-            'is_active'        => true
         ]);
     }
 }

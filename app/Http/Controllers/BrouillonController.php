@@ -34,6 +34,27 @@ class BrouillonController extends Controller
             if (empty($ecritures)) {
                 return response()->json(['error' => 'Aucune donnée à enregistrer.'], 400);
             }
+            
+            // SÉCURITÉ : Forcer l'exercice du contexte session
+            $companyId = session('current_company_id', $user->company_id);
+            $exerciceContextId = session('current_exercice_id');
+            $exerciceActif = null;
+            
+            if ($exerciceContextId) {
+                $exerciceActif = \App\Models\ExerciceComptable::where('id', $exerciceContextId)
+                    ->where('company_id', $companyId)
+                    ->first();
+            }
+            
+            if (!$exerciceActif) {
+                $exerciceActif = \App\Models\ExerciceComptable::where('company_id', $companyId)
+                    ->where('is_active', 1)
+                    ->first();
+            }
+            
+            if (!$exerciceActif) {
+                return response()->json(['error' => 'Aucun exercice comptable actif trouvé.'], 400);
+            }
 
             $pieceFilename = null;
             if ($request->hasFile('piece_justificatif')) {
@@ -56,7 +77,8 @@ class BrouillonController extends Controller
                     'type_flux' => $ecriture['type_flux'] ?? null,
                     'plan_analytique' => $ecriture['plan_analytique'] ?? 0,
                     'code_journal_id' => $ecriture['code_journal_id'] ?? null,
-                    'exercices_comptables_id' => $ecriture['exercices_comptables_id'] ?? null,
+                    // FORCER l'exercice du contexte session (ignorer celui du formulaire)
+                    'exercices_comptables_id' => $exerciceActif->id,
                     'journaux_saisis_id' => $ecriture['journaux_saisis_id'] ?? null,
                     'debit' => $ecriture['debit'] ?? 0,
                     'credit' => $ecriture['credit'] ?? 0,

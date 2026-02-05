@@ -75,8 +75,14 @@
                             <p class="text-base font-medium text-slate-500">Vue agrégée de toutes les activités de l'entreprise.</p>
                         </div>
 
-                        <!-- Actions Rapides Stylisées -->
+                        @php
+                            $showActions = auth()->user()->hasPermission('compta.create') || 
+                                           auth()->user()->hasPermission('admin.admins.create') || 
+                                           auth()->user()->hasPermission('admin.users.create');
+                        @endphp
+                        @if($showActions)
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            @if(auth()->user()->hasPermission('compta.create'))
                             <a href="{{ route('compta.create') }}" class="glass-card p-5 d-flex align-items-center justify-content-between text-decoration-none transition-all hover:bg-slate-50 border-l-4 border-l-indigo-600">
                                 <div class="d-flex align-items-center">
                                     <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl me-4">
@@ -89,7 +95,9 @@
                                 </div>
                                 <i class="fa-solid fa-chevron-right text-slate-300"></i>
                             </a>
+                            @endif
 
+                            @if(auth()->user()->hasPermission('admin.admins.create'))
                             <a href="{{ route('admin.admins.create') }}" class="glass-card p-5 d-flex align-items-center justify-content-between text-decoration-none transition-all hover:bg-slate-50 border-l-4 border-l-blue-600">
                                 <div class="d-flex align-items-center">
                                     <div class="p-3 bg-blue-50 text-blue-600 rounded-2xl me-4">
@@ -102,7 +110,9 @@
                                 </div>
                                 <i class="fa-solid fa-chevron-right text-slate-300"></i>
                             </a>
+                            @endif
 
+                            @if(auth()->user()->hasPermission('admin.users.create'))
                             <a href="{{ route('admin.users.create') }}" class="glass-card p-5 d-flex align-items-center justify-content-between text-decoration-none transition-all hover:bg-slate-50 border-l-4 border-l-emerald-600">
                                 <div class="d-flex align-items-center">
                                     <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl me-4">
@@ -115,7 +125,9 @@
                                 </div>
                                 <i class="fa-solid fa-chevron-right text-slate-300"></i>
                             </a>
+                            @endif
                         </div>
+                        @endif
 
                         <!-- Section Statistiques Globales (KPIs) -->
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">

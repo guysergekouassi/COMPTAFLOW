@@ -35,7 +35,7 @@ class PlanComptableController extends Controller
 
         $plansComptables = PlanComptable::where('company_id', $companyId)
             ->orderByRaw("LPAD(numero_de_compte, 20, '0')")
-            ->get(['id', 'numero_de_compte', 'intitule', 'adding_strategy', 'classe', 'created_at', 'user_id', 'company_id']);
+            ->get(['id', 'numero_de_compte', 'intitule', 'adding_strategy', 'classe', 'created_at', 'user_id', 'company_id', 'numero_original']);
 
         // 3. CALCUL DES STATISTIQUES RÉELLES
         // Nombre total
@@ -273,7 +273,7 @@ class PlanComptableController extends Controller
             $utilise = EcritureComptable::where('plan_comptable_id', $id)->exists();
 
             if ($utilise) {
-                return redirect()->back()->with('error', 'Ce plan comptable est utilisé dans des écritures comptables et ne peut pas être supprimé.');
+                return redirect()->back()->with('error', 'Impossible de supprimer ce compte car il contient des écritures. Veuillez supprimer toutes les écritures associées avant de tenter la suppression.');
             }
 
             $plan->delete();
@@ -299,7 +299,8 @@ class PlanComptableController extends Controller
                 'intitule',
                 // 'classe',
                 'created_at',
-                'adding_strategy'
+                'adding_strategy',
+                'numero_original'
             ]);
         
         // Gestion du filtrage

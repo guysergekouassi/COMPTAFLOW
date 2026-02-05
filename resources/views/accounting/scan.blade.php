@@ -167,7 +167,7 @@
                                     <button id="btnApplyVAT" class="btn btn-primary btn-sm rounded-pivot px-3 d-none" onclick="window.applyVAT18()">
                                         <i class="bx bx-plus me-1"></i>APPLIQUER TVA 18%
                                     </button>
-                                    <span class="badge bg-label-secondary px-3 py-2 rounded-pivot">N° Saisie: <span class="fw-bold text-primary">{{ $nextSaisieNumber }}</span></span>
+                                    <span class="badge bg-label-secondary px-3 py-2 rounded-pivot">N° Saisie: <span id="displayNSaisie" class="fw-bold text-primary">{{ $nextSaisieNumber }}</span></span>
                                     <button id="btnReset" class="btn btn-icon btn-outline-secondary btn-sm rounded-circle"><i class="bx bx-refresh"></i></button>
                                 </div>
                             </div>
@@ -267,7 +267,21 @@
         const GEN_ACCOUNTS = @json($plansComptables);
         const TIERS_LIST = @json($plansTiers);
         const SAVE_ROUTE = "{{ route('api.ecriture.storeMultiple') }}";
-        const NEXT_SAISIE = "{{ $nextSaisieNumber }}";
+        let NEXT_SAISIE = "{{ $nextSaisieNumber }}";
+
+        async function fetchNextSaisieNumber() {
+            try {
+                const res = await fetch("{{ route('api.next-saisie-number') }}");
+                const json = await res.json();
+                if (json.success) {
+                    NEXT_SAISIE = json.numero;
+                    const display = document.getElementById('displayNSaisie');
+                    if (display) display.innerText = NEXT_SAISIE;
+                }
+            } catch (e) {
+                console.error("Erreur sync n_saisie:", e);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             const dropZone = document.getElementById('dropZone');
@@ -748,6 +762,7 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                 uploadContainer.classList.remove('d-none');
                 entriesBody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">En attente de document...</td></tr>';
                 document.getElementById('btnApplyVAT').classList.add('d-none');
+                fetchNextSaisieNumber(); // Synchroniser le numéro
                 window.updateTotals();
             };
             document.getElementById('btnReset').onclick = resetUI;

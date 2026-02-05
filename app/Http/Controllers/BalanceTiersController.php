@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 
 
+use App\Models\ExerciceComptable;
 use PDF;
 use Illuminate\Http\Request;
 
@@ -24,19 +25,42 @@ class BalanceTiersController extends Controller
     {
 
         $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
 
         // Tous les journaux de la compagnie du user
-        $PlanTiers = PlanTiers::where('company_id', $user->company_id)
+        $PlanTiers = PlanTiers::where('company_id', $companyId)
             ->orderByRaw('LEFT(numero_de_tiers, 1) ASC')
             ->orderBy('numero_de_tiers')
             ->get();
 
-        $Balance = BalanceTiers::where('company_id', $user->company_id)
+        $Balance = BalanceTiers::where('company_id', $companyId)
             ->orderByDesc('created_at')
             ->get();
 
+        // Récupérer l'exercice en cours (Priorité au CONTEXTE, puis ACTIF)
+        $contextExerciceId = session('current_exercice_id');
+        $exerciceEnCours = null;
 
-        return view('accounting_balance_tiers', compact('PlanTiers', 'Balance'));
+        if ($contextExerciceId) {
+            $exerciceEnCours = ExerciceComptable::where('id', $contextExerciceId)
+                ->where('company_id', $companyId)
+                ->first();
+        }
+
+        if (!$exerciceEnCours) {
+             $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
+                ->where('is_active', 1)
+                ->first();
+        }
+
+        if (!$exerciceEnCours) {
+            $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
+
+        return view('accounting_balance_tiers', compact('PlanTiers', 'Balance', 'exerciceEnCours'));
     }
 
 
@@ -120,14 +144,15 @@ class BalanceTiersController extends Controller
 
     public function generateBalance(Request $request)
     {
+        $request->validate([
+            'date_debut' => 'required|date',
+            'date_fin' => 'required|date|after_or_equal:date_debut',
+            'plan_tiers_id_1' => 'required|exists:plan_tiers,id',
+            'plan_tiers_id_2' => 'required|exists:plan_tiers,id',
+            'format' => 'nullable|in:pdf,excel,csv' // ✅ ajout du format
+        ]);
+
         try {
-            $request->validate([
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after_or_equal:date_debut',
-                'plan_tiers_id_1' => 'required|exists:plan_tiers,id',
-                'plan_tiers_id_2' => 'required|exists:plan_tiers,id',
-                'format' => 'nullable|in:pdf,excel,csv' // ✅ ajout du format
-            ]);
 
             $user = Auth::user();
 
@@ -152,8 +177,14 @@ class BalanceTiersController extends Controller
             ])
                 ->where('company_id', $user->company_id)
                 ->whereIn('plan_tiers_id', $comptesIds)
-                ->whereBetween('date', [$request->date_debut, $request->date_fin])
-                ->get();
+                ->whereBetween('date', [$request->date_debut, $request->date_fin]);
+
+            // Filtrage strict par exercice si le contexte est défini
+            if (session()->has('current_exercice_id')) {
+                $query->where('exercices_comptables_id', session('current_exercice_id'));
+            }
+
+            $ecritures = $query->get();
 
             $count = $ecritures->count();
             if ($count === 0) {
@@ -278,8 +309,14 @@ class BalanceTiersController extends Controller
             ])
                 ->where('company_id', $user->company_id)
                 ->whereIn('plan_tiers_id', $comptesIds)
-                ->whereBetween('date', [$request->date_debut, $request->date_fin])
-                ->get();
+                ->whereBetween('date', [$request->date_debut, $request->date_fin]);
+
+            // Filtrage strict par exercice si le contexte est défini
+            if (session()->has('current_exercice_id')) {
+                $query->where('exercices_comptables_id', session('current_exercice_id'));
+            }
+
+            $ecritures = $query->get();
 
             if ($ecritures->isEmpty()) {
                 return back()->with('error', 'Aucune écriture trouvée pour cette période.');

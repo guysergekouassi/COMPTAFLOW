@@ -189,11 +189,76 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                    <div class="mt-4 text-center">
+                                        <button type="button" id="toggleDatesBtn" class="btn btn-sm btn-outline-light" onclick="toggleDateDisplay()">
+                                            <i class="fa-solid fa-calendar me-1"></i> Afficher les dates
+                                        </button>
+                                    </div>
                                     <p class="text-blue-200 text-xs mt-6 mb-0">
                                         <i class="fa-solid fa-circle-info me-1"></i> 
                                         Les 10 premières lignes sont affichées à titre d'exemple pour vous aider dans le mappage.
                                     </p>
                                 </div>
+                                <script>
+                                    let datesConverted = false;
+
+                                    function toggleDateDisplay() {
+                                        const btn = document.getElementById('toggleDatesBtn');
+                                        
+                                        if (!datesConverted) {
+                                            convertAllDates();
+                                            btn.innerHTML = '<i class="fa-solid fa-hashtag me-1"></i> Afficher les codes';
+                                            datesConverted = true;
+                                        } else {
+                                            restoreAllDates();
+                                            btn.innerHTML = '<i class="fa-solid fa-calendar me-1"></i> Afficher les dates';
+                                            datesConverted = false;
+                                        }
+                                    }
+
+                                    function convertAllDates() {
+                                        const cells = document.querySelectorAll('.table-dark tbody td');
+                                        cells.forEach(cell => {
+                                            const originalValue = cell.innerText.trim();
+                                            
+                                            if (!cell.hasAttribute('data-original')) {
+                                                cell.setAttribute('data-original', originalValue);
+                                            }
+
+                                            if (isNumeric(originalValue)) {
+                                                const num = parseFloat(originalValue);
+                                                if (num >= 30000 && num <= 60000) {
+                                                    const dateStr = excelDateToJSDate(num);
+                                                    cell.innerHTML = `<span class="text-success fw-bold">${dateStr}</span>`;
+                                                }
+                                            }
+                                        });
+                                    }
+
+                                    function restoreAllDates() {
+                                        const cells = document.querySelectorAll('.table-dark tbody td[data-original]');
+                                        cells.forEach(cell => {
+                                            cell.innerHTML = cell.getAttribute('data-original');
+                                        });
+                                    }
+
+                                    function isNumeric(n) {
+                                        return !isNaN(parseFloat(n)) && isFinite(n);
+                                    }
+
+                                    function excelDateToJSDate(serial) {
+                                        const totalSeconds = (serial - 25569) * 86400;
+                                        const date = new Date(totalSeconds * 1000);
+                                        const offset = date.getTimezoneOffset() * 60 * 1000;
+                                        const finalDate = new Date(date.getTime() + offset); 
+
+                                        const day = String(finalDate.getDate()).padStart(2, '0');
+                                        const month = String(finalDate.getMonth() + 1).padStart(2, '0');
+                                        const year = finalDate.getFullYear();
+
+                                        return `${day}/${month}/${year}`;
+                                    }
+                                </script>
                             </div>
                         </div>
 

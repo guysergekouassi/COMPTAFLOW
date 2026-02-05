@@ -10,9 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        /*
         Schema::table('plan_comptables', function (Blueprint $table) {
             $table->integer('classe')->nullable()->change();
         });
+        */
     }
 
     public function down(): void

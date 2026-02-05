@@ -13,7 +13,7 @@
         width: 100%;
         padding: 0.75rem 1rem;
         border: 2px solid #e2e8f0;
-        border-radius: 12px;
+        border-radius: 16px;
         font-size: 0.875rem;
         transition: all 0.2s ease;
         background-color: white;
@@ -40,7 +40,7 @@
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
-        border-radius: 12px;
+        border-radius: 16px;
         font-weight: 700;
         font-size: 0.75rem;
         text-transform: uppercase;
@@ -60,7 +60,7 @@
         color: #64748b;
         border: 2px solid #e2e8f0;
         padding: 0.75rem 1.5rem;
-        border-radius: 12px;
+        border-radius: 16px;
         font-weight: 700;
         font-size: 0.75rem;
         text-transform: uppercase;
@@ -79,6 +79,12 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+    }
+
+    /* Force Selectpicker text to be black and bold */
+    .bootstrap-select .filter-option-inner-inner {
+        color: #1e293b !important;
+        font-weight: 700 !important;
     }
 </style>
 
@@ -111,19 +117,41 @@
                                         </div>
                                         <h6 class="mb-0" style="font-weight: 700; font-size: 0.85rem; color: #1e293b;">Exercice comptable</h6>
                                     </div>
-                                    <select class="selectpicker w-100 input-field-premium" data-live-search="true" id="exercice_id" name="exercice_id" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
-                                        <option value="" disabled hidden>
-                                            {{ $exerciceActif ? '-- Sélectionnez un exercice --' : 'Aucun exercice disponible' }}
-                                        </option>
-                                        @foreach ($exercices as $exercice)
-                                            <option value="{{ $exercice->id }}"
-                                                data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}"
-                                                {{ (isset($exerciceActif) && $exercice->id == $exerciceActif->id) || (isset($data['id_exercice']) && $exercice->id == $data['id_exercice']) ? 'selected' : '' }}>
-                                                {{ $exercice->intitule }} ({{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }})
-                                                @if($exercice->is_active) - ACTIVÉ 🟢 @endif
+                                    
+                                    @php
+                                        $isContextLocked = session('current_exercice_id') ? true : false;
+                                        $selectedExerciceId = $isContextLocked ? session('current_exercice_id') : ($exerciceActif->id ?? null);
+                                        $selectedExerciceModel = $exercices->where('id', $selectedExerciceId)->first();
+                                        $annee = $selectedExerciceModel ? \Carbon\Carbon::parse($selectedExerciceModel->date_debut)->format('Y') : '';
+                                    @endphp
+
+                                    @if($isContextLocked)
+                                        <div class="alert alert-soft-primary d-flex align-items-center p-2 mb-2" role="alert" style="font-size: 0.75rem;">
+                                            <i class="bx bx-lock-alt me-2"></i>
+                                            <div>
+                                                <strong>Exercice verrouillé</strong> selon le contexte sélectionné.
+                                            </div>
+                                        </div>
+                                        <input type="hidden" id="exercice_id" name="exercice_id" value="{{ $selectedExerciceId }}" data-annee="{{ $annee }}">
+                                        <input type="text" class="form-control input-field-premium bg-light" value="{{ $selectedExerciceModel->intitule ?? 'Exercice inconnu' }} ({{ $annee }})" readonly disabled>
+                                    @else
+                                        <select class="selectpicker w-100 input-field-premium" data-live-search="true" id="exercice_id" name="exercice_id" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
+                                            <option value="" disabled hidden>
+                                                {{ $exerciceActif ? '-- Sélectionnez un exercice --' : 'Aucun exercice disponible' }}
                                             </option>
-                                        @endforeach
-                                    </select>
+                                            @foreach ($exercices as $exercice)
+                                                @if(isset($selectedExerciceId) && $selectedExerciceId && $exercice->id != $selectedExerciceId)
+                                                    @continue
+                                                @endif
+                                                <option value="{{ $exercice->id }}"
+                                                    data-annee="{{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }}"
+                                                    {{ (isset($exerciceActif) && $exercice->id == $exerciceActif->id) || (isset($data['id_exercice']) && $exercice->id == $data['id_exercice']) ? 'selected' : '' }}>
+                                                    {{ $exercice->intitule }} ({{ \Carbon\Carbon::parse($exercice->date_debut)->format('Y') }})
+                                                    @if($exercice->is_active) - ACTIVÉ 🟢 @endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -145,7 +173,8 @@
                                                 $codeTresorerie = $code_j->code_tresorerie_display ?? null;
                                                 $displayCode = $code_j->code_journal;
                                                 if (!empty($codeTresorerie)) {
-                                                    $displayCode .= ' (Trésor: ' . $codeTresorerie . ')';
+                                                    $displayCode .= '' . $codeTresorerie ;
+                                                
                                                 }
                                             @endphp
                                             <option value="{{ $code_j->id }}"
@@ -153,7 +182,7 @@
                                                 data-intitule_j="{{ $code_j->intitule }}"
                                                 data-type_j="{{ $code_j->type }}"
                                                 data-code_tresorerie_j="{{ $codeTresorerie ?? '' }}">
-                                                {{ $displayCode }} - {{ $code_j->intitule }}
+                                                {{ $displayCode }}  {{ $code_j->intitule }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -172,19 +201,18 @@
                                         <h6 class="mb-0" style="font-weight: 700; font-size: 0.85rem; color: #1e293b;">Période</h6>
                                     </div>
                                     <select class="selectpicker w-100 input-field-premium" data-live-search="true" id="mois" name="mois" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
-                                        <option value="" disabled selected hidden>-- Sélectionner un mois --</option>
-                                        <option value="1">Janvier</option>
-                                        <option value="2">Février</option>
-                                        <option value="3">Mars</option>
-                                        <option value="4">Avril</option>
-                                        <option value="5">Mai</option>
-                                        <option value="6">Juin</option>
-                                        <option value="7">Juillet</option>
-                                        <option value="8">Août</option>
-                                        <option value="9">Septembre</option>
-                                        <option value="10">Octobre</option>
-                                        <option value="11">Novembre</option>
-                                        <option value="12">Décembre</option>
+                                        <option value="" disabled hidden>-- Sélectionner un mois --</option>
+                                        @php
+                                            $months = [
+                                                1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril',
+                                                5 => 'Mai', 6 => 'Juin', 7 => 'Juillet', 8 => 'Août',
+                                                9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre'
+                                            ];
+                                            $currentMonth = date('n');
+                                        @endphp
+                                        @foreach($months as $num => $name)
+                                            <option value="{{ $num }}" {{ $currentMonth == $num ? 'selected' : '' }}>{{ $name }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -228,19 +256,33 @@
 
 
  $(document).ready(function() {
-    // Utilisation de 'shown.bs.modal' pour s'assurer que le modal est visible avant d'agir
-    $('#saisieRedirectModal').on('shown.bs.modal', function () {
-        console.log("Modal affiché, rafraîchissement des listes...");
-        
-        // On détruit et on réinitialise proprement
+    // Détruire toute instance existante pour éviter les doublons
+    if ($('.selectpicker').data('selectpicker')) {
+        $('.selectpicker').selectpicker('destroy');
+    }
+    
+    // Initialisation propre
+    $('.selectpicker').selectpicker({
+        liveSearch: true,
+        width: '100%',
+        style: 'btn-outline-secondary',
+        noneSelectedText: '-- Sélectionner --'
+    });
+
+    // Réinitialiser proprement à chaque ouverture du modal
+    $('#saisieRedirectModal').on('show.bs.modal', function () {
+        // Détruire et recréer pour éviter les doublons
         $('.selectpicker').selectpicker('destroy');
         $('.selectpicker').selectpicker({
             liveSearch: true,
             width: '100%',
-            style: 'btn-outline-secondary'
+            style: 'btn-outline-secondary',
+            noneSelectedText: '-- Sélectionner --'
         });
-        
-        // Force la mise à jour visuelle
+    });
+    
+    // Refresh après affichage pour corriger les calculs de largeur
+    $('#saisieRedirectModal').on('shown.bs.modal', function () {
         $('.selectpicker').selectpicker('refresh');
     });
 });
@@ -262,17 +304,27 @@
 
         const selectedOption = journalSelect.options[journalSelect.selectedIndex];
         const moisValeur = moisSelect.value;
-        const selectedOptionA = exerciceSelect.options[exerciceSelect.selectedIndex];
-        const anneeValue = selectedOptionA.dataset.annee;
+        
+        // Gestion dynamique selon si c'est un select ou un hidden input (locked context)
+        let selectedExerciceId, anneeValue;
+        
+        if (exerciceSelect.tagName === 'SELECT') {
+            const selectedOptionA = exerciceSelect.options[exerciceSelect.selectedIndex];
+            selectedExerciceId = selectedOptionA.value;
+            anneeValue = selectedOptionA.dataset.annee;
+        } else {
+            selectedExerciceId = exerciceSelect.value;
+            anneeValue = exerciceSelect.dataset.annee;
+        }
 
-        const idSaisi = await getJournalId(selectedOptionA.value, anneeValue, selectedOption.value, moisValeur);
+        const idSaisi = await getJournalId(selectedExerciceId, anneeValue, selectedOption.value, moisValeur);
         if (!idSaisi) {
             alert("Aucun journal trouvé pour les critères sélectionnés.");
             return;
         }
 
         globalParams = new URLSearchParams({
-            id_exercice: selectedOptionA.value,
+            id_exercice: selectedExerciceId,
             id_journal: idSaisi,
             annee: anneeValue,
             mois: moisValeur,

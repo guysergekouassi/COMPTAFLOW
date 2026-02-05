@@ -87,33 +87,42 @@ class ExerciceComptable extends Model
         $realEnd = \Carbon\Carbon::parse($this->date_fin);
         $codeJournals = CodeJournal::where('company_id', $companyId)->get();
         
-        // On s'arrête si le mois de début dépasse le mois de fin réel
+        // Optimisation : Récupérer tous les journaux saisis existants pour cet exercice une seule fois
+        $existingRecords = JournalSaisi::where('exercices_comptables_id', $this->id)
+            ->select('annee', 'mois', 'code_journals_id')
+            ->get()
+            ->groupBy(['annee', 'mois', 'code_journals_id']);
+
+        $newRecords = [];
+
         while ($start->lte($realEnd->copy()->startOfMonth())) {
-            // Si la date de fin est le 1er du mois, et que ce n'est pas le même mois que le début, 
-            // on considère souvent que c'est une limite exclusive pour un exercice de 12 mois.
             if ($start->isSameMonth($realEnd) && $realEnd->day == 1 && !$start->isSameMonth(\Carbon\Carbon::parse($this->date_debut))) {
                 break;
             }
+            
             foreach ($codeJournals as $codeJournal) {
-                // Vérifie si le journal existe déjà pour éviter doublons
-                $exists = JournalSaisi::where('exercices_comptables_id', $this->id)
-                    ->where('annee', $start->year)
-                    ->where('mois', $start->month)
-                    ->where('code_journals_id', $codeJournal->id)
-                    ->exists();
+                // Vérification en mémoire via le groupBy
+                $exists = isset($existingRecords[$start->year][$start->month][$codeJournal->id]);
 
                 if (!$exists) {
-                    JournalSaisi::create([
+                    $newRecords[] = [
                         'annee' => $start->year,
                         'mois' => $start->month,
                         'exercices_comptables_id' => $this->id,
                         'code_journals_id' => $codeJournal->id,
                         'user_id' => $userId,
                         'company_id' => $companyId,
-                    ]);
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 }
             }
             $start->addMonth();
+        }
+
+        if (!empty($newRecords)) {
+            // Insertion groupée pour les performances
+            JournalSaisi::insert($newRecords);
         }
 
         // Mise à jour du nombre total de journaux

@@ -31,6 +31,8 @@
                                                data-user-id="{{ $user->id }}"
                                                data-user-name="{{ $user->name }} {{ $user->last_name }}"
                                                data-user-role="{{ $user->role }}"
+                                               data-created-by="{{ $user->created_by_id }}"
+                                               data-is-principal="{{ $user->isPrincipalAdmin() ? '1' : '0' }}"
                                                data-permissions='{{ json_encode($user->getHabilitations()) }}'>
                                                 <div class="avatar avatar-sm me-3">
                                                     <span class="avatar-initial rounded-circle bg-label-primary">
@@ -76,17 +78,19 @@
                                                                     <span>
                                                                         @php
                                                                             $icon = match($groupName) {
-                                                                                'Pilotage' => 'fa-chart-pie',
-                                                                                'Configuration' => 'fa-cogs',
-                                                                                'Gouvernance' => 'fa-user-shield',
-                                                                                'Opérations' => 'fa-lists-check',
+                                                                                'Pilotage', 'Pilotage (Super Admin)' => 'fa-chart-pie',
+                                                                                'Configuration Entreprise', 'Configuration' => 'fa-cogs',
+                                                                                'Gouvernance', 'Gouvernance (Super Admin)' => 'fa-user-shield',
+                                                                                'Opérations', 'Opérations (Super Admin)' => 'fa-list-check',
                                                                                 'Gestion des Tâches' => 'fa-tasks',
                                                                                 'Validation' => 'fa-check-double',
                                                                                 'Paramétrage' => 'fa-sliders',
-                                                                                'Import & Export' => 'fa-file-export',
-                                                                                 'Traitement' => 'fa-file-invoice',
-                                                                                'Rapports' => 'fa-chart-line',
-                                                                                'Rapports & Analyse' => 'fa-chart-area', // Cas spécifique
+                                                                                'Importation' => 'fa-file-import',
+                                                                                'Exportation' => 'fa-file-export',
+                                                                                'Traitement' => 'fa-file-invoice',
+                                                                                'Rapports', 'Analyses (Super Admin)' => 'fa-chart-line',
+                                                                                'Fusion & Démarrage' => 'fa-bolt',
+                                                                                'ETATS FINANCIERS' => 'fa-file-invoice-dollar',
                                                                                 default => 'fa-folder'
                                                                             };
                                                                         @endphp
@@ -182,108 +186,100 @@
             const form = document.getElementById('permissions-form');
             const checkboxes = document.querySelectorAll('.permission-checkbox');
 
-            // Permissions par rôle (Même logique que create.blade.php)
-            const rolePermissions = {
-                'admin': @json(config('accounting_permissions.role_permissions_map.admin')),
-                'comptable': @json(config('accounting_permissions.role_permissions_map.comptable')),
-                'super_admin': [] 
-            };
-            
-            // Mapping des sections interdites par rôle (Logique "Intelligente")
-            const roleRestrictions = {
-                'comptable': ['Gouvernance', 'Configuration', 'Super Admin'],
-                'admin': ['Super Admin'], // L'admin peut tout voir sauf Super Admin
-                'utilisateur': ['Gouvernance', 'Configuration', 'Paramétrage', 'Super Admin']
-            };
+            // Variables globales passées depuis PHP
+            const currentUserId = {{ auth()->id() }};
+            const isSubCompany = {{ $isSubCompany ? 'true' : 'false' }};
 
             userButtons.forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     
-                    // Highlight active
                     userButtons.forEach(b => b.classList.remove('active', 'bg-light'));
                     this.classList.add('active');
 
-                    // Show panel
                     emptyState.style.display = 'none';
                     permissionsPanel.style.display = 'block';
-                    permissionsPanel.classList.add('animate__animated', 'animate__fadeIn');
 
-                    // Get User Data
                     const name = this.getAttribute('data-user-name');
-                    const userId = this.getAttribute('data-user-id');
-                    let userRole = this.getAttribute('data-user-role'); 
-                    if(!userRole) userRole = this.querySelector('small') ? this.querySelector('small').textContent.trim().toLowerCase() : 'user';
+                    const userId = parseInt(this.getAttribute('data-user-id'));
+                    const userRole = this.getAttribute('data-user-role');
+                    const createdBy = parseInt(this.getAttribute('data-created-by'));
+                    const isPrincipal = this.getAttribute('data-is-principal') === '1';
 
                     userNameTitle.innerHTML = `<span class="text-primary me-2"><i class="fa-solid fa-shield-alt"></i></span>Permissions de <span class="text-dark fw-bold">${name}</span> <span class="badge bg-label-secondary ms-2">${userRole}</span>`;
-
-                    // Update Form Action
                     form.action = "/admin/habilitations/" + userId;
 
-                    // Parse existing user permissions
                     let rawPermissions = this.getAttribute('data-permissions');
                     let userExistingPermissions = [];
                     try {
                         const parsed = JSON.parse(rawPermissions);
-                        if (Array.isArray(parsed)) {
-                            userExistingPermissions = parsed;
-                        } else {
-                            userExistingPermissions = Object.keys(parsed).filter(key => parsed[key] == "1" || parsed[key] === true);
-                        }
-                    } catch (e) {
-                        console.error("Erreur parsing permissions", e);
-                    }
+                        userExistingPermissions = Array.isArray(parsed) ? parsed : Object.keys(parsed).filter(key => parsed[key] == "1" || parsed[key] === true);
+                    } catch (e) { console.error(e); }
 
-                    // Apply Logic
-                    const defaultPermissionsForRole = rolePermissions[userRole] || [];
-                    const restrictedSections = roleRestrictions[userRole] || [];
-
+                    // LOGIQUE INTELLIGENTE DES HABILITATIONS
                     checkboxes.forEach(cb => {
-                        // Utilisation du format arrayname[key] 
-                        // name="habilitations[{{$key}}]" => on extrait la clé
                         const match = cb.name.match(/habilitations\[(.+)\]/);
                         const permissionKey = match ? match[1] : cb.value;
-
-                        // Identify Section Name via data attribute (ROBUST)
                         const sectionItem = cb.closest('.accordion-item');
                         const sectionName = sectionItem ? sectionItem.getAttribute('data-section-name') : '';
 
-                        // 1. Check State:
-                        // On se fie UNIQUEMENT à la base de données (ce qui a été enregistré).
-                        // Si on force les défauts ici, impossible de décocher une option par défaut.
-                        // La logique "Intelligence" de pré-cochage ne doit s'appliquer qu'à la CRÉATION (create.blade.php), pas à l'édition.
-                        const shouldBeChecked = userExistingPermissions.includes(permissionKey);
-                        cb.checked = shouldBeChecked;
+                        // 1. Initialisation de l'état coché
+                        const hasPermission = userExistingPermissions.includes(permissionKey);
+                        cb.checked = hasPermission;
 
-                        // 2. Disable/Grey State (Restriction Intelligence):
+                        // 2. Détermination des restrictions
                         let isRestricted = false;
-                        for(const restricted of restrictedSections) {
-                             if(sectionName.includes(restricted)) {
-                                 isRestricted = true;
-                                 break;
-                             }
+                        let forceUnchecked = false;
+
+                        // RÈGLE A : Sections Super Admin (Toujours interdites pour tous sauf Super Admin)
+                        if (sectionName.includes('Super Admin')) {
+                            isRestricted = true;
+                            forceUnchecked = true;
                         }
 
-                        const container = cb.closest('.form-check'); // Le div parent
-                        // IMPORTANT: NE JAMAIS utiliser disabled sur la checkbox sinon elle n'est pas envoyée !
-                        // On utilise CSS pointer-events:none pour empêcher le clic
-                        
+                        // RÈGLE B : Section Fusion (Uniquement pour sous-entreprises)
+                        if (sectionName.includes('Fusion & Démarrage')) {
+                            if (!isSubCompany) {
+                                isRestricted = true;
+                                forceUnchecked = true;
+                            }
+                        }
+
+                        // RÈGLE C : Auto-modification (On ne peut pas modifier ses propres droits)
+                        if (userId === currentUserId) {
+                            isRestricted = true;
+                        }
+
+                        // RÈGLE D : Admin Principal (Droits fixes, tout coché sauf SA/Fusion)
+                        if (isPrincipal) {
+                            if (!forceUnchecked) {
+                                cb.checked = true;
+                            }
+                            isRestricted = true;
+                        }
+
+                        // RÈGLE E : Admin Sécondaire / Autre Utilisateur
+                        // Seul le créateur peut modifier les habilitations
+                        if (!isPrincipal && createdBy !== currentUserId) {
+                            isRestricted = true;
+                        }
+
+                        // RÈGLE F : Droits supérieurs (Comptable ne voit pas les droits Admin)
+                        // Note: Ici on est dans l'admin, donc l'admin voit tout. 
+                        // Mais si un "user" (comptable) accède ici via une faille ou autre...
+                        // On vérifie si la permission est de type admin.* (Optionnel car protégé par middleware)
+
+                        // 3. Application visuelle
+                        if (forceUnchecked) {
+                            cb.checked = false;
+                        }
+
+                        const container = cb.closest('.form-check'); 
                         if (isRestricted) {
-                            // On empêche la modification VISUELLE, mais la valeur est envoyée.
-                            // Si restreint, est-ce qu'on doit le DECOCHER ?
-                            // Si c'était coché par défaut mais restreint (ex: droits hérités bizarres), on force décoché.
-                            // Mais attention : si on veut empêcher d'AJOUTER, on laisse dans l'état actuel (décoché).
-                            
-                            // Décision : Si restreint, on force décoché pour nettoyage ?
-                            // Non, l'admin peut vouloir garder des droits legacy.
-                            // On va juste empêcher le changement.
                             container.classList.add('restricted-permission');
-                            cb.setAttribute('readonly', true); // Checkbox readonly doesn't exist natively but good for semantic
-                            // Hack: click handler to prevent default
                             cb.onclick = (e) => e.preventDefault();
                         } else {
                             container.classList.remove('restricted-permission');
-                            cb.removeAttribute('readonly');
                             cb.onclick = null;
                         }
                     });

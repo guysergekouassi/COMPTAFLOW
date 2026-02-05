@@ -96,6 +96,22 @@
 
                         <div class="row">
                             <div class="col-lg-8">
+                                <div class="bg-blue-50 border border-blue-100 rounded-[20px] p-6 mb-6">
+                                    <div class="d-flex gap-4">
+                                        <div class="w-12 h-12 rounded-xl bg-blue-100 d-flex align-items-center justify-content-center flex-shrink-0">
+                                            <i class="fa-solid fa-wand-magic-sparkles text-blue-600 fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-blue-900 font-bold mb-1">Génération Automatique Intelligente</h5>
+                                            <p class="text-blue-700 mb-0 opacity-80 text-sm leading-relaxed">
+                                                Pour garantir la cohérence de votre base de données, <strong>les numéros de tiers seront automatiquement générés</strong> par le système. 
+                                                Tout numéro présent dans votre fichier sera ignoré et remplacé, mais restera visible comme référence. 
+                                                La catégorie sera également auto-déterminée via le préfixe du numéro importé.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <form action="{{ route('admin.import.process_mapping', $import->id) }}" method="POST">
                                     @csrf
                                     <div class="mapper-card overflow-hidden">
@@ -107,14 +123,19 @@
                                         </div>
 
                                         @foreach($fields as $key => $field)
-                                            <div class="mapping-row @if($field['auto_generate'] ?? false) opacity-50 bg-slate-50 @endif">
+                                            <div class="mapping-row @if($field['auto_generate'] ?? false) opacity-70 bg-slate-50 @endif" @if($field['auto_generate'] ?? false) style="pointer-events: none;" @endif>
                                                 <div class="row align-items-center">
                                                     <div class="col-md-5">
                                                         <div class="field-label @if(($field['required'] ?? false) && !($field['auto_generate'] ?? false)) field-required @endif">
                                                             <div class="w-8 h-8 rounded-lg bg-slate-100 d-flex align-items-center justify-content-center">
                                                                  <i class="fa-solid {{ $field['icon'] }} text-slate-500 text-xs"></i>
                                                              </div>
-                                                             {{ $field['label'] }}
+                                                             <div class="d-flex flex-column">
+                                                                <span class="leading-tight">{{ $field['label'] }}</span>
+                                                                @if(isset($field['info']))
+                                                                    <span class="text-[10px] text-slate-400 font-normal mt-1 leading-tight">{{ $field['info'] }}</span>
+                                                                @endif
+                                                             </div>
                                                              @if($field['auto_generate'] ?? false)
                                                                  <span class="badge bg-label-secondary ms-2 text-[10px]">AUTO-GÉNÉRÉ</span>
                                                              @endif
@@ -122,10 +143,26 @@
                                                      </div>
                                                      <div class="col-md-7">
                                                          @if($field['auto_generate'] ?? false)
-                                                             <div class="form-control bg-slate-200 border-dashed text-slate-500 py-2 rounded-xl text-center font-bold">
-                                                                 <i class="fa-solid fa-magic me-2"></i> Ce champ sera généré automatiquement
+                                                             @php
+                                                                 $suggestedIdx = $field['suggested_col'] ?? "";
+                                                                 // Fallback manual detection if no suggestion
+                                                                 if ($suggestedIdx === "" && $key == 'numero_de_tiers') {
+                                                                     foreach($headers as $index => $header) {
+                                                                         $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $header)));
+                                                                         foreach(($field['match'] ?? []) as $m) {
+                                                                             if(str_contains($cleanHeader, $m)) {
+                                                                                 $suggestedIdx = $index;
+                                                                                 break;
+                                                                             }
+                                                                         }
+                                                                         if ($suggestedIdx !== "") break;
+                                                                     }
+                                                                 }
+                                                             @endphp
+                                                             <div class="form-control bg-slate-100 border-dashed text-slate-400 py-2 rounded-xl text-center text-xs">
+                                                                 <i class="fa-solid fa-lock me-2"></i> Ce champ est géré par le système
                                                              </div>
-                                                             <input type="hidden" name="mapping[{{ $key }}]" value="AUTO">
+                                                             <input type="hidden" name="mapping[{{ $key }}]" value="{{ $headers[$suggestedIdx] ?? '' }}">
                                                          @else
                                                              <select name="mapping[{{ $key }}]" class="select-mapping" @if($field['required'] ?? false) required @endif>
                                                                  <option value="">-- Ignorer cette colonne --</option>

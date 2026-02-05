@@ -7,13 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class ImportStaging extends Model
 {
     protected $fillable = [
+        'batch_id',
         'company_id',
         'user_id',
+        'exercice_id',
         'source',
         'type',
         'file_name',
         'raw_data',
         'mapping',
+        'metadata',
         'status',
         'error_log'
     ];

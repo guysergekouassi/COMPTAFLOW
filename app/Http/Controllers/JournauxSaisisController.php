@@ -19,9 +19,15 @@ class JournauxSaisisController extends Controller
             'id_exercice' => 'required|exists:exercices_comptables,id'
         ]);
 
-        // $companyId = Auth::user()->company_id;
         $companyId = session('current_company_id', Auth::user()->company_id);
         $data = $request->all();
+        
+        // SÉCURITÉ : Vérifier que l'exercice demandé correspond au contexte session
+        $exerciceContextId = session('current_exercice_id');
+        if ($exerciceContextId && $request->id_exercice != $exerciceContextId) {
+            return redirect()->back()->with('error', 
+                'Vous ne pouvez pas accéder aux journaux d\'un exercice différent de celui sélectionné dans le contexte.');
+        }
 
         // Récupérer l'exercice sélectionné
         $exercice = ExerciceComptable::findOrFail($request->id_exercice);
@@ -52,13 +58,21 @@ class JournauxSaisisController extends Controller
                 'message' => 'Paramètres manquants'
             ], 400);
         }
+        
+        // SÉCURITÉ : Vérifier que l'exercice demandé correspond au contexte session
+        $exerciceContextId = session('current_exercice_id');
+        if ($exerciceContextId && $request->exercice_id != $exerciceContextId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous ne pouvez pas accéder aux journaux d\'un exercice différent de celui sélectionné.'
+            ], 403);
+        }
 
         $journal = JournalSaisi::where([
                 ['annee', '=', $request->annee],
                 ['mois', '=', $request->mois],
                 ['exercices_comptables_id', '=', $request->exercice_id],
                 ['code_journals_id', '=', $request->code_journal_id],
-                // ['company_id', '=', Auth::user()->company_id]
                 ['company_id', '=', session('current_company_id', Auth::user()->company_id)]
             ])
             ->select('id') // On ne récupère que l'ID pour optimiser la mémoire

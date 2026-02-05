@@ -22,7 +22,7 @@ class SuperAdminAccessController extends Controller
     }
 
     /**
-     * Bloque une entreprise
+     * Bloque une entreprise ET tous ses utilisateurs (blocage en cascade)
      */
     public function blockCompany(Request $request, $id)
     {
@@ -32,6 +32,7 @@ class SuperAdminAccessController extends Controller
             'reason' => 'required|string|max:255',
         ]);
         
+        // Bloquer l'entreprise
         $company->update([
             'is_blocked' => true,
             'block_reason' => $validated['reason'],
@@ -39,8 +40,18 @@ class SuperAdminAccessController extends Controller
             'blocked_by' => Auth::id(),
         ]);
         
+        // BLOCAGE EN CASCADE : Bloquer tous les utilisateurs de cette entreprise
+        $blockedUsersCount = User::where('company_id', $id)
+            ->where('role', '!=', 'super_admin') // Ne jamais bloquer un SA
+            ->update([
+                'is_blocked' => true,
+                'block_reason' => "Entreprise bloquée : {$validated['reason']}",
+                'blocked_at' => now(),
+                'blocked_by' => Auth::id(),
+            ]);
+        
         return redirect()->route('superadmin.access')
-            ->with('success', "L'entreprise {$company->company_name} a été bloquée");
+            ->with('success', "L'entreprise {$company->company_name} et {$blockedUsersCount} utilisateur(s) ont été bloqués");
     }
 
     /**
@@ -69,7 +80,7 @@ class SuperAdminAccessController extends Controller
         $user = User::findOrFail($id);
         
         // Empêcher le blocage d'un super admin
-        if ($user->role === 'super_admin') {
+        if ($user->isSuperAdmin()) {
             return redirect()->route('superadmin.access')
                 ->with('error', 'Impossible de bloquer un super administrateur');
         }
@@ -128,9 +139,16 @@ class SuperAdminAccessController extends Controller
     {
         $user = User::findOrFail($id);
         
-        if ($user->role === 'super_admin') {
+        // Empêcher la suppression de tout super admin
+        if ($user->isSuperAdmin()) {
             return redirect()->route('superadmin.access')
-                ->with('error', 'Impossible de supprimer un super administrateur');
+                ->with('error', 'Impossible de supprimer un super administrateur !');
+        }
+        
+        // PROTECTION ADDITIONNELLE : Empêcher la suppression du SA primaire
+        if ($user->isPrimarySuperAdmin()) {
+            return redirect()->route('superadmin.access')
+                ->with('error', 'Impossible de supprimer le Super Admin Principal ! Cette action est strictement interdite.');
         }
         
         $user->delete();

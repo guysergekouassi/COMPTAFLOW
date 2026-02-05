@@ -196,11 +196,14 @@
                                     Générer Plan
                                 </button>
 
-                                <button type="button" data-bs-toggle="modal" data-bs-target="#modalCreatePoste"
-                                    class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
-                                    <i class="fas fa-plus"></i>
-                                    Nouveau Poste
-                                </button>
+                                {{-- Bouton Nouveau Poste restreint à l'admin config --}}
+                                @if(auth()->user()->hasPermission('admin.config.tresorerie_posts'))
+                                    <a href="{{ route('admin.config.tresorerie_posts') }}"
+                                        class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
+                                        <i class="fas fa-plus"></i>
+                                        Gérer les Postes (Admin)
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -281,15 +284,22 @@
                                                 </td>
                                                 <td class="px-8 py-6 text-center">
                                                     <div class="flex justify-center gap-2 transition-opacity">
-                                                        <button type="button"
-                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm btn-update-poste"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#modalUpdatePoste"
-                                                            data-id="{{ $item->id }}"
-                                                            data-name="{{ $item->name }}"
-                                                            data-type="{{ $item->type }}">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
+                                                        <a href="{{ route('postetresorerie.show', $item->id) }}"
+                                                            class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 text-slate-600 hover:bg-slate-600 hover:text-white transition shadow-sm"
+                                                            title="Voir les mouvements">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        @if(auth()->user()->hasPermission('admin.config.tresorerie_posts'))
+                                                            <button type="button"
+                                                                class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm btn-update-poste"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#modalUpdatePoste"
+                                                                data-id="{{ $item->id }}"
+                                                                data-name="{{ $item->name }}"
+                                                                data-type="{{ $item->type }}">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                 </td>
                                             </tr>
@@ -545,66 +555,124 @@
                 });
             }
 
-            // 2. DataTables logic
-            const initDataTable = () => {
-                if (typeof $ !== 'undefined' && $.fn.dataTable) {
-                    const table = $('#posteTable').DataTable({
-                        dom: 't',
-                        pageLength: 5,
-                        language: {
-                            zeroRecords: "Aucun poste de trésorerie trouvé",
-                            infoEmpty: "Aucune donnée à afficher"
-                        }
-                    });
+            // 2. Custom Table Logic (without DataTables)
+            let currentPage = 1;
+            const rowsPerPage = 5;
+            let filteredRows = [];
 
-                    window.posteTable = table;
+            const initCustomTable = () => {
+                const table = document.getElementById('posteTable');
+                if (!table) return;
 
-                    // Pagination
-                    const updatePagination = () => {
-                        const info = table.page.info();
-                        
-                        if (info.recordsDisplay > 0) {
-                            $('#tableInfo').html(`Affichage de <span class="font-bold text-slate-700">${info.start + 1}</span> à <span class="font-bold text-slate-700">${info.end}</span> sur <span class="font-bold text-slate-700">${info.recordsDisplay}</span> postes`);
-                        
-                            let paginationHtml = '';
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page === 0 ? 'opacity-50 cursor-not-allowed' : ''}" onclick="window.posteTable.page('previous').draw('page')" ${info.page === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                            paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${info.page + 1}</button>`;
-                            paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${info.page >= info.pages - 1 ? 'opacity-50 cursor-not-allowed' : ''}" onclick="window.posteTable.page('next').draw('page')" ${info.page >= info.pages - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-                            
-                            $('#customPagination').html(paginationHtml);
-                        } else {
-                            $('#tableInfo').html('Aucun poste trouvé');
-                            $('#customPagination').empty();
-                        }
-                    };
+                const tbody = table.querySelector('tbody');
+                const allRows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
+                
+                // Initialize filtered rows
+                filteredRows = allRows;
+                
+                // Show initial page
+                showPage(1);
+                updatePagination();
+            };
 
-                    table.on('draw', updatePagination);
-                    updatePagination();
+            const showPage = (page) => {
+                currentPage = page;
+                const tbody = document.querySelector('#posteTable tbody');
+                const allRows = Array.from(tbody.querySelectorAll('tr'));
+                
+                // Hide all rows first
+                allRows.forEach(row => row.style.display = 'none');
+                
+                // Calculate start and end indices
+                const start = (page - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                
+                // Show rows for current page
+                filteredRows.slice(start, end).forEach(row => {
+                    row.style.display = '';
+                });
+                
+                updatePagination();
+            };
 
-                } else {
-                    setTimeout(initDataTable, 500);
+            const updatePagination = () => {
+                const totalRows = filteredRows.length;
+                const totalPages = Math.ceil(totalRows / rowsPerPage);
+                const start = (currentPage - 1) * rowsPerPage + 1;
+                const end = Math.min(currentPage * rowsPerPage, totalRows);
+                
+                // Update info text
+                const infoEl = document.getElementById('tableInfo');
+                if (infoEl) {
+                    if (totalRows > 0) {
+                        infoEl.innerHTML = `Affichage de <span class="font-bold text-slate-700">${start}</span> à <span class="font-bold text-slate-700">${end}</span> sur <span class="font-bold text-slate-700">${totalRows}</span> postes`;
+                    } else {
+                        infoEl.innerHTML = 'Aucun poste trouvé';
+                    }
+                }
+                
+                // Update pagination buttons
+                const paginationEl = document.getElementById('customPagination');
+                if (paginationEl) {
+                    let paginationHtml = '';
+                    
+                    // Previous button
+                    paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}" 
+                        onclick="showPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>`;
+                    
+                    // Current page
+                    paginationHtml += `<button class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">${currentPage}</button>`;
+                    
+                    // Next button
+                    paginationHtml += `<button class="px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-400 hover:text-blue-700 hover:border-blue-200 transition ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed' : ''}" 
+                        onclick="showPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>`;
+                    
+                    paginationEl.innerHTML = paginationHtml;
                 }
             };
-            
-            initDataTable();
+
+            // Make showPage globally accessible
+            window.showPage = showPage;
+
+            // Initialize on load
+            initCustomTable();
 
             // 3. Independent Filter Logic
             const applyFilter = () => {
-                 if (window.posteTable) {
-                      const intitule = document.getElementById('filterIntitule').value;
-                      const categorie = document.getElementById('filterCategorie').value;
-                      window.posteTable.column(0).search(intitule);
-                      window.posteTable.column(1).search(categorie);
-                      window.posteTable.draw();
-                 }
+                const intitule = document.getElementById('filterIntitule').value.toLowerCase();
+                const categorie = document.getElementById('filterCategorie').value.toUpperCase();
+                
+                const tbody = document.querySelector('#posteTable tbody');
+                const allRows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
+                
+                // Filter rows based on search criteria
+                filteredRows = allRows.filter(row => {
+                    const rowText = row.textContent.toLowerCase();
+                    const matchesIntitule = !intitule || rowText.includes(intitule);
+                    const matchesCategorie = !categorie || rowText.includes(categorie);
+                    return matchesIntitule && matchesCategorie;
+                });
+                
+                // Reset to first page and update display
+                currentPage = 1;
+                showPage(1);
             };
 
             const resetFilter = () => {
-                 document.getElementById('filterIntitule').value = '';
-                 document.getElementById('filterCategorie').value = '';
-                 if (window.posteTable) {
-                      window.posteTable.columns().search('').draw();
-                 }
+                document.getElementById('filterIntitule').value = '';
+                document.getElementById('filterCategorie').value = '';
+                
+                // Reset filtered rows to all rows
+                const tbody = document.querySelector('#posteTable tbody');
+                filteredRows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
+                
+                // Reset to first page and update display
+                currentPage = 1;
+                showPage(1);
             };
 
             // Attach events

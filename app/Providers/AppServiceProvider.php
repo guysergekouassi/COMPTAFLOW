@@ -38,7 +38,13 @@ class AppServiceProvider extends ServiceProvider
                 
                 $pendingApprovalsCount = 0;
                 if ($user->isAdmin()) {
-                    $pendingApprovalsCount = \App\Models\Approval::where('status', 'pending')->count();
+                    $pendingApprovalsCount = \App\Models\Approval::where('status', 'pending')
+                        ->get()
+                        ->filter(function ($approval) use ($currentCompanyId) {
+                            $approvable = $approval->approvable;
+                            return $approvable && isset($approvable->company_id) && $approvable->company_id == $currentCompanyId;
+                        })
+                        ->count();
                 }
 
                 // Logic moved from sidebar.blade.php
@@ -55,7 +61,19 @@ class AppServiceProvider extends ServiceProvider
                     ->get()
                     ->unique('code_journal');
 
-                $exerciceActif = $exercices->where('cloturer', 0)->first() ?? $exercices->first();
+                // LOGIQUE DE CONTEXTE UTILISATEUR : Priorité à la session
+                $sessionExerciceId = session('current_exercice_id');
+                
+                if ($sessionExerciceId) {
+                    $exerciceActif = $exercices->firstWhere('id', $sessionExerciceId);
+                }
+                
+                // Fallback : Si pas de session (ou invalide), on prend celui marqué "actif" en DB, ou le dernier créé
+                if (empty($exerciceActif)) {
+                    $exerciceActif = $exercices->where('is_active', true)->first() 
+                                  ?? $exercices->where('cloturer', 0)->first() 
+                                  ?? $exercices->first();
+                }
 
                 // Companies for switch
                 if ($user->role === 'super_admin') {
@@ -165,8 +183,13 @@ class AppServiceProvider extends ServiceProvider
 
         $code_journaux = CodeJournal::where('company_id', $companyId)->get();
 
-        // Définition de l'exercice actif (le premier de la liste par défaut)
-        $exerciceActif = $exercices->where('is_active', true)->first() ?? $exercices->first();
+        // Définition de l'exercice actif (Priorité Session > DB > Défaut)
+        $sessionExerciceId = session('current_exercice_id');
+        $exerciceActif = $exercices->firstWhere('id', $sessionExerciceId);
+
+        if (!$exerciceActif) {
+            $exerciceActif = $exercices->where('is_active', true)->first() ?? $exercices->first();
+        }
 
         // Partage les variables avec la vue du modal
         $view->with([

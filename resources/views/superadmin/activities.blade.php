@@ -107,7 +107,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'SuperAdmin <span class="text-primary">Activités</span>'])
+                @include('components.header', ['page_title' => 'Suivi des Activités'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
@@ -115,7 +115,7 @@
                         <!-- Header Premium -->
                         <div class="page-header-premium shadow-lg">
                             <div class="position-relative z-index-2">
-                                <h2 class="font-black mb-1 text-white">Suivi des Opérations</h2>
+                                <h2 class="font-black mb-1 text-white">Suivi des Activités</h2>
                                 <p class="mb-0 text-slate-300 font-medium opacity-80">Vision globale de l'activité sur l'ensemble des dossiers comptables.</p>
                             </div>
                             <div class="header-decoration">

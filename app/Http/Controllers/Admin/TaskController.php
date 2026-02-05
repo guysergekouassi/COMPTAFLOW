@@ -79,4 +79,18 @@ class TaskController extends Controller
         // Check if all completed? Optional logic.
         return back()->with('success', 'Tâche marquée comme terminée.');
     }
+
+    public function destroy($id)
+    {
+        $task = AdminTask::findOrFail($id);
+        
+        // Vérification des droits (celui qui a assigné ou admin)
+        if ($task->assigned_by !== auth()->id() && !auth()->user()->isAdmin()) {
+            return back()->with('error', 'Vous n\'êtes pas autorisé à supprimer cette tâche.');
+        }
+
+        $task->delete();
+
+        return back()->with('success', 'Tâche supprimée avec succès.');
+    }
 }

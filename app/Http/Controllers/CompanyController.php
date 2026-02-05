@@ -148,7 +148,9 @@ class CompanyController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-
+        
+        \Illuminate\Support\Facades\Log::info('Tentative de création de sous-compagnie par User ID: ' . $user->id);
+        
         // 1. Assurer que l'utilisateur est un 'admin'
         if ($user->role !== 'admin') {
             abort(403, 'Accès non autorisé.');
@@ -164,8 +166,8 @@ class CompanyController extends Controller
             'code_postal' => 'required|string|max:20',
             'city' => 'required|string|max:50',
             'country' => 'required|string|max:255',
-            'phone_number' => 'nullable|string|min:10',
-            'email_adresse' => 'nullable|email|max:191|unique:companies,email_adresse',
+            'phone_number' => 'required|string|min:10', // REQUIRED
+            'email_adresse' => 'required|email|max:191|unique:companies,email_adresse', // REQUIRED
             'identification_TVA' => 'nullable|string|max:50',
         ]);
 
@@ -187,6 +189,7 @@ class CompanyController extends Controller
                 'identification_TVA' => $request->identification_TVA,
                 // Le lien clé ! La compagnie B' est rattachée à la compagnie B de l'Admin Manager
                 'parent_company_id' => $user->company_id,
+                'user_id' => $user->id, // REQUIRED BY DB SCHEMA
             ]);
 
             DB::commit();

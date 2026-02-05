@@ -37,34 +37,44 @@ class UserController extends Controller
 
 
 
-    private function processHabilitations(string $role, array $input): array
+    private function processHabilitations(string $role, array $input, ?int $companyId = null): array
     {
-        $allPermissions = $this->getAllPermissions();
+        $groupedPermissions = config('accounting_permissions.permissions', []);
+        $finalHabilitations = [];
         
-        // 1. Si admin, tout est activé.
-        if ($role === 'admin') {
-            $habilitations = [];
-            foreach ($allPermissions as $perm) {
-                $habilitations[$perm] = "1";
-            }
-            return $habilitations;
-        }
+        // Contexte de l'entreprise (Fusion)
+        $company = $companyId ? Company::find($companyId) : null;
+        $isSubCompany = $company && $company->parent_company_id;
 
-        // 2. Pour les autres rôles (comptable), traiter les permissions sélectionnées
-        $habilitations = [];
-        
-        // Support for both formats: ['key' => '1'] and ['key']
-        foreach ($allPermissions as $perm) {
-            if (isset($input[$perm]) && $input[$perm] == "1") {
-                $habilitations[$perm] = "1";
-            } elseif (in_array($perm, $input)) {
-                $habilitations[$perm] = "1";
-            } else {
-                $habilitations[$perm] = "0";
+        foreach ($groupedPermissions as $section => $perms) {
+            $isSuperAdminSection = str_contains($section, 'Super Admin');
+            $isFusionSection = str_contains($section, 'Fusion & Démarrage');
+
+            foreach ($perms as $key => $label) {
+                // Règle 1 : Super Admin
+                if ($isSuperAdminSection) {
+                    $finalHabilitations[$key] = "0";
+                    continue;
+                }
+
+                // Règle 2 : Fusion
+                if ($isFusionSection && !$isSubCompany) {
+                    $finalHabilitations[$key] = "0";
+                    continue;
+                }
+
+                // Règle 3 : Attribution
+                if ($role === 'admin' && !isset($input[$key])) {
+                    // Pour un admin principal (storeAdmin), on met tout par défaut s'il n'y a pas d'input spécifique
+                    // Mais si c'est un storeSecondaryAdmin, l'input sera présent.
+                    $finalHabilitations[$key] = "1";
+                } else {
+                    $finalHabilitations[$key] = isset($input[$key]) ? "1" : "0";
+                }
             }
         }
         
-        return $habilitations;
+        return $finalHabilitations;
     }
 
     // NOUVELLE MÉTHODE : Pour les statistiques du Tableau de Bord Administrateur
@@ -288,10 +298,11 @@ public function stat_online()
     $validated['company_id'] = $targetCompanyId;
     $validated['password'] = Hash::make($validated['password']);
 
-    // Traitement des habilitations (assurez-vous que processHabilitations existe)
+    // Traitement des habilitations
     $validated['habilitations'] = $this->processHabilitations(
         $validated['role'],
-        $request->input('habilitations', []) // Utiliser $request->input car $validated peut ne pas contenir 'habilitations' si c'est null
+        $request->input('habilitations', []),
+        $validated['company_id'] != 'new' ? $validated['company_id'] : null
     );
 
     //  dd($validated);
@@ -348,12 +359,8 @@ User::create($validated);
             return back()->with('error', 'Vous n\'avez pas les droits sur cette entreprise.')->withInput();
         }
 
-        // Un administrateur a toutes les habilitations par défaut
-        $allPermissions = $this->getAllPermissions();
-        $habilitations = [];
-        foreach ($allPermissions as $perm) {
-            $habilitations[$perm] = "1";
-        }
+        // Un administrateur a toutes les habilitations par défaut (filtrées)
+        $habilitations = $this->processHabilitations('admin', [], $validated['company_id']);
 
         User::create([
             'name' => $validated['name'],
@@ -393,11 +400,7 @@ User::create($validated);
         }
 
         // Normalisation des habilitations
-        $habilitations = [];
-        $allPermissions = $this->getAllPermissions();
-        foreach ($allPermissions as $perm) {
-            $habilitations[$perm] = isset($validated['habilitations'][$perm]) ? "1" : "0";
-        }
+        $habilitations = $this->processHabilitations('admin', $validated['habilitations'], $validated['company_id']);
 
         User::create([
             'name' => $validated['name'],
@@ -595,12 +598,30 @@ public function impersonate(User $user)
     public function profile()
     {
         $user = Auth::user();
-        $company = $user->company; // Assuming relation exists
+        $company = $user->company;
         
+        // Calcul des statistiques réelles
+        $totalEntries = \App\Models\EcritureComptable::where('user_id', $user->id)->count();
+        
+        // Calcul de l'activité - 7 derniers jours
+        $activityData = [];
+        $activityLabels = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $count = \App\Models\EcritureComptable::where('user_id', $user->id)
+                ->whereDate('created_at', $date)
+                ->count();
+            
+            $activityData[] = $count;
+            $activityLabels[] = $date->translatedFormat('D'); // Lun, Mar...
+        }
+
         $stats = [
+            'total_entries' => $totalEntries,
             'member_since' => $user->created_at,
-            'last_activity' => $user->updated_at, // Or tracking column if available
-            // Add other stats as needed
+            'last_activity' => $user->updated_at,
+            'activity_data' => $activityData,
+            'activity_labels' => $activityLabels,
         ];
 
         if ($user->role === 'comptable') {

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 
 <html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/"
   data-template="vertical-menu-template-free" data-bs-theme="light">
@@ -6,6 +6,76 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+      /* --- PLAN TIERS PREMIUM MODAL STYLES --- */
+      .premium-modal-content-tiers {
+          background: rgba(255, 255, 255, 0.98) !important;
+          backdrop-filter: blur(15px) !important;
+          border: 1px solid rgba(255, 255, 255, 1) !important;
+          border-radius: 20px !important;
+          box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1) !important;
+          font-family: 'Plus Jakarta Sans', sans-serif !important;
+          padding: 1.5rem !important;
+      }
+      .text-blue-gradient-premium {
+          background: linear-gradient(to right, #1e40af, #3b82f6);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-weight: 800;
+      }
+      .input-field-premium {
+          transition: all 0.2s ease;
+          border: 2px solid #f1f5f9 !important;
+          background-color: #f8fafc !important;
+          border-radius: 16px !important;
+          padding: 0.75rem 1rem !important;
+          font-size: 0.8rem !important;
+          font-weight: 600 !important;
+          color: #0f172a !important;
+          width: 100%;
+      }
+      .input-field-premium:focus {
+          border-color: #1e40af !important;
+          background-color: #ffffff !important;
+          box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.05) !important;
+          outline: none !important;
+      }
+      .input-label-premium {
+          font-size: 0.7rem !important;
+          font-weight: 800 !important;
+          color: #64748b !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.05em !important;
+          margin-bottom: 0.5rem !important;
+          display: block;
+      }
+      .btn-save-premium {
+          background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+          color: white;
+          border: none;
+          border-radius: 16px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 700;
+          transition: all 0.3s ease;
+          box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.3);
+      }
+      .btn-save-premium:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 15px 20px -3px rgba(30, 64, 175, 0.4);
+      }
+      .btn-cancel-premium {
+          background: #f1f5f9;
+          color: #64748b;
+          border: none;
+          border-radius: 16px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 700;
+          transition: all 0.3s ease;
+      }
+      .btn-cancel-premium:hover {
+          background: #e2e8f0;
+          color: #475569;
+      }
+
       #loading-icon {
         display: none;
       }
@@ -210,7 +280,7 @@
     /* Boutons Premium */
     .btn-premium {
         padding: 0.8rem 1rem !important;
-        border-radius: 10px !important;
+        border-radius: 16px !important;
         font-weight: 600 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.3px !important;
@@ -365,7 +435,7 @@
         animation: shimmer 3s infinite;
     }
     
-    /* Labels et Contrôles Premium */
+    /* Labels et ContrÃ´les Premium */
     .form-label {
         font-weight: 700 !important;
         text-transform: uppercase !important;
@@ -597,11 +667,41 @@
                                         <label for="date" class="form-label">
                                             <i class="bx bx-calendar"></i>Date de l'écriture <span class="text-danger">*</span>
                                         </label>
-                                        <input type="date" id="date" name="date" class="form-control" required 
-                                               value="{{ date('Y-m-d') }}" 
-                                               min="{{ date('Y-m-d', strtotime('-1 year')) }}" 
-                                               max="{{ date('Y-m-d', strtotime('+1 year')) }}" readonly/>
-                                        <div class="invalid-feedback">Veuillez renseigner une date valide.</div>
+                                        @php
+                                            // Déterminer la date par défaut et les limites
+                                            $exoStart = $exerciceActif->date_debut ?? date('Y-01-01');
+                                            $exoEnd = $exerciceActif->date_fin ?? date('Y-12-31');
+                                            
+                                            // Date par défaut : 
+                                            // 1. Si mois/année donnés via le modal -> 1er du mois
+                                            // 2. Sinon Aujourd'hui si dans l'intervalle
+                                            // 3. Sinon Date de début de l'exercice
+                                            
+                                            $defaultDate = date('Y-m-d');
+                                            
+                                            if (isset($data['annee']) && isset($data['mois'])) {
+                                                try {
+                                                    $defaultDate = \Carbon\Carbon::createFromDate($data['annee'], $data['mois'], 1)->format('Y-m-d');
+                                                } catch (\Exception $e) {}
+                                            } elseif ($defaultDate < $exoStart || $defaultDate > $exoEnd) {
+                                                $defaultDate = $exoStart;
+                                            }
+                                        @endphp
+                                        <div class="form-control d-flex align-items-center" style="border-radius: 12px; border: 2px solid #e2e8f0; background-color: #ffffff; padding: 0.25rem 0.75rem;">
+                                            @php
+                                                $currentDay = date('d', strtotime($defaultDate));
+                                                $monthYear = date('/m/Y', strtotime($defaultDate));
+                                            @endphp
+                                            <select id="day_select" class="border-0 bg-transparent p-0" style="width: 25px; font-weight: bold; color: #1e293b; outline: none; appearance: none; -moz-appearance: none; -webkit-appearance: none; cursor: pointer;">
+                                                @for ($i = 1; $i <= 31; $i++)
+                                                    @php $d = str_pad($i, 2, '0', STR_PAD_LEFT); @endphp
+                                                    <option value="{{ $d }}" {{ $currentDay == $d ? 'selected' : '' }}>{{ $d }}</option>
+                                                @endfor
+                                            </select>
+                                            <span id="month_year_display" style="color: #94a3b8; font-weight: 600; cursor: default; user-select: none;">{{ $monthYear }}</span>
+                                            <input type="hidden" id="date" name="date" value="{{ $defaultDate }}" />
+                                        </div>
+                                        <div class="invalid-feedback">Veuillez renseigner une date valide dans l'exercice.</div>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="imputation" class="form-label">
@@ -619,6 +719,13 @@
                                         <input type="text" id="n_saisie" name="n_saisie" class="form-control" readonly value="000000000001" style="font-weight: bold; color: #1a202c;" />
                                         <small class="form-text text-muted">Numéro automatique</small>
                                     </div>
+                                    <div class="col-md-3">
+                                        <label for="n_saisie_user" class="form-label">
+                                            <i class="bx bx-hash"></i>N° de Saisie (original)
+                                        </label>
+                                        <input type="text" id="n_saisie_user" name="n_saisie_user" class="form-control" readonly value="" style="font-weight: bold; color: #64748b;" />
+                                        <small class="form-text text-muted">Numéro d'origine importé (si disponible)</small>
+                                    </div>
                                     <div class="col-md-12">
                                         <label for="description_operation" class="form-label">
                                             <i class="bx bx-file-text"></i>Libellé / Description de l'opération <span class="text-danger">*</span>
@@ -633,15 +740,18 @@
                                         <input type="text" id="reference_piece" name="reference_piece" class="form-control" placeholder="N° Facture, Chèque..." />
                                         <small class="form-text text-muted">Commun à toutes les lignes</small>
                                     </div>
-                                                                    <div class="col-md-4" id="div_compte_tresorerie" style="display: none;"> <label for="compte_tresorerie" class="form-label">
+                                                                    <div class="col-md-5" id="div_compte_tresorerie" style="display: none;">
+                                        <label for="compte_tresorerie" class="form-label">
                                             <i class="bx bx-receipt"></i>Compte Trésorerie
                                         </label>
-                                        <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2">
-                                            <option value="" selected disabled>Chargement...</option>
-                                            @foreach($comptesTresorerie as $treso)
-                                                <option value="{{ $treso->id }}">{{ $treso->name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2" style="flex: 1;">
+                                                <option value="" selected disabled>Chargement...</option>
+                                                @foreach($comptesTresorerie as $treso)
+                                                    <option value="{{ $treso->id }}">{{ $treso->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                         <small class="form-text text-muted">Compte automatique pour ce journal</small>
                                     </div>
                                     <div class="col-md-8">
@@ -702,20 +812,34 @@
                                         <label for="compte_general" class="form-label">
                                             <i class="bx bx-folder-open"></i>Compte Général <span class="text-danger">*</span>
                                         </label>
-                                        <select id="compte_general" name="compte_general"
-                                            class="form-select select2 w-100" data-live-search="true"
-                                            title="Sélectionner un compte général" required>
-                                            <option value="" selected disabled>Sélectionner un compte</option>
-                                            @if(isset($plansComptables))
-                                                @foreach ($plansComptables as $plan)
-                                                    <option value="{{ $plan->id }}"
-                                                        data-intitule_compte_general="{{ $plan->numero_de_compte }}">
-                                                        {{ $plan->numero_de_compte }} -
-                                                        {{ $plan->intitule }}
-                                                    </option>
-                                                @endforeach
-                                            @endif
-                                        </select>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <select id="compte_general" name="compte_general"
+                                                class="form-select select2" style="flex: 1;" data-live-search="true"
+                                                title="Sélectionner un compte général" required>
+                                                <option value="" selected disabled>Sélectionner un compte</option>
+                                                @if(isset($plansComptables))
+                                                    @foreach ($plansComptables as $plan)
+                                                        <option value="{{ $plan->id }}"
+                                                            data-numero="{{ $plan->numero_de_compte }}"
+                                                            data-intitule_compte_general="{{ $plan->numero_de_compte }}">
+                                                            {{ $plan->numero_de_compte }} -
+                                                            {{ $plan->intitule }}
+                                                        </option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                            <button type="button" class="btn btn-outline-secondary btn-premium" data-bs-toggle="modal" data-bs-target="#modalCenterCreate" title="Créer un nouveau compte" style="
+                                                background: #ffffff;
+                                                border: 2px solid #e2e8f0;
+                                                color: #64748b;
+                                                padding: 0.7rem 1rem;
+                                                font-weight: 600;
+                                                transition: all 0.3s ease;
+                                                white-space: nowrap;
+                                            " onmouseover="this.style.borderColor='#cbd5e1'; this.style.color='#1a202c';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#64748b';">
+                                                <i class="bx bx-plus"></i> Créer
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="compte_tiers" class="form-label">
@@ -735,12 +859,11 @@
                                                     @endforeach
                                                 @endif
                                             </select>
-                                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#createTiersModal" title="Créer un nouveau compte tiers" style="
+                                            <button type="button" class="btn btn-outline-secondary btn-premium" data-bs-toggle="modal" data-bs-target="#createTiersModal" title="Créer un nouveau compte tiers" style="
                                                 background: #ffffff;
                                                 border: 2px solid #e2e8f0;
                                                 color: #64748b;
                                                 padding: 0.7rem 1rem;
-                                                border-radius: 12px;
                                                 font-weight: 600;
                                                 transition: all 0.3s ease;
                                                 white-space: nowrap;
@@ -840,6 +963,11 @@
                                         </ul>
                                     </div>
                                 </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-primary-premium btn-premium w-100" onclick="ajouterEcriture()">
+                                        <i class="bx bx-plus-circle me-2"></i>Ajouter à la ligne
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="table-responsive">
@@ -935,11 +1063,6 @@
                                         </div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="d-grid gap-2">
-                                            <button type="button" class="btn btn-primary-premium btn-premium w-100" onclick="ajouterEcriture()">
-                                                <i class="bx bx-plus-circle me-2"></i>Ajouter une ligne
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -982,68 +1105,127 @@
 
       <!-- Core JS -->
 
-      <!-- Modal pour créer un nouveau compte tiers (Design Premium) -->
-      <div class="modal fade" id="createTiersModal" tabindex="-1" aria-labelledby="createTiersModalLabel" aria-hidden="true">
-          <div class="modal-dialog modal-lg modal-dialog-centered">
-              <div class="modal-content" style="border-radius: 25px; border: none; overflow: hidden;">
-                  <div class="modal-header" style="background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%); border: none; padding: 2rem;">
-                      <h5 class="modal-title" id="createTiersModalLabel" style="color: #ffffff; font-weight: 800; font-size: 1.5rem;">
-                          <i class="bx bx-user-plus me-3"></i>CRÉER UN NOUVEAU TIERS
-                      </h5>
-                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="filter: brightness(0) invert(1);"></button>
+      <!-- Modal Nouveau Tiers (Plan Tiers Style) -->
+      <div class="modal fade" id="createTiersModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+              <form id="createTiersForm" class="w-full">
+                  <div class="modal-content premium-modal-content-tiers">
+                      
+                      <!-- En-tête -->
+                      <div class="text-center mb-6 position-relative">
+                          <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                          <h1 class="text-xl font-extrabold tracking-tight text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                              Nouveau <span class="text-blue-gradient-premium">Tiers</span>
+                          </h1>
+                          <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
+                      </div>
+
+                      <div class="space-y-4">
+                          
+                          <!-- Catégorie (Type de tiers) -->
+                          <div class="mb-3">
+                              <label class="input-label-premium">Catégorie</label>
+                              <select id="type_tiers" name="type_de_tiers" class="input-field-premium" required>
+                                  <option value="" disabled selected>Sélectionner une catégorie</option>
+                                  <option value="Fournisseur" data-prefix="40">Fournisseur</option>
+                                  <option value="Client" data-prefix="41">Client</option>
+                                  <option value="Personnel" data-prefix="42">Personnel</option>
+                                  <option value="CNPS" data-prefix="43">Organisme sociaux / CNPS</option>
+                                  <option value="Impots" data-prefix="44">Impôt</option>
+                                  <option value="Organisme international" data-prefix="45">Organisme international</option>
+                                  <option value="Associé" data-prefix="46">Associé / Actionnaire</option>
+                                  <option value="Divers Tiers" data-prefix="47">Divers Tiers</option>
+                              </select>
+                          </div>
+
+                          <!-- Numéro de tiers -->
+                          <div class="mb-3">
+                              <label class="input-label-premium">Numéro de tiers</label>
+                              <input type="text" id="numero_tiers" name="numero_de_tiers" 
+                                  class="input-field-premium opacity-75" placeholder="Généré automatiquement" required readonly>
+                          </div>
+
+                          <!-- Compte de Rattachement (Compte général associé) -->
+                          <div class="mb-3">
+                              <label class="input-label-premium">Compte de Rattachement</label>
+                              <div class="d-flex gap-2">
+                                  <select id="compte_general_tiers" name="compte_general" class="input-field-premium form-select" style="flex: 1;">
+                                      <option value="" disabled selected>-- Sélectionnez un compte --</option>
+                                  </select>
+                                  <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center" type="button" onclick="window.showAllAccountsTiers()" title="Afficher tous les comptes de classe 4" style="border-radius: 12px; border: 2px solid #e2e8f0; background-color: #fff; width: 50px; flex-shrink: 0;">
+                                      <i class="bx bx-show fs-4"></i>
+                                  </button>
+                              </div>
+                          </div>
+
+                          <!-- Nom / Raison Sociale (Intitulé) -->
+                          <div class="mb-3">
+                              <label class="input-label-premium">Nom / Raison Sociale</label>
+                              <input type="text" id="intitule_tiers" name="intitule" 
+                                  class="input-field-premium" placeholder="Entrez le nom de l'entité" required>
+                          </div>
+
+                      </div>
+
+                      <!-- Actions -->
+                      <div class="row g-3 mt-4">
+                          <div class="col-6">
+                              <button type="button" class="btn-cancel-premium w-100" data-bs-dismiss="modal">
+                                  Annuler
+                              </button>
+                          </div>
+                          <div class="col-6">
+                              <button type="button" id="btnCreateTiers" onclick="window.createTiersSimple(event)" class="btn-save-premium w-100">
+                                  Enregistrer
+                              </button>
+                          </div>
+                      </div>
+
                   </div>
-                  <form id="createTiersForm">
-                      <div class="modal-body" style="padding: 2.5rem;">
-                          <div class="row g-4">
-                              <div class="col-md-6">
-                                  <label for="type_tiers" class="form-label">
-                                      <i class="bx bx-tag"></i>Type de tiers *
-                                  </label>
-                                  <select id="type_tiers" name="type_de_tiers" class="form-select" required>
-                                      <option value="" selected disabled>Sélectionner un type</option>
-                                      <option value="Fournisseur">Fournisseur</option>
-                                      <option value="Client">Client</option>
-                                      <option value="Personnel">Personnel</option>
-                                      <option value="CNPS">CNPS</option>
-                                      <option value="Impots">Impots</option>
-                                      <option value="Associé">Associé</option>
-                                      <option value="Divers Tiers">Divers Tiers</option>
-                                  </select>
+              </form>
+          </div>
+      </div>
+
+      <!-- Modal Creation Compte Général -->
+      <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+              <form action="{{ route('plan_comptable.store') }}" method="POST" id="planComptableForm" class="w-full">
+                  @csrf
+                  <div class="modal-content premium-modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                      <div class="text-center mb-4 position-relative" style="padding: 1.5rem 1.5rem 0;">
+                          <button type="button" class="btn-close position-absolute end-0 top-0 m-3" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                          <h1 class="text-xl font-extrabold tracking-tight text-slate-900" style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">
+                              Nouveau <span class="text-blue-gradient-premium">Compte</span>
+                          </h1>
+                          <div class="h-1 w-8 bg-blue-700 mx-auto rounded-full" style="height: 4px; width: 32px;"></div>
+                      </div>
+                      <div class="modal-body" style="padding: 0 2rem 2rem;">
+                          <div class="space-y-4">
+                              <div class="mb-3">
+                                  <label for="numero_de_compte" class="input-label-premium" style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Numéro de compte</label>
+                                  <input type="text" class="input-field-premium" id="numero_de_compte" name="numero_de_compte" 
+                                      maxlength="8" placeholder="Ex: 41110000" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px;">
                               </div>
-                              <div class="col-md-6">
-                                  <label for="compte_general_tiers" class="form-label">
-                                      <i class="bx bx-folder-open"></i>Compte général *
-                                  </label>
-                                  <select id="compte_general_tiers" name="compte_general" class="form-select" required>
-                                      <option value="" selected disabled>Sélectionner d'abord le type de tiers</option>
-                                  </select>
+                              <div class="mb-3">
+                                  <label for="intitule" class="input-label-premium" style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Intitulé du compte</label>
+                                  <input type="text" class="input-field-premium" id="intitule" name="intitule" 
+                                      placeholder="Entrez l'intitulé du compte" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px;">
                               </div>
-                              <div class="col-md-6">
-                                  <label for="numero_tiers" class="form-label">
-                                      <i class="bx bx-hash"></i>Numéro de tiers *
-                                  </label>
-                                  <input type="text" id="numero_tiers" name="numero_de_tiers" class="form-control" readonly placeholder="Sera généré automatiquement" required>
+                          </div>
+                          <div class="row g-3 mt-2">
+                              <div class="col-6">
+                                  <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal" style="padding: 0.75rem; border-radius: 12px; font-weight: 700; color: #64748b;">Annuler</button>
                               </div>
-                              <div class="col-md-6">
-                                  <label for="intitule_tiers" class="form-label">
-                                      <i class="bx bx-user"></i>Intitulé du tiers *
-                                  </label>
-                                  <input type="text" id="intitule_tiers" name="intitule" class="form-control" placeholder="Nom du tiers" required>
+                              <div class="col-6">
+                                  <button type="submit" class="btn btn-primary-premium w-100" style="padding: 0.75rem; border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border: none; color: white;">Enregistrer</button>
                               </div>
                           </div>
                       </div>
-                      <div class="modal-footer" style="background: #f8fafc; border: none; padding: 1.5rem 2.5rem;">
-                          <button type="button" class="btn btn-outline-premium btn-premium" data-bs-dismiss="modal">
-                              <i class="bx bx-x me-2"></i>Annuler
-                          </button>
-                          <button type="button" class="btn btn-primary-premium btn-premium" id="btnCreateTiers" onclick="window.createTiersSimple(event)">
-                              <i class="bx bx-save me-2"></i>Créer le compte tiers
-                          </button>
-                      </div>
-                  </form>
-              </div>
+                  </div>
+              </form>
           </div>
       </div>
+
 
       @include('components.footer')
 
@@ -1054,166 +1236,220 @@
 
 <script>
 // Logic for Creating Tiers and Modal Management
-// Using standard Bootstrap 5 API to avoid flickering issues
-
 document.addEventListener('DOMContentLoaded', function() {
-    const createTiersModalEl = document.getElementById('createTiersModal');
- 
-    if (!createTiersModalEl) return;
+    // --- DATE HYBRIDE SYNCHRONIZATION ---
+    const daySelect = document.getElementById('day_select');
+    const dateHidden = document.getElementById('date');
+    const monthYearDisplay = document.getElementById('month_year_display');
 
-    // Use Bootstrap's Modal instance
-    const tiersModal = new bootstrap.Modal(createTiersModalEl);
-    
-    // Reset form when modal opens
-    createTiersModalEl.addEventListener('show.bs.modal', function () {
-        const form = document.getElementById('createTiersForm');
-        if (form) {
-            form.reset();
-            const numeroTiers = document.getElementById('numero_tiers');
-            const compteGeneralTiers = document.getElementById('compte_general_tiers');
-            if (numeroTiers) numeroTiers.value = '';
-            if (compteGeneralTiers) {
-                compteGeneralTiers.innerHTML = '<option value="" selected disabled>Sélectionner d\'abord le type de tiers</option>';
+    if (daySelect && dateHidden) {
+        daySelect.addEventListener('change', function() {
+            const day = this.value;
+            const currentDate = dateHidden.value; // YYYY-MM-DD
+            const parts = currentDate.split('-');
+            if (parts.length === 3) {
+                const newDate = `${parts[0]}-${parts[1]}-${day}`;
+                dateHidden.value = newDate;
+                console.log('Date updated to:', newDate);
             }
-        }
-    });
-
-    // Handle Tier Creation
-    window.createTiersSimple = function(event) {
-        if (event) event.preventDefault();
-        
-        const typeTiers = document.getElementById('type_tiers').value;
-        const compteGeneral = document.getElementById('compte_general_tiers').value;
-        const intitule = document.getElementById('intitule_tiers').value.trim();
-        const numeroTiersValue = document.getElementById('numero_tiers').value;
-        
-        if (!typeTiers || !compteGeneral || !intitule) {
-            alert('Veuillez remplir tous les champs obligatoires');
-            return;
-        }
-        
-        const btn = document.getElementById('btnCreateTiers');
-        const originalText = btn.innerHTML;
-        
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
-        btn.disabled = true;
-        
-        const data = {
-            'type_de_tiers': typeTiers,
-            'compte_general': compteGeneral,
-            'intitule': intitule,
-            'numero_de_tiers': numeroTiersValue
-        };
-        
-        fetch('{{ route("plan_tiers.store") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                // Close modal using BS API
-                tiersModal.hide();
-                
-                // Add to tiers select
-                const select = document.getElementById('compte_tiers');
-                const option = document.createElement('option');
-                option.value = result.id;
-                option.text = (result.numero_de_tiers || numeroTiersValue) + ' - ' + result.intitule;
-                option.selected = true;
-                select.appendChild(option);
-                
-                // Trigger change for Select2/Bootstrap-Select if needed
-                if (typeof $ !== 'undefined') {
-                    $(select).trigger('change');
-                }
-                
-                alert('Compte tiers créé avec succès !');
-            } else {
-                alert('Erreur: ' + (result.error || 'Erreur inconnue'));
-            }
-        })
-        .catch(error => {
-            console.error('Erreur AJAX:', error);
-            alert('Erreur lors de la création: ' + error.message);
-        })
-        .finally(() => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
         });
+    }
+
+    // Fonction globale pour mettre Ã  jour la date (utilisée lors des chargements de brouillons)
+    window.updateHybridDate = function(fullDate) {
+        if (!fullDate) return;
+        const parts = fullDate.split('-');
+        if (parts.length === 3) {
+            const day = parts[2];
+            const month = parts[1];
+            const year = parts[0];
+            
+            if (daySelect) daySelect.value = day;
+            if (monthYearDisplay) {
+                if (monthYearDisplay.tagName === 'SPAN') {
+                    monthYearDisplay.textContent = `/${month}/${year}`;
+                } else {
+                    monthYearDisplay.value = `/${month}/${year}`;
+                }
+            }
+            if (dateHidden) dateHidden.value = fullDate;
+        }
     };
 
-    // Logic for type_tiers change (filtering and number generation)
-    const typeTiersSelect = document.getElementById('type_tiers');
-    if (typeTiersSelect) {
-        typeTiersSelect.addEventListener('change', function() {
-            const typeTiers = this.value;
-            const compteGeneralSelect = document.getElementById('compte_general_tiers');
-            const numeroTiersInput = document.getElementById('numero_tiers');
-            
-            if (!typeTiers) {
-                compteGeneralSelect.innerHTML = '<option value="" selected disabled>Sélectionner d\'abord le type de tiers</option>';
+    // --- GESTION DES TIERS (REFONTE ROBUSTE) ---
+    const createTiersModalEl = document.getElementById('createTiersModal');
+    if (createTiersModalEl) {
+        const tiersModal = new bootstrap.Modal(createTiersModalEl);
+        const typeTiersSelect = document.getElementById('type_tiers');
+        const compteGeneralTiers = document.getElementById('compte_general_tiers');
+        const numeroTiersInput = document.getElementById('numero_tiers');
+        const intituleTiersInput = document.getElementById('intitule_tiers');
+        const btnCreateTiers = document.getElementById('btnCreateTiers');
+
+        // Reset au chargement
+        createTiersModalEl.addEventListener('show.bs.modal', function () {
+            document.getElementById('createTiersForm').reset();
+            compteGeneralTiers.innerHTML = '<option value="" selected disabled>Choisir le type...</option>';
+            numeroTiersInput.value = '';
+        });
+
+        // Changement de type -> Filtre comptes & Génération numéro
+        if (typeTiersSelect) {
+            typeTiersSelect.addEventListener('change', function() {
+                const type = this.value;
                 numeroTiersInput.value = '';
-                return;
-            }
-            
-            const prefixes = {
-                'Fournisseur': '40',
-                'Client': '41',
-                'Personnel': '42',
-                'CNPS': '43',
-                'Impots': '44',
-                'Associé': '45'
-            };
-            
-            const mainSelect = document.getElementById('compte_general');
-            if (mainSelect) {
-                const options = Array.from(mainSelect.options).filter(opt => opt.value);
-                let filtered = [];
+                numeroTiersInput.placeholder = 'Calcul...';
                 
-                if (typeTiers === 'Divers Tiers') {
-                    const allPrefixes = Object.values(prefixes);
-                    filtered = options.filter(opt => {
-                        const numero = opt.textContent.split(' - ')[0].trim();
-                        return !allPrefixes.some(prefix => numero.startsWith(prefix));
-                    });
-                } else {
-                    const prefix = prefixes[typeTiers];
-                    filtered = options.filter(opt => {
-                        const numero = opt.textContent.split(' - ')[0].trim();
-                        return numero.startsWith(prefix);
+                // Prefixes standard SYSCOHADA
+                const prefixes = {
+                    'Fournisseur': '40',
+                    'Client': '41',
+                    'Personnel': '42',
+                    'CNPS': '43',
+                    'Impots': '44',
+                    'Associé': '45',
+                    'Organisme international': '45', // Often same as Associate in some plans or 47
+                    'Divers Tiers': '47'
+                };
+
+                const prefix = prefixes[type];
+
+                // 1. Filtrer les comptes généraux
+                const mainSelect = document.getElementById('compte_general');
+                if (mainSelect) {
+                    const options = Array.from(mainSelect.options).filter(opt => opt.value);
+                    let filtered = [];
+                    
+                    if (type === 'Divers Tiers') {
+                        const allPrefixes = ['40', '41', '42', '43', '44', '45', '46'];
+                        filtered = options.filter(opt => {
+                            const numero = opt.getAttribute('data-numero') || opt.textContent.trim();
+                            return !allPrefixes.some(p => numero.startsWith(p));
+                        });
+                    } else if (prefix) {
+                        filtered = options.filter(opt => {
+                            const numero = opt.getAttribute('data-numero') || opt.textContent.trim();
+                            return numero.startsWith(prefix);
+                        });
+                    }
+
+                    compteGeneralTiers.innerHTML = '<option value="" selected disabled>Sélectionner un compte rattaché</option>';
+                    filtered.forEach(opt => {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = opt.value;
+                        newOpt.setAttribute('data-numero', opt.getAttribute('data-numero') || opt.textContent.split(' - ')[0].trim());
+                        newOpt.textContent = opt.textContent;
+                        compteGeneralTiers.appendChild(newOpt);
                     });
                 }
-                
-                compteGeneralSelect.innerHTML = '<option value="" selected disabled>Sélectionner un compte général</option>';
+
+                // 2. Générer le numéro via API
+                if (type !== 'Divers Tiers' && prefix) {
+                    fetch(`/plan_tiers/${prefix}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.numero) {
+                                numeroTiersInput.value = data.numero;
+                            } else {
+                                numeroTiersInput.placeholder = 'Erreur';
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Erreur génération numéro:', err);
+                            const fallback = prefix + Math.floor(Math.random() * 89999 + 10000);
+                            numeroTiersInput.value = fallback;
+                        });
+                } else {
+                    numeroTiersInput.placeholder = 'Saisir manuellement';
+                    numeroTiersInput.readOnly = false;
+                    numeroTiersInput.style.backgroundColor = '#ffffff';
+                }
+            });
+        }
+
+        // Afficher tous les comptes (Voir)
+        window.showAllAccountsTiers = function() {
+            const mainSelect = document.getElementById('compte_general');
+            const targetSelect = document.getElementById('compte_general_tiers');
+            
+            if (mainSelect && targetSelect) {
+                const options = Array.from(mainSelect.options).filter(opt => opt.value);
+                const filtered = options.filter(opt => {
+                    const numero = opt.getAttribute('data-numero') || opt.textContent.trim();
+                    return numero.startsWith('4');
+                });
+
+                targetSelect.innerHTML = '<option value="" selected disabled>-- Tous les comptes de classe 4 --</option>';
                 filtered.forEach(opt => {
-                    const newOpt = opt.cloneNode(true);
-                    compteGeneralSelect.appendChild(newOpt);
+                    const newOpt = document.createElement('option');
+                    newOpt.value = opt.value;
+                    newOpt.setAttribute('data-numero', opt.getAttribute('data-numero') || opt.textContent.split(' - ')[0].trim());
+                    newOpt.textContent = opt.textContent;
+                    targetSelect.appendChild(newOpt);
                 });
             }
+        };
+
+        // Création Effective
+        window.createTiersSimple = function(event) {
+            if (event) event.preventDefault();
             
-            // Generate number
-            if (typeTiers !== 'Divers Tiers' && prefixes[typeTiers]) {
-                fetch('/plan_tiers/' + prefixes[typeTiers])
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.numero) {
-                            numeroTiersInput.value = data.numero;
-                        }
-                    })
-                    .catch(() => {
-                        const random = Math.floor(Math.random() * 9000) + 1000;
-                        numeroTiersInput.value = prefixes[typeTiers] + random;
-                    });
-            } else {
-                numeroTiersInput.value = '';
+            const data = {
+                type_de_tiers: typeTiersSelect.value,
+                compte_general: compteGeneralTiers.value,
+                numero_de_tiers: numeroTiersInput.value,
+                intitule: intituleTiersInput.value.trim()
+            };
+
+            if (!data.type_de_tiers || !data.compte_general || !data.numero_de_tiers || !data.intitule) {
+                Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
+                return;
             }
-        });
+
+            const originalBtnHtml = btnCreateTiers.innerHTML;
+            btnCreateTiers.disabled = true;
+            btnCreateTiers.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
+
+            fetch('{{ route("plan_tiers.store") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    tiersModal.hide();
+                    
+                    // Mise à jour du dropdown principal
+                    const mainTiersSelect = document.getElementById('compte_tiers');
+                    if (mainTiersSelect) {
+                        const newOption = new Option(`${result.numero_de_tiers} - ${result.intitule}`, result.id, true, true);
+                        mainTiersSelect.add(newOption);
+                        if (typeof $ !== 'undefined' && $(mainTiersSelect).data('select2')) {
+                            $(mainTiersSelect).trigger('change');
+                        } else {
+                            mainTiersSelect.dispatchEvent(new Event('change'));
+                        }
+                    }
+
+                    Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le compte tiers a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
+                } else {
+                    throw new Error(result.error || 'Erreur lors de la création');
+                }
+            })
+            .catch(err => {
+                console.error('Erreur:', err);
+                Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
+            })
+            .finally(() => {
+                btnCreateTiers.disabled = false;
+                btnCreateTiers.innerHTML = originalBtnHtml;
+            });
+        };
     }
 });
 
@@ -1282,7 +1518,7 @@ function ajouterEcriture() {
             imputationValue,
             libelle.value,
             referencePiece ? referencePiece.value || '' : '',
-            '', // Compte général - sera rempli avec l'élément personnalisé
+            '', // Compte gÃ©nÃ©ral - sera rempli avec l'élément personnalisé
             compteTiersValue,
             debit.value || '',
             credit.value || '',
@@ -1403,11 +1639,11 @@ function ajouterEcriture() {
     // Fonction pour visualiser la pièce justificative (après sauvegarde)
     function voirPieceJustificative(filename) {
         if (!filename) {
-            alert('Aucun fichier à visualiser');
+            alert('Aucun fichier Ã  visualiser');
             return;
         }
         
-        // Ouvrir le fichier dans une nouvelle fenêtre
+        // Ouvrir le fichier dans une nouvelle fenÃªtre
         const url = `/justificatifs/${filename}`;
         window.open(url, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
     }
@@ -1447,7 +1683,7 @@ function ajouterEcriture() {
                 if (data.success) {
                     const champSaisie = document.getElementById('n_saisie');
                     if (champSaisie) {
-                        champSaisie.value = data.nextSaisieNumber;
+                        champSaisie.value = data.numero;
                     }
                 }
             }
@@ -1479,7 +1715,12 @@ function ajouterEcriture() {
     }
 
     // Initialisation
+    const approvalEditingData = @json($approvalEditingData ?? null);
+
     document.addEventListener('DOMContentLoaded', function() {
+        if (approvalEditingData) {
+            chargerDonneesApprobation(approvalEditingData);
+        }
         fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
         
         // Détection du journal au chargement
@@ -1570,7 +1811,7 @@ function ajouterEcriture() {
                 if (tbody) tbody.innerHTML = '';
                 
                 // Remplir les champs communs
-                if (json.summary.date) document.getElementById('date').value = json.summary.date;
+                if (json.summary.date) window.updateHybridDate(json.summary.date);
                 if (json.summary.description) document.getElementById('description_operation').value = json.summary.description;
                 if (json.summary.reference) document.getElementById('reference_piece').value = json.summary.reference;
                 
@@ -1581,7 +1822,7 @@ function ajouterEcriture() {
                     if (imputationHidden) imputationHidden.value = json.summary.code_journal_id;
                     if (codeJournalAffiche) codeJournalAffiche.value = json.summary.journal_code;
                     
-                    // Déclencher la vérification du type de journal (pour afficher le compte de trésorerie si nécessaire)
+                    // Déclencher la vérification du type de journal (pour afficher le compte de trÃ©sorerie si nécessaire)
                     if (typeof verifierTypeJournal === 'function') {
                         verifierTypeJournal(json.summary.journal_code);
                     }
@@ -1591,6 +1832,12 @@ function ajouterEcriture() {
                 if (json.summary.n_saisie) {
                     const nSaisieInput = document.getElementById('n_saisie');
                     if (nSaisieInput) nSaisieInput.value = json.summary.n_saisie;
+                }
+
+                // N° de Saisie (original)
+                if (json.summary.n_saisie_user !== undefined) {
+                    const nSaisieUserInput = document.getElementById('n_saisie_user');
+                    if (nSaisieUserInput) nSaisieUserInput.value = json.summary.n_saisie_user || '';
                 }
 
                 // Compte Trésorerie
@@ -1658,7 +1905,7 @@ function ajouterEcriture() {
                 if (tbody) tbody.innerHTML = '';
                 
                 // Remplir les champs communs
-                if (json.summary.date) document.getElementById('date').value = json.summary.date;
+                if (json.summary.date) window.updateHybridDate(json.summary.date);
                 if (json.summary.description) document.getElementById('description_operation').value = json.summary.description;
                 if (json.summary.reference) document.getElementById('reference_piece').value = json.summary.reference;
                 
@@ -1669,7 +1916,7 @@ function ajouterEcriture() {
                     if (imputationHidden) imputationHidden.value = json.summary.code_journal_id;
                     if (codeJournalAffiche) codeJournalAffiche.value = json.summary.journal_code;
                     
-                    // Déclencher la vérification du type de journal (pour afficher le compte de trésorerie si nécessaire)
+                    // Déclencher la vérification du type de journal (pour afficher le compte de trÃ©sorerie si nécessaire)
                     if (typeof verifierTypeJournal === 'function') {
                         verifierTypeJournal(json.summary.journal_code);
                     }
@@ -1679,6 +1926,12 @@ function ajouterEcriture() {
                 if (json.summary.n_saisie) {
                     const nSaisieInput = document.getElementById('n_saisie');
                     if (nSaisieInput) nSaisieInput.value = json.summary.n_saisie;
+                }
+
+                // N° de Saisie (original)
+                if (json.summary.n_saisie_user !== undefined) {
+                    const nSaisieUserInput = document.getElementById('n_saisie_user');
+                    if (nSaisieUserInput) nSaisieUserInput.value = json.summary.n_saisie_user || '';
                 }
 
                 // Compte Trésorerie
@@ -1865,7 +2118,7 @@ function ajouterEcriture() {
             .then(response => response.json())
             .then(deleteResult => {
                 if (deleteResult.success) {
-                    // Ensuite, créer les nouvelles écritures
+                    // Ensuite, crÃ©er les nouvelles Ã©critures
                     creerNouvellesEcritures(ecritures, pieceFile, batchId);
                 } else {
                     showAlert('danger', 'Erreur lors de la suppression des anciennes écritures: ' + (deleteResult.message || 'Erreur inconnue'));
@@ -1880,10 +2133,128 @@ function ajouterEcriture() {
                 btnEnregistrer.disabled = false;
                 btnSpinner.classList.add('d-none');
             });
+        } else if (approvalEditingData) {
+            // Mode modification d'approbation (Admin)
+            updateApprovalEntries(ecritures, pieceFile, approvalEditingData.approval_id);
         } else {
             // Mode création : créer directement les écritures
             creerNouvellesEcritures(ecritures, pieceFile, batchId);
         }
+    }
+
+    function chargerDonneesApprobation(data) {
+        console.log("Loading Approval Data", data);
+        const btnEnregistrer = document.getElementById('btnEnregistrer');
+        const btnText = document.getElementById('btnText');
+        
+        if (btnText) btnText.textContent = 'VALIDER LA MODIFICATION';
+        
+        // Remplir les champs communs
+        if (data.date) window.updateHybridDate(data.date);
+        if (data.description) document.getElementById('description_operation').value = data.description;
+        if (data.reference) document.getElementById('reference_piece').value = data.reference;
+        if (data.n_saisie) document.getElementById('n_saisie').value = data.n_saisie;
+
+        // Journal
+        if (data.code_journal_id) {
+            document.getElementById('imputation').value = data.code_journal_id;
+            // Trigger change if needed or manually update display
+             const select = document.getElementById('imputation');
+             const option = select.querySelector(`option[value="${data.code_journal_id}"]`);
+             if(option) {
+                 document.getElementById('code_journal_affiche').value = option.getAttribute('data-code');
+                 verifierTypeJournal(option.getAttribute('data-code'));
+             }
+        }
+        
+        // Compte Trésorerie
+        if (data.compte_tresorerie_id) {
+            const selectTreso = document.getElementById('compte_tresorerie');
+            if (selectTreso) {
+                selectTreso.value = data.compte_tresorerie_id;
+                if (typeof $(selectTreso).select2 === 'function') $(selectTreso).trigger('change');
+            }
+        }
+
+        // Lignes
+        const tbody = document.querySelector('#tableEcritures tbody');
+        if (tbody) tbody.innerHTML = '';
+        
+        data.lines.forEach(line => {
+             ajouterLigneEcriture({
+                date: line.date,
+                piece: line.reference_piece,
+                journal: line.code_journal ? line.code_journal.code_journal : '',
+                compte: line.plan_comptable ? `${line.plan_comptable.numero_de_compte} - ${line.plan_comptable.intitule}` : '',
+                libelle: line.description_operation,
+                tiers: line.plan_tiers ? `${line.plan_tiers.numero_de_tiers} - ${line.plan_tiers.intitule}` : '',
+                debit: line.debit ? line.debit.toString().replace('.', ',') : '0,00',
+                credit: line.credit ? line.credit.toString().replace('.', ',') : '0,00',
+                analytique: line.plan_analytique ? 'Oui' : 'Non'
+            });
+            // Update attributes manually for IDs
+            const lastRow = tbody.lastElementChild;
+            if(lastRow) {
+                lastRow.cells[5].setAttribute('data-plan-comptable-id', line.plan_comptable_id);
+                if(line.plan_tiers_id) lastRow.cells[6].setAttribute('data-tiers-id', line.plan_tiers_id);
+                if(line.compte_tresorerie_id) lastRow.setAttribute('data-compte-tresorerie-id', line.compte_tresorerie_id);
+                
+                // Handle attachment button if present
+                if (line.piece_justificatif) {
+                     lastRow.cells[9].innerHTML = `<button class="btn btn-sm btn-primary-premium btn-premium" onclick="voirPieceJustificative('${line.piece_justificatif}')" style="border-radius: 10px;"><i class="bx bx-eye me-1"></i>Voir</button>`;
+                     lastRow.cells[9].setAttribute('data-piece-filename', line.piece_justificatif);
+                }
+            }
+        });
+        
+        updateTotals();
+        showAlert('info', 'Données d\'approbation chargées pour modification.');
+    }
+
+    function updateApprovalEntries(ecritures, pieceFile, approvalId) {
+        const formDataToSend = new FormData();
+        formDataToSend.append('ecritures', JSON.stringify(ecritures));
+        formDataToSend.append('approval_id', approvalId);
+        if (pieceFile) {
+            formDataToSend.append('piece_justificatif', pieceFile);
+        }
+
+        const btnEnregistrer = document.getElementById('btnEnregistrer');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        
+        btnText.textContent = 'VALIDATION EN COURS...';
+        btnEnregistrer.disabled = true;
+        btnSpinner.classList.remove('d-none');
+
+        fetch("{{ route('ecriture.update_approval') }}", {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: formDataToSend
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                if (data.redirect) {
+                    setTimeout(() => window.location.href = data.redirect, 1500);
+                } else {
+                     window.location.reload();
+                }
+            } else {
+                throw new Error(data.message || 'Erreur inconnue');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showAlert('danger', 'Erreur lors de la mise à jour: ' + error.message);
+            btnText.textContent = 'VALIDER LA MODIFICATION';
+            btnEnregistrer.disabled = false;
+            btnSpinner.classList.add('d-none');
+        });
     }
 
     function creerNouvellesEcritures(ecritures, pieceFile, batchId) {
@@ -2232,7 +2603,7 @@ function ajouterEcriture() {
         // Récupérer les données de la ligne
         const cells = row.cells;
         
-        // Extraire les données de chaque cellule
+        // Extraire les donnÃ©es de chaque cellule
         const date = cells[0].textContent.trim();
         const nSaisie = cells[1].textContent.trim();
         const journal = cells[2].textContent.trim();
@@ -2279,7 +2650,7 @@ function ajouterEcriture() {
             for (let i = 0; i < options.length; i++) {
                 if (options[i].text.includes(journal)) {
                     journalSelect.value = options[i].value;
-                    // Déclencher le changement pour mettre à jour le champ caché
+                    // DÃ©clencher le changement pour mettre Ã  jour le champ cachÃ©
                     journalSelect.dispatchEvent(new Event('change'));
                     break;
                 }
@@ -2291,7 +2662,7 @@ function ajouterEcriture() {
             const compteGeneralSelect = document.getElementById('compte_general');
             if (compteGeneralSelect) {
                 compteGeneralSelect.value = compteGeneralId;
-                // Déclencher le changement pour mettre à jour les champs
+                // DÃ©clencher le changement pour mettre Ã  jour les champs
                 compteGeneralSelect.dispatchEvent(new Event('change'));
             }
         } else {
@@ -2333,9 +2704,24 @@ function ajouterEcriture() {
         if (debitInput) debitInput.value = debit.replace(/\s/g, '').replace(',', '.');
         if (creditInput) creditInput.value = credit.replace(/\s/g, '').replace(',', '.');
         
+        // Récupérer l'ID du compte de trésorerie depuis l'attribut de la ligne
+        const compteTresorerieId = row.getAttribute('data-compte-tresorerie-id');
+        
         // Cocher la case analytique si nécessaire
         const analytiqueCheckbox = document.getElementById('plan_analytique');
         if (analytiqueCheckbox) analytiqueCheckbox.checked = analytique;
+        
+        // Restaurer le compte de trésorerie si présent
+        if (compteTresorerieId) {
+            const compteTresorerieSelect = document.getElementById('compte_tresorerie');
+            if (compteTresorerieSelect) {
+                compteTresorerieSelect.value = compteTresorerieId;
+                // Si select2 est utilisé
+                if (window.jQuery && typeof window.jQuery(compteTresorerieSelect).trigger === 'function') {
+                    window.jQuery(compteTresorerieSelect).trigger('change');
+                }
+            }
+        }
         
         // Supprimer la ligne modifiée du tableau
         row.remove();
@@ -2357,5 +2743,58 @@ function ajouterEcriture() {
         }
     }
 
-    // Gestionnaire d'événements pour le changement de type de tiers
+    // Gestionnaire d'Ã©vÃ©nements pour le changement de type de tiers
+
+    // --- LOGIQUE ADDITIONNELLE (Date & Tiers) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Masquage de la date (modification du jour uniquement)
+        const dateInput = document.getElementById('date');
+        if (dateInput) {
+            const originalDate = dateInput.value;
+            if (originalDate) {
+                const dateParts = originalDate.split('-');
+                const year = dateParts[0];
+                const month = dateParts[1];
+                
+                dateInput.addEventListener('change', function() {
+                    const newDate = this.value;
+                    const newParts = newDate.split('-');
+                    
+                    if (newParts[0] !== year || newParts[1] !== month) {
+                        this.value = `${year}-${month}-${newParts[2]}`;
+                        showAlert('warning', 'Vous ne pouvez modifier que le jour dans cet exercice.');
+                    }
+                });
+            }
+        }
+
+        // 2. Désactivation du compte tiers pour la classe 6
+        const compteGeneralSelect = document.getElementById('compte_general');
+        const compteTiersSelect = document.getElementById('compte_tiers');
+
+        if (compteGeneralSelect && compteTiersSelect) {
+            $(compteGeneralSelect).on('select2:select change', function(e) {
+                const option = this.options[this.selectedIndex];
+                const numero = option ? (option.getAttribute('data-numero') || '') : '';
+                
+                if (numero.startsWith('6')) {
+                    compteTiersSelect.value = '';
+                    $(compteTiersSelect).val('').trigger('change');
+                    compteTiersSelect.disabled = true;
+                    const parent = compteTiersSelect.closest('.d-flex');
+                    if (parent) {
+                        parent.style.opacity = '0.5';
+                        parent.style.pointerEvents = 'none';
+                    }
+                } else {
+                    compteTiersSelect.disabled = false;
+                    const parent = compteTiersSelect.closest('.d-flex');
+                    if (parent) {
+                        parent.style.opacity = '1';
+                        parent.style.pointerEvents = 'auto';
+                    }
+                }
+            });
+        }
+    });
 </script>

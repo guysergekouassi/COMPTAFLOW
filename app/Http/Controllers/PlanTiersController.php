@@ -38,7 +38,7 @@ class PlanTiersController extends Controller
             $currentCompanyId = session('current_company_id', $user->company_id);
             $tiers = PlanTiers::with('compte')
                 ->where('company_id', $currentCompanyId)
-                ->orderByDesc('created_at')
+                ->orderBy('numero_de_tiers')
                 ->get();
                 
             // Debug: Afficher le nombre de tiers trouvés
@@ -280,7 +280,7 @@ class PlanTiersController extends Controller
             $utilise = \App\Models\EcritureComptable::where('plan_tiers_id', $id)->exists();
 
             if ($utilise) {
-                return redirect()->back()->with('error', 'Ce plan tiers est utilisé dans des écritures comptables et ne peut pas être supprimé.');
+                return redirect()->back()->with('error', 'Impossible de supprimer ce compte tiers car il contient des écritures. Veuillez supprimer toutes les écritures associées avant de tenter la suppression.');
             }
 
             $tiers->delete();

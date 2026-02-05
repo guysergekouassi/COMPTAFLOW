@@ -89,7 +89,13 @@
                                                                             <span class="fw-bold text-primary">{{ $approval->data['n_saisie'] ?? 'N/A' }}</span>
                                                                         </div>
                                                                         @php
-                                                                            $totalDebit = \App\Models\EcritureComptable::where('n_saisie', $approval->data['n_saisie'] ?? '')->sum('debit');
+                                                                            // Chercher les écritures avec le numéro de saisie
+                                                                            $ecrituresForTotal = \App\Models\EcritureComptable::where(function($query) use ($approval) {
+                                                                                $nSaisie = $approval->data['n_saisie'] ?? '';
+                                                                                $query->where('n_saisie', $nSaisie)
+                                                                                      ->orWhere('n_saisie_user', $nSaisie);
+                                                                            })->get();
+                                                                            $totalDebit = $ecrituresForTotal->sum('debit');
                                                                         @endphp
                                                                         <div class="d-flex justify-content-between">
                                                                             <span class="text-muted small">Montant Total</span>
@@ -111,16 +117,26 @@
                                                                 @endif
                                                             </div>
 
-                                                            <div class="p-3 p-4 pt-0 d-flex gap-2">
-                                                                <form action="{{ route('admin.approvals.approve', $approval->id) }}" method="POST" class="w-100">
-                                                                    @csrf
-                                                                    <button type="submit" class="btn btn-success w-100 shadow-sm py-2">
-                                                                        <i class="fa-solid fa-check-circle me-2"></i> Valider
+                                                            <div class="p-3 p-4 pt-0">
+                                                                <div class="d-flex gap-2 mb-2">
+                                                                    <button class="btn btn-primary w-100 shadow-sm py-2" onclick="openDetailsModal('{{ $approval->id }}')">
+                                                                        <i class="fa-solid fa-eye me-2"></i> Détails
                                                                     </button>
-                                                                </form>
-                                                                <button class="btn btn-outline-danger w-100 shadow-sm py-2" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $approval->id }}">
-                                                                    <i class="fa-solid fa-times-circle me-2"></i> Rejeter
-                                                                </button>
+                                                                    <a href="{{ route('accounting_entry_real', ['approval_edit' => $approval->id]) }}" class="btn btn-warning w-100 shadow-sm py-2">
+                                                                        <i class="fa-solid fa-pen-to-square me-2"></i> Modifier
+                                                                    </a>
+                                                                </div>
+                                                                <div class="d-flex gap-2">
+                                                                    <form action="{{ route('admin.approvals.approve', $approval->id) }}" method="POST" class="w-100">
+                                                                        @csrf
+                                                                        <button type="submit" class="btn btn-success w-100 shadow-sm py-2">
+                                                                            <i class="fa-solid fa-check-circle me-2"></i> Valider
+                                                                        </button>
+                                                                    </form>
+                                                                    <button class="btn btn-outline-danger w-100 shadow-sm py-2" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $approval->id }}">
+                                                                        <i class="fa-solid fa-times-circle me-2"></i> Rejeter
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
 
@@ -244,7 +260,144 @@
             </div>
         </div>
     </div>
+    <!-- Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header bg-label-primary p-4">
+                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-eye me-2"></i> Détails complets de la demande</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="modalLoader" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Chargement des détails...</p>
+                    </div>
+                    <div id="modalContent" style="display: none;">
+                        <div class="p-4 border-bottom">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted text-uppercase fw-bold">Demandeur</small>
+                                    <h6 id="detailRequester" class="fw-bold mb-3"></h6>
+                                    
+                                    <small class="text-muted text-uppercase fw-bold">Type</small>
+                                    <h6 id="detailType" class="fw-bold mb-0"></h6>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Compte</th>
+                                        <th>Tiers</th>
+                                        <th>Trésorerie</th>
+                                        <th>Libellé</th>
+                                        <th class="text-end">Débit</th>
+                                        <th class="text-end">Crédit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailTableBody">
+                                </tbody>
+                                <tfoot class="bg-label-secondary">
+                                    <tr>
+                                        <th colspan="4" class="text-end fw-bold">TOTAUX</th>
+                                        <th id="detailTotalDebit" class="text-end fw-bold"></th>
+                                        <th id="detailTotalCredit" class="text-end fw-bold"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div id="detailAttachment" class="p-4 border-top bg-light" style="display: none;">
+                            <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Pièce Justificative</h6>
+                            <div id="attachmentContent"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer p-3 bg-light">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <a href="#" id="btnModifyModal" class="btn btn-warning"><i class="fa-solid fa-pen-to-square me-2"></i> Modifier</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function openDetailsModal(id) {
+            const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+            document.getElementById('modalLoader').style.display = 'block';
+            document.getElementById('modalContent').style.display = 'none';
+            modal.show();
+
+            fetch(`/admin/approvals/${id}/details`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        document.getElementById('detailRequester').innerText = data.requester;
+                        document.getElementById('detailType').innerText = data.type.toUpperCase().replace('_', ' ');
+                        document.getElementById('btnModifyModal').href = `/accounting_entry_real?approval_edit=${id}`;
+
+                        const tbody = document.getElementById('detailTableBody');
+                        tbody.innerHTML = '';
+                        let tDebit = 0, tCredit = 0;
+                        let attachment = null;
+
+                        data.ecritures.forEach(e => {
+                            tDebit += parseFloat(e.debit || 0);
+                            tCredit += parseFloat(e.credit || 0);
+                            if(e.piece_justificatif) attachment = e.piece_justificatif;
+
+                            const tr = `
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span>${e.plan_comptable ? e.plan_comptable.numero_de_compte + ' - ' + e.plan_comptable.intitule : '-'}</span>
+                                            ${e.plan_comptable && e.plan_comptable.numero_original ? `<div class="text-[10px] text-slate-400 italic mt-1 font-medium"><i class="fa-solid fa-file-import text-[8px] me-1"></i>Orig: ${e.plan_comptable.numero_original}</div>` : ''}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span>${e.plan_tiers ? e.plan_tiers.numero_de_tiers + ' - ' + e.plan_tiers.intitule : '-'}</span>
+                                            ${e.plan_tiers && e.plan_tiers.numero_original ? `<div class="text-[10px] text-slate-400 italic mt-1 font-medium"><i class="fa-solid fa-file-import text-[8px] me-1"></i>Orig: ${e.plan_tiers.numero_original}</div>` : ''}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        ${e.compte_tresorerie ? `<span class="badge bg-label-info">${e.compte_tresorerie.name}</span>` : '<span class="text-muted">-</span>'}
+                                    </td>
+                                    <td>${e.description_operation}</td>
+                                    <td class="text-end text-success fw-medium">${new Intl.NumberFormat('fr-FR').format(e.debit)}</td>
+                                    <td class="text-end text-danger fw-medium">${new Intl.NumberFormat('fr-FR').format(e.credit)}</td>
+                                </tr>
+                            `;
+                            tbody.innerHTML += tr;
+                        });
+
+                        document.getElementById('detailTotalDebit').innerText = new Intl.NumberFormat('fr-FR').format(tDebit);
+                        document.getElementById('detailTotalCredit').innerText = new Intl.NumberFormat('fr-FR').format(tCredit);
+
+                        const attachDiv = document.getElementById('detailAttachment');
+                        const attachContent = document.getElementById('attachmentContent');
+                        if (attachment) {
+                            attachDiv.style.display = 'block';
+                            attachContent.innerHTML = `<a href="/justificatifs/${attachment}" target="_blank" class="btn btn-outline-primary"><i class="fa-solid fa-file-pdf me-2"></i> Voir le document</a>`;
+                        } else {
+                            attachDiv.style.display = 'none';
+                        }
+
+                        document.getElementById('modalLoader').style.display = 'none';
+                        document.getElementById('modalContent').style.display = 'block';
+                    } else {
+                        alert(data.message);
+                        modal.hide();
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Erreur lors du chargement des détails");
+                    modal.hide();
+                });
+        }
+
         function toggleComment(id) {
             const radioOther = document.getElementById('motif4-' + id);
             const otherDiv = document.getElementById('otherCommentDiv-' + id);

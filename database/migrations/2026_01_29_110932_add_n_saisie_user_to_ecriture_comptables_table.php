@@ -11,10 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            //
-
-            $table->foreignId('pack_id')->nullable()->constrained()->onDelete('cascade');
+        Schema::table('ecriture_comptables', function (Blueprint $table) {
+            $table->string('n_saisie_user', 50)->nullable()->after('n_saisie');
         });
     }
 
@@ -23,10 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            //
-            $table->dropForeign(['pack_id']);
-            $table->dropColumn('pack_id');
+        Schema::table('ecriture_comptables', function (Blueprint $table) {
+            $table->dropColumn('n_saisie_user');
         });
     }
 };

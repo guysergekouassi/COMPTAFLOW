@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             $table->string('numero_de_tiers')->unique();
-            $table->foreignId('compte_general')->constrained('plan_comptable')->onDelete('cascade'); // correspond à plan_comptable_id
+            $table->foreignId('compte_general')->constrained('plan_comptables')->onDelete('cascade'); // correspond à plan_comptable_id
             $table->string('intitule');
             $table->string('type_de_tiers');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

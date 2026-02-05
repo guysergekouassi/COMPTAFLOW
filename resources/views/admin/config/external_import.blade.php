@@ -62,6 +62,37 @@
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
                         
+                        {{-- Affichage des Alertes --}}
+                        @if(session('success'))
+                            <div class="alert alert-success border-0 shadow-sm rounded-xl mb-6 d-flex align-items-center" role="alert">
+                                <i class="fa-solid fa-circle-check me-3 fa-lg"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1 font-bold text-success">Succès !</h6>
+                                    <span>{{ session('success') }}</span>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if(session('error'))
+                            <div class="alert alert-danger border-0 shadow-sm rounded-xl mb-6 d-flex align-items-center" role="alert">
+                                <i class="fa-solid fa-circle-xmark me-3 fa-lg"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1 font-bold text-danger">Erreur</h6>
+                                    <span>{{ session('error') }}</span>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if(session('info'))
+                            <div class="alert alert-info border-0 shadow-sm rounded-xl mb-6 d-flex align-items-center" role="alert">
+                                <i class="fa-solid fa-circle-info me-3 fa-lg"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1 font-bold text-info">Information</h6>
+                                    <span>{{ session('info') }}</span>
+                                </div>
+                            </div>
+                        @endif
+                        
                         <div class="master-header shadow-lg text-white">
                             <div class="row align-items-center">
                                 <div class="col-lg-8">
@@ -108,10 +139,22 @@
                                             <form action="{{ route('admin.import.upload') }}" method="POST" enctype="multipart/form-data">
                                                 @csrf
                                                 <input type="hidden" name="type" value="initial">
-                                                <input type="hidden" name="source" value="excel">
                                                 <div class="mb-4">
-                                                    <label class="form-label text-xs font-black text-slate-400 uppercase">Fichier</label>
-                                                    <input type="file" name="file" class="form-control rounded-xl border-slate-200" accept=".xlsx,.xls,.csv,.xml" required>
+                                                    <div class="row g-2">
+                                                        <div class="col-7">
+                                                            <label class="form-label text-xs font-black text-slate-400 uppercase">Fichier</label>
+                                                            <input type="file" name="file" class="form-control rounded-xl border-slate-200" accept=".xlsx,.xls,.csv,.xml,.txt,.html,.htm" required>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label text-xs font-black text-slate-400 uppercase">Format</label>
+                                                            <select name="source" class="form-select rounded-xl border-slate-200">
+                                                                <option value="excel" selected>Excel/CSV</option>
+                                                                <option value="sage">Texte (.txt)</option>
+                                                                <option value="xml">XML</option>
+                                                                <option value="html">HTML</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <button type="submit" class="btn btn-primary w-100 rounded-xl py-2 font-bold shadow-lg shadow-blue-500/20">
                                                     <i class="fa-solid fa-upload me-2"></i> Charger
@@ -133,10 +176,22 @@
                                             <form action="{{ route('admin.import.upload') }}" method="POST" enctype="multipart/form-data">
                                                 @csrf
                                                 <input type="hidden" name="type" value="tiers">
-                                                <input type="hidden" name="source" value="excel">
                                                 <div class="mb-4">
-                                                    <label class="form-label text-xs font-black text-slate-400 uppercase">Fichier</label>
-                                                    <input type="file" name="file" class="form-control rounded-xl border-slate-200" accept=".xlsx,.xls,.csv,.xml" required>
+                                                    <div class="row g-2">
+                                                        <div class="col-7">
+                                                            <label class="form-label text-xs font-black text-slate-400 uppercase">Fichier</label>
+                                                            <input type="file" name="file" class="form-control rounded-xl border-slate-200" accept=".xlsx,.xls,.csv,.xml,.txt" required>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label text-xs font-black text-slate-400 uppercase">Format</label>
+                                                             <select name="source" class="form-select rounded-xl border-slate-200">
+                                                                <option value="excel" selected>Excel/CSV</option>
+                                                                <option value="sage">Texte (.txt)</option>
+                                                                <option value="xml">XML</option>
+                                                                <option value="html">HTML</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <button type="submit" class="btn btn-indigo w-100 rounded-xl py-2 font-bold shadow-lg shadow-indigo-500/20 text-white" style="background:#4338ca;">
                                                     <i class="fa-solid fa-upload me-2"></i> Charger
@@ -158,10 +213,22 @@
                                             <form action="{{ route('admin.import.upload') }}" method="POST" enctype="multipart/form-data">
                                                 @csrf
                                                 <input type="hidden" name="type" value="journals">
-                                                <input type="hidden" name="source" value="excel">
                                                 <div class="mb-4">
-                                                    <label class="form-label text-xs font-black text-slate-400 uppercase">Fichier</label>
-                                                    <input type="file" name="file" class="form-control rounded-xl border-slate-200" accept=".xlsx,.xls,.csv,.xml" required>
+                                                    <div class="row g-2">
+                                                        <div class="col-7">
+                                                            <label class="form-label text-xs font-black text-slate-400 uppercase">Fichier</label>
+                                                            <input type="file" name="file" class="form-control rounded-xl border-slate-200" accept=".xlsx,.xls,.csv,.xml,.txt,.html,.htm" required>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label text-xs font-black text-slate-400 uppercase">Format</label>
+                                                            <select name="source" class="form-select rounded-xl border-slate-200">
+                                                                <option value="excel" selected>Excel/CSV</option>
+                                                                <option value="sage">Texte (.txt)</option>
+                                                                <option value="xml">XML</option>
+                                                                <option value="html">HTML</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <button type="submit" class="btn btn-emerald w-100 rounded-xl py-2 font-bold shadow-lg shadow-emerald-500/20 text-white" style="background:#059669;">
                                                     <i class="fa-solid fa-upload me-2"></i> Charger
@@ -187,8 +254,10 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label font-bold text-slate-600">Source des données</label>
                                                         <select name="source" class="form-select border-slate-200 py-3 rounded-xl font-bold">
-                                                            <option value="sage">Fichier texte (.txt)</option>
-                                                            <option value="excel" selected>Excel (.xlsx) / CSV / XML</option>
+                                                            <option value="excel" selected>Excel/CSV</option>
+                                                            <option value="sage">Texte (.txt)</option>
+                                                            <option value="xml">XML</option>
+                                                            <option value="html">HTML</option>
                                                         </select>
                                                     </div>
                                                     <div class="col-md-6">

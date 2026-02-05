@@ -119,7 +119,7 @@
             transition: all 0.2s ease;
             border: 2px solid #f1f5f9 !important;
             background-color: #f8fafc !important;
-            border-radius: 12px !important;
+            border-radius: 16px !important;
             padding: 0.75rem 1rem !important;
             font-size: 0.8rem !important;
             font-weight: 600 !important;
@@ -371,35 +371,59 @@
                                         @forelse($tiers as $tier)
                                             <tr class="table-row">
                                                 <td class="px-8 py-6">
-                                                    <span class="font-mono text-base font-bold text-blue-700">{{ $tier->numero_de_tiers }}</span>
+                                                    <div class="flex flex-col">
+                                                        <div class="flex items-center gap-2 mb-1">
+                                                            <i class="fa-solid fa-pen text-blue-400 text-xs"></i>
+                                                            <span class="font-mono text-base font-bold text-blue-700">{{ $tier->numero_de_tiers }}</span>
+                                                        </div>
+                                                        @if(!empty($tier->numero_original))
+                                                            <div class="text-[10px] text-slate-400 font-medium italic d-flex items-center gap-1">
+                                                                <i class="fa-solid fa-file-import text-[8px]"></i> Original: {{ $tier->numero_original }}
+                                                            </div>
+                                                        @endif
+                                                    </div>
                                                 </td>
                                                 <td class="px-8 py-6">
                                                     <p class="font-semibold text-slate-800">{{ $tier->intitule }}</p>
-                                                    <div class="text-xs text-slate-600 font-medium">
+                                                    <div class="text-xs text-slate-600 font-medium mt-1">
                                                         <div class="mb-1">
-                                                            <span class="font-semibold">Compte rattaché :</span> 
+                                                            <span class="text-slate-400">Rattaché au compte:</span> 
                                                             @if($tier->compte)
-                                                                {{ $tier->compte->numero_de_compte }} - {{ $tier->compte->intitule }}
+                                                                <span class="font-bold">{{ $tier->compte->numero_de_compte }}</span>
+                                                                <!-- Affichage du numéro original du COMPTE -->
+                                                                @if(!empty($tier->compte->numero_original))
+                                                                    <div class="text-[10px] text-indigo-400 font-bold mt-1 uppercase tracking-tighter flex items-center gap-1">
+                                                                        <i class="fa-solid fa-link text-[8px]"></i> Origine: {{ $tier->compte->numero_original }}
+                                                                    </div>
+                                                                @endif
                                                             @else
-                                                                <span class="text-red-500">Aucun compte associé (ID: {{ $tier->compte_general ?? 'null' }})</span>
+                                                                <span class="text-red-500">Non lié</span>
                                                             @endif
-                                                        </div>
-                                                        <div class="text-slate-400 italic">
-                                                            Code tiers: {{ $tier->numero_de_tiers }}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td class="px-8 py-6">
                                                     @php
-                                                        $badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-                                                        if (\Illuminate\Support\Str::contains(strtolower($tier->type_de_tiers), 'client')) {
-                                                            $badgeColor = 'bg-green-100 text-green-700 border-green-200';
-                                                        } elseif (\Illuminate\Support\Str::contains(strtolower($tier->type_de_tiers), 'fournisseur')) {
-                                                            $badgeColor = 'bg-blue-100 text-blue-700 border-blue-200';
-                                                        }
+                                                        $prefix = substr($tier->numero_de_tiers, 0, 2);
+                                                        $catName = "AUTRE";
+                                                        $cats = [
+                                                            '40' => 'Fournisseurs',
+                                                            '41' => 'Clients',
+                                                            '42' => 'Salarié',
+                                                            '43' => 'Organisme sociaux',
+                                                            '44' => 'Impôt',
+                                                            '45' => 'Organisme international',
+                                                            '46' => 'Associés',
+                                                            '47' => 'Divers',
+                                                            '48' => 'Dettes sur Immo',
+                                                            '49' => 'Dépréciation'
+                                                        ];
+                                                        $catName = $cats[$prefix] ?? $tier->type_de_tiers ?? "AUTRE";
+                                                        
+                                                        $badgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
                                                     @endphp
                                                     <span class="px-3 py-1 {{ $badgeColor }} rounded-lg text-[10px] font-black uppercase tracking-wider border text-nowrap">
-                                                        {{ $tier->type_de_tiers }}
+                                                        {{ strtoupper($catName) }}
                                                     </span>
                                                 </td>
                                                 <td class="px-8 py-6 text-right">
@@ -476,20 +500,16 @@
                                                     <!-- Catégorie (Type de tiers) -->
                                                     <div class="space-y-1">
                                                         <label class="input-label-premium">Catégorie</label>
-                                                        <select id="type_de_tiers" name="type_de_tiers" class="input-field-premium" required>
+                                                        <select id="type_de_tiers" name="type_de_tiers" class="input-field-premium" onchange="handleCategoryChange(this, 'create')" required>
                                                             <option value="" disabled selected>Sélectionner une catégorie</option>
-                                                            @foreach (['Fournisseur', 'Client', 'Personnel', 'Impots', 'CNPS', 'Associé', 'Divers Tiers'] as $type)
-                                                                <option value="{{ $type }}">{{ $type }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Compte de Rattachement (Compte général associé) -->
-                                                    <div class="space-y-1">
-                                                        <label class="input-label-premium">Compte de Rattachement</label>
-                                                        <select id="compte_general" name="compte_general" class="input-field-premium" required>
-                                                            <option value="" disabled selected>-- Sélectionnez un compte --</option>
-                                                            {{-- Injecté par JS --}}
+                                                            <option value="Fournisseur" data-prefix="40">Fournisseur</option>
+                                                            <option value="Client" data-prefix="41">Client</option>
+                                                            <option value="Personnel" data-prefix="42">Personnel</option>
+                                                            <option value="CNPS" data-prefix="43">Organisme sociaux / CNPS</option>
+                                                            <option value="Impots" data-prefix="44">Impôt</option>
+                                                            <option value="Organisme international" data-prefix="45">Organisme international</option>
+                                                            <option value="Associé" data-prefix="46">Associé</option>
+                                                            <option value="Divers Tiers" data-prefix="47">Divers Tiers</option>
                                                         </select>
                                                     </div>
 
@@ -498,6 +518,20 @@
                                                         <label class="input-label-premium">Numéro de tiers</label>
                                                         <input type="text" id="numero_de_tiers" name="numero_de_tiers" 
                                                             class="input-field-premium opacity-75" placeholder="Généré automatiquement" required readonly>
+                                                    </div>
+
+                                                    <!-- Compte de Rattachement (Compte général associé) -->
+                                                    <div class="space-y-1">
+                                                        <label class="input-label-premium">Compte de Rattachement (Optionnel)</label>
+                                                        <div class="flex gap-2">
+                                                            <select id="compte_general" name="compte_general" class="input-field-premium flex-grow">
+                                                                <option value="" disabled selected>-- Sélectionnez un compte --</option>
+                                                                {{-- Injecté par JS --}}
+                                                            </select>
+                                                            <button class="px-3 py-2 border rounded-xl bg-slate-50 text-slate-500" type="button" onclick="showAllAccounts('create')" title="Afficher tous les comptes de classe 4">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
 
                                                     <!-- Nom / Raison Sociale (Intitulé) -->
@@ -546,24 +580,16 @@
                                                     <!-- Catégorie (Type de tiers) -->
                                                     <div class="space-y-1">
                                                         <label class="input-label-premium">Catégorie</label>
-                                                        <select id="update_type_de_tiers" name="type_de_tiers" class="input-field-premium" required>
+                                                        <select id="update_type_de_tiers" name="type_de_tiers" class="input-field-premium" onchange="handleCategoryChange(this, 'edit')" required>
                                                             <option value="" disabled selected>Sélectionner une catégorie</option>
-                                                            @foreach (['Fournisseur', 'Client', 'Personnel', 'Impots', 'CNPS', 'Associé', 'Divers Tiers'] as $type)
-                                                                <option value="{{ $type }}">{{ $type }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Compte de Rattachement (Compte général associé) -->
-                                                    <div class="space-y-1">
-                                                        <label class="input-label-premium">Compte de Rattachement</label>
-                                                        <select id="update_compte" name="compte_general" class="input-field-premium" required>
-                                                            <option value="" disabled selected>-- Sélectionnez un compte --</option>
-                                                            @foreach ($comptesGeneraux as $compte)
-                                                                <option value="{{ $compte->id }}" data-numero="{{ $compte->numero_de_compte }}">
-                                                                    {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
-                                                                </option>
-                                                            @endforeach
+                                                            <option value="Fournisseur" data-prefix="40">Fournisseur</option>
+                                                            <option value="Client" data-prefix="41">Client</option>
+                                                            <option value="Personnel" data-prefix="42">Personnel</option>
+                                                            <option value="CNPS" data-prefix="43">Organisme sociaux / CNPS</option>
+                                                            <option value="Impots" data-prefix="44">Impôt</option>
+                                                            <option value="Organisme international" data-prefix="45">Organisme international</option>
+                                                            <option value="Associé" data-prefix="46">Associé</option>
+                                                            <option value="Divers Tiers" data-prefix="47">Divers Tiers</option>
                                                         </select>
                                                     </div>
 
@@ -572,6 +598,24 @@
                                                         <label class="input-label-premium">Numéro de tiers</label>
                                                         <input type="text" id="update_numero" name="numero_de_tiers" 
                                                             class="input-field-premium opacity-75" placeholder="Généré automatiquement" required readonly>
+                                                    </div>
+
+                                                    <!-- Compte de Rattachement (Compte général associé) -->
+                                                    <div class="space-y-1">
+                                                        <label class="input-label-premium">Compte de Rattachement (Optionnel)</label>
+                                                        <div class="flex gap-2">
+                                                            <select id="update_compte" name="compte_general" class="input-field-premium flex-grow">
+                                                                <option value="" disabled selected>-- Sélectionnez un compte --</option>
+                                                                @foreach ($comptesGeneraux as $compte)
+                                                                    <option value="{{ $compte->id }}" data-numero="{{ $compte->numero_de_compte }}" class="update-acc-option">
+                                                                        {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            <button class="px-3 py-2 border rounded-xl bg-slate-50 text-slate-500" type="button" onclick="showAllAccounts('edit')" title="Afficher tous les comptes de classe 4">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
 
                                                     <!-- Nom / Raison Sociale (Intitulé) -->
@@ -666,32 +710,64 @@
                     "use strict";
 
                     // --- FONCTIONS GLOBALES (Exposées sur window) ---
-                    window.genererNumero = (numeroCompte, targetInput) => {
-                        if (!numeroCompte) { targetInput.value = ''; return; }
+                    window.genererNumero = (prefix, targetInput) => {
+                        if (!prefix) { targetInput.value = ''; return; }
                         targetInput.value = 'Calcul...';
-                        const racine = numeroCompte.replace(/0+$/, '');
-                        fetch(`/plan_tiers/${racine}`)
+                        fetch(`/plan_tiers/${prefix}`)
                             .then(r => r.json())
                             .then(data => { targetInput.value = data.numero || ''; })
                             .catch(e => { console.error(e); targetInput.value = ''; });
                     };
 
-                    window.updateAccountOptions = (typeSelect, accountSelect, targetInput, autoSelect = true) => {
+                    window.handleCategoryChange = (selectElement, mode) => {
+                        const prefix = selectElement.options[selectElement.selectedIndex].getAttribute('data-prefix');
+                        const accountSelect = document.getElementById(mode === 'create' ? 'compte_general' : 'update_compte');
+                        const targetInput = document.getElementById(mode === 'create' ? 'numero_de_tiers' : 'update_numero');
+                        
+                        window.updateAccountOptions(selectElement, accountSelect, targetInput, prefix);
+                        if (prefix) {
+                            window.genererNumero(prefix, targetInput);
+                        }
+                    };
+
+                    window.updateAccountOptions = (typeSelect, accountSelect, targetInput, prefix) => {
                         if (!typeSelect || !accountSelect) return;
                         const selectedType = typeSelect.value;
-                        const comptes = window.correspondancesTiers[selectedType] || [];
+                        // On utilise les correspondances si dispo, sinon on filtre par préfixe
+                        const comptes = (window.correspondancesTiers && window.correspondancesTiers[selectedType]) 
+                                        ? window.correspondancesTiers[selectedType] 
+                                        : [];
+                        
                         accountSelect.innerHTML = `<option value="" disabled selected>-- Sélectionnez un compte --</option>`;
-                        comptes.forEach(c => {
-                            const opt = document.createElement('option');
-                            opt.value = c.id;
-                            opt.setAttribute('data-numero', c.numero);
-                            opt.textContent = `${c.numero} - ${c.intitule}`;
-                            accountSelect.appendChild(opt);
-                        });
-                        if (autoSelect && comptes.length > 0) {
-                            accountSelect.selectedIndex = 1;
-                            window.genererNumero(comptes[0].numero, targetInput);
+                        
+                        // Si on a des correspondances chargées par le controlleur
+                        if (comptes.length > 0) {
+                            comptes.forEach(c => {
+                                const opt = document.createElement('option');
+                                opt.value = c.id;
+                                opt.setAttribute('data-numero', c.numero);
+                                opt.textContent = `${c.numero} - ${c.intitule}`;
+                                accountSelect.appendChild(opt);
+                            });
+                        } else if (prefix) {
+                            // Sinon on peut essayer de filtrer manuellement si on a accès à tous les comptes (pour l'edit par exemple)
+                            // Mais normalement correspondancesTiers est complet.
                         }
+                    };
+
+                    window.showAllAccounts = (mode) => {
+                        const accountSelect = document.getElementById(mode === 'create' ? 'compte_general' : 'update_compte');
+                        // Récupérer tous les comptes de classe 4 depuis les correspondances
+                        accountSelect.innerHTML = `<option value="" disabled selected>-- Sélectionnez un compte --</option>`;
+                        Object.values(window.correspondancesTiers).flat().forEach(c => {
+                            if (c.numero.startsWith('4')) {
+                                const opt = document.createElement('option');
+                                opt.value = c.id;
+                                opt.setAttribute('data-numero', c.numero);
+                                opt.textContent = `${c.numero} - ${c.intitule}`;
+                                accountSelect.appendChild(opt);
+                            }
+                        });
                     };
 
                     window.toggleAdvancedFilter = function() {
@@ -801,12 +877,25 @@
                             updateModal.addEventListener('show.bs.modal', function(event) {
                                 const btn = $(event.relatedTarget);
                                 const id = btn.data('id');
+                                const type = btn.data('type');
+                                const compteId = btn.data('compte');
+
                                 $('#update_id').val(id);
                                 $('#update_intitule').val(btn.data('intitule'));
                                 $('#update_numero').val(btn.data('numero'));
-                                $('#update_type_de_tiers').val(btn.data('type'));
-                                window.updateAccountOptions(document.getElementById('update_type_de_tiers'), document.getElementById('update_compte'), document.getElementById('update_numero'), false);
-                                $('#update_compte').val(btn.data('compte'));
+                                
+                                const typeSelect = document.getElementById('update_type_de_tiers');
+                                for (let i = 0; i < typeSelect.options.length; i++) {
+                                    if (typeSelect.options[i].value === type || typeSelect.options[i].text.includes(type)) {
+                                        typeSelect.selectedIndex = i;
+                                        break;
+                                    }
+                                }
+
+                                const prefix = typeSelect.options[typeSelect.selectedIndex] ? typeSelect.options[typeSelect.selectedIndex].getAttribute('data-prefix') : null;
+                                window.updateAccountOptions(typeSelect, document.getElementById('update_compte'), document.getElementById('update_numero'), prefix);
+                                
+                                $('#update_compte').val(compteId);
                                 $('#updateTiersForm').attr('action', plan_tiersUpdateBaseUrl.replace('__ID__', id));
                             });
                         }

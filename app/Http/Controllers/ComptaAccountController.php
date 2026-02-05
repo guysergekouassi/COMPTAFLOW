@@ -14,11 +14,13 @@ class ComptaAccountController extends Controller
     public function index()
     {
         // Récupérer l'ID de l'utilisateur actuellement connecté
-        $userId = Auth::id();
+        $user = Auth::user();
 
-        // --- Requête principale : Filtrer UNIQUEMENT les comptes créés par cet utilisateur ---
-        // Les comptes avec user_id = 0 (Super Admin/Système) sont exclus.
-        $allComptaAccounts = Company::where('user_id', $userId)
+        // --- Requête principale : Filtrer UNIQUEMENT les sous-entreprises (subsidiaries) ---
+        // On affiche les entreprises dont le parent est l'entreprise de l'admin connecté.
+        // Cela exclut l'entreprise mère elle-même.
+        $allComptaAccounts = Company::where('parent_company_id', $user->company_id)
+                                     ->withCount(['users', 'ecritures'])
                                      ->get();
         // -----------------------------------------------------------------------------------
 

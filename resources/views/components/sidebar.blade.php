@@ -320,6 +320,64 @@
     </div>
 
     <nav class="sidebar-nav">
+        {{-- SÉLECTEUR D'EXERCICE (NOUVEAU) --}}
+        @if(isset($exercices) && $exercices->count() > 0 && $isComptaAccountActive)
+            <div class="px-3 mb-4">
+                <div class="dropdown">
+                    @php
+                        $exerciceEnContexte = session('current_exercice_id') ? true : false;
+                    @endphp
+                    <button class="btn btn-white w-100 text-start d-flex align-items-center justify-content-between border shadow-sm rounded-lg py-2 px-3 {{ $exerciceEnContexte ? 'border-primary' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-calendar-check {{ $exerciceEnContexte ? 'text-primary' : 'text-primary' }} me-2"></i>
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold text-dark">{{ $exerciceActif->intitule ?? 'Exercice non défini' }}</span>
+                                {{-- <span class="text-muted" style="font-size: 0.7rem;">
+                                    @if($exerciceEnContexte)
+                                        <i class="fa-solid fa-lock me-1"></i>Exercice Sélectionné
+                                    @else
+                                        Exercice Actif (Défaut)
+                                    @endif
+                                </span> --}}
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-muted" style="font-size: 0.7rem;"></i>
+                    </button>
+                    <ul class="dropdown-menu w-100 shadow-lg border-0 rounded-lg p-2">
+                        <li class="px-2 py-1 text-xs text-muted font-bold text-uppercase">Changer d'exercice</li>
+                        @foreach($exercices as $exo)
+                            <li>
+                                <a class="dropdown-item rounded-md py-2 d-flex align-items-center justify-content-between {{ ($exerciceActif && $exerciceActif->id === $exo->id) ? 'active bg-primary text-white' : '' }}" 
+                                   href="{{ route('exercice_comptable.switch', $exo->id) }}"
+                                   data-exercice-switch="{{ $exo->id }}">
+                                   <span>{{ $exo->intitule }}</span>
+                                   @if($exo->is_active)
+                                       <span class="badge bg-warning text-dark ms-2" style="font-size: 0.6rem;">DÉFAUT</span>
+                                   @endif
+                                </a>
+                            </li>
+                        @endforeach
+                        @if($exerciceEnContexte)
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-success font-bold rounded-md py-2" 
+                                   href="{{ route('exercice_comptable.switch', 0) }}"
+                                   data-exercice-switch="0">
+                                    <i class="fa-solid fa-arrow-rotate-left me-2"></i> Quitter le contexte
+                                </a>
+                            </li>
+                        @endif
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-primary font-bold" href="{{ route('exercice_comptable') }}">
+                                <i class="fa-solid fa-cog me-2"></i> Gérer les exercices
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        @endif
+
             {{-- SECTION 1 : PILOTAGE --}}
         <div class="menu-section">
             @php
@@ -348,14 +406,16 @@
                 @if(auth()->user()->hasPermission('compta.dashboard'))
                     <a href="{{ $dashboardRoute }}" class="menu-link-new {{ request()->routeIs('comptable.comptdashboard', 'compta.dashboard') ? 'active' : '' }}">
                         <i class="fa-solid fa-chart-pie"></i>
-                        <span>Tableau de bord</span>
+                        <span>Tableau de bord personnel</span>
                     </a>
                 @endif
 
+                @if(auth()->user()->hasPermission('notifications.index'))
                 <a href="{{ route('notifications.index') }}" class="menu-link-new {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-bell"></i>
                     <span>Notifications</span>
                 </a>
+                @endif
 
 
 
@@ -371,7 +431,7 @@
                                auth()->user()->hasPermission('admin.config.journals') ||
                                auth()->user()->hasPermission('admin.config.external_import')) && !session('sidebar_config_hidden', false);
                 
-                $showExport = auth()->user()->hasPermission('admin.config.export.view') && !session('sidebar_config_hidden', false);
+                $showExport = auth()->user()->hasPermission('admin.export.hub') && !session('sidebar_config_hidden', false);
             @endphp
 
             @if($showConfig && !session('sidebar_admin_hidden', false))
@@ -401,6 +461,18 @@
                     <span>Modèle des Journaux</span>
                 </a>
                 @endif
+                @if(auth()->user()->hasPermission('admin.config.tresorerie_posts'))
+                <a href="{{ route('admin.config.tresorerie_posts') }}" class="menu-link-new {{ request()->routeIs('admin.config.tresorerie_posts') ? 'active' : '' }}">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Postes de Trésorerie</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('admin.config.treasury_categories'))
+                <a href="{{ route('admin.config.treasury_categories') }}" class="menu-link-new {{ request()->routeIs('admin.config.treasury_categories') ? 'active' : '' }}">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Catégories de Trésorerie</span>
+                </a>
+                @endif
             </div>
             @endif
 
@@ -410,6 +482,17 @@
                 <a href="{{ route('admin.config.external_import') }}" class="menu-link-new {{ request()->routeIs('admin.config.external_import') ? 'active' : '' }}">
                     <i class="fa-solid fa-file-import"></i>
                     <span>Importation de données</span>
+                </a>
+            </div>
+            @endif
+
+            {{-- SECTION FUSION (Sous-entreprises uniquement) --}}
+            @if(isset($currentCompany) && $currentCompany->parent_company_id && !session('sidebar_admin_hidden', false) && (auth()->user()->isAdmin() || auth()->user()->hasPermission('admin.fusion.index')))
+            <div class="menu-section">
+                <div class="menu-section-header">Fusion & Démarrage</div>
+                <a href="{{ route('admin.fusion.index') }}" class="menu-link-new {{ request()->routeIs('admin.fusion.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-bolt text-warning"></i>
+                    <span>Fusion Données Mère</span>
                 </a>
             </div>
             @endif
@@ -519,7 +602,7 @@
                 @if(auth()->user()->hasPermission('admin.audit'))
                 <a href="{{ route('admin.audit') }}" class="menu-link-new {{ request()->routeIs('admin.audit') ? 'active' : '' }}">
                     <i class="fa-solid fa-history"></i>
-                    <span>Archives & Audit</span>
+                    <span>Traçabilité & Activités</span>
                 </a>
                 @endif
                 @if(auth()->user()->hasPermission('admin.access'))
@@ -617,6 +700,7 @@
                 $showTraitement = auth()->user()->hasPermission('modal_saisie_direct') || 
                                   auth()->user()->hasPermission('accounting_entry_list') || 
                                   auth()->user()->hasPermission('brouillons.index') || 
+                                  auth()->user()->hasPermission('immobilisations.index') || 
                                   auth()->user()->hasPermission('exercice_comptable');
             @endphp
             @if ($showTraitement)
@@ -652,6 +736,12 @@
                     <span>Exercice comptable</span>
                 </a>
                 @endif
+                @if(auth()->user()->hasPermission('immobilisations.index'))
+                <a href="{{ route('immobilisations.index') }}" class="menu-link-new {{ request()->routeIs('immobilisations.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-building-circle-check"></i>
+                    <span>Immobilisations</span>
+                </a>
+                @endif
             </div>
             @endif
 
@@ -673,6 +763,35 @@
                 <a href="{{ route('accounting_balance') }}" class="menu-link-new {{ request()->is('accounting_balance') ? 'active' : '' }}">
                     <i class="fa-solid fa-scale-balanced"></i>
                     <span>Balance</span>
+                </a>
+                @endif
+            </div>
+            @endif
+
+            {{-- États Financiers --}}
+            @php
+                $showEtatsFinanciers = auth()->user()->hasPermission('bilan') || 
+                                       auth()->user()->hasPermission('compte_resultat');
+            @endphp
+            @if ($showEtatsFinanciers)
+            <div class="menu-section">
+                <div class="menu-section-header">ETATS FINANCIERS</div>
+                @if(auth()->user()->hasPermission('bilan'))
+                <a href="{{ route('reporting.bilan') }}" class="menu-link-new {{ request()->routeIs('reporting.bilan') ? 'active' : '' }}">
+                    <i class="fa-solid fa-list-ol"></i>
+                    <span>Bilan Actif/Passif</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('compte_resultat'))
+                <a href="{{ route('reporting.resultat') }}" class="menu-link-new {{ request()->routeIs('reporting.resultat') ? 'active' : '' }}">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Compte de Résultat</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('bilan'))
+                <a href="{{ route('reporting.tft') }}" class="menu-link-new {{ request()->routeIs('reporting.tft') ? 'active' : '' }}">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                    <span>Flux de Trésorerie (TFT)</span>
                 </a>
                 @endif
             </div>
@@ -702,7 +821,7 @@
                 <div class="menu-section-header">Support</div>
                 <a href="#" class="menu-link-new text-muted" title="Bientôt disponible">
                     <i class="fa-solid fa-history"></i>
-                    <span>Archives & Audit</span>
+                    <span>Traçabilité & Activités</span>
                     <span class="badge bg-soft-primary text-primary ms-auto" style="font-size: 10px;">Pro</span>
                 </a>
             </div>
@@ -740,6 +859,45 @@
     </div>
     @endauth
 </div>
+
+<script>
+// Intercepteur pour forcer le rechargement complet après changement d'exercice
+document.addEventListener('DOMContentLoaded', function() {
+    const exerciceSwitchLinks = document.querySelectorAll('[data-exercice-switch]');
+    
+    exerciceSwitchLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('href');
+            
+            // Afficher un indicateur de chargement
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Changement en cours...';
+            this.style.pointerEvents = 'none';
+            
+            // Faire la requête de switch
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Recharger complètement la page pour appliquer le nouveau contexte
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Erreur lors du changement d\'exercice:', error);
+                // Fallback: redirection classique
+                window.location.href = url;
+            });
+        });
+    });
+});
+</script>
 @endif
 
 <!-- Ancien sidebar (supprimé car doublon inutile) -->

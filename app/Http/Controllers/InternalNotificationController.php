@@ -80,19 +80,38 @@ class InternalNotificationController extends Controller
         $recipients = collect();
 
         if ($user->role === 'super_admin') {
-            // Super Admin peut écrire aux Admins qu'il a créé
-            $recipients = User::where('created_by_id', $user->id)->get();
+            // Super Admin peut écrire à tous les administrateurs de compagnie
+            $recipients = User::where('role', 'admin')->get();
         } elseif ($user->role === 'admin') {
-            // Admin peut écrire à son Super Admin (créateur)
-            if ($user->created_by_id) {
-                $creator = User::find($user->created_by_id);
-                if ($creator) $recipients->push($creator);
-            }
-            // Admin peut écrire à tous ses utilisateurs de société
+            // 1. Admin peut écrire à son Super Admin (créateur ou n'importe quel super_admin)
+            $superAdmins = User::where('role', 'super_admin')->get();
+            $recipients = $recipients->concat($superAdmins);
+            
+            // 2. Admin peut écrire à tous ses utilisateurs de société
             $companyUsers = User::where('company_id', $user->company_id)
                 ->where('id', '!=', $user->id)
                 ->get();
             $recipients = $recipients->concat($companyUsers);
+
+            // 3. HIÉRARCHIE PARENT-ENFANT (COMPAGNIES)
+            $ownCompany = Company::where('id', $user->company_id)->first();
+            if ($ownCompany) {
+                // Ajouter l'admin de la compagnie mère (si existe)
+                if ($ownCompany->parent_company_id) {
+                    $parentCompany = Company::with('admin')->find($ownCompany->parent_company_id);
+                    if ($parentCompany && $parentCompany->admin) {
+                        $recipients->push($parentCompany->admin);
+                    }
+                }
+                
+                // Ajouter les admins des compagnies filles (si existent)
+                $childCompanies = Company::where('parent_company_id', $ownCompany->id)->with('admin')->get();
+                foreach ($childCompanies as $child) {
+                    if ($child->admin) {
+                        $recipients->push($child->admin);
+                    }
+                }
+            }
         } else {
             // Utilisateur classique (comptable, etc.)
             // Peut écrire à son Admin
@@ -109,7 +128,7 @@ class InternalNotificationController extends Controller
             $recipients = $recipients->concat($colleagues);
         }
 
-        return $recipients->unique('id');
+        return $recipients->whereNotNull('id')->unique('id');
     }
     
     /**

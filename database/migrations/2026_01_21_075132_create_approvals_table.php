@@ -11,12 +11,14 @@ return new class extends Migration
      */
   public function up()
 {
+    /*
     Schema::create('approvals', function (Blueprint $table) {
         $table->id();
         $table->string('status');
         $table->unsignedBigInteger('user_id')->nullable();
         $table->timestamps();
     });
+    */
 }
 
     /**

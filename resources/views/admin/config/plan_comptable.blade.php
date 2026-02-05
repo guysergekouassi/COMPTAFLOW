@@ -74,7 +74,7 @@
                                 <div class="col-lg-4 text-end d-flex flex-column gap-2 border-start border-white/10 ps-6">
                                     <div class="d-flex gap-2">
                                         <button class="btn btn-premium w-100" data-bs-toggle="modal" data-bs-target="#modalCenterCreate">
-                                            <i class="fa-solid fa-plus me-2"></i> Ajouter au Modèle
+                                            <i class="fa-solid fa-plus me-2"></i> Ajouter un compte général
                                         </button>
                                         <form action="{{ route('admin.config.reset_plan') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir vider tout le plan comptable master ?');">
                                             @csrf
@@ -157,7 +157,17 @@
                                         @foreach($plansComptables as $plan)
                                         <tr>
                                             <td class="ps-8 py-6">
-                                                <span class="font-black text-blue-600 fs-5">{{ $plan->numero_de_compte }}</span>
+                                                <div class="d-flex flex-column">
+                                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                                        <i class="fa-solid fa-pen text-primary fs-small"></i>
+                                                        <span class="font-black text-blue-600 fs-5">{{ $plan->numero_de_compte }}</span>
+                                                    </div>
+                                                    @if(!empty($plan->numero_original))
+                                                        <div class="text-[10px] text-slate-400 font-medium italic d-flex align-items-center gap-1">
+                                                            <i class="fa-solid fa-file-import text-[8px]"></i> Original: {{ $plan->numero_original }}
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="py-6">
                                                 <span class="font-bold text-slate-700">{{ $plan->intitule }}</span>

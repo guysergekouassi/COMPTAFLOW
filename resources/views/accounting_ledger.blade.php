@@ -401,12 +401,20 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label for="date_debut" class="input-label-premium">Date de début</label>
-                                                <input type="date" id="date_debut" name="date_debut" class="input-field-premium" required />
+                                                <input type="date" id="date_debut" name="date_debut" class="input-field-premium" 
+                                                    value="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                    min="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                    max="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                    required />
                                                 <div class="invalid-feedback">Veuillez renseigner la date de début.</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="date_fin" class="input-label-premium">Date de fin</label>
-                                                <input type="date" id="date_fin" name="date_fin" class="input-field-premium" required />
+                                                <input type="date" id="date_fin" name="date_fin" class="input-field-premium" 
+                                                    value="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                    min="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                    max="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                    required />
                                                 <div class="invalid-feedback">Veuillez renseigner la date de fin.</div>
                                             </div>
                                         </div>
@@ -480,7 +488,7 @@
                                             <h6 class="mb-0" style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">Format de sortie</h6>
                                         </div>
                                         <div class="row g-3">
-                                            <div class="col-md-6 mx-auto">
+                                            <div class="col-md-6">
                                                 <label for="format_fichier" class="input-label-premium">Type de fichier</label>
                                                 <select id="format_fichier" name="format_fichier" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" required>
                                                     <option value="pdf" selected>📄 PDF</option>
@@ -488,6 +496,19 @@
                                                     <option value="csv">📋 CSV</option>
                                                 </select>
                                                 <div class="invalid-feedback">Veuillez sélectionner une option.</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="display_mode" class="input-label-premium">Affichage des numéros de compte</label>
+                                                <select id="display_mode" name="display_mode" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" required>
+                                                    <option value="origine" selected>Compte d'origine</option>
+                                                    <option value="comptaflow">Compte ComptaFlow</option>
+                                                    <option value="both">Compte ComptaFlow et origine</option>
+                                                </select>
+                                                <small class="text-muted d-block mt-2" style="font-size: 0.65rem;">
+                                                    <strong>Origine :</strong> Numéros originaux importés<br>
+                                                    <strong>ComptaFlow :</strong> Numéros standardisés<br>
+                                                    <strong>Both :</strong> Les deux (origine en dessous)
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -502,7 +523,9 @@
                             <i class="bx bx-x me-2"></i>Annuler
                         </button>
                         <button type="button" class="btn btn-info flex-fill" id="btnPreview" style="padding: 0.875rem 1.5rem; border-radius: 12px; font-weight: 700; font-size: 0.875rem; text-transform: none; letter-spacing: normal;">
-                            <i class="bx bx-show me-2"></i>Prévisualiser
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="spinnerPreview"></span>
+                            <span id="loaderText" class="d-none ms-2">Veuillez patienter...</span>
+                            <span id="btnPreviewLabel"><i class="bx bx-show me-2"></i>Prévisualiser</span>
                         </button>
                         <button type="submit" class="btn-save-premium flex-fill" id="btnSaveModal" style="padding: 0.875rem 1.5rem; font-size: 0.875rem;">
                             <i class="bx bx-check me-2"></i>Générer

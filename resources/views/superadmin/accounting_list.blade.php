@@ -19,7 +19,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Gouvernance / Liste des Exercices Comptables'])
+                @include('components.header', ['page_title' => 'Gestion des Comptabilités'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
@@ -27,7 +27,7 @@
                         <!-- Header Standardisé -->
                         <div class="d-flex justify-content-between align-items-center mb-6">
                             <div>
-                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Liste des Exercices Comptables</h5>
+                                <h5 class="mb-1 text-premium-gradient">Gestion des Comptabilités</h5>
                                 <p class="text-muted small mb-0">Pilotez et surveillez l'ensemble des exercices comptables du réseau.</p>
                             </div>
                             <a href="{{ route('superadmin.accounting.create') }}" class="btn btn-primary rounded-pill px-4">

@@ -127,7 +127,25 @@
                     $totalSF_C += $soldeFinalCredit;
                 @endphp
                 <tr>
-                    <td>{{ $num }}</td>
+                    <td>
+                        @php
+                            $displayMode = $display_mode ?? 'comptaflow';
+                        @endphp
+                        
+                        @if($displayMode === 'origine')
+                            {{-- Afficher uniquement le numéro original --}}
+                            {{ $plan->numero_original ?? $num }}
+                        @elseif($displayMode === 'comptaflow')
+                            {{-- Afficher uniquement le numéro ComptaFlow --}}
+                            {{ $num }}
+                        @else
+                            {{-- Afficher les deux (ComptaFlow en haut, origine en bas) --}}
+                            {{ $num }}
+                            @if(!empty($plan->numero_original) && $plan->numero_original !== $num)
+                                <br><span style="font-size: 7px; color: #666;">({{ $plan->numero_original }})</span>
+                            @endif
+                        @endif
+                    </td>
                     <td>{{ $intitule }}</td>
                     <td class="right">{{ number_format($soldeInitialDebit, 0, ',', ' ') }}</td>
                     <td class="right">{{ number_format($soldeInitialCredit, 0, ',', ' ') }}</td>
