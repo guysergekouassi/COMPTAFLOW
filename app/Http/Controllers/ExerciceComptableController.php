@@ -15,6 +15,7 @@ use App\Services\AccountingReportingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Models\InternalNotification;
+use App\Models\PlanComptable;
 
 class ExerciceComptableController extends Controller
 {
@@ -363,8 +364,8 @@ public function index()
             DB::beginTransaction();
 
             // 4. Calculer le résultat via le service
-            $resultatData = $this->reportingService->getResultatData($exercice->id, $companyId);
-            $montantResultat = $resultatData['resultat'];
+            $resultatData = $this->reportingService->getSIGData($exercice->id, $companyId);
+            $montantResultat = $resultatData['resultat_net'];
 
             // 5. Identifier ou créer le journal RAN
             $journalRan = CodeJournal::where('company_id', $companyId)
