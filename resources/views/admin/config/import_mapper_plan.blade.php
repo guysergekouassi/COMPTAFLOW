@@ -125,6 +125,11 @@
                                                              <div class="form-control bg-slate-100 border-dashed text-slate-400 py-2 rounded-xl text-center">
                                                                  <i class="fa-solid fa-magic me-2"></i> Ce champ sera généré automatiquement
                                                              </div>
+                                                             @if(isset($field['info']))
+                                                                 <div class="mt-2 text-[11px] text-slate-500 italic bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
+                                                                     <i class="fa-solid fa-circle-info me-1 text-blue-400"></i> {{ $field['info'] }}
+                                                                 </div>
+                                                             @endif
                                                              <input type="hidden" name="mapping[{{ $key }}]" value="AUTO">
                                                          @else
                                                              <select name="mapping[{{ $key }}]" class="select-mapping" @if($field['required'] ?? false) required @endif>

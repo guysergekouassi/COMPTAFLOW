@@ -163,7 +163,7 @@
                                         <i class="fa-solid fa-file-invoice"></i>
                                     </div>
                                     <h5 class="font-black mb-3">Écritures Importées</h5>
-                                    <p class="text-sm text-slate-500 mb-6">Visualisez et intégrez les écritures provenant de logiciels externes (Sage, SAP).</p>
+                                    <p class="text-sm text-slate-500 mb-6">Visualisez et intégrez les écritures provenant de logiciels externes.</p>
                                     
                                     @if($stats['imported'] > 0)
                                         <form action="{{ route('admin.config.charge_imports') }}" method="POST">
@@ -177,6 +177,19 @@
                                             <i class="fa-solid fa-plus-circle me-2"></i>Importer des données
                                         </a>
                                     @endif
+                                </div>
+                            </div>
+
+                            <!-- Postes de Trésorerie -->
+                            <div class="col-md-4">
+                                <div class="config-card p-6 h-100">
+                                    <span class="stat-badge bg-blue-100 text-blue-700">Trésorerie</span>
+                                    <div class="icon-box bg-blue-50 text-blue-600">
+                                        <i class="fa-solid fa-wallet"></i>
+                                    </div>
+                                    <h5 class="font-black mb-3">Postes Trésorerie</h5>
+                                    <p class="text-sm text-slate-500 mb-6">Définissez les rubriques et catégories de flux pour le tableau de trésorerie.</p>
+                                    <a href="{{ route('admin.config.tresorerie_posts') }}" class="btn btn-config-action w-100">Définir les postes</a>
                                 </div>
                             </div>
 

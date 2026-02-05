@@ -15,6 +15,7 @@ class Company extends Model
         'email_adresse', 'identification_TVA','is_active','user_id','parent_company_id',
         'is_blocked', 'block_reason', 'blocked_at', 'blocked_by',
         'account_digits', 'tier_digits', 'tier_id_type', 'accounting_system',
+        'journal_code_digits', 'journal_code_type',
     ];
 
     protected $casts = [
@@ -55,5 +56,9 @@ class Company extends Model
     public function plansComptables()
     {
         return $this->hasMany(PlanComptable::class, 'company_id');
+    }
+    public function ecritures()
+    {
+        return $this->hasMany(EcritureComptable::class, 'company_id');
     }
 }

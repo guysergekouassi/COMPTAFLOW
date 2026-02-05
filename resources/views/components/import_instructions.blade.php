@@ -88,6 +88,7 @@
                         <div class="tab-pane fade" id="navs-journaux" role="tabpanel">
                             <div class="bg-emerald-50 p-6 rounded-2xl mb-6">
                                 <h6 class="font-black text-emerald-900 mb-2">Structure attendue (Colonnes)</h6>
+                                <p class="text-sm text-emerald-700 mb-4">Définissez vos journaux standards. Les types permettent d'activer des fonctionnalités spécifiques (ex: rapprochement pour Banque/Caisse).</p>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-bordered bg-white">
                                         <thead>
@@ -95,13 +96,29 @@
                                                 <th class="bg-emerald-100">Code Journal</th>
                                                 <th class="bg-emerald-100">Intitulé</th>
                                                 <th class="bg-emerald-100">Type</th>
+                                                <th class="bg-emerald-100">Compte Trésorerie</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr><td>ACH</td><td>JOURNAL DES ACHATS</td><td>Achats</td></tr>
-                                            <tr><td>BQ1</td><td>SOCIETE GENERALE CI</td><td>Banque</td></tr>
+                                            <tr><td>ACH</td><td>JOURNAL DES ACHATS</td><td>Achats</td><td class="text-muted italic">-</td></tr>
+                                            <tr><td>VEN</td><td>JOURNAL DES VENTES</td><td>Ventes</td><td class="text-muted italic">-</td></tr>
+                                            <tr><td>BQ1</td><td>SOCIETE GENERALE CI</td><td>Banque</td><td>521100</td></tr>
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="alert alert-info border-0 text-sm h-100">
+                                        <i class="fa-solid fa-tags me-2"></i>
+                                        <strong>Types acceptés :</strong> Achats, Ventes, Caisse, Banque, Opérations Diverses. L'orthographe doit être exacte.
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-warning border-0 text-sm h-100 font-bold">
+                                        <i class="fa-solid fa-university me-2"></i>
+                                        Pour les types <strong>Banque</strong> ou <strong>Caisse</strong>, le compte de trésorerie (Classe 5) est fortement recommandé pour l'imputation automatique.
+                                    </div>
                                 </div>
                             </div>
                         </div>

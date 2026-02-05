@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-         if (!Schema::hasTable('grand_livres')) {
+         if (Schema::hasTable('grand_livres')) {
         Schema::table('grand_livres', function (Blueprint $table) {
             // Supprimer l’ancienne colonne
             $table->dropForeign(['plan_comptable_id']);

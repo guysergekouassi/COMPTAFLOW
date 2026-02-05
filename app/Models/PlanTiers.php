@@ -23,6 +23,7 @@ class PlanTiers extends Model
         'type_de_tiers',
         'user_id',
         'company_id',
+        'numero_original'
     ];
 
     public function user()

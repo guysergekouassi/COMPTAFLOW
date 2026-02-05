@@ -38,7 +38,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Tableau de Bord / Vue d\'ensemble Globale'])
+                @include('components.header', ['page_title' => 'Tableau de bord SuperAdmin'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">

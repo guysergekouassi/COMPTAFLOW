@@ -136,22 +136,22 @@
                                         <div class="col-md-4">
                                             <div class="stat-card">
                                                 <div class="text-blue-500 mb-2"><i class="fa-solid fa-file-invoice fa-lg"></i></div>
-                                                <h3 class="fw-black m-0">124</h3>
+                                                <h3 class="fw-black m-0">{{ $stats['total_entries'] }}</h3>
                                                 <p class="text-slate-400 small m-0 uppercase font-black">Écritures saisies</p>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="stat-card">
                                                 <div class="text-emerald-500 mb-2"><i class="fa-solid fa-check-double fa-lg"></i></div>
-                                                <h3 class="fw-black m-0">98%</h3>
-                                                <p class="text-slate-400 small m-0 uppercase font-black">Précision IA</p>
+                                                <h3 class="fw-black m-0">95%</h3>
+                                                <p class="text-slate-400 small m-0 uppercase font-black">Fiabilité Saisie</p>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="stat-card">
-                                                <div class="text-purple-500 mb-2"><i class="fa-solid fa-clock-rotate-left fa-lg"></i></div>
-                                                <h3 class="fw-black m-0">12h</h3>
-                                                <p class="text-slate-400 small m-0 uppercase font-black">Temps actif / sem</p>
+                                                <div class="text-purple-500 mb-2"><i class="fa-solid fa-calendar-day fa-lg"></i></div>
+                                                <h3 class="fw-black m-0">{{ $user->created_at->diffInDays(now()) }}j</h3>
+                                                <p class="text-slate-400 small m-0 uppercase font-black">Ancienneté</p>
                                             </div>
                                         </div>
                                     </div>
@@ -205,13 +205,16 @@
     <script>
         // Graphique d'activité Premium
         const ctx = document.getElementById('activityChart').getContext('2d');
+        const activityData = @json($stats['activity_data']);
+        const activityLabels = @json($stats['activity_labels']);
+
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                labels: activityLabels,
                 datasets: [{
                     label: 'Opérations effectuées',
-                    data: [12, 19, 3, 5, 2, 3, 10],
+                    data: activityData,
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     fill: true,

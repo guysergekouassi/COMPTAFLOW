@@ -11,7 +11,7 @@ class UpdateBalancesTableForPlanComptables extends Migration
      */
     public function up(): void
     {
-         if (!Schema::hasTable('balances')) {
+         if (Schema::hasTable('balances')) {
         Schema::table('balances', function (Blueprint $table) {
             // Supprimer l'ancienne clé étrangère
             $table->dropForeign(['code_journals_id']);

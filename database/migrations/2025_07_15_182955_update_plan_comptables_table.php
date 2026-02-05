@@ -10,6 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        /*
         Schema::table('plan_comptables', function (Blueprint $table) {
             // Supprimer les anciennes colonnes
             $table->dropColumn([
@@ -23,6 +24,7 @@ return new class extends Migration {
             // Ajouter la colonne enum
             $table->enum('adding_strategy', ['auto', 'manuel'])->default('manuel')->after('intitule');
         });
+        */
     }
 
     /**

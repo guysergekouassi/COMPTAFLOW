@@ -145,7 +145,13 @@
                                                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                                <li><a class="dropdown-item text-danger" href="#">Supprimer</a></li>
+                                                                <li>
+                                                                    <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment supprimer cette tâche ?');">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="dropdown-item text-danger">Supprimer</button>
+                                                                    </form>
+                                                                </li>
                                                             </ul>
                                                         </div>
                                                     </div>

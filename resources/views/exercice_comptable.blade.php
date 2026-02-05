@@ -484,6 +484,45 @@
                             </div>
                         </div>
 
+                        <div class="modal fade" id="reouvrirConfirmationModal" tabindex="-1" aria-labelledby="reouvrirModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered" role="document">
+                                <form method="POST" id="reouvrirForm" class="w-full">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="modal-content premium-modal-content">
+                                        <!-- Header -->
+                                        <div class="text-center mb-6 position-relative">
+                                            <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                            <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4" style="width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; background-color: #eff6ff; border-radius: 1rem; margin: 0 auto 1rem;">
+                                                <i class="bx bx-lock-open-alt text-blue-600 text-xl" style="color: #2563eb; font-size: 1.25rem;"></i>
+                                            </div>
+                                            <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                                                Réouvrir l'<span style="color: #2563eb; font-weight: 800;">Exercice</span>
+                                            </h1>
+                                        </div>
+
+                                        <div class="text-center space-y-3 mb-8">
+                                            <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                                                Êtes-vous sûr de vouloir <strong>réouvrir</strong> cet exercice ?<br>
+                                                Les reports à nouveau générés seront <strong>supprimés</strong>.
+                                            </p>
+                                            <p class="text-slate-900 font-bold" id="exerciceToReouvrir"></p>
+                                        </div>
+
+                                        <!-- Actions -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                                                Annuler
+                                            </button>
+                                            <button type="submit" class="btn-save-premium" style="background-color: #2563eb !important;">
+                                                Réouvrir
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -502,6 +541,7 @@
             const journauxSaisisUrl = "{{ route('journaux_saisis') }}";
             const exercice_comptableDeleteUrl = "{{ route('exercice_comptable.destroy', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableCloturerUrl = "{{ route('exercice_comptable.cloturer', ['exercice_comptable' => '__ID__']) }}";
+            const exercice_comptableReouvrirUrl = "{{ route('exercice_comptable.reouvrir', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableShowUrl = "{{ route('exercice_comptable.show', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableEditUrl = "{{ route('exercice_comptable.edit', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableActivateUrl = "{{ route('exercice_comptable.activate', ['exercice_comptable' => '__ID__']) }}";
@@ -653,16 +693,16 @@
                                                         data-bs-toggle="tooltip"
                                                         title="Clôturer">
                                                     <i class="bx bx-lock-alt fs-5"></i>
-                                                </button>` : ''
-                                            }
-                                            ${row.cloturer && !row.is_active ? `
+                                                </button>` : `
                                                 <button type="button"
-                                                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition shadow-sm bg-white"
-                                                        disabled
+                                                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm bg-white btn-action reouvrir-btn"
+                                                        data-id="${row.id}"
+                                                        data-label="${row.intitule}"
                                                         data-bs-toggle="tooltip"
-                                                        title="Exercice clôturé">
-                                                    <i class="bx bx-lock fs-5"></i>
-                                                </button>` : ''
+                                                        title="Réouvrir">
+                                                    <i class="bx bx-lock-open-alt fs-5"></i>
+                                                </button>
+                                                `
                                             }
                                         </div>
                                     `;
@@ -964,6 +1004,32 @@
                             if (clotureModalEl) {
                                 if (window.bootstrap?.Modal) {
                                     bootstrap.Modal.getOrCreateInstance(clotureModalEl).show();
+                                }
+                            }
+                        });
+                    });
+
+                    // Gestionnaire pour le bouton de réouverture (bouton généré par DataTable)
+                    document.querySelectorAll('.reouvrir-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            const label = this.getAttribute('data-label') || 'cet exercice';
+
+                            const form = document.getElementById('reouvrirForm');
+                            const reouvrirModalEl = document.getElementById('reouvrirConfirmationModal');
+
+                            if (form && id) {
+                                form.action = exercice_comptableReouvrirUrl.replace('__ID__', id);
+                            }
+
+                            const exerciceToReouvrir = document.getElementById('exerciceToReouvrir');
+                            if (exerciceToReouvrir) {
+                                exerciceToReouvrir.textContent = label;
+                            }
+
+                            if (reouvrirModalEl) {
+                                if (window.bootstrap?.Modal) {
+                                    bootstrap.Modal.getOrCreateInstance(reouvrirModalEl).show();
                                 }
                             }
                         });

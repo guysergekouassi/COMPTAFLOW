@@ -134,8 +134,10 @@ public function index(Request $request)
 
     public function store(Request $request)
     {
+        $digits = auth()->user()->company->journal_code_digits ?? 3;
+        
         $request->validate([
-            'code_journal' => ['required', 'string', 'max:4', 'regex:/^[A-Z0-9]{1,4}$/'],
+            'code_journal' => ['required', 'string', 'max:'.$digits, 'regex:/^[A-Z0-9]{1,'.$digits.'}$/'],
             'intitule' => 'required|string|max:255',
             'traitement_analytique' => 'required|in:oui,non',
             'type' => 'nullable|string',
@@ -143,8 +145,8 @@ public function index(Request $request)
             'rapprochement_sur' => 'nullable|in:Manuel,Automatique',
             'poste_tresorerie' => 'nullable|string',
         ], [
-            'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
-            'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'
+            'code_journal.regex' => "Le code journal doit contenir entre 1 et $digits caractères alphanumériques en majuscules",
+            'code_journal.max' => "Le code journal ne peut pas dépasser $digits caractères"
         ]);
 
         try {
@@ -169,6 +171,8 @@ public function index(Request $request)
                     ->value('id');
             }
 
+            $posteTresorerie = $request->poste_tresorerie_autre ?: $request->poste_tresorerie;
+
             $journal = CodeJournal::create([
                 'code_journal' => strtoupper($request->code_journal),
                 'intitule' => $intitule_formate,
@@ -177,14 +181,14 @@ public function index(Request $request)
                 'compte_de_tresorerie' => $compteId,
                 'compte_de_contrepartie' => $request->compte_de_contrepartie,
                 'rapprochement_sur' => $request->rapprochement_sur,
-                'poste_tresorerie' => $request->poste_tresorerie,
+                'poste_tresorerie' => $posteTresorerie,
                 'user_id' => $user->id,
                 'company_id' => $currentCompanyId,
             ]);
 
             // Si c'est un journal de trésorerie, créer une entrée dans la table tresoreries
             if ($request->type === 'Tresorerie') {
-                $categorie = Tresoreries::where('poste_tresorerie', $request->poste_tresorerie)
+                $categorie = Tresoreries::where('poste_tresorerie', $posteTresorerie)
                     ->whereNotNull('categorie')
                     ->value('categorie');
 
@@ -192,7 +196,7 @@ public function index(Request $request)
                     'code_journal' => strtoupper($request->code_journal),
                     'intitule' => $intitule_formate,
                     'compte_de_contrepartie' => $request->compte_de_contrepartie,
-                    'poste_tresorerie' => $request->poste_tresorerie,
+                    'poste_tresorerie' => $posteTresorerie,
                     'categorie' => $categorie,
                     'user_id' => $user->id,
                     'company_id' => $currentCompanyId,
@@ -220,8 +224,10 @@ public function index(Request $request)
 
     public function update(Request $request, $id)
     {
+        $digits = auth()->user()->company->journal_code_digits ?? 3;
+
         $validated = $request->validate([
-            'code_journal' => ['required', 'string', 'max:4', 'regex:/^[A-Z0-9]{1,4}$/'],
+            'code_journal' => ['required', 'string', 'max:'.$digits, 'regex:/^[A-Z0-9]{1,'.$digits.'}$/'],
             'intitule' => 'required|string|max:255',
             'traitement_analytique' => 'nullable|in:0,1',
             'type' => 'nullable|string',
@@ -230,14 +236,29 @@ public function index(Request $request)
             'poste_tresorerie' => 'nullable|string',
             'rapprochement_sur' => 'nullable|in:Manuel,Automatique',
         ], [
-            'code_journal.regex' => 'Le code journal doit contenir entre 1 et 4 caractères alphanumériques en majuscules',
-            'code_journal.max' => 'Le code journal ne peut pas dépasser 4 caractères'
+            'code_journal.regex' => "Le code journal doit contenir entre 1 et $digits caractères alphanumériques en majuscules",
+            'code_journal.max' => "Le code journal ne peut pas dépasser $digits caractères"
         ]);
 
         try {
-            $validated['intitule'] = ucfirst(strtolower($validated['intitule']));
-
             $journal = CodeJournal::findOrFail($id);
+            
+            // Unicité
+            $exists = CodeJournal::where('company_id', $journal->company_id)
+                ->where('code_journal', strtoupper($request->code_journal))
+                ->where('id', '!=', $id)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce code journal existe déjà pour votre entreprise.'
+                ], 422);
+            }
+            
+            $posteTresorerie = $request->poste_tresorerie_autre ?: $request->poste_tresorerie;
+            $validated['poste_tresorerie'] = $posteTresorerie;
+
             $journal->update($validated);
 
             // Si c'est un journal de trésorerie, créer/mettre à jour l'entrée dans la table tresoreries
@@ -290,7 +311,7 @@ public function index(Request $request)
             $utilise = \App\Models\EcritureComptable::where('code_journal_id', $id)->exists();
 
             if ($utilise) {
-                return redirect()->back()->with('error', 'Ce Code journal est utilisé dans des écritures comptables et ne peut pas être supprimé.');
+                return redirect()->back()->with('error', 'Impossible de supprimer ce journal car il contient des écritures. Veuillez supprimer toutes les écritures associées avant de tenter la suppression.');
             }
 
             $journal->delete();
@@ -301,5 +322,76 @@ public function index(Request $request)
         }
     }
 
+    public function getCompteTreso($id)
+    {
+        try {
+            $journal = CodeJournal::find($id);
+            if (!$journal) {
+                return response()->json(['success' => false, 'message' => 'Journal non trouvé'], 404);
+            }
 
+            $compte = $journal->account; // Relation belongsTo PlanComptable
+            if (!$compte) {
+                return response()->json(['success' => false, 'message' => 'Aucun compte de trésorerie associé'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'compte' => $compte
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getNextSequentialCode(Request $request)
+    {
+        try {
+            $prefix = strtoupper($request->prefix);
+            $user = Auth::user();
+            $company = $user->company;
+            $digits = $company->journal_code_digits ?? 3;
+
+            // Chercher les codes existants qui commencent par le préfixe pour CETTE entreprise
+            $codes = CodeJournal::where('company_id', $company->id)
+                ->where('code_journal', 'LIKE', $prefix . '%')
+                ->pluck('code_journal')
+                ->toArray();
+
+            $maxNum = 0;
+            foreach ($codes as $code) {
+                // Extraire la partie numérique après le préfixe
+                $suffix = substr($code, strlen($prefix));
+                if (is_numeric($suffix)) {
+                    $maxNum = max($maxNum, (int)$suffix);
+                }
+            }
+
+            $nextNum = $maxNum + 1;
+            
+            // Calculer la longueur disponible pour le numéro
+            $availableSpace = max(0, $digits - strlen($prefix));
+            
+            if ($availableSpace <= 0) {
+                // Si le préfixe est déjà à la taille max ou plus, on retourne juste le préfixe tronqué
+                $nextCode = substr($prefix, 0, $digits);
+            } else {
+                // Padding avec des 0 à GAUCHE du numéro pour remplir l'espace disponible
+                $nextCode = $prefix . str_pad((string)$nextNum, $availableSpace, '0', STR_PAD_LEFT);
+                
+                // Si le numéro est trop grand pour l'espace, il dépassera mais str_pad ne coupera pas à droite.
+                // Si on veut rester strict sur $digits :
+                if (strlen($nextCode) > $digits) {
+                    $nextCode = substr($nextCode, 0, $digits);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'code' => $nextCode
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }

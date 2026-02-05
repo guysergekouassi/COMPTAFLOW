@@ -11,17 +11,33 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('admin_tasks')) {
         Schema::create('admin_tasks', function (Blueprint $table) {
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->unsignedBigInteger('assigned_to');
-            $table->unsignedBigInteger('assigned_by');
-            $table->date('due_date')->nullable();
+            
+            // Assignation
+            $table->foreignId('assigned_to')->nullable()->constrained('users')->onDelete('cascade');
+            $table->foreignId('assigned_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('company_id')->nullable()->constrained('companies')->onDelete('cascade');
+            
+            // Statut et priorité
             $table->enum('status', ['pending', 'in_progress', 'completed', 'cancelled'])->default('pending');
             $table->enum('priority', ['low', 'medium', 'high', 'urgent'])->default('medium');
+            
+            // Dates
+            $table->dateTime('due_date')->nullable();
+            $table->dateTime('completed_at')->nullable();
+            
             $table->timestamps();
+            
+            // Index pour les recherches fréquentes
+            $table->index(['status', 'priority']);
+            $table->index('assigned_to');
+            $table->index('company_id');
         });
+        }
     }
 
     /**

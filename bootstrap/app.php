@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'check.blocked' => \App\Http\Middleware\CheckBlockedStatus::class,
             'company.session' => \App\Http\Middleware\CompanySession::class,
+            'exercice.context' => \App\Http\Middleware\ExerciceContextMiddleware::class,
         ]);
         
         $middleware->web(append: [

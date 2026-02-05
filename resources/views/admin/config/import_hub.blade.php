@@ -78,7 +78,7 @@
                                     <div class="position-relative" style="z-index: 2;">
                                         <h2 class="font-black mb-1 text-slate-900">Hub d'Importation</h2>
                                     <p class="text-slate-500 mb-4 max-w-xl">
-                                        Migrez vos données depuis des logiciels externes (Sage, SAP, Quadratus) en toute simplicité. Suivez notre tunnel intelligent pour une migration sans erreurs.
+                                        Migrez vos données depuis des logiciels externes en toute simplicité. Suivez notre tunnel intelligent pour une migration sans erreurs.
                                     </p>
                                     <button type="button" class="btn btn-outline-primary rounded-xl font-bold" data-bs-toggle="modal" data-bs-target="#modalImportInstructions">
                                         <i class="fa-solid fa-circle-info me-2"></i> Guide d'Importation
@@ -337,7 +337,7 @@
                                                     <i class="fa-solid fa-file-pdf text-rose-500"></i> 
                                                 </div>
                                                 <div class="d-flex flex-column">
-                                                    <span class="text-white font-bold text-sm">Guide Sage 100</span>
+                                                    <span class="text-white font-bold text-sm">Guide d'Import</span>
                                                     <span class="text-slate-500" style="font-size: 0.7rem;">Exportation Grand Livre</span>
                                                 </div>
                                             </div>

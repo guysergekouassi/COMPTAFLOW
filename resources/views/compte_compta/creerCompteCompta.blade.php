@@ -126,9 +126,7 @@
                                 <p class="text-slate-500 font-medium">Administration centrale et pilotage de vos entités comptables.</p>
                             </div>
                             <div>
-                                <button type="button" class="btn-flow-premium" data-bs-toggle="modal" data-bs-target="#modalCreateComptaAccount">
-                                    <i class="fa-solid fa-plus-circle"></i> Ajouter une Entité
-                                </button>
+                                {{-- Bouton Ajouter Entité supprimé sur demande --}}
                             </div>
                         </div>
 
@@ -262,20 +260,21 @@
                                             <div class="col-6">
                                                 <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
                                                     <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Écritures</p>
-                                                    <p class="text-lg font-extrabold text-slate-700 mb-0">--</p>
+                                                    <p class="text-lg font-extrabold text-slate-700 mb-0">{{ number_format($comptaAccount->ecritures_count ?? 0) }}</p>
                                                 </div>
                                             </div>
                                             <div class="col-6">
                                                 <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
                                                     <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Équipe</p>
-                                                    <p class="text-lg font-extrabold text-slate-700 mb-0">--</p>
+                                                    <p class="text-lg font-extrabold text-slate-700 mb-0">{{ number_format($comptaAccount->users_count ?? 0) }}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="px-6 pb-6 mt-auto">
                                         <a href="{{ route('compta_accounts.access', ['companyId' => $comptaAccount->id]) }}" 
-                                           class="btn w-100 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg shadow-blue-200">
+                                           class="btn w-100 py-3 rounded-2xl font-bold text-white transition-all shadow-lg"
+                                           style="background-color: #2563eb; border-color: #2563eb;"> {{-- Force Blue Style --}}
                                             <i class="fa-solid fa-door-open me-2"></i> Accéder au dossier
                                         </a>
                                     </div>

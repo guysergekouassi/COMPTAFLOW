@@ -26,26 +26,24 @@ class PosteTresorController extends Controller
 {
 // Fichier : PosteTresorController.php (Méthode index() mise à jour)
 
-   public function index(){
+    public function index(){
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
 
         // 1. Démarrez la requête de base pour les comptes de classe 5
-        // (SANS AUCUN FILTRE DE COMPANY_ID COMME DEMANDÉ)
         $query = PlanComptable::whereRaw("CAST(numero_de_compte AS CHAR) LIKE '5%'")
+            ->where('company_id', $companyId)
             ->orderBy('numero_de_compte');
 
-        // 2. Exécuter la requête pour obtenir TOUS les comptes de classe 5
-       $comptes5 = $query
-            // Grouper par numéro et intitulé (pour être sûr)
+        // 2. Exécuter la requête pour obtenir les comptes de classe 5 de la compagnie
+        $comptes5 = $query
             ->groupBy('numero_de_compte', 'intitule')
-            // Sélectionner le MIN(id) pour obtenir une ID valide pour le formulaire,
-            // ainsi que les colonnes de regroupement.
             ->selectRaw('MIN(id) as id, numero_de_compte, intitule')
-            // Ordonner le résultat
             ->orderBy('numero_de_compte')
             ->get();
-        // dd( $comptes5);
-        // 3. Récupération des postes de trésorerie existants
-        $comptes = CompteTresorerie::all();
+
+        // 3. Récupération des postes de trésorerie de la compagnie
+        $comptes = CompteTresorerie::where('company_id', $companyId)->get();
         $postesTresorerie = $comptes;
 
         // 4. Passer toutes les listes à la vue
@@ -84,12 +82,18 @@ class PosteTresorController extends Controller
 
    public function show(CompteTresorerie $compte)
     {
-        $comptes = CompteTresorerie::all();
-        $compte = null;
-        $mouvements = collect();
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
 
-        $mouvements = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
-        $postesTresorerie = $postesTresorerie = $comptes;
+        $comptes = CompteTresorerie::where('company_id', $companyId)->get();
+        $postesTresorerie = $comptes;
+        
+        // S'assurer que le compte appartient à la compagnie
+        if ($compte->company_id != $companyId) {
+            return redirect()->route('postetresorerie.index')->with('error', 'Accès non autorisé.');
+        }
+
+        $mouvements = $compte->mouvements()->orderBy('date_mouvement', 'desc')->paginate(20);
 
         return view('Poste.posteTresor', compact('comptes','compte', 'mouvements', 'postesTresorerie'));
     }
@@ -159,53 +163,75 @@ class PosteTresorController extends Controller
     // Méthode pour l'enregistrement d'un NOUVEAU POSTE de trésorerie (Route: postetresorerie.store_poste)
     public function storeCompteTresorerie(Request $request)
     {
-        // 1. Validation des données pour la création du POSTE
+        if (!auth()->user()->hasPermission('admin.config.tresorerie_posts')) {
+            abort(403);
+        }
+
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+
         $validated = $request->validate([
-
-            'name' => 'required|string|max:255|unique:compte_tresoreries,name',
-           'type' => 'required|in:Flux Des Activités Operationnelles,Flux Des Activités Investissement,Flux Des Activités de Financement',
-
+            'name' => 'required|string|max:255',
+            'type' => 'required|in:Flux Des Activités Operationnelles,Flux Des Activités Investissement,Flux Des Activités de Financement',
         ]);
 
-        // 2. Création du CompteTresorerie
-        $compte = CompteTresorerie::create([
+        // Vérification d'unicité par compagnie
+        $exists = CompteTresorerie::where('company_id', $companyId)
+            ->where('name', $validated['name'])
+            ->exists();
 
+        if ($exists) {
+            return redirect()->back()->with('error', "Le poste '{$validated['name']}' existe déjà pour cette entreprise.");
+        }
+
+        $compte = CompteTresorerie::create([
             'name' => $validated['name'],
             'type' => $validated['type'],
-
+            'company_id' => $companyId,
+            'solde_initial' => 0,
+            'solde_actuel' => 0,
         ]);
 
-        // Assurez-vous que la relation compteComptable existe sur votre modèle CompteTresorerie
-        $numeroCompte = $compte->planComptable->numero_de_compte ?? 'N/A';
-
         return redirect()->route('postetresorerie.index')
-                         ->with('success', 'Poste de trésorerie créé et lié au Plan Comptable ' . $numeroCompte . ' avec succès.');
+                         ->with('success', 'Poste de trésorerie créé avec succès.');
     }
 
     public function update(Request $request, CompteTresorerie $compte)
-{
-    // 1. Validation des données
-    $validated = $request->validate([
-        'name' => [
-            'required',
-            'string',
-            'max:255',
-            // Règle unique: ignore l'ID du compte actuel
-            \Illuminate\Validation\Rule::unique('compte_tresoreries', 'name')->ignore($compte->id),
-        ],
-        'type' => 'required|in:Flux Des Activités Operationnelles,Flux Des Activités Investissement,Flux Des Activités de Financement',
-    ]);
+    {
+        if (!auth()->user()->hasPermission('admin.config.tresorerie_posts')) {
+            abort(403);
+        }
 
-    // 2. Mise à jour du CompteTresorerie
-    $compte->update([
-        'name' => $validated['name'],
-        'type' => $validated['type'],
-    ]);
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
 
-    // 3. Redirection avec message de succès
-    return redirect()->route('postetresorerie.index')
-                     ->with('success', 'Poste de trésorerie "' . $compte->name . '" mis à jour avec succès.');
-}
+        if ($compte->company_id != $companyId) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|in:Flux Des Activités Operationnelles,Flux Des Activités Investissement,Flux Des Activités de Financement',
+        ]);
+
+        // Vérification d'unicité par compagnie
+        $exists = CompteTresorerie::where('company_id', $companyId)
+            ->where('name', $validated['name'])
+            ->where('id', '!=', $compte->id)
+            ->exists();
+
+        if ($exists) {
+            return redirect()->back()->with('error', "Un autre poste de trésorerie porte déjà le nom '{$validated['name']}'.");
+        }
+
+        $compte->update([
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+        ]);
+
+        return redirect()->route('postetresorerie.index')
+                         ->with('success', 'Poste de trésorerie "' . $compte->name . '" mis à jour avec succès.');
+    }
 
 
 

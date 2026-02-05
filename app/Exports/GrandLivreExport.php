@@ -13,10 +13,28 @@ class GrandLivreExport implements FromCollection, WithHeadings, WithMapping
     protected $totauxGeneraux;
     protected $ligneCouranteSolde = []; // mémoriser solde progressif par compte
 
-    public function __construct(Collection $ecritures)
+    protected $soldesInitiaux;
+
+    public function __construct(Collection $ecritures, $soldesInitiaux = [])
     {
-        // Trier par numéro de compte
-        $sorted = $ecritures->sortBy(fn($item) => $item->planComptable->numero_de_compte ?? 0);
+        $this->soldesInitiaux = $soldesInitiaux;
+        // Trier par numéro de compte, puis date, puis n_saisie
+        $sorted = $ecritures->sort(function ($a, $b) {
+            // 1. Compte
+            $cA = $a->planComptable->numero_de_compte ?? '';
+            $cB = $b->planComptable->numero_de_compte ?? '';
+            $cmp = strcmp($cA, $cB);
+            if ($cmp !== 0) return $cmp;
+
+            // 2. Date
+            $dA = $a->date ?? '';
+            $dB = $b->date ?? '';
+            $cmp = strcmp($dA, $dB);
+            if ($cmp !== 0) return $cmp;
+
+            // 3. N° Saisie
+            return strcmp($a->n_saisie ?? '', $b->n_saisie ?? '');
+        });
 
         // Grouper par compte
         $this->groupedEcritures = $sorted->groupBy('plan_comptable_id');
@@ -32,14 +50,31 @@ class GrandLivreExport implements FromCollection, WithHeadings, WithMapping
         $rows = collect();
 
         foreach ($this->groupedEcritures as $compteId => $operations) {
-            $compteNumero = optional($operations->first()->planComptable)->numero_de_compte ?? '-';
+            $compteNum = optional($operations->first()->planComptable)->numero_de_compte ?? '-';
             $compteIntitule = optional($operations->first()->planComptable)->intitule ?? '-';
 
-            // Initialiser solde pour ce compte
-            $this->ligneCouranteSolde[$compteId] = 0;
+            // Initialisation avec le solde initial (si présent)
+            $si = $this->soldesInitiaux[$compteId] ?? ['debit' => 0, 'credit' => 0, 'solde' => 0];
+            $this->ligneCouranteSolde[$compteId] = (float)$si['solde'];
 
-            $totalDebit = 0;
-            $totalCredit = 0;
+            $totalDebit = (float)$si['debit'];
+            $totalCredit = (float)$si['credit'];
+
+            // Ligne OUVERTURE
+            $rows->push((object)[
+                'planComptable' => (object)[
+                    'numero_de_compte' => $compteNum,
+                    'intitule' => $compteIntitule,
+                ],
+                'date' => '',
+                'codeJournal' => (object)['code_journal' => ''],
+                'n_saisie' => '',
+                'description_operation' => 'SOLDE INITIAL (OUVERTURE)',
+                'lettrage' => '',
+                'debit' => $si['debit'],
+                'credit' => $si['credit'],
+                'solde_progressif' => $this->ligneCouranteSolde[$compteId],
+            ]);
 
             foreach ($operations as $ecriture) {
                 $debit = $ecriture->debit ?? 0;
@@ -60,60 +95,39 @@ class GrandLivreExport implements FromCollection, WithHeadings, WithMapping
             // Ajouter une ligne "Total compte"
             $rows->push((object)[
                 'planComptable' => (object)[
-                    'numero_de_compte' => $compteNumero,
-                    'intitule' => $compteIntitule,
+                    'numero_de_compte' => '',
+                    'intitule' => 'TOTAL CUMULÉ COMPTE ' . $compteNum,
                 ],
                 'date' => '',
-                'planTiers' => (object)['numero_de_tiers' => ''],
                 'codeJournal' => (object)['code_journal' => ''],
                 'n_saisie' => '',
-                'description_operation' => 'Total compte ' . $compteNumero,
+                'description_operation' => '',
                 'lettrage' => '',
                 'debit' => $totalDebit,
                 'credit' => $totalCredit,
-                'solde_progressif' => '', // pas de solde sur ligne total
+                'solde_progressif' => $this->ligneCouranteSolde[$compteId],
             ]);
 
-            // cumuler dans les totaux généraux
             $this->totauxGeneraux['debit'] += $totalDebit;
             $this->totauxGeneraux['credit'] += $totalCredit;
         }
 
-        // Ligne totaux généraux
-        $rows->push((object)[
-            'planComptable' => (object)[
-                'numero_de_compte' => '',
-                'intitule' => 'Totaux généraux',
-            ],
-            'date' => '',
-            'planTiers' => (object)['numero_de_tiers' => ''],
-            'codeJournal' => (object)['code_journal' => ''],
-            'n_saisie' => '',
-            'description_operation' => '',
-            'lettrage' => '',
-            'debit' => $this->totauxGeneraux['debit'],
-            'credit' => $this->totauxGeneraux['credit'],
-            'solde_progressif' => $this->totauxGeneraux['debit'] - $this->totauxGeneraux['credit'],
-        ]);
-
-        return $rows;
+        return $rows; // Retourne toutes les lignes accumulées
     }
 
     public function headings(): array
     {
         return [
-            'Compte',
-            'Intitulé',
+            'N° compte',
+            'Intitulé compte',
             'Date',
-            'Compte général',
-            'Tiers',
-            'C.J',
-            'N° Saisie',
-            'Libellé écriture',
-            'Let',
+            'Journal',
+            'N° Pièce',
+            'Libellé',
+            'Lettrage',
             'Débit',
             'Crédit',
-            'Solde progressif',
+            'Solde Progressif'
         ];
     }
 
@@ -122,16 +136,14 @@ class GrandLivreExport implements FromCollection, WithHeadings, WithMapping
         return [
             $ecriture->planComptable->numero_de_compte ?? '',
             $ecriture->planComptable->intitule ?? '',
-            $ecriture->date ? \Carbon\Carbon::parse($ecriture->date)->format('d/m/Y') : '',
-            $ecriture->planComptable->numero_de_compte ?? '',
-            $ecriture->planTiers->numero_de_tiers ?? '',
+            $ecriture->date ?: '',
             $ecriture->codeJournal->code_journal ?? '',
             $ecriture->n_saisie ?? '',
-            $ecriture->description_operation ?? '',
+            $ecriture->description_operation,
             $ecriture->lettrage ?? '',
-            $ecriture->debit ?? 0,
-            $ecriture->credit ?? 0,
-            $ecriture->solde_progressif ?? '',
+            number_format($ecriture->debit ?? 0, 2, '.', ''),
+            number_format($ecriture->credit ?? 0, 2, '.', ''),
+            number_format($ecriture->solde_progressif ?? 0, 2, '.', ''),
         ];
     }
 }

@@ -1,0 +1,24 @@
+id | bigint unsigned | NO | 
+date | date | NO | 
+n_saisie | varchar(255) | NO | 
+n_saisie_user | varchar(50) | YES | 
+description_operation | varchar(255) | NO | 
+reference_piece | varchar(255) | YES | 
+plan_comptable_id | bigint unsigned | NO | 
+plan_tiers_id | bigint unsigned | YES | 
+compte_tresorerie_id | bigint unsigned | YES | 
+type_flux | varchar(255) | YES | 
+plan_analytique | tinyint(1) | NO | 
+code_journal_id | bigint unsigned | NO | 
+exercices_comptables_id | bigint unsigned | YES | 
+journaux_saisis_id | bigint unsigned | YES | 
+debit | decimal(15,2) | NO | 0.00
+credit | decimal(15,2) | NO | 0.00
+piece_justificatif | varchar(255) | YES | 
+user_id | bigint unsigned | NO | 
+company_id | bigint unsigned | NO | 
+statut | varchar(255) | NO | pending
+admin_modified | tinyint(1) | NO | 0
+is_ran | tinyint(1) | NO | 0
+created_at | timestamp | YES | 
+updated_at | timestamp | YES | 

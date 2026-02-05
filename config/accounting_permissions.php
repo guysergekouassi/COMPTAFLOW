@@ -11,80 +11,92 @@ return [
 
     // Habilitations (Permissions spécifiques)
     'permissions' => [
-        'Super Admin - Pilotage' => [
-            'superadmin.dashboard' => 'Tableau de bord Global',
+        'Pilotage (Super Admin)' => [
+            'superadmin.dashboard' => 'Tableau de bord SuperAdmin',
         ],
-        'Super Admin - Gouvernance' => [
+        'Gouvernance (Super Admin)' => [
             'superadmin.entities' => 'Gestion des Entités',
             'superadmin.companies.create' => 'Créer Entreprise',
             'superadmin.accounting.create' => 'Créer Comptabilité',
             'superadmin.users' => 'Gestion Utilisateurs',
-            'superadmin.users.create' => 'Créer Utilisateur SuperAdmin',
-            'superadmin.admins.create' => 'Créer Administrateur SuperAdmin',
-            'superadmin.switch' => 'Switch Entreprise Global',
+            'superadmin.users.create' => 'Créer Utilisateur',
+            'superadmin.admins.create' => 'Créer Administrateur',
+            'superadmin.switch' => 'Switch Entreprise',
         ],
-        'Super Admin - Opérations' => [
+        'Opérations (Super Admin)' => [
             'superadmin.activities' => 'Suivi des Activités',
-            'superadmin.access' => 'Contrôle d\'Accès Global',
-            'superadmin.access' => 'Contrôle d\'Accès Global',
+            'admin.tasks.index' => 'Assigner Tâche',
+            'superadmin.access' => 'Contrôle d\'Accès',
         ],
-        'Super Admin - Analyses' => [
-            'superadmin.reports' => 'Rapports Performance Globaux',
+        'Analyses (Super Admin)' => [
+            'superadmin.reports' => 'Rapports Performance',
         ],
         'Pilotage' => [
-            'compta.dashboard' => 'Tableau de bord',
             'admin.performance' => 'Tableau de bord Admin',
+            'compta.dashboard' => 'Tableau de bord',
+            'notifications.index' => 'Notifications',
         ],
-        'Configuration/Importation' => [
-            'admin.config.hub' => 'Dossier de Configuration (Hub)',
-            'admin.config.update_settings' => 'Modifier Paramètres Structurels (Chiffres/Système)',
-            'admin.config.load_standard_journals' => 'Initialiser Journaux Standards',
+        'Configuration Entreprise' => [
+            'admin.config.hub' => 'Dossier de Configuration',
             'admin.config.plan_comptable' => 'Modèle de Plan',
             'admin.config.plan_tiers' => 'Modèle de Tiers',
-            'admin.config.journals' => 'Structure des Journaux',
-            'admin.config.external_import' => 'Tunnel d\'Importation Intelligent',
+            'admin.config.journals' => 'Modèle des Journaux',
+            'admin.config.tresorerie_posts' => 'Postes de Trésorerie',
+        ],
+        'Importation' => [
+            'admin.config.external_import' => 'Importation de données',
+            'admin.import.hub' => 'Tunnel d\'Importation',
+        ],
+        'Fusion & Démarrage' => [
+            'admin.fusion.index' => 'Fusion Données Mère',
         ],
         'Exportation' => [
-            'admin.config.export.view' => 'Accès au Module d\'Exportation',
-            'admin.config.export.process' => 'Générer des Exports (Sage, FEC, Excel)',
+            'admin.export.hub' => 'Exportation de données',
         ],
         'Gouvernance' => [
             'compta_accounts.index' => 'Gestion des Entités',
             'admin.companies.create' => 'Créer Entreprise',
             'user_management' => 'Équipe & Permissions',
-            'admin.habilitations.index' => 'Modification Habilitation', // NOUVEAU
+            'admin.habilitations.index' => 'Modification Habilitation',
             'admin.switch' => 'Switch Comptabilité',
             'compta.create' => 'Créer Comptabilité',
             'admin.admins.create' => 'Créer Administrateur',
             'admin.secondary_admins.create' => 'Créer Admin Sécondaire',
             'admin.users.create' => 'Créer Utilisateur',
         ],
-        'Gestion des Tâches' => [ // NOUVEAU
-            'tasks.assign' => 'Assigner Tâches',
-            'tasks.view_daily' => 'Tâches Quotidiennes',
-        ],
         'Opérations' => [
-            'admin.audit' => 'Archives & Audit',
+            'admin.audit' => 'Traçabilité & Activités',
             'admin.access' => 'Contrôle d\'Accès',
+        ],
+        'Gestion des Tâches' => [
+            'admin.tasks.index' => 'Assigner Tâche',
+            'tasks.assign' => 'Assigner Tâche (Alternatif)',
+            'tasks.view_daily' => 'Tâches Quotidiennes',
         ],
         'Validation' => [
             'admin.approvals' => 'Approbations',
         ],
         'Paramétrage' => [
-            'plan_comptable' => 'Plan Comptable',
-            'plan_tiers' => 'Plan Tiers',
-            'accounting_journals' => 'Codes Journaux',
+            'plan_comptable' => 'Plan comptable',
+            'plan_tiers' => 'Plan tiers',
+            'accounting_journals' => 'Journaux',
             'postetresorerie.index' => 'Poste Trésorerie',
         ],
         'Traitement' => [
-            'modal_saisie_direct' => 'Nouvelle Saisie',
+            'modal_saisie_direct' => 'Nouvelle saisie',
             'accounting_entry_list' => 'Liste des écritures',
-            'ecriture.rejected' => 'Écritures Rejetées',
+            'ecriture.rejected' => 'Écritures rejetées',
             'brouillons.index' => 'Brouillons',
-            'exercice_comptable' => 'Exercice Comptable',
+            'exercice_comptable' => 'Exercice comptable',
+            'gestion_tresorerie' => 'Gestion Trésorerie',
+            'immobilisations.index' => 'Gestion Immobilisations',
+        ],
+        'ETATS FINANCIERS' => [
+            'bilan' => 'Bilan Actif/Passif',
+            'compte_resultat' => 'Compte de Résultat',
         ],
         'Rapports' => [
-            'accounting_ledger' => 'Grand Livre',
+            'accounting_ledger' => 'Grand livre',
             'accounting_balance' => 'Balance',
         ],
     ],
@@ -93,26 +105,26 @@ return [
     // Utilisé lors de l'initialisation d'un nouvel utilisateur dans une Company.
     'role_permissions_map' => [
         'admin' => [
-            'compta.dashboard', 'admin.performance', 'admin.config.hub', 'admin.config.plan_comptable',
-            'admin.config.plan_tiers', 'admin.config.journals', 'admin.config.external_import',
-            'admin.config.export.view', 'admin.config.export.process',
+            'compta.dashboard', 'admin.performance', 'notifications.index', 'admin.config.hub', 'admin.config.plan_comptable',
+            'admin.config.plan_tiers', 'admin.config.journals', 'admin.config.tresorerie_posts', 'admin.config.external_import', 'admin.import.hub',
+            'admin.export.hub', 'admin.fusion.index',
             'compta_accounts.index',
             'admin.companies.create', 'user_management', 'admin.habilitations.index', 'admin.switch', 'admin.admins.create',
             'admin.secondary_admins.create', 'admin.users.create', 'admin.audit',
             'admin.access', 'tasks.assign', 'tasks.view_daily', 'admin.approvals', 'plan_comptable', 'plan_tiers',
             'accounting_journals', 'postetresorerie.index', 'modal_saisie_direct',
-            'accounting_entry_list', 'ecriture.rejected', 'brouillons.index', 'exercice_comptable',
-            'accounting_entry_real', 'gestion_tresorerie', 'accounting_ledger',
+            'accounting_entry_list', 'ecriture.rejected', 'brouillons.index', 'exercice_comptable', 'gestion_tresorerie',
+            'accounting_entry_real', 'accounting_ledger',
             'accounting_ledger_tiers', 'accounting_balance', 'Balance_Tiers',
             'compte_exploitation', 'flux_tresorerie', 'tableau_amortissements',
-            'etat_tiers', 'compte_resultat', 'bilan', 'etats_analytiques', 'etats_previsionnels'
+            'etat_tiers', 'compte_resultat', 'bilan', 'etats_analytiques', 'etats_previsionnels', 'immobilisations.index'
         ],
         'comptable' => [
             'compta.dashboard', 'plan_comptable', 'plan_tiers', 'accounting_journals',
             'postetresorerie.index', 'modal_saisie_direct', 'accounting_entry_list', 'ecriture.rejected',
             'brouillons.index', 'accounting_entry_real',
             'gestion_tresorerie', 'accounting_ledger', 'accounting_ledger_tiers',
-            'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily'
+            'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily', 'immobilisations.index'
         ]
     ],
 ];

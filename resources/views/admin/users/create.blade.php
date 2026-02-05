@@ -163,52 +163,62 @@
             'utilisateur': ['Gouvernance', 'Configuration', 'Paramétrage']
         };
         
+        const roleSelect = document.getElementById('role');
+        const habilitationCheckboxes = document.querySelectorAll('input[name^="habilitations["]');
+        const isSubCompany = {{ isset($currentCompany) && $currentCompany->parent_company_id ? 'true' : 'false' }};
+        
         function updatePermissions() {
             const selectedRole = roleSelect.value;
-            const restrictedSections = roleRestrictions[selectedRole] || [];
+            
+            // Permissions par défaut pour affichage (cochage initial)
+            const rolePermissions = {
+                'admin': @json(config('accounting_permissions.role_permissions_map.admin')),
+                'comptable': @json(config('accounting_permissions.role_permissions_map.comptable'))
+            };
             const allowedPermissions = rolePermissions[selectedRole] || [];
 
             habilitationCheckboxes.forEach(checkbox => {
-                // Extraire la clé de permission du name attribute
                 const match = checkbox.name.match(/habilitations\[(.+)\]/);
                 if (match) {
                     const permissionKey = match[1];
-                    const isAllowed = allowedPermissions.includes(permissionKey);
-                    
-                    // Récupérer le nom de la section (Hack DOM)
                     const sectionTitle = checkbox.closest('.col-12.mb-4').querySelector('h6').textContent;
+                    
                     let isRestricted = false;
-                    for (const restricted of restrictedSections) {
-                        if (sectionTitle.includes(restricted)) {
-                            isRestricted = true;
-                            break;
+                    let forceUnchecked = false;
+
+                    // 1. Restriction Super Admin (Toujours)
+                    if (sectionTitle.includes('Super Admin')) {
+                        isRestricted = true;
+                        forceUnchecked = true;
+                    }
+
+                    // 2. Restriction Fusion (Uniquement sous-entreprises)
+                    if (sectionTitle.includes('Fusion & Démarrage') && !isSubCompany) {
+                        isRestricted = true;
+                        forceUnchecked = true;
+                    }
+
+                    // 3. Restriction Niveau (Comptable ne voit pas Gouvernance/Config Admin)
+                    if (selectedRole === 'comptable') {
+                        const higherSections = ['Gouvernance', 'Configuration Entreprise'];
+                        for (const s of higherSections) {
+                            if (sectionTitle.includes(s)) {
+                                isRestricted = true;
+                                forceUnchecked = true;
+                                break;
+                            }
                         }
                     }
 
-                    // Activer/désactiver et griser
-                    // Si restreint par section => Force disable + unchecked
-                    if (isRestricted) {
-                        checkbox.disabled = true;
-                        checkbox.checked = false;
-                    } else {
-                        checkbox.disabled = !isAllowed; // Désactivé si pas dans la map par défaut ? Le user veut pouvoir cocher manuellement aussi, donc juste pre-check ?
-                        // Correction: Le user veut que ce soit INTELLIGENT.
-                        // "certaines section ou case dont il n'a pas droit doivent etre grisé" => DISABLED.
-                        // "le systeme doit précocher les habilitation déja donnée" => CHECKED.
-                        // Donc:
-                        // 1. Si section interdite -> Disabled + Unchecked.
-                        // 2. Si non interdite -> Enabled, Checked si dans default map map.
-                        checkbox.disabled = false;
-                        checkbox.checked = isAllowed;
-                    }
+                    // Application
+                    checkbox.checked = forceUnchecked ? false : allowedPermissions.includes(permissionKey);
                     
-                    // Ajouter un style visuel
                     const container = checkbox.closest('.form-check');
                     if (container) {
                         if (isRestricted) {
                             container.style.opacity = '0.4';
                             container.style.pointerEvents = 'none';
-                            container.title = "Non disponible pour ce rôle";
+                            container.title = "Non disponible";
                         } else {
                             container.style.opacity = '1';
                             container.style.pointerEvents = 'auto';

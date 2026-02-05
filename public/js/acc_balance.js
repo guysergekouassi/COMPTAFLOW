@@ -5,6 +5,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnSaveModal = document.getElementById("btnSaveModal");
     const btnCloseModal = document.getElementById("btnCloseModal");
     const btnPreview = document.getElementById("btnPreview");
+    const spinnerPreview = document.getElementById("spinnerPreview");
+    const loaderText = document.getElementById("loaderText");
+    const btnPreviewLabel = document.getElementById("btnPreviewLabel");
 
     const accountSearch = document.getElementById("accountSearch");
     const selectAllCheck = document.getElementById("selectAllAccounts");
@@ -101,7 +104,15 @@ document.addEventListener("DOMContentLoaded", function () {
         // Validation Range
         if (grandLivreForm) {
             grandLivreForm.addEventListener("submit", function (e) {
-                if (selectAllCheck && selectAllCheck.checked) return;
+                // Si "Tout sélectionner" est coché, on active temporairement les champs pour qu'ils soient envoyés
+                if (selectAllCheck && selectAllCheck.checked) {
+                    accountSelects.forEach(select => {
+                        if (select) select.disabled = false;
+                    });
+                    // On ne fait pas de e.preventDefault() ici, on laisse le formulaire partir normalement
+                    return;
+                }
+
                 const v1 = accountSelects[0]?.options[accountSelects[0].selectedIndex]?.text.split(" - ")[0].trim();
                 const v2 = accountSelects[1]?.options[accountSelects[1].selectedIndex]?.text.split(" - ")[0].trim();
                 if (v1 && v2 && v1 > v2) {
@@ -182,6 +193,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
+                // Afficher le spinner
+                if (spinnerPreview) spinnerPreview.classList.remove("d-none");
+                if (loaderText) loaderText.classList.remove("d-none");
+                if (btnPreviewLabel) btnPreviewLabel.classList.add("d-none");
+                if (btnPreview) btnPreview.disabled = true;
+
                 fetch(accounting_balancePreviewUrl, {
                     method: "POST",
                     body: formData,
@@ -189,14 +206,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 })
                     .then(response => response.json())
                     .then(data => {
+                        // Masquer le spinner
+                        if (spinnerPreview) spinnerPreview.classList.add("d-none");
+                        if (loaderText) loaderText.classList.add("d-none");
+                        if (btnPreviewLabel) btnPreviewLabel.classList.remove("d-none");
+                        if (btnPreview) btnPreview.disabled = false;
+
                         if (data.success) {
                             const frame = document.getElementById("pdfPreviewFrame");
-                            if (frame) frame.src = data.url;
+                            if (frame) {
+                                // Ajouter le paramètre #view=FitH pour ajuster à la largeur
+                                frame.src = data.url + '#view=FitH&toolbar=1&navpanes=0&scrollbar=1';
+                            }
                             const modalEl = document.getElementById("modalPreviewPDF");
                             if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
                         } else { alert(data.error || "Erreur lors de la prévisualisation."); }
                     })
-                    .catch(err => { console.error("Erreur :", err); alert("Impossible de générer la prévisualisation."); });
+                    .catch(err => {
+                        // Masquer le spinner
+                        if (spinnerPreview) spinnerPreview.classList.add("d-none");
+                        if (loaderText) loaderText.classList.add("d-none");
+                        if (btnPreviewLabel) btnPreviewLabel.classList.remove("d-none");
+                        if (btnPreview) btnPreview.disabled = false;
+
+                        console.error("Erreur :", err); alert("Impossible de générer la prévisualisation.");
+                    });
             });
         }
 

@@ -71,7 +71,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'SuperAdmin <span class="text-primary">Analytics</span>'])
+                @include('components.header', ['page_title' => 'Rapports Performance'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">

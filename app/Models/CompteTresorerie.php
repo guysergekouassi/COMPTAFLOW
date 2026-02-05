@@ -16,11 +16,20 @@ class CompteTresorerie extends Model
     protected $fillable = [
         'name',
         'type',
+        'category_id',
         'solde_initial',
         'solde_actuel', // Maintenu par les mouvements
         'plan_comptable_id',
         'company_id',
     ];
+
+    /**
+     * Relation avec la catégorie dynamique.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(TreasuryCategory::class, 'category_id');
+    }
 
 
     protected $casts = [

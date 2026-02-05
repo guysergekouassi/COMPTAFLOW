@@ -18,6 +18,8 @@ class User extends Authenticatable
         'email_adresse',
         'password',
         'role',
+        'super_admin_type',
+        'supervised_companies',
         'is_online',
         'company_id',
         'habilitations',
@@ -32,6 +34,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'habilitations' => 'array',
+        'supervised_companies' => 'array',
         'is_blocked' => 'boolean',
         'is_active' => 'boolean',
         'blocked_at' => 'datetime',
@@ -73,6 +76,28 @@ class User extends Authenticatable
        return $this->role ==="super_admin";
     }
 
+    // verifier si l'utilisateur est super admin primaire (non supprimable)
+    public function isPrimarySuperAdmin(): bool{
+        return $this->role === 'super_admin' && $this->super_admin_type === 'primary';
+    }
+
+    // verifier si l'utilisateur est super admin secondaire (périmètre limité)
+    public function isSecondarySuperAdmin(): bool{
+        return $this->role === 'super_admin' && $this->super_admin_type === 'secondary';
+    }
+
+    // vérifier si le SA peut gérer une entreprise donnée
+    public function canManageCompany(int $companyId): bool{
+        // SA primaire peut tout gérer
+        if ($this->isPrimarySuperAdmin()) return true;
+        
+        // SA secondaire : vérifier le périmètre
+        if (!$this->isSecondarySuperAdmin()) return false;
+        
+        $supervised = $this->supervised_companies ?? [];
+        return in_array($companyId, $supervised);
+    }
+
     // verifier si l'utilisateur est comptable
     public function isComptable(): bool{
         return $this->role ==="comptable";
@@ -94,6 +119,28 @@ class User extends Authenticatable
         return $this->habilitations ?? [];
     }
 
+    public function isPrincipalAdmin(): bool
+    {
+        if ($this->role !== 'admin') return false;
+        
+        // Un admin est principal s'il a été créé par un super admin 
+        // ou s'il est désigné comme l'admin de la compagnie.
+        $creator = $this->creator;
+        if ($creator && $creator->role === 'super_admin') return true;
+        
+        if ($this->company && $this->company->user_id === $this->id) return true;
+
+        // Par défaut, si pas de créateur (seeder/migration), on considère principal
+        if (!$this->created_by_id) return true;
+
+        return false;
+    }
+
+    public function isSecondaryAdmin(): bool
+    {
+        return $this->role === 'admin' && !$this->isPrincipalAdmin();
+    }
+
     /**
      * Check if user has a specific permission
      */
@@ -104,17 +151,31 @@ class User extends Authenticatable
             return true;
         }
         
-        // Pour les Admins de compagnie, ils ont tous les droits dans leur contexte,
-        // SAUF s'ils sont des "Admins Secondaires" (ce qui sera déterminé par leurs habilitations).
-        // Si l'habilitation est explicitement définie à "0", on refuse l'accès.
+        // 1. Protection contre les permissions de Super Admin
+        // Aucun autre rôle ne peut accéder aux routes superadmin.*
+        if (str_starts_with($permission, 'superadmin.')) {
+            return false;
+        }
+
+        // 2. Logique Fusion : Uniquement pour les sous-entreprises
+        if ($permission === 'admin.fusion.index') {
+            if (!$this->company || !$this->company->parent_company_id) {
+                return false;
+            }
+        }
+
         $habilitations = $this->habilitations ?? [];
         
-        // Si l'utilisateur est Admin et n'a pas d'habilitations définies, il a tout par défaut (Admin principal)
-        if ($this->role === 'admin' && empty($habilitations)) {
+        // 3. Admin Principal : On vérifie s'il a le droit par défaut.
+        // On ne force pas aveuglément pour permettre un certain contrôle, 
+        // mais l'UI s'occupera de cocher/griser.
+        if ($this->isPrincipalAdmin() && empty($habilitations)) {
+            // S'il n'a rien en base, il a tout par défaut (Admin orphelin ou migration)
             return true;
         }
 
-        return isset($habilitations[$permission]) && ($habilitations[$permission] === "1" || $habilitations[$permission] === true);
+        // Si des habilitations sont présentes, on vérifie la clé spécifiquement
+        return isset($habilitations[$permission]) && ($habilitations[$permission] === "1" || $habilitations[$permission] === true || $habilitations[$permission] === 1);
     }
 
 }

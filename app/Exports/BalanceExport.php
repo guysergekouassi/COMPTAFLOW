@@ -11,14 +11,16 @@ class BalanceExport implements FromCollection, WithHeadings, WithMapping
 {
     protected $groupedEcritures;
     protected $totauxGeneraux;
+    protected $displayMode;
 
-    public function __construct(Collection $ecritures)
+    public function __construct(Collection $ecritures, $displayMode = 'comptaflow')
     {
         // Trier par numéro de compte
         $sorted = $ecritures->sortBy(fn($item) => $item->planComptable->numero_de_compte ?? 0);
 
         // Grouper par compte
         $this->groupedEcritures = $sorted->groupBy('plan_comptable_id');
+        $this->displayMode = $displayMode;
 
         $this->totauxGeneraux = [
             'mouvement_debit' => 0,
@@ -33,8 +35,20 @@ class BalanceExport implements FromCollection, WithHeadings, WithMapping
         $rows = collect();
 
         foreach ($this->groupedEcritures as $operations) {
-            $compteNumero = optional($operations->first()->planComptable)->numero_de_compte ?? '-';
-            $compteIntitule = optional($operations->first()->planComptable)->intitule ?? 'Intitulé inconnu';
+            $plan = $operations->first()->planComptable;
+            $compteNumero = optional($plan)->numero_de_compte ?? '-';
+            $compteOriginal = optional($plan)->numero_original;
+            $compteIntitule = optional($plan)->intitule ?? 'Intitulé inconnu';
+            
+            // Déterminer le numéro à afficher selon le mode
+            $compteAffiche = $compteNumero;
+            if ($this->displayMode === 'origine') {
+                $compteAffiche = $compteOriginal ?? $compteNumero;
+            } elseif ($this->displayMode === 'both') {
+                if (!empty($compteOriginal) && $compteOriginal !== $compteNumero) {
+                    $compteAffiche = $compteNumero . ' (' . $compteOriginal . ')';
+                }
+            }
 
             // Totaux du compte
             $totalDebit = $operations->sum('debit');
@@ -47,7 +61,7 @@ class BalanceExport implements FromCollection, WithHeadings, WithMapping
 
             // Ligne du compte
             $rows->push((object)[
-                'compte' => $compteNumero,
+                'compte' => $compteAffiche,
                 'intitule' => $compteIntitule,
                 'mouvement_debit' => $totalDebit,
                 'mouvement_credit' => $totalCredit,

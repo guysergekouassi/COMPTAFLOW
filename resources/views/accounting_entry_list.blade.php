@@ -403,6 +403,7 @@
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">N° Saisie</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Statut</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Code Journal</th>
+                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Poste Trésorerie</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Réf. Pièce</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
                                             <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Compte Général</th>
@@ -429,7 +430,10 @@
                                                 <tr class="border-b border-slate-100 hover:bg-slate-50">
                                                     @if($index === 0)
                                                         <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->date }}</td>
-                                                        <td class="px-4 py-3 text-sm font-semibold text-slate-800" rowspan="{{ $rowCount }}">{{ $ecriture->n_saisie }}</td>
+                                                        <td class="px-4 py-3 text-sm" rowspan="{{ $rowCount }}">
+                                                            <div class="font-bold text-slate-900">{{ $ecriture->n_saisie }}</div>
+                                                            <div class="text-[10px] text-slate-500 font-medium mt-1">{{ $ecriture->n_saisie_user }}</div>
+                                                        </td>
                                                         <td class="px-4 py-3 text-center" rowspan="{{ $rowCount }}">
                                                             @php
                                                                 $status = $ecriture->statut ?? 'pending';
@@ -453,17 +457,54 @@
                                                                 <i class='bx {{ $iconClass }} text-sm'></i>
                                                                 {{ $statusLabel }}
                                                             </span>
+                                                            @if($ecriture->admin_modified)
+                                                                <div class="mt-1">
+                                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800" title="Cette écriture a été modifiée par un administrateur avant validation">
+                                                                        <i class="bx bx-edit-alt mr-1"></i> Modifié par Admin
+                                                                    </span>
+                                                                </div>
+                                                            @endif
                                                         </td>
-                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</td>
+                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">
+                                                            <div class="flex flex-col">
+                                                                <span class="font-bold">{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</span>
+                                                                @if($ecriture->codeJournal && !empty($ecriture->codeJournal->numero_original))
+                                                                    <div class="text-[10px] text-slate-400 font-medium italic mt-1 flex items-center gap-1">
+                                                                        <i class="fas fa-file-import text-[8px]"></i> Orig: {{ $ecriture->codeJournal->numero_original }}
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                        </td>
+                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">
+                                                            @if($ecriture->compteTresorerie)
+                                                                <span class="badge bg-label-info">{{ $ecriture->compteTresorerie->name }}</span>
+                                                            @else
+                                                                <span class="text-slate-400">-</span>
+                                                            @endif
+                                                        </td>
                                                         <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->reference_piece }}</td>
                                                     @endif
                                                     
                                                     <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->description_operation }}</td>
                                                     <td class="px-4 py-3 text-sm text-slate-700">
-                                                        {{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte . ' - ' . $ecriture->planComptable->intitule : '-' }}
+                                                        <div class="flex flex-col">
+                                                            <span class="font-medium text-slate-900">{{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte . ' - ' . $ecriture->planComptable->intitule : '-' }}</span>
+                                                            @if($ecriture->planComptable && !empty($ecriture->planComptable->numero_original))
+                                                                <div class="text-[10px] text-slate-400 font-medium italic mt-0.5 flex items-center gap-1">
+                                                                    <i class="fas fa-file-import text-[8px]"></i> Orig: {{ $ecriture->planComptable->numero_original }}
+                                                                </div>
+                                                            @endif
+                                                        </div>
                                                     </td>
                                                     <td class="px-4 py-3 text-sm text-slate-700">
-                                                        {{ $ecriture->planTiers ? $ecriture->planTiers->numero_de_tiers . ' - ' . $ecriture->planTiers->intitule : '-' }}
+                                                        <div class="flex flex-col">
+                                                            <span class="font-medium text-slate-900">{{ $ecriture->planTiers ? $ecriture->planTiers->numero_de_tiers . ' - ' . $ecriture->planTiers->intitule : '-' }}</span>
+                                                            @if($ecriture->planTiers && !empty($ecriture->planTiers->numero_original))
+                                                                <div class="text-[10px] text-slate-400 font-medium italic mt-0.5 flex items-center gap-1">
+                                                                    <i class="fas fa-file-import text-[8px]"></i> Orig: {{ $ecriture->planTiers->numero_original }}
+                                                                </div>
+                                                            @endif
+                                                        </div>
                                                     </td>
                                                     <td class="px-4 py-3 text-sm text-slate-700">{{ (int) $ecriture->plan_analytique === 1 ? 'Oui' : 'Non' }}</td>
                                                     <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->debit, 2, ',', ' ') }}</td>
@@ -496,14 +537,14 @@
                                             
                                             <!-- Separator between entries -->
                                             <tr>
-                                                <td colspan="12" class="border-0 p-0">
+                                                <td colspan="13" class="border-0 p-0">
                                                     <div class="border-t-2 border-slate-200 my-0"></div>
                                                 </td>
                                             </tr>
                                         @endforeach
                                         @if (!isset($ecritures) || $ecritures->isEmpty())
                                             <tr>
-                                                <td colspan="12" class="text-center text-slate-500 py-6">
+                                                <td colspan="13" class="text-center text-slate-500 py-6">
                                                     Aucune écriture trouvée pour les critères sélectionnés
                                                 </td>
                                             </tr>

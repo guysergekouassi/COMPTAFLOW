@@ -19,7 +19,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Gouvernance / Administration des Utilisateurs'])
+                @include('components.header', ['page_title' => 'Administration des Utilisateurs'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
@@ -27,7 +27,7 @@
                         <!-- Header Standardisé -->
                         <div class="d-flex justify-content-between align-items-center mb-6">
                             <div>
-                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Administration des Utilisateurs</h5>
+                                <h5 class="mb-1 text-premium-gradient">Administration des Utilisateurs</h5>
                                 <p class="text-muted small mb-0">Gérez les accès et les rôles de tous les collaborateurs de la plateforme.</p>
                             </div>
                             <a href="{{ route('superadmin.users.create') }}" class="btn btn-primary rounded-pill px-4">

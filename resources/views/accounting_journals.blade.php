@@ -66,7 +66,7 @@
         transition: all 0.2s ease;
         border: 2px solid #f1f5f9 !important;
         background-color: #f8fafc !important;
-        border-radius: 12px !important;
+        border-radius: 16px !important;
         padding: 0.75rem 1rem !important;
         font-size: 0.8rem !important;
         font-weight: 600 !important;
@@ -245,10 +245,10 @@
                                     </div>
                                 </div>
                                 <div class="flex justify-end gap-3 mt-4">
-                                    <button type="button" id="resetFilterBtn" class="px-6 py-2 bg-slate-100 text-slate-600 rounded-xl font-semibold hover:bg-slate-200 transition">
+                                    <button type="button" id="resetFilterBtn" class="px-6 py-2 bg-slate-100 text-slate-600 rounded-2xl font-semibold hover:bg-slate-200 transition">
                                         Réinitialiser
                                     </button>
-                                    <button type="button" id="applyFilterBtn" class="px-6 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                                    <button type="button" id="applyFilterBtn" class="px-6 py-2 bg-blue-600 text-white rounded-2xl font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
                                         Rechercher
                                     </button>
                                 </div>
@@ -290,7 +290,14 @@
                                                     <span class="inline-flex px-3 py-1 rounded-lg text-xs font-bold border {{ $badge }}">{{ strtoupper($journal->type ?? 'Général') }}</span>
                                                 </td>
                                                 <td class="px-8 py-6">
-                                                    <span class="font-mono text-lg font-bold text-blue-700">{{ $journal->code_journal }}</span>
+                                                    <div class="flex flex-col">
+                                                        <span class="font-mono text-lg font-bold text-blue-700">{{ $journal->code_journal }}</span>
+                                                        @if(!empty($journal->numero_original))
+                                                            <div class="text-[10px] text-slate-400 font-medium italic mt-1 flex items-center gap-1">
+                                                                <i class="fa-solid fa-file-import text-[8px]"></i> Orig: {{ $journal->numero_original }}
+                                                            </div>
+                                                        @endif
+                                                    </div>
                                                 </td>
                                                 <td class="px-8 py-6 font-semibold text-slate-800">{{ $journal->intitule }}</td>
                                                 <td class="px-8 py-6 font-mono text-sm text-slate-600">
@@ -302,13 +309,14 @@
                                                 <td class="px-8 py-6 text-right">
                                                     <div class="flex justify-end gap-2">
                                                         <button type="button" class="btn-edit-journal w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm"
-                                                            data-id="{{ $journal->id }}"
+                                                             data-id="{{ $journal->id }}"
                                                             data-code="{{ $journal->code_journal }}"
                                                             data-type="{{ $journal->type }}"
                                                             data-intitule="{{ $journal->intitule }}"
                                                             data-traitement="{{ $journal->traitement_analytique }}"
                                                             data-compte_de_contrepartie="{{ $journal->compte_de_contrepartie }}"
-                                                            data-rapprochement_sur="{{ $journal->rapprochement_sur }}">
+                                                            data-rapprochement_sur="{{ $journal->rapprochement_sur }}"
+                                                            data-poste_tresorerie="{{ $journal->poste_tresorerie }}">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm"
@@ -364,13 +372,12 @@
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
-                                <select id="type_select" name="type" class="input-field-premium" required onchange="toggleTresorerieFields(this)">
+                                <select id="type_select" name="type" class="input-field-premium" required onchange="toggleTresorerieFields(this); updateJournalCode('create')">
                                     <option value="Achats">Achats</option>
                                     <option value="Ventes">Ventes</option>
-                                    <option value="Banque">Banque</option>
-                                    <option value="Caisse">Caisse</option>
+                                    <option value="Tresorerie">Trésorerie</option>
                                     <option value="Opérations Diverses">Opérations Diverses</option>
-                                    <option value="Situation">Situation</option>
+                                    <option value="Standard">Standard</option>
                                 </select>
                             </div>
                             <div class="col-12 text-start">
@@ -398,6 +405,23 @@
                             <!-- Conditional Fields Group -->
                             <div class="col-12 text-start d-none" id="tresorerie_options">
                                 <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="input-label-premium">Type de Trésorerie</label>
+                                        <div class="d-flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="poste_tresorerie" id="treso_caisse_create" value="Caisse" onchange="handleTresoChange('create'); updateJournalCode('create')">
+                                                <label class="form-check-label font-bold text-slate-700" for="treso_caisse_create">Caisse</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="poste_tresorerie" id="treso_banque_create" value="Banque" onchange="handleTresoChange('create'); updateJournalCode('create')">
+                                                <label class="form-check-label font-bold text-slate-700" for="treso_banque_create">Banque</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="input-label-premium">Autre (Optionnel)</label>
+                                        <input type="text" name="poste_tresorerie_autre" id="treso_autre_create" class="input-field-premium" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('create'); updateJournalCode('create')">
+                                    </div>
                                     <div class="col-md-12">
                                         <label class="input-label-premium">ETAT DE RAPPROCHEMENT BANCAIRE</label>
                                         <select name="rapprochement_sur" class="input-field-premium">
@@ -447,10 +471,9 @@
                                 <select id="update_type" name="type" class="input-field-premium" required onchange="toggleTresorerieFields(this)">
                                     <option value="Achats">Achats</option>
                                     <option value="Ventes">Ventes</option>
-                                    <option value="Banque">Banque</option>
-                                    <option value="Caisse">Caisse</option>
+                                    <option value="Tresorerie">Trésorerie</option>
                                     <option value="Opérations Diverses">Opérations Diverses</option>
-                                    <option value="Situation">Situation</option>
+                                    <option value="Standard">Standard</option>
                                 </select>
                             </div>
                             <div class="col-12 text-start">
@@ -478,6 +501,23 @@
                             <!-- Conditional Fields Group -->
                             <div class="col-12 text-start d-none" id="update_tresorerie_options">
                                 <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="input-label-premium">Type de Trésorerie</label>
+                                        <div class="d-flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="poste_tresorerie" id="edit_treso_caisse" value="Caisse" onchange="handleTresoChange('edit')">
+                                                <label class="form-check-label font-bold text-slate-700" for="edit_treso_caisse">Caisse</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="poste_tresorerie" id="edit_treso_banque" value="Banque" onchange="handleTresoChange('edit')">
+                                                <label class="form-check-label font-bold text-slate-700" for="edit_treso_banque">Banque</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="input-label-premium">Autre (Optionnel)</label>
+                                        <input type="text" name="poste_tresorerie_autre" id="edit_treso_autre" class="input-field-premium" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('edit')">
+                                    </div>
                                     <div class="col-md-12">
                                         <label class="input-label-premium">ETAT DE RAPPROCHEMENT BANCAIRE</label>
                                         <select id="update_rapprochement_sur" name="rapprochement_sur" class="input-field-premium">
@@ -634,7 +674,85 @@
                 }
             };
 
-            $('#type_select, #update_type').on('change', function() { toggleTresorerieFields(this); });
+            window.handleTresoChange = function(mode) {
+                const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+                const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+                const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+                
+                if (caisse.checked || banque.checked) {
+                    autre.value = '';
+                    autre.disabled = true;
+                    autre.classList.add('bg-slate-50');
+                } else {
+                    autre.disabled = false;
+                    autre.classList.remove('bg-slate-50');
+                }
+            };
+
+            window.handleOtherInput = function(mode) {
+                const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+                const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+                const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+                
+                if (autre.value.trim() !== '') {
+                    caisse.checked = false;
+                    banque.checked = false;
+                    caisse.disabled = true;
+                    banque.disabled = true;
+                } else {
+                    caisse.disabled = false;
+                    banque.disabled = false;
+                }
+            };
+
+            $('#type_select, #update_type').on('change', function() { 
+                toggleTresorerieFields(this); 
+                updateJournalCode($(this).attr('id') === 'update_type' ? 'edit' : 'create');
+            });
+
+            window.updateJournalCode = function(mode) {
+                const typeInput = document.getElementById(mode === 'edit' ? 'update_type' : 'type_select');
+                if (!typeInput) return;
+                const type = typeInput.value;
+                const codeInput = document.getElementById(mode === 'edit' ? 'update_code_journal' : 'code_journal_input');
+                
+                let prefix = '';
+                
+                if (type === 'Achats') prefix = 'ACH';
+                else if (type === 'Ventes') prefix = 'VEN';
+                else if (type === 'Opérations Diverses') prefix = 'OD';
+                else if (type === 'Standard') prefix = 'STD';
+                else if (type === 'Tresorerie') {
+                    const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+                    const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+                    const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+                    
+                    if (caisse && caisse.checked) prefix = 'CAI';
+                    else if (banque && banque.checked) prefix = 'BQ';
+                    else if (autre && autre.value.trim() !== '') {
+                        prefix = autre.value.trim().substring(0, 3).toUpperCase();
+                    } else {
+                        return;
+                    }
+                }
+                
+                if (prefix && codeInput) {
+                    // Appel API pour obtenir le prochain code disponible
+                    fetch(`/admin/config/get-next-journal-code?prefix=${prefix}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                codeInput.value = data.code;
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Erreur génération code:', err);
+                            const digits = {{ auth()->user()->company->journal_code_digits ?? 3 }};
+                            let finalCode = prefix.padEnd(digits, '0');
+                            codeInput.value = finalCode.substring(0, digits);
+                        });
+                }
+            };
 
             // Create Form Submission
             $('#formCodeJournal').on('submit', function(e) {
@@ -718,6 +836,36 @@
                 modal.find('#update_traitement_analytique').val(btn.data('traitement'));
                 modal.find('#update_compte_de_contrepartie').val(btn.data('compte_de_contrepartie') || '');
                 modal.find('#update_rapprochement_sur').val(btn.data('rapprochement_sur') || '');
+                
+                // Pre-fill treasury options
+                const posteTresorerie = btn.data('poste_tresorerie');
+                const caisse = modal.find('#edit_treso_caisse')[0];
+                const banque = modal.find('#edit_treso_banque')[0];
+                const autre = modal.find('#edit_treso_autre')[0];
+                
+                caisse.checked = (posteTresorerie === 'Caisse');
+                banque.checked = (posteTresorerie === 'Banque');
+                
+                if (['Caisse', 'Banque'].includes(posteTresorerie)) {
+                    autre.value = '';
+                    autre.disabled = true;
+                    autre.classList.add('bg-slate-50');
+                    caisse.disabled = false;
+                    banque.disabled = false;
+                } else {
+                    autre.value = posteTresorerie || '';
+                    autre.disabled = false;
+                    autre.classList.remove('bg-slate-50');
+                    if (posteTresorerie && posteTresorerie !== 'Automatique') {
+                        caisse.checked = false;
+                        banque.checked = false;
+                        caisse.disabled = true;
+                        banque.disabled = true;
+                    } else {
+                        caisse.disabled = false;
+                        banque.disabled = false;
+                    }
+                }
                 
                 toggleTresorerieFields(modal.find('#update_type')[0]);
                 

@@ -18,7 +18,8 @@ class PlanComptable extends Model
         'adding_strategy',
         'classe',
         'user_id',
-        'company_id'
+        'company_id',
+        'numero_original'
     ];
 
     public function scopeClasse5($query)

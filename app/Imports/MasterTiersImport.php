@@ -26,11 +26,21 @@ class MasterTiersImport implements ToModel, WithHeadingRow
     */
     public function model(array $row)
     {
-        if (empty($row['numero_de_tiers']) || empty($row['intitule']) || empty($row['type_de_tiers'])) {
+        // Tentative de récupération intelligente (Slugified headers ou Index)
+        $num = $row['numero_de_tiers'] ?? $row['numerodetiers'] ?? $row['code_tiers'] ?? $row[0] ?? null;
+        $label = $row['intitule'] ?? $row['libelle'] ?? $row['nom'] ?? $row[1] ?? null;
+        $type = $row['type_de_tiers'] ?? $row['typedetiers'] ?? $row['type'] ?? $row[2] ?? 'Autre';
+
+        if (empty($num) || empty($label)) {
             return null;
         }
 
-        $numero = strtoupper($row['numero_de_tiers']);
+        // Nettoyage si entête passée par erreur
+        if (str_contains(strtolower($num), 'tiers') || str_contains(strtolower($label), 'intitule')) {
+            return null;
+        }
+
+        $numero = strtoupper($num);
 
         $exists = PlanTiers::where('company_id', $this->companyId)
             ->where('numero_de_tiers', $numero)
@@ -42,8 +52,8 @@ class MasterTiersImport implements ToModel, WithHeadingRow
 
         return new PlanTiers([
             'numero_de_tiers' => $numero,
-            'intitule'        => strtoupper($row['intitule']),
-            'type_de_tiers'   => $row['type_de_tiers'],
+            'intitule'        => strtoupper($label),
+            'type_de_tiers'   => $type,
             'user_id'         => $this->userId,
             'company_id'      => $this->companyId,
         ]);

@@ -101,14 +101,14 @@
                                     <p class="text-muted small mb-4">Définissez les accès spécifiques pour cet administrateur sécondaire.</p>
 
                                     @foreach(config('accounting_permissions.permissions') as $section => $permissions)
-                                        <div class="mb-4">
+                                        <div class="mb-4 permission-section" data-section-name="{{ $section }}">
                                             <h6 class="text-xs font-bold text-slate-600 uppercase mb-2">{{ $section }}</h6>
                                             <div class="row g-3">
                                                 @foreach($permissions as $key => $label)
                                                     <div class="col-md-4 col-sm-6">
                                                         <div class="permission-card">
                                                             <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="perm_{{ $key }}" checked>
+                                                                <input class="form-check-input permission-checkbox" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="perm_{{ $key }}" checked>
                                                                 <label class="form-check-label fw-medium text-dark cursor-pointer" for="perm_{{ $key }}">
                                                                     {{ $label }}
                                                                 </label>
@@ -154,5 +154,43 @@
         </div>
         <div class="layout-overlay layout-menu-toggle"></div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isSubCompany = {{ isset($currentCompany) && $currentCompany->parent_company_id ? 'true' : 'false' }};
+            const permissionSections = document.querySelectorAll('.permission-section');
+
+            permissionSections.forEach(section => {
+                const sectionName = section.getAttribute('data-section-name');
+                const checkboxes = section.querySelectorAll('.permission-checkbox');
+
+                let isRestricted = false;
+                let forceUnchecked = false;
+
+                // 1. Restriction Super Admin
+                if (sectionName.includes('Super Admin')) {
+                    isRestricted = true;
+                    forceUnchecked = true;
+                }
+
+                // 2. Restriction Fusion
+                if (sectionName.includes('Fusion & Démarrage') && !isSubCompany) {
+                    isRestricted = true;
+                    forceUnchecked = true;
+                }
+
+                if (isRestricted) {
+                    checkboxes.forEach(cb => {
+                        if (forceUnchecked) cb.checked = false;
+                        const container = cb.closest('.permission-card');
+                        if (container) {
+                            container.style.opacity = '0.4';
+                            container.style.pointerEvents = 'none';
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

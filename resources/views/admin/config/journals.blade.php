@@ -129,7 +129,14 @@
                                                 <span class="journal-badge border border-emerald-200 text-emerald-700 bg-emerald-50">{{ strtoupper($journal->type) }}</span>
                                             </td>
                                             <td class="py-6">
-                                                <span class="font-black text-emerald-700 fs-5">{{ $journal->code_journal }}</span>
+                                                <div class="d-flex flex-column">
+                                                    <span class="font-black text-emerald-700 fs-5">{{ $journal->code_journal }}</span>
+                                                    @if(!empty($journal->numero_original))
+                                                        <div class="text-[10px] text-slate-400 font-medium italic mt-1 d-flex align-items-center gap-1">
+                                                            <i class="fa-solid fa-file-import text-[8px]"></i> Original: {{ $journal->numero_original }}
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="py-6 font-bold text-slate-800">
                                                 {{ $journal->intitule }}
@@ -188,16 +195,16 @@
                         <div class="row g-6">
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700">Code Journal</label>
-                                <input type="text" name="code_journal" class="form-control border-slate-200 py-3 rounded-xl shadow-none focus:border-emerald-500" placeholder="Ex: ACH" required>
+                                <input type="text" name="code_journal" id="create_code_journal" class="form-control border-slate-200 py-3 rounded-xl shadow-none focus:border-emerald-500" placeholder="Ex: ACH" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700">Type</label>
-                                <select name="type" class="form-select border-slate-200 py-3 rounded-xl focus:border-emerald-500" id="journal_type_select" onchange="toggleTresorerieFields(this.value, 'create')" required>
+                                <select name="type" class="form-select border-slate-200 py-3 rounded-xl focus:border-emerald-500" id="journal_type_select" onchange="toggleTresorerieFields(this.value, 'create'); updateJournalCode('create')" required>
                                     <option value="Achats">Achats</option>
                                     <option value="Ventes">Ventes</option>
-                                    <option value="Caisse">Caisse</option>
-                                    <option value="Banque">Banque</option>
+                                    <option value="Tresorerie">Trésorerie</option>
                                     <option value="Opérations Diverses">Opérations Diverses</option>
+                                    <option value="Standard">Standard</option>
                                 </select>
                             </div>
                             <div class="col-12">
@@ -226,6 +233,23 @@
                                     </select>
                                 </div>
                                 <div class="col-12">
+                                    <label class="form-label font-black text-slate-700">Type de Trésorerie</label>
+                                    <div class="d-flex gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="poste_tresorerie" id="treso_caisse_create" value="Caisse" onchange="handleTresoChange('create'); updateJournalCode('create')">
+                                            <label class="form-check-label font-bold text-slate-700" for="treso_caisse_create">Caisse</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="poste_tresorerie" id="treso_banque_create" value="Banque" onchange="handleTresoChange('create'); updateJournalCode('create')">
+                                            <label class="form-check-label font-bold text-slate-700" for="treso_banque_create">Banque</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <label class="form-label font-black text-slate-700">Autre (Optionnel)</label>
+                                    <input type="text" name="poste_tresorerie_autre" id="treso_autre_create" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('create'); updateJournalCode('create')">
+                                </div>
+                                <div class="col-12">
                                     <label class="form-label font-black text-slate-700">État de Rapprochement Bancaire</label>
                                     <select name="rapprochement_sur" class="form-select border-slate-200 py-3 rounded-xl">
                                         <option value="">-- Aucun --</option>
@@ -233,7 +257,6 @@
                                         <option value="Automatique">Automatique</option>
                                     </select>
                                 </div>
-                                <input type="hidden" name="poste_tresorerie" value="Automatique">
                                 <input type="hidden" name="compte_de_contrepartie" value="">
                             </div>
                         </div>
@@ -305,9 +328,9 @@
                                 <select name="type" id="edit_type_journal" class="form-select border-slate-200 py-3 rounded-xl focus:border-emerald-500" onchange="toggleTresorerieFields(this.value, 'edit')" required>
                                     <option value="Achats">Achats</option>
                                     <option value="Ventes">Ventes</option>
-                                    <option value="Caisse">Caisse</option>
-                                    <option value="Banque">Banque</option>
+                                    <option value="Tresorerie">Trésorerie</option>
                                     <option value="Opérations Diverses">Opérations Diverses</option>
+                                    <option value="Standard">Standard</option>
                                 </select>
                             </div>
                             <div class="col-12">
@@ -335,6 +358,23 @@
                                     </select>
                                 </div>
                                 <div class="col-12">
+                                    <label class="form-label font-black text-slate-700">Type de Trésorerie</label>
+                                    <div class="d-flex gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="poste_tresorerie" id="edit_treso_caisse" value="Caisse" onchange="handleTresoChange('edit')">
+                                            <label class="form-check-label font-bold text-slate-700" for="edit_treso_caisse">Caisse</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="poste_tresorerie" id="edit_treso_banque" value="Banque" onchange="handleTresoChange('edit')">
+                                            <label class="form-check-label font-bold text-slate-700" for="edit_treso_banque">Banque</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <label class="form-label font-black text-slate-700">Autre (Optionnel)</label>
+                                    <input type="text" name="poste_tresorerie_autre" id="edit_treso_autre" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('edit')">
+                                </div>
+                                <div class="col-12">
                                     <label class="form-label font-black text-slate-700">État de Rapprochement Bancaire</label>
                                     <select name="rapprochement_sur" id="edit_rapprochement_sur" class="form-select border-slate-200 py-3 rounded-xl">
                                         <option value="">-- Aucun --</option>
@@ -342,7 +382,6 @@
                                         <option value="Automatique">Automatique</option>
                                     </select>
                                 </div>
-                                <input type="hidden" name="poste_tresorerie" id="edit_poste_tresorerie" value="Automatique">
                                 <input type="hidden" name="compte_de_contrepartie" id="edit_compte_contrepartie" value="">
                             </div>
                         </div>
@@ -379,9 +418,7 @@
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700 uppercase text-xs">Type de Code</label>
                                 <select name="journal_code_type" class="form-select border-slate-200 py-3 rounded-xl font-bold">
-                                    <option value="alphabetical" {{ ($mainCompany->journal_code_type ?? 'alphabetical') == 'alphabetical' ? 'selected' : '' }}>Alphabétique</option>
-                                    <option value="alphanumeric" {{ ($mainCompany->journal_code_type ?? 'alphabetical') == 'alphanumeric' ? 'selected' : '' }}>Alphanumérique</option>
-                                    <option value="numeric" {{ ($mainCompany->journal_code_type ?? 'alphabetical') == 'numeric' ? 'selected' : '' }}>Numérique</option>
+                                    <option value="alphanumeric" {{ ($mainCompany->journal_code_type ?? 'alphanumeric') == 'alphanumeric' ? 'selected' : '' }}>Alphanumérique</option>
                                 </select>
                             </div>
                             <input type="hidden" name="accounting_system" value="{{ $mainCompany->accounting_system }}">
@@ -400,10 +437,41 @@
     <script>
         function toggleTresorerieFields(type, mode) {
             const container = document.getElementById(`tresorerie_fields_${mode}`);
-            if (['Banque', 'Caisse'].includes(type)) {
+            if (['Banque', 'Caisse', 'Tresorerie'].includes(type)) {
                 container.classList.remove('d-none');
             } else {
                 container.classList.add('d-none');
+            }
+        }
+
+        function handleTresoChange(mode) {
+            const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+            const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+            const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+            
+            if (caisse.checked || banque.checked) {
+                autre.value = '';
+                autre.disabled = true;
+                autre.classList.add('bg-slate-50');
+            } else {
+                autre.disabled = false;
+                autre.classList.remove('bg-slate-50');
+            }
+        }
+
+        function handleOtherInput(mode) {
+            const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+            const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+            const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+            
+            if (autre.value.trim() !== '') {
+                caisse.checked = false;
+                banque.checked = false;
+                caisse.disabled = true;
+                banque.disabled = true;
+            } else {
+                caisse.disabled = false;
+                banque.disabled = false;
             }
         }
 
@@ -418,14 +486,84 @@
             
             // Remplissage des champs de trésorerie
             document.getElementById('edit_compte_tresorerie').value = compteTresorerie;
-            document.getElementById('edit_poste_tresorerie').value = posteTresorerie;
-            document.getElementById('edit_compte_contrepartie').value = compteContrepartie;
             document.getElementById('edit_rapprochement_sur').value = rapprochementSur;
+            
+            // Gestion poste_tresorerie (Caisse, Banque ou Autre)
+            const caisse = document.getElementById('edit_treso_caisse');
+            const banque = document.getElementById('edit_treso_banque');
+            const autre = document.getElementById('edit_treso_autre');
+            
+            caisse.checked = (posteTresorerie === 'Caisse');
+            banque.checked = (posteTresorerie === 'Banque');
+            
+            if (['Caisse', 'Banque'].includes(posteTresorerie)) {
+                autre.value = '';
+                autre.disabled = true;
+                autre.classList.add('bg-slate-50');
+                caisse.disabled = false;
+                banque.disabled = false;
+            } else {
+                autre.value = posteTresorerie;
+                autre.disabled = false;
+                autre.classList.remove('bg-slate-50');
+                if (posteTresorerie && posteTresorerie !== 'Automatique') {
+                    caisse.checked = false;
+                    banque.checked = false;
+                    caisse.disabled = true;
+                    banque.disabled = true;
+                } else {
+                    caisse.disabled = false;
+                    banque.disabled = false;
+                }
+            }
             
             // Affichage conditionnel
             toggleTresorerieFields(type, 'edit');
             
             new bootstrap.Modal(document.getElementById('modalEditJournal')).show();
+        }
+        function updateJournalCode(mode) {
+            const typeSelect = document.getElementById(mode === 'edit' ? 'edit_type_journal' : 'journal_type_select');
+            const type = typeSelect.value;
+            const codeInput = document.getElementById(mode === 'edit' ? 'edit_code_journal' : 'create_code_journal');
+            
+            let prefix = '';
+            
+            if (type === 'Achats') prefix = 'ACH';
+            else if (type === 'Ventes') prefix = 'VEN';
+            else if (type === 'Opérations Diverses') prefix = 'OD';
+            else if (type === 'Standard') prefix = 'STD';
+            else if (type === 'Tresorerie') {
+                const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+                const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+                const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+                
+                if (caisse.checked) prefix = 'CAI';
+                else if (banque.checked) prefix = 'BQ';
+                else if (autre.value.trim() !== '') {
+                    prefix = autre.value.trim().substring(0, 3).toUpperCase();
+                } else {
+                    return;
+                }
+            }
+            
+            if (prefix) {
+                // Appel API pour obtenir le prochain code disponible
+                fetch(`/admin/config/get-next-journal-code?prefix=${prefix}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            codeInput.value = data.code;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Erreur génération code:', err);
+                        // Fallback au padding si l'API échoue
+                        const digits = {{ $mainCompany->journal_code_digits ?? 3 }};
+                        let finalCode = prefix.padEnd(digits, '0');
+                        codeInput.value = finalCode.substring(0, digits);
+                    });
+            }
         }
     </script>
     @include('components.import_instructions_journals')

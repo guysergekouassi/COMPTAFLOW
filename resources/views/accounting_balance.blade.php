@@ -392,12 +392,20 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label for="date_debut" class="input-label-premium">Date de début</label>
-                                                <input type="date" id="date_debut" name="date_debut" class="input-field-premium" required />
+                                                <input type="date" id="date_debut" name="date_debut" class="input-field-premium" 
+                                                    value="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                    min="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                    max="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                    required />
                                                 <div class="invalid-feedback">Veuillez renseigner la date de début.</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="date_fin" class="input-label-premium">Date de fin</label>
-                                                <input type="date" id="date_fin" name="date_fin" class="input-field-premium" required />
+                                                <input type="date" id="date_fin" name="date_fin" class="input-field-premium" 
+                                                    value="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                    min="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                    max="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                    required />
                                                 <div class="invalid-feedback">Veuillez renseigner la date de fin.</div>
                                             </div>
                                         </div>
@@ -491,6 +499,23 @@
                                                 <div class="invalid-feedback">Veuillez sélectionner une option.</div>
                                             </div>
                                         </div>
+                                        
+                                        <!-- Nouvelle section: Affichage des numéros de compte -->
+                                        <div class="row g-3 mt-2">
+                                            <div class="col-12">
+                                                <label for="display_mode" class="input-label-premium">Affichage des numéros de compte</label>
+                                                <select id="display_mode" name="display_mode" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" required>
+                                                    <option value="origine" selected>Compte d'origine</option>
+                                                    <option value="comptaflow">Compte ComptaFlow</option>
+                                                    <option value="both">Compte ComptaFlow et origine</option>
+                                                </select>
+                                                <small class="text-muted d-block mt-2" style="font-size: 0.7rem;">
+                                                    <strong>Compte d'origine :</strong> Affiche uniquement les numéros de compte originaux importés<br>
+                                                    <strong>Compte ComptaFlow :</strong> Affiche uniquement les numéros standardisés<br>
+                                                    <strong>Compte ComptaFlow et origine :</strong> Affiche les deux (origine en dessous)
+                                                </small>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -503,7 +528,9 @@
                             <i class="bx bx-x me-2"></i>Annuler
                         </button>
                         <button type="button" class="btn btn-info flex-fill" id="btnPreview" style="padding: 0.875rem 1.5rem; border-radius: 12px; font-weight: 700; font-size: 0.875rem; text-transform: none; letter-spacing: normal;">
-                            <i class="bx bx-show me-2"></i>Prévisualiser
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="spinnerPreview"></span>
+                            <span id="loaderText" class="d-none ms-2">Veuillez patienter...</span>
+                            <span id="btnPreviewLabel"><i class="bx bx-show me-2"></i>Prévisualiser</span>
                         </button>
                         <button type="submit" class="btn-save-premium flex-fill" id="btnSaveModal" style="padding: 0.875rem 1.5rem; font-size: 0.875rem;">
                             <i class="bx bx-check me-2"></i>Générer
@@ -516,26 +543,27 @@
 
     {{-- previsualisation avant sauvegarde --}}
     <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-dialog modal-fullscreen m-0" role="document">
             <div class="modal-content border-0">
-                <div class="modal-header bg-slate-900 border-0 py-3 px-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                            <i class="bx bxs-file-pdf text-white fs-4"></i>
+                <div class="modal-header bg-slate-900 border-0 py-2 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <i class="bx bxs-file-pdf text-white fs-5"></i>
                         </div>
                         <div>
-                            <h5 class="modal-title text-white font-bold mb-0">Aperçu du Rapport - Balance</h5>
-                            <p class="text-slate-400 mb-0 text-xs">Veuillez vérifier les informations avant l'exportation</p>
+                            <h5 class="modal-title text-white font-bold mb-0 fs-6">Aperçu du Rapport - Balance</h5>
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <div class="modal-body p-0 bg-slate-800">
-                    <iframe id="pdfPreviewFrame" style="width:100%;height:100%;border:none;" src="about:blank"></iframe>
+                <div class="modal-body p-0 bg-slate-800 d-flex justify-content-center align-items-start" style="height: calc(100vh - 100px); overflow: auto;">
+                    <div style="width: 100%; max-width: 1400px; height: 100%; background: white;">
+                        <iframe id="pdfPreviewFrame" style="width:100%;height:100%;border:none;display:block;" src="about:blank"></iframe>
+                    </div>
                 </div>
-                <div class="modal-footer bg-slate-900 border-0 py-3 px-4">
-                    <button type="button" class="btn btn-label-secondary px-4 py-2 font-bold" data-bs-dismiss="modal">
-                        <i class="bx bx-x me-2"></i>Fermer l'aperçu
+                <div class="modal-footer bg-slate-900 border-0 py-2 px-3">
+                    <button type="button" class="btn btn-label-secondary px-3 py-1" data-bs-dismiss="modal">
+                        <i class="bx bx-x me-1"></i>Fermer l'aperçu
                     </button>
                 </div>
             </div>

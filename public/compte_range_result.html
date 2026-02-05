@@ -1,0 +1,224 @@
+﻿<!DOCTYPE html>
+<html><head><meta charset='UTF-8'><title>Plage de Comptes</title><style>body{font-family:Arial;padding:20px;background:#f5f5f5;}.info{background:#cce5ff;padding:15px;border-left:5px solid blue;margin:20px 0;}.warning{background:#fff3cd;padding:15px;border-left:5px solid orange;margin:20px 0;}table{border-collapse:collapse;background:white;width:100%;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}</style></head><body>
+<h1>­ƒôè Analyse de la Plage de Comptes</h1>
+<div class='info'>
+<h2>Plan Comptable</h2>
+<ul>
+<li><strong>Nombre total de comptes:</strong> 144</li>
+<li><strong>Premier compte:</strong> 10000000 - Agnimel (ID: 9790)</li>
+<li><strong>Dernier compte:</strong> 812000 - VALEURS COMPT. DES CESSION D'IMMO CG (ID: 9789)</li>
+</ul>
+</div>
+<div class='info'>
+<h2>Comptes Utilis├®s dans l'Exercice 5</h2>
+<ul>
+<li><strong>Nombre de comptes distincts:</strong> 37</li>
+<li><strong>Premier compte utilis├®:</strong> 235100</li>
+<li><strong>Dernier compte utilis├®:</strong> 661100</li>
+</ul>
+</div>
+<div class='info'>
+<h2>V├®rification</h2>
+<ul>
+<li><strong>Comptes utilis├®s (IDs uniques):</strong> 37</li>
+<li><strong>Comptes existants dans le plan:</strong> 37</li>
+</ul>
+</div>
+<div class='warning'>
+<h2>­ƒº¬ Test whereHas avec TOUTE la plage</h2>
+<p><strong>Requ├¬te:</strong></p>
+<pre>whereHas('planComptable', function($q) {
+    $q->where('numero_de_compte', '>=', '10000000')
+      ->where('numero_de_compte', '<=', '812000');
+})</pre>
+<p><strong>R├®sultat:</strong> <span style='font-size:24px;color:green;'>364 ├®critures</span></p>
+</div>
+<h2>Liste des Comptes Utilis├®s</h2>
+<table><tr><th>Num├®ro</th><th>Intitul├®</th><th>Nb ├ëcritures</th></tr>
+<tr>
+<td><strong>605300</strong></td>
+<td>COMPTE ├á CR├®ER                     G</td>
+<td>17</td>
+</tr>
+<tr>
+<td><strong>401000</strong></td>
+<td>FR. LUKE INTERNATIONAL SCHOOL      G</td>
+<td>170</td>
+</tr>
+<tr>
+<td><strong>622200</strong></td>
+<td>LOYER                              G</td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>624200</strong></td>
+<td>ENTRETIEN ET R├®PARATIONS DES BIENS G</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>624300</strong></td>
+<td>PRODUIT D'ENTRETIEN                G</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>624100</strong></td>
+<td>ENTRETIEN ET R├®PARATION DE BIEN IMMG</td>
+<td>8</td>
+</tr>
+<tr>
+<td><strong>634300</strong></td>
+<td>REDEVANCES POUR LOGICIELS          G</td>
+<td>5</td>
+</tr>
+<tr>
+<td><strong>632400</strong></td>
+<td>HONORAIRES                         G</td>
+<td>5</td>
+</tr>
+<tr>
+<td><strong>605800</strong></td>
+<td>ACHATS DE TRAVAUX, MAT├®RIELS ET ├®QUG</td>
+<td>13</td>
+</tr>
+<tr>
+<td><strong>628800</strong></td>
+<td>AUTRES FRAIS DE T├®L├®COMUNICATIONS  G</td>
+<td>9</td>
+</tr>
+<tr>
+<td><strong>604300</strong></td>
+<td>PROSUITS D'ENTRETIEN               G</td>
+<td>7</td>
+</tr>
+<tr>
+<td><strong>605700</strong></td>
+<td>ACHATS D'├®TUDES ET PRESTATIONS DE SG</td>
+<td>14</td>
+</tr>
+<tr>
+<td><strong>618300</strong></td>
+<td>COMPTE ├á CR├®ER                     G</td>
+<td>11</td>
+</tr>
+<tr>
+<td><strong>605500</strong></td>
+<td>FOURNITURES DE BUREAU NON STOCKABLEG</td>
+<td>6</td>
+</tr>
+<tr>
+<td><strong>622000</strong></td>
+<td>LOCATION, CHARGES LOCATIVES        G</td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>605100</strong></td>
+<td>FOURNITURES NON STOCKABLES -EAU    G</td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>632401</strong></td>
+<td>HONORAIRES DES PROFESSIONS R├¿GLEMENG</td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>632700</strong></td>
+<td>R├®MUN├®RATIONS DES AUTRES PRESTATAIRG</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>634500</strong></td>
+<td>REDEVANCES POUR SITES INTERNET     G</td>
+<td>6</td>
+</tr>
+<tr>
+<td><strong>244100</strong></td>
+<td>MATERIEL DE BUREAU                 G</td>
+<td>7</td>
+</tr>
+<tr>
+<td><strong>481000</strong></td>
+<td>FOURNISSEUR D'INVESTISSEMENT       G</td>
+<td>10</td>
+</tr>
+<tr>
+<td><strong>616000</strong></td>
+<td>TRANSPORT DE PLIS                  G</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>235100</strong></td>
+<td>AM├®NAGEMENT DE BUREAUX             G</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>605200</strong></td>
+<td>FOURNITURES NON STOCKABLES-CIE     G</td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>244200</strong></td>
+<td>MAT├®RIEL INFORMATIQUE              G</td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>604100</strong></td>
+<td>ACHAT DE MATI├¿RES CONSOMMBALES     G</td>
+<td>6</td>
+</tr>
+<tr>
+<td><strong>605600</strong></td>
+<td>ACHAT DE PETIT MAT├®RIEL ET OUTILLAGG</td>
+<td>13</td>
+</tr>
+<tr>
+<td><strong>638300</strong></td>
+<td>R├®CEPTIONS                         G</td>
+<td>9</td>
+</tr>
+<tr>
+<td><strong>632800</strong></td>
+<td>FRAIS DIVERS                       G</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>631000</strong></td>
+<td>FRAIS BANCAIRES                    G</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>628100</strong></td>
+<td>FRAIS DE T├®L├®COMMUNICATION         G</td>
+<td>5</td>
+</tr>
+<tr>
+<td><strong>235800</strong></td>
+<td>AUTRE AMENAGEMENT DE BUREAOX       G</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>661100</strong></td>
+<td>APPOITEMENTS SALAIRES ET COMMISSIONG</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>422000</strong></td>
+<td>PERSONNEL, REMUNERATIONS DUES      G</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>558000</strong></td>
+<td>COMPTE ├á CR├®ER                     G</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>626500</strong></td>
+<td>DOCUMENTATION G├®N├®RALE             G</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>622800</strong></td>
+<td>LOCATIONS ET CHARGES LOCATIVES DIVEG</td>
+<td>2</td>
+</tr>
+</table>
+</body></html>

@@ -26,14 +26,24 @@ class MasterJournalImport implements ToModel, WithHeadingRow
     */
     public function model(array $row)
     {
-        if (empty($row['code_journal']) || empty($row['intitule']) || empty($row['type'])) {
+        // Tentative de récupération intelligente (Slugified headers ou Index)
+        $code = $row['code_journal'] ?? $row['codejournal'] ?? $row['code'] ?? $row[0] ?? null;
+        $label = $row['intitule'] ?? $row['libelle'] ?? $row['nom'] ?? $row[1] ?? null;
+        $type = $row['type'] ?? $row[2] ?? 'Opérations Diverses';
+
+        if (empty($code) || empty($label)) {
             return null;
         }
 
-        $code = strtoupper($row['code_journal']);
+        // Nettoyage si entête passée par erreur
+        if (str_contains(strtolower($code), 'code') || str_contains(strtolower($label), 'intitule')) {
+            return null;
+        }
+
+        $codeFormatted = strtoupper($code);
 
         $exists = CodeJournal::where('company_id', $this->companyId)
-            ->where('code_journal', $code)
+            ->where('code_journal', $codeFormatted)
             ->exists();
 
         if ($exists) {
@@ -41,9 +51,9 @@ class MasterJournalImport implements ToModel, WithHeadingRow
         }
 
         return new CodeJournal([
-            'code_journal' => $code,
-            'intitule'     => strtoupper($row['intitule']),
-            'type'         => $row['type'],
+            'code_journal' => $codeFormatted,
+            'intitule'     => strtoupper($label),
+            'type'         => $type,
             'user_id'      => $this->userId,
             'company_id'   => $this->companyId,
         ]);

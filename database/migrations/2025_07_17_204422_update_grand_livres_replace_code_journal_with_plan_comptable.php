@@ -11,7 +11,7 @@ class UpdateGrandLivresReplaceCodeJournalWithPlanComptable extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('grand_livres')) {
+        if (Schema::hasTable('grand_livres')) {
         Schema::table('grand_livres', function (Blueprint $table) {
             // Supprimer la contrainte et la colonne code_journals_id
             $table->dropForeign(['code_journals_id']);

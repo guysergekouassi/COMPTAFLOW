@@ -69,6 +69,7 @@ class Kernel extends HttpKernel
         // Notre middleware personnalisé pour gérer les rôles
         'role' => \App\Http\Middleware\RoleMiddleware::class,
         'company.session' => \App\Http\Middleware\CompanySession::class,
+        'exercice.context' => \App\Http\Middleware\ExerciceContextMiddleware::class,
 
         // L'alias 'superadmin' pour la gestion des accès Super Admin
         // 'admin' => \App\Http\Middleware\SuperAdminMiddleware::class,

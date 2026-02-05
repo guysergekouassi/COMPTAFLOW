@@ -14,7 +14,7 @@ return new class extends Migration {
             // Ajouter une nouvelle colonne foreign key
             $table->foreignId('compte_de_tresorerie')
                 ->nullable()
-                ->constrained('plan_comptable')
+                ->constrained('plan_comptables')
                 ->onDelete('cascade');
         });
     }

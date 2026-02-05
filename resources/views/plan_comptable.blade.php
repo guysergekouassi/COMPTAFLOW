@@ -71,7 +71,7 @@
         transition: all 0.2s ease;
         border: 2px solid #f1f5f9 !important;
         background-color: #f8fafc !important;
-        border-radius: 12px !important;
+        border-radius: 16px !important;
         padding: 0.75rem 1rem !important;
         font-size: 0.8rem !important;
         font-weight: 600 !important;
@@ -107,7 +107,7 @@
 
     .btn-save-premium {
         padding: 0.75rem 1rem !important;
-        border-radius: 12px !important;
+        border-radius: 16px !important;
         background-color: #1e40af !important;
         color: white !important;
         font-weight: 800 !important;
@@ -328,7 +328,17 @@
                                         @forelse ($plansComptables as $plan)
                                         <tr class="table-row group">
                                             <td class="px-8 py-6">
-                                                <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
+                                                <div class="flex flex-col justify-center">
+                                                    <div class="flex items-center gap-2">
+                                                        <i class="fa-solid fa-magic text-blue-400 text-xs"></i>
+                                                        <span class="font-mono text-lg font-bold text-blue-700">{{ $plan->numero_de_compte }}</span>
+                                                    </div>
+                                                    @if(!empty($plan->numero_original))
+                                                        <div class="text-[10px] text-slate-400 font-medium italic mt-1 flex items-center gap-1">
+                                                            <i class="fa-solid fa-file-import text-[8px]"></i> Original: {{ $plan->numero_original }}
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="px-8 py-6">
                                                 <p class="font-medium text-slate-800">{{ $plan->intitule }}</p>

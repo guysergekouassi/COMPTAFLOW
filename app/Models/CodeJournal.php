@@ -15,17 +15,15 @@ class CodeJournal extends Model
     use HasFactory, BelongsToTenant;
 
     protected $fillable = [
-        // 'annee',
-        // 'mois',
         'code_journal',
+        'numero_original',
         'intitule',
-        'traitement_analytique',
         'type',
-        'compte_de_contrepartie',
         'compte_de_tresorerie',
-        'poste_tresorerie',
+        'traitement_analytique',
         'rapprochement_sur',
-        'etat_rapprochement',
+        'poste_tresorerie',
+        'compte_de_contrepartie',
         'user_id',
         'company_id',
     ];

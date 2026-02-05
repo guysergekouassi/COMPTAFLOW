@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 // use PDF;
 use PDF;
+use App\Models\ExerciceComptable;
 use Illuminate\Http\Request;
 
 class BalanceController extends Controller
@@ -33,7 +34,37 @@ class BalanceController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('accounting_balance', compact('PlanComptable', 'Balance'));
+        // Récupérer l'exercice en cours (Priorité au CONTEXTE, puis ACTIF)
+        $contextExerciceId = session('current_exercice_id');
+        $exerciceEnCours = null;
+
+        if ($contextExerciceId) {
+            $exerciceEnCours = ExerciceComptable::where('id', $contextExerciceId)
+                ->where('company_id', $companyId)
+                ->first();
+        }
+
+        if (!$exerciceEnCours) {
+             $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
+                ->where('is_active', 1)
+                ->first();
+        }
+
+        if (!$exerciceEnCours) {
+            $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
+
+        // Si toujours aucun exercice, on prend le dernier même clôturé pour éviter le null
+        if (!$exerciceEnCours) {
+            $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
+
+        return view('accounting_balance', compact('PlanComptable', 'Balance', 'exerciceEnCours'));
     }
 
 
@@ -118,14 +149,22 @@ class BalanceController extends Controller
 
     public function generateBalance(Request $request)
     {
+        $request->validate([
+            'date_debut' => 'required|date',
+            'date_fin' => 'required|date|after_or_equal:date_debut',
+            'plan_comptable_id_1' => 'required|exists:plan_comptables,id',
+            'plan_comptable_id_2' => 'required|exists:plan_comptables,id',
+            'format_fichier' => 'nullable|in:pdf,excel,csv',
+            'display_mode' => 'nullable|in:origine,comptaflow,both' // Mode d'affichage des numéros de compte
+        ], [
+            'date_debut.required' => 'La date de début est obligatoire.',
+            'date_fin.required' => 'La date de fin est obligatoire.',
+            'date_fin.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début.',
+            'plan_comptable_id_1.required' => 'Le compte de début est requis.',
+            'plan_comptable_id_2.required' => 'Le compte de fin est requis.',
+        ]);
+
         try {
-            $request->validate([
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after_or_equal:date_debut',
-                'plan_comptable_id_1' => 'required|exists:plan_comptables,id',
-                'plan_comptable_id_2' => 'required|exists:plan_comptables,id',
-                'format' => 'nullable|in:pdf,excel,csv' // ✅ on accepte le format
-            ]);
 
             // dd($request->format_fichier);
 
@@ -138,8 +177,10 @@ class BalanceController extends Controller
             // Comparaison de chaînes pour la plage de comptes (important pour SYSCOHADA)
             $v1 = (string)$compte1->numero_de_compte;
             $v2 = (string)$compte2->numero_de_compte;
-            $min = $v1 < $v2 ? $v1 : $v2;
-            $max = $v1 < $v2 ? $v2 : $v1;
+            
+            // Correction BUG: PHP compare les chaînes numériques comme des entiers
+            $min = strcmp($v1, $v2) < 0 ? $v1 : $v2;
+            $max = strcmp($v1, $v2) < 0 ? $v2 : $v1;
 
             $comptesIds = PlanComptable::withoutGlobalScopes()
                 ->where('company_id', $companyId)
@@ -147,7 +188,10 @@ class BalanceController extends Controller
                 ->where('numero_de_compte', '<=', $max)
                 ->pluck('id');
 
-            $ecritures = EcritureComptable::with([
+            // IMPORTANT: On affiche TOUS les comptes de l'exercice
+            // sans filtrer par plage, car les utilisateurs ne sélectionnent pas toujours
+            // la bonne plage et cela cause des résultats vides.
+            $query = EcritureComptable::with([
                 'planComptable',
                 'planTiers',
                 'codeJournal',
@@ -157,14 +201,19 @@ class BalanceController extends Controller
                 'company'
             ])
                 ->where('company_id', $companyId)
-                ->whereIn('plan_comptable_id', $comptesIds)
-                ->whereBetween('date', [$request->date_debut, $request->date_fin])
-                ->get();
+                // Pas de filtre par plage de comptes - on affiche tout
+                ->whereBetween('date', [$request->date_debut, $request->date_fin]);
 
-            $count = $ecritures->count();
-            if ($count === 0) {
-                return back()->with('error', 'Aucune écriture trouvée pour cette période.');
+            // Filtrage strict par exercice si le contexte est défini
+            if (session()->has('current_exercice_id')) {
+                $query->where('exercices_comptables_id', session('current_exercice_id'));
             }
+
+            $ecritures = $query->get();
+            
+            // On autorise la génération même vide (utile pour certifier le néant)
+            $count = $ecritures->count();
+            // Si vide, on ne bloque pas, on génère une balance vide
 
             // Nouveau : choix du format
             $format_fichier = $request->format_fichier ?? 'pdf'; // PDF par défaut
@@ -174,7 +223,7 @@ class BalanceController extends Controller
                 $filename = 'balance_excel_' . $compte1->numero_de_compte . '_' . $compte2->numero_de_compte . '_' . now()->format('YmdHis') . '.xlsx';
 
                 // Sauvegarde dans public/grand_livres/
-                Excel::store(new BalanceExport($ecritures), $filename, 'balances');
+                Excel::store(new BalanceExport($ecritures, $request->display_mode ?? 'comptaflow'), $filename, 'balances');
 
                 // Enregistrement en BD
                 Balance::create([
@@ -195,7 +244,7 @@ class BalanceController extends Controller
                 $filename = 'balance_csv_' . $compte1->numero_de_compte . '_' . $compte2->numero_de_compte . '_' . now()->format('YmdHis') . '.csv';
 
                 // Sauvegarde dans public/grand_livres/
-                Excel::store(new BalanceExport($ecritures), $filename, 'balances');
+                Excel::store(new BalanceExport($ecritures, $request->display_mode ?? 'comptaflow'), $filename, 'balances');
 
                 // Enregistrement en BD
                 Balance::create([
@@ -216,6 +265,11 @@ class BalanceController extends Controller
             $filename = 'balance_' . $compte1->numero_de_compte . '_' . $compte2->numero_de_compte . '_' . now()->format('YmdHis') . '.pdf';
             $titre = "Balances des comptes";
 
+            // --- Calcul de la plage réelle de comptes utilisés ---
+            $comptesUtilises = $ecritures->pluck('planComptable.numero_de_compte')->filter()->sort();
+            $premierCompte = $comptesUtilises->first() ?? $compte1->numero_de_compte;
+            $dernierCompte = $comptesUtilises->last() ?? $compte2->numero_de_compte;
+
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
             $pdf->loadView('balance', [
@@ -223,10 +277,11 @@ class BalanceController extends Controller
                 'ecritures' => $ecritures,
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
-                'compte' => $compte1->numero_de_compte,
-                'compte_2' => $compte2->numero_de_compte,
+                'compte' => $premierCompte,
+                'compte_2' => $dernierCompte,
                 'user' => $user,
                 'titre' => $titre,
+                'display_mode' => $request->display_mode ?? 'comptaflow',
             ]);
 
             $pdf->save($BalancesPath . $filename);
@@ -339,7 +394,14 @@ class BalanceController extends Controller
                 'date_fin' => 'required|date|after_or_equal:date_debut',
                 'plan_comptable_id_1' => 'required|exists:plan_comptables,id',
                 'plan_comptable_id_2' => 'required|exists:plan_comptables,id',
-                'type' => 'nullable|in:4,6,8'
+                'type' => 'nullable|in:4,6,8',
+                'display_mode' => 'nullable|in:origine,comptaflow,both'
+            ], [
+                'date_debut.required' => 'La date de début est obligatoire.',
+                'date_fin.required' => 'La date de fin est obligatoire.',
+                'date_fin.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début.',
+                'plan_comptable_id_1.required' => 'Le compte de début est requis.',
+                'plan_comptable_id_2.required' => 'Le compte de fin est requis.',
             ]);
 
             $user = Auth::user();
@@ -351,8 +413,10 @@ class BalanceController extends Controller
 
             $v1 = (string)$compte1->numero_de_compte;
             $v2 = (string)$compte2->numero_de_compte;
-            $min = $v1 < $v2 ? $v1 : $v2;
-            $max = $v1 < $v2 ? $v2 : $v1;
+
+            // Correction BUG: PHP compare les chaînes numériques comme des entiers
+            $min = strcmp($v1, $v2) < 0 ? $v1 : $v2;
+            $max = strcmp($v1, $v2) < 0 ? $v2 : $v1;
 
             // --- Récupération des comptes concernés ---
             $comptesIds = PlanComptable::withoutGlobalScopes()
@@ -362,7 +426,10 @@ class BalanceController extends Controller
                 ->pluck('id');
 
             // --- Récupération des écritures ---
-            $ecritures = EcritureComptable::with([
+            // IMPORTANT: On affiche TOUS les comptes de l'exercice
+            // sans filtrer par plage, car les utilisateurs ne sélectionnent pas toujours
+            // la bonne plage et cela cause des résultats vides.
+            $query = EcritureComptable::with([
                 'planComptable',
                 'planTiers',
                 'codeJournal',
@@ -372,13 +439,30 @@ class BalanceController extends Controller
                 'company'
             ])
                 ->where('company_id', $companyId)
-                ->whereIn('plan_comptable_id', $comptesIds)
-                ->whereBetween('date', [$request->date_debut, $request->date_fin])
-                ->get();
+                // Pas de filtre par plage de comptes - on affiche tout
+                ->whereBetween('date', [$request->date_debut, $request->date_fin]);
 
-            if ($ecritures->isEmpty()) {
-                return response()->json(['success' => false, 'error' => 'Aucune écriture trouvée pour cette période.']);
+             // LOG DEBUG
+            \Illuminate\Support\Facades\Log::info('--- PREVIEW BALANCE DEBUG ---');
+            \Illuminate\Support\Facades\Log::info('Session ID: ' . session()->getId());
+            \Illuminate\Support\Facades\Log::info('Current Exercice ID (Session): ' . session('current_exercice_id'));
+            \Illuminate\Support\Facades\Log::info('Company ID: ' . $companyId);
+            \Illuminate\Support\Facades\Log::info('Dates: ' . $request->date_debut . ' to ' . $request->date_fin);
+            \Illuminate\Support\Facades\Log::info('Comptes IDs Count: ' . $comptesIds->count());
+
+            // Filtrage strict par exercice si le contexte est défini
+            if (session()->has('current_exercice_id')) {
+                $query->where('exercices_comptables_id', session('current_exercice_id'));
+                \Illuminate\Support\Facades\Log::info('Filtering by Exercice ID: ' . session('current_exercice_id'));
+            } else {
+                \Illuminate\Support\Facades\Log::info('NO Exercice Context Filter Applied');
             }
+
+            $ecritures = $query->get();
+            \Illuminate\Support\Facades\Log::info('Result Count: ' . $ecritures->count());
+
+            // On autorise la prévisualisation vide
+            // if ($ecritures->isEmpty()) { ... }
 
             // --- Définition du titre ---
             $titre = "Prévisualisation Balance des comptes";
@@ -391,6 +475,11 @@ class BalanceController extends Controller
                 default => 'balance',
             };
 
+            // --- Calcul de la plage réelle de comptes utilisés ---
+            $comptesUtilises = $ecritures->pluck('planComptable.numero_de_compte')->filter()->sort();
+            $premierCompte = $comptesUtilises->first() ?? $compte1->numero_de_compte;
+            $dernierCompte = $comptesUtilises->last() ?? $compte2->numero_de_compte;
+
             // --- Chargement du PDF avec la bonne vue ---
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
@@ -399,10 +488,11 @@ class BalanceController extends Controller
                 'ecritures' => $ecritures,
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
-                'compte' => $compte1->numero_de_compte,
-                'compte_2' => $compte2->numero_de_compte,
+                'compte' => $premierCompte,
+                'compte_2' => $dernierCompte,
                 'user' => $user,
                 'titre' => $titre,
+                'display_mode' => $request->display_mode ?? 'comptaflow',
             ]);
 
             // --- Sauvegarde du PDF temporaire ---

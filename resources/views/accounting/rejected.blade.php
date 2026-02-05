@@ -76,6 +76,7 @@
                                                             <thead class="bg-light">
                                                                 <tr>
                                                                     <th>Journal</th>
+                                                                    <th>Trésorerie</th>
                                                                     <th>Description</th>
                                                                     <th>Compte G.</th>
                                                                     <th>Débit</th>
@@ -86,6 +87,13 @@
                                                                 @foreach($group as $item)
                                                                 <tr class="border-bottom border-light">
                                                                     <td><span class="badge bg-label-secondary">{{ $item->codeJournal->code_journal }}</span></td>
+                                                                    <td>
+                                                                        @if($item->compteTresorerie)
+                                                                            <span class="badge bg-label-info">{{ $item->compteTresorerie->name }}</span>
+                                                                        @else
+                                                                            <span class="text-muted">-</span>
+                                                                        @endif
+                                                                    </td>
                                                                     <td class="small">{{ $item->description_operation }}</td>
                                                                     <td><span class="fw-medium">{{ $item->planComptable->numero_de_compte }}</span></td>
                                                                     <td class="text-dark fw-bold">{{ number_format($item->debit, 0, ',', ' ') }}</td>

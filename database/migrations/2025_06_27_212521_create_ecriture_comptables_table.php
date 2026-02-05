@@ -26,10 +26,9 @@ return new class extends Migration {
             $table->foreignId('code_journal_id')->constrained('code_journals')->onDelete('cascade');
 
 
-            $table->foreignId('exercices_comptables_id')->constrained('exercices_comptables')->onDelete('cascade');
-
-
-            $table->foreignId('journaux_saisis_id')->constrained('journaux_saisis')->onDelete('cascade');
+            // $table->foreignId('exercices_comptables_id')->constrained('exercices_comptables')->onDelete('cascade');
+            
+            // $table->foreignId('journaux_saisis_id')->constrained('journaux_saisis')->onDelete('cascade');
 
 
             $table->decimal('debit', 15, 2)->default(0.00);

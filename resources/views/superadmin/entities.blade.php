@@ -101,7 +101,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Gouvernance / Gestion des Entités'])
+                @include('components.header', ['page_title' => 'Gestion des Entités'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
 
@@ -138,7 +138,7 @@
                     <!-- Header Standardisé -->
                     <div class="d-flex justify-content-between align-items-center mb-6">
                         <div>
-                            <h5 class="mb-1 text-premium-gradient">Gouvernance / Gestion des Entités</h5>
+                            <h5 class="mb-1 text-premium-gradient">Gestion des Entités</h5>
                             <p class="text-muted small mb-0">Pilotez les structures et les administrateurs du réseau.</p>
                         </div>
                         <a href="{{ route('superadmin.companies.create') }}" class="btn btn-primary rounded-pill px-4">
@@ -209,7 +209,7 @@
                         </button>
 
                         {{-- Delete --}}
-                        <form action="{{ route('companies.destroy', $company->id) }}" method="POST" class="inline" 
+                        <form action="{{ route('superadmin.companies.destroy', $company->id) }}" method="POST" class="inline" 
                             onsubmit="return confirm('Souhaitez-vous vraiment supprimer {{ $company->company_name }} ?');">
                             @csrf
                             @method('DELETE')

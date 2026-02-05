@@ -163,43 +163,97 @@
 
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
                                         <!-- Traitement -->
+                                        @php
+                                            $showTraitement = auth()->user()->hasPermission('modal_saisie_direct') || 
+                                                              auth()->user()->hasPermission('accounting_entry_list') || 
+                                                              auth()->user()->hasPermission('ecriture.rejected') || 
+                                                              auth()->user()->hasPermission('brouillons.index') || 
+                                                              auth()->user()->hasPermission('immobilisations.index') || 
+                                                              auth()->user()->hasPermission('exercice_comptable');
+                                        @endphp
+                                        @if($showTraitement)
                                         <div class="space-y-3">
                                             <h5 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Traitement</h5>
-                                            <a href="{{ route('accounting_entry_real') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold pulse bg-blue-700 text-white border-none transition-all hover:bg-blue-800">
+                                            @if(auth()->user()->hasPermission('modal_saisie_direct'))
+                                            <button type="button" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold pulse bg-blue-700 text-white border-none transition-all hover:bg-blue-800">
                                                 <i class="fas fa-keyboard w-5"></i> Nouvelle Saisie
-                                            </a>
+                                            </button>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('accounting_entry_list'))
                                             <a href="{{ route('accounting_entry_list') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-list-ul w-5"></i> Écritures
                                             </a>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('ecriture.rejected'))
+                                            <a href="{{ route('ecriture.rejected') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-file-circle-xmark w-5"></i> Écritures rejetées
+                                            </a>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('brouillons.index'))
+                                            <a href="{{ route('brouillons.index') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-file-pen w-5"></i> Brouillons
+                                            </a>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('immobilisations.index'))
+                                            <a href="{{ route('immobilisations.index') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                                                <i class="fas fa-building-circle-check w-5"></i> Immobilisations
+                                            </a>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('exercice_comptable'))
                                             <a href="{{ route('exercice_comptable') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-history w-5"></i> Exercice
                                             </a>
+                                            @endif
                                         </div>
+                                        @endif
 
                                         <!-- Paramétrage -->
+                                        @php
+                                            $showParametrage = auth()->user()->hasPermission('plan_comptable') || 
+                                                               auth()->user()->hasPermission('plan_tiers') || 
+                                                               auth()->user()->hasPermission('accounting_journals');
+                                        @endphp
+                                        @if($showParametrage)
                                         <div class="space-y-3">
                                             <h5 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Paramétrage</h5>
+                                            @if(auth()->user()->hasPermission('plan_comptable'))
                                             <a href="{{ route('plan_comptable') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-book w-5"></i> Plan Comptable
                                             </a>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('plan_tiers'))
                                             <a href="{{ route('plan_tiers') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-address-book w-5"></i> Plan Tiers
                                             </a>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('accounting_journals'))
                                             <a href="{{ route('accounting_journals') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-journal-whills w-5"></i> Journaux
                                             </a>
+                                            @endif
                                         </div>
+                                        @endif
 
                                         <!-- Rapports -->
+                                        @php
+                                            $showRapports = auth()->user()->hasPermission('accounting_ledger') || 
+                                                            auth()->user()->hasPermission('accounting_balance');
+                                        @endphp
+                                        @if($showRapports)
                                         <div class="space-y-3">
                                             <h5 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Rapports</h5>
+                                            @if(auth()->user()->hasPermission('accounting_ledger'))
                                             <a href="{{ route('accounting_ledger') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-file-invoice w-5"></i> Grand Livre
                                             </a>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('accounting_balance'))
                                             <a href="{{ route('accounting_balance') }}" class="nav-button w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                                                 <i class="fas fa-balance-scale w-5"></i> Balance
                                             </a>
+                                            @endif
                                         </div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -281,5 +335,6 @@
         <!-- Overlay -->
         <div class="layout-overlay layout-menu-toggle"></div>
     </div>
+    @include('components.modal_saisie_direct')
 </body>
 </html>

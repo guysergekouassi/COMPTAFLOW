@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        /*
         Schema::table('companies', function (Blueprint $table) {
             $table->boolean('is_blocked')->default(false)->after('is_active');
             $table->string('block_reason')->nullable()->after('is_blocked');
@@ -24,6 +25,7 @@ return new class extends Migration
             $table->timestamp('blocked_at')->nullable()->after('block_reason');
             $table->unsignedBigInteger('blocked_by')->nullable()->after('blocked_at');
         });
+        */
     }
 
     /**

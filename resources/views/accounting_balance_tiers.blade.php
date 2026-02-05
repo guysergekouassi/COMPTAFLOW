@@ -356,12 +356,20 @@
                                                             <div class="row g-3">
                                                                 <div class="col-md-6">
                                                                     <label for="date_debut_modal" class="input-label-premium">Date de début</label>
-                                                                    <input type="date" id="date_debut_modal" name="date_debut" class="input-field-premium" required />
+                                                                    <input type="date" id="date_debut_modal" name="date_debut" class="input-field-premium" 
+                                                                        value="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                                        min="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                                        max="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                                        required />
                                                                     <div class="invalid-feedback">Veuillez renseigner la date de début.</div>
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <label for="date_fin_modal" class="input-label-premium">Date de fin</label>
-                                                                    <input type="date" id="date_fin_modal" name="date_fin" class="input-field-premium" required />
+                                                                    <input type="date" id="date_fin_modal" name="date_fin" class="input-field-premium" 
+                                                                        value="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                                        min="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('Y-m-d') : '' }}"
+                                                                        max="{{ $exerciceEnCours ? \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('Y-m-d') : '' }}"
+                                                                        required />
                                                                     <div class="invalid-feedback">Veuillez renseigner la date de fin.</div>
                                                                 </div>
                                                             </div>

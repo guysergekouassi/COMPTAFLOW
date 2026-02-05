@@ -57,20 +57,70 @@ class EcritureComptableController extends Controller
         }
         $exercicesVisibles = $exercicesVisibles->get();
 
-        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')->orderBy('numero_de_compte')->get();
-        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')->with('compte')->get();
+        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule', 'numero_original')->orderBy('numero_de_compte')->get();
+        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general', 'numero_original')->with('compte')->get();
         $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')->orderBy('name')->get();
 
-        $lastSaisie = EcritureComptable::max('id');
-        $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
+        // Générer le numéro utilisateur au format CPT-XX_000000000001
+        $initials = $user->initiales;
+        $prefix = "CPT-" . $initials . "_";
+        $lastUserSaisie = EcritureComptable::where('company_id', $user->company_id)
+            ->where('n_saisie_user', 'like', $prefix . '%')
+            ->max('id');
+        
+        $nextSequence = ($lastUserSaisie ? $lastUserSaisie + 1 : 1);
+        // Note: Pour être plus précis on devrait compter les n_saisie_user distincts mais count(distinct) ou max sur la sequence suffixe est mieux.
+        // On va utiliser une approche simple pour l'init :
+        $nextSaisieNumber = $prefix . str_pad($nextSequence, 12, '0', STR_PAD_LEFT);
+
         $activeCompanyId = session('current_company_id', $user->company_id);
 
-        $query = EcritureComptable::where('company_id', $user->company_id)->orderBy('created_at', 'desc');
-        $ecritures = $query->with(['planComptable', 'planTiers','compteTresorerie'])->get();
+        $query = EcritureComptable::where('company_id', $user->company_id);
+        
+        // Filtrer par exercice si présent
+        if (!empty($data['id_exercice'])) {
+            $query->where('exercices_comptables_id', $data['id_exercice']);
+        }
+
+        $ecritures = $query->with(['planComptable', 'planTiers','compteTresorerie'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Gestion du mode édition depuis l'approbation
+        $approvalEditingData = null;
+        if ($request->has('approval_edit')) {
+            try {
+                $approval = Approval::findOrFail($request->approval_edit);
+                $nSaisie = $approval->data['n_saisie'] ?? null;
+                
+                if ($nSaisie) {
+                    $lines = EcritureComptable::where('company_id', $activeCompanyId)
+                        ->where('n_saisie', $nSaisie)
+                        ->get();
+                        
+                    if ($lines->isNotEmpty()) {
+                        $first = $lines->first();
+                        $approvalEditingData = [
+                            'approval_id' => $approval->id,
+                            'n_saisie' => $nSaisie,
+                            'date' => $first->date,
+                            'description' => $first->description_operation,
+                            'reference' => $first->reference_piece,
+                            'code_journal_id' => $first->code_journal_id,
+                            'compte_tresorerie_id' => $first->compte_tresorerie_id,
+                            'lines' => $lines
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Ignorer ou logger l'erreur
+            }
+        }
 
         return view('accounting_entry_real', compact(
             'plansComptables', 'plansTiers', 'data', 'ecritures', 
-            'nextSaisieNumber', 'comptesTresorerie', 'exercicesVisibles'
+            'nextSaisieNumber', 'comptesTresorerie', 'exercicesVisibles',
+            'approvalEditingData'
         ));
     }
 
@@ -82,8 +132,13 @@ class EcritureComptableController extends Controller
         $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')->orderBy('numero_de_compte')->get();
         $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')->with('compte')->get();
         
-        $lastSaisie = EcritureComptable::max('id');
-        $nextSaisieNumber = str_pad(($lastSaisie ? $lastSaisie + 1 : 1), 12, '0', STR_PAD_LEFT);
+        $initials = $user->initiales;
+        $prefix = "CPT-" . $initials . "_";
+        $lastUserSaisie = EcritureComptable::where('company_id', $user->company_id)
+            ->where('n_saisie_user', 'like', $prefix . '%')
+            ->max('id');
+        $nextSequence = ($lastUserSaisie ? $lastUserSaisie + 1 : 1);
+        $nextSaisieNumber = $prefix . str_pad($nextSequence, 12, '0', STR_PAD_LEFT);
 
         return view('accounting.scan', compact('plansComptables', 'plansTiers', 'data', 'nextSaisieNumber'));
     }
@@ -220,10 +275,10 @@ class EcritureComptableController extends Controller
                     ->first();
             }
 
-            if (!$exerciceActif) {
+            if (!$exerciceActif || $exerciceActif->cloturer) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Aucun exercice comptable actif trouvé.'
+                    'message' => 'Impossible d\'enregistrer : L\'exercice comptable est clôturé ou inexistant.'
                 ], 422);
             }
 
@@ -242,12 +297,21 @@ class EcritureComptableController extends Controller
                         }
                     }
                 ],
-                'n_saisie' => 'required|string|max:12',
-                'code_journal' => 'required|exists:code_journaux,id',
+                'n_saisie' => 'required|string|max:50',
+                'code_journal' => [
+                    'required', 
+                    \Illuminate\Validation\Rule::exists('code_journaux', 'id')->where('company_id', $activeCompanyId)
+                ],
                 'description_operation' => 'required|string|max:255',
                 'reference_piece' => 'nullable|string|max:50',
-                'plan_comptable_id' => 'required|exists:plan_comptables,id',
-                'plan_tiers_id' => 'nullable|exists:plan_tiers,id',
+                'plan_comptable_id' => [
+                    'required',
+                    \Illuminate\Validation\Rule::exists('plan_comptables', 'id')->where('company_id', $activeCompanyId)
+                ],
+                'plan_tiers_id' => [
+                    'nullable',
+                    \Illuminate\Validation\Rule::exists('plan_tiers', 'id')->where('company_id', $activeCompanyId)
+                ],
                 'debit' => 'nullable|numeric|min:0',
                 'credit' => 'nullable|numeric|min:0',
                 'plan_analytique' => 'nullable|boolean',
@@ -279,11 +343,33 @@ class EcritureComptableController extends Controller
             $hasApprovalPower = $user->hasPermission('admin.approvals');
             $status = $hasApprovalPower ? 'approved' : 'pending';
 
+            $date = \Carbon\Carbon::parse($data['date']);
+            $journalSaisi = \App\Models\JournalSaisi::firstOrCreate([
+                'annee' => $date->year,
+                'mois' => $date->month,
+                'exercices_comptables_id' => $exerciceActif->id,
+                'code_journals_id' => $data['code_journal'],
+                'company_id' => $activeCompanyId,
+            ], ['user_id' => $user->id]);
+
+            // Générer le numéro approprié selon le statut
+            $nSaisie = null;
+            $nSaisieUser = $request->n_saisie; // Numéro utilisateur fourni par le formulaire
+            
+            if ($status === 'approved') {
+                // Pour les écritures approuvées: générer le numéro global ECR_
+                $nSaisie = $this->generateGlobalSaisieNumber($activeCompanyId);
+            } else {
+                // Pour les écritures en attente: utiliser le numéro utilisateur
+                $nSaisie = $nSaisieUser;
+            }
+
             // Préparer les données pour la création
             $ecritureData = [
                 'company_id' => $activeCompanyId,
                 'user_id' => $user->id,
-                'n_saisie' => $request->n_saisie,
+                'n_saisie' => $nSaisie,
+                'n_saisie_user' => $nSaisieUser,
                 'code_journal_id' => $data['code_journal'],
                 'exercices_comptables_id' => $exerciceActif->id,
                 'date' => $data['date'],
@@ -298,6 +384,7 @@ class EcritureComptableController extends Controller
                 'compte_tresorerie_id' => $request->compte_tresorerie_id ?? $data['compte_tresorerie_id'] ?? null,
                 'piece_justificatif' => $data['piece_justificatif'] ?? null,
                 'statut' => $status,
+                'journaux_saisis_id' => $journalSaisi->id,
             ];
 
             $ecriture = EcritureComptable::create($ecritureData);
@@ -310,7 +397,7 @@ class EcritureComptableController extends Controller
                     'type' => 'accounting_entry',
                     'status' => 'pending',
                     'requested_by' => $user->id,
-                    'data' => ['n_saisie' => $ecriture->n_saisie]
+                    'data' => ['n_saisie' => $ecriture->n_saisie] // Stocker le numéro utilisateur
                 ]);
             }
             
@@ -328,6 +415,10 @@ class EcritureComptableController extends Controller
 
     public function storeMultiple(Request $request)
     {
+            \Illuminate\Support\Facades\Log::info('EcritureComptableController@storeMultiple called', [
+            'request' => $request->all(),
+            'user_id' => auth()->id()
+        ]);
         try {
             $user = Auth::user();
             if (!$user) {
@@ -347,8 +438,8 @@ class EcritureComptableController extends Controller
                     ->first();
             }
 
-            if (!$exerciceActif) {
-                return response()->json(['success' => false, 'error' => 'Aucun exercice actif trouvé.'], 422);
+            if (!$exerciceActif || $exerciceActif->cloturer) {
+                return response()->json(['success' => false, 'error' => 'Impossible d\'enregistrer : L\'exercice est clôturé ou inexistant.'], 422);
             }
 
             $ecritures = $request->input('ecritures');
@@ -375,6 +466,20 @@ class EcritureComptableController extends Controller
 
             DB::beginTransaction();
             $firstEcriture = null;
+            $globalNSaisie = null;
+            $userNSaisie = null;
+
+            // Générer le numéro approprié selon le statut
+            if ($status === 'approved') {
+                // Pour les écritures approuvées: générer le numéro global ECR_
+                $globalNSaisie = $this->generateGlobalSaisieNumber($activeCompanyId);
+            } else {
+                // Pour les écritures en attente: utiliser le numéro utilisateur CPT-{initiales}_
+                $userNSaisie = $ecritures[0]['n_saisie'] ?? $ecritures[0]['numero_saisie'] ?? null;
+                if (!$userNSaisie) {
+                    throw new \Exception("Le numéro de saisie utilisateur est requis pour les écritures en attente.");
+                }
+            }
 
             foreach ($ecritures as $data) {
                 // ... (existing logic)
@@ -398,7 +503,17 @@ class EcritureComptableController extends Controller
 
                 $ecriture = new EcritureComptable();
                 $ecriture->date = $dateString;
-                $ecriture->n_saisie = $data['n_saisie'] ?? $data['numero_saisie'] ?? null;
+                
+                // Attribution du numéro selon le statut
+                if ($status === 'approved') {
+                    $ecriture->n_saisie = $globalNSaisie; // Numéro GLOBAL (ECR_)
+                    $ecriture->n_saisie_user = $data['n_saisie'] ?? $data['numero_saisie'] ?? null; // Numéro d'origine (User)
+                } else {
+                    // Pour les écritures en attente: le numéro utilisateur dans les deux champs
+                    $ecriture->n_saisie = $userNSaisie; // Numéro utilisateur (CPT-XXX_)
+                    $ecriture->n_saisie_user = $userNSaisie; // Même numéro pour traçabilité
+                }
+                
                 $ecriture->description_operation = $data['description_operation'] ?? $data['description'] ?? '';
                 $ecriture->reference_piece = $data['reference_piece'] ?? $data['reference'] ?? null;
                 $ecriture->plan_comptable_id = $planComptableId;
@@ -425,7 +540,7 @@ class EcritureComptableController extends Controller
                     'type' => 'accounting_entry',
                     'status' => 'pending',
                     'requested_by' => $user->id,
-                    'data' => ['n_saisie' => $firstEcriture->n_saisie]
+                    'data' => ['n_saisie' => $firstEcriture->n_saisie] // Stocker le numéro utilisateur
                 ]);
             }
 
@@ -442,6 +557,10 @@ class EcritureComptableController extends Controller
             return response()->json(['success' => true, 'message' => $status === 'approved' ? 'Écritures validées avec succès.' : 'Écritures enregistrées (en attente d\'approbation).']);
         } catch (\Exception $e) {
             DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Error in storeMultiple: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
@@ -454,10 +573,24 @@ class EcritureComptableController extends Controller
         $data = $request->all();
         $activeCompanyId = session('current_company_id', $user->company_id);
 
-        $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
-            ->where('is_active', 1)
-            ->first();
-            
+        // PRIORITÉ 1 : Exercice sélectionné en session (contexte utilisateur)
+        $exerciceContextId = session('current_exercice_id');
+        $exerciceActif = null;
+        
+        if ($exerciceContextId) {
+            $exerciceActif = ExerciceComptable::where('id', $exerciceContextId)
+                ->where('company_id', $activeCompanyId)
+                ->first();
+        }
+        
+        // PRIORITÉ 2 : Exercice actif par défaut
+        if (!$exerciceActif) {
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('is_active', 1)
+                ->first();
+        }
+        
+        // PRIORITÉ 3 : Dernier exercice non clôturé
         if (!$exerciceActif) {
             $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
                 ->where('cloturer', 0)
@@ -466,6 +599,14 @@ class EcritureComptableController extends Controller
         }
             
         $baseQuery = EcritureComptable::where('company_id', $activeCompanyId);
+        
+        // FILTRE EXERCICE STRICT
+        if ($exerciceActif) {
+            $baseQuery->where('exercices_comptables_id', $exerciceActif->id);
+        } else {
+            // Si vraiment aucun exercice, on ne retourne rien (sécurité)
+            $baseQuery->whereRaw('1 = 0');
+        }
         
         // Logique de filtrage par rôle/permission
         if (!$user->hasPermission('admin.approvals')) {
@@ -513,6 +654,64 @@ class EcritureComptableController extends Controller
         ]);
     }
 
+    public function getNextSaisieNumber(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) return response()->json(['error' => 'Non authentifié'], 401);
+
+            $activeCompanyId = session('current_company_id', $user->company_id);
+            $initials = $user->initiales;
+            $prefix = "CPT-" . $initials . "_";
+
+            // Trouver le dernier numéro utilisateur pour cet utilisateur et cette entreprise
+            $lastEntry = EcritureComptable::where('company_id', $activeCompanyId)
+                ->where('n_saisie_user', 'like', $prefix . '%')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $nextNumber = 1;
+            if ($lastEntry && $lastEntry->n_saisie_user) {
+                $parts = explode('_', $lastEntry->n_saisie_user);
+                if (count($parts) >= 2) {
+                    $lastSequence = (int) end($parts);
+                    $nextNumber = $lastSequence + 1;
+                }
+            }
+
+            $formattedNumber = $prefix . str_pad($nextNumber, 12, '0', STR_PAD_LEFT);
+
+            return response()->json([
+                'success' => true,
+                'numero' => $formattedNumber,
+                'prefix' => $prefix
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Génère un numéro de saisie global séquentiel au format ECR_000000000001
+     */
+    private function generateGlobalSaisieNumber($companyId)
+    {
+        // On cherche le max de n_saisie qui commence par ECR_
+        $lastEntry = EcritureComptable::where('company_id', $companyId)
+            ->where('n_saisie', 'like', 'ECR_%')
+            ->orderBy('n_saisie', 'desc')
+            ->first();
+
+        $nextNumber = 1;
+        if ($lastEntry) {
+            $lastNSaisie = $lastEntry->n_saisie;
+            $numberPart = str_replace('ECR_', '', $lastNSaisie);
+            $nextNumber = (int)$numberPart + 1;
+        }
+
+        return 'ECR_' . str_pad($nextNumber, 12, '0', STR_PAD_LEFT);
+    }
+
     public function getCompteParJournal(){
         // On cherche le compte de trésorerie lié au journal
         $journal = CodeJournal::with('compteTresorerie')->find($journalId);
@@ -531,10 +730,40 @@ class EcritureComptableController extends Controller
         if (!$user) return redirect()->route('login');
 
         $activeCompanyId = session('current_company_id', $user->company_id);
+        
+        // PRIORITÉ 1 : Exercice sélectionné en session (contexte utilisateur)
+        $exerciceContextId = session('current_exercice_id');
+        $exerciceActif = null;
+        
+        if ($exerciceContextId) {
+            $exerciceActif = ExerciceComptable::where('id', $exerciceContextId)
+                ->where('company_id', $activeCompanyId)
+                ->first();
+        }
+        
+        // PRIORITÉ 2 : Exercice actif par défaut
+        if (!$exerciceActif) {
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('is_active', 1)
+                ->first();
+        }
+        
+        // PRIORITÉ 3 : Dernier exercice non clôturé
+        if (!$exerciceActif) {
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
 
-        $query = EcritureComptable::with(['planComptable', 'planTiers', 'codeJournal'])
+        $query = EcritureComptable::with(['planComptable', 'planTiers', 'codeJournal', 'compteTresorerie'])
             ->where('company_id', $activeCompanyId)
             ->where('statut', 'rejected');
+        
+        // FILTRER par exercice actif
+        if ($exerciceActif) {
+            $query->where('exercices_comptables_id', $exerciceActif->id);
+        }
 
         if (!$user->hasPermission('admin.approvals')) {
             $query->where('user_id', $user->id);
@@ -542,6 +771,83 @@ class EcritureComptableController extends Controller
 
         $ecritures = $query->orderBy('created_at', 'desc')->get();
 
-        return view('accounting.rejected', compact('ecritures'));
+        return view('accounting.rejected', compact('ecritures', 'exerciceActif'));
+    }
+    public function updateFromApproval(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user->hasPermission('admin.approvals')) {
+            return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $approvalId = $request->input('approval_id');
+            $approval = Approval::findOrFail($approvalId);
+            $oldNSaisie = $approval->data['n_saisie'];
+            $activeCompanyId = session('current_company_id', $user->company_id);
+
+            // 1. Supprimer les anciennes lignes (Pending)
+            EcritureComptable::where('company_id', $activeCompanyId)
+                ->where('n_saisie', $oldNSaisie)
+                ->delete();
+
+            // 2. Générer le NOUVEAU numéro global (Séquentiel)
+            $newGlobalNSaisie = $this->generateGlobalSaisieNumber($activeCompanyId);
+
+            // 3. Créer les nouvelles lignes
+            $ecritures = $request->input('ecritures');
+            if (is_string($ecritures)) $ecritures = json_decode($ecritures, true);
+
+            // Fichier
+            $pieceFilename = null;
+            $file = $request->file('piece_justificatif') ?? $request->file('ecritures.0.piece_justificatif');
+            if ($file) {
+                $pieceFilename = time() . '_' . preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
+                $file->move(public_path('justificatifs'), $pieceFilename);
+            } else {
+                // Tenter de récupérer l'ancien fichier s'il n'y en a pas de nouveau ?
+                // Idéalement il faudrait le passer dans le formulaire si on veut le garder.
+                // Pour simplifier ici, on suppose qu'il faut le re-uploader ou gérer un champ hidden 'existing_file'
+            }
+
+            foreach ($ecritures as $data) {
+                EcritureComptable::create([
+                    'company_id' => $activeCompanyId,
+                    'user_id' => $approval->requested_by, // Garder l'user original ? Ou mettre l'admin ? Mieux vaut garder l'original.
+                    'n_saisie' => $newGlobalNSaisie, // Numéro GLOBAL
+                    'n_saisie_user' => $oldNSaisie, // On garde le préfixe utilisateur original
+                    'code_journal_id' => $data['code_journal_id'] ?? $data['journal_id'],
+                    'exercices_comptables_id' => $data['exercices_comptables_id'] ?? $data['exercice_id'],
+                    'date' => $data['date'],
+                    'description_operation' => $data['description_operation'],
+                    'reference_piece' => $data['reference_piece'] ?? null,
+                    'plan_comptable_id' => $data['plan_comptable_id'] ?? $data['compte_general'],
+                    'plan_tiers_id' => $data['plan_tiers_id'] ?? $data['compte_tiers'] ?? null,
+                    'debit' => $data['debit'] ?? 0,
+                    'credit' => $data['credit'] ?? 0,
+                    'plan_analytique' => $data['plan_analytique'] ?? 0,
+                    'compte_tresorerie_id' => $data['compte_tresorerie_id'] ?? null,
+                    'piece_justificatif' => $pieceFilename, // Ou ancien fichier
+                    'statut' => 'approved',
+                    'admin_modified' => true,
+                ]);
+            }
+
+            // 4. Mettre à jour l'approbation
+            $approval->update([
+                'status' => 'approved',
+                'handled_by' => $user->id,
+            ]);
+
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Écriture modifiée et validée avec succès.', 'redirect' => route('approvals')]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }

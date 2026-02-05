@@ -20,6 +20,7 @@ class EcritureComptable extends Model
     protected $fillable = [
         'date',
         'n_saisie',
+        'n_saisie_user',
         'description_operation',
         'reference_piece',
         'plan_comptable_id',  // compte_general
@@ -32,7 +33,7 @@ class EcritureComptable extends Model
         'debit',
         'credit',
         'compte_tresorerie_id',
-        //  'type_flux',
+        'type_flux',
         'user_id',
         'company_id',
         'statut',
@@ -85,5 +86,10 @@ class EcritureComptable extends Model
     {
         // Assurez-vous d'importer le modèle App\Models\CompteTresorerie si ce n'est pas déjà fait
         return $this->belongsTo(CompteTresorerie::class);
+    }
+
+    public function immobilisation()
+    {
+        return $this->hasOne(Immobilisation::class, 'ecriture_id');
     }
 }
