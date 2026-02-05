@@ -379,6 +379,7 @@ public function index()
                     'code_journal' => 'RAN',
                     'intitule' => 'REPORT À NOUVEAU',
                     'type' => 'Opérations Diverses',
+                    'traitement_analytique' => 0,
                     'user_id' => Auth::id()
                 ]);
             }
