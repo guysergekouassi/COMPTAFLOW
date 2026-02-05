@@ -168,7 +168,10 @@ public function index()
             $exercice = new ExerciceComptable();
             $exercice->date_debut = $request->date_debut;
             $exercice->date_fin = $request->date_fin;
-            $exercice->intitule = $request->intitule;
+            
+            // Génération automatique de l'intitulé
+            $year = Carbon::parse($request->date_debut)->year;
+            $exercice->intitule = "EXERCICE $year";
             $exercice->user_id = $user->id;
             $exercice->company_id = $companyId;
             $exercice->nombre_journaux_saisis = 0;
@@ -559,7 +562,11 @@ public function index()
             'intitule' => 'required|string|max:255'
         ]);
 
-        $exercice->update($request->all());
+        $data = $request->all();
+        $year = Carbon::parse($request->date_debut)->year;
+        $data['intitule'] = "EXERCICE $year";
+
+        $exercice->update($data);
 
         return redirect()->route('exercice_comptable')
             ->with('success', 'Exercice mis à jour avec succès.');
