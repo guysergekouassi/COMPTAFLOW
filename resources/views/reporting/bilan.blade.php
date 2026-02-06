@@ -160,125 +160,60 @@
                                     
                                     <table class="table-premium">
                                         <tbody>
-                                            <!-- Actif Immobilisé -->
+                                            @foreach(['immobilise' => ['icon'=>'bx-buildings', 'color'=>'primary', 'title'=>'Actif Immobilisé'], 'circulant' => ['icon'=>'bx-package', 'color'=>'info', 'title'=>'Actif Circulant'], 'tresorerie' => ['icon'=>'bx-wallet', 'color'=>'success', 'title'=>'Trésorerie Actif']] as $key => $meta)
+                                            <!-- Main Section Header -->
                                             <tr class="main-row">
                                                 <td>
                                                     <div class="d-flex align-items-center">
-                                                        <div class="avatar bg-label-primary p-2 rounded-circle me-4">
-                                                            <i class="bx bx-buildings fs-4"></i>
+                                                        <div class="avatar bg-label-{{ $meta['color'] }} p-2 rounded-circle me-4">
+                                                            <i class="bx {{ $meta['icon'] }} fs-4"></i>
                                                         </div>
                                                         <div>
-                                                            <span class="fw-bold text-slate-800 d-block">Actif Immobilisé</span>
-                                                            <small class="text-muted">Investissements long terme</small>
+                                                            <span class="fw-bold text-slate-800 d-block">{{ $meta['title'] }}</span>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td class="text-end">
-                                                    <h5 class="mb-0 amount-font">{{ number_format($data['actif']['immobilise']['total'], 0, ',', ' ') }}</h5>
+                                                    <h5 class="mb-0 amount-font">{{ number_format($data['actif'][$key]['total'], 0, ',', ' ') }}</h5>
                                                 </td>
                                             </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['actif']['immobilise']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <table class="table-details">
-                                                            @foreach($data['actif']['immobilise']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['actif']['immobilise']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
 
-                                            <!-- Actif Circulant -->
-                                            <tr class="main-row">
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="avatar bg-label-info p-2 rounded-circle me-4">
-                                                            <i class="bx bx-package fs-4"></i>
+                                            <!-- Subcategories -->
+                                            @foreach($data['actif'][$key]['subcategories'] as $subKey => $subData)
+                                                @if($subData['total'] != 0 || !empty($subData['details']))
+                                                <tr>
+                                                    <td class="ps-5 pt-1 pb-1">
+                                                        <span class="fw-semibold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">{{ $subData['label'] }}</span>
+                                                    </td>
+                                                    <td class="text-end pt-1 pb-1">
+                                                        <span class="fw-bold text-dark small">{{ number_format($subData['total'], 0, ',', ' ') }}</span>
+                                                    </td>
+                                                </tr>
+                                                
+                                                <!-- Details -->
+                                                @if(request('detail') && !empty($subData['details']))
+                                                <tr>
+                                                    <td colspan="2" class="p-0 ps-5 pb-2">
+                                                        <div class="details-container ps-4 border-start border-3 border-light ms-2">
+                                                            <table class="table-details">
+                                                                @foreach($subData['details'] as $item)
+                                                                <tr>
+                                                                    <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
+                                                                    <td>{{ $item['intitule'] }}</td>
+                                                                    <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
+                                                                </tr>
+                                                                @endforeach
+                                                            </table>
                                                         </div>
-                                                        <div>
-                                                            <span class="fw-bold text-slate-800 d-block">Actif Circulant</span>
-                                                            <small class="text-muted">Stocks & Créances clients</small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="text-end">
-                                                    <h5 class="mb-0 amount-font">{{ number_format($data['actif']['circulant']['total'], 0, ',', ' ') }}</h5>
-                                                </td>
-                                            </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['actif']['circulant']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <table class="table-details">
-                                                            @foreach($data['actif']['circulant']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['actif']['circulant']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
-
-                                            <!-- Trésorerie Actif -->
-                                            <tr class="main-row">
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="avatar bg-label-success p-2 rounded-circle me-4">
-                                                            <i class="bx bx-wallet fs-4"></i>
-                                                        </div>
-                                                        <div>
-                                                            <span class="fw-bold text-slate-800 d-block">Trésorerie Actif</span>
-                                                            <small class="text-muted">Liquidités disponibles</small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="text-end">
-                                                    <h5 class="mb-0 amount-font">{{ number_format($data['actif']['tresorerie']['total'], 0, ',', ' ') }}</h5>
-                                                </td>
-                                            </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['actif']['tresorerie']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <table class="table-details">
-                                                            @foreach($data['actif']['tresorerie']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['actif']['tresorerie']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
+                                                    </td>
+                                                </tr>
+                                                @endif
+                                                @endif
+                                            @endforeach
+                                            
+                                            <!-- Separator -->
+                                            <tr><td colspan="2" class="p-0" style="border-bottom: 1px solid #f1f5f9;"></td></tr>
+                                            @endforeach
                                         </tbody>
                                     </table>
 
@@ -299,125 +234,60 @@
                                     
                                     <table class="table-premium">
                                         <tbody>
-                                            <!-- Capitaux -->
+                                            @foreach(['capitaux' => ['icon'=>'bx-shield-quarter', 'color'=>'warning', 'title'=>'Capitaux Propres'], 'dettes_fin' => ['icon'=>'bx-building-house', 'color'=>'danger', 'title'=>'Dettes Financières'], 'passif_circ' => ['icon'=>'bx-credit-card', 'color'=>'danger', 'title'=>'Passif Circulant'], 'tresorerie' => ['icon'=>'bx-money', 'color'=>'secondary', 'title'=>'Trésorerie Passif']] as $key => $meta)
+                                            <!-- Main Section Header -->
                                             <tr class="main-row">
                                                 <td>
                                                     <div class="d-flex align-items-center">
-                                                        <div class="avatar bg-label-warning p-2 rounded-circle me-4">
-                                                            <i class="bx bx-shield-quarter fs-4"></i>
+                                                        <div class="avatar bg-label-{{ $meta['color'] }} p-2 rounded-circle me-4">
+                                                            <i class="bx {{ $meta['icon'] }} fs-4"></i>
                                                         </div>
                                                         <div>
-                                                            <span class="fw-bold text-slate-800 d-block">Capitaux Propres</span>
-                                                            <small class="text-muted">Apports & Réserves</small>
+                                                            <span class="fw-bold text-slate-800 d-block">{{ $meta['title'] }}</span>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td class="text-end">
-                                                    <h5 class="mb-0 amount-font">{{ number_format($data['passif']['capitaux']['total'], 0, ',', ' ') }}</h5>
+                                                    <h5 class="mb-0 amount-font">{{ number_format($data['passif'][$key]['total'], 0, ',', ' ') }}</h5>
                                                 </td>
                                             </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['passif']['capitaux']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <table class="table-details">
-                                                            @foreach($data['passif']['capitaux']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['passif']['capitaux']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
 
-                                            <!-- Dettes -->
-                                            <tr class="main-row">
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="avatar bg-label-danger p-2 rounded-circle me-4">
-                                                            <i class="bx bx-credit-card fs-4"></i>
+                                            <!-- Subcategories -->
+                                            @foreach($data['passif'][$key]['subcategories'] as $subKey => $subData)
+                                                @if($subData['total'] != 0 || !empty($subData['details']))
+                                                <tr>
+                                                    <td class="ps-5 pt-1 pb-1">
+                                                        <span class="fw-semibold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">{{ $subData['label'] }}</span>
+                                                    </td>
+                                                    <td class="text-end pt-1 pb-1">
+                                                        <span class="fw-bold text-dark small">{{ number_format($subData['total'], 0, ',', ' ') }}</span>
+                                                    </td>
+                                                </tr>
+                                                
+                                                <!-- Details -->
+                                                @if(request('detail') && !empty($subData['details']))
+                                                <tr>
+                                                    <td colspan="2" class="p-0 ps-5 pb-2">
+                                                        <div class="details-container ps-4 border-start border-3 border-light ms-2">
+                                                            <table class="table-details">
+                                                                @foreach($subData['details'] as $item)
+                                                                <tr>
+                                                                    <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
+                                                                    <td>{{ $item['intitule'] }}</td>
+                                                                    <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
+                                                                </tr>
+                                                                @endforeach
+                                                            </table>
                                                         </div>
-                                                        <div>
-                                                            <span class="fw-bold text-slate-800 d-block">Dettes</span>
-                                                            <small class="text-muted">Fournisseurs & Emprunts</small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="text-end">
-                                                    <h5 class="mb-0 amount-font">{{ number_format($data['passif']['dettes']['total'], 0, ',', ' ') }}</h5>
-                                                </td>
-                                            </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['passif']['dettes']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <table class="table-details">
-                                                            @foreach($data['passif']['dettes']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['passif']['dettes']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
+                                                    </td>
+                                                </tr>
+                                                @endif
+                                                @endif
+                                            @endforeach
 
-                                            <!-- Trésorerie Passif -->
-                                            <tr class="main-row">
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="avatar bg-label-secondary p-2 rounded-circle me-4">
-                                                            <i class="bx bx-money fs-4"></i>
-                                                        </div>
-                                                        <div>
-                                                            <span class="fw-bold text-slate-800 d-block">Trésorerie Passif</span>
-                                                            <small class="text-muted">Découverts bancaires</small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="text-end">
-                                                    <h5 class="mb-0 amount-font">{{ number_format($data['passif']['tresorerie']['total'], 0, ',', ' ') }}</h5>
-                                                </td>
-                                            </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['passif']['tresorerie']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <table class="table-details">
-                                                            @foreach($data['passif']['tresorerie']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['passif']['tresorerie']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
+                                            <!-- Separator -->
+                                            <tr><td colspan="2" class="p-0" style="border-bottom: 1px solid #f1f5f9;"></td></tr>
+                                            @endforeach
                                         </tbody>
                                     </table>
 

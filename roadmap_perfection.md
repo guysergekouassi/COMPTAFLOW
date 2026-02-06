@@ -33,6 +33,9 @@ Ce document définit les étapes clés pour transformer ComptaFlow en une soluti
 - [ ] **Saisie de Budget** : Permettre de définir des budgets annuels par compte de charge.
 - [ ] **Analyse des Écarts** : Tableau de bord comparant le Réalisé vs Budget.
 
+### 2.3 TFT Dynamique (Configurable)
+- [ ] **Flux Personnalisés** : Générer le TFT en se basant sur les "Catégories de Trésorerie" définies par l'utilisateur (nécessite le mapping comptable). *Plan détaillé disponible dans `dynamic_tft_plan.md`*. voici mon avis pour ca : non les regles standard doivent resté pour les importations et pour le scan par ia , mais pour les saisies manuelle , 
+
 ---
 
 ## 🟡 PHASE 3 : Trésorerie Intelligente

@@ -5,107 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bilan Actif/Passif - {{ $exercice->intitule }}</title>
     <style>
+        @page {
+            margin: 120px 25px 40px 25px;
+        }
+        header {
+            position: fixed;
+            top: -100px;
+            left: 0px;
+            right: 0px;
+            height: 90px;
+            border: 1px solid #000;
+            padding: 5px 10px;
+        }
         body {
             font-family: 'DejaVu Sans', sans-serif;
             font-size: 11px;
-            color: #333;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-        }
-        .header h1 {
+            color: #000;
             margin: 0;
-            font-size: 18px;
-            font-weight: bold;
+            padding: 0;
         }
-        .header p {
-            margin: 5px 0 0 0;
-            font-size: 12px;
-            color: #666;
-        }
-        .content {
-            margin-top: 20px;
-        }
-        .row {
-            display: table;
+        .header-table {
             width: 100%;
-            margin-bottom: 20px;
+            border-collapse: collapse;
         }
-        .col {
-            display: table-cell;
-            width: 48%;
+        .header-table td {
             vertical-align: top;
+            padding: 2px 0;
         }
-        .col:first-child {
-            padding-right: 2%;
+        .company-name {
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
         }
-        .col:last-child {
-            padding-left: 2%;
-        }
-        h3 {
-            background-color: #f0f0f0;
-            padding: 8px;
-            margin: 0 0 10px 0;
-            font-size: 13px;
+        .doc-title {
             text-align: center;
             font-weight: bold;
+            font-size: 16px;
+            text-transform: uppercase;
         }
+        .doc-subtitle {
+            text-align: center;
+            font-size: 10px;
+            margin-top: 2px;
+        }
+        .period {
+            text-align: right;
+            font-size: 9px;
+        }
+        .footer-row td {
+            font-size: 8px;
+            color: #555;
+            padding-top: 5px !important;
+        }
+        .page-counter:before {
+            content: counter(page);
+        }
+        .watermark {
+            position: fixed;
+            top: 35%;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            opacity: 0.08;
+            transform: rotate(-45deg);
+            font-size: 110px;
+            font-weight: bold;
+            color: #000;
+            z-index: -1000;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+        /* Existing table styles */
         table {
             width: 100%;
             border-collapse: collapse;
         }
         table th, table td {
-            padding: 6px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        table th {
-            background-color: #f8f8f8;
-            font-weight: bold;
-            font-size: 10px;
-        }
-        table td.amount {
-            text-align: right;
-        }
-        .total-row {
-            background-color: #333;
-            color: white;
-            font-weight: bold;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
-            text-align: center;
-            font-size: 9px;
-            color: #999;
-        }
-        .alert {
-            padding: 10px;
-            margin-top: 20px;
-            border-radius: 4px;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        .alert-danger {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
+            padding: 4px;
+            border: 1px solid #000;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>BILAN ACTIF/PASSIF</h1>
-        <p>Exercice: {{ $exercice->intitule }}</p>
-        <p>Période: {{ \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}</p>
-    </div>
+    <div class="watermark">COMPTAFLOW</div>
+    <header>
+        <table class="header-table">
+            <tr>
+                <td style="width: 30%; border-bottom: 1px solid #000; text-align: left;">
+                    <div class="company-name">{{ $exercice->company->company_name ?? 'Entreprise' }}</div>
+                    <div style="font-size: 8px; margin-top: 2px; font-weight: normal;">Impression définitive</div>
+                </td>
+                <td style="width: 40%; border-bottom: 1px solid #000; text-align: center;">
+                    <div class="doc-title">BILAN ACTIF / PASSIF</div>
+                    <div class="doc-subtitle">Comptes Annuels</div>
+                </td>
+                <td style="width: 30%; border-bottom: 1px solid #000; text-align: right;">
+                    <div class="period">
+                        Période du {{ \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') }}<br>
+                        au {{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}<br>
+                        Tenue de compte : {{ $exercice->company->currency ?? 'FCFA' }}
+                    </div>
+                </td>
+            </tr>
+            <tr class="footer-row">
+                <td style="text-align: left; width: 30%;">
+                    &copy; ComptaFlow - Logiciel de comptabilité
+                </td>
+                <td style="text-align: center; width: 40%;">
+                    Date de tirage : {{ date('d/m/Y à H:i:s') }}
+                </td>
+                <td style="text-align: right; width: 30%;">
+                    Page : <span class="page-counter"></span>
+                </td>
+            </tr>
+        </table>
+    </header>
+
 
     <div class="content">
         <div class="row">
@@ -119,59 +134,36 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- ACTIF IMMOBILISE -->
-                        <tr>
-                            <td style="font-weight:bold;">Actif Immobilisé (Classe 2)</td>
-                            <td class="amount" style="font-weight:bold;">{{ number_format($data['actif']['immobilise']['total'], 0, ',', ' ') }} FCFA</td>
-                        </tr>
-                        @if(isset($detailed) && $detailed && !empty($data['actif']['immobilise']['details']))
-                            @foreach($data['actif']['immobilise']['details'] as $detail)
+                        @foreach(['immobilise' => 'Actif Immobilisé', 'circulant' => 'Actif Circulant', 'tresorerie' => 'Trésorerie Actif'] as $key => $title)
+                            <!-- Section Header -->
                             <tr>
-                                <td style="padding-left: 20px; font-style: italic; color: #555; font-size: 10px;">
-                                    {{ $detail['numero'] }} - {{ $detail['intitule'] }}
-                                </td>
-                                <td class="amount" style="font-size: 10px; color: #555;">
-                                    {{ number_format($detail['solde'], 0, ',', ' ') }}
-                                </td>
+                                <td style="font-weight:bold; background-color: #eee;">{{ $title }}</td>
+                                <td class="amount" style="font-weight:bold; background-color: #eee;">{{ number_format($data['actif'][$key]['total'], 0, ',', ' ') }} FCFA</td>
                             </tr>
+                            
+                            <!-- Subcategories -->
+                            @foreach($data['actif'][$key]['subcategories'] as $subKey => $subData)
+                                @if($subData['total'] != 0 || !empty($subData['details']))
+                                <tr>
+                                    <td style="padding-left: 10px; font-weight:600;">{{ $subData['label'] }}</td>
+                                    <td class="amount" style="font-weight:600;">{{ number_format($subData['total'], 0, ',', ' ') }}</td>
+                                </tr>
+                                
+                                    @if(isset($detailed) && $detailed && !empty($subData['details']))
+                                        @foreach($subData['details'] as $detail)
+                                        <tr>
+                                            <td style="padding-left: 25px; font-style: italic; color: #333; font-size: 10px;">
+                                                {{ $detail['numero'] }} - {{ $detail['intitule'] }}
+                                            </td>
+                                            <td class="amount" style="font-size: 10px; color: #333;">
+                                                {{ number_format($detail['solde'], 0, ',', ' ') }}
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+                                @endif
                             @endforeach
-                        @endif
-
-                        <!-- ACTIF CIRCULANT -->
-                        <tr>
-                            <td style="font-weight:bold;">Actif Circulant (Stocks & Créances)</td>
-                            <td class="amount" style="font-weight:bold;">{{ number_format($data['actif']['circulant']['total'], 0, ',', ' ') }} FCFA</td>
-                        </tr>
-                        @if(isset($detailed) && $detailed && !empty($data['actif']['circulant']['details']))
-                            @foreach($data['actif']['circulant']['details'] as $detail)
-                            <tr>
-                                <td style="padding-left: 20px; font-style: italic; color: #555; font-size: 10px;">
-                                    {{ $detail['numero'] }} - {{ $detail['intitule'] }}
-                                </td>
-                                <td class="amount" style="font-size: 10px; color: #555;">
-                                    {{ number_format($detail['solde'], 0, ',', ' ') }}
-                                </td>
-                            </tr>
-                            @endforeach
-                        @endif
-
-                        <!-- TRESORERIE ACTIF -->
-                        <tr>
-                            <td style="font-weight:bold;">Trésorerie Actif</td>
-                            <td class="amount" style="font-weight:bold;">{{ number_format($data['actif']['tresorerie']['total'], 0, ',', ' ') }} FCFA</td>
-                        </tr>
-                        @if(isset($detailed) && $detailed && !empty($data['actif']['tresorerie']['details']))
-                            @foreach($data['actif']['tresorerie']['details'] as $detail)
-                            <tr>
-                                <td style="padding-left: 20px; font-style: italic; color: #555; font-size: 10px;">
-                                    {{ $detail['numero'] }} - {{ $detail['intitule'] }}
-                                </td>
-                                <td class="amount" style="font-size: 10px; color: #555;">
-                                    {{ number_format($detail['solde'], 0, ',', ' ') }}
-                                </td>
-                            </tr>
-                            @endforeach
-                        @endif
+                        @endforeach
                     </tbody>
                     <tfoot>
                         <tr class="total-row">
@@ -192,59 +184,36 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- CAPITAUX PROPRES -->
-                        <tr>
-                            <td style="font-weight:bold;">Capitaux Propres</td>
-                            <td class="amount" style="font-weight:bold;">{{ number_format($data['passif']['capitaux']['total'], 0, ',', ' ') }} FCFA</td>
-                        </tr>
-                        @if(isset($detailed) && $detailed && !empty($data['passif']['capitaux']['details']))
-                            @foreach($data['passif']['capitaux']['details'] as $detail)
+                        @foreach(['capitaux' => 'Capitaux Propres', 'dettes_fin' => 'Dettes Financières', 'passif_circ' => 'Passif Circulant', 'tresorerie' => 'Trésorerie Passif'] as $key => $title)
+                            <!-- Section Header -->
                             <tr>
-                                <td style="padding-left: 20px; font-style: italic; color: #555; font-size: 10px;">
-                                    {{ $detail['numero'] }} - {{ $detail['intitule'] }}
-                                </td>
-                                <td class="amount" style="font-size: 10px; color: #555;">
-                                    {{ number_format($detail['solde'], 0, ',', ' ') }}
-                                </td>
+                                <td style="font-weight:bold; background-color: #eee;">{{ $title }}</td>
+                                <td class="amount" style="font-weight:bold; background-color: #eee;">{{ number_format($data['passif'][$key]['total'], 0, ',', ' ') }} FCFA</td>
                             </tr>
+                            
+                            <!-- Subcategories -->
+                            @foreach($data['passif'][$key]['subcategories'] as $subKey => $subData)
+                                @if($subData['total'] != 0 || !empty($subData['details']))
+                                <tr>
+                                    <td style="padding-left: 10px; font-weight:600;">{{ $subData['label'] }}</td>
+                                    <td class="amount" style="font-weight:600;">{{ number_format($subData['total'], 0, ',', ' ') }}</td>
+                                </tr>
+                                
+                                    @if(isset($detailed) && $detailed && !empty($subData['details']))
+                                        @foreach($subData['details'] as $detail)
+                                        <tr>
+                                            <td style="padding-left: 25px; font-style: italic; color: #333; font-size: 10px;">
+                                                {{ $detail['numero'] }} - {{ $detail['intitule'] }}
+                                            </td>
+                                            <td class="amount" style="font-size: 10px; color: #333;">
+                                                {{ number_format($detail['solde'], 0, ',', ' ') }}
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+                                @endif
                             @endforeach
-                        @endif
-
-                        <!-- DETTES -->
-                        <tr>
-                            <td style="font-weight:bold;">Dettes à court/long terme</td>
-                            <td class="amount" style="font-weight:bold;">{{ number_format($data['passif']['dettes']['total'], 0, ',', ' ') }} FCFA</td>
-                        </tr>
-                        @if(isset($detailed) && $detailed && !empty($data['passif']['dettes']['details']))
-                            @foreach($data['passif']['dettes']['details'] as $detail)
-                            <tr>
-                                <td style="padding-left: 20px; font-style: italic; color: #555; font-size: 10px;">
-                                    {{ $detail['numero'] }} - {{ $detail['intitule'] }}
-                                </td>
-                                <td class="amount" style="font-size: 10px; color: #555;">
-                                    {{ number_format($detail['solde'], 0, ',', ' ') }}
-                                </td>
-                            </tr>
-                            @endforeach
-                        @endif
-
-                        <!-- TRESORERIE PASSIF -->
-                        <tr>
-                            <td style="font-weight:bold;">Trésorerie Passif</td>
-                            <td class="amount" style="font-weight:bold;">{{ number_format($data['passif']['tresorerie']['total'], 0, ',', ' ') }} FCFA</td>
-                        </tr>
-                        @if(isset($detailed) && $detailed && !empty($data['passif']['tresorerie']['details']))
-                            @foreach($data['passif']['tresorerie']['details'] as $detail)
-                            <tr>
-                                <td style="padding-left: 20px; font-style: italic; color: #555; font-size: 10px;">
-                                    {{ $detail['numero'] }} - {{ $detail['intitule'] }}
-                                </td>
-                                <td class="amount" style="font-size: 10px; color: #555;">
-                                    {{ number_format($detail['solde'], 0, ',', ' ') }}
-                                </td>
-                            </tr>
-                            @endforeach
-                        @endif
+                        @endforeach
                     </tbody>
                     <tfoot>
                         <tr class="total-row">
@@ -257,11 +226,11 @@
         </div>
 
         @if(!$data['equilibre'])
-        <div class="alert alert-danger">
+        <div style="border: 2px solid #000; padding: 10px; margin-top: 15px;">
             <strong>Attention :</strong> Le bilan n'est pas équilibré. Différence : {{ number_format($data['difference'], 0, ',', ' ') }} FCFA.
         </div>
         @else
-        <div class="alert alert-success">
+        <div style="border: 1px solid #000; padding: 10px; margin-top: 15px;">
             <strong>Équilibre :</strong> Le bilan est parfaitement équilibré.
         </div>
         @endif

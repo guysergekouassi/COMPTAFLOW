@@ -121,6 +121,8 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::get('/reporting/bilan/export', [ReportingController::class, 'exportBilan'])->name('reporting.bilan.export');
     Route::get('/reporting/resultat/export', [ReportingController::class, 'exportResultat'])->name('reporting.resultat.export');
     Route::get('/reporting/tft/export', [ReportingController::class, 'exportTFT'])->name('reporting.tft.export');
+    Route::get('/reporting/monthly-resultat', [ReportingController::class, 'monthlyResultat'])->name('reporting.monthly_resultat');
+    Route::get('/reporting/monthly-resultat/export', [ReportingController::class, 'exportMonthlyResultat'])->name('reporting.monthly_resultat.export');
 
     // Immobilisations
     Route::resource('immobilisations', ImmobilisationController::class);

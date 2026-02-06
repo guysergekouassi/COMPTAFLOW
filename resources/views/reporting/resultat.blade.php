@@ -144,8 +144,8 @@
                         </div>
 
                         <!-- Main Result KPI -->
-                        <div class="row g-4 mb-6">
-                            <div class="col-md-4">
+                        <div class="d-flex gap-4 mb-6 overflow-x-auto pb-3" style="scroll-behavior: smooth;">
+                            <div class="flex-shrink-0" style="min-width: 320px; flex: 1;">
                                 <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white;">
                                     <div class="card-body p-4">
                                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -160,7 +160,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="flex-shrink-0" style="min-width: 320px; flex: 1;">
                                 <div class="card border-0 shadow-sm h-100 bg-white">
                                     <div class="card-body p-4">
                                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -177,7 +177,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="flex-shrink-0" style="min-width: 320px; flex: 1;">
                                 <div class="card border-0 shadow-sm h-100" style="background: {{ $data['resultat_net'] >= 0 ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' }}; color: white;">
                                     <div class="card-body p-4">
                                         <div class="d-flex justify-content-between align-items-start mb-3">

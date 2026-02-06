@@ -13,11 +13,15 @@ class BilanExport implements FromCollection, WithHeadings, WithMapping, WithStyl
 {
     protected $data;
     protected $exercice;
+    protected $month;
+    protected $detailed;
 
-    public function __construct($data, $exercice)
+    public function __construct($data, $exercice, $month = null, $detailed = false)
     {
         $this->data = $data;
         $this->exercice = $exercice;
+        $this->month = $month;
+        $this->detailed = $detailed;
     }
 
     public function collection()
@@ -32,23 +36,46 @@ class BilanExport implements FromCollection, WithHeadings, WithMapping, WithStyl
         ]);
         $rows->push((object)['section' => '', 'libelle' => '', 'montant' => '']);
 
-        // ACTIF
+        // --- ACTIF ---
         $rows->push((object)['section' => 'ACTIF', 'libelle' => '', 'montant' => '']);
-        $rows->push((object)[
-            'section' => '',
-            'libelle' => 'Actif Immobilisé (Classe 2)',
-            'montant' => $this->data['actif']['immobilise']['total']
-        ]);
-        $rows->push((object)[
-            'section' => '',
-            'libelle' => 'Actif Circulant (Stocks & Créances)',
-            'montant' => $this->data['actif']['circulant']['total']
-        ]);
-        $rows->push((object)[
-            'section' => '',
-            'libelle' => 'Trésorerie Actif',
-            'montant' => $this->data['actif']['tresorerie']['total']
-        ]);
+        
+        $actifParams = [
+            'immobilise' => 'Actif Immobilisé', 
+            'circulant' => 'Actif Circulant', 
+            'tresorerie' => 'Trésorerie Actif'
+        ];
+
+        foreach ($actifParams as $key => $title) {
+            // Section Total
+            $rows->push((object)[
+                'section' => '',
+                'libelle' => $title,
+                'montant' => $this->data['actif'][$key]['total']
+            ]);
+
+            // Subcategories
+            foreach ($this->data['actif'][$key]['subcategories'] as $subData) {
+                if ($subData['total'] != 0 || !empty($subData['details'])) {
+                     $rows->push((object)[
+                        'section' => '',
+                        'libelle' => '   ' . $subData['label'],
+                        'montant' => $subData['total']
+                    ]);
+                    
+                    // Details
+                    if ($this->detailed && !empty($subData['details'])) {
+                        foreach ($subData['details'] as $item) {
+                            $rows->push((object)[
+                                'section' => '',
+                                'libelle' => '      ' . $item['numero'] . ' - ' . $item['intitule'],
+                                'montant' => $item['solde']
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+        
         $rows->push((object)[
             'section' => 'TOTAL ACTIF',
             'libelle' => '',
@@ -56,23 +83,47 @@ class BilanExport implements FromCollection, WithHeadings, WithMapping, WithStyl
         ]);
         $rows->push((object)['section' => '', 'libelle' => '', 'montant' => '']);
 
-        // PASSIF
+        // --- PASSIF ---
         $rows->push((object)['section' => 'PASSIF & CAPITAUX', 'libelle' => '', 'montant' => '']);
-        $rows->push((object)[
-            'section' => '',
-            'libelle' => 'Capitaux Propres',
-            'montant' => $this->data['passif']['capitaux']['total']
-        ]);
-        $rows->push((object)[
-            'section' => '',
-            'libelle' => 'Dettes à court/long terme',
-            'montant' => $this->data['passif']['dettes']['total']
-        ]);
-        $rows->push((object)[
-            'section' => '',
-            'libelle' => 'Trésorerie Passif',
-            'montant' => $this->data['passif']['tresorerie']['total']
-        ]);
+
+        $passifParams = [
+            'capitaux' => 'Capitaux Propres', 
+            'dettes_fin' => 'Dettes Financières', 
+            'passif_circ' => 'Passif Circulant', 
+            'tresorerie' => 'Trésorerie Passif'
+        ];
+
+        foreach ($passifParams as $key => $title) {
+             // Section Total
+            $rows->push((object)[
+                'section' => '',
+                'libelle' => $title,
+                'montant' => $this->data['passif'][$key]['total']
+            ]);
+
+            // Subcategories
+            foreach ($this->data['passif'][$key]['subcategories'] as $subData) {
+                if ($subData['total'] != 0 || !empty($subData['details'])) {
+                     $rows->push((object)[
+                        'section' => '',
+                        'libelle' => '   ' . $subData['label'],
+                        'montant' => $subData['total']
+                    ]);
+                    
+                    // Details
+                    if ($this->detailed && !empty($subData['details'])) {
+                        foreach ($subData['details'] as $item) {
+                            $rows->push((object)[
+                                'section' => '',
+                                'libelle' => '      ' . $item['numero'] . ' - ' . $item['intitule'],
+                                'montant' => $item['solde']
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+
         $rows->push((object)[
             'section' => 'TOTAL PASSIF',
             'libelle' => '',
@@ -100,10 +151,9 @@ class BilanExport implements FromCollection, WithHeadings, WithMapping, WithStyl
     {
         return [
             1 => ['font' => ['bold' => true, 'size' => 14]],
-            3 => ['font' => ['bold' => true]],
-            8 => ['font' => ['bold' => true]],
-            10 => ['font' => ['bold' => true]],
-            16 => ['font' => ['bold' => true]],
+            3 => ['font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 12], 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E293B']]], // ACTIF header
+            // Dynamic styling is hard with collection based simplified export, but we can style specific known rows if we tracked index.
+            // For now, let's keep it simple.
         ];
     }
 }

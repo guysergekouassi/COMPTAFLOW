@@ -5,28 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compte de Résultat (SIG) - {{ $exercice->intitule }}</title>
     <style>
+        @page {
+            margin: 120px 25px 40px 25px;
+        }
+        header {
+            position: fixed;
+            top: -100px;
+            left: 0px;
+            right: 0px;
+            height: 90px;
+            border: 1px solid #000;
+            padding: 5px 10px;
+        }
         body {
             font-family: 'DejaVu Sans', sans-serif;
             font-size: 10px;
             color: #333;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-        .header h1 {
             margin: 0;
-            font-size: 16px;
+            padding: 0;
+        }
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: top;
+            padding: 2px 0;
+        }
+        .company-name {
             font-weight: bold;
+            font-size: 11px;
             text-transform: uppercase;
         }
-        .header p {
-            margin: 5px 0 0 0;
-            font-size: 11px;
-            color: #666;
+        .doc-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            text-transform: uppercase;
         }
+        .doc-subtitle {
+            text-align: center;
+            font-size: 10px;
+            margin-top: 2px;
+        }
+        .period {
+            text-align: right;
+            font-size: 9px;
+        }
+        .footer-row td {
+            font-size: 8px;
+            color: #555;
+            padding-top: 5px !important;
+        }
+        .page-counter:before {
+            content: counter(page);
+        }
+        .watermark {
+            position: fixed;
+            top: 35%;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            opacity: 0.08;
+            transform: rotate(-45deg);
+            font-size: 110px;
+            font-weight: bold;
+            color: #000;
+            z-index: -1000;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+        /* Existing table styles */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -41,8 +90,8 @@
         }
         .sig-row.main td {
             font-weight: bold;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #ccc;
+            background-color: #eee;
+            border-bottom: 2px solid #000;
         }
         .section-title {
             font-weight: bold;
@@ -55,8 +104,8 @@
         .amount {
             text-align: right;
         }
-        .text-success { color: #198754; }
-        .text-danger { color: #dc3545; }
+        .text-success { color: #000; font-weight: bold; }
+        .text-danger { color: #000; font-weight: bold; }
         
         .details-table {
             margin-top: 5px;
@@ -72,21 +121,50 @@
             font-weight: bold;
             font-size: 9px;
         }
-        .footer {
-            margin-top: 30px;
-            border-top: 1px solid #ddd;
-            text-align: center;
-            font-size: 8px;
-            color: #999;
-            padding-top: 10px;
+        .resultat-net-row td {
+            background-color: #000 !important;
+            color: #fff !important;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 8px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>COMPTE DE RÉSULTAT (SIG)</h1>
-        <p>Exercice: {{ $exercice->intitule }} | Période: {{ \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}</p>
-    </div>
+    <div class="watermark">COMPTAFLOW</div>
+    <header>
+        <table class="header-table">
+            <tr>
+                <td style="width: 30%; border-bottom: 1px solid #000; text-align: left;">
+                    <div class="company-name">{{ $exercice->company->company_name ?? 'Entreprise' }}</div>
+                    <div style="font-size: 8px; margin-top: 2px; font-weight: normal;">Impression définitive</div>
+                </td>
+                <td style="width: 40%; border-bottom: 1px solid #000; text-align: center;">
+                    <div class="doc-title">COMPTE DE RÉSULTAT (SIG)</div>
+                    <div class="doc-subtitle">Comptes Annuels</div>
+                </td>
+                <td style="width: 30%; border-bottom: 1px solid #000; text-align: right;">
+                    <div class="period">
+                        Période du {{ \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') }}<br>
+                        au {{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}<br>
+                        Tenue de compte : {{ $exercice->company->currency ?? 'FCFA' }}
+                    </div>
+                </td>
+            </tr>
+            <tr class="footer-row">
+                <td style="text-align: left; width: 30%;">
+                    &copy; ComptaFlow - Logiciel de comptabilité
+                </td>
+                <td style="text-align: center; width: 40%;">
+                    Date de tirage : {{ date('d/m/Y à H:i:s') }}
+                </td>
+                <td style="text-align: right; width: 30%;">
+                    Page : <span class="page-counter"></span>
+                </td>
+            </tr>
+        </table>
+    </header>
+
 
     <table>
         <tbody>
@@ -183,7 +261,7 @@
                 <td>Impôts sur le Résultat</td>
                 <td class="amount text-danger">- {{ number_format($data['impots_resultat'], 0, ',', ' ') }}</td>
             </tr>
-            <tr class="sig-row main" style="background-color: #333; color: white;">
+            <tr class="resultat-net-row">
                 <td>RÉSULTAT NET</td>
                 <td class="amount">{{ number_format($data['resultat_net'], 0, ',', ' ') }} FCFA</td>
             </tr>
@@ -206,9 +284,6 @@
         @endforeach
     @endif
 
-    <div class="footer">
-        Document généré le {{ now()->format('d/m/Y à H:i') }} par ComptaFlow.<br>
-        Les montants sont exprimés en FCFA.
-    </div>
+
 </body>
 </html>

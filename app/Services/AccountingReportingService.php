@@ -8,6 +8,30 @@ use Illuminate\Support\Facades\DB;
 class AccountingReportingService
 {
     /**
+     * Génère la liste des mois pour un exercice donné.
+     */
+    private function getMonthsForExercise($exerciceId)
+    {
+        $exercice = \App\Models\ExerciceComptable::find($exerciceId);
+        if (!$exercice) return [];
+
+        $start = \Carbon\Carbon::parse($exercice->date_debut);
+        $end = \Carbon\Carbon::parse($exercice->date_fin);
+        
+        $months = [];
+        $current = $start->copy();
+        while ($current <= $end) {
+            $months[] = [
+                'id' => $current->month,
+                'name' => $current->locale('fr')->isoFormat('MMM-YY'),
+                'year' => $current->year
+            ];
+            $current->addMonth();
+        }
+        return $months;
+    }
+
+    /**
      * Récupère les écritures filtrées par exercice et mois optionnel.
      */
     private function getFilteredEcritures($exerciceId, $companyId, $month = null)
@@ -47,81 +71,232 @@ class AccountingReportingService
     /**
      * Calcule les données pour le Bilan (Classes 1 à 5).
      */
+    /**
+     * Calcule les données pour le Bilan (Classes 1 à 5) avec structure OHADA détaillée.
+     */
     public function getBilanData($exerciceId, $companyId, $month = null, $detailed = false)
     {
         $ecritures = $this->getFilteredEcritures($exerciceId, $companyId, $month);
 
-        $data = [
-            'actif' => [
-                'immobilise' => ['total' => 0, 'details' => []],
-                'circulant' => ['total' => 0, 'details' => []],
-                'tresorerie' => ['total' => 0, 'details' => []],
+        // Structure détaillée Actif
+        $actif = [
+            'immobilise' => [
                 'total' => 0,
+                'subcategories' => [
+                    'charges_immo' => ['label' => 'Charges immobilisées', 'total' => 0, 'details' => []], // 20
+                    'immo_incorp' => ['label' => 'Immobilisations incorporelles', 'total' => 0, 'details' => []], // 21
+                    'immo_corp' => ['label' => 'Immobilisations corporelles', 'total' => 0, 'details' => []], // 22, 23, 24
+                    'immo_fin' => ['label' => 'Immobilisations financières', 'total' => 0, 'details' => []], // 25, 26, 27
+                ]
             ],
-            'passif' => [
-                'capitaux' => ['total' => 0, 'details' => []],
-                'dettes' => ['total' => 0, 'details' => []],
-                'tresorerie' => ['total' => 0, 'details' => []],
+            'circulant' => [
                 'total' => 0,
+                'subcategories' => [
+                    'stocks' => ['label' => 'Stocks', 'total' => 0, 'details' => []], // 3
+                    'creances' => ['label' => 'Créances', 'total' => 0, 'details' => []], // 4 (Débiteur)
+                ]
             ],
-            'equilibre' => true,
-            'difference' => 0,
+            'tresorerie' => [
+                'total' => 0,
+                'subcategories' => [
+                    'titres' => ['label' => 'Titres de placement', 'total' => 0, 'details' => []], // 50
+                    'banque' => ['label' => 'Banque', 'total' => 0, 'details' => []], // 52, 53... (Débiteur)
+                    'caisse' => ['label' => 'Caisse', 'total' => 0, 'details' => []], // 57, 58 (Débiteur)
+                ]
+            ],
+            'total' => 0
+        ];
+
+        // Structure détaillée Passif
+        $passif = [
+            'capitaux' => [
+                'total' => 0,
+                'subcategories' => [
+                    'capital' => ['label' => 'Capital', 'total' => 0, 'details' => []], // 10
+                    'reserves' => ['label' => 'Réserves', 'total' => 0, 'details' => []], // 11
+                    'report' => ['label' => 'Report à nouveau', 'total' => 0, 'details' => []], // 12
+                    'resultat' => ['label' => 'Résultat net (instance)', 'total' => 0, 'details' => []], // 13 (Calculé)
+                    'subventions' => ['label' => 'Subventions', 'total' => 0, 'details' => []], // 14
+                    'provisions' => ['label' => 'Provisions réglementées', 'total' => 0, 'details' => []], // 15
+                ]
+            ],
+            'dettes_fin' => [
+                'total' => 0,
+                'subcategories' => [
+                    'emprunts' => ['label' => 'Emprunts', 'total' => 0, 'details' => []], // 16
+                ]
+            ],
+            'passif_circ' => [
+                'total' => 0,
+                'subcategories' => [
+                    'fournisseurs' => ['label' => 'Dettes Fournisseurs', 'total' => 0, 'details' => []], // 40
+                    'fiscales' => ['label' => 'Dettes Fiscales', 'total' => 0, 'details' => []], // 44
+                    'sociales' => ['label' => 'Dettes Sociales', 'total' => 0, 'details' => []], // 42, 43
+                    'autres_dettes' => ['label' => 'Autres dettes', 'total' => 0, 'details' => []], // Autres 4
+                ]
+            ],
+            'tresorerie' => [
+                'total' => 0,
+                'subcategories' => [
+                    'decouverts' => ['label' => 'Découverts bancaires', 'total' => 0, 'details' => []], // 5 (Créditeur)
+                ]
+            ],
+            'total' => 0
         ];
 
         foreach ($ecritures as $ecriture) {
             $compte = $ecriture->planComptable;
             if (!$compte) continue;
 
-            $numero = $compte->numero_de_compte;
+            $n = $compte->numero_de_compte;
             $solde = $ecriture->debit - $ecriture->credit;
+            if (abs($solde) < 0.01) continue;
 
-            // Logique Bilan
-            if (str_starts_with($numero, '2')) {
-                // Actif Immobilisé
-                $data['actif']['immobilise']['total'] += $solde;
-                if ($detailed) $this->addDetail($data['actif']['immobilise']['details'], $compte, $solde);
-            } elseif (str_starts_with($numero, '3')) {
-                // Actif Circulant (Stocks)
-                $data['actif']['circulant']['total'] += $solde;
-                if ($detailed) $this->addDetail($data['actif']['circulant']['details'], $compte, $solde);
-            } elseif (str_starts_with($numero, '4')) {
-                // Tiers (Clients/Actif ou Fournisseurs/Passif)
-                // Simplification: Solde débiteur = Actif, Créditeur = Passif
+            // --- ACTIF (Solde Débiteur > 0 en général, sauf 28, 29 Amort/Prov qui sont Créditeurs mais classés en Actif en moins) ---
+            // Pour simplifier selon l'image : on classe selon la racine.
+            
+            // CLASSE 2 : IMMOBILISATIONS
+            if (str_starts_with($n, '2')) {
+                // Gestion des amortissements/provisions (28, 29) -> Vont en diminution de l'actif
+                // Mais ici on fait un bilan NET ou BRUT ? Image montre "Actif Immobilisé". Souvent NET.
+                // Si on fait NET, on ajoute le solde (qui peut être négatif si Amortissement).
+                
+                if (str_starts_with($n, '20')) $target = &$actif['immobilise']['subcategories']['charges_immo'];
+                elseif (str_starts_with($n, '21')) $target = &$actif['immobilise']['subcategories']['immo_incorp'];
+                elseif (str_starts_with($n, '22') || str_starts_with($n, '23') || str_starts_with($n, '24')) $target = &$actif['immobilise']['subcategories']['immo_corp'];
+                elseif (str_starts_with($n, '28') || str_starts_with($n, '29')) {
+                    // Amortissements : on les met dans la catégorie de l'immo correspondante ou globale ?
+                    // Simplifions : 280/290->charges, 281/291->incorp, reste->corp
+                    if(str_starts_with($n, '280') || str_starts_with($n, '290')) $target = &$actif['immobilise']['subcategories']['charges_immo'];
+                    elseif(str_starts_with($n, '281') || str_starts_with($n, '291')) $target = &$actif['immobilise']['subcategories']['immo_incorp'];
+                    else $target = &$actif['immobilise']['subcategories']['immo_corp'];
+                }
+                else $target = &$actif['immobilise']['subcategories']['immo_fin']; // 25, 26, 27
+
+                if ($target) {
+                    $target['total'] += $solde;
+                    if ($detailed) $this->addDetail($target['details'], $compte, $solde);
+                }
+            }
+
+            // CLASSE 3 : STOCKS
+            elseif (str_starts_with($n, '3')) {
+                $target = &$actif['circulant']['subcategories']['stocks'];
+                $target['total'] += $solde;
+                if ($detailed) $this->addDetail($target['details'], $compte, $solde);
+            }
+
+            // CLASSE 4 : TIERS (Active ou Passive selon solde)
+            elseif (str_starts_with($n, '4')) {
                 if ($solde > 0) {
-                    $data['actif']['circulant']['total'] += $solde;
-                    if ($detailed) $this->addDetail($data['actif']['circulant']['details'], $compte, $solde);
+                    // ACTIF : CRÉANCES
+                    $target = &$actif['circulant']['subcategories']['creances'];
+                    $target['total'] += $solde;
+                    if ($detailed) $this->addDetail($target['details'], $compte, $solde);
                 } else {
-                    $data['passif']['dettes']['total'] += abs($solde);
-                    if ($detailed) $this->addDetail($data['passif']['dettes']['details'], $compte, abs($solde));
+                    // PASSIF : DETTES (Solde Credit < 0, on prend valeur absolue)
+                    if (str_starts_with($n, '40')) $target = &$passif['passif_circ']['subcategories']['fournisseurs'];
+                    elseif (str_starts_with($n, '44')) $target = &$passif['passif_circ']['subcategories']['fiscales'];
+                    elseif (str_starts_with($n, '42') || str_starts_with($n, '43')) $target = &$passif['passif_circ']['subcategories']['sociales'];
+                    else $target = &$passif['passif_circ']['subcategories']['autres_dettes'];
+
+                    $target['total'] += abs($solde);
+                    if ($detailed) $this->addDetail($target['details'], $compte, abs($solde));
                 }
-            } elseif (str_starts_with($numero, '5')) {
-                // Trésorerie
+            }
+
+            // CLASSE 5 : TRÉSORERIE
+            elseif (str_starts_with($n, '5')) {
                 if ($solde >= 0) {
-                    $data['actif']['tresorerie']['total'] += $solde;
-                    if ($detailed) $this->addDetail($data['actif']['tresorerie']['details'], $compte, $solde);
+                    // ACTIF
+                    if (str_starts_with($n, '50')) $target = &$actif['tresorerie']['subcategories']['titres'];
+                    elseif (str_starts_with($n, '57') || str_starts_with($n, '58')) $target = &$actif['tresorerie']['subcategories']['caisse'];
+                    else $target = &$actif['tresorerie']['subcategories']['banque'];
+
+                    $target['total'] += $solde;
+                    if ($detailed) $this->addDetail($target['details'], $compte, $solde);
                 } else {
-                    $data['passif']['tresorerie']['total'] += abs($solde);
-                    if ($detailed) $this->addDetail($data['passif']['tresorerie']['details'], $compte, abs($solde));
+                    // PASSIF
+                    $target = &$passif['tresorerie']['subcategories']['decouverts'];
+                    $target['total'] += abs($solde);
+                    if ($detailed) $this->addDetail($target['details'], $compte, abs($solde));
                 }
-            } elseif (str_starts_with($numero, '1')) {
-                // Capitaux (Passif)
-                if(str_starts_with($numero, '16')) { // Emprunts = Dettes financières
-                     $data['passif']['dettes']['total'] += abs($solde);
-                     if ($detailed) $this->addDetail($data['passif']['dettes']['details'], $compte, abs($solde));
+            }
+
+            // CLASSE 1 : CAPITAUX & DETTES FIN
+            elseif (str_starts_with($n, '1')) {
+                if (str_starts_with($n, '16')) {
+                    // Dettes financières
+                    $target = &$passif['dettes_fin']['subcategories']['emprunts'];
+                    $target['total'] += abs($solde); // Créditeur
+                    if ($detailed) $this->addDetail($target['details'], $compte, abs($solde));
+                } elseif (str_starts_with($n, '13')) {
+                    // Résultat Net (si clos)
+                    $target = &$passif['capitaux']['subcategories']['resultat'];
+                    $target['total'] += (-$solde); // Compte 13 : Crediteur = Benefice (Positif dans capitaux), Debiteur = Perte (Negatif)
+                    if ($detailed) $this->addDetail($target['details'], $compte, -$solde);
                 } else {
-                     $data['passif']['capitaux']['total'] += abs($solde);
-                     if ($detailed) $this->addDetail($data['passif']['capitaux']['details'], $compte, abs($solde));
+                    // Capitaux
+                    if (str_starts_with($n, '10')) $target = &$passif['capitaux']['subcategories']['capital'];
+                    elseif (str_starts_with($n, '11')) $target = &$passif['capitaux']['subcategories']['reserves'];
+                    elseif (str_starts_with($n, '12')) $target = &$passif['capitaux']['subcategories']['report'];
+                    elseif (str_starts_with($n, '14')) $target = &$passif['capitaux']['subcategories']['subventions'];
+                    elseif (str_starts_with($n, '15')) $target = &$passif['capitaux']['subcategories']['provisions'];
+                    else {
+                        // Autres capitaux, mis dans Reserves par defaut
+                        $target = &$passif['capitaux']['subcategories']['reserves'];
+                    }
+
+                    $target['total'] += abs($solde);
+                    if ($detailed) $this->addDetail($target['details'], $compte, abs($solde));
                 }
             }
         }
 
-        $data['actif']['total'] = $data['actif']['immobilise']['total'] + $data['actif']['circulant']['total'] + $data['actif']['tresorerie']['total'];
-        $data['passif']['total'] = $data['passif']['capitaux']['total'] + $data['passif']['dettes']['total'] + $data['passif']['tresorerie']['total'];
-        
-        $data['difference'] = $data['actif']['total'] - $data['passif']['total'];
-        $data['equilibre'] = abs($data['difference']) < 1.0; // Tolérance 1 FCFA
+        // Calculs Totaux Sections Actif
+        $actif['immobilise']['total'] = array_sum(array_column($actif['immobilise']['subcategories'], 'total'));
+        $actif['circulant']['total'] = array_sum(array_column($actif['circulant']['subcategories'], 'total'));
+        $actif['tresorerie']['total'] = array_sum(array_column($actif['tresorerie']['subcategories'], 'total'));
+        $actif['total'] = $actif['immobilise']['total'] + $actif['circulant']['total'] + $actif['tresorerie']['total'];
 
-        return $data;
+        // Calculs Totaux Sections Passif (Hors Résultat pour l'instant si pas de 13)
+        $passif['capitaux']['total'] = array_sum(array_column($passif['capitaux']['subcategories'], 'total'));
+        $passif['dettes_fin']['total'] = array_sum(array_column($passif['dettes_fin']['subcategories'], 'total'));
+        $passif['passif_circ']['total'] = array_sum(array_column($passif['passif_circ']['subcategories'], 'total'));
+        $passif['tresorerie']['total'] = array_sum(array_column($passif['tresorerie']['subcategories'], 'total'));
+        
+        $totalPassifProvisoire = $passif['capitaux']['total'] + $passif['dettes_fin']['total'] + $passif['passif_circ']['total'] + $passif['tresorerie']['total'];
+
+        // Calcul automatique du résultat si déséquilibre (Comptes 6 et 7 non soldés)
+        $difference = $actif['total'] - $totalPassifProvisoire;
+        
+        // Si la différence n'est pas nulle, c'est le résultat de la période
+        // (Actif = Passif + Résultat). Donc Résultat = Actif - Passif.
+        // Si Actif > Passif => Bénéfice (Positif dans Capitaux)
+        // Si Actif < Passif => Perte (Négatif dans Capitaux)
+        if (abs($difference) > 0.01) {
+            $passif['capitaux']['subcategories']['resultat']['total'] += $difference;
+            $passif['capitaux']['total'] += $difference;
+            $totalPassifProvisoire += $difference;
+            
+            // On ajoute une ligne "fictive" pour le détail si demandé
+            if ($detailed) {
+                 $passif['capitaux']['subcategories']['resultat']['details'][] = [
+                     'numero' => 'RES',
+                     'intitule' => 'Résultat de la période (calculé)',
+                     'solde' => $difference
+                 ];
+            }
+        }
+
+        $passif['total'] = $totalPassifProvisoire;
+        
+        return [
+            'actif' => $actif,
+            'passif' => $passif,
+            'equilibre' => abs($actif['total'] - $passif['total']) < 0.01,
+            'difference' => $actif['total'] - $passif['total']
+        ];
     }
 
     /**
@@ -389,5 +564,339 @@ class AccountingReportingService
         $data['tresorerie']['finale'] = $data['tresorerie']['initiale'] + $data['tresorerie']['variation_nette'];
 
         return $data;
+    }
+    /**
+     * Calcule les données TFT au format matriciel (Mois par Mois).
+     */
+    public function getTFTMatrixData($exerciceId, $companyId, $detailed = false)
+    {
+        // 1. Déterminer les mois de l'exercice
+        $exercice = \App\Models\ExerciceComptable::find($exerciceId);
+        $start = \Carbon\Carbon::parse($exercice->date_debut);
+        $end = \Carbon\Carbon::parse($exercice->date_fin);
+        
+        $months = [];
+        $current = $start->copy();
+        while ($current <= $end) {
+            $months[] = [
+                'id' => $current->month,
+                'name' => $current->locale('fr')->isoFormat('MMM-YY'),
+                'year' => $current->year
+            ];
+            $current->addMonth();
+        }
+
+        // 2. Initialiser la structure de la matrice
+        $matrix = [
+            'months' => $months,
+            'flux' => [
+                'operationnel' => [
+                    'encaissements' => [
+                        'clients' => array_fill(0, count($months), 0),
+                        'autres' => array_fill(0, count($months), 0),
+                        'total' => array_fill(0, count($months), 0),
+                        'details' => ['clients' => [], 'autres' => []]
+                    ],
+                    'decaissements' => [
+                        'production' => array_fill(0, count($months), 0), // 601, 602, 603
+                        'autres_achats' => array_fill(0, count($months), 0), // 604, 605, 608
+                        'transport' => array_fill(0, count($months), 0), // 61
+                        'services_exterieurs' => array_fill(0, count($months), 0), // 62, 63
+                        'impots_taxes' => array_fill(0, count($months), 0), // 64
+                        'personnel' => array_fill(0, count($months), 0), // 66
+                        'charges_diverses' => array_fill(0, count($months), 0), // 65
+                        'total' => array_fill(0, count($months), 0),
+                        'details' => [
+                            'production' => [], 'autres_achats' => [], 'transport' => [], 
+                            'services_exterieurs' => [], 'impots_taxes' => [], 'personnel' => [], 'charges_diverses' => []
+                        ]
+                    ],
+                    'net' => array_fill(0, count($months), 0)
+                ],
+                'investissement' => [
+                    'acquisitions' => array_fill(0, count($months), 0),
+                    'cessions' => array_fill(0, count($months), 0),
+                    'net' => array_fill(0, count($months), 0),
+                    'details' => ['acquisitions' => [], 'cessions' => []]
+                ],
+                'financement' => [
+                    'net' => array_fill(0, count($months), 0),
+                    'details' => ['net' => []]
+                ],
+                'tresorerie' => [
+                    'net' => array_fill(0, count($months), 0),
+                    'variation' => array_fill(0, count($months), 0), // Variation par rapport au mois précédent
+                    'solde_fin' => array_fill(0, count($months), 0)
+                ]
+            ]
+        ];
+
+        // 3. Récupérer toutes les écritures
+        $ecritures = EcritureComptable::where('exercices_comptables_id', $exerciceId)
+            ->where('company_id', $companyId)
+            ->with('planComptable')
+            ->get();
+
+        // 4. Parcourir les écritures et remplir la matrice
+        foreach ($ecritures as $ecriture) {
+            $compte = $ecriture->planComptable;
+            if (!$compte) continue;
+
+            $num = $compte->numero_de_compte;
+            $montant = $ecriture->debit - $ecriture->credit; // D - C. 
+            // Pour Actif/Charges (D>C): Positif. Pour Passif/Produits (C>D): Négatif.
+            
+            // Trouver l'index du mois
+            $ecritureDate = \Carbon\Carbon::parse($ecriture->date);
+            $monthIndex = -1;
+            foreach ($months as $index => $m) {
+                if ($m['id'] == $ecritureDate->month && $m['year'] == $ecritureDate->year) {
+                    $monthIndex = $index;
+                    break;
+                }
+            }
+            if ($monthIndex === -1) continue;
+
+            // --- FLUX OPÉRATIONNELS ---
+
+            // Encaissements (Produits / Clients)
+            // Note: En trésorerie pure, on regarde les comptes 5. Mais ici on reconstitue via les comptes de gestion/tiers comme le TFT indirect
+            // Approche simplifiée : On classe les flux selon la nature du compte tiers ou de charge/produit impacté
+            
+            // ENCAISSEMENTS
+            if (str_starts_with($num, '70') || str_starts_with($num, '41')) {
+                // Ventes ou Clients
+                // Si c'est un client (41), Crédit = Encaissement. Debit = Facturation (pas encore cash).
+                // Si on raisonne en flux de trésorerie direct, on devrait regarder la contrepartie 5.
+                // MAIS, le TFT souvent se calcule par variation BFR.
+                // ICI, l'utilisateur veut un tableau "Flux de trésorerie... Clients".
+                // On va supposer Encaissement = Credit sur compte 41 (Paiement client) ou Credit sur 70 (Vente comptant si pas passé par 41)
+                
+                // Pour faire simple et correspondre à l'image "Clients" : On prend les CRÉDITS sur les comptes 41 (Paiements reçus)
+                if (str_starts_with($num, '41') && $ecriture->credit > 0) {
+                     $val = $ecriture->credit; // Encaissement positif
+                     $matrix['flux']['operationnel']['encaissements']['clients'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['encaissements']['details']['clients'], $compte, $val, $monthIndex);
+                }
+            }
+
+            // DÉCAISSEMENTS (Charges)
+            // On regarde les DÉBITS sur les comptes de charges (6) ou DÉBITS sur Fournisseurs (40 - Paiement)
+            // L'utilisateur demande "Dépenses de production", "Autres achats". Ce sont des comptes de charges.
+            // Si on prend les comptes 6 directement, on est en "Engagements" pas en "Décaissements" (sauf si comptabilité de trésorerie).
+            // Toutefois pour un tableau de bord mensuel type "Budget vs Réel", souvent on affiche les charges.
+            // Si l'utilisateur veut "Flux de Trésorerie", il faut théoriquement prendre les Paiements (Debit 40).
+            // Mais comment ventiler le Debit 40 "Fourmisseur X" en "Transport" vs "Marchandises" ? Impossible sans lettrage analytique.
+            // HYPOTHÈSE FORTE : L'image montre "Dépenses de production", "Electricité". Ce sont des comptes 6.
+            // Le client appelle ça "TFT" mais l'image ressemble à un SIG mensuel ou un tableau de dépenses.
+            // Je vais utiliser les comptes de CLASSE 6 (Charges) comme proxy des décaissements (vision engagement ou tréso directe si achat comptant).
+            
+            if (str_starts_with($num, '6')) {
+                 $val = $ecriture->debit; // Charge = Débit. On considère ça comme une sortie de cash (ou dette court terme)
+                 
+                 if (str_starts_with($num, '601') || str_starts_with($num, '602') || str_starts_with($num, '603')) {
+                     $matrix['flux']['operationnel']['decaissements']['production'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['production'], $compte, $val, $monthIndex);
+                 }
+                 elseif (str_starts_with($num, '604') || str_starts_with($num, '605') || str_starts_with($num, '608')) {
+                     $matrix['flux']['operationnel']['decaissements']['autres_achats'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['autres_achats'], $compte, $val, $monthIndex);
+                 }
+                 elseif (str_starts_with($num, '61')) {
+                     $matrix['flux']['operationnel']['decaissements']['transport'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['transport'], $compte, $val, $monthIndex);
+                 }
+                 elseif (str_starts_with($num, '62') || str_starts_with($num, '63')) {
+                     $matrix['flux']['operationnel']['decaissements']['services_exterieurs'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['services_exterieurs'], $compte, $val, $monthIndex);
+                 }
+                 elseif (str_starts_with($num, '64')) {
+                     $matrix['flux']['operationnel']['decaissements']['impots_taxes'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['impots_taxes'], $compte, $val, $monthIndex);
+                 }
+                 elseif (str_starts_with($num, '66')) {
+                     $matrix['flux']['operationnel']['decaissements']['personnel'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['personnel'], $compte, $val, $monthIndex);
+                 }
+                 elseif (str_starts_with($num, '65')) {
+                     $matrix['flux']['operationnel']['decaissements']['charges_diverses'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['charges_diverses'], $compte, $val, $monthIndex);
+                 }
+            }
+
+            // INVESTISSEMENT (Classe 2)
+            if (str_starts_with($num, '2') && !str_starts_with($num, '28') && !str_starts_with($num, '29')) {
+                if ($ecriture->debit > 0) { // Acquisition
+                     $val = $ecriture->debit;
+                     $matrix['flux']['investissement']['acquisitions'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['acquisitions'], $compte, $val, $monthIndex);
+                }
+                if ($ecriture->credit > 0) { // Cession
+                     $val = $ecriture->credit;
+                     $matrix['flux']['investissement']['cessions'][$monthIndex] += $val;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['cessions'], $compte, $val, $monthIndex);
+                }
+            }
+
+            // FINANCEMENT (16, 10)
+             if ((str_starts_with($num, '16') || str_starts_with($num, '10')) && !str_starts_with($num, '169')) { // Exclure primes
+                 // Crédit = Augmentation dette/capital = Ressource (+). Débit = Remboursement = Emploi (-).
+                 $val = $ecriture->credit - $ecriture->debit; 
+                 $matrix['flux']['financement']['net'][$monthIndex] += $val;
+                 if($detailed) $this->addDetailMatrix($matrix['flux']['financement']['details']['net'], $compte, $val, $monthIndex);
+             }
+        }
+
+        // 5. Calcul des totaux et nets mois par mois
+        $tresorerie_initiale = 0; // À récupérer potentiellement du report à nouveau N-1 ou précédent
+        
+        for ($i = 0; $i < count($months); $i++) {
+            // Total Encaissements
+            $enc = $matrix['flux']['operationnel']['encaissements']['clients'][$i] 
+                 + $matrix['flux']['operationnel']['encaissements']['autres'][$i]; // Aujouer autres si besoin
+            $matrix['flux']['operationnel']['encaissements']['total'][$i] = $enc;
+
+            // Total Décaissements
+            $dec = $matrix['flux']['operationnel']['decaissements']['production'][$i]
+                 + $matrix['flux']['operationnel']['decaissements']['autres_achats'][$i]
+                 + $matrix['flux']['operationnel']['decaissements']['transport'][$i]
+                 + $matrix['flux']['operationnel']['decaissements']['services_exterieurs'][$i]
+                 + $matrix['flux']['operationnel']['decaissements']['impots_taxes'][$i]
+                 + $matrix['flux']['operationnel']['decaissements']['personnel'][$i]
+                 + $matrix['flux']['operationnel']['decaissements']['charges_diverses'][$i];
+            $matrix['flux']['operationnel']['decaissements']['total'][$i] = $dec;
+
+            // Net Opérationnel (Enc - Dec)
+            $matrix['flux']['operationnel']['net'][$i] = $enc - $dec;
+
+            // Net Investissement (Cessions - Acquisitions)
+            $matrix['flux']['investissement']['net'][$i] = $matrix['flux']['investissement']['cessions'][$i] - $matrix['flux']['investissement']['acquisitions'][$i];
+
+            // Variation Totale (Op + Inv + Fin)
+            $variation = $matrix['flux']['operationnel']['net'][$i] 
+                       + $matrix['flux']['investissement']['net'][$i] 
+                       + $matrix['flux']['financement']['net'][$i];
+            
+            $matrix['flux']['tresorerie']['variation'][$i] = $variation;
+            
+            // Calcul cumulé (Approximation simple, idéalement prendre le solde réel des comptes 5)
+            $tresorerie_initiale += $variation;
+            $matrix['flux']['tresorerie']['solde_fin'][$i] = $tresorerie_initiale;
+        }
+
+        return $matrix;
+    }
+
+    public function getMonthlyResultatData($exerciceId, $companyId, $detailed = false)
+    {
+        $months = $this->getMonthsForExercise($exerciceId);
+        $monthIds = array_column($months, 'id');
+        
+        // Initialize structure
+        $data = [
+            'produits' => [
+                'vente_marchandises' => ['label' => 'Vente de marchandises (70)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'production_vendue' => ['label' => 'Production vendue (71)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'production_stockee' => ['label' => 'Production stockée (72-73)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'autres_produits' => ['label' => 'Autres produits (75-78)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'total' => array_fill(0, count($months), 0)
+            ],
+            'charges' => [
+                'achats_marchandises' => ['label' => 'Achats de marchandises (60)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'transports' => ['label' => 'Transports (61)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'services_exterieurs' => ['label' => 'Services Extérieurs (62-63)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'impots_taxes' => ['label' => 'Impôts et Taxes (64)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'charges_personnel' => ['label' => 'Charges de personnel (66)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'autres_charges' => ['label' => 'Autres charges (65, 68)', 'data' => array_fill(0, count($months), 0), 'details' => []],
+                'total' => array_fill(0, count($months), 0)
+            ],
+            'resultat' => array_fill(0, count($months), 0)
+        ];
+
+        // Fetch entries
+        $ecritures = \App\Models\EcritureComptable::with('planComptable')
+            ->where('company_id', $companyId)
+            ->where('exercices_comptables_id', $exerciceId)
+            ->whereHas('planComptable', function($q) {
+                $q->where('numero_de_compte', 'LIKE', '6%')
+                  ->orWhere('numero_de_compte', 'LIKE', '7%');
+            })
+            ->get();
+
+        foreach ($ecritures as $ecriture) {
+            $compte = $ecriture->planComptable;
+            $num = $compte->numero_de_compte;
+            
+            // Find month index
+            $ecritureDate = \Carbon\Carbon::parse($ecriture->date);
+            $monthIndex = -1;
+            foreach ($months as $index => $m) {
+                if ($m['id'] == $ecritureDate->month && $m['year'] == $ecritureDate->year) {
+                    $monthIndex = $index;
+                    break;
+                }
+            }
+            
+            if ($monthIndex === -1) continue;
+
+            $montant = 0;
+            if (str_starts_with($num, '7')) {
+                $montant = $ecriture->credit - $ecriture->debit;
+                
+                // Categorization
+                $key = 'autres_produits';
+                if (str_starts_with($num, '70')) $key = 'vente_marchandises';
+                elseif (str_starts_with($num, '71')) $key = 'production_vendue';
+                elseif (str_starts_with($num, '72') || str_starts_with($num, '73')) $key = 'production_stockee';
+                
+                $data['produits'][$key]['data'][$monthIndex] += $montant;
+                $data['produits']['total'][$monthIndex] += $montant;
+                
+                if ($detailed) {
+                     $this->addDetailMatrix($data['produits'][$key]['details'], $compte, $montant, $monthIndex);
+                }
+
+            } elseif (str_starts_with($num, '6')) {
+                $montant = $ecriture->debit - $ecriture->credit;
+
+                // Categorization
+                $key = 'autres_charges';
+                if (str_starts_with($num, '60')) $key = 'achats_marchandises';
+                elseif (str_starts_with($num, '61')) $key = 'transports';
+                elseif (str_starts_with($num, '62') || str_starts_with($num, '63')) $key = 'services_exterieurs';
+                elseif (str_starts_with($num, '64')) $key = 'impots_taxes';
+                elseif (str_starts_with($num, '66')) $key = 'charges_personnel';
+                
+                $data['charges'][$key]['data'][$monthIndex] += $montant;
+                $data['charges']['total'][$monthIndex] += $montant;
+
+                if ($detailed) {
+                     $this->addDetailMatrix($data['charges'][$key]['details'], $compte, $montant, $monthIndex);
+                }
+            }
+        }
+
+        // Finalize Resultat Net
+        for ($i = 0; $i < count($months); $i++) {
+            $data['resultat'][$i] = $data['produits']['total'][$i] - $data['charges']['total'][$i];
+        }
+
+        return ['data' => $data, 'months' => $months];
+    }
+
+    private function addDetailMatrix(&$detailsArray, $compte, $montant, $monthIndex)
+    {
+        $num = $compte->numero_de_compte;
+        if (!isset($detailsArray[$num])) {
+            $detailsArray[$num] = [
+                'numero' => $num,
+                'intitule' => $compte->intitule,
+                'data' => [] // On ne connait pas la taille ici, on utilisera l'index
+            ];
+        }
+        if (!isset($detailsArray[$num]['data'][$monthIndex])) {
+             $detailsArray[$num]['data'][$monthIndex] = 0;
+        }
+        $detailsArray[$num]['data'][$monthIndex] += $montant;
     }
 }

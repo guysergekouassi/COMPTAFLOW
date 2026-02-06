@@ -7,102 +7,109 @@
 <style>
     body {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
-        background-color: #f8fafc;
+        background-color: #f4f7fe;
     }
     .glass-card {
         background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.4);
-        border-radius: 16px;
-        box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+        padding: 20px;
+        overflow-x: auto; /* Allow horizontal scroll for large matrix */
     }
     .text-premium-gradient {
         background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    .btn-premium {
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        border: none;
-        border-radius: 12px;
-        padding: 10px 20px;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-        transition: all 0.3s ease;
-    }
-    .section-title {
-        font-size: 0.85rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #64748b;
-        margin-bottom: 1.5rem;
-        border-left: 4px solid #6366f1;
-        padding-left: 12px;
-    }
-    .table-custom {
-        border-collapse: separate;
-        border-spacing: 0 8px;
-    }
-    .table-custom tr.main-row {
-        background: #fdfdfd;
-        border-radius: 12px;
-        transition: transform 0.2s ease;
-    }
-    .table-custom tr.main-row:hover {
-        transform: translateX(5px);
-        background: #ffffff;
-    }
-    .table-custom td {
-        padding: 14px 20px;
-        border: none;
-    }
-    .table-custom tr.main-row td:first-child {
-        border-radius: 12px 0 0 12px;
-    }
-    .table-custom tr.main-row td:last-child {
-        border-radius: 0 12px 12px 0;
-    }
-    .flux-total-row {
-        background: #f1f5f9 !important;
-        font-weight: 700;
-        color: #1e293b;
-    }
-    .grand-total-card {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white;
-        padding: 24px;
-        border-radius: 16px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    .amount-display {
-        font-family: 'Inter', monospace;
-        font-weight: 700;
-    }
-    
-    /* Details Styling */
-    .details-container {
-        display: block;
-        padding: 0 20px 10px 20px;
-    }
-    .table-details {
+    .table-matrix {
         width: 100%;
+        min-width: 1000px;
+        border-collapse: separate; 
+        border-spacing: 0;
         font-size: 0.85rem;
-        color: #64748b;
     }
-    .table-details td {
-        padding: 8px 10px;
-        border-bottom: 1px dashed #e2e8f0;
+    .table-matrix th, .table-matrix td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e2e8f0;
     }
-    .account-badge {
-        background-color: #e2e8f0;
+    .table-matrix th {
+        background: #f8fafc;
+        font-weight: 700;
         color: #475569;
-        padding: 2px 6px;
-        border-radius: 4px;
+        text-transform: uppercase;
         font-size: 0.75rem;
+        position: sticky;
+        top: 0;
+    }
+    .table-matrix td {
+        color: #1e293b;
+        text-align: right;
+        font-family: 'Inter', monospace;
+    }
+    .table-matrix td:first-child {
+        text-align: left;
         font-weight: 600;
-        margin-right: 8px;
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 1;
+        border-right: 1px solid #e2e8f0;
+    }
+    .table-matrix tr:hover td {
+        background-color: #f1f5f9;
+    }
+    .section-row td {
+        background-color: #e2e8f0;
+        font-weight: 800;
+        color: #1e293b;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+    .total-row td {
+        background-color: #f8fafc;
+        font-weight: 700;
+        border-top: 2px solid #cbd5e1;
+    }
+    .main-total-row td {
+        background-color: #1e293b !important;
+        color: white !important;
+        font-weight: 800;
+    }
+    .table-matrix tr.main-total-row:hover td {
+        background-color: #1e293b !important;
+        color: white !important;
+    }
+    .detail-row td {
+        background-color: #fff;
+        font-style: italic;
+        color: #64748b;
+        font-size: 0.8rem;
+    }
+    .detail-row td:first-child {
+        padding-left: 30px;
+        font-weight: 400;
+    }
+    /* Toggle switch styling */
+    .switch-toggle input {
+        display: none;
+    }
+    .switch-toggle label {
+        cursor: pointer;
+        background: #e2e8f0;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .switch-toggle input:checked + label {
+        background: #6366f1;
+        color: white;
     }
 </style>
 
@@ -112,7 +119,7 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Tableau des <span class="text-gradient">Flux de Trésorerie</span>'])
+                @include('components.header', ['page_title' => 'Tableau des Flux de <span class="text-gradient">Trésorerie</span>'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
@@ -120,246 +127,401 @@
                         <!-- Actions Header & Filters -->
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-6 gap-4">
                             <div>
-                                <h4 class="fw-bold mb-1 text-premium-gradient">Analyse des flux (TFT)</h4>
-                                <p class="text-muted small mb-0">
-                                    <i class="bx bx-calendar-event me-1"></i> Exercice : <strong>{{ $exercice->intitule }}</strong>
-                                </p>
+                                <h3 class="fw-extrabold mb-1 text-premium-gradient">Flux de Trésorerie</h3>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-label-primary px-3 py-2 rounded-pill me-3">
+                                        <i class="bx bx-calendar me-1"></i> {{ $exercice->intitule }}
+                                    </span>
+                                </div>
                             </div>
 
-                             <!-- Filter Form -->
-                             <form action="{{ route('reporting.tft') }}" method="GET" class="d-flex align-items-center gap-3 bg-white p-2 rounded-3 shadow-sm" style="position: relative; z-index: 10;">
-                                <select name="month" class="form-select border-0 bg-light" onchange="this.form.submit()" style="width: 150px; font-weight: 600;">
-                                    <option value="all" {{ request('month') == 'all' ? 'selected' : '' }}>Tout l'exercice</option>
-                                    @foreach(range(1, 12) as $m)
-                                        <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>
-                                            {{ \Carbon\Carbon::create()->month($m)->locale('fr')->monthName }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                            <!-- Filter Form -->
+                            <form action="{{ route('reporting.tft') }}" method="GET" class="d-flex align-items-center gap-3 bg-white p-2 rounded-3 shadow-sm">
                                 
-                                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2 ps-2 border-start">
-                                    <input class="form-check-input" type="checkbox" id="detailSwitch" name="detail" value="1" {{ request('detail') ? 'checked' : '' }} onchange="this.form.submit()">
-                                    <label class="form-check-label small fw-bold text-uppercase" for="detailSwitch">Détails</label>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="detailSwitch" name="detail" value="1" {{ request('detail') ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <label for="detailSwitch">
+                                        <i class="bx bx-list-ul"></i>
+                                        {{ request('detail') ? 'Vue Détaillée' : 'Vue en Masse' }}
+                                    </label>
                                 </div>
 
-                                <div class="border-start ps-2">
+                                <div class="border-start ps-2 d-flex gap-2">
                                     <a href="{{ route('reporting.tft.export', ['format' => 'pdf'] + request()->all()) }}" class="btn btn-sm btn-light text-danger" data-bs-toggle="tooltip" title="Exporter en PDF">
                                         <i class="bx bxs-file-pdf fs-4"></i>
+                                    </a>
+                                    <a href="{{ route('reporting.tft.export', ['format' => 'excel'] + request()->all()) }}" class="btn btn-sm btn-light text-success" data-bs-toggle="tooltip" title="Exporter en Excel">
+                                        <i class="bx bxs-file-json fs-4"></i>
                                     </a>
                                 </div>
                             </form>
                         </div>
 
-                        <!-- Quick Stats -->
-                        <div class="row g-6 mb-6">
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="glass-card p-4">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="avatar me-3">
-                                            <span class="avatar-initial rounded bg-label-secondary"><i class="bx bx-hourglass-top"></i></span>
+                        <!-- Summary Cards -->
+                        <div class="d-flex align-items-stretch gap-4 mb-4" style="overflow-x: auto; padding-bottom: 5px;">
+                            <!-- Opérationnel -->
+                            <div class="card border-0 shadow-sm rounded-4 flex-grow-1" style="min-width: 200px;">
+                                <div class="card-body p-4 position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Opérationnel</h6>
+                                        <div class="p-2 rounded-3 bg-label-primary text-primary">
+                                            <i class="bx bx-briefcase fs-4"></i>
                                         </div>
-                                        <h6 class="mb-0 text-muted small fw-bold text-uppercase">TRESORERIE INITIALE</h6>
                                     </div>
-                                    <h4 class="ms-10 mb-0 amount-display">{{ number_format($data['tresorerie']['initiale'], 0, ',', ' ') }}</h4>
+                                    <h4 class="mb-2 fw-extrabold text-dark">{{ number_format(array_sum($data['flux']['operationnel']['net']), 0, ',', ' ') }}</h4>
+                                    <div class="small fw-semibold text-primary">
+                                        <i class="bx bx-check-circle me-1"></i> Flux Net
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="glass-card p-4">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="avatar me-3">
-                                            <span class="avatar-initial rounded bg-label-success"><i class="bx bx-trending-up"></i></span>
+
+                            <!-- Investissement -->
+                            <div class="card border-0 shadow-sm rounded-4 flex-grow-1" style="min-width: 200px;">
+                                <div class="card-body p-4 position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Investissement</h6>
+                                        <div class="p-2 rounded-3 bg-label-info text-info">
+                                            <i class="bx bx-building fs-4"></i>
                                         </div>
-                                        <h6 class="mb-0 text-muted small fw-bold text-uppercase">FLUX EXPLOITATION</h6>
                                     </div>
-                                    <h4 class="ms-10 mb-0 amount-display">{{ number_format($data['operationnel']['total'], 0, ',', ' ') }}</h4>
+                                    <h4 class="mb-2 fw-extrabold text-dark">{{ number_format(array_sum($data['flux']['investissement']['net']), 0, ',', ' ') }}</h4>
+                                    <div class="small fw-semibold text-info">
+                                        <i class="bx bx-pie-chart-alt me-1"></i> Actifs
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="glass-card p-4">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="avatar me-3">
-                                            <span class="avatar-initial rounded bg-label-info"><i class="bx bx-refresh"></i></span>
+
+                            <!-- Financement -->
+                            <div class="card border-0 shadow-sm rounded-4 flex-grow-1" style="min-width: 200px;">
+                                <div class="card-body p-4 position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Financement</h6>
+                                        <div class="p-2 rounded-3 bg-label-warning text-warning">
+                                            <i class="bx bx-money fs-4"></i>
                                         </div>
-                                        <h6 class="mb-0 text-muted small fw-bold text-uppercase">AUTO-FINANCEMENT</h6>
                                     </div>
-                                    <h4 class="ms-10 mb-0 amount-display">{{ number_format($data['operationnel']['caf'], 0, ',', ' ') }}</h4>
+                                    <h4 class="mb-2 fw-extrabold text-dark">{{ number_format(array_sum($data['flux']['financement']['net']), 0, ',', ' ') }}</h4>
+                                    <div class="small fw-semibold text-warning">
+                                        <i class="bx bx-line-chart me-1"></i> Capitaux
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="glass-card p-4">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="avatar me-3">
-                                            <span class="avatar-initial rounded bg-label-primary"><i class="bx bx-flag"></i></span>
+
+                            <!-- Variation -->
+                            @php
+                                $varTotal = array_sum($data['flux']['tresorerie']['variation']);
+                                $varColor = $varTotal >= 0 ? 'success' : 'danger';
+                                $varIcon = $varTotal >= 0 ? 'bx-trending-up' : 'bx-trending-down';
+                            @endphp
+                            <div class="card border-0 shadow-sm rounded-4 flex-grow-1" style="min-width: 200px;">
+                                <div class="card-body p-4 position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Variation Totale</h6>
+                                        <div class="p-2 rounded-3 bg-label-{{ $varColor }} text-{{ $varColor }}">
+                                            <i class="bx {{ $varIcon }} fs-4"></i>
                                         </div>
-                                        <h6 class="mb-0 text-muted small fw-bold text-uppercase">TRESORERIE FINALE</h6>
                                     </div>
-                                    <h4 class="ms-10 mb-0 amount-display">{{ number_format($data['tresorerie']['finale'], 0, ',', ' ') }}</h4>
+                                    <h4 class="mb-2 fw-extrabold text-{{ $varColor }}">{{ number_format($varTotal, 0, ',', ' ') }}</h4>
+                                    <div class="small fw-semibold text-{{ $varColor }}">
+                                        <i class="bx bx-stats me-1"></i> Global
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Solde Final -->
+                            @php
+                                $soldeFin = $data['flux']['tresorerie']['solde_fin'][count($data['months'])-1] ?? 0;
+                                $soldeColor = $soldeFin >= 0 ? 'primary' : 'danger';
+                            @endphp
+                            <div class="card border-0 shadow-sm rounded-4 flex-grow-1" style="min-width: 200px;">
+                                <div class="card-body p-4 position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Solde Trésorerie</h6>
+                                        <div class="p-2 rounded-3 bg-label-{{ $soldeColor }} text-{{ $soldeColor }}">
+                                            <i class="bx bx-wallet fs-4"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="mb-2 fw-extrabold text-{{ $soldeColor }}">
+                                        {{ number_format($soldeFin, 0, ',', ' ') }} <span class="fs-6 text-muted fw-normal">FCFA</span>
+                                    </h4>
+                                    <div class="small fw-semibold text-muted font-italic">
+                                        Mise à jour temps réel
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="glass-card p-6">
-                            
-                            <!-- SECTION OPERATIONNELLE -->
-                            <div class="mb-8">
-                                <h6 class="section-title">Activités Opérationnelles</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-custom mb-0">
-                                        <tbody>
-                                            <tr class="main-row">
-                                                <td class="text-slate-600">Capacité d'Autofinancement (CAF)</td>
-                                                <td class="text-end fw-bold amount-display">{{ number_format($data['operationnel']['caf'], 0, ',', ' ') }}</td>
-                                            </tr>
-                                            <tr class="main-row">
-                                                <td class="text-slate-600">Variation du Besoin en Fonds de Roulement (BFR)</td>
-                                                <td class="text-end fw-bold amount-display">{{ number_format($data['operationnel']['variation_bfr'], 0, ',', ' ') }}</td>
-                                            </tr>
-                                            <tr class="flux-total-row main-row">
-                                                <td>FLUX NET DE TRÉSORERIE EXPLOITATION (B)</td>
-                                                <td class="text-end amount-display">{{ number_format($data['operationnel']['total'], 0, ',', ' ') }} <small>FCFA</small></td>
-                                            </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['operationnel']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <div class="px-2 py-1 bg-slate-50 text-uppercase small fw-bold text-muted mb-2">Détails Exploitation</div>
-                                                        <table class="table-details">
-                                                            @foreach($data['operationnel']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['operationnel']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                        <div class="glass-card">
+                            <table class="table-matrix">
+                                <thead>
+                                    <tr>
+                                        <th>Flux de trésorerie</th>
+                                        @foreach($data['months'] as $month)
+                                            <th class="text-center">{{ $month['name'] }}</th>
+                                        @endforeach
+                                        <th class="text-center">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="section-row">
+                                        <td colspan="{{ count($data['months']) + 2 }}">I. Flux de trésorerie des activités opérationnelles</td>
+                                    </tr>
+                                    
+                                    <!-- ENCAISSEMENTS -->
+                                    <tr>
+                                        <td>Clients (Encaissements)</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['encaissements']['clients'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['encaissements']['clients']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['operationnel']['encaissements']['details']['clients'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
 
-                            <!-- SECTION INVESTISSEMENT -->
-                            <div class="mb-8">
-                                <h6 class="section-title">Activités d'Investissement</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-custom mb-0">
-                                        <tbody>
-                                            <tr class="main-row">
-                                                <td class="text-slate-600">Produits des cessions d'immobilisations (+)</td>
-                                                <td class="text-end fw-bold text-success amount-display">+ {{ number_format($data['investissement']['cessions'], 0, ',', ' ') }}</td>
-                                            </tr>
-                                            <tr class="main-row">
-                                                <td class="text-slate-600">Acquisitions d'immobilisations (-)</td>
-                                                <td class="text-end fw-bold text-danger amount-display">- {{ number_format($data['investissement']['acquisitions'], 0, ',', ' ') }}</td>
-                                            </tr>
-                                            <tr class="flux-total-row main-row">
-                                                <td>FLUX NET DE TRÉSORERIE INVESTISSEMENT (C)</td>
-                                                <td class="text-end amount-display">{{ number_format($data['investissement']['total'], 0, ',', ' ') }} <small>FCFA</small></td>
-                                            </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['investissement']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <div class="px-2 py-1 bg-slate-50 text-uppercase small fw-bold text-muted mb-2">Détails Investissement</div>
-                                                        <table class="table-details">
-                                                            @foreach($data['investissement']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['investissement']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                    <tr class="total-row">
+                                        <td>Total Encaissements</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['encaissements']['total'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td>{{ number_format(array_sum($data['flux']['operationnel']['encaissements']['total']), 0, ',', ' ') }}</td>
+                                    </tr>
 
-                            <!-- SECTION FINANCEMENT -->
-                            <div class="mb-8">
-                                <h6 class="section-title">Activités de Financement</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-custom mb-0">
-                                        <tbody>
-                                            <tr class="main-row">
-                                                <td class="text-slate-600">Variations de Capital (+)</td>
-                                                <td class="text-end fw-bold amount-display">{{ number_format($data['financement']['capital'], 0, ',', ' ') }}</td>
-                                            </tr>
-                                            <tr class="main-row">
-                                                <td class="text-slate-600">Variations d'Emprunts et Dettes financières</td>
-                                                <td class="text-end fw-bold amount-display">{{ number_format($data['financement']['emprunts'], 0, ',', ' ') }}</td>
-                                            </tr>
-                                            <tr class="flux-total-row main-row">
-                                                <td>FLUX NET DE TRÉSORERIE FINANCEMENT (D)</td>
-                                                <td class="text-end amount-display">{{ number_format($data['financement']['total'], 0, ',', ' ') }} <small>FCFA</small></td>
-                                            </tr>
-                                            @if(request('detail'))
-                                            @if(!empty($data['financement']['details']))
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <div class="details-container">
-                                                        <div class="px-2 py-1 bg-slate-50 text-uppercase small fw-bold text-muted mb-2">Détails Financement</div>
-                                                        <table class="table-details">
-                                                            @foreach($data['financement']['details'] as $item)
-                                                            <tr>
-                                                                <td width="20%"><span class="account-badge">{{ $item['numero'] }}</span></td>
-                                                                <td>{{ $item['intitule'] }}</td>
-                                                                <td class="text-end">{{ number_format($item['solde'], 0, ',', ' ') }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endif
-                                            @if(empty($data['financement']['details']))
-                                            <tr><td colspan="2" class="p-4 text-center text-muted fst-italic small">Aucune écriture trouvée</td></tr>
-                                            @endif
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                    <tr class="section-row">
+                                        <td colspan="{{ count($data['months']) + 2 }}" style="font-size: 0.75rem; color: #475569; background: #fff;">Décaissements</td>
+                                    </tr>
 
-                            <!-- SYNTHESE FINALE -->
-                            <div class="row g-6 align-items-center mt-4">
-                                <div class="col-md-7">
-                                    <div class="p-5 rounded-4 bg-label-info border border-info border-dashed d-flex align-items-center h-100">
-                                        <i class="bx bx-info-circle fs-3 me-4"></i>
-                                        <p class="mb-0 small">
-                                            L'équilibre de ce tableau (SYSCOHADA) est validé si la **Trésorerie Finale (E)** calculée ici correspond exactement aux disponibilités de votre Bilan.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="grand-total-card">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <span class="small opacity-75 text-uppercase fw-bold">Trésorerie Finale (E)</span>
-                                            <i class="bx bx-check-shield fs-4"></i>
-                                        </div>
-                                        <h2 class="mb-0 amount-display text-white">{{ number_format($data['tresorerie']['finale'], 0, ',', ' ') }} <small class="ms-1" style="font-size: 1rem;">FCFA</small></h2>
-                                    </div>
-                                </div>
-                            </div>
+                                    <!-- DÉCAISSEMENTS (Production) -->
+                                    <tr>
+                                        <td>Dépenses de production</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['production'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['production']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['operationnel']['decaissements']['details']['production'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
 
+                                    <!-- Autres Achats -->
+                                    <tr>
+                                        <td>Autres achats</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['autres_achats'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['autres_achats']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['operationnel']['decaissements']['details']['autres_achats'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                     <!-- Transport -->
+                                    <tr>
+                                        <td>Transport</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['transport'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['transport']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['operationnel']['decaissements']['details']['transport'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                     <!-- Services Extérieurs -->
+                                    <tr>
+                                        <td>Services Extérieurs</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['services_exterieurs'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['services_exterieurs']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['operationnel']['decaissements']['details']['services_exterieurs'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                    <!-- Personnel -->
+                                    <tr>
+                                        <td>Charges de personnel</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['personnel'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['personnel']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['operationnel']['decaissements']['details']['personnel'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                     <!-- Impots -->
+                                    <tr>
+                                        <td>Impôts et Taxes</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['impots_taxes'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['impots_taxes']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['operationnel']['decaissements']['details']['impots_taxes'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                    <tr class="total-row">
+                                        <td>Total Décaissements</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['total'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td>{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['total']), 0, ',', ' ') }}</td>
+                                    </tr>
+
+                                    <tr class="main-total-row">
+                                        <td>I. Flux Net Opérationnel</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['net'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td>{{ number_format(array_sum($data['flux']['operationnel']['net']), 0, ',', ' ') }}</td>
+                                    </tr>
+
+                                    <tr class="section-row">
+                                        <td colspan="{{ count($data['months']) + 2 }}">II. Flux de trésorerie des activités d'investissement</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cessions d'immobilisations (+)</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td class="text-success">+ {{ number_format($data['flux']['investissement']['cessions'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['investissement']['cessions']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Acquisitions d'immobilisations (-)</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td class="text-danger">- {{ number_format($data['flux']['investissement']['acquisitions'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">- {{ number_format(array_sum($data['flux']['investissement']['acquisitions']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['investissement']['details']['acquisitions'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>- {{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>- {{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                    <tr class="main-total-row">
+                                        <td>II. Flux Net Investissement</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['investissement']['net'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td>{{ number_format(array_sum($data['flux']['investissement']['net']), 0, ',', ' ') }}</td>
+                                    </tr>
+
+                                    <tr class="section-row">
+                                        <td colspan="{{ count($data['months']) + 2 }}">III. Flux de trésorerie des activités de financement</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Flux Net Financement</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['financement']['net'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['financement']['net']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['financement']['details']['net'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                    <tr class="main-total-row">
+                                        <td>III. Flux Net Financement</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['financement']['net'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td>{{ number_format(array_sum($data['flux']['financement']['net']), 0, ',', ' ') }}</td>
+                                    </tr>
+
+                                    <tr class="main-total-row" style="background: #0f172a;">
+                                        <td>VARIATION DE TRÉSORERIE (I+II+III)</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['tresorerie']['variation'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td>{{ number_format(array_sum($data['flux']['tresorerie']['variation']), 0, ',', ' ') }}</td>
+                                    </tr>
+
+                                    <tr class="total-row">
+                                        <td>Solde Trésorerie Fin de Période (Cumulé)</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['tresorerie']['solde_fin'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td>-</td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
                         </div>
+
                     </div>
                     @include('components.footer')
                 </div>

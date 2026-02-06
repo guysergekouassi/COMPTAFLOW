@@ -788,6 +788,12 @@
                     <span>Compte de Résultat</span>
                 </a>
                 @endif
+                @if(auth()->user()->hasPermission('compte_resultat'))
+                <a href="{{ route('reporting.monthly_resultat') }}" class="menu-link-new {{ request()->routeIs('reporting.monthly_resultat') ? 'active' : '' }}">
+                    <i class="fa-solid fa-calendar-week"></i>
+                    <span>Compte d'Exp. Mensuel</span>
+                </a>
+                @endif
                 @if(auth()->user()->hasPermission('bilan'))
                 <a href="{{ route('reporting.tft') }}" class="menu-link-new {{ request()->routeIs('reporting.tft') ? 'active' : '' }}">
                     <i class="fa-solid fa-money-bill-transfer"></i>

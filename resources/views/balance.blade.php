@@ -136,10 +136,26 @@
             border-top: 1px solid #000;
             padding-top: 3px;
         }
+        .watermark {
+            position: fixed;
+            top: 35%;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            opacity: 0.08;
+            transform: rotate(-45deg);
+            font-size: 110px;
+            font-weight: bold;
+            color: #000;
+            z-index: -1000;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
     </style>
 </head>
 
 <body>
+    <div class="watermark">COMPTAFLOW</div>
 
     <!-- En-tête -->
     <div class="header-container">
