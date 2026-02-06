@@ -78,7 +78,7 @@ class User extends Authenticatable
 
     // verifier si l'utilisateur est super admin primaire (non supprimable)
     public function isPrimarySuperAdmin(): bool{
-        return $this->role === 'super_admin' && $this->super_admin_type === 'primary';
+        return $this->role === 'super_admin' && ($this->super_admin_type === 'primary' || $this->super_admin_type === null);
     }
 
     // verifier si l'utilisateur est super admin secondaire (périmètre limité)
@@ -111,11 +111,12 @@ class User extends Authenticatable
 
     public function getHabilitations(): array
     {
-        // Si l'utilisateur est Super Admin, il a accès à toutes les sections de configuration.
-        if ($this->isSuperAdmin()) {
+        // SA Primaire : Accès à tout
+        if ($this->isPrimarySuperAdmin()) {
             return Config::get('accounting_permissions.permissions', []);
         }
 
+        // Pour les autres (SA Secondaire, Admin, Comptable), on retourne les habilitations stockées
         return $this->habilitations ?? [];
     }
 
@@ -146,43 +147,44 @@ class User extends Authenticatable
      */
     public function hasPermission(string $permission): bool
     {
-        // Les Super Admins ont tous les droits.
-        if ($this->isSuperAdmin()) {
+        // 1. SA Primaire : Toujours accès à TOUT
+        if ($this->isPrimarySuperAdmin()) {
             return true;
         }
-        
-        // 1. Protection contre les permissions de Super Admin
-        // Aucun autre rôle ne peut accéder aux routes superadmin.*
-        if (str_starts_with($permission, 'superadmin.')) {
-            return false;
-        }
 
-        // 2. Logique Fusion : Uniquement pour les sous-entreprises
-        if ($permission === 'admin.fusion.index') {
+        // 2. Logique Fusion : Uniquement pour les sous-entreprises (Sauf Super Admin)
+        if ($permission === 'admin.fusion.index' && !$this->isSuperAdmin()) {
             if (!$this->company || !$this->company->parent_company_id) {
                 return false;
             }
         }
 
-        // 3. Règle NB4: Les accès de configurations sont réservés au SEUL administrateur principal
-        // Si c'est une permission de config et que l'utilisateur n'est pas admin principal (et pas SA)
-        if (str_contains($permission, '.config.') && !$this->isPrincipalAdmin()) {
-            // Exception : Si l'admin principal lui a explicitement donné (Règle NB4 suite)
-            // On laisse la vérification finale au tableau d'habilitations
+        // 3. Protection SuperAdmin : Seuls les SuperAdmins (Primaire ou Secondaire) peuvent accéder aux routes superadmin.*
+        // Si c'est une permission superadmin et que l'utilisateur n'est pas SA
+        if (str_starts_with($permission, 'superadmin.') && !$this->isSuperAdmin()) {
+            return false;
         }
 
         $habilitations = $this->habilitations ?? [];
-        
-        // 4. Admin Principal : On vérifie s'il a le droit par défaut.
+
+        // 4. Super Admin Secondaire : On vérifie s'il a le droit explicitement (s'il n'est pas primaire)
+        // Note: Si on veut qu'il ait TOUT par défaut s'il n'a rien de configuré, on peut ajuster.
+        // Mais ici on suit la logique granulaire demandée.
+        if ($this->isSecondarySuperAdmin()) {
+            return isset($habilitations[$permission]) && ($habilitations[$permission] === "1" || $habilitations[$permission] === true || $habilitations[$permission] === 1);
+        }
+
+        // 5. Admin Principal : On vérifie s'il a le droit par défaut (s'il n'a pas d'habilitations personnalisées).
         if ($this->isPrincipalAdmin() && empty($habilitations)) {
             return true;
         }
 
-        // 5. Règle NB3: Un comptable ne peut que voir son profil, notifications et dashboard par défaut
-        // Si on veut être restrictif, on pourrait filtrer ici, mais Rule NB4 permet l'octroi de droits.
-        // Donc on se fie au tableau d'habilitations qui sera géré par l'admin principal.
+        // 6. Règle NB4: Les accès de configurations sont réservés au SEUL administrateur principal
+        if (str_contains($permission, '.config.') && !$this->isPrincipalAdmin() && !$this->isSuperAdmin()) {
+            // Laisse la vérification finale au tableau d'habilitations
+        }
 
-        // Si des habilitations sont présentes, on vérifie la clé spécifiquement
+        // 7. Vérification finale par clé d'habilitation
         return isset($habilitations[$permission]) && ($habilitations[$permission] === "1" || $habilitations[$permission] === true || $habilitations[$permission] === 1);
     }
 

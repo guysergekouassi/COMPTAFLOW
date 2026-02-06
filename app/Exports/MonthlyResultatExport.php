@@ -24,7 +24,7 @@ class MonthlyResultatExport implements FromView, ShouldAutoSize, WithTitle, With
 
     public function view(): View
     {
-        return view('reporting.pdf.monthly_resultat', [
+        return view('reporting.excel.monthly_resultat', [
             'data' => $this->data,
             'exercice' => $this->exercice,
             'detailed' => $this->detailed

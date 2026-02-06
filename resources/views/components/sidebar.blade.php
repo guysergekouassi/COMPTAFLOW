@@ -414,6 +414,9 @@
                 <a href="{{ route('notifications.index') }}" class="menu-link-new {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-bell"></i>
                     <span>Notifications</span>
+                    @if(isset($unreadNotificationsCount) && $unreadNotificationsCount > 0)
+                        <span class="badge bg-danger rounded-pill ms-auto">{{ $unreadNotificationsCount }}</span>
+                    @endif
                 </a>
                 @endif
 
@@ -629,6 +632,9 @@
                 <a href="{{ route('admin.tasks.index') }}" class="menu-link-new {{ request()->routeIs('admin.tasks.index') ? 'active' : '' }}">
                     <i class="fa-solid fa-file-pen"></i>
                     <span>Assigner Tâche</span>
+                    @if(isset($tasksSentCount) && $tasksSentCount > 0)
+                        <span class="badge bg-soft-primary text-primary rounded-pill ms-auto">{{ $tasksSentCount }}</span>
+                    @endif
                 </a>
                 @endif
                 
@@ -636,6 +642,9 @@
                 <a href="{{ route('admin.tasks.daily') }}" class="menu-link-new {{ request()->routeIs('admin.tasks.daily') ? 'active' : '' }}">
                     <i class="fa-solid fa-list-check"></i>
                     <span>Tâches Quotidiennes</span>
+                    @if(isset($tasksReceivedCompletedCount) && $tasksReceivedCompletedCount > 0)
+                        <span class="badge bg-soft-success text-success rounded-pill ms-auto">{{ $tasksReceivedCompletedCount }}</span>
+                    @endif
                 </a>
                 @endif
             </div>

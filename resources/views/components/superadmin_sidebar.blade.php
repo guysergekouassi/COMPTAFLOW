@@ -34,11 +34,36 @@
 
             @if(auth()->user()->hasPermission('superadmin.reports'))
             <a href="{{ route('superadmin.reports') }}" class="menu-link-new {{ request()->routeIs('superadmin.reports') ? 'active' : '' }}">
-                <i class="fa-solid fa-bell"></i>
+                <i class="fa-solid fa-chart-line"></i>
                 <span>Rapports Performance</span>
             </a>
             @endif
+
+            <a href="{{ route('notifications.index') }}" class="menu-link-new {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-bell"></i>
+                <span>Notifications</span>
+                @if(isset($unreadNotificationsCount) && $unreadNotificationsCount > 0)
+                    <span class="badge bg-danger rounded-pill ms-auto">{{ $unreadNotificationsCount }}</span>
+                @endif
+            </a>
         </div>
+
+        {{-- SECTION NOUVELLE : ADMINISTRATION INTERNE --}}
+        @if(auth()->user()->hasPermission('superadmin.secondary.index'))
+        <div class="menu-section">
+            <div class="menu-section-header">Administration Interne</div>
+            
+            <a href="{{ route('superadmin.secondary.index') }}" class="menu-link-new {{ request()->is('superadmin/secondary-admins') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-tie"></i>
+                <span>Super Admins Secondaires</span>
+            </a>
+
+            <a href="{{ route('superadmin.secondary.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.secondary.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-gear"></i>
+                <span>Créer super admin secondaire</span>
+            </a>
+        </div>
+        @endif
 
         {{-- SECTION 2 : GOUVERNANCE --}}
         <div class="menu-section">
@@ -65,13 +90,6 @@
             </a>
             @endif
 
-            {{-- Gestion des Super Admins Secondaires (Réservé au SA Primaire) --}}
-            @if(auth()->user()->isPrimarySuperAdmin())
-            <a href="{{ route('superadmin.secondary.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.secondary.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-user-tie"></i>
-                <span>Super Admins Secondaires</span>
-            </a>
-            @endif
 
             {{-- SECTION : CRÉATION RAPIDE --}}
             <div class="menu-section-header mt-4">Création Rapide</div>
@@ -81,12 +99,6 @@
                 <span>Créer Entreprise</span>
             </a>
 
-            @if(auth()->user()->isPrimarySuperAdmin())
-            <a href="{{ route('superadmin.secondary.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.secondary.create') ? 'active' : '' }}">
-                <i class="fa-solid fa-user-gear"></i>
-                <span>Créer super admin secondaire</span>
-            </a>
-            @endif
 
             <a href="{{ route('superadmin.admins.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.admins.create') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-shield"></i>
@@ -137,6 +149,9 @@
             <a href="{{ route('superadmin.tasks.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.tasks.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-tasks"></i>
                 <span>Tâches Administratives</span>
+                @if(isset($tasksSentCount) && $tasksSentCount > 0)
+                    <span class="badge bg-soft-primary text-primary rounded-pill ms-auto">{{ $tasksSentCount }}</span>
+                @endif
             </a>
             @endif
         </div>

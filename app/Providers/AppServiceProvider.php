@@ -11,6 +11,8 @@ use Illuminate\Support\Collection;   // <-- AJOUTER (pour la transformation)
 use App\Models\Company;
 use App\Models\ExerciceComptable;
 use App\Models\CodeJournal;
+use App\Models\InternalNotification;
+use App\Models\AdminTask;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -46,6 +48,23 @@ class AppServiceProvider extends ServiceProvider
                         })
                         ->count();
                 }
+
+                $unreadNotificationsCount = InternalNotification::where('receiver_id', $user->id)
+                    ->where('is_read', false)
+                    ->count();
+
+                // Tâches reçues (celles qui me sont assignées)
+                $tasksReceivedCount = AdminTask::whereHas('assignees', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })->count();
+
+                // Tâches envoyées (celles que j'ai créées)
+                $tasksSentCount = AdminTask::where('assigned_by', $user->id)->count();
+
+                // Tâches terminées reçues (selon la demande spécifique "recevoir( status terminé )")
+                $tasksReceivedCompletedCount = AdminTask::whereHas('assignees', function($q) use ($user) {
+                    $q->where('user_id', $user->id)->where('admin_task_user.status', 'completed');
+                })->count();
 
                 // Logic moved from sidebar.blade.php
                 $isComptaAccountActive = session('plan_comptable', true) && session('current_compta_account_id', true);
@@ -95,7 +114,11 @@ class AppServiceProvider extends ServiceProvider
                     'code_journaux' => $code_journaux,
                     'exerciceActif' => $exerciceActif,
                     'companies' => $companies_for_switch,
-                    'currentCompanyId' => $currentCompanyId
+                    'currentCompanyId' => $currentCompanyId,
+                    'unreadNotificationsCount' => $unreadNotificationsCount,
+                    'tasksReceivedCount' => $tasksReceivedCount,
+                    'tasksSentCount' => $tasksSentCount,
+                    'tasksReceivedCompletedCount' => $tasksReceivedCompletedCount
                 ]);
             } else {
                 $view->with([

@@ -8,6 +8,7 @@ use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 
 class SuperAdminSecondaryController extends Controller
 {
@@ -16,34 +17,32 @@ class SuperAdminSecondaryController extends Controller
      */
     public function index()
     {
-        // Seul le SA primaire peut accéder à cette page
-        if (!Auth::user()->isPrimarySuperAdmin()) {
+        if (!Auth::user()->hasPermission('superadmin.secondary.index')) {
             return redirect()->route('superadmin.dashboard')
-                ->with('error', 'Accès refusé : seul le Super Admin Principal peut gérer les Super Admins Secondaires.');
+                ->with('error', 'Accès refusé : vous n\'avez pas les droits nécessaires.');
         }
-        
-        $secondaryAdmins = User::where('role', 'super_admin')
+
+        $admins = User::where('role', 'super_admin')
             ->where('super_admin_type', 'secondary')
-            ->with('creator')
-            ->get();
-        
-        $companies = Company::all();
-        
-        return view('superadmin.secondary_admins', compact('secondaryAdmins', 'companies'));
+            ->with('company')
+            ->paginate(15);
+
+        return view('superadmin.secondary_admins', compact('admins'));
     }
 
     /**
-     * Affiche le formulaire de création d'un Super Admin Secondaire
+     * Affiche le formulaire de création
      */
     public function create()
     {
-        if (!Auth::user()->isPrimarySuperAdmin()) {
+        if (!Auth::user()->hasPermission('superadmin.secondary.index')) {
             return redirect()->route('superadmin.dashboard')
                 ->with('error', 'Accès refusé.');
         }
-        
-        $companies = Company::all();
-        return view('superadmin.create_secondary_superadmin', compact('companies'));
+
+        $companies = Company::where('is_active', true)->get();
+        $modules = Config::get('accounting_permissions.permissions', []);
+        return view('superadmin.create_secondary_superadmin', compact('companies', 'modules'));
     }
 
     /**
@@ -52,9 +51,9 @@ class SuperAdminSecondaryController extends Controller
     public function store(Request $request)
     {
         // Vérification de sécurité
-        if (!Auth::user()->isPrimarySuperAdmin()) {
+        if (!Auth::user()->hasPermission('superadmin.secondary.index')) {
             return redirect()->back()
-                ->with('error', 'Accès refusé : seul le Super Admin Principal peut créer des Super Admins Secondaires.');
+                ->with('error', 'Accès refusé.');
         }
         
         $validated = $request->validate([
@@ -64,6 +63,7 @@ class SuperAdminSecondaryController extends Controller
             'password' => 'required|string|min:5',
             'supervised_companies' => 'required|array|min:1',
             'supervised_companies.*' => 'exists:companies,id',
+            'habilitations' => 'nullable|array',
         ]);
         
         User::create([
@@ -74,6 +74,7 @@ class SuperAdminSecondaryController extends Controller
             'role' => 'super_admin',
             'super_admin_type' => 'secondary',
             'supervised_companies' => $validated['supervised_companies'],
+            'habilitations' => $request->habilitations ?? [],
             'is_active' => true,
             'created_by_id' => Auth::id(),
         ]);
@@ -88,9 +89,9 @@ class SuperAdminSecondaryController extends Controller
     public function update(Request $request, $id)
     {
         // Vérification de sécurité
-        if (!Auth::user()->isPrimarySuperAdmin()) {
+        if (!Auth::user()->hasPermission('superadmin.secondary.index')) {
             return redirect()->back()
-                ->with('error', 'Accès refusé : seul le Super Admin Principal peut modifier les Super Admins Secondaires.');
+                ->with('error', 'Accès refusé.');
         }
         
         $user = User::findOrFail($id);
@@ -134,9 +135,9 @@ class SuperAdminSecondaryController extends Controller
     public function destroy($id)
     {
         // Vérification de sécurité
-        if (!Auth::user()->isPrimarySuperAdmin()) {
+        if (!Auth::user()->hasPermission('superadmin.secondary.index')) {
             return redirect()->back()
-                ->with('error', 'Accès refusé : seul le Super Admin Principal peut supprimer des Super Admins Secondaires.');
+                ->with('error', 'Accès refusé.');
         }
         
         $user = User::findOrFail($id);

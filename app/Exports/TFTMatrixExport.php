@@ -24,10 +24,7 @@ class TFTMatrixExport implements FromView, ShouldAutoSize, WithTitle, WithStyles
 
     public function view(): View
     {
-        // We reuse the PDF view because it will include the full matrix logic
-        // We might want to create a specific 'reporting.excel.tft' if specific excel formatting is needed, 
-        // but starting with the pdf one (which we will rewrite next) is a good base.
-        return view('reporting.pdf.tft', [
+        return view('reporting.excel.tft', [
             'data' => $this->data,
             'exercice' => $this->exercice,
             'detailed' => $this->detailed

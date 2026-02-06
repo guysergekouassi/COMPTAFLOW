@@ -11,6 +11,9 @@ return [
 
     // Habilitations (Permissions spécifiques)
     'permissions' => [
+        'Administration Interne (Super Admin)' => [
+            'superadmin.secondary.index' => 'Gestion de l\'Administration Interne',
+        ],
         'Pilotage (Super Admin)' => [
             'superadmin.dashboard' => 'Tableau de bord SuperAdmin',
         ],

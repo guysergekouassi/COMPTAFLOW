@@ -96,7 +96,50 @@
                                             @error('supervised_companies') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                         </div>
                                     </div>
+                                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                                        <i class="fa-solid fa-shield-check me-2"></i>Permissions & Habilitations
+                                    </h5>
+
+                                    <div class="accordion accordion-flush" id="accordionPermissions">
+                                        @foreach($modules as $groupName => $permissions)
+                                            <div class="accordion-item bg-transparent border-bottom-0 mb-2">
+                                                <h2 class="accordion-header" id="heading{{ \Illuminate\Support\Str::slug($groupName) }}">
+                                                    <button class="accordion-button collapsed bg-white border rounded shadow-sm fw-bold text-dark mx-0 mt-2 w-100" type="button" 
+                                                            data-bs-toggle="collapse" data-bs-target="#collapse{{ \Illuminate\Support\Str::slug($groupName) }}"
+                                                            style="border-left: 4px solid #1e40af !important;">
+                                                        <span class="d-flex align-items-center w-100 justify-content-between pe-3">
+                                                            <span>
+                                                                <i class="fa-solid fa-folder me-2 text-primary opacity-75"></i>
+                                                                {{ $groupName }}
+                                                            </span>
+                                                            <span class="badge bg-light text-primary rounded-pill border">{{ count($permissions) }}</span>
+                                                        </span>
+                                                    </button>
+                                                </h2>
+                                                <div id="collapse{{ \Illuminate\Support\Str::slug($groupName) }}" class="accordion-collapse collapse" 
+                                                     data-bs-parent="#accordionPermissions">
+                                                    <div class="accordion-body bg-slate-50 border rounded-bottom shadow-sm mx-0 mb-3 pt-3">
+                                                        <div class="row g-3">
+                                                            @foreach($permissions as $key => $label)
+                                                                <div class="col-md-6 text-start">
+                                                                    <div class="form-check form-switch p-2 bg-white rounded border d-flex align-items-center gap-3">
+                                                                        <input class="form-check-input ms-0" type="checkbox" 
+                                                                               name="habilitations[{{ $key }}]" value="1" id="perm_{{ $key }}" style="float: none;">
+                                                                        <label class="form-check-label cursor-pointer fw-semibold text-slate-600 small mb-0" for="perm_{{ $key }}">
+                                                                            {{ $label }}
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 </div>
+                            </div>
                             </div>
 
                             <div class="col-lg-4">
@@ -111,7 +154,7 @@
                                         <li class="mb-1">Vue d'ensemble sur les entreprises assignées.</li>
                                         <li class="mb-1">Gestion des utilisateurs de ces entreprises.</li>
                                         <li class="mb-1">Audit des activités.</li>
-                                        <li>Ne peut pas créer d'autres Super Admins.</li>
+                                        <li>Accès granulaire aux fonctionnalités Super Admin.</li>
                                     </ul>
                                     <div class="d-grid gap-3">
                                         <button type="submit" class="btn btn-primary btn-lg">

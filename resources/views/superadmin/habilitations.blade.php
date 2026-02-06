@@ -286,6 +286,13 @@
                                 cb.checked = false;
                             }
 
+                            // Admin/Comptable filters for Internal Admin
+                            if ((userRole === 'admin' || userRole === 'comptable') && key === 'superadmin.secondary.index') {
+                                cb.checked = false;
+                                cb.disabled = true;
+                                cb.closest('.form-check').classList.add('restricted-permission');
+                            }
+
                             // Accountant filters
                             if (userRole === 'comptable') {
                                 if (accountantPermissions.includes(key)) {
@@ -295,8 +302,14 @@
                                     cb.disabled = true;
                                     cb.closest('.form-check').classList.add('restricted-permission');
                                 }
+                            } else if (userRole === 'super_admin') {
+                                // For Super Admins, everything is allowed and nothing is grayed out
+                                hasAllowedPermission = true;
                             } else {
-                                hasAllowedPermission = true; // For other roles, keep sections active
+                                // For other roles (Admins)
+                                if (key !== 'superadmin.secondary.index') {
+                                    hasAllowedPermission = true;
+                                }
                             }
 
                             // Security: SA secondaire ne peut pas modifier un SA
