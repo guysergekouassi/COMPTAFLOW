@@ -12,7 +12,16 @@
                 @include('components.header', ['page_title' => 'Créer une Comptabilité'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    <form action="{{ route('compta.store') }}" method="POST">
+                    <div class="container-xxl flex-grow-1 container-p-y p-0">
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Créer une Comptabilité</h5>
+                                <p class="text-muted small mb-0">Initialisez un nouvel exercice comptable pour votre entité.</p>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('compta.store') }}" method="POST">
                         @csrf
 
                         <div class="row">
@@ -58,7 +67,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="d-flex justify-content-end gap-3 mt-5">
+                                    <div class="d-flex justify-content-end gap-3 mt-5 d-none">
                                         <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
@@ -70,22 +79,26 @@
                             </div>
 
                             <div class="col-lg-4">
-                                <div class="bg-green-50 rounded-xl border border-green-200 p-4 sticky-top" style="top: 100px;">
-                                    <h6 class="fw-bold text-green-900 mb-3">
-                                        <i class="fa-solid fa-circle-info me-2"></i>Fonctionnement
+                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 20px;">
+                                    <h6 class="fw-bold text-blue-900 mb-3 d-flex align-items-center">
+                                        <i class="fa-solid fa-info-circle me-2"></i>Actions
                                     </h6>
-                                    <p class="text-sm text-green-800 mb-3">
+                                    <p class="text-xs text-blue-800 mb-4 lh-lg">
                                         La création d'un exercice initialise automatiquement la structure de données pour l'année fiscale concernée.
                                     </p>
-                                    <ul class="text-xs text-green-700 ps-3 mb-0">
-                                        <li class="mb-1">Période standard de 12 mois recommandée.</li>
-                                        <li class="mb-1">Vous serez le propriétaire principal de cet exercice.</li>
-                                        <li>Les journaux standards seront créés (si configuré).</li>
-                                    </ul>
+                                    <div class="d-grid gap-3">
+                                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                            <i class="fa-solid fa-save me-2"></i>Créer l'exercice
+                                        </button>
+                                        <a href="{{ route('admin.dashboard') }}" class="btn btn-white border shadow-sm">
+                                            <i class="fa-solid fa-times me-2"></i>Annuler
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 @include('components.footer')

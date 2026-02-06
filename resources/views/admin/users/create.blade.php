@@ -9,10 +9,19 @@
             @include('components.sidebar')
 
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Créer un Utilisateur'])
+                @include('components.header', ['page_title' => 'Créer un Comptable'])
 
-                <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    <form action="{{ route('users.store') }}" method="POST">
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Créer un Comptable</h5>
+                                <p class="text-muted small mb-0">Définissez un nouveau profil utilisateur et attribuez des habilitations.</p>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('users.store') }}" method="POST">
                         @csrf
 
                         <div class="row">
@@ -20,7 +29,7 @@
                                 <!-- Section 1: Profil et Identité -->
                                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
                                     <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
-                                        <i class="fa-solid fa-user-circle me-2"></i>Identité de l'Utilisateur
+                                        <i class="fa-solid fa-user-circle me-2"></i>Section 1: Profil et Identité
                                     </h5>
                                     
                                     <div class="row g-4">
@@ -53,7 +62,7 @@
                                 <!-- Section 2: Assignation et Rôle -->
                                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
                                     <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
-                                        <i class="fa-solid fa-briefcase me-2"></i>Assignation et Rôle
+                                        <i class="fa-solid fa-briefcase me-2"></i>Section 2: Assignation et Rôle
                                     </h5>
                                     
                                     <div class="row g-4">
@@ -62,8 +71,9 @@
                                             <select class="form-select @error('company_id') is-invalid @enderror" id="company_id" name="company_id" required>
                                                 <option value="">Sélectionner une entreprise</option>
                                                 @foreach($companies as $company)
-                                                    <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
+                                                    <option value="{{ $company->id }}" data-is-sub="{{ $company->parent_company_id ? 'true' : 'false' }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
                                                         {{ $company->company_name }}
+                                                        @if($company->parent) (Filiale de : {{ $company->parent->company_name }}) @endif
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -90,54 +100,58 @@
                                     </div>
                                 </div>
 
-                                <!-- Section 3: Habilitatons (Permissions) -->
+                                <!-- Section 3: Habilitations Spécifiques -->
                                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                     <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
                                         <i class="fa-solid fa-shield-halved me-2"></i>Habilitations Spécifiques
                                     </h5>
                                     
                                     <div class="row">
-                                    @foreach($permissions as $section => $sectionPermissions)
-                                        <div class="col-12 mb-4">
-                                            <h6 class="text-xs font-bold text-slate-600 uppercase mb-2 border-bottom pb-2">{{ $section }}</h6>
-                                            <div class="row">
-                                                @foreach($sectionPermissions as $key => $label)
-                                                    <div class="col-md-6 mb-3">
-                                                <div class="form-check form-switch p-2 border rounded bg-light bg-opacity-50 h-100 d-flex align-items-center">
-                                                    <input class="form-check-input ms-0 me-3" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}" 
-                                                        {{ is_array(old('habilitations')) && isset(old('habilitations')[$key]) ? 'checked' : '' }}>
-                                                    <label class="form-check-label text-xs fw-bold text-slate-700 w-100 cursor-pointer" for="hab_{{ $key }}">
-                                                        {{ $label }}
-                                                    </label>
-                                                    </div>
+                                    @foreach($permissions as $section => $groupPermissions)
+                                        <div class="col-12 permission-section mb-4" data-section-name="{{ $section }}">
+                                            <div class="mb-2">
+                                                <h6 class="text-[10px] font-black uppercase text-slate-400 tracking-widest border-bottom pb-1">{{ $section }}</h6>
+                                            </div>
+                                            <div class="row g-3">
+                                                @foreach($groupPermissions as $key => $label)
+                                                    <div class="col-md-4 col-sm-6">
+                                                        <div class="form-check form-switch p-2 border rounded-lg hover:bg-gray-50 transition-colors d-flex align-items-center gap-3">
+                                                            <input class="form-check-input ms-0 permission-checkbox" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}" 
+                                                                {{ is_array(old('habilitations')) && isset(old('habilitations')[$key]) ? 'checked' : '' }} style="float: none;">
+                                                            <label class="form-check-label text-xs fw-bold text-slate-700 mb-0" for="hab_{{ $key }}">
+                                                                {{ $label }}
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                 @endforeach
                                             </div>
                                         </div>
                                     @endforeach
                                     </div>
+                                </div>
                             </div>
 
                             <div class="col-lg-4">
-                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 100px;">
-                                    <h6 class="fw-bold text-blue-900 mb-3">
+                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 20px;">
+                                    <h6 class="fw-bold text-blue-900 mb-3 d-flex align-items-center">
                                         <i class="fa-solid fa-info-circle me-2"></i>Actions
                                     </h6>
-                                    <p class="text-sm text-blue-800 mb-4">
-                                        L'utilisateur recevra ses accès immédiatement après la création.
+                                    <p class="text-xs text-blue-800 mb-4 lh-lg">
+                                        L'utilisateur recevra ses accès immédiatement après la création. Assurez-vous d'avoir configuré les habilitations correctement.
                                     </p>
                                     <div class="d-grid gap-3">
-                                        <button type="submit" class="btn btn-primary btn-lg">
+                                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
                                             <i class="fa-solid fa-user-plus me-2"></i>Créer l'utilisateur
                                         </button>
-                                        <a href="{{ route('user_management') }}" class="btn btn-outline-secondary">
+                                        <a href="{{ route('user_management') }}" class="btn btn-white border shadow-sm">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 @include('components.footer')
@@ -145,94 +159,103 @@
         </div>
         <div class="layout-overlay layout-menu-toggle"></div>
     </div>
+
+    <style>
+        .restricted-permission {
+            opacity: 0.5;
+            pointer-events: none;
+            background-color: #f8fafc !important;
+        }
+    </style>
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const roleSelect = document.getElementById('role');
-        const habilitationCheckboxes = document.querySelectorAll('input[name^="habilitations["]');
+        const companySelect = document.getElementById('company_id');
+        const checkboxes = document.querySelectorAll('.permission-checkbox');
+        const sections = document.querySelectorAll('.permission-section');
         
-        // Permissions par rôle (depuis la config)
-        const rolePermissions = {
-            'admin': @json(config('accounting_permissions.role_permissions_map.admin')),
-            'comptable': @json(config('accounting_permissions.role_permissions_map.comptable'))
-        };
+        const accountantPermissions = [
+            'compta.dashboard', 'notifications.index', 'plan_comptable', 'plan_tiers', 'accounting_journals',
+            'postetresorerie.index', 'modal_saisie_direct', 'accounting_entry_list', 'ecriture.rejected',
+            'brouillons.index', 'accounting_entry_real',
+            'gestion_tresorerie', 'accounting_ledger', 'accounting_ledger_tiers',
+            'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily', 'immobilisations.index'
+        ];
 
-        // Sections restreintes par rôle (pour bloquer/griser visuellement)
-        const roleRestrictions = {
-            'comptable': ['Gouvernance', 'Configuration', 'Super Admin'],
-            'admin': ['Super Admin'], 
-            'utilisateur': ['Gouvernance', 'Configuration', 'Paramétrage']
-        };
-        
-        const roleSelect = document.getElementById('role');
-        const habilitationCheckboxes = document.querySelectorAll('input[name^="habilitations["]');
-        const isSubCompany = {{ isset($currentCompany) && $currentCompany->parent_company_id ? 'true' : 'false' }};
-        
         function updatePermissions() {
-            const selectedRole = roleSelect.value;
+            const role = roleSelect.value;
+            const selectedOption = companySelect.options[companySelect.selectedIndex];
+            const isSubCompany = selectedOption ? selectedOption.getAttribute('data-is-sub') === 'true' : false;
             
-            // Permissions par défaut pour affichage (cochage initial)
-            const rolePermissions = {
-                'admin': @json(config('accounting_permissions.role_permissions_map.admin')),
-                'comptable': @json(config('accounting_permissions.role_permissions_map.comptable'))
-            };
-            const allowedPermissions = rolePermissions[selectedRole] || [];
+            sections.forEach(section => {
+                const sectionName = section.getAttribute('data-section-name');
+                const sectionCheckboxes = section.querySelectorAll('.permission-checkbox');
+                let hasAllowedPermission = false;
 
-            habilitationCheckboxes.forEach(checkbox => {
-                const match = checkbox.name.match(/habilitations\[(.+)\]/);
-                if (match) {
-                    const permissionKey = match[1];
-                    const sectionTitle = checkbox.closest('.col-12.mb-4').querySelector('h6').textContent;
+                sectionCheckboxes.forEach(cb => {
+                    const container = cb.closest('.form-check');
+                    const key = cb.id.replace('hab_', '');
                     
                     let isRestricted = false;
                     let forceUnchecked = false;
 
-                    // 1. Restriction Super Admin (Toujours)
-                    if (sectionTitle.includes('Super Admin')) {
+                    // 1. Restriction Super Admin
+                    if (sectionName.includes('Super Admin')) {
                         isRestricted = true;
                         forceUnchecked = true;
                     }
 
-                    // 2. Restriction Fusion (Uniquement sous-entreprises)
-                    if (sectionTitle.includes('Fusion & Démarrage') && !isSubCompany) {
+                    // 2. Restriction Fusion (Sub-companies only)
+                    if (sectionName.includes('Fusion & Démarrage') && !isSubCompany) {
                         isRestricted = true;
                         forceUnchecked = true;
                     }
 
-                    // 3. Restriction Niveau (Comptable ne voit pas Gouvernance/Config Admin)
-                    if (selectedRole === 'comptable') {
-                        const higherSections = ['Gouvernance', 'Configuration Entreprise'];
-                        for (const s of higherSections) {
-                            if (sectionTitle.includes(s)) {
-                                isRestricted = true;
-                                forceUnchecked = true;
-                                break;
-                            }
-                        }
+                    // 3. Accountant Restrictions
+                    if (role === 'comptable' && !accountantPermissions.includes(key)) {
+                        isRestricted = true;
+                        forceUnchecked = true;
                     }
 
-                    // Application
-                    checkbox.checked = forceUnchecked ? false : allowedPermissions.includes(permissionKey);
-                    
-                    const container = checkbox.closest('.form-check');
-                    if (container) {
-                        if (isRestricted) {
-                            container.style.opacity = '0.4';
-                            container.style.pointerEvents = 'none';
-                            container.title = "Non disponible";
-                        } else {
-                            container.style.opacity = '1';
-                            container.style.pointerEvents = 'auto';
-                            container.title = "";
+                    // Apply States
+                    if (isRestricted) {
+                        if (forceUnchecked) cb.checked = false;
+                        cb.disabled = true;
+                        container.classList.add('restricted-permission');
+                    } else {
+                        cb.disabled = false;
+                        container.classList.remove('restricted-permission');
+                        hasAllowedPermission = true;
+                        
+                        // Auto-check for accountants if not manually changed
+                        if (role === 'comptable' && accountantPermissions.includes(key) && !cb.dataset.manuallyChanged) {
+                            cb.checked = true;
                         }
                     }
+                });
+
+                if (!hasAllowedPermission) {
+                    section.classList.add('restricted-permission');
+                } else {
+                    section.classList.remove('restricted-permission');
                 }
             });
         }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                cb.dataset.manuallyChanged = 'true';
+            });
+        });
+
+        roleSelect.addEventListener('change', function() {
+            checkboxes.forEach(cb => delete cb.dataset.manuallyChanged);
+            updatePermissions();
+        });
+
+        companySelect.addEventListener('change', updatePermissions);
         
-        // Écouter les changements de rôle
-        roleSelect.addEventListener('change', updatePermissions);
-        
-        // Initialiser au chargement
         updatePermissions();
     });
     </script>

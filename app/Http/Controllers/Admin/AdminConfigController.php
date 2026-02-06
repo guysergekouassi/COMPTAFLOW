@@ -40,6 +40,7 @@ class AdminConfigController extends Controller
             'imported' => EcritureComptable::where('company_id', $companyId)
                 ->where('statut', 'imported')
                 ->count(),
+            'treasury_categories' => \App\Models\TreasuryCategory::where('company_id', $companyId)->count(),
         ];
 
         // Récupération de l'exercice actif

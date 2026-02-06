@@ -193,6 +193,19 @@
                                 </div>
                             </div>
 
+                            <!-- Catégories de Trésorerie -->
+                            <div class="col-md-4">
+                                <div class="config-card p-6 h-100">
+                                    <span class="stat-badge bg-purple-100 text-purple-700">{{ $stats['treasury_categories'] }} types</span>
+                                    <div class="icon-box bg-purple-50 text-purple-600">
+                                        <i class="fa-solid fa-layer-group"></i>
+                                    </div>
+                                    <h5 class="font-black mb-3">Catégories de Trésorerie</h5>
+                                    <p class="text-sm text-slate-500 mb-6">Organisez vos flux de trésorerie par catégories analytiques selon vos besoins.</p>
+                                    <a href="{{ route('admin.config.treasury_categories') }}" class="btn btn-config-action w-100">Gérer les catégories</a>
+                                </div>
+                            </div>
+
                     </div>
                     @include('components.footer')
                 </div>

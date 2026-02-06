@@ -164,15 +164,23 @@ class User extends Authenticatable
             }
         }
 
+        // 3. Règle NB4: Les accès de configurations sont réservés au SEUL administrateur principal
+        // Si c'est une permission de config et que l'utilisateur n'est pas admin principal (et pas SA)
+        if (str_contains($permission, '.config.') && !$this->isPrincipalAdmin()) {
+            // Exception : Si l'admin principal lui a explicitement donné (Règle NB4 suite)
+            // On laisse la vérification finale au tableau d'habilitations
+        }
+
         $habilitations = $this->habilitations ?? [];
         
-        // 3. Admin Principal : On vérifie s'il a le droit par défaut.
-        // On ne force pas aveuglément pour permettre un certain contrôle, 
-        // mais l'UI s'occupera de cocher/griser.
+        // 4. Admin Principal : On vérifie s'il a le droit par défaut.
         if ($this->isPrincipalAdmin() && empty($habilitations)) {
-            // S'il n'a rien en base, il a tout par défaut (Admin orphelin ou migration)
             return true;
         }
+
+        // 5. Règle NB3: Un comptable ne peut que voir son profil, notifications et dashboard par défaut
+        // Si on veut être restrictif, on pourrait filtrer ici, mais Rule NB4 permet l'octroi de droits.
+        // Donc on se fie au tableau d'habilitations qui sera géré par l'admin principal.
 
         // Si des habilitations sont présentes, on vérifie la clé spécifiquement
         return isset($habilitations[$permission]) && ($habilitations[$permission] === "1" || $habilitations[$permission] === true || $habilitations[$permission] === 1);

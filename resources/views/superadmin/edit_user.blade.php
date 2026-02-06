@@ -93,8 +93,9 @@
                                             <label for="company_id" class="form-label fw-semibold">Entreprise <span class="text-danger">*</span></label>
                                             <select class="form-select @error('company_id') is-invalid @enderror" id="company_id" name="company_id" required>
                                                 @foreach($companies as $company)
-                                                    <option value="{{ $company->id }}" {{ old('company_id', $user->company_id) == $company->id ? 'selected' : '' }}>
+                                                    <option value="{{ $company->id }}" data-is-sub="{{ $company->parent_company_id ? 'true' : 'false' }}" {{ old('company_id', $user->company_id) == $company->id ? 'selected' : '' }}>
                                                         {{ $company->company_name }}
+                                                        @if($company->parent) (Filiale de : {{ $company->parent->company_name }}) @endif
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -144,19 +145,23 @@
                                     <div class="row g-3">
                                         @php $currentHabilitations = is_array($user->habilitations) ? $user->habilitations : (json_decode($user->habilitations, true) ?? []); @endphp
                                         @foreach($permissions as $section => $groupPermissions)
-                                            <div class="col-12 mb-2 mt-3">
-                                                <h6 class="text-[10px] font-black uppercase text-slate-400 tracking-widest border-bottom pb-1">{{ $section }}</h6>
-                                            </div>
-                                            @foreach($groupPermissions as $key => $label)
-                                                <div class="col-md-4 col-sm-6">
-                                                    <div class="form-check form-switch p-2 border rounded-lg hover:bg-gray-50 transition-colors">
-                                                        <input class="form-check-input ms-0 me-2" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}" {{ isset($currentHabilitations[$key]) && $currentHabilitations[$key] ? 'checked' : '' }}>
-                                                        <label class="form-check-label fw-medium text-gray-700" for="hab_{{ $key }}">
-                                                            {{ $label }}
-                                                        </label>
-                                                    </div>
+                                            <div class="col-12 permission-section mb-4" data-section-name="{{ $section }}">
+                                                <div class="mb-2">
+                                                    <h6 class="text-[10px] font-black uppercase text-slate-400 tracking-widest border-bottom pb-1">{{ $section }}</h6>
                                                 </div>
-                                            @endforeach
+                                                <div class="row g-3">
+                                                    @foreach($groupPermissions as $key => $label)
+                                                        <div class="col-md-4 col-sm-6">
+                                                            <div class="form-check form-switch p-2 border rounded-lg hover:bg-gray-50 transition-colors d-flex align-items-center gap-3">
+                                                                <input class="form-check-input ms-0 permission-checkbox" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}" {{ isset($currentHabilitations[$key]) && $currentHabilitations[$key] ? 'checked' : '' }} style="float: none;">
+                                                                <label class="form-check-label fw-medium text-gray-700 mb-0" for="hab_{{ $key }}">
+                                                                    {{ $label }}
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
                                         @endforeach
                                     </div>
                                 </div>
@@ -191,17 +196,110 @@
         <div class="layout-overlay layout-menu-toggle"></div>
     </div>
 
+    <style>
+        .restricted-permission {
+            opacity: 0.5;
+            pointer-events: none;
+            background-color: #f8fafc !important;
+        }
+    </style>
+
     <script>
-        document.getElementById('togglePassword')?.addEventListener('click', function() {
-            const password = document.getElementById('password');
-            const icon = this.querySelector('i');
-            if (password.type === 'password') {
-                password.type = 'text';
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                password.type = 'password';
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
+        document.addEventListener('DOMContentLoaded', function() {
+            const roleSelect = document.getElementById('role');
+            const companySelect = document.getElementById('company_id');
+            const checkboxes = document.querySelectorAll('.form-check-input[name^="habilitations"]');
+            
+            const accountantPermissions = [
+                'compta.dashboard', 'plan_comptable', 'plan_tiers', 'accounting_journals',
+                'postetresorerie.index', 'modal_saisie_direct', 'accounting_entry_list', 'ecriture.rejected',
+                'brouillons.index', 'accounting_entry_real',
+                'gestion_tresorerie', 'accounting_ledger', 'accounting_ledger_tiers',
+                'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily', 'immobilisations.index'
+            ];
+
+            function updatePermissions(isInitial = false) {
+                const role = roleSelect.value;
+                const selectedOption = companySelect.options[companySelect.selectedIndex];
+                const isSubCompany = selectedOption ? selectedOption.getAttribute('data-is-sub') === 'true' : false;
+                const sections = document.querySelectorAll('.permission-section');
+                
+                sections.forEach(section => {
+                    const sectionName = section.getAttribute('data-section-name');
+                    const sectionCheckboxes = section.querySelectorAll('.permission-checkbox');
+                    let hasAllowedPermission = false;
+
+                    sectionCheckboxes.forEach(cb => {
+                        const container = cb.closest('.form-check');
+                        const key = cb.id.replace('hab_', '');
+                        
+                        let isRestricted = false;
+                        let forceUnchecked = false;
+
+                        // 1. Restriction Super Admin
+                        if (sectionName.includes('Super Admin')) {
+                            isRestricted = true;
+                            forceUnchecked = true;
+                        }
+
+                        // 2. Restriction Fusion (Sub-companies only)
+                        if (sectionName.includes('Fusion & Démarrage') && !isSubCompany) {
+                            isRestricted = true;
+                            forceUnchecked = true;
+                        }
+
+                        // 3. Accountant Restrictions
+                        if (role === 'comptable' && !accountantPermissions.includes(key)) {
+                            isRestricted = true;
+                            forceUnchecked = true;
+                        }
+
+                        // Apply States
+                        if (isRestricted) {
+                            if (forceUnchecked) cb.checked = false;
+                            cb.disabled = true;
+                            container.classList.add('restricted-permission');
+                        } else {
+                            cb.disabled = false;
+                            container.classList.remove('restricted-permission');
+                            hasAllowedPermission = true;
+                            
+                            // Only auto-check if we are switching TO accountant from something else
+                            if (!isInitial && role === 'comptable' && accountantPermissions.includes(key) && cb.dataset.roleChanged === "true") {
+                                cb.checked = true;
+                            }
+                        }
+                    });
+
+                    if (!hasAllowedPermission) {
+                        section.classList.add('restricted-permission');
+                    } else {
+                        section.classList.remove('restricted-permission');
+                    }
+                });
             }
+
+            roleSelect.addEventListener('change', () => {
+                checkboxes.forEach(cb => cb.dataset.roleChanged = "true");
+                updatePermissions(false);
+            });
+
+            companySelect.addEventListener('change', () => updatePermissions(false));
+            
+            // Initial call
+            updatePermissions(true);
+
+            document.getElementById('togglePassword')?.addEventListener('click', function() {
+                const password = document.getElementById('password');
+                const icon = this.querySelector('i');
+                if (password.type === 'password') {
+                    password.type = 'text';
+                    icon.classList.replace('fa-eye', 'fa-eye-slash');
+                } else {
+                    password.type = 'password';
+                    icon.classList.replace('fa-eye-slash', 'fa-eye');
+                }
+            });
         });
     </script>
 </body>

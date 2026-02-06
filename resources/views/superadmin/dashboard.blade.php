@@ -60,6 +60,30 @@
                         </div>
                     </div>
 
+                    <!-- Actions Rapides -->
+                    <div class="row mb-6">
+                        <div class="col-12">
+                            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg d-flex align-items-center justify-content-center">
+                                        <i class="fa-solid fa-bolt"></i>
+                                    </div>
+                                    <h6 class="mb-0 fw-bold text-slate-700">Actions Prioritaires</h6>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    @if(auth()->user()->isPrimarySuperAdmin())
+                                    <a href="{{ route('superadmin.secondary.create') }}" class="btn btn-primary px-4">
+                                        <i class="fa-solid fa-user-plus me-2"></i>Créer Super Admin Secondaire
+                                    </a>
+                                    @endif
+                                    <a href="{{ route('superadmin.companies.create') }}" class="btn btn-outline-primary px-4">
+                                        <i class="fa-solid fa-plus-circle me-2"></i>Nouvelle Entreprise
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 1. CARTES DE SCORE (KPIs) -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         

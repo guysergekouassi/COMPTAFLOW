@@ -79,24 +79,52 @@ class SuperAdminCompanyController extends Controller
         $company->is_active = !$company->is_active;
         $company->save();
 
+        // 1. Cascade aux utilisateurs de la compagnie elle-même
         User::where('company_id', $company->id)->update([
             'is_active' => $company->is_active
         ]);
 
+        // 2. Cascade aux sous-compagnies (si c'est une mère)
+        if (!$company->parent_company_id) {
+            $childrenIds = Company::where('parent_company_id', $company->id)->pluck('id');
+            
+            // Bloquer toutes les sous-compagnies
+            Company::whereIn('id', $childrenIds)->update(['is_active' => $company->is_active]);
+
+            // Bloquer tous les utilisateurs de toutes les sous-compagnies
+            User::whereIn('company_id', $childrenIds)->update(['is_active' => $company->is_active]);
+        }
+
         $status = $company->is_active ? 'activée' : 'désactivée';
-        return back()->with('success', "La compagnie **{$company->company_name}** a été {$status} avec succès.");
+        return back()->with('success', "La compagnie **{$company->company_name}** et toutes ses dépendances ont été {$status} avec succès.");
     }
 
 
     public function destroy(Company $company)
     {
-
+        DB::beginTransaction();
         try {
-            $company->delete();
-            return back()->with('success', "La compagnie {$company->company_name} a été supprimée.");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Erreur lors de la suppression de la compagnie.');
+            // 1. Si c'est une mère, supprimer toutes les filles
+            if (!$company->parent_company_id) {
+                $children = Company::where('parent_company_id', $company->id)->get();
+                foreach($children as $child) {
+                    // Supprimer les utilisateurs de la fille
+                    User::where('company_id', $child->id)->delete();
+                    $child->delete();
+                }
+            }
 
+            // 2. Supprimer les utilisateurs de la compagnie elle-même
+            User::where('company_id', $company->id)->delete();
+
+            // 3. Supprimer la compagnie
+            $company->delete();
+
+            DB::commit();
+            return back()->with('success', "La compagnie {$company->company_name} et toutes ses dépendances ont été supprimées définitivement.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erreur lors de la suppression en cascade : ' . $e->getMessage());
         }
     }
     

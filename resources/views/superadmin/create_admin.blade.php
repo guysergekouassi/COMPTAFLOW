@@ -87,6 +87,7 @@
                                                 @foreach($companies as $company)
                                                     <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
                                                         {{ $company->company_name }}
+                                                        @if($company->parent) (Filiale de : {{ $company->parent->company_name }}) @endif
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -97,11 +98,11 @@
                             </div>
 
                             <div class="col-lg-4">
-                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 sticky-top" style="top: 100px;">
-                                    <h6 class="fw-bold text-blue-900 mb-3">
-                                        <i class="fa-solid fa-circle-info me-2"></i>Informations
+                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 20px;">
+                                    <h6 class="fw-bold text-blue-900 mb-3 d-flex align-items-center">
+                                        <i class="fa-solid fa-info-circle me-2"></i>Actions
                                     </h6>
-                                    <p class="text-sm text-blue-800 mb-3">
+                                    <p class="text-xs text-blue-800 mb-3 lh-lg">
                                         Créer un administrateur configure automatiquement les accès suivants :
                                     </p>
                                     <ul class="text-xs text-blue-700 ps-3 mb-4">
@@ -111,10 +112,10 @@
                                         <li>Le rôle sera défini sur <strong>Administrateur</strong>.</li>
                                     </ul>
                                     <div class="d-grid gap-3">
-                                        <button type="submit" class="btn btn-primary btn-lg">
+                                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
                                             <i class="fa-solid fa-user-check me-2"></i>Finaliser la création
                                         </button>
-                                        <a href="{{ route('superadmin.users') }}" class="btn btn-outline-secondary">
+                                        <a href="{{ route('superadmin.users') }}" class="btn btn-white border shadow-sm">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
                                     </div>

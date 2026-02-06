@@ -146,23 +146,33 @@
                                     <div class="p-4">
                                         <div class="list-group list-group-flush">
                                             @foreach($managedCompanies as $company)
-                                                <div class="list-group-item list-group-item-premium d-flex justify-content-between align-items-center">
+                                                <div class="list-group-item list-group-item-premium d-flex justify-content-between align-items-center {{ $company->parent_company_id ? 'ms-8 border-start-2 border-blue-50' : '' }}">
                                                     <div class="d-flex align-items-center">
-                                                        <div class="switch-avatar-premium me-4 {{ auth()->user()->company_id == $company->id ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-600' }}">
-                                                            <i class="fa-solid fa-briefcase"></i>
+                                                        <div class="switch-avatar-premium me-4 {{ auth()->user()->company_id == $company->id ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : ($company->parent_company_id ? 'bg-slate-100 text-slate-400' : 'bg-slate-200 text-slate-700') }}">
+                                                            <i class="fa-solid {{ $company->parent_company_id ? 'fa-diagram-project' : 'fa-building-columns' }}"></i>
                                                         </div>
                                                         <div>
-                                                            <h6 class="mb-0 font-black text-slate-800">{{ $company->company_name }}</h6>
-                                                            <div class="text-xs text-slate-400 font-bold uppercase truncate" style="max-width: 200px;">{{ $company->email ?? 'Sans contact email' }}</div>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <h6 class="mb-0 font-black text-slate-800">{{ $company->company_name }}</h6>
+                                                                <span class="text-[8px] font-black px-1.5 py-0.5 rounded border {{ $company->parent_company_id ? 'text-blue-500 border-blue-100 bg-blue-50' : 'text-slate-500 border-slate-200 bg-slate-50' }} uppercase tracking-tighter">
+                                                                    {{ $company->parent_company_id ? 'Sous-entité' : 'Siège' }}
+                                                                </span>
+                                                            </div>
+                                                            <div class="text-[10px] text-slate-400 font-bold uppercase truncate" style="max-width: 250px;">
+                                                                {{ $company->email_adresse ?? 'Aucun email configuré' }}
+                                                                @if($company->parent_company_id)
+                                                                    <span class="text-blue-300 ms-1">• Unité de gestion</span>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     @if(auth()->user()->company_id == $company->id)
                                                         <span class="active-badge-premium border border-green-200">
-                                                            <i class="fa-solid fa-circle-check me-1"></i> Active
+                                                            <i class="fa-solid fa-circle-check me-1"></i> Dossier Actif
                                                         </span>
                                                     @else
-                                                        <a href="{{ route('switch_company', $company->id) }}" class="btn-premium-action px-6">
-                                                            Ouvrir
+                                                        <a href="{{ route('switch_company', $company->id) }}" class="btn-premium-action px-6 py-2">
+                                                            Basculer
                                                         </a>
                                                     @endif
                                                 </div>

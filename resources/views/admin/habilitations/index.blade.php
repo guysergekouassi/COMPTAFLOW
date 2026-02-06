@@ -190,6 +190,14 @@
             const currentUserId = {{ auth()->id() }};
             const isSubCompany = {{ $isSubCompany ? 'true' : 'false' }};
 
+            const accountantPermissions = [
+                'compta.dashboard', 'notifications.index', 'plan_comptable', 'plan_tiers', 'accounting_journals',
+                'postetresorerie.index', 'modal_saisie_direct', 'accounting_entry_list', 'ecriture.rejected',
+                'brouillons.index', 'accounting_entry_real',
+                'gestion_tresorerie', 'accounting_ledger', 'accounting_ledger_tiers',
+                'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily', 'immobilisations.index'
+            ];
+
             userButtons.forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -262,6 +270,14 @@
                         // Seul le créateur peut modifier les habilitations
                         if (!isPrincipal && createdBy !== currentUserId) {
                             isRestricted = true;
+                        }
+
+                        // RÈGLE F : Restrictions Comptable
+                        if (userRole === 'comptable') {
+                            if (!accountantPermissions.includes(permissionKey)) {
+                                isRestricted = true;
+                                forceUnchecked = true;
+                            }
                         }
 
                         // RÈGLE F : Droits supérieurs (Comptable ne voit pas les droits Admin)

@@ -166,18 +166,18 @@
                             </div>
 
                             <div class="col-lg-4">
-                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 100px;">
-                                    <h6 class="fw-bold text-blue-900 mb-3">
-                                        <i class="fa-solid fa-keyboard me-2"></i>Validation
+                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 20px;">
+                                    <h6 class="fw-bold text-blue-900 mb-3 d-flex align-items-center">
+                                        <i class="fa-solid fa-info-circle me-2"></i>Actions
                                     </h6>
-                                    <p class="text-sm text-blue-800 mb-4">
-                                        Veuillez vérifier toutes les informations avant de valider. Les champs marqués d'une astérisque (*) sont obligatoires.
+                                    <p class="text-xs text-blue-800 mb-4 lh-lg">
+                                        Veuillez vérifier toutes les informations avant de valider. L'entreprise sera immédiatement disponible dans le réseau.
                                     </p>
                                     <div class="d-grid gap-3">
-                                        <button type="submit" class="btn btn-primary btn-lg">
+                                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
                                             <i class="fa-solid fa-save me-2"></i>Enregistrer l'entreprise
                                         </button>
-                                        <a href="{{ route('superadmin.entities') }}" class="btn btn-outline-secondary">
+                                        <a href="{{ route('superadmin.entities') }}" class="btn btn-white border shadow-sm">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
                                     </div>

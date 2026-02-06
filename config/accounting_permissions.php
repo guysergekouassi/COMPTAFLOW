@@ -19,7 +19,7 @@ return [
             'superadmin.companies.create' => 'Créer Entreprise',
             'superadmin.accounting.create' => 'Créer Comptabilité',
             'superadmin.users' => 'Gestion Utilisateurs',
-            'superadmin.users.create' => 'Créer Utilisateur',
+            'superadmin.users.create' => 'Créer Comptable',
             'superadmin.admins.create' => 'Créer Administrateur',
             'superadmin.switch' => 'Switch Entreprise',
         ],
@@ -42,6 +42,7 @@ return [
             'admin.config.plan_tiers' => 'Modèle de Tiers',
             'admin.config.journals' => 'Modèle des Journaux',
             'admin.config.tresorerie_posts' => 'Postes de Trésorerie',
+            'admin.config.treasury_categories' => 'Catégories de Trésorerie',
         ],
         'Importation' => [
             'admin.config.external_import' => 'Importation de données',
@@ -62,7 +63,7 @@ return [
             'compta.create' => 'Créer Comptabilité',
             'admin.admins.create' => 'Créer Administrateur',
             'admin.secondary_admins.create' => 'Créer Admin Sécondaire',
-            'admin.users.create' => 'Créer Utilisateur',
+            'admin.users.create' => 'Créer Comptable',
         ],
         'Opérations' => [
             'admin.audit' => 'Traçabilité & Activités',
@@ -106,7 +107,7 @@ return [
     'role_permissions_map' => [
         'admin' => [
             'compta.dashboard', 'admin.performance', 'notifications.index', 'admin.config.hub', 'admin.config.plan_comptable',
-            'admin.config.plan_tiers', 'admin.config.journals', 'admin.config.tresorerie_posts', 'admin.config.external_import', 'admin.import.hub',
+            'admin.config.plan_tiers', 'admin.config.journals', 'admin.config.tresorerie_posts', 'admin.config.treasury_categories', 'admin.config.external_import', 'admin.import.hub',
             'admin.export.hub', 'admin.fusion.index',
             'compta_accounts.index',
             'admin.companies.create', 'user_management', 'admin.habilitations.index', 'admin.switch', 'admin.admins.create',

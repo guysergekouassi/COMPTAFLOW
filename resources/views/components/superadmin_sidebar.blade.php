@@ -51,17 +51,17 @@
             </a>
             @endif
 
-            @if(auth()->user()->hasPermission('superadmin.accounting.index'))
-            <a href="{{ route('superadmin.accounting.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.accounting.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-calculator"></i>
-                <span>Gestion des Comptabilités</span>
-            </a>
-            @endif
-
             @if(auth()->user()->hasPermission('superadmin.users'))
             <a href="{{ route('superadmin.users') }}" class="menu-link-new {{ request()->routeIs('superadmin.users', 'superadmin.users.*', 'superadmin.admins.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-shield"></i>
-                <span>Administration des Utilisateurs</span>
+                <span>Gestion Utilisateurs</span>
+            </a>
+            @endif
+
+            @if(auth()->user()->hasPermission('superadmin.accounting.index'))
+            <a href="{{ route('superadmin.accounting.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.accounting.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-calculator"></i>
+                <span>Gestion comptabilités</span>
             </a>
             @endif
 
@@ -73,7 +73,42 @@
             </a>
             @endif
 
-            <a href="{{ route('admin.habilitations.index') }}" class="menu-link-new {{ request()->routeIs('admin.habilitations.index') ? 'active' : '' }}">
+            {{-- SECTION : CRÉATION RAPIDE --}}
+            <div class="menu-section-header mt-4">Création Rapide</div>
+
+            <a href="{{ route('superadmin.companies.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.companies.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>Créer Entreprise</span>
+            </a>
+
+            @if(auth()->user()->isPrimarySuperAdmin())
+            <a href="{{ route('superadmin.secondary.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.secondary.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-gear"></i>
+                <span>Créer super admin secondaire</span>
+            </a>
+            @endif
+
+            <a href="{{ route('superadmin.admins.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.admins.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Créer Administrateur</span>
+            </a>
+
+            <a href="{{ route('admin.secondary_admins.create') }}" class="menu-link-new {{ request()->routeIs('admin.secondary_admins.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-check"></i>
+                <span>Créer administrateur secondaire</span>
+            </a>
+
+            <a href="{{ route('superadmin.accounting.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.accounting.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-calculator"></i>
+                <span>Créer comptabilité</span>
+            </a>
+
+            <a href="{{ route('superadmin.users.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.users.create') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-plus"></i>
+                <span>Créer comptable</span>
+            </a>
+
+            <a href="{{ route('superadmin.habilitations.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.habilitations.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-check"></i>
                 <span>Modification Habilitation</span>
             </a>

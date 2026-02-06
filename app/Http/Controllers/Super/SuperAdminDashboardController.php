@@ -77,15 +77,18 @@ class SuperAdminDashboardController extends Controller
         // Cette méthode sert l'ANCIEN Dashboard (Gestion des Entités)
         $user = Auth::user();
         
-        // Récupérer les données nécessaires pour la vue entities (ancien dashboard)
-        $companies = Company::with('admin', 'users')->get();
+        // Récupérer les compagnies mères avec leurs sous-compagnies
+        $rootCompanies = Company::with(['admin', 'users', 'children.admin', 'children.users'])
+            ->whereNull('parent_company_id')
+            ->get();
         
-        // KPIs pour le haut de page (optionnel, ou à garder)
+        // KPIs pour le haut de page
         $totalCompanies = Company::count();
         $totalAdmins = User::where('role', 'admin')->count();
         $totalUsers = User::where('role', 'user')->count();
         $activeCompanies = Company::where('is_active', true)->count();
+        $companies = Company::all();
 
-        return view('superadmin.entities', compact('companies', 'totalCompanies', 'totalAdmins', 'totalUsers', 'activeCompanies'));
+        return view('superadmin.entities', compact('rootCompanies', 'totalCompanies', 'totalAdmins', 'totalUsers', 'activeCompanies', 'companies'));
     }
 }

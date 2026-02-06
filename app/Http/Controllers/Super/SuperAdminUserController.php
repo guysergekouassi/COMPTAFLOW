@@ -15,10 +15,16 @@ class SuperAdminUserController extends Controller
      */
     public function index()
     {
-        $users = User::with('company')->paginate(20);
+        $users = User::with(['company.parent'])->paginate(20);
         $companies = Company::all();
         
-        return view('superadmin.users', compact('users', 'companies'));
+        // Totaux globaux pour les KPIs (hors pagination)
+        $totalUsers = User::count();
+        $totalAdmins = User::where('role', 'admin')->count();
+        $totalComptables = User::where('role', 'comptable')->count();
+        $totalActive = User::where('is_active', 1)->count();
+        
+        return view('superadmin.users', compact('users', 'companies', 'totalUsers', 'totalAdmins', 'totalComptables', 'totalActive'));
     }
 
     /**
@@ -43,7 +49,7 @@ class SuperAdminUserController extends Controller
      */
     public function create()
     {
-        $companies = Company::where('is_active', 1)->get();
+        $companies = Company::with('parent')->where('is_active', 1)->get();
         $packs = \App\Models\pack::all();
         $permissions = config('accounting_permissions.permissions');
         return view('superadmin.create_user', compact('companies', 'packs', 'permissions'));
@@ -54,7 +60,7 @@ class SuperAdminUserController extends Controller
      */
     public function createAdmin()
     {
-        $companies = Company::where('is_active', 1)->get();
+        $companies = Company::with('parent')->where('is_active', 1)->get();
         return view('superadmin.create_admin', compact('companies'));
     }
 
@@ -132,7 +138,7 @@ class SuperAdminUserController extends Controller
     public function edit($id)
     {
         $user = User::findOrFail($id);
-        $companies = Company::where('is_active', 1)->get();
+        $companies = Company::with('parent')->where('is_active', 1)->get();
         $packs = \App\Models\pack::all();
         $permissions = config('accounting_permissions.permissions');
         return view('superadmin.edit_user', compact('user', 'companies', 'packs', 'permissions'));

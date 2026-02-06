@@ -63,61 +63,69 @@
                         </div>
                     @endif
 
-                    <!-- Statistiques rapides -->
-                    <div class="row g-4 mb-4">
+                    <!-- Statistiques rapides (Premium) -->
+                    <div class="row g-4 mb-8">
+                        <!-- KPI 1: Total -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="w-12 h-12 bg-blue-100 rounded-lg d-flex align-items-center justify-content-center me-3">
-                                        <i class="fa-solid fa-tasks text-primary fs-4"></i>
+                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-blue-200">
+                                        <i class="fa-solid fa-tasks text-white fs-4"></i>
                                     </div>
-                                    <div>
-                                        <p class="text-gray-500 mb-0 small">Total Tâches</p>
-                                        <h4 class="fw-bold mb-0">{{ $tasks->total() }}</h4>
+                                    <div class="text-end">
+                                        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Plateforme</span>
                                     </div>
                                 </div>
+                                <h6 class="text-gray-500 font-medium text-sm mb-1">Total Tâches</h6>
+                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $tasks->total() }}</h3>
                             </div>
                         </div>
 
+                        <!-- KPI 2: En Attente -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="w-12 h-12 bg-yellow-100 rounded-lg d-flex align-items-center justify-content-center me-3">
-                                        <i class="fa-solid fa-clock text-warning fs-4"></i>
+                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-yellow-200">
+                                        <i class="fa-solid fa-clock text-white fs-4"></i>
                                     </div>
-                                    <div>
-                                        <p class="text-gray-500 mb-0 small">En Attente</p>
-                                        <h4 class="fw-bold mb-0">{{ $tasks->where('status', 'pending')->count() }}</h4>
+                                    <div class="text-end text-warning">
+                                        <span class="text-xs font-bold uppercase tracking-wider">En Attente</span>
                                     </div>
                                 </div>
+                                <h6 class="text-gray-500 font-medium text-sm mb-1">Tâches Ouvertes</h6>
+                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $tasks->where('status', 'pending')->count() }}</h3>
                             </div>
                         </div>
 
+                        <!-- KPI 3: En Cours -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="w-12 h-12 bg-purple-100 rounded-lg d-flex align-items-center justify-content-center me-3">
-                                        <i class="fa-solid fa-spinner text-purple-600 fs-4"></i>
+                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-purple-200">
+                                        <i class="fa-solid fa-spinner text-white fs-4"></i>
                                     </div>
-                                    <div>
-                                        <p class="text-gray-500 mb-0 small">En Cours</p>
-                                        <h4 class="fw-bold mb-0">{{ $tasks->where('status', 'in_progress')->count() }}</h4>
+                                    <div class="text-end text-purple-600">
+                                        <span class="text-xs font-bold uppercase tracking-wider">Action</span>
                                     </div>
                                 </div>
+                                <h6 class="text-gray-500 font-medium text-sm mb-1">Tâches en cours</h6>
+                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $tasks->where('status', 'in_progress')->count() }}</h3>
                             </div>
                         </div>
 
+                        <!-- KPI 4: Complétées -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="w-12 h-12 bg-green-100 rounded-lg d-flex align-items-center justify-content-center me-3">
-                                        <i class="fa-solid fa-check-circle text-success fs-4"></i>
+                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-emerald-200">
+                                        <i class="fa-solid fa-check-circle text-white fs-4"></i>
                                     </div>
-                                    <div>
-                                        <p class="text-gray-500 mb-0 small">Complétées</p>
-                                        <h4 class="fw-bold mb-0">{{ $tasks->where('status', 'completed')->count() }}</h4>
+                                    <div class="text-end text-success">
+                                        <span class="text-xs font-bold uppercase tracking-wider">Succès</span>
                                     </div>
                                 </div>
+                                <h6 class="text-gray-500 font-medium text-sm mb-1">Total Complétées</h6>
+                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $tasks->where('status', 'completed')->count() }}</h3>
                             </div>
                         </div>
                     </div>

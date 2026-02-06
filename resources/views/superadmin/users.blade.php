@@ -51,61 +51,79 @@
                         </div>
                     @endif
 
-                    <!-- Statistiques rapides -->
-                    <div class="row g-4 mb-4">
+                    <style>
+                        .glass-card {
+                            background: #ffffff;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 20px;
+                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                            transition: transform 0.2s, box-shadow 0.2s;
+                        }
+                        .glass-card:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                        }
+                    </style>
+
+                    <!-- Statistiques rapides (Standardisées) -->
+                    <div class="row g-4 mb-8">
                         <div class="col-md-3">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="w-12 h-12 bg-blue-100 rounded-lg d-flex align-items-center justify-content-center me-3">
-                                        <i class="fa-solid fa-users text-primary fs-4"></i>
-                                    </div>
+                            <div class="glass-card p-5 border-l-4 border-l-primary h-100">
+                                <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <p class="text-gray-500 mb-0 small">Total Utilisateurs</p>
-                                        <h4 class="fw-bold mb-0">{{ $users->total() }}</h4>
+                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Utilisateurs</p>
+                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $totalUsers }}</h3>
+                                    </div>
+                                    <div class="p-3 bg-blue-50 text-primary rounded-2xl">
+                                        <i class="fa-solid fa-users text-lg"></i>
                                     </div>
                                 </div>
+                                <p class="text-[10px] text-slate-500 mt-4 font-bold uppercase">Tous rôles confondus</p>
                             </div>
                         </div>
 
                         <div class="col-md-3">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="w-12 h-12 bg-green-100 rounded-lg d-flex align-items-center justify-content-center me-3">
-                                        <i class="fa-solid fa-user-shield text-success fs-4"></i>
-                                    </div>
+                            <div class="glass-card p-5 border-l-4 border-l-success h-100">
+                                <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <p class="text-gray-500 mb-0 small">Administrateurs</p>
-                                        <h4 class="fw-bold mb-0">{{ $users->where('role', 'admin')->count() }}</h4>
+                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Administrateurs</p>
+                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $totalAdmins }}</h3>
+                                    </div>
+                                    <div class="p-3 bg-green-50 text-success rounded-2xl">
+                                        <i class="fa-solid fa-user-shield text-lg"></i>
                                     </div>
                                 </div>
+                                <p class="text-[10px] text-green-600 mt-4 font-bold uppercase">Gestionnaires d'entités</p>
                             </div>
                         </div>
 
                         <div class="col-md-3">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="w-12 h-12 bg-purple-100 rounded-lg d-flex align-items-center justify-content-center me-3">
-                                        <i class="fa-solid fa-calculator text-purple-600 fs-4"></i>
-                                    </div>
+                            <div class="glass-card p-5 border-l-4 border-l-purple-600 h-100">
+                                <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <p class="text-gray-500 mb-0 small">Comptables</p>
-                                        <h4 class="fw-bold mb-0">{{ $users->where('role', 'comptable')->count() }}</h4>
+                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Comptables</p>
+                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $totalComptables }}</h3>
+                                    </div>
+                                    <div class="p-3 bg-purple-50 text-purple-600 rounded-2xl">
+                                        <i class="fa-solid fa-calculator text-lg"></i>
                                     </div>
                                 </div>
+                                <p class="text-[10px] text-purple-600 mt-4 font-bold uppercase">Opérateurs saisie</p>
                             </div>
                         </div>
 
                         <div class="col-md-3">
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="w-12 h-12 bg-orange-100 rounded-lg d-flex align-items-center justify-content-center me-3">
-                                        <i class="fa-solid fa-user text-orange-600 fs-4"></i>
-                                    </div>
+                            <div class="glass-card p-5 border-l-4 border-l-warning h-100">
+                                <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <p class="text-gray-500 mb-0 small">Utilisateurs</p>
-                                        <h4 class="fw-bold mb-0">{{ $users->where('role', 'user')->count() }}</h4>
+                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Utilisateurs Actifs</p>
+                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $totalActive }}</h3>
+                                    </div>
+                                    <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-2xl">
+                                        <i class="fa-solid fa-user-check text-lg"></i>
                                     </div>
                                 </div>
+                                <p class="text-[10px] text-warning mt-4 font-bold uppercase">Comptes opérationnels</p>
                             </div>
                         </div>
                     </div>
@@ -140,7 +158,16 @@
                                                 </div>
                                             </td>
                                             <td>{{ $user->email }}</td>
-                                            <td>{{ $user->company->company_name ?? 'N/A' }}</td>
+                                            <td>
+                                                <div>
+                                                    <div class="fw-medium text-slate-700">{{ $user->company->company_name ?? 'N/A' }}</div>
+                                                    @if($user->company && $user->company->parent)
+                                                        <div class="text-[10px] font-bold text-blue-500 uppercase tracking-tighter mt-1">
+                                                            <i class="fa-solid fa-link me-1"></i>Filiale de {{ $user->company->parent->company_name }}
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </td>
                                             <td>
                                                 @if($user->role === 'admin')
                                                     <span class="badge bg-success">Admin</span>

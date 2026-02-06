@@ -159,105 +159,127 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
-    @forelse ($companies as $company)
-        {{-- Ligne PRINCIPALE (Master Row) --}}
-        {{-- Utilisez l'ID unique du parent pour cibler l'effondrement --}}
-            <tr class="accordion-toggle hover:bg-slate-50/80 transition-colors cursor-pointer"
-                data-bs-toggle="collapse"
-                data-bs-target="#subcompany-details-{{ $company->id }}">
-                <td class="px-8 py-6">
-                    <div class="flex items-center gap-3">
-                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-300 transition-transform toggle-icon"></i>
-                        <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 border border-blue-100">
-                            <i class="fa-solid fa-building"></i>
-                        </div>
-                        <span class="font-bold text-slate-800 text-lg">{{ $company->company_name }}</span>
+    @forelse ($rootCompanies as $company)
+        {{-- Ligne pour Compagnie Mère --}}
+        <tr class="hover:bg-slate-50/80 transition-colors">
+            <td class="px-8 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 border border-blue-100">
+                        <i class="fa-solid fa-building"></i>
                     </div>
-                </td>
-                <td class="px-8 py-6">
-                    @php $admin = $company->admin; @endphp
                     <div class="flex flex-col">
-                        <span class="font-semibold text-slate-700">{{ $admin ? $admin->name . ' ' . $admin->last_name : 'N/A' }}</span>
-                        <span class="text-xs text-slate-400">{{ $admin ? $admin->email_adresse : '' }}</span>
+                        <span class="font-bold text-slate-800 text-lg">{{ $company->company_name }}</span>
+                        <span class="text-[10px] font-black uppercase text-blue-500 tracking-wider">Compagnie Mère</span>
                     </div>
-                </td>
-                <td class="px-8 py-6 text-center">
-                    @if ($company->is_active)
-                        <span class="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-green-100">Active</span>
-                    @else
-                        <span class="px-3 py-1 bg-red-50 text-red-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-red-100">Inactive</span>
-                    @endif
-                </td>
-                <td class="px-8 py-6 text-center">
-                    <span class="px-2 py-1 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md">{{ $company->users->count() }}</span>
-                </td>
-                <td class="px-8 py-6 text-right">
-                    <div class="flex justify-end gap-2" onclick="event.stopPropagation();">
-                        {{-- Toggle Status --}}
-                        <form action="{{ route('toggle', $company->id) }}" method="POST" class="inline">
-                            @csrf
-                            @method('PUT')
-                            <button type="submit" class="w-10 h-10 flex items-center justify-center rounded-xl border transition-all {{ $company->is_active ? 'border-red-100 text-red-600 hover:bg-red-600 hover:text-white' : 'border-green-100 text-green-600 hover:bg-green-600 hover:text-white' }}" title="{{ $company->is_active ? 'Désactiver' : 'Activer' }}">
-                                <i class="fa-solid {{ $company->is_active ? 'fa-ban' : 'fa-check' }}"></i>
-                            </button>
-                        </form>
-
-                        {{-- Edit --}}
-                        <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
-                            data-bs-toggle="modal" data-bs-target="#editCompanyModal{{ $company->id }}">
-                            <i class="fa-solid fa-pen-to-square"></i>
+                </div>
+            </td>
+            <td class="px-8 py-5">
+                @php $admin = $company->admin; @endphp
+                <div class="flex flex-col">
+                    <span class="font-semibold text-slate-700">{{ $admin ? $admin->name . ' ' . $admin->last_name : 'N/A' }}</span>
+                    <span class="text-xs text-slate-400">{{ $admin ? $admin->email_adresse : '' }}</span>
+                </div>
+            </td>
+            <td class="px-8 py-5 text-center">
+                @if ($company->is_active)
+                    <span class="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-green-100">Active</span>
+                @else
+                    <span class="px-3 py-1 bg-red-50 text-red-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-red-100">Inactive</span>
+                @endif
+            </td>
+            <td class="px-8 py-5 text-center">
+                <span class="px-2 py-1 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md">{{ $company->users->count() }}</span>
+            </td>
+            <td class="px-8 py-5 text-right">
+                <div class="flex justify-end gap-2">
+                    <form action="{{ route('toggle', $company->id) }}" method="POST" class="inline">
+                        @csrf
+                        @method('PUT')
+                        <button type="submit" class="w-9 h-9 flex items-center justify-center rounded-lg border transition-all {{ $company->is_active ? 'border-red-100 text-red-600 hover:bg-red-600 hover:text-white' : 'border-green-100 text-green-600 hover:bg-green-600 hover:text-white' }}" title="{{ $company->is_active ? 'Désactiver' : 'Activer' }}">
+                            <i class="fa-solid {{ $company->is_active ? 'fa-ban' : 'fa-check' }}"></i>
                         </button>
-
-                        {{-- Delete --}}
-                        <form action="{{ route('superadmin.companies.destroy', $company->id) }}" method="POST" class="inline" 
-                            onsubmit="return confirm('Souhaitez-vous vraiment supprimer {{ $company->company_name }} ?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-
-            <tr id="subcompany-details-{{ $company->id }}" class="collapse bg-slate-50/30">
-                <td colspan="5" class="px-8 py-0">
-                    <div class="py-6 border-l-2 border-blue-500 ml-10 pl-8">
-                        <h6 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <i class="fa-solid fa-diagram-project text-blue-500"></i>
-                            Unités Comptables de {{ $company->company_name }}
-                        </h6>
-                        @if ($company->children && $company->children->count() > 0)
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                @foreach ($company->children as $subCompany)
-                                    <div class="bg-white p-3 rounded-xl border border-slate-100 flex items-center justify-between shadow-sm">
-                                        <div class="flex items-center gap-2">
-                                            <i class="fa-solid fa-angle-right text-[10px] text-slate-300"></i>
-                                            <span class="text-sm font-semibold text-slate-700">{{ $subCompany->company_name }}</span>
-                                        </div>
-                                        <span class="px-2 py-0.5 {{ $subCompany->is_active ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100' }} text-[9px] font-bold rounded-full border">
-                                            {{ $subCompany->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @else
-                            <p class="text-xs text-slate-400 italic">Aucune sous-entité enregistrée.</p>
-                        @endif
-                    </div>
-                </td>
-            </tr>
-@php
-    // Collection des modals pour les déplacer hors du tbody
-    if(!isset($companyModals)) $companyModals = [];
-    $companyModals[] = $company;
-@endphp
-    @empty
-        <tr>
-            <td colspan="5" class="text-center">Aucune compagnie principale n'a encore été créée.</td>
+                    </form>
+                    <button type="button" class="w-9 h-9 flex items-center justify-center rounded-lg border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
+                        data-bs-toggle="modal" data-bs-target="#editCompanyModal{{ $company->id }}">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <form action="{{ route('superadmin.companies.destroy', $company->id) }}" method="POST" class="inline" onsubmit="return confirm('Souhaitez-vous vraiment supprimer {{ $company->company_name }} ?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-100 text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </form>
+                </div>
+            </td>
         </tr>
 
+        {{-- Lignes pour Sous-compagnies --}}
+        @foreach ($company->children as $subCompany)
+            <tr class="bg-slate-50/30 hover:bg-slate-100/50 transition-colors">
+                <td class="px-8 py-4 pl-20"> {{-- Indentation --}}
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 border border-slate-100">
+                            <i class="fa-solid fa-arrow-turn-up fa-rotate-90 text-[10px]"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-slate-700">{{ $subCompany->company_name }}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sous-entité</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-8 py-4">
+                    @php $subAdmin = $subCompany->admin; @endphp
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-slate-600 text-sm">{{ $subAdmin ? $subAdmin->name . ' ' . $subAdmin->last_name : 'N/A' }}</span>
+                        <span class="text-[11px] text-slate-400">{{ $subAdmin ? $subAdmin->email_adresse : '' }}</span>
+                    </div>
+                </td>
+                <td class="px-8 py-4 text-center">
+                    @if ($subCompany->is_active)
+                        <span class="px-2 py-0.5 bg-green-50 text-green-600 text-[9px] font-black uppercase tracking-wider rounded border border-green-100">Active</span>
+                    @else
+                        <span class="px-2 py-0.5 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-wider rounded border border-red-100">Inactive</span>
+                    @endif
+                </td>
+                <td class="px-8 py-4 text-center">
+                    <span class="px-2 py-0.5 bg-white text-slate-500 text-[10px] font-bold rounded border border-slate-200">{{ $subCompany->users->count() }}</span>
+                </td>
+                <td class="px-8 py-4 text-right">
+                    <div class="flex justify-end gap-1">
+                        <form action="{{ route('toggle', $subCompany->id) }}" method="POST" class="inline">
+                            @csrf
+                            @method('PUT')
+                            <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-lg border transition-all {{ $subCompany->is_active ? 'border-red-100 text-red-500 hover:bg-red-500 hover:text-white' : 'border-green-100 text-green-500 hover:bg-green-500 hover:text-white' }}" title="{{ $subCompany->is_active ? 'Désactiver' : 'Activer' }}">
+                                <i class="fa-solid {{ $subCompany->is_active ? 'fa-ban' : 'fa-check' }} text-[10px]"></i>
+                            </button>
+                        </form>
+                        <button type="button" class="w-8 h-8 flex items-center justify-center rounded-lg border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
+                            data-bs-toggle="modal" data-bs-target="#editCompanyModal{{ $subCompany->id }}">
+                            <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                        </button>
+                        <form action="{{ route('superadmin.companies.destroy', $subCompany->id) }}" method="POST" class="inline" onsubmit="return confirm('Souhaitez-vous vraiment supprimer {{ $subCompany->company_name }} ?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            @php $companyModals[] = $subCompany; @endphp
+        @endforeach
+        @php $companyModals[] = $company; @endphp
+    @empty
+        <tr>
+            <td colspan="5" class="px-8 py-10 text-center">
+                <div class="flex flex-col items-center gap-2">
+                    <i class="fa-solid fa-folder-open text-slate-200 text-4xl"></i>
+                    <p class="text-slate-400 font-semibold italic">Aucune compagnie n'a encore été créée.</p>
+                </div>
+            </td>
+        </tr>
     @endforelse
 </tbody>
                                             </table>

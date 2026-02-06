@@ -12,7 +12,16 @@
                 @include('components.header', ['page_title' => 'Créer une Entité'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    <form action="{{ route('admin.companies.store') }}" method="POST">
+                    <div class="container-xxl flex-grow-1 container-p-y p-0">
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Créer une Entité</h5>
+                                <p class="text-muted small mb-0">Enregistrez une nouvelle structure juridique dans votre écosystème.</p>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('admin.companies.store') }}" method="POST">
                         @csrf
 
                         <div class="row">
@@ -135,25 +144,26 @@
                             </div>
 
                             <div class="col-lg-4">
-                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 100px;">
-                                    <h6 class="fw-bold text-blue-900 mb-3">
-                                        <i class="fa-solid fa-keyboard me-2"></i>Validation
+                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 20px;">
+                                    <h6 class="fw-bold text-blue-900 mb-3 d-flex align-items-center">
+                                        <i class="fa-solid fa-info-circle me-2"></i>Actions
                                     </h6>
-                                    <p class="text-sm text-blue-800 mb-4">
+                                    <p class="text-xs text-blue-800 mb-4 lh-lg">
                                         En créant cette entité, elle sera automatiquement rattachée à votre cabinet/entreprise principale.
                                     </p>
                                     <div class="d-grid gap-3">
-                                        <button type="submit" class="btn btn-primary btn-lg rounded-pill">
+                                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
                                             <i class="fa-solid fa-save me-2"></i>Créer l'entité
                                         </button>
-                                        <a href="{{ route('compagny_information') }}" class="btn btn-outline-secondary rounded-pill">
+                                        <a href="{{ route('compagny_information') }}" class="btn btn-white border shadow-sm">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 @include('components.footer')

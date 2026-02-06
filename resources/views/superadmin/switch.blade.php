@@ -87,6 +87,7 @@
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="fw-semibold">Entreprise</th>
+                                        <th class="fw-semibold">Type</th>
                                         <th class="fw-semibold">Utilisateurs</th>
                                         <th class="fw-semibold">Statut</th>
                                         <th class="fw-semibold text-end">Actions</th>
@@ -107,6 +108,13 @@
                                                         @endif
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                @if(is_null($company->parent_company_id))
+                                                    <span class="badge bg-label-primary">Siège</span>
+                                                @else
+                                                    <span class="badge bg-label-info">Sous-entité</span>
+                                                @endif
                                             </td>
                                             <td>
                                                 <span class="badge bg-secondary">{{ $company->users->count() }} utilisateurs</span>

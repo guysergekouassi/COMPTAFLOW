@@ -33,6 +33,20 @@ class SuperAdminSecondaryController extends Controller
     }
 
     /**
+     * Affiche le formulaire de création d'un Super Admin Secondaire
+     */
+    public function create()
+    {
+        if (!Auth::user()->isPrimarySuperAdmin()) {
+            return redirect()->route('superadmin.dashboard')
+                ->with('error', 'Accès refusé.');
+        }
+        
+        $companies = Company::all();
+        return view('superadmin.create_secondary_superadmin', compact('companies'));
+    }
+
+    /**
      * Enregistre un nouveau Super Admin Secondaire
      */
     public function store(Request $request)

@@ -36,7 +36,16 @@
                 @include('components.header', ['page_title' => 'Nouveau Admin Sécondaire'])
 
                 <div class="content-wrapper" style="padding: 32px; width: 100%; min-height: calc(100vh - 80px);">
-                    <form action="{{ route('admin.secondary_admins.store') }}" method="POST">
+                    <div class="container-xxl flex-grow-1 container-p-y p-0">
+                        <!-- Header Standardisé -->
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <div>
+                                <h5 class="mb-1 text-premium-gradient">Gouvernance / Créer un Admin Sécondaire</h5>
+                                <p class="text-muted small mb-0">Définissez un nouvel administrateur secondaire pour assister la gestion.</p>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('admin.secondary_admins.store') }}" method="POST">
                         @csrf
 
                         <div class="row">
@@ -83,8 +92,9 @@
                                             <select name="company_id" class="form-select @error('company_id') is-invalid @enderror" required>
                                                 <option value="" disabled selected>Choisir une entreprise...</option>
                                                 @foreach($companies as $company)
-                                                    <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
+                                                    <option value="{{ $company->id }}" data-is-sub="{{ $company->parent_company_id ? 'true' : 'false' }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
                                                         {{ $company->company_name }}
+                                                        @if($company->parent) (Filiale de : {{ $company->parent->company_name }}) @endif
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -123,30 +133,26 @@
                             </div>
 
                             <div class="col-lg-4">
-                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 sticky-top" style="top: 100px;">
-                                    <h6 class="fw-bold text-blue-900 mb-3">
-                                        <i class="fa-solid fa-circle-info me-2"></i>Admin Sécondaire
+                                <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 sticky-top" style="top: 20px;">
+                                    <h6 class="fw-bold text-blue-900 mb-3 d-flex align-items-center">
+                                        <i class="fa-solid fa-info-circle me-2"></i>Actions
                                     </h6>
-                                    <p class="text-sm text-blue-800 mb-3">
-                                        Contrairement à l'Admin principal, vous pouvez limiter les accès de cet utilisateur.
+                                    <p class="text-xs text-blue-800 mb-4 lh-lg">
+                                        L'admin secondaire recevra ses accès immédiatement. Assurez-vous d'avoir configuré les habilitations correctement.
                                     </p>
-                                    <ul class="text-xs text-blue-700 ps-3 mb-4">
-                                        <li class="mb-1">Accès restreint selon les habilitations choisies.</li>
-                                        <li class="mb-1">Peut gérer les données de l'entreprise assignée.</li>
-                                        <li>Idéal pour des rôles de supervision limités.</li>
-                                    </ul>
                                     <div class="d-grid gap-3">
-                                        <button type="submit" class="btn btn-primary btn-lg">
-                                            <i class="fa-solid fa-user-check me-2"></i>Créer l'Admin
+                                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                            <i class="fa-solid fa-user-plus me-2"></i>Créer l'admin secondaire
                                         </button>
-                                        <a href="{{ route('user_management') }}" class="btn btn-outline-secondary">
+                                        <a href="{{ route('user_management') }}" class="btn btn-white border shadow-sm">
                                             <i class="fa-solid fa-times me-2"></i>Annuler
                                         </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 @include('components.footer')
@@ -155,41 +161,65 @@
         <div class="layout-overlay layout-menu-toggle"></div>
     </div>
 
+    <style>
+        .restricted-permission {
+            opacity: 0.5 !important;
+            pointer-events: none !important;
+            background-color: #f8fafc !important;
+        }
+    </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const isSubCompany = {{ isset($currentCompany) && $currentCompany->parent_company_id ? 'true' : 'false' }};
+            const companySelect = document.querySelector('select[name="company_id"]');
             const permissionSections = document.querySelectorAll('.permission-section');
 
-            permissionSections.forEach(section => {
-                const sectionName = section.getAttribute('data-section-name');
-                const checkboxes = section.querySelectorAll('.permission-checkbox');
+            function updateGrisement() {
+                const selectedOption = companySelect.options[companySelect.selectedIndex];
+                const isSubCompany = selectedOption ? selectedOption.getAttribute('data-is-sub') === 'true' : false;
 
-                let isRestricted = false;
-                let forceUnchecked = false;
+                permissionSections.forEach(section => {
+                    const sectionName = section.getAttribute('data-section-name');
+                    const checkboxes = section.querySelectorAll('.permission-checkbox');
 
-                // 1. Restriction Super Admin
-                if (sectionName.includes('Super Admin')) {
-                    isRestricted = true;
-                    forceUnchecked = true;
-                }
+                    let isRestricted = false;
+                    let forceUnchecked = false;
 
-                // 2. Restriction Fusion
-                if (sectionName.includes('Fusion & Démarrage') && !isSubCompany) {
-                    isRestricted = true;
-                    forceUnchecked = true;
-                }
+                    // 1. Restriction Super Admin
+                    if (sectionName.includes('Super Admin')) {
+                        isRestricted = true;
+                        forceUnchecked = true;
+                    }
 
-                if (isRestricted) {
-                    checkboxes.forEach(cb => {
-                        if (forceUnchecked) cb.checked = false;
-                        const container = cb.closest('.permission-card');
-                        if (container) {
-                            container.style.opacity = '0.4';
-                            container.style.pointerEvents = 'none';
-                        }
-                    });
-                }
-            });
+                    // 2. Restriction Fusion
+                    if (sectionName.includes('Fusion & Démarrage') && !isSubCompany) {
+                        isRestricted = true;
+                        forceUnchecked = true;
+                    }
+
+                    if (isRestricted) {
+                        checkboxes.forEach(cb => {
+                            if (forceUnchecked) cb.checked = false;
+                            cb.disabled = true;
+                            const container = cb.closest('.permission-card');
+                            if (container) {
+                                container.classList.add('restricted-permission');
+                            }
+                        });
+                    } else {
+                        checkboxes.forEach(cb => {
+                            cb.disabled = false;
+                            const container = cb.closest('.permission-card');
+                            if (container) {
+                                container.classList.remove('restricted-permission');
+                            }
+                        });
+                    }
+                });
+            }
+
+            companySelect.addEventListener('change', updateGrisement);
+            updateGrisement();
         });
     </script>
 </body>

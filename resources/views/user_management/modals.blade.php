@@ -50,8 +50,9 @@
                             <select name="company_id" id="company_id" class="input-field-premium form-select">
                                 <option value="new">-- Nouvelle Entité --</option>
                                 @foreach($managedCompanies as $company)
-                                    <option value="{{ $company->id }}" {{ $company->id == ($currentCompanyId ?? '') ? 'selected' : '' }}>
+                                    <option value="{{ $company->id }}" data-is-sub="{{ $company->parent_company_id ? 'true' : 'false' }}" {{ $company->id == ($currentCompanyId ?? '') ? 'selected' : '' }}>
                                         {{ $company->company_name }}
+                                        @if($company->parent) (Filiale de : {{ $company->parent->company_name }}) @endif
                                     </option>
                                 @endforeach
                             </select>
@@ -76,15 +77,15 @@
                         
                         <div id="habilitationsGroup" class="col-12 mt-6 d-none">
                             <h6 class="text-xs font-black text-slate-400 uppercase tracking-widest border-bottom pb-2 mb-4">Périmètre des Habilitations</h6>
-                            @foreach(config('accounting_permissions.permissions') as $section => $permissions)
-                                <div class="mb-4">
+                            @foreach(config('accounting_permissions.permissions') as $section => $groupPermissions)
+                                <div class="mb-4 permission-section" data-section-name="{{ $section }}">
                                     <h6 class="text-xs font-bold text-slate-600 uppercase mb-2">{{ $section }}</h6>
                                     <div class="row g-3">
-                                        @foreach($permissions as $key => $label)
+                                        @foreach($groupPermissions as $key => $label)
                                             <div class="col-md-6">
-                                                <div class="form-check custom-option custom-option-basic p-3 border rounded-xl hover:bg-slate-50 transition-colors">
-                                                    <input class="form-check-input" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}">
-                                                    <label class="form-check-label font-bold text-sm text-slate-700 ms-2" for="hab_{{ $key }}">{{ $label }}</label>
+                                                <div class="form-check custom-option custom-option-basic p-3 border rounded-xl hover:bg-slate-50 transition-colors d-flex align-items-center">
+                                                    <input class="form-check-input permission-checkbox" type="checkbox" name="habilitations[{{ $key }}]" value="1" id="hab_{{ $key }}" style="float: none;">
+                                                    <label class="form-check-label font-bold text-sm text-slate-700 ms-3 mb-0" for="hab_{{ $key }}">{{ $label }}</label>
                                                 </div>
                                             </div>
                                         @endforeach
@@ -147,7 +148,7 @@
                             <label for="updateCompanyId" class="input-label-premium">Entité</label>
                             <select name="company_id" id="updateCompanyId" class="input-field-premium form-select">
                                 @foreach($managedCompanies as $company)
-                                    <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                                    <option value="{{ $company->id }}" data-is-sub="{{ $company->parent_company_id ? 'true' : 'false' }}">{{ $company->company_name }} @if($company->parent) (Filiale de : {{ $company->parent->company_name }}) @endif</option>
                                 @endforeach
                             </select>
                         </div>
@@ -155,16 +156,16 @@
 
                     <div id="updateHabilitationsSection" class="mt-8">
                         <h6 class="text-xs font-black text-slate-400 uppercase tracking-widest border-bottom pb-2 mb-4">Gestion des Habilitations</h6>
-                        @foreach(config('accounting_permissions.permissions') as $section => $permissions)
-                            <div class="mb-4">
+                        @foreach(config('accounting_permissions.permissions') as $section => $groupPermissions)
+                            <div class="mb-4 permission-section" data-section-name="{{ $section }}">
                                 <h6 class="text-xs font-bold text-slate-600 uppercase mb-2">{{ $section }}</h6>
                                 <div class="row g-3">
-                                    @foreach($permissions as $key => $label)
+                                    @foreach($groupPermissions as $key => $label)
                                         <div class="col-md-6">
-                                            <div class="form-check custom-option custom-option-basic p-3 border rounded-xl hover:bg-slate-50 transition-colors">
+                                            <div class="form-check custom-option custom-option-basic p-3 border rounded-xl hover:bg-slate-50 transition-colors d-flex align-items-center">
                                                 <input type="hidden" name="habilitations[{{ $key }}]" value="0">
-                                                <input class="form-check-input" type="checkbox" id="update_{{ $key }}" name="habilitations[{{ $key }}]" value="1">
-                                                <label class="form-check-label font-bold text-sm text-slate-700 ms-2" for="update_{{ $key }}">{{ $label }}</label>
+                                                <input class="form-check-input permission-checkbox" type="checkbox" id="update_{{ $key }}" name="habilitations[{{ $key }}]" value="1" style="float: none;">
+                                                <label class="form-check-label font-bold text-sm text-slate-700 ms-3 mb-0" for="update_{{ $key }}">{{ $label }}</label>
                                             </div>
                                         </div>
                                     @endforeach
@@ -221,15 +222,15 @@
 
                 <div id="seeHabilitationsSection" class="mt-8">
                     <h6 class="text-xs font-black text-slate-400 uppercase tracking-widest border-bottom pb-2 mb-4">Habilitations Actives</h6>
-                    @foreach(config('accounting_permissions.permissions') as $section => $permissions)
-                        <div class="mb-4">
+                    @foreach(config('accounting_permissions.permissions') as $section => $groupPermissions)
+                        <div class="mb-4 permission-section" data-section-name="{{ $section }}">
                             <h6 class="text-xs font-bold text-slate-600 uppercase mb-2">{{ $section }}</h6>
                             <div class="row g-3">
-                                @foreach($permissions as $key => $label)
+                                @foreach($groupPermissions as $key => $label)
                                     <div class="col-md-6">
-                                        <div class="form-check custom-option custom-option-basic p-3 border rounded-xl opacity-75">
-                                            <input class="form-check-input" type="checkbox" id="see_{{ $key }}" disabled >
-                                            <label class="form-check-label font-bold text-sm text-slate-700 ms-2" for="see_{{ $key }}">{{ $label }}</label>
+                                        <div class="form-check custom-option custom-option-basic p-3 border rounded-xl opacity-75 d-flex align-items-center">
+                                            <input class="form-check-input permission-checkbox" type="checkbox" id="see_{{ $key }}" disabled style="float: none;">
+                                            <label class="form-check-label font-bold text-sm text-slate-700 ms-3 mb-0" for="see_{{ $key }}">{{ $label }}</label>
                                         </div>
                                     </div>
                                 @endforeach
@@ -283,3 +284,132 @@
         </div>
     </div>
 </div>
+    <style>
+        .restricted-permission {
+            opacity: 0.5 !important;
+            pointer-events: none !important;
+            background-color: #f8fafc !important;
+        }
+    </style>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const accountantPermissions = [
+            'compta.dashboard', 'plan_comptable', 'plan_tiers', 'accounting_journals',
+            'postetresorerie.index', 'modal_saisie_direct', 'accounting_entry_list', 'ecriture.rejected',
+            'brouillons.index', 'accounting_entry_real',
+            'gestion_tresorerie', 'accounting_ledger', 'accounting_ledger_tiers',
+            'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily', 'immobilisations.index'
+        ];
+
+        // Logique de grisement pour les modales
+        function getIsSubCompany(modal) {
+            const companySelect = modal.querySelector('select[name="company_id"]');
+            if (!companySelect) return {{ isset($currentCompany) && $currentCompany->parent_company_id ? 'true' : 'false' }};
+            const selectedOption = companySelect.options[companySelect.selectedIndex];
+            return selectedOption ? selectedOption.getAttribute('data-is-sub') === 'true' : false;
+        }
+
+        function applyGrisementToContainer(container, role, sectionName, key, isSubCompany) {
+            let isRestricted = false;
+            let forceUnchecked = false;
+
+            // 1. Restriction Super Admin
+            if (sectionName.includes('Super Admin')) {
+                isRestricted = true;
+                forceUnchecked = true;
+            }
+
+            // 2. Restriction Fusion
+            if (sectionName.includes('Fusion & Démarrage') && !isSubCompany) {
+                isRestricted = true;
+                forceUnchecked = true;
+            }
+
+            // 3. Accountant Restrictions
+            if (role === 'comptable' && !accountantPermissions.includes(key)) {
+                isRestricted = true;
+                forceUnchecked = true;
+            }
+
+            const checkbox = container.querySelector('.permission-checkbox');
+            if (isRestricted) {
+                if (checkbox && forceUnchecked && !checkbox.disabled) checkbox.checked = false;
+                if (checkbox) checkbox.disabled = true;
+                container.classList.add('restricted-permission');
+            } else {
+                if (checkbox && !container.id.includes('see_')) checkbox.disabled = false;
+                container.classList.remove('restricted-permission');
+            }
+        }
+
+        function updateModalPermissions(modalId, roleSelectId) {
+            const modal = document.getElementById(modalId);
+            const roleSelect = document.getElementById(roleSelectId);
+            if (!modal || !roleSelect) return;
+
+            const isSubCompany = getIsSubCompany(modal);
+            const sections = modal.querySelectorAll('.permission-section');
+            const role = roleSelect.value;
+
+            sections.forEach(section => {
+                const sectionName = section.getAttribute('data-section-name');
+                const containers = section.querySelectorAll('.form-check');
+                
+                containers.forEach(container => {
+                    const checkbox = container.querySelector('.permission-checkbox');
+                    const key = checkbox.id.split('_').pop(); // hab_key or update_key or see_key
+                    applyGrisementToContainer(container, role, sectionName, key, isSubCompany);
+                });
+            });
+        }
+
+        // Écouteurs pour la création
+        const createRole = document.getElementById('role');
+        const createCompany = document.getElementById('company_id');
+        if (createRole) {
+            createRole.addEventListener('change', () => updateModalPermissions('modalCenterCreate', 'role'));
+        }
+        if (createCompany) {
+            createCompany.addEventListener('change', () => updateModalPermissions('modalCenterCreate', 'role'));
+        }
+
+        // Écouteurs pour la modification
+        const updateRole = document.getElementById('updateRole');
+        const updateCompany = document.getElementById('updateCompanyId');
+        if (updateRole) {
+            updateRole.addEventListener('change', () => updateModalPermissions('modalCenterUpdate', 'updateRole'));
+        }
+        if (updateCompany) {
+            updateCompany.addEventListener('change', () => updateModalPermissions('modalCenterUpdate', 'updateRole'));
+        }
+
+        // Pour la visualisation, on applique le grisement à l'ouverture du modal
+        const seeModal = document.getElementById('modalCenterSee');
+        if (seeModal) {
+            seeModal.addEventListener('show.bs.modal', function() {
+                // On attend un peu que le role soit injecté par user_m.js
+                setTimeout(() => {
+                    const role = document.getElementById('seeRole').value;
+                    const isSubCompany = {{ isset($currentCompany) && $currentCompany->parent_company_id ? 'true' : 'false' }};
+                    const sections = seeModal.querySelectorAll('.permission-section');
+                    sections.forEach(section => {
+                        const sectionName = section.getAttribute('data-section-name');
+                        const containers = section.querySelectorAll('.form-check');
+                        containers.forEach(container => {
+                            const checkbox = container.querySelector('.permission-checkbox');
+                            const key = checkbox.id.split('_').pop();
+                            applyGrisementToContainer(container, role, sectionName, key, isSubCompany);
+                        });
+                    });
+                }, 100);
+            });
+        }
+        
+        // Initialisation si nécessaire
+        const createModal = document.getElementById('modalCenterCreate');
+        if (createModal) {
+            createModal.addEventListener('show.bs.modal', () => updateModalPermissions('modalCenterCreate', 'role'));
+        }
+    });
+    </script>

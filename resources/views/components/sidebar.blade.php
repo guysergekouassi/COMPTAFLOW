@@ -525,12 +525,6 @@
                     <span>Gestion des Entités</span>
                 </a>
                 @endif
-                @if(auth()->user()->hasPermission('admin.companies.create'))
-                <a href="{{ route('admin.companies.create') }}" class="menu-link-new {{ request()->routeIs('admin.companies.create') ? 'active' : '' }}">
-                    <i class="fa-solid fa-plus-circle"></i>
-                    <span>Créer Entreprise</span>
-                </a>
-                @endif
                 @if(auth()->user()->hasPermission('user_management'))
                 <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
                     <i class="fa-solid fa-user-shield"></i>
@@ -560,6 +554,12 @@
                 @if($hasQuickActions)
                 <div class="mt-2 pt-2 border-top border-light">
                     <small class="text-muted text-uppercase px-3 mb-2 d-block" style="font-size: 0.65rem;">Création Rapide</small>
+                    @if(auth()->user()->hasPermission('admin.companies.create'))
+                    <a href="{{ route('admin.companies.create') }}" class="menu-link-quick {{ request()->routeIs('admin.companies.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Créer Entreprise</span>
+                    </a>
+                    @endif
                     @if(auth()->user()->hasPermission('compta.create'))
                     <a href="{{ route('compta.create') }}" class="menu-link-quick {{ request()->routeIs('compta.create') ? 'active' : '' }}">
                         <i class="fa-solid fa-plus-circle"></i>
@@ -581,7 +581,7 @@
                     @if(auth()->user()->hasPermission('admin.users.create'))
                     <a href="{{ route('admin.users.create') }}" class="menu-link-quick {{ request()->routeIs('admin.users.create') ? 'active' : '' }}">
                         <i class="fa-solid fa-users"></i>
-                        <span>Créer Utilisateur</span>
+                        <span>Créer Comptable</span>
                     </a>
                     @endif
                 </div>
@@ -738,7 +738,7 @@
                 @endif
                 @if(auth()->user()->hasPermission('immobilisations.index'))
                 <a href="{{ route('immobilisations.index') }}" class="menu-link-new {{ request()->routeIs('immobilisations.index') ? 'active' : '' }}">
-                    <i class="fa-solid fa-building-circle-check"></i>
+                    <i class="fa-solid fa-city"></i>
                     <span>Immobilisations</span>
                 </a>
                 @endif

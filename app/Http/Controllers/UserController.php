@@ -161,7 +161,7 @@ public function stat_online()
                            ->toArray();
 
         // 2. Récupérer les objets Company pour le sélecteur dans la vue (la liste des comptabilités)
-        $managedCompanies = Company::whereIn('id', $managedCompanyIds)->get();
+        $managedCompanies = Company::with('parent')->whereIn('id', $managedCompanyIds)->get();
 
         $filteredUsers = User::with('company')
         ->where('company_id', $currentContextId) // C'est ici que la magie opère
@@ -224,7 +224,7 @@ public function stat_online()
 
         // Récupérer les entreprises gérées
         $managedCompanyIds = $this->getManagedCompanyIds($admin);
-        $companies = Company::whereIn('id', $managedCompanyIds)->get();
+        $companies = Company::with('parent')->whereIn('id', $managedCompanyIds)->get();
 
         // Récupérer les permissions disponibles
         $permissions = config('accounting_permissions.permissions');
@@ -320,7 +320,7 @@ User::create($validated);
     {
         $admin = Auth::user();
         $managedCompanyIds = $this->getManagedCompanyIds($admin);
-        $companies = Company::whereIn('id', $managedCompanyIds)->get(); // Renommé $companies pour correspondre à la vue
+        $companies = Company::with('parent')->whereIn('id', $managedCompanyIds)->get(); // Renommé $companies pour correspondre à la vue
         
         return view('admin.users.create_admin', compact('companies'));
     }
@@ -332,7 +332,7 @@ User::create($validated);
     {
         $admin = Auth::user();
         $managedCompanyIds = $this->getManagedCompanyIds($admin);
-        $companies = Company::whereIn('id', $managedCompanyIds)->get();
+        $companies = Company::with('parent')->whereIn('id', $managedCompanyIds)->get();
         
         return view('admin.users.create_secondary_admin', compact('companies'));
     }
@@ -496,6 +496,11 @@ User::create($validated);
     public function switchCompany(Request $request, $companyId)
     {
         $user = Auth::user();
+
+        // Règle NB3: Un comptable ne peut pas switcher de dossier comptable
+        if ($user->role === 'comptable') {
+            return redirect()->back()->with('error', 'Accès refusé : un comptable ne peut pas changer de dossier.');
+        }
 
         // 1. Sécurité: Trouver l'ID de la compagnie mère de l'Admin
         $admin_primary_company_id = $user->company_id;

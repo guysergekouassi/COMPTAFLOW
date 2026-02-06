@@ -598,6 +598,10 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
     Route::put('/companies/{company}/update', [\App\Http\Controllers\Super\SuperAdminCompanyController::class, 'update'])->name('superadmin.companies.update');
     Route::delete('/companies/{company}', [\App\Http\Controllers\Super\SuperAdminCompanyController::class, 'destroy'])->name('superadmin.companies.destroy');
 
+    // Modification Habilitations (Super Admin)
+    Route::get('/superadmin/habilitations', [\App\Http\Controllers\Super\SuperAdminHabilitationController::class, 'index'])->name('superadmin.habilitations.index');
+    Route::post('/superadmin/habilitations/update/{user}', [\App\Http\Controllers\Super\SuperAdminHabilitationController::class, 'update'])->name('superadmin.habilitations.update');
+
     // Gestion des Comptabilités
     Route::get('/superadmin/accounting', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'index'])->name('superadmin.accounting.index');
     Route::get('/superadmin/accounting/create', [\App\Http\Controllers\Super\SuperAdminComptaController::class, 'create'])->name('superadmin.accounting.create');
@@ -653,6 +657,7 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
 
     // Gestion des Super Admins Secondaires (Réservé au SA Primaire)
     Route::get('/superadmin/secondary-admins', [\App\Http\Controllers\Super\SuperAdminSecondaryController::class, 'index'])->name('superadmin.secondary.index');
+    Route::get('/superadmin/secondary-admins/create', [\App\Http\Controllers\Super\SuperAdminSecondaryController::class, 'create'])->name('superadmin.secondary.create');
     Route::post('/superadmin/secondary-admins', [\App\Http\Controllers\Super\SuperAdminSecondaryController::class, 'store'])->name('superadmin.secondary.store');
     Route::put('/superadmin/secondary-admins/{id}', [\App\Http\Controllers\Super\SuperAdminSecondaryController::class, 'update'])->name('superadmin.secondary.update');
     Route::delete('/superadmin/secondary-admins/{id}', [\App\Http\Controllers\Super\SuperAdminSecondaryController::class, 'destroy'])->name('superadmin.secondary.destroy');
