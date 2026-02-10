@@ -27,42 +27,66 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
 
                     <!-- KPIs -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <div class="card shadow-sm h-100 border-0 card-hover">
-                                <div class="card-body">
-                                    <span class="d-block mb-1 text-muted text-uppercase small fw-bold">Total Actifs</span>
-                                    <h3 class="card-title text-primary mb-0">{{ $totalImmobilisations }}</h3>
-                                    <small class="text-muted">Biens enregistrés</small>
+                    <!-- KPIs -->
+                    <div class="d-flex align-items-stretch gap-4 mb-4" style="overflow-x: auto; padding-bottom: 5px;">
+                        
+                        <!-- Total Actifs -->
+                        <div class="card border-0 shadow-sm rounded-4 flex-grow-1 card-hover" style="min-width: 260px;">
+                            <div class="card-body p-4 position-relative">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Total Actifs</h6>
+                                    <div class="p-2 rounded-3 bg-label-primary text-primary">
+                                        <i class="bx bx-cube fs-4"></i>
+                                    </div>
+                                </div>
+                                <h4 class="mb-2 fw-extrabold text-dark">{{ $totalImmobilisations }}</h4>
+                                <div class="small fw-semibold text-primary">
+                                    <i class="bx bx-check-circle me-1"></i> Biens enregistrés
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card shadow-sm h-100 border-0 card-hover">
-                                <div class="card-body">
-                                    <span class="d-block mb-1 text-muted text-uppercase small fw-bold">VNC Totale</span>
-                                    <h3 class="card-title text-success mb-0">{{ number_format($vncTotale, 0, ',', ' ') }}</h3>
-                                    <small class="text-muted">FCFA</small>
+
+                        <!-- VNC Totale -->
+                        <div class="card border-0 shadow-sm rounded-4 flex-grow-1 card-hover" style="min-width: 260px;">
+                            <div class="card-body p-4 position-relative">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">VNC Totale</h6>
+                                    <div class="p-2 rounded-3 bg-label-success text-success">
+                                        <i class="bx bx-wallet fs-4"></i>
+                                    </div>
+                                </div>
+                                <h4 class="mb-2 fw-extrabold text-dark">{{ number_format($vncTotale, 0, ',', ' ') }} <span class="fs-6 text-muted fw-normal">FCFA</span></h4>
+                                <div class="small fw-semibold text-success">
+                                    <i class="bx bx-trending-up me-1"></i> Valeur comptable
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card shadow-sm h-100 border-0 card-hover">
-                                <div class="card-body">
-                                    <span class="d-block mb-1 text-muted text-uppercase small fw-bold">Prov. {{ date('Y') }}</span>
-                                    <h3 class="card-title text-warning mb-0">{{ number_format($dotationsAnnee, 0, ',', ' ') }}</h3>
-                                    <small class="text-muted">FCFA</small>
+
+                        <!-- Prov. Année -->
+                        <div class="card border-0 shadow-sm rounded-4 flex-grow-1 card-hover" style="min-width: 260px;">
+                            <div class="card-body p-4 position-relative">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Prov. {{ date('Y') }}</h6>
+                                    <div class="p-2 rounded-3 bg-label-warning text-warning">
+                                        <i class="bx bx-time-five fs-4"></i>
+                                    </div>
+                                </div>
+                                <h4 class="mb-2 fw-extrabold text-dark">{{ number_format($dotationsAnnee, 0, ',', ' ') }} <span class="fs-6 text-muted fw-normal">FCFA</span></h4>
+                                <div class="small fw-semibold text-warning">
+                                    <i class="bx bx-loader-circle me-1"></i> Dotations
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card shadow-sm h-100 border-0 d-flex flex-column justify-content-center p-3 gap-2 bg-transparent shadow-none">
-                                <a href="{{ route('immobilisations.create') }}" class="btn btn-primary w-100 shadow-sm">
+
+                        <!-- Actions Rapides -->
+                        <div class="card border-0 shadow-sm rounded-4 flex-grow-1 bg-label-secondary" style="min-width: 260px;">
+                            <div class="card-body p-4 d-flex flex-column justify-content-center gap-2">
+                                <a href="{{ route('immobilisations.create') }}" class="btn btn-primary w-100 shadow-sm fw-bold">
                                     <i class="bx bx-plus me-1"></i> Nouveau Bien
                                 </a>
                                 <form action="{{ route('immobilisations.generer_dotations') }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="btn btn-outline-warning w-100 bg-white" onclick="return confirm('Générer les dotations ?')">
+                                    <button type="submit" class="btn btn-outline-warning w-100 bg-white fw-bold" onclick="return confirm('Générer les dotations ?')">
                                         <i class="bx bx-cog me-1"></i> Calculer Amort.
                                     </button>
                                 </form>
@@ -74,7 +98,7 @@
                     <div class="row g-3">
                         
                         <!-- Left: Potential Assets -->
-                        <div class="col-lg-6">
+                        <div class="col-md-6">
                             <div class="card h-100 shadow-sm border-0">
                                 <div class="card-header border-bottom py-3 bg-white d-flex justify-content-between align-items-center">
                                     <h5 class="card-title mb-0 text-primary">
@@ -130,7 +154,7 @@
                         </div>
 
                         <!-- Right: Registered Assets -->
-                        <div class="col-lg-6">
+                        <div class="col-md-6">
                             <div class="card h-100 shadow-sm border-0">
                                 <div class="card-header border-bottom py-3 bg-white d-flex justify-content-between align-items-center">
                                     <h5 class="card-title mb-0 text-success">

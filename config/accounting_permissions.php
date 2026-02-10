@@ -94,10 +94,13 @@ return [
             'exercice_comptable' => 'Exercice comptable',
             'gestion_tresorerie' => 'Gestion Trésorerie',
             'immobilisations.index' => 'Gestion Immobilisations',
+            'lettrage.index' => 'Lettrage des tiers',
         ],
         'ETATS FINANCIERS' => [
             'bilan' => 'Bilan Actif/Passif',
             'compte_resultat' => 'Compte de Résultat',
+            'reporting.monthly_resultat' => 'Résultat Mensuel',
+            'reporting.tft' => 'Flux de Trésorerie (TFT)',
         ],
         'Rapports' => [
             'accounting_ledger' => 'Grand livre',
@@ -121,14 +124,16 @@ return [
             'accounting_entry_real', 'accounting_ledger',
             'accounting_ledger_tiers', 'accounting_balance', 'Balance_Tiers',
             'compte_exploitation', 'flux_tresorerie', 'tableau_amortissements',
-            'etat_tiers', 'compte_resultat', 'bilan', 'etats_analytiques', 'etats_previsionnels', 'immobilisations.index'
+            'etat_tiers', 'compte_resultat', 'bilan', 'etats_analytiques', 'etats_previsionnels', 'immobilisations.index', 'lettrage.index',
+            'reporting.monthly_resultat', 'reporting.tft'
         ],
         'comptable' => [
             'compta.dashboard', 'plan_comptable', 'plan_tiers', 'accounting_journals',
             'postetresorerie.index', 'modal_saisie_direct', 'accounting_entry_list', 'ecriture.rejected',
             'brouillons.index', 'accounting_entry_real',
             'gestion_tresorerie', 'accounting_ledger', 'accounting_ledger_tiers',
-            'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily', 'immobilisations.index'
+            'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily', 'immobilisations.index', 'lettrage.index',
+            'reporting.monthly_resultat', 'reporting.tft'
         ]
     ],
 ];

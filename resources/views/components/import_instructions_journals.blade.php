@@ -8,22 +8,25 @@
             <div class="modal-body p-8">
                 <!-- Structure -->
                 <div class="bg-emerald-50 p-6 rounded-2xl mb-6 border border-emerald-100">
-                    <h6 class="font-black text-emerald-900 mb-4">Structure attendue du fichier (Colonnes)</h6>
+                    <h6 class="font-black text-emerald-900 mb-2">Structure attendue du fichier (Colonnes)</h6>
+                    <p class="text-sm text-emerald-700 mb-4">Les journaux seront créés ou mis à jour selon la configuration. Les comptes de trésorerie associés doivent être configurés pour permettre le rapprochement automatique.</p>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered bg-white">
                             <thead class="bg-emerald-100">
                                 <tr>
-                                    <th class="font-black text-emerald-800">Code Journal</th>
-                                    <th class="font-black text-emerald-800">Intitulé</th>
-                                    <th class="font-black text-emerald-800">Type</th>
+                                    <th class="font-black text-emerald-800 text-muted italic">Code Journal (Auto)</th>
+                                    <th class="font-black text-emerald-800">Intitulé du Journal *</th>
+                                    <th class="font-black text-emerald-800 text-muted italic">Type (Achats, Ventes, etc.) (Auto)</th>
                                     <th class="font-black text-emerald-800">Compte Trésorerie</th>
+                                    <th class="font-black text-emerald-800">Traitement Analytique</th>
+                                    <th class="font-black text-emerald-800">État Rapprochement</th>
                                 </tr>
                             </thead>
                             <tbody class="text-sm">
-                                <tr><td>ACH</td><td>JOURNAL DES ACHATS</td><td>Achats</td><td class="text-muted italic">-</td></tr>
-                                <tr><td>VEN</td><td>JOURNAL DES VENTES</td><td>Ventes</td><td class="text-muted italic">-</td></tr>
-                                <tr><td>BQ1</td><td>SOCIETE GENERALE CI</td><td>Banque</td><td>521100</td></tr>
-                                <tr><td>CSH</td><td>CAISNE PRINCIPALE</td><td>Caisse</td><td>571100</td></tr>
+                                <tr><td>ACH</td><td>JOURNAL DES ACHATS</td><td>Achats</td><td class="text-muted italic">-</td><td class="text-muted italic">-</td><td class="text-muted italic">-</td></tr>
+                                <tr><td>VEN</td><td>JOURNAL DES VENTES</td><td>Ventes</td><td class="text-muted italic">-</td><td class="text-muted italic">-</td><td class="text-muted italic">-</td></tr>
+                                <tr><td>BQ1</td><td>SOCIETE GENERALE CI</td><td>Banque</td><td>521100</td><td class="text-muted italic">-</td><td class="text-muted italic">-</td></tr>
+                                <tr><td>CSH</td><td>CAISNE PRINCIPALE</td><td>Caisse</td><td>571100</td><td class="text-muted italic">-</td><td class="text-muted italic">-</td></tr>
                             </tbody>
                         </table>
                     </div>

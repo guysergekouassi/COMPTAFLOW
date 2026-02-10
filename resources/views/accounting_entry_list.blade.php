@@ -154,7 +154,7 @@
 
                             #tableEcritures thead th {
                                 background-color: #f8fafc;
-                                border-bottom: 1px solid #e2e8f0;
+                                border-bottom: 2px solid #e2e8f0;
                                 padding: 1.25rem 2rem !important;
                                 font-size: 0.875rem !important;
                                 font-weight: 700 !important;
@@ -164,9 +164,54 @@
                             }
                             
                             #tableEcritures tbody td {
-                                padding: 1.5rem 2rem !important;
+                                padding: 1rem 1rem !important;
                                 vertical-align: middle !important;
+                                border-bottom: 1px solid #f1f5f9 !important;
+                                font-size: 0.85rem !important;
+                                color: #1e293b !important;
+                                font-weight: 500 !important;
                             }
+
+                            /* Table Premium - Refonte Conteneur */
+                            .table-container-premium {
+                                background: #ffffff !important;
+                                border-radius: 24px !important;
+                                border: 1px solid #e2e8f0 !important;
+                                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+                                overflow: hidden !important;
+                                margin-bottom: 2rem !important;
+                            }
+
+                            .table-responsive-premium {
+                                overflow-x: auto !important;
+                                -webkit-overflow-scrolling: touch;
+                                scrollbar-width: thin;
+                                scrollbar-color: #888 #f5f5f5;
+                            }
+
+                            .table-responsive-premium::-webkit-scrollbar {
+                                height: 8px;
+                            }
+                            .table-responsive-premium::-webkit-scrollbar-thumb {
+                                background-color: #cbd5e1;
+                                border-radius: 4px;
+                            }
+
+                            .table-badge {
+                                padding: 0.35rem 0.6rem !important;
+                                border-radius: 8px !important;
+                                font-weight: 700 !important;
+                                font-size: 0.7rem !important;
+                                display: inline-flex !important;
+                                align-items: center !important;
+                                gap: 0.3rem !important;
+                                white-space: nowrap !important;
+                            }
+
+                            .badge-journal { background-color: #eff6ff !important; color: #1e40af !important; border: 1px solid #dbeafe !important; }
+                            .badge-compte { background-color: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
+                            .amount-debit { color: #dc2626 !important; font-weight: 700 !important; text-align: right !important; }
+                            .amount-credit { color: #059669 !important; font-weight: 700 !important; text-align: right !important; }
 
                             /* Nouveau Design Premium pour les Modaux */
                             .premium-modal-content, .premium-modal-content-wide {
@@ -401,44 +446,25 @@
                                         <span class="text-blue-600 text-sm font-medium"> écritures au total</span>
                                     </div>
                                 </div>
-                                <style>
-                                    /* Style personnalisé pour la barre de défilement */
-                                    .table-responsive::-webkit-scrollbar {
-                                        height: 10px;
-                                        background-color: #f5f5f5;
-                                    }
-                                    .table-responsive::-webkit-scrollbar-thumb {
-                                        background-color: #888;
-                                        border-radius: 5px;
-                                    }
-                                    .table-responsive::-webkit-scrollbar-thumb:hover {
-                                        background-color: #555;
-                                    }
-                                    .table-responsive {
-                                        overflow-x: auto;
-                                        -webkit-overflow-scrolling: touch;
-                                        scrollbar-width: thin;
-                                        scrollbar-color: #888 #f5f5f5;
-                                    }
-                                </style>
-                                <div class="table-responsive" style="margin-bottom: 15px;">
+                            <div class="table-container-premium px-0 pb-0">
+                                <div class="table-responsive-premium">
                                     <table class="w-full text-left border-collapse" id="tableEcritures" style="min-width: 100%; width: max-content;">
-                                    <thead class="bg-slate-50/50 border-b border-slate-100">
+                                    <thead>
                                         <tr>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">N° Saisie</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Statut</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Code Journal</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Poste Trésorerie</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Réf. Pièce</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Compte Général</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Compte Tiers</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Analytique</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Débit</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Crédit</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Pièce</th>
-                                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Actions</th>
+                                            <th>Date</th>
+                                            <th>N° Saisie</th>
+                                            <th class="text-center">Statut</th>
+                                            <th>Code Journal</th>
+                                            <th>Poste Trésorerie</th>
+                                            <th>Réf. Pièce</th>
+                                            <th>Description</th>
+                                            <th>Compte Général</th>
+                                            <th>Compte Tiers</th>
+                                            <th>An.</th>
+                                            <th class="text-right">Débit</th>
+                                            <th class="text-right">Crédit</th>
+                                            <th class="text-center">Pièce</th>
+                                            <th class="text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -491,9 +517,9 @@
                                                                 </div>
                                                             @endif
                                                         </td>
-                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">
+                                                        <td rowspan="{{ $rowCount }}">
                                                             <div class="flex flex-col">
-                                                                <span class="font-bold">{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</span>
+                                                                <span class="table-badge badge-journal">{{ $ecriture->codeJournal ? $ecriture->codeJournal->code_journal : '-' }}</span>
                                                                 @if($ecriture->codeJournal && !empty($ecriture->codeJournal->numero_original))
                                                                     <div class="text-[10px] text-slate-400 font-medium italic mt-1 flex items-center gap-1">
                                                                         <i class="fas fa-file-import text-[8px]"></i> Orig: {{ $ecriture->codeJournal->numero_original }}
@@ -503,23 +529,23 @@
                                                         </td>
                                                     @endif
 
-                                                    <td class="px-4 py-3 text-sm text-slate-700 td-poste-treso" data-ecriture-id="{{ $ecriture->id }}">
+                                                     <td class="td-poste-treso" data-ecriture-id="{{ $ecriture->id }}">
                                                             <div class="flex items-center gap-2 group">
                                                                 @if($ecriture->posteTresorerie)
-                                                                    <span class="badge bg-label-info">
+                                                                    <span class="table-badge badge-compte">
                                                                         {{ $ecriture->posteTresorerie->name }}
                                                                         @if($ecriture->posteTresorerie->category)
                                                                             - {{ $ecriture->posteTresorerie->category->name }}
                                                                         @endif
                                                                     </span>
                                                                     <button type="button" class="btn btn-xs btn-icon btn-label-secondary transition-opacity" 
-                                                                        onclick="window.quickEditPoste({{ $ecriture->id }}, {{ $ecriture->poste_tresorerie_id }}, '{{ $ecriture->posteTresorerie->syscohada_line_id ?? '' }}')" title="Modifier le poste">
+                                                                        onclick="window.quickEditPoste({{ $ecriture->id }}, {{ $ecriture->poste_tresorerie_id }}, '{{ addslashes($ecriture->posteTresorerie->name) }}', {{ $ecriture->posteTresorerie->category_id }}, '{{ $ecriture->posteTresorerie->syscohada_line_id ?? '' }}')" title="Modifier le poste">
                                                                         <i class="bx bx-edit-alt text-xs"></i>
                                                                     </button>
                                                                 @elseif($ecriture->compteTresorerie)
-                                                                    <span class="badge bg-label-secondary" title="Compte de trésorerie (Banque)">{{ $ecriture->compteTresorerie->name }}</span>
+                                                                    <span class="table-badge badge-compte" title="Compte de trésorerie (Banque)">{{ $ecriture->compteTresorerie->name }}</span>
                                                                     <button type="button" class="btn btn-xs btn-icon btn-label-primary transition-opacity" 
-                                                                        onclick="window.quickCreatePoste({{ $ecriture->id }}, {{ $ecriture->compte_tresorerie_id }})" title="Créer un poste pour ce compte">
+                                                                        onclick="window.quickCreatePoste({{ $ecriture->id }}, {{ $ecriture->compte_tresorerie_id }}, '{{ addslashes($ecriture->compteTresorerie->name) }}')" title="Créer un poste pour ce compte">
                                                                         <i class="bx bx-plus text-xs"></i>
                                                                     </button>
                                                                 @else
@@ -527,7 +553,7 @@
                                                                         $isClass5 = $ecriture->planComptable && str_starts_with($ecriture->planComptable->numero_de_compte, '5');
                                                                     @endphp
                                                                     @if($isClass5)
-                                                                        <span class="text-slate-400">Non défini</span>
+                                                                        <span class="text-slate-400 small">Non défini</span>
                                                                         <button type="button" class="btn btn-xs btn-icon btn-label-warning transition-opacity" 
                                                                             onclick="window.quickCreatePoste({{ $ecriture->id }}, null)" title="Créer un poste trésorerie">
                                                                             <i class="bx bx-plus text-xs"></i>
@@ -540,52 +566,54 @@
                                                         </td>
 
                                                         @if($index === 0)
-                                                            <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->reference_piece }}</td>
+                                                            <td rowspan="{{ $rowCount }}">{{ $ecriture->reference_piece }}</td>
                                                         @endif
 
-                                                    <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->description_operation }}</td>
-                                                    <td class="px-4 py-3 text-sm text-slate-700">
+                                                    <td class="description-operation">{{ $ecriture->description_operation }}</td>
+                                                    <td>
                                                         <div class="flex flex-col">
-                                                            <span class="font-medium text-slate-900">{{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte . ' - ' . $ecriture->planComptable->intitule : '-' }}</span>
-                                                            @if($ecriture->planComptable && !empty($ecriture->planComptable->numero_original))
-                                                                <div class="text-[10px] text-slate-400 font-medium italic mt-0.5 flex items-center gap-1">
-                                                                    <i class="fas fa-file-import text-[8px]"></i> Orig: {{ $ecriture->planComptable->numero_original }}
-                                                                </div>
-                                                            @endif
+                                                            <span class="font-bold text-slate-800">{{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte : '-' }}</span>
+                                                            <span class="text-[10px] text-slate-500 truncate" style="max-width: 150px;" title="{{ $ecriture->planComptable ? $ecriture->planComptable->intitule : '' }}">
+                                                                {{ $ecriture->planComptable ? $ecriture->planComptable->intitule : '' }}
+                                                            </span>
                                                         </div>
                                                     </td>
-                                                    <td class="px-4 py-3 text-sm text-slate-700">
+                                                    <td>
                                                         <div class="flex flex-col">
-                                                            <span class="font-medium text-slate-900">{{ $ecriture->planTiers ? $ecriture->planTiers->numero_de_tiers . ' - ' . $ecriture->planTiers->intitule : '-' }}</span>
-                                                            @if($ecriture->planTiers && !empty($ecriture->planTiers->numero_original))
-                                                                <div class="text-[10px] text-slate-400 font-medium italic mt-0.5 flex items-center gap-1">
-                                                                    <i class="fas fa-file-import text-[8px]"></i> Orig: {{ $ecriture->planTiers->numero_original }}
-                                                                </div>
-                                                            @endif
+                                                            <span class="font-bold text-slate-800">{{ $ecriture->planTiers ? $ecriture->planTiers->numero_de_tiers : '-' }}</span>
+                                                            <span class="text-[10px] text-slate-500 truncate" style="max-width: 150px;" title="{{ $ecriture->planTiers ? $ecriture->planTiers->intitule : '' }}">
+                                                                {{ $ecriture->planTiers ? $ecriture->planTiers->intitule : '' }}
+                                                            </span>
                                                         </div>
                                                     </td>
-                                                    <td class="px-4 py-3 text-sm text-slate-700">{{ (int) $ecriture->plan_analytique === 1 ? 'Oui' : 'Non' }}</td>
-                                                    <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->debit, 2, ',', ' ') }}</td>
-                                                    <td class="px-4 py-3 text-sm text-slate-700 text-right">{{ number_format((float) $ecriture->credit, 2, ',', ' ') }}</td>
+                                                    <td class="text-center">{{ (int) $ecriture->plan_analytique === 1 ? 'Oui' : 'Non' }}</td>
+                                                    <td class="amount-debit">{{ number_format((float) $ecriture->debit, 2, ',', ' ') }}</td>
+                                                    <td class="amount-credit">{{ number_format((float) $ecriture->credit, 2, ',', ' ') }}</td>
                                                     
                                                     @if($index === 0)
-                                                        <td class="px-4 py-3 text-center" rowspan="{{ $rowCount }}">
+                                                        <td class="text-center" rowspan="{{ $rowCount }}">
                                                             @if ($ecriture->piece_justificatif)
-                                                                <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}" target="_blank" class="text-blue-700 font-semibold">Voir</a>
+                                                                <a href="{{ asset('justificatifs/' . $ecriture->piece_justificatif) }}" target="_blank" 
+                                                                   class="inline-flex items-center px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors" title="Voir la pièce">
+                                                                    <i class='bx bx-file text-lg'></i>
+                                                                </a>
                                                             @else
-                                                                <span class="text-slate-400">-</span>
+                                                                <span class="text-slate-300">-</span>
                                                             @endif
                                                         </td>
-                                                        <td class="px-4 py-3 text-center whitespace-nowrap" rowspan="{{ $rowCount }}">
-                                                            <div class="flex items-center justify-center space-x-2">
-                                                                <a href="{{ route('accounting_entry_real') }}?n_saisie={{ $ecriture->n_saisie }}" class="p-1.5 text-warning hover:text-yellow-700 transition-colors duration-200" title="Modifier l'écriture">
-                                                                    <i class="bx bx-edit-alt"></i>
+                                                        <td class="text-center whitespace-nowrap" rowspan="{{ $rowCount }}">
+                                                            <div class="flex items-center justify-center gap-1">
+                                                                <a href="{{ route('accounting_entry_real') }}?n_saisie={{ $ecriture->n_saisie }}" 
+                                                                   class="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition-all" title="Modifier l'écriture">
+                                                                    <i class="bx bx-edit-alt text-lg"></i>
                                                                 </a>
-                                                                <a href="{{ route('ecriture.show', $ecriture->id) }}" class="p-1.5 text-info hover:text-blue-800 transition-colors duration-200" title="Voir l'écriture complète">
-                                                                    <i class="bx bx-show text-xl"></i>
+                                                                <a href="{{ route('ecriture.show', $ecriture->id) }}" 
+                                                                   class="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all" title="Détails">
+                                                                    <i class="bx bx-show text-lg"></i>
                                                                 </a>
-                                                                <button onclick="confirmDeleteBySaisie('{{ $ecriture->n_saisie }}')" class="p-1.5 text-red-600 hover:text-red-800 transition-colors duration-200" title="Supprimer toute l'écriture">
-                                                                    <i class="bx bx-trash text-xl"></i>
+                                                                <button onclick="confirmDeleteBySaisie('{{ $ecriture->n_saisie }}')" 
+                                                                        class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all" title="Supprimer">
+                                                                    <i class="bx bx-trash text-lg"></i>
                                                                 </button>
                                                             </div>
                                                         </td>
@@ -612,6 +640,7 @@
                                 </tfoot>
                         </table>
                     </div>
+                </div>
                     
                     @if(isset($pagination) && $pagination->hasPages())
                         <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
@@ -1234,9 +1263,9 @@
         ).join('');
     }
 
-    window.quickEditPoste = function(ecritureId, posteId, currentSyscohadaId = '') {
+    window.quickEditPoste = function(ecritureId, posteId, currentName = '', currentCategoryId = '', currentSyscohadaId = '') {
         const categories = @json($treasury_categories ?? []);
-        const categoryOptions = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        const categoryOptions = categories.map(c => `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`).join('');
         const syscohadaOptionsHtml = getSyscohadaOptionsHtml(currentSyscohadaId);
         
         Swal.fire({
@@ -1248,12 +1277,12 @@
                 </div>
                 <div class="mb-3 text-start">
                     <label class="form-label">Catégorie</label>
-                    <select id="swal_poste_category" class="form-select">
+                    <select id="swal_poste_category" class="form-select" onchange="toggleSyscohadaVisibility('swal_poste_category', 'swal_syscohada_container')">
                         <option value="">Sélectionner une catégorie...</option>
                         ${categoryOptions}
                     </select>
                 </div>
-                <div class="mb-3 text-start">
+                <div id="swal_syscohada_container" class="mb-3 text-start" style="display: none;">
                     <label class="form-label">Flux SYSCOHADA (TFT)</label>
                     <div class="form-text text-muted mb-1 text-xs">Obligatoire pour Inv/Fin, ignoré pour Opérationnel</div>
                     <select id="swal_poste_syscohada" class="form-select">
@@ -1265,11 +1294,16 @@
             confirmButtonText: 'Enregistrer',
             cancelButtonText: 'Annuler',
             didOpen: () => {
-                // Populate existing name? We don't have it easily here without fetching or passing it.
-                // For "Edit", we ideally want the name pre-filled. 
-                // Currently the logic passed posteId but not the name.
-                // Let's rely on user re-typing or maybe we should have passed it.
-                // For now, let's keep it simple as the original code did not pre-fill name except if we add it.
+                const nameInput = document.getElementById('swal_poste_name');
+                const catSelect = document.getElementById('swal_poste_category');
+                const sysSelect = document.getElementById('swal_poste_syscohada');
+                
+                if (nameInput) nameInput.value = currentName;
+                if (catSelect) catSelect.value = currentCategoryId;
+                if (sysSelect) sysSelect.value = currentSyscohadaId;
+
+                // Trigger visibility check for pre-selected category if editing
+                toggleSyscohadaVisibility('swal_poste_category', 'swal_syscohada_container');
             },
             preConfirm: () => {
                 const name = document.getElementById('swal_poste_name').value;
@@ -1288,10 +1322,9 @@
         });
     };
 
-    window.quickCreatePoste = function(ecritureId, compteTresorerieId) {
-        // Similar to edit but for creation
+    window.quickCreatePoste = function(ecritureId, compteTresorerieId, defaultName = '') {
         const categories = @json($treasury_categories ?? []);
-        const categoryOptions = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        const categoryOptions = categories.map(c => `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`).join('');
         const syscohadaOptionsHtml = getSyscohadaOptionsHtml();
 
         Swal.fire({
@@ -1303,12 +1336,12 @@
                 </div>
                 <div class="mb-3 text-start">
                     <label class="form-label">Catégorie</label>
-                    <select id="swal_poste_category" class="form-select">
+                    <select id="swal_poste_category" class="form-select" onchange="toggleSyscohadaVisibility('swal_poste_category', 'swal_syscohada_container')">
                         <option value="">Sélectionner une catégorie...</option>
                         ${categoryOptions}
                     </select>
                 </div>
-                <div class="mb-3 text-start">
+                <div id="swal_syscohada_container" class="mb-3 text-start" style="display: none;">
                     <label class="form-label">Flux SYSCOHADA (TFT)</label>
                      <div class="form-text text-muted mb-1 text-xs">Obligatoire pour Inv/Fin, ignoré pour Opérationnel</div>
                     <select id="swal_poste_syscohada" class="form-select">
@@ -1319,6 +1352,10 @@
             showCancelButton: true,
             confirmButtonText: 'Créer et Assigner',
             cancelButtonText: 'Annuler',
+            didOpen: () => {
+                const nameInput = document.getElementById('swal_poste_name');
+                if (nameInput) nameInput.value = defaultName;
+            },
             preConfirm: () => {
                 const name = document.getElementById('swal_poste_name').value;
                 const category_id = document.getElementById('swal_poste_category').value;
@@ -1334,6 +1371,24 @@
                 saveQuickPoste(ecritureId, result.value.name, result.value.category_id, result.value.syscohada_line_id);
             }
         });
+    };
+
+    window.toggleSyscohadaVisibility = function(selectId, containerId) {
+        const select = document.getElementById(selectId);
+        const container = document.getElementById(containerId);
+        if (!select || !container) return;
+        
+        const selectedOption = select.options[select.selectedIndex];
+        const categoryName = selectedOption ? selectedOption.getAttribute('data-name') : '';
+        
+        if (categoryName && (categoryName.includes('II.') || categoryName.includes('III.'))) {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+            // Optionally clear the syscohada field if not applicable
+            const sysSelect = document.getElementById('swal_poste_syscohada');
+            if (sysSelect) sysSelect.value = '';
+        }
     };
 
     function saveQuickPoste(ecritureId, name, categoryId, syscohadaLineId) {
@@ -1365,7 +1420,7 @@
                                 ${data.name} - ${data.category_name}
                             </span>
                             <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
-                                onclick="window.quickEditPoste(${ecritureId}, ${data.id}, '${data.syscohada_line_id || ''}')" title="Modifier le poste">
+                                onclick="window.quickEditPoste(${ecritureId}, ${data.id}, '${data.name.replace(/'/g, "\\'")}', '${data.category_id}', '${data.syscohada_line_id || ''}')" title="Modifier le poste">
                                 <i class="bx bx-edit-alt text-xs"></i>
                             </button>
                         </div>

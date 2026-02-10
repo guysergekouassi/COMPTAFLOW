@@ -34,13 +34,13 @@
                         <div class="tab-pane fade show active" id="navs-plan" role="tabpanel">
                             <div class="bg-blue-50 p-6 rounded-2xl mb-6">
                                 <h6 class="font-black text-blue-900 mb-2">Structure attendue (Colonnes)</h6>
-                                <p class="text-sm text-blue-700 mb-4">Les colonnes peuvent être dans n'importe quel ordre. Le système identifiera automatiquement les intitulés.</p>
+                                <p class="text-sm text-blue-700 mb-4">Vérifier la configuration avant d'importer le plan général. Les numéros de compte généraux seront générés par le système en fonction de l'original et du nombre de caractères défini dans la configuration, tout en conservant l'origine pour avoir une trace.</p>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-bordered bg-white">
                                         <thead>
                                             <tr>
-                                                <th class="bg-blue-100">N° comptes</th>
-                                                <th class="bg-blue-100">Intitulé</th>
+                                                <th class="bg-blue-100 text-muted italic">Numéro de compte (Auto)</th>
+                                                <th class="bg-blue-100">Intitulé du compte *</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -50,9 +50,9 @@
                                     </table>
                                 </div>
                             </div>
-                            <div class="alert alert-info border-0 text-sm">
-                                <i class="fa-solid fa-lightbulb me-2"></i>
-                                <strong>Intelligence :</strong> Vous pouvez importer des fichiers sans titres de colonnes. Le système analysera le contenu pour faire correspondre les données. Retirez les lignes de totaux ou informations inutiles du fichier.
+                            <div class="alert alert-info border-0 text-sm font-bold">
+                                <i class="fa-solid fa-circle-check me-2"></i>
+                                Vérifier la configuration avant d'importer le plan général. Les numéros de compte généraux seront générés par le système en fonction de l'original et du nombre de caractères défini dans la configuration, tout en conservant l'origine pour avoir une trace.
                             </div>
                         </div>
 
@@ -60,20 +60,20 @@
                         <div class="tab-pane fade" id="navs-tiers" role="tabpanel">
                             <div class="bg-indigo-50 p-6 rounded-2xl mb-6">
                                 <h6 class="font-black text-indigo-900 mb-2">Structure attendue (Colonnes)</h6>
-                                <p class="text-sm text-indigo-700 mb-4">Le <strong>Numéro de Tiers</strong> est généré automatiquement par le système. Vous n'avez pas besoin de le fournir.</p>
+                                <p class="text-sm text-indigo-700 mb-4">Le <strong>Numéro de Tiers</strong> est généré automatiquement par le système en fonction du préfixe du tiers original et de la configuration (le nombre de caractères et le type de code). La catégorie ou type est aussi déterminée en fonction du préfixe du tiers original.</p>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-bordered bg-white">
                                         <thead>
                                             <tr>
-                                                <th class="bg-indigo-100 text-muted">Numéro Tiers (Auto)</th>
-                                                <th class="bg-indigo-100">Nom / Raison Sociale</th>
-                                                <th class="bg-indigo-100">Compte général</th>
-                                                <th class="bg-indigo-100">Catégorie</th>
+                                                <th class="bg-indigo-100 text-muted italic">Numéro de Tiers (Auto)</th>
+                                                <th class="bg-indigo-100">Nom / Intitulé *</th>
+                                                <th class="bg-indigo-100 text-muted italic">Catégorie / Type (Auto)</th>
+                                                <th class="bg-indigo-100 text-muted italic">Compte général (Auto)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr><td class="text-muted italic">Généré par Flow</td><td>ETS KOUASSI & FILS</td><td>401100</td><td>Fournisseur</td></tr>
-                                            <tr><td class="text-muted italic">Généré par Flow</td><td>BOUTIQUE DU PLATEAU</td><td>411100</td><td>Client</td></tr>
+                                            <tr><td>T0001</td><td>ETS KOUASSI & FILS</td><td>Fournisseur</td><td>401100</td></tr>
+                                            <tr><td>T0002</td><td>BOUTIQUE DU PLATEAU</td><td>Client</td><td>411100</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -88,7 +88,7 @@
                         <div class="tab-pane fade" id="navs-journaux" role="tabpanel">
                             <div class="bg-emerald-50 p-6 rounded-2xl mb-6">
                                 <h6 class="font-black text-emerald-900 mb-2">Structure attendue (Colonnes)</h6>
-                                <p class="text-sm text-emerald-700 mb-4">Définissez vos journaux standards. Les types permettent d'activer des fonctionnalités spécifiques (ex: rapprochement pour Banque/Caisse).</p>
+                                <p class="text-sm text-emerald-700 mb-4">Les journaux seront créés ou mis à jour selon la configuration. Les comptes de trésorerie associés doivent être configurés pour permettre le rapprochement automatique.</p>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-bordered bg-white">
                                         <thead>
@@ -132,13 +132,16 @@
                                     <table class="table table-sm table-bordered bg-white" style="font-size: 0.75rem;">
                                         <thead>
                                             <tr>
-                                                <th class="bg-amber-100">Date</th>
-                                                <th class="bg-amber-100">Journal</th>
-                                                <th class="bg-amber-100">Compte</th>
-                                                <th class="bg-amber-100">Réf. Pièce</th>
-                                                <th class="bg-amber-100">Libellé</th>
-                                                <th class="bg-amber-100">Débit</th>
-                                                <th class="bg-amber-100">Crédit</th>
+                                                <th class="bg-amber-100">Date / Jour *</th>
+                                                <th class="bg-amber-100 text-muted italic">N° Saisie / Écriture</th>
+                                                <th class="bg-amber-100">Code Journal *</th>
+                                                <th class="bg-amber-100">Référence Pièce</th>
+                                                <th class="bg-amber-100">Numéro Compte *</th>
+                                                <th class="bg-amber-100">Libellé Opération *</th>
+                                                <th class="bg-amber-100">Montant Débit *</th>
+                                                <th class="bg-amber-100">Montant Crédit *</th>
+                                                <th class="bg-amber-100">Compte Tiers</th>
+                                                <th class="bg-amber-100 text-muted italic">Type Écriture (A/G)</th>
                                             </tr>
                                         </thead>
                                         <tbody>

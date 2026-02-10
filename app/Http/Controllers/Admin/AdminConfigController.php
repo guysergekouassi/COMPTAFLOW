@@ -3667,6 +3667,7 @@ class AdminConfigController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:treasury_categories,id',
+            'syscohada_line_id' => 'nullable|string|max:50',
         ]);
 
         $user = Auth::user();
@@ -3683,6 +3684,7 @@ class AdminConfigController extends Controller
         \App\Models\CompteTresorerie::create([
             'name' => $request->name,
             'category_id' => $request->category_id,
+            'syscohada_line_id' => $request->syscohada_line_id ?? null,
             'company_id' => $companyId,
             'solde_initial' => 0,
             'solde_actuel' => 0,
@@ -3699,6 +3701,7 @@ class AdminConfigController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:treasury_categories,id',
+            'syscohada_line_id' => 'nullable|string|max:50',
         ]);
 
         $user = Auth::user();
@@ -3717,6 +3720,7 @@ class AdminConfigController extends Controller
         $poste->update([
             'name' => $request->name,
             'category_id' => $request->category_id,
+            'syscohada_line_id' => $request->syscohada_line_id ?? null,
         ]);
 
         return redirect()->route('admin.config.tresorerie_posts')->with('success', 'Poste de trésorerie mis à jour avec succès.');
@@ -3739,61 +3743,6 @@ class AdminConfigController extends Controller
 
             $poste->delete();
             return redirect()->route('admin.config.tresorerie_posts')->with('success', 'Poste de trésorerie supprimé avec succès.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Catégories de Trésorerie
-     */
-    public function storeTreasuryCategory(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
-        $user = Auth::user();
-        $companyId = session('current_company_id', $user->company_id);
-
-        \App\Models\TreasuryCategory::create([
-            'name' => $request->name,
-            'company_id' => $companyId,
-        ]);
-
-        return redirect()->back()->with('success', 'Catégorie de trésorerie ajoutée avec succès.');
-    }
-
-    public function updateTreasuryCategory(Request $request, $id)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
-        $user = Auth::user();
-        $companyId = session('current_company_id', $user->company_id);
-        $category = \App\Models\TreasuryCategory::where('company_id', $companyId)->findOrFail($id);
-
-        $category->update([
-            'name' => $request->name,
-        ]);
-
-        return redirect()->back()->with('success', 'Catégorie de trésorerie mise à jour avec succès.');
-    }
-
-    public function deleteTreasuryCategory($id)
-    {
-        try {
-            $user = Auth::user();
-            $companyId = session('current_company_id', $user->company_id);
-            $category = \App\Models\TreasuryCategory::where('company_id', $companyId)->findOrFail($id);
-
-            if ($category->postes()->count() > 0) {
-                return redirect()->back()->with('error', 'Impossible de supprimer cette catégorie car elle est liée à des postes de trésorerie.');
-            }
-
-            $category->delete();
-            return redirect()->back()->with('success', 'Catégorie de trésorerie supprimée avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
         }

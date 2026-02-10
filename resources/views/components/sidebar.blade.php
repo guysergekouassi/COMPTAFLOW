@@ -726,6 +726,10 @@
                     <i class="fa-solid fa-list-check"></i>
                     <span>Liste des écritures</span>
                 </a>
+                <a href="{{ route('lettrage.index') }}" class="menu-link-new {{ request()->routeIs('lettrage.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-link"></i>
+                    <span>Lettrage des Tiers</span>
+                </a>
                 @endif
                 @if(auth()->user()->hasPermission('ecriture.rejected'))
                 <a href="{{ route('ecriture.rejected') }}" class="menu-link-new {{ request()->routeIs('ecriture.rejected') ? 'active' : '' }}">

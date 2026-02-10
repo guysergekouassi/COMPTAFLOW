@@ -274,40 +274,76 @@
         white-space: nowrap;
     }
 
-    /* Table Premium */
-    .table-responsive {
-        border-radius: 20px !important;
-        overflow: hidden !important;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05) !important;
+    /* Table Premium - Refonte Conteneur */
+    .table-container-premium {
+        background: #ffffff !important;
+        border-radius: 24px !important;
         border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+        overflow: hidden !important;
+        margin-bottom: 2rem !important;
     }
+
+    .table-responsive-premium {
+        overflow-x: auto !important;
+    }
+
     #tableEcritures {
         margin: 0 !important;
-        border-radius: 20px !important;
-        overflow: hidden !important;
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
     }
+
     #tableEcritures thead {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+        background-color: #f8fafc !important;
+        border-bottom: 2px solid #e2e8f0 !important;
     }
+
     #tableEcritures th {
-        background: transparent !important;
-        color: #ffffff !important;
+        color: #475569 !important;
         text-transform: uppercase !important;
-        font-size: 0.75rem !important;
+        font-size: 0.7rem !important;
         font-weight: 800 !important;
         letter-spacing: 0.05em !important;
-        padding: 1.2rem 1rem !important;
+        padding: 1.25rem 1rem !important;
         border: none !important;
+        background-color: #f8fafc !important;
+        white-space: nowrap !important;
     }
+
     #tableEcritures td {
         padding: 1rem !important;
-        font-size: 0.9rem !important;
+        font-size: 0.85rem !important;
         vertical-align: middle !important;
         border-bottom: 1px solid #f1f5f9 !important;
+        color: #1e293b !important;
         font-weight: 500 !important;
     }
+
     #tableEcritures tbody tr:hover {
-        background-color: #f8fafc !important;
+        background-color: #fcfdfe !important;
+    }
+
+    .table-badge {
+        padding: 0.35rem 0.6rem !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        font-size: 0.7rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.3rem !important;
+        white-space: nowrap !important;
+    }
+
+    .badge-journal { background-color: #eff6ff !important; color: #1e40af !important; border: 1px solid #dbeafe !important; }
+    .badge-compte { background-color: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
+    .amount-debit { color: #dc2626 !important; font-weight: 700 !important; text-align: right !important; }
+    .amount-credit { color: #059669 !important; font-weight: 700 !important; text-align: right !important; }
+    
+    .poste-badge-text {
+        font-size: 0.65rem !important;
+        padding: 0.3rem 0.5rem !important;
     }
 
     /* Totaux Premium */
@@ -539,40 +575,76 @@
         font-weight: 600 !important;
     }
 
-    /* Table Premium */
-    .table-responsive {
-        border-radius: 20px !important;
-        overflow: hidden !important;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05) !important;
+    /* Table Premium - Refonte Conteneur */
+    .table-container-premium {
+        background: #ffffff !important;
+        border-radius: 24px !important;
         border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+        overflow: hidden !important;
+        margin-bottom: 2rem !important;
     }
+
+    .table-responsive-premium {
+        overflow-x: auto !important;
+    }
+
     #tableEcritures {
         margin: 0 !important;
-        border-radius: 20px !important;
-        overflow: hidden !important;
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
     }
+
     #tableEcritures thead {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+        background-color: #f8fafc !important;
+        border-bottom: 2px solid #e2e8f0 !important;
     }
+
     #tableEcritures th {
-        background: transparent !important;
-        color: #ffffff !important;
+        color: #475569 !important;
         text-transform: uppercase !important;
-        font-size: 0.75rem !important;
+        font-size: 0.7rem !important;
         font-weight: 800 !important;
         letter-spacing: 0.05em !important;
-        padding: 1.2rem 1rem !important;
+        padding: 1.25rem 1rem !important;
         border: none !important;
+        background-color: #f8fafc !important;
+        white-space: nowrap !important;
     }
+
     #tableEcritures td {
         padding: 1rem !important;
-        font-size: 0.9rem !important;
+        font-size: 0.85rem !important;
         vertical-align: middle !important;
         border-bottom: 1px solid #f1f5f9 !important;
+        color: #1e293b !important;
         font-weight: 500 !important;
     }
+
     #tableEcritures tbody tr:hover {
-        background-color: #f8fafc !important;
+        background-color: #fcfdfe !important;
+    }
+
+    .table-badge {
+        padding: 0.35rem 0.6rem !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        font-size: 0.7rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.3rem !important;
+        white-space: nowrap !important;
+    }
+
+    .badge-journal { background-color: #eff6ff !important; color: #1e40af !important; border: 1px solid #dbeafe !important; }
+    .badge-compte { background-color: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
+    .amount-debit { color: #dc2626 !important; font-weight: 700 !important; text-align: right !important; }
+    .amount-credit { color: #059669 !important; font-weight: 700 !important; text-align: right !important; }
+    
+    .poste-badge-text {
+        font-size: 0.65rem !important;
+        padding: 0.3rem 0.5rem !important;
     }
 
     /* Totaux Premium */
@@ -946,9 +1018,18 @@
                                             <select id="poste_tresorerie" name="poste_tresorerie" class="form-select select2" style="flex: 1;" disabled>
                                                 <option value="" selected disabled>Sélectionner un poste...</option>
                                                 @foreach($comptesTresorerie as $treso)
-                                                    <option value="{{ $treso->id }}" data-category="{{ $treso->category->name ?? '' }}">{{ $treso->name }} - {{ $treso->category->name ?? 'Sans catégorie' }}</option>
+                                                    <option value="{{ $treso->id }}" 
+                                                        data-category="{{ $treso->category->name ?? '' }}"
+                                                        data-syscohada-line-id="{{ $treso->syscohada_line_id ?? '' }}">
+                                                        {{ $treso->name }} - {{ $treso->category->name ?? 'Sans catégorie' }}
+                                                    </option>
                                                 @endforeach
                                             </select>
+                                            <div id="poste_mapping_indicator" class="mt-1" style="display: none;">
+                                                <small class="text-blue-600 fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">
+                                                    <i class="bx bx-bolt-circle"></i> <span id="poste_mapping_text">Classification Automatique</span>
+                                                </small>
+                                            </div>
                                             <button type="button" id="btn_create_poste_entry" class="btn btn-outline-secondary btn-premium d-none" data-bs-toggle="modal" data-bs-target="#modalCreatePoste" title="Créer un nouveau poste de trésorerie" style="
                                                 background: #ffffff;
                                                 border: 2px solid #e2e8f0;
@@ -1060,53 +1141,40 @@
                                 </div>
                             </div>
 
-                            <style>
-                                .table-responsive {
-                                    overflow-x: auto !important;
-                                    display: block !important;
-                                    padding-bottom: 15px; /* Espace pour la barre de défilement */
-                                }
-                                #tableEcritures {
-                                    min-width: 1450px !important;
-                                }
-                                /* Assurer que la barre de défilement est visible */
-                                .table-responsive::-webkit-scrollbar {
-                                    height: 10px;
-                                }
-                                .table-responsive::-webkit-scrollbar-track {
-                                    background: #f1f5f9;
-                                    border-radius: 10px;
-                                }
-                                .table-responsive::-webkit-scrollbar-thumb {
-                                    background: #cbd5e1;
-                                    border-radius: 10px;
-                                }
-                                .table-responsive::-webkit-scrollbar-thumb:hover {
-                                    background: #94a3b8;
-                                }
-                            </style>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm" id="tableEcritures">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>N° Saisie</th>
-                                            <th>Journal</th>
-                                            <th>Libellé</th>
-                                            <th>Réf Pièce</th>
-                                            <th>Cpte Général</th>
-                                            <th>Cpte Tiers</th>
-                                            <th>Débit</th>
-                                            <th>Crédit</th>
-                                            <th>Poste Trésorerie</th>
-                                            <th>Pièce</th>
-                                            <th>ANALYTIQUE</th>
-                                            <th>Modifier</th>
-                                            <th>Supprimer</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
+                            <div class="table-container-premium">
+                                <div class="table-responsive-premium">
+                                    <table class="table table-hover" id="tableEcritures">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 100px;">DATE</th>
+                                                <th style="width: 120px;">N° SAISIE</th>
+                                                <th style="width: 100px;">JOURNAL</th>
+                                                <th style="min-width: 250px;">LIBELLÉ OPÉRATION</th>
+                                                <th style="width: 120px;">RÉF. PIÈCE</th>
+                                                <th style="width: 150px;">CPTE GÉNÉRAL</th>
+                                                <th style="width: 150px;">CPTE TIERS</th>
+                                                <th style="width: 130px;" class="text-end">DÉBIT</th>
+                                                <th style="width: 130px;" class="text-end">CRÉDIT</th>
+                                                <th style="width: 180px;">POSTE TRÉSORERIE</th>
+                                                <th style="width: 80px;" class="text-center">PIÈCE</th>
+                                                <th style="width: 100px;" class="text-center">ANALYTIQUE</th>
+                                                <th style="width: 120px;" class="text-center">ACTIONS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tableEcrituresBody">
+                                            <!-- Les lignes seront insérées ici dynamiquement -->
+                                            <tr id="emptyStateRow">
+                                                <td colspan="13" class="text-center py-5">
+                                                    <div class="d-flex flex-column align-items-center opacity-50">
+                                                        <i class="bx bx-receipt fs-1 mb-2"></i>
+                                                        <p class="mb-0 fw-semibold">Aucune ligne d'écriture pour le moment</p>
+                                                        <small>Commencez par ajouter une ligne ci-dessus</small>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                         
@@ -1435,6 +1503,33 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // --- GESTION DES TIERS (REFONTE ROBUSTE) ---
+    const posteTresorSelect = document.getElementById('poste_tresorerie');
+    const mappingIndicator = document.getElementById('poste_mapping_indicator');
+    const mappingText = document.getElementById('poste_mapping_text');
+
+    if (posteTresorSelect) {
+        $(posteTresorSelect).on('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (!selectedOption || !this.value) {
+                if (mappingIndicator) mappingIndicator.style.display = 'none';
+                return;
+            }
+
+            const syscId = selectedOption.getAttribute('data-syscohada-line-id');
+            if (mappingIndicator && mappingText) {
+                mappingIndicator.style.display = 'block';
+                if (syscId) {
+                    const label = syscId.startsWith('INV') ? 'Investissement' : 'Financement';
+                    mappingText.innerHTML = `Classification configurée (${label})`;
+                    mappingText.parentElement.classList.replace('text-blue-600', 'text-success');
+                } else {
+                    mappingText.innerHTML = `Classification Automatique`;
+                    mappingText.parentElement.classList.replace('text-success', 'text-blue-600');
+                }
+            }
+        });
+    }
+
     const createTiersModalEl = document.getElementById('createTiersModal');
     if (createTiersModalEl) {
         const tiersModal = new bootstrap.Modal(createTiersModalEl);
@@ -1651,10 +1746,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (posteSelect) {
                         const newOption = new Option(result.name, result.id, true, true);
                         posteSelect.add(newOption);
-                    if (typeof $ !== 'undefined' && $(posteSelect).data('select2')) {
-                        $(posteSelect).trigger('change');
-                    } else {
-                        posteSelect.dispatchEvent(new Event('change'));
+                        if (typeof $ !== 'undefined' && $(posteSelect).data('select2')) {
+                            $(posteSelect).trigger('change');
+                        } else {
+                            posteSelect.dispatchEvent(new Event('change'));
+                        }
                     }
                     
                     Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le poste de trésorerie a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
@@ -1885,10 +1981,16 @@ function ajouterEcriture() {
             return;
         }
 
-        const tbody = document.querySelector('#tableEcritures tbody');
+        const tbody = document.getElementById('tableEcrituresBody');
         if (!tbody) {
             alert('Tableau des écritures introuvable.');
             return;
+        }
+        
+        // Supprimer la ligne "Aucune écriture" si elle existe
+        const emptyRow = document.getElementById('emptyStateRow');
+        if (emptyRow) {
+            emptyRow.remove();
         }
         
         const compteTresorerieSelect = document.getElementById('compte_tresorerie');
@@ -1905,14 +2007,11 @@ function ajouterEcriture() {
         const newRow = tbody.insertRow();
 
         const imputationValue = imputationInput ? imputationInput.value : '';
-        const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? 'Oui' : 'Non') : '';
+        const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>') : '';
         const compteText = compteGeneral.options[compteGeneral.selectedIndex].text;
-        const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '';
+        const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '-';
         const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
 
-        // Stocker le fichier globalement pour la visualisation
-        let globalPieceFile = null;
-        
         // Stocker l'ID du compte de trésorerie et du poste dans la ligne
         if (compteTresorerieId) {
             newRow.setAttribute('data-compte-tresorerie-id', compteTresorerieId);
@@ -1921,93 +2020,94 @@ function ajouterEcriture() {
             newRow.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
         }
         
-        // Créer les cellules une par une pour pouvoir ajouter des attributs
-        const cells = [
-            date.value,
-            nSaisie ? nSaisie.value : '',
-            imputationValue,
-            libelle.value,
-            referencePiece ? referencePiece.value || '' : '',
-            '', // Compte gÃ©nÃ©ral - sera rempli avec l'élément personnalisé
-            compteTiersValue,
-            debit.value || '',
-            credit.value || '',
-            '', // Poste Trésorerie - sera rempli avec l'élément personnalisé
-            '', // Pièce justificative - sera rempli avec le bouton Voir
-            analytiqueValue
-        ];
+        // Formattage des montants
+        const formatNumber = (val) => val ? parseFloat(val).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
 
         // Ajouter chaque cellule avec son contenu
-        cells.forEach((content, index) => {
-            const cell = newRow.insertCell();
-            if (index === 5) {
-                // Pour la cellule du compte général, ajouter l'attribut data-plan-comptable-id
-                cell.textContent = compteText;
-                cell.setAttribute('data-plan-comptable-id', compteGeneral.value);
-            } else if (index === 6 && compteTiers && compteTiers.value) {
-                // Pour la cellule du compte tiers, ajouter l'attribut data-tiers-id
-                cell.textContent = compteTiersValue;
-                cell.setAttribute('data-tiers-id', compteTiers.value);
-            } else if (index === 9) {
-                // Pour la cellule du poste de trésorerie, ajouter les icônes de gestion 'in-place'
-                cell.className = 'td-poste-treso-row';
-                cell.innerHTML = `
-                    <div class="flex items-center gap-2 group">
-                        <span class="badge bg-label-info poste-badge-text">
-                            ${posteTresorerieText || '-'}
-                        </span>
-                        ${posteTresorerieId ? `
-                            <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
-                                onclick="window.quickEditPosteRow(this, ${posteTresorerieId})" title="Modifier le poste">
-                                <i class="bx bx-edit-alt text-xs"></i>
-                            </button>
-                        ` : (compteText.startsWith('5') ? `
-                            <button type="button" class="btn btn-xs btn-icon btn-label-warning opacity-0 group-hover:opacity-100 transition-opacity" 
-                                onclick="window.quickCreatePosteRow(this)" title="Créer un poste">
-                                <i class="bx bx-plus text-xs"></i>
-                            </button>
-                        ` : '')}
-                    </div>
-                `;
-            } else {
-                cell.textContent = content;
-            }
-        });
-
-        const modifierCell = newRow.insertCell();
-        modifierCell.className = "text-center";
-        modifierCell.innerHTML = `
-            <button type="button" class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Modifier cette ligne">
-                <i class="bx bx-edit text-white"></i>
-            </button>
+        newRow.innerHTML = `
+            <td>${date.value}</td>
+            <td class="fw-bold text-slate-700">${nSaisie ? nSaisie.value : ''}</td>
+            <td><span class="table-badge badge-journal">${imputationValue}</span></td>
+            <td><div class="text-truncate" style="max-width: 250px;" title="${libelle.value}">${libelle.value}</div></td>
+            <td><span class="text-muted small fw-bold">${referencePiece ? referencePiece.value || '-' : '-'}</span></td>
+            <td data-plan-comptable-id="${compteGeneral.value}"><span class="table-badge badge-compte">${compasTextShortcut(compteText)}</span></td>
+            <td data-tiers-id="${compteTiers ? compteTiers.value : ''}">${compteTiers && compteTiers.value ? `<span class="table-badge badge-compte">${compteTiersValue}</span>` : '-'}</td>
+            <td class="text-end amount-debit">${formatNumber(debit.value)}</td>
+            <td class="text-end amount-credit">${formatNumber(credit.value)}</td>
+            <td class="td-poste-treso-row">
+                <div class="d-flex align-items-center gap-2 group">
+                    <span class="badge bg-label-info poste-badge-text" style="font-size: 0.65rem;">
+                        @php
+                            // Logic to display Name - Category Badge
+                            // We need to do this via JS since this is a JS function
+                        @endphp
+                        <script>
+                            (function() {
+                                // Self-invoking to avoid namespace pollution if needed, but here we are inside a function
+                                // This is just a placeholder comment to indicate logic placement
+                            })();
+                        </script>
+                        ${(() => {
+                            if (!posteTresorerieText) return '-';
+                            const parts = posteTresorerieText.split(' - ');
+                            if (parts.length > 1) {
+                                return `${parts[0]} <span class="badge bg-white text-info shadow-sm ms-1">${parts.slice(1).join(' - ')}</span>`;
+                            }
+                            return posteTresorerieText;
+                        })()}
+                    </span>
+                    ${posteTresorerieId ? `
+                        <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
+                            onclick="window.quickEditPosteRow(this, ${posteTresorerieId})">
+                            <i class="bx bx-edit-alt text-xs"></i>
+                        </button>
+                    ` : (compteText.startsWith('5') ? `
+                        <button type="button" class="btn btn-xs btn-icon btn-label-warning opacity-0 group-hover:opacity-100 transition-opacity" 
+                            onclick="window.quickCreatePosteRow(this)">
+                            <i class="bx bx-plus text-xs"></i>
+                        </button>
+                    ` : '')}
+                </div>
+            </td>
+            <td class="text-center">
+                ${pieceFileName ? '<button type="button" class="btn btn-xs btn-icon btn-label-primary" onclick="voirPieceJustificativeLocale()"><i class="bx bx-show"></i></button>' : '-'}
+            </td>
+            <td class="text-center">${analytiqueValue}</td>
+            <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                    <button type="button" class="btn btn-icon btn-sm btn-label-warning" onclick="modifierEcriture(this.closest('tr'));" title="Modifier">
+                        <i class="bx bx-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-label-danger" onclick="supprimerEcriture(this.closest('tr'));" title="Supprimer">
+                        <i class="bx bx-trash"></i>
+                    </button>
+                </div>
+            </td>
         `;
 
-        const supprimerCell = newRow.insertCell();
-        supprimerCell.className = "text-center";
-        supprimerCell.innerHTML = `
-            <button type="button" class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Supprimer cette ligne">
-                <i class="bx bx-trash text-white"></i>
-            </button>
-        `;
+        // Helper function inside scope or globally
+        if (typeof window.compasTextShortcut === 'undefined') {
+            window.compasTextShortcut = (txt) => txt.length > 30 ? txt.substring(0, 27) + '...' : txt;
+        }
 
-            // Réinitialisation SEULEMENT des champs spécifiques à chaque ligne
-            compteGeneral.value = '';
-            if (compteTiers) compteTiers.value = '';
-            const posteTresoSelect = document.getElementById('poste_tresorerie');
-            if (posteTresoSelect) {
-                posteTresoSelect.value = '';
-                if (typeof $ !== 'undefined' && $(posteTresoSelect).data('select2')) {
-                    $(posteTresoSelect).val('').trigger('change');
-                }
+        // Réinitialisation SEULEMENT des champs spécifiques à chaque ligne
+        compteGeneral.value = '';
+        if (compteTiers) compteTiers.value = '';
+        const posteTresoSelect = document.getElementById('poste_tresorerie');
+        if (posteTresoSelect) {
+            posteTresoSelect.value = '';
+            if (typeof $ !== 'undefined' && $(posteTresoSelect).data('select2')) {
+                $(posteTresoSelect).val('').trigger('change');
             }
-            debit.value = '';
-            credit.value = '';
-            if (planAnalytique) planAnalytique.value = '0';
-            
-            // Réinitialisation des états et styles via notre fonction globale
-            if (typeof window.resetExclusivity === 'function') {
-                window.resetExclusivity();
-            }
+        }
+        debit.value = '';
+        credit.value = '';
+        if (planAnalytique) planAnalytique.value = '0';
+        
+        // Réinitialisation des états et styles via notre fonction globale
+        if (typeof window.resetExclusivity === 'function') {
+            window.resetExclusivity();
+        }
 
         // Mise à jour des totaux
         updateTotals();
@@ -2410,8 +2510,14 @@ function ajouterEcriture() {
     }
 
     function ajouterLigneBrouillon(b) {
-        const tbody = document.querySelector('#tableEcritures tbody');
-        const newRow = tbody.insertRow();
+        const tbody = document.getElementById('tableEcrituresBody');
+        if (!tbody) return;
+
+        // Supprimer la ligne "Aucune écriture"
+        const emptyRow = document.getElementById('emptyStateRow');
+        if (emptyRow) emptyRow.remove();
+
+        const tr = tbody.insertRow();
         
         const date = b.date || document.getElementById('date').value;
         const nSaisie = b.n_saisie || document.getElementById('n_saisie').value;
@@ -2419,56 +2525,67 @@ function ajouterEcriture() {
         const description = b.description_operation || '';
         const reference = b.reference_piece || '';
         const compteText = b.plan_comptable ? `${b.plan_comptable.numero_de_compte} - ${b.plan_comptable.intitule}` : '-';
-        const tiersText = b.plan_tiers ? `${b.plan_tiers.numero_de_tiers} - ${b.plan_tiers.intitule}` : '';
+        const tiersText = b.plan_tiers ? `${b.plan_tiers.numero_de_tiers} - ${b.plan_tiers.intitule}` : '-';
         const debit = b.debit || 0;
         const credit = b.credit || 0;
-        const analytique = b.plan_analytique ? 'Oui' : 'Non';
+        const analytique = b.plan_analytique || b.analytique === 'Oui';
         const pieceFileName = b.piece_justificatif || '';
-        const posteTresorerieName = b.poste_tresorerie ? 
-            (b.poste_tresorerie.name + (b.poste_tresorerie.category ? ' - ' + b.poste_tresorerie.category.name : '')) : '';
+        const posteTresorerieName = b.poste_tresorerie ? b.poste_tresorerie.name : '';
         const posteTresorerieId = b.poste_tresorerie_id || '';
 
         if (b.compte_tresorerie_id) {
-            newRow.setAttribute('data-compte-tresorerie-id', b.compte_tresorerie_id);
+            tr.setAttribute('data-compte-tresorerie-id', b.compte_tresorerie_id);
         }
         if (posteTresorerieId) {
-            newRow.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
+            tr.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
         }
 
-        const cells = [
-            date, nSaisie, imputation, description, reference,
-            compteText, tiersText, debit, credit, posteTresorerieName, '', analytique
-        ];
+        const formatNumber = (val) => val ? parseFloat(val).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+        const analytiqueBadge = analytique ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>';
 
-        cells.forEach((content, index) => {
-            const cell = newRow.insertCell();
-            if (index === 5) {
-                cell.textContent = compteText;
-                cell.setAttribute('data-plan-comptable-id', b.plan_comptable_id);
-            } else if (index === 6 && b.plan_tiers_id) {
-                cell.textContent = tiersText;
-                cell.setAttribute('data-tiers-id', b.plan_tiers_id);
-            } else if (index === 10) {
-                if (pieceFileName) {
-                    cell.innerHTML = `<button class="btn btn-sm btn-primary-premium btn-premium" onclick="voirPieceJustificative('${pieceFileName}')" style="border-radius: 10px;">
-                        <i class="bx bx-eye me-1"></i>Voir
-                    </button>`;
-                    cell.setAttribute('data-piece-filename', pieceFileName);
-                } else {
-                    cell.textContent = '';
-                }
-            } else {
-                cell.textContent = content;
-            }
-        });
-
-        const modifierCell = newRow.insertCell();
-        modifierCell.className = "text-center";
-        modifierCell.innerHTML = `<button type="button" class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Modifier cette ligne"><i class="bx bx-edit text-white"></i></button>`;
-
-        const supprimerCell = newRow.insertCell();
-        supprimerCell.className = "text-center";
-        supprimerCell.innerHTML = `<button type="button" class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Supprimer cette ligne"><i class="bx bx-trash text-white"></i></button>`;
+        tr.innerHTML = `
+            <td>${date}</td>
+            <td class="fw-bold text-slate-700">${nSaisie}</td>
+            <td><span class="table-badge badge-journal">${imputation}</span></td>
+            <td><div class="text-truncate" style="max-width: 250px;" title="${description}">${description}</div></td>
+            <td><span class="text-muted small fw-bold">${reference || '-'}</span></td>
+            <td data-plan-comptable-id="${b.plan_comptable_id}"><span class="table-badge badge-compte">${compasTextShortcut(compteText)}</span></td>
+            <td data-tiers-id="${b.plan_tiers_id || ''}"><span class="table-badge badge-compte">${tiersText}</span></td>
+            <td class="text-end amount-debit">${formatNumber(debit)}</td>
+            <td class="text-end amount-credit">${formatNumber(credit)}</td>
+            <td class="td-poste-treso-row">
+                <div class="d-flex align-items-center gap-2 group">
+                    <span class="badge bg-label-info poste-badge-text">
+                        ${posteTresorerieName || '-'}
+                    </span>
+                    ${posteTresorerieId ? `
+                        <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
+                            onclick="window.quickEditPosteRow(this, ${posteTresorerieId})">
+                            <i class="bx bx-edit-alt text-xs"></i>
+                        </button>
+                    ` : (compteText.startsWith('5') ? `
+                        <button type="button" class="btn btn-xs btn-icon btn-label-warning opacity-0 group-hover:opacity-100 transition-opacity" 
+                            onclick="window.quickCreatePosteRow(this)">
+                            <i class="bx bx-plus text-xs"></i>
+                        </button>
+                    ` : '')}
+                </div>
+            </td>
+            <td class="text-center">
+                ${pieceFileName ? `<button type="button" class="btn btn-xs btn-icon btn-label-primary" onclick="voirPieceJustificative('${pieceFileName}')"><i class="bx bx-show"></i></button>` : '-'}
+            </td>
+            <td class="text-center">${analytiqueBadge}</td>
+            <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                    <button type="button" class="btn btn-icon btn-sm btn-label-warning" onclick="modifierEcriture(this.closest('tr'));" title="Modifier">
+                        <i class="bx bx-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-label-danger" onclick="supprimerEcriture(this.closest('tr'));" title="Supprimer">
+                        <i class="bx bx-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
     }
 
     // ... (rest of local/draft logic can be kept or minimized if needed)
@@ -2621,6 +2738,7 @@ function ajouterEcriture() {
                 journal: line.code_journal ? line.code_journal.code_journal : '',
                 compte: line.plan_comptable ? `${line.plan_comptable.numero_de_compte} - ${line.plan_comptable.intitule}` : '',
                 libelle: line.description_operation,
+                poste: line.poste_tresorerie ? `${line.poste_tresorerie.name} - ${line.poste_tresorerie.category ? line.poste_tresorerie.category.name : ''}` : '',
                 tiers: line.plan_tiers ? `${line.plan_tiers.numero_de_tiers} - ${line.plan_tiers.intitule}` : '',
                 debit: line.debit ? line.debit.toString().replace('.', ',') : '0,00',
                 credit: line.credit ? line.credit.toString().replace('.', ',') : '0,00',
@@ -2632,6 +2750,7 @@ function ajouterEcriture() {
                 lastRow.cells[5].setAttribute('data-plan-comptable-id', line.plan_comptable_id);
                 if(line.plan_tiers_id) lastRow.cells[6].setAttribute('data-tiers-id', line.plan_tiers_id);
                 if(line.compte_tresorerie_id) lastRow.setAttribute('data-compte-tresorerie-id', line.compte_tresorerie_id);
+                if(line.poste_tresorerie_id) lastRow.setAttribute('data-poste-tresorerie-id', line.poste_tresorerie_id);
                 
                 // Handle attachment button if present
                 if (line.piece_justificatif) {
@@ -2770,43 +2889,71 @@ function ajouterEcriture() {
         });
     }
 
-    // Fonction pour ajouter une ligne d'écriture au tableau
     function ajouterLigneEcriture(ligne = {}) {
-        const tbody = document.querySelector('#tableEcritures tbody');
+        const tbody = document.getElementById('tableEcrituresBody');
         if (!tbody) return;
+
+        // Supprimer la ligne "Aucune écriture"
+        const emptyRow = document.getElementById('emptyStateRow');
+        if (emptyRow) emptyRow.remove();
 
         const tr = document.createElement('tr');
         
-        // Formater les valeurs par défaut
         const date = ligne.date || document.getElementById('date').value;
-        const piece = ligne.piece || document.getElementById('piece').value || '';
-        const journal = ligne.journal || document.getElementById('journal').value || '';
-        const compte = ligne.compte || '';
+        const nSaisie = ligne.piece || ligne.nSaisie || document.getElementById('n_saisie').value || '';
+        const journal = ligne.journal || document.getElementById('code_journal_affiche').value || '';
         const libelle = ligne.libelle || '';
-        const tiers = ligne.tiers || '';
-        const debit = ligne.debit ? parseFloat(ligne.debit.replace(/\s/g, '').replace(',', '.')) : 0;
-        const credit = ligne.credit ? parseFloat(ligne.credit.replace(/\s/g, '').replace(',', '.')) : 0;
-        const analytique = ligne.analytique === 'Oui';
+        const reference = ligne.reference || ligne.piece_justificatif || '';
+        const compte = ligne.compte || '';
+        const tiers = ligne.tiers || '-';
+        const debit = parseFloat((ligne.debit || '0').replace(/\s/g, '').replace(',', '.')) || 0;
+        const credit = parseFloat((ligne.credit || '0').replace(/\s/g, '').replace(',', '.')) || 0;
+        const analytique = ligne.analytique === 'Oui' || ligne.analytique === true;
+        
+        const formatNumber = (val) => val ? val.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+        const analytiqueBadge = analytique ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>';
+
+        const poste = ligne.poste || '-';
         
         tr.innerHTML = `
             <td>${date}</td>
-            <td>${piece}</td>
-            <td>${journal}</td>
-            <td>${compte}</td>
-            <td>${libelle}</td>
-            <td>${tiers}</td>
-            <td class="text-end">${debit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}</td>
-            <td class="text-end">${credit.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}</td>
-            <td class="text-center"><input type="checkbox" ${analytique ? 'checked' : ''}></td>
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-icon btn-label-warning" onclick="modifierEcriture(this.closest('tr'))">
-                    <i class="fas fa-edit"></i>
-                </button>
+            <td class="fw-bold text-slate-700">${nSaisie}</td>
+            <td><span class="table-badge badge-journal">${journal}</span></td>
+            <td><div class="text-truncate" style="max-width: 250px;" title="${libelle}">${libelle}</div></td>
+            <td><span class="text-muted small fw-bold">${reference || '-'}</span></td>
+            <td><span class="table-badge badge-compte">${compasTextShortcut(compte)}</span></td>
+            <td><span class="table-badge badge-compte">${tiers}</span></td>
+            <td class="text-end amount-debit">${formatNumber(debit)}</td>
+            <td class="text-end amount-credit">${formatNumber(credit)}</td>
+            <td class="td-poste-treso-row">
+                <div class="d-flex align-items-center gap-2 group">
+                    <span class="badge bg-label-info poste-badge-text" style="font-size: 0.65rem;">
+                         ${(() => {
+                            if (!poste || poste === '-') return '-';
+                            const parts = poste.split(' - ');
+                            if (parts.length > 1) {
+                                return `${parts[0]} <span class="badge bg-white text-info shadow-sm ms-1">${parts.slice(1).join(' - ')}</span>`;
+                            }
+                            return poste;
+                        })()}
+                    </span>
+                    <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
+                        onclick="const row = this.closest('tr'); window.quickEditPosteRow(this, row.getAttribute('data-poste-tresorerie-id'))">
+                        <i class="bx bx-edit-alt text-xs"></i>
+                    </button>
+                </div>
             </td>
+            <td class="text-center">-</td>
+            <td class="text-center">${analytiqueBadge}</td>
             <td class="text-center">
-                <button type="button" class="btn btn-sm btn-icon btn-label-danger" onclick="supprimerLigne(this)">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="d-flex gap-1 justify-content-center">
+                    <button type="button" class="btn btn-icon btn-sm btn-label-warning" onclick="modifierEcriture(this.closest('tr'));" title="Modifier">
+                        <i class="bx bx-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-label-danger" onclick="supprimerEcriture(this.closest('tr'));" title="Supprimer">
+                        <i class="bx bx-trash"></i>
+                    </button>
+                </div>
             </td>
         `;
         
@@ -3038,174 +3185,103 @@ function ajouterEcriture() {
         // Récupérer les données de la ligne
         const cells = row.cells;
         
-        // Extraire les donnÃ©es de chaque cellule
+        // Extraire les données de chaque cellule
         const date = cells[0].textContent.trim();
         const nSaisie = cells[1].textContent.trim();
         const journal = cells[2].textContent.trim();
         const libelle = cells[3].textContent.trim();
         const referencePiece = cells[4].textContent.trim();
         
-        // Pour le compte général, lire depuis l'attribut data-plan-comptable-id et le texte
+        // Pour le compte général
         const compteGeneralCell = cells[5];
-        const compteGeneral = compteGeneralCell.textContent.trim();
         const compteGeneralId = compteGeneralCell.getAttribute('data-plan-comptable-id');
         
-        // Pour le compte tiers, lire depuis l'attribut data-tiers-id et le texte
+        // Pour le compte tiers
         const compteTiersCell = cells[6];
-        const compteTiers = compteTiersCell.textContent.trim();
         const compteTiersId = compteTiersCell.getAttribute('data-tiers-id');
         
-        const debit = cells[7].textContent.trim();
-        const credit = cells[8].textContent.trim();
+        const debit = cells[7].textContent.trim().replace(/\s/g, '').replace(',', '.');
+        const credit = cells[8].textContent.trim().replace(/\s/g, '').replace(',', '.');
         
-        // Poste Trésorerie est à l'index 9
-        const posteTresorerie = cells[9].textContent.trim();
         const posteTresorerieId = row.getAttribute('data-poste-tresorerie-id');
+        const compteTresorerieId = row.getAttribute('data-compte-tresorerie-id');
         
-        // ANALYTIQUE est à l'index 11
+        // Analytique (index 11)
         let analytique = false;
         if (cells[11]) {
             const text = cells[11].textContent.trim();
-            analytique = text === 'Oui' || text === 'true' || text === '1';
+            analytique = text === 'Oui';
         }
         
-        // Mettre à jour le formulaire principal avec les valeurs de la ligne
-        document.getElementById('date').value = date;
-        document.getElementById('n_saisie').value = nSaisie;
-        document.getElementById('description_operation').value = libelle;
-        document.getElementById('reference_piece').value = referencePiece;
-        document.getElementById('debit').value = debit.replace(/\s/g, '').replace(',', '.') || '';
-        document.getElementById('credit').value = credit.replace(/\s/g, '').replace(',', '.') || '';
+        // --- MISE À JOUR DU FORMULAIRE ---
+        if (document.getElementById('date')) document.getElementById('date').value = date;
+        if (document.getElementById('n_saisie')) document.getElementById('n_saisie').value = nSaisie;
+        if (document.getElementById('description_operation')) document.getElementById('description_operation').value = libelle;
+        if (document.getElementById('reference_piece')) document.getElementById('reference_piece').value = referencePiece === '-' ? '' : referencePiece;
+        if (document.getElementById('debit')) document.getElementById('debit').value = debit === '-' ? '' : debit;
+        if (document.getElementById('credit')) document.getElementById('credit').value = credit === '-' ? '' : credit;
         
         if (document.getElementById('plan_analytique')) {
             document.getElementById('plan_analytique').value = analytique ? '1' : '0';
         }
 
-        // Gérer le compte général
-        const selectCompte = document.getElementById('compte_general');
-        if (selectCompte && compteGeneralId) {
-            selectCompte.value = compteGeneralId;
-            $(selectCompte).trigger('change');
-        }
-
-        // Gérer le tiers
-        const selectTiers = document.getElementById('compte_tiers');
-        if (selectTiers) {
-            if (compteTiersId) {
-                selectTiers.value = compteTiersId;
-                $(selectTiers).trigger('change');
-            } else {
-                selectTiers.value = '';
-                $(selectTiers).trigger('change');
-            }
-        }
-
-        // Gérer le poste de trésorerie
-        const selectPoste = document.getElementById('poste_tresorerie');
-        if (selectPoste) {
-            if (posteTresorerieId) {
-                selectPoste.value = posteTresorerieId;
-                $(selectPoste).trigger('change');
-            } else {
-                selectPoste.value = '';
-                $(selectPoste).trigger('change');
-            }
-        }
-        const journalSelect = document.getElementById('code_journal_affiche');
-        if (journalSelect && journalSelect.options) {
-            // Chercher l'option qui correspond au texte du journal
-            const options = journalSelect.options;
-            for (let i = 0; i < options.length; i++) {
-                if (options[i].text.includes(journal)) {
-                    journalSelect.value = options[i].value;
-                    // DÃ©clencher le changement pour mettre Ã  jour le champ cachÃ©
-                    journalSelect.dispatchEvent(new Event('change'));
-                    break;
-                }
-            }
-        }
-        
-        // Pour le compte général, utiliser l'ID si disponible, sinon le texte
+        // Comptes (Select2)
         if (compteGeneralId) {
-            const compteGeneralSelect = document.getElementById('compte_general');
-            if (compteGeneralSelect) {
-                compteGeneralSelect.value = compteGeneralId;
-                // DÃ©clencher le changement pour mettre Ã  jour les champs
-                compteGeneralSelect.dispatchEvent(new Event('change'));
-            }
-        } else {
-            // Fallback avec le champ de recherche
-            const compteGeneralInput = document.getElementById('compteGeneralSearch');
-            if (compteGeneralInput && compteGeneral !== '-') {
-                compteGeneralInput.value = compteGeneral;
-                setTimeout(() => {
-                    compteGeneralInput.dispatchEvent(new Event('input'));
-                }, 100);
-            }
+            $('#compte_general').val(compteGeneralId).trigger('change');
         }
-        
-        // Pour le compte tiers, utiliser l'ID si disponible
         if (compteTiersId) {
-            const compteTiersSelect = document.getElementById('compte_tiers');
-            if (compteTiersSelect) {
-                compteTiersSelect.value = compteTiersId;
-                // Déclencher le changement
-                compteTiersSelect.dispatchEvent(new Event('change'));
-            }
-        } else if (compteTiers !== '-') {
-            // Fallback avec le texte
-            const compteTiersSelect = document.getElementById('compte_tiers');
-            if (compteTiersSelect && compteTiersSelect.options) {
-                const options = compteTiersSelect.options;
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].text.includes(compteTiers)) {
-                        compteTiersSelect.value = options[i].value;
-                        break;
-                    }
-                }
-            }
+            $('#compte_tiers').val(compteTiersId).trigger('change');
+        } else {
+            $('#compte_tiers').val('').trigger('change');
         }
         
-        // Mettre à jour les montants dans les champs temporaires
-        const debitInput = document.getElementById('debit');
-        const creditInput = document.getElementById('credit');
-        if (debitInput) debitInput.value = debit.replace(/\s/g, '').replace(',', '.');
-        if (creditInput) creditInput.value = credit.replace(/\s/g, '').replace(',', '.');
-        
-        // Récupérer l'ID du compte de trésorerie depuis l'attribut de la ligne
-        const compteTresorerieId = row.getAttribute('data-compte-tresorerie-id');
-        
-        // Cocher la case analytique si nécessaire
-        const analytiqueCheckbox = document.getElementById('plan_analytique');
-        if (analytiqueCheckbox) analytiqueCheckbox.checked = analytique;
-        
-        // Restaurer le compte de trésorerie si présent
+        // Journal (Select2 si applicable, sinon text)
+        const journalField = document.getElementById('code_journal_affiche');
+        if (journalField) journalField.value = journal;
+
+        // Trésorerie
         if (compteTresorerieId) {
-            const compteTresorerieSelect = document.getElementById('compte_tresorerie');
-            if (compteTresorerieSelect) {
-                compteTresorerieSelect.value = compteTresorerieId;
-                // Si select2 est utilisé
-                if (window.jQuery && typeof window.jQuery(compteTresorerieSelect).trigger === 'function') {
-                    window.jQuery(compteTresorerieSelect).trigger('change');
-                }
-            }
+            $('#compte_tresorerie').val(compteTresorerieId).trigger('change');
+        }
+        if (posteTresorerieId) {
+            $('#poste_tresorerie').val(posteTresorerieId).trigger('change');
+        } else {
+            $('#poste_tresorerie').val('').trigger('change');
         }
         
-        // Supprimer la ligne modifiée du tableau
+        // Supprimer la ligne et recalculer
         row.remove();
+        
+        // Gérer l'état "vide" du tableau
+        const tbody = document.getElementById('tableEcrituresBody');
+        if (tbody && tbody.rows.length === 0) {
+            const emptyTr = document.createElement('tr');
+            emptyTr.id = 'emptyStateRow';
+            emptyTr.innerHTML = '<td colspan="13" class="text-center py-5 text-muted"><i class="bx bx-info-circle fs-4 mb-2 d-block"></i>Aucune écriture ajoutée pour le moment.</td>';
+            tbody.appendChild(emptyTr);
+        }
+        
         updateTotals();
         
-        // Mettre le focus sur le premier champ
+        // Focus
         document.getElementById('description_operation').focus();
-        
-        // Afficher un message d'aide
-        showAlert('info', 'Ligne chargée dans le formulaire. Modifiez si nécessaire et cliquez sur "Ajouter une ligne".');
+        showAlert('info', 'Écriture chargée pour modification.');
     }
 
     // Fonction pour supprimer une écriture
     function supprimerEcriture(row) {
         if (confirm('Êtes-vous sûr de vouloir supprimer cette écriture ?')) {
             row.remove();
+            
+            // Gérer l'état "vide" du tableau
+            const tbody = document.getElementById('tableEcrituresBody');
+            if (tbody && tbody.rows.length === 0) {
+                const emptyTr = document.createElement('tr');
+                emptyTr.id = 'emptyStateRow';
+                emptyTr.innerHTML = '<td colspan="13" class="text-center py-5 text-muted"><i class="bx bx-info-circle fs-4 mb-2 d-block"></i>Aucune écriture ajoutée pour le moment.</td>';
+                tbody.appendChild(emptyTr);
+            }
+            
             updateTotals();
             showAlert('success', 'Écriture supprimée avec succès !');
         }

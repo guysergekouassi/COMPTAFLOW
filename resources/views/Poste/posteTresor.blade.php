@@ -302,7 +302,8 @@
                                                                 data-bs-target="#modalUpdatePoste"
                                                                 data-id="{{ $item->id }}"
                                                                 data-name="{{ $item->name }}"
-                                                                data-category-id="{{ $item->category_id }}">
+                                                                data-category-id="{{ $item->category_id }}"
+                                                                data-syscohada-line-id="{{ $item->syscohada_line_id }}">
                                                                 <i class="fas fa-edit"></i>
                                                             </button>
                                                         @endif
@@ -415,12 +416,19 @@
                         </div>
                         <div>
                             <label class="input-label-premium">Catégorie *</label>
-                            <select name="category_id" class="input-field-premium" required>
+                            <select id="create_category_id" name="category_id" class="input-field-premium" required onchange="toggleSyscohadaVisibility('create_category_id', 'create_syscohada_container')">
                                 <option value="" disabled selected>-- Sélectionner --</option>
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}">{{ $category->name }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div id="create_syscohada_container" style="display: none;">
+                            <label class="input-label-premium">Flux SYSCOHADA (TFT)</label>
+                            <select name="syscohada_line_id" class="input-field-premium syscohada-select-populate">
+                                <option value="">-- Mappage automatique --</option>
+                            </select>
+                            <small class="text-slate-400 text-[10px] mt-1 block">Laissez vide pour utiliser la détection automatique intelligente.</small>
                         </div>
                     </div>
 
@@ -457,11 +465,18 @@
                         </div>
                         <div>
                             <label class="input-label-premium">Catégorie *</label>
-                            <select name="category_id" id="update_category_id" class="input-field-premium" required>
+                            <select name="category_id" id="update_category_id" class="input-field-premium" required onchange="toggleSyscohadaVisibility('update_category_id', 'update_syscohada_container')">
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}">{{ $category->name }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div id="update_syscohada_container" style="display: none;">
+                            <label class="input-label-premium">Flux SYSCOHADA (TFT)</label>
+                            <select name="syscohada_line_id" id="update_syscohada_line_id" class="input-field-premium syscohada-select-populate">
+                                <option value="">-- Mappage automatique --</option>
+                            </select>
+                            <small class="text-slate-400 text-[10px] mt-1 block">Laissez vide pour utiliser la détection automatique intelligente.</small>
                         </div>
                     </div>
 
@@ -542,6 +557,49 @@
 
     <!-- Custom Logic -->
     <script>
+        const syscohadaOptions = {
+            'INV_ACQ': 'INV - Acquisition d\'immobilisations',
+            'INV_CES': 'INV - Cessions d\'immobilisations',
+            'FIN_RMB': 'FIN - Remboursement d\'emprunt',
+            'FIN_DIV': 'FIN - Dividendes versés',
+            'FIN_CAP': 'FIN - Augmentation de capital',
+            'FIN_EMP': 'FIN - Emprunts contractés',
+            'FIN_SUB': 'FIN - Subvention d\'investissement'
+        };
+
+        function getSyscohadaOptionsHtml(selected = '') {
+            return Object.entries(syscohadaOptions).map(([key, label]) => 
+                `<option value="${key}" ${key === selected ? 'selected' : ''}>${label}</option>`
+            ).join('');
+        }
+
+        // Population automatique des selects SYSCOHADA
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.syscohada-select-populate').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML += getSyscohadaOptionsHtml();
+                if (currentVal) select.value = currentVal;
+            });
+        });
+
+        function toggleSyscohadaVisibility(selectId, containerId) {
+            const select = document.getElementById(selectId);
+            const container = document.getElementById(containerId);
+            if (!select || !container) return;
+
+            const selectedOption = select.options[select.selectedIndex];
+            const text = selectedOption ? selectedOption.text : '';
+            
+            // On affiche le champ si la catégorie contient investissement ou financement
+            if (text.toLowerCase().includes('investissement') || text.toLowerCase().includes('financement')) {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                const syscSelect = container.querySelector('select');
+                if (syscSelect) syscSelect.value = '';
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             
             // 1. Toggle Filter Logic
@@ -700,16 +758,21 @@
                     const button = event.relatedTarget;
                     const id = button.getAttribute('data-id');
                     const name = button.getAttribute('data-name');
+                    const syscohadaLineId = button.getAttribute('data-syscohada-line-id');
                     const categoryId = button.getAttribute('data-category-id');
                     const form = this.querySelector('#updatePosteForm');
                     const nameInput = this.querySelector('#update_name');
                     const categorySelect = this.querySelector('#update_category_id');
+                    const syscohadaSelect = this.querySelector('#update_syscohada_line_id');
                     const titleSpan = this.querySelector('#posteNameTitle');
 
                     form.setAttribute('action', `/postetresorerie/${id}`);
                     titleSpan.textContent = name;
                     nameInput.value = name;
                     categorySelect.value = categoryId;
+                    syscohadaSelect.value = syscohadaLineId || '';
+
+                    toggleSyscohadaVisibility('update_category_id', 'update_syscohada_container');
                 });
             }
 

@@ -8,13 +8,13 @@
             <div class="modal-body p-8">
                 <div class="bg-blue-50 p-6 rounded-2xl mb-6">
                     <h6 class="font-black text-blue-900 mb-2">Structure attendue (Colonnes)</h6>
-                    <p class="text-sm text-blue-700 mb-4">Les colonnes peuvent être dans n'importe quel ordre. Le système identifiera automatiquement les intitulés.</p>
+                    <p class="text-sm text-blue-700 mb-4">Vérifier la configuration avant d'importer le plan général. Les numéros de compte généraux seront générés par le système en fonction de l'original et du nombre de caractères défini dans la configuration, tout en conservant l'origine pour avoir une trace.</p>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered bg-white">
                             <thead>
                                 <tr>
-                                    <th class="bg-blue-100">N° comptes</th>
-                                    <th class="bg-blue-100">Intitulé</th>
+                                    <th class="bg-blue-100 text-muted italic">Numéro de compte (Auto)</th>
+                                    <th class="bg-blue-100">Intitulé du compte *</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -24,9 +24,9 @@
                         </table>
                     </div>
                 </div>
-                <div class="alert alert-info border-0 text-sm">
-                    <i class="fa-solid fa-lightbulb me-2"></i>
-                    <strong>Intelligence :</strong> Vous pouvez importer des fichiers sans titres de colonnes. Le système analysera le contenu pour faire correspondre les données. Retirez les lignes de totaux ou informations inutiles du fichier.
+                <div class="alert alert-info border-0 text-sm font-bold">
+                    <i class="fa-solid fa-circle-check me-2"></i>
+                    Vérifier la configuration avant d'importer le plan général. Les numéros de compte généraux seront générés par le système en fonction de l'original et du nombre de caractères défini dans la configuration, tout en conservant l'origine pour avoir une trace.
                 </div>
             </div>
             <div class="modal-footer bg-slate-50 p-6 border-0">

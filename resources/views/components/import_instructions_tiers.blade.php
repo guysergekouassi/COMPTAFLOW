@@ -8,20 +8,20 @@
             <div class="modal-body p-8">
                 <div class="bg-indigo-50 p-6 rounded-2xl mb-6">
                     <h6 class="font-black text-indigo-900 mb-2">Structure attendue (Colonnes)</h6>
-                    <p class="text-sm text-indigo-700 mb-4">Le <strong>Numéro de Tiers</strong> est généré automatiquement par le système. Vous n'avez pas besoin de le fournir.</p>
+                    <p class="text-sm text-indigo-700 mb-4">Le <strong>Numéro de Tiers</strong> est généré automatiquement par le système en fonction du préfixe du tiers original et de la configuration (le nombre de caractères et le type de code). La catégorie ou type est aussi déterminée en fonction du préfixe du tiers original.</p>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered bg-white">
                             <thead>
                                 <tr>
-                                    <th class="bg-indigo-100 text-muted">Numéro Tiers (Auto)</th>
-                                    <th class="bg-indigo-100">Nom / Intitulé</th>
-                                    <th class="bg-indigo-100">Compte général</th>
-                                    <th class="bg-indigo-100">Catégorie</th>
+                                    <th class="bg-indigo-100 text-muted italic">Numéro de Tiers (Auto)</th>
+                                    <th class="bg-indigo-100">Nom / Intitulé *</th>
+                                    <th class="bg-indigo-100 text-muted italic">Catégorie / Type (Auto)</th>
+                                    <th class="bg-indigo-100 text-muted italic">Compte général (Auto)</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td class="text-muted italic">Généré par Flow</td><td>ETS KOUASSI & FILS</td><td>401100</td><td>Fournisseur</td></tr>
-                                <tr><td class="text-muted italic">Généré par Flow</td><td>BOUTIQUE DU PLATEAU</td><td>411100</td><td>Client</td></tr>
+                                <tr><td>T0001</td><td>ETS KOUASSI & FILS</td><td>Fournisseur</td><td>401100</td></tr>
+                                <tr><td>T0002</td><td>BOUTIQUE DU PLATEAU</td><td>Client</td><td>411100</td></tr>
                             </tbody>
                         </table>
                     </div>

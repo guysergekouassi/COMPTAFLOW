@@ -98,4 +98,9 @@ class EcritureComptable extends Model
     {
         return $this->hasOne(Immobilisation::class, 'ecriture_id');
     }
+
+    public function lettrage()
+    {
+        return $this->belongsTo(Lettrage::class, 'lettrage_id');
+    }
 }

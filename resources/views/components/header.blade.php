@@ -518,6 +518,10 @@
                     <i class="fa-solid fa-user-gear"></i>
                     <span>Paramètres</span>
                 </a>
+                <a href="{{ route('guide.index') }}" class="dropdown-link">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Guide d'utilisation</span>
+                </a>
 
                 @php
                     $canSeeAdminOptions = auth()->user()->isAdmin() || 

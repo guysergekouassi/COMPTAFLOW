@@ -144,6 +144,12 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::post('/notifications/{id}/read', [App\Http\Controllers\InternalNotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::get('/api/notifications/unread-count', [App\Http\Controllers\InternalNotificationController::class, 'unreadCount'])->name('api.notifications.unread_count');
 
+    // ROUTES GUIDES D'UTILISATION
+    Route::get('/guide', [App\Http\Controllers\GuideController::class, 'index'])->name('guide.index');
+    Route::get('/guide/superadmin', [App\Http\Controllers\GuideController::class, 'superadmin'])->name('guide.superadmin');
+    Route::get('/guide/admin', [App\Http\Controllers\GuideController::class, 'admin'])->name('guide.admin');
+    Route::get('/guide/comptable', [App\Http\Controllers\GuideController::class, 'comptable'])->name('guide.comptable');
+
     // *****************ROUTE GESTION DE COMPANY
     Route::get('/compagny_information', [CompanyController::class, 'index'])->name('compagny_information');
     Route::put('/compagny_information/{company}', [CompanyController::class, 'update'])->name('compagny_information.update');
@@ -528,6 +534,11 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
     // Route compte
     Route::get('/comptes/creer', [compteController::class, 'index'])->name('creer_compte.index');
     Route::post('/comptes/store', [compteController::class, 'store'])->name('creer_compte.store');
+
+    // *****************ROUTE GESTION DU LETTRAGE
+    Route::get('/comptabilite/lettrage', [App\Http\Controllers\Comptabilite\LettrageController::class, 'index'])->name('lettrage.index');
+    Route::post('/comptabilite/lettrage', [App\Http\Controllers\Comptabilite\LettrageController::class, 'store'])->name('lettrage.store');
+    Route::delete('/comptabilite/lettrage/{id}', [App\Http\Controllers\Comptabilite\LettrageController::class, 'destroy'])->name('lettrage.destroy');
 
 
     // Assurez-vous que cette ligne existe si vous utilisez 'companies.store'

@@ -207,7 +207,7 @@ class EcritureComptableController extends Controller
             $activeCompanyId = session('current_company_id', $user->company_id);
             
             // Récupérer toutes les lignes d'écriture pour ce n_saisie
-            $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie', 'codeJournal'])
+            $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie.category', 'codeJournal'])
                 ->where('company_id', $activeCompanyId)
                 ->where('n_saisie', $n_saisie)
                 ->orderBy('id')

@@ -502,50 +502,105 @@ class AccountingReportingService
         $sigData = $this->getSIGData($exerciceId, $companyId, $month);
         $data['operationnel']['caf'] = $sigData['resultat_net'];
 
+        // Tracker les Saisies traitées via Poste pour éviter le double comptage si fallback
+        $handledSaisiesInv = [];
+        $handledSaisiesFin = [];
+
         foreach ($ecritures as $ec) {
             $compte = $ec->planComptable;
             if (!$compte) continue;
 
             $num = $compte->numero_de_compte;
-            $flux = $ec->debit - $ec->credit; // Flux de trésorerie conventionnel : Débit = Emploi, Crédit = Ressource ?
-            // Simplification : On regarde l'impact sur la trésorerie.
+            $montant = $ec->debit - $ec->credit; // Solde Algébrique (Debit +, Credit -)
+            $flux = $montant; // On garde flux pour la suite
+
+            // --- A. INVESTISSEMENT & FINANCEMENT (Priorité Méthode Directe via Postes) ---
+            if (str_starts_with($num, '5') && $ec->posteTresorerie) {
+                $poste = $ec->posteTresorerie;
+                $syscohadaLine = $poste->syscohada_line_id;
+                $categoryName = $poste->category ? strtolower($poste->category->name) : '';
+                
+                // Flux de trésorerie réel : Debit = Entrée (+), Credit = Sortie (-)
+                $fluxTresorerie = $ec->debit - $ec->credit;
+
+                if ($syscohadaLine) {
+                    if (str_starts_with($syscohadaLine, 'INV_')) {
+                        $handledSaisiesInv[$ec->numero_saisie] = true;
+                        if ($syscohadaLine === 'INV_CES') {
+                            $data['investissement']['cessions'] += $fluxTresorerie;
+                            if($detailed) $this->addDetail($data['investissement']['details'], $compte, $fluxTresorerie);
+                        } elseif ($syscohadaLine === 'INV_ACQ') {
+                            $data['investissement']['acquisitions'] += abs($fluxTresorerie);
+                            if($detailed) $this->addDetail($data['investissement']['details'], $compte, abs($fluxTresorerie));
+                        }
+                    } elseif (str_starts_with($syscohadaLine, 'FIN_')) {
+                        $handledSaisiesFin[$ec->numero_saisie] = true;
+                        if ($syscohadaLine === 'FIN_CAP') $data['financement']['capital'] += $fluxTresorerie;
+                        elseif ($syscohadaLine === 'FIN_EMP') $data['financement']['emprunts'] += $fluxTresorerie;
+                        elseif ($syscohadaLine === 'FIN_DIV') $data['financement']['dividendes'] += abs($fluxTresorerie);
+                        
+                        $data['financement']['total'] += $fluxTresorerie;
+                        if($detailed) $this->addDetail($data['financement']['details'], $compte, $fluxTresorerie);
+                    }
+                } 
+                elseif (str_contains($categoryName, 'investissement')) {
+                    $handledSaisiesInv[$ec->numero_saisie] = true;
+                    if ($fluxTresorerie > 0) {
+                        $data['investissement']['cessions'] += $fluxTresorerie;
+                    } else {
+                        $data['investissement']['acquisitions'] += abs($fluxTresorerie);
+                    }
+                    if($detailed) $this->addDetail($data['investissement']['details'], $compte, $fluxTresorerie);
+                }
+                elseif (str_contains($categoryName, 'financement')) {
+                    $handledSaisiesFin[$ec->numero_saisie] = true;
+                    $data['financement']['total'] += $fluxTresorerie;
+                    if($detailed) $this->addDetail($data['financement']['details'], $compte, $fluxTresorerie);
+                }
+            }
+
+            // --- B. MÉTHODE INDIRECTE (CAF & BFR) ---
             
-            // Note: Pour CAF méthode additive : Résultat + Dotations - Reprises
+            // CAF
             if (str_starts_with($num, '68') || str_starts_with($num, '69')) {
-                $data['operationnel']['caf'] += $flux; // Charges calculées (Débit > 0), on les rajoute car non décaissées
+                $data['operationnel']['caf'] += $flux; 
                 if($detailed) $this->addDetail($data['operationnel']['details'], $compte, $flux);
             }
             if (str_starts_with($num, '78') || str_starts_with($num, '79')) {
-               $data['operationnel']['caf'] += $flux; // Produits calculés (Crédit > 0 -> Flux Négatif), on les retire (donc on ajoute le flux négatif)
+               $data['operationnel']['caf'] += $flux; 
                if($detailed) $this->addDetail($data['operationnel']['details'], $compte, $flux);
             }
 
             // BFR
-            if (str_starts_with($num, '3') || str_starts_with($num, '4')) {
-                // Pour actifs (3, 41): Augmentation (Debit) = Besoin (-)
-                // Pour passifs (40, 42): Augmentation (Credit) = Ressource (+)
+            if (str_starts_with($num, '3') || (str_starts_with($num, '4') && !in_array($ec->numero_saisie, array_keys(array_merge($handledSaisiesInv, $handledSaisiesFin))))) {
                 if(str_starts_with($num, '40') || str_starts_with($num, '42') || str_starts_with($num, '43') || str_starts_with($num, '44')) {
-                    $data['operationnel']['variation_bfr'] -= $flux; // Flux négatif (Credit) = Augmentation Dette = + Tréso. Donc -(-x) = +x
+                    $data['operationnel']['variation_bfr'] -= $flux; 
                 } else {
-                    $data['operationnel']['variation_bfr'] -= $flux; // Flux positif (Debit) = Augmentation Créance = - Tréso. Donc -(x) = -x
+                    $data['operationnel']['variation_bfr'] -= $flux; 
                 }
                 if($detailed) $this->addDetail($data['operationnel']['details'], $compte, -$flux);
             }
 
+            // --- C. FALLBACKS (Si non traité par poste) ---
+            
             // INVESTISSEMENT
             if (str_starts_with($num, '2') && !str_starts_with($num, '28') && !str_starts_with($num, '29')) {
-                if ($flux > 0) { // Acquisition
-                    $data['investissement']['acquisitions'] += $flux;
-                } else { // Cession
-                    $data['investissement']['cessions'] += abs($flux);
+                if (!isset($handledSaisiesInv[$ec->numero_saisie])) {
+                    if ($flux > 0) { // Acquisition
+                        $data['investissement']['acquisitions'] += $flux;
+                    } else { // Cession
+                        $data['investissement']['cessions'] += abs($flux);
+                    }
+                    if($detailed) $this->addDetail($data['investissement']['details'], $compte, $flux);
                 }
-                if($detailed) $this->addDetail($data['investissement']['details'], $compte, $flux);
             }
 
             // FINANCEMENT
             if (str_starts_with($num, '16') || str_starts_with($num, '10')) {
-                 $data['financement']['total'] -= $flux; // Crédit = Ressource (+)
-                 if($detailed) $this->addDetail($data['financement']['details'], $compte, -$flux);
+                 if (!isset($handledSaisiesFin[$ec->numero_saisie])) {
+                    $data['financement']['total'] -= $flux; // Crédit = Ressource (+)
+                    if($detailed) $this->addDetail($data['financement']['details'], $compte, -$flux);
+                 }
             }
 
             // TRESORERIE

@@ -199,6 +199,7 @@ class PosteTresorController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:treasury_categories,id',
+            'syscohada_line_id' => 'nullable|string|max:50',
         ]);
 
         // Vérification d'unicité par compagnie
@@ -213,6 +214,7 @@ class PosteTresorController extends Controller
         $compte = CompteTresorerie::create([
             'name' => $validated['name'],
             'category_id' => $validated['category_id'],
+            'syscohada_line_id' => $validated['syscohada_line_id'] ?? null,
             'company_id' => $companyId,
             'solde_initial' => 0,
             'solde_actuel' => 0,
@@ -275,6 +277,7 @@ class PosteTresorController extends Controller
             'id' => $compte->id,
             'name' => $compte->id == ($existingPost->id ?? null) ? $compte->name : $compte->name,
             'category_name' => $compte->category->name ?? '',
+            'category_id' => $compte->category_id,
             'syscohada_line_id' => $compte->syscohada_line_id,
             'message' => 'Poste de trésorerie enregistré avec succès'
         ]);

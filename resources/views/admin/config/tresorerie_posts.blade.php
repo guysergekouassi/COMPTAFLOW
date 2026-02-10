@@ -155,7 +155,7 @@
                                             <td class="pe-8 py-6 text-end">
                                                 <div class="btn-group">
                                                     <button class="btn btn-icon btn-sm btn-outline-primary border-0 rounded-circle" 
-                                                        onclick="editPoste({{ $poste->id }}, '{{ addslashes($poste->name) }}', {{ $poste->category_id ?? 'null' }})" 
+                                                        onclick="editPoste({{ $poste->id }}, '{{ addslashes($poste->name) }}', {{ $poste->category_id ?? 'null' }}, '{{ $poste->syscohada_line_id }}')" 
                                                         title="Modifier">
                                                         <i class="bx bx-edit-alt"></i>
                                                     </button>
@@ -211,19 +211,26 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label font-black text-slate-700 uppercase text-xs">Catégorie (seulement ces trois flux)</label>
-                                <select name="category_id" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold" required>
+                                <select id="create_category_id" name="category_id" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold" required onchange="toggleSyscohadaVisibility('create_category_id', 'create_syscohada_container')">
                                     <option value="" disabled selected>-- Sélectionner une catégorie --</option>
                                     @foreach($categories as $category)
                                         <option value="{{ $category->id }}">{{ $category->name }}</option>
                                     @endforeach
                                 </select>
-                                @if($categories->isEmpty())
-                                    <small class="text-danger">
-                                        <i class="bx bx-error-circle"></i>
-                                        Erreur : Les catégories prédéfinies n'ont pas été trouvées.
-                                    </small>
-                                @endif
                             </div>
+                            <div class="col-12" id="create_syscohada_container" style="display: none;">
+                                <label class="form-label font-black text-slate-700 uppercase text-xs">Flux SYSCOHADA (TFT)</label>
+                                <select name="syscohada_line_id" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold syscohada-select-populate">
+                                    <option value="">-- Mappage automatique --</option>
+                                </select>
+                                <small class="text-slate-400 text-[10px] mt-1 block">Laissez vide pour utiliser la détection automatique intelligente.</small>
+                            </div>
+                            @if($categories->isEmpty())
+                                <small class="text-danger">
+                                    <i class="bx bx-error-circle"></i>
+                                    Erreur : Les catégories prédéfinies n'ont pas été trouvées.
+                                </small>
+                            @endif
                         </div>
                     </div>
                     <div class="modal-footer bg-slate-50 p-6 border-0">
@@ -254,12 +261,19 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label font-black text-slate-700 uppercase text-xs">Catégorie (seulement ces trois flux)</label>
-                                <select name="category_id" id="edit_category_id" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold" required>
+                                <select name="category_id" id="edit_category_id" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold" required onchange="toggleSyscohadaVisibility('edit_category_id', 'edit_syscohada_container')">
                                     <option value="" disabled>-- Sélectionner une catégorie --</option>
                                     @foreach($categories as $category)
                                         <option value="{{ $category->id }}">{{ $category->name }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="col-12" id="edit_syscohada_container" style="display: none;">
+                                <label class="form-label font-black text-slate-700 uppercase text-xs">Flux SYSCOHADA (TFT)</label>
+                                <select name="syscohada_line_id" id="edit_syscohada_line_id" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold syscohada-select-populate">
+                                    <option value="">-- Mappage automatique --</option>
+                                </select>
+                                <small class="text-slate-400 text-[10px] mt-1 block">Laissez vide pour utiliser la détection automatique intelligente.</small>
                             </div>
                         </div>
                     </div>
@@ -273,6 +287,48 @@
     </div>
 
     <script>
+        const syscohadaOptions = {
+            'INV_ACQ': 'INV - Acquisition d\'immobilisations',
+            'INV_CES': 'INV - Cessions d\'immobilisations',
+            'FIN_RMB': 'FIN - Remboursement d\'emprunt',
+            'FIN_DIV': 'FIN - Dividendes versés',
+            'FIN_CAP': 'FIN - Augmentation de capital',
+            'FIN_EMP': 'FIN - Emprunts contractés',
+            'FIN_SUB': 'FIN - Subvention d\'investissement'
+        };
+
+        function getSyscohadaOptionsHtml(selected = '') {
+            return Object.entries(syscohadaOptions).map(([key, label]) => 
+                `<option value="${key}" ${key === selected ? 'selected' : ''}>${label}</option>`
+            ).join('');
+        }
+
+        // Population automatique des selects SYSCOHADA
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.syscohada-select-populate').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML += getSyscohadaOptionsHtml();
+                if (currentVal) select.value = currentVal;
+            });
+        });
+
+        function toggleSyscohadaVisibility(selectId, containerId) {
+            const select = document.getElementById(selectId);
+            const container = document.getElementById(containerId);
+            if (!select || !container) return;
+
+            const selectedOption = select.options[select.selectedIndex];
+            const text = selectedOption ? selectedOption.text : '';
+            
+            if (text.toLowerCase().includes('investissement') || text.toLowerCase().includes('financement')) {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                const syscSelect = container.querySelector('select');
+                if (syscSelect) syscSelect.value = '';
+            }
+        }
+
         // Recherche
         document.getElementById('searchPoste')?.addEventListener('input', function() {
             const searchValue = this.value.toLowerCase().trim();
@@ -285,12 +341,15 @@
         });
 
         // Edition
-        function editPoste(id, name, categoryId) {
+        function editPoste(id, name, categoryId, syscohadaLineId) {
             const form = document.getElementById('editPosteForm');
             form.action = `/admin/config/update-tresorerie-post/${id}`;
             
             document.getElementById('edit_name').value = name;
             document.getElementById('edit_category_id').value = categoryId;
+            document.getElementById('edit_syscohada_line_id').value = syscohadaLineId || '';
+
+            toggleSyscohadaVisibility('edit_category_id', 'edit_syscohada_container');
             
             new bootstrap.Modal(document.getElementById('modalEditPoste')).show();
         }

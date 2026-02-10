@@ -194,6 +194,7 @@
                             </div>
 
                             <!-- Catégories de Trésorerie -->
+                            {{-- 
                             <div class="col-md-4">
                                 <div class="config-card p-6 h-100">
                                     <span class="stat-badge bg-purple-100 text-purple-700">{{ $stats['treasury_categories'] }} types</span>
@@ -205,6 +206,7 @@
                                     <a href="{{ route('admin.config.treasury_categories') }}" class="btn btn-config-action w-100">Gérer les catégories</a>
                                 </div>
                             </div>
+                            --}}
 
                     </div>
                     @include('components.footer')
