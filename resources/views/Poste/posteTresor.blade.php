@@ -196,13 +196,23 @@
                                     Générer Plan
                                 </button>
 
-                                {{-- Bouton Nouveau Poste restreint à l'admin config --}}
+                                {{-- Bouton Nouveau Poste --}}
                                 @if(auth()->user()->hasPermission('admin.config.tresorerie_posts'))
-                                    <a href="{{ route('admin.config.tresorerie_posts') }}"
+                                    <form action="{{ route('postetresorerie.repair') }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" 
+                                            class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm"
+                                            title="Lier automatiquement les écritures de classe 5 sans poste">
+                                            <i class="fas fa-sync-alt text-green-600"></i>
+                                            Lier les écritures
+                                        </button>
+                                    </form>
+
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#modalCreatePoste"
                                         class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
                                         <i class="fas fa-plus"></i>
-                                        Gérer les Postes (Admin)
-                                    </a>
+                                        Nouveau poste
+                                    </button>
                                 @endif
                             </div>
                         </div>
@@ -222,9 +232,9 @@
                                         <select id="filterCategorie"
                                             class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm appearance-none">
                                             <option value="">Toutes les catégories</option>
-                                            <option value="OPÉRATIONNEL">OPÉRATIONNEL</option>
-                                            <option value="FINANCEMENT">FINANCEMENT</option>
-                                            <option value="INVESTISSEMENT">INVESTISSEMENT</option>
+                                            @foreach($categories as $category)
+                                                <option value="{{ strtoupper($category->name) }}">{{ $category->name }}</option>
+                                            @endforeach
                                         </select>
                                         <i class="fas fa-tags absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                         <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -265,22 +275,18 @@
                                                 </td>
                                                 <td class="px-8 py-6">
                                                     @php
-                                                        $type = strtoupper($item->type ?? '');
+                                                        $catName = $item->category->name ?? 'NON DÉFINI';
                                                         $class = 'bg-slate-100 text-slate-600 border-slate-200';
-                                                        $label = $item->type ?? 'NON DÉFINI';
                                                         
-                                                        if (str_contains($type, 'OPERATIONNEL')) {
+                                                        if (str_contains($catName, 'opérationnelles')) {
                                                             $class = 'bg-blue-100 text-blue-700 border-blue-200';
-                                                            $label = 'OPÉRATIONNEL';
-                                                        } elseif (str_contains($type, 'FINANCEMENT')) {
+                                                        } elseif (str_contains($catName, 'financement')) {
                                                             $class = 'bg-indigo-100 text-indigo-700 border-indigo-200';
-                                                            $label = 'FINANCEMENT';
-                                                        } elseif (str_contains($type, 'INVESTISSEMENT')) {
+                                                        } elseif (str_contains($catName, 'investissement')) {
                                                             $class = 'bg-amber-100 text-amber-700 border-amber-200';
-                                                            $label = 'INVESTISSEMENT';
                                                         }
                                                     @endphp
-                                                    <span class="status-pill border {{ $class }}">{{ $label }}</span>
+                                                    <span class="status-pill border {{ $class }}">{{ $catName }}</span>
                                                 </td>
                                                 <td class="px-8 py-6 text-center">
                                                     <div class="flex justify-center gap-2 transition-opacity">
@@ -296,7 +302,7 @@
                                                                 data-bs-target="#modalUpdatePoste"
                                                                 data-id="{{ $item->id }}"
                                                                 data-name="{{ $item->name }}"
-                                                                data-type="{{ $item->type }}">
+                                                                data-category-id="{{ $item->category_id }}">
                                                                 <i class="fas fa-edit"></i>
                                                             </button>
                                                         @endif
@@ -409,11 +415,11 @@
                         </div>
                         <div>
                             <label class="input-label-premium">Catégorie *</label>
-                            <select name="type" class="input-field-premium" required>
+                            <select name="category_id" class="input-field-premium" required>
                                 <option value="" disabled selected>-- Sélectionner --</option>
-                                <option value="Flux Des Activités Operationnelles">Flux Des Activités Opérationnelles</option>
-                                <option value="Flux Des Activités Investissement">Flux Des Activités d'Investissement</option>
-                                <option value="Flux Des Activités de Financement">Flux Des Activités de Financement</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
@@ -451,10 +457,10 @@
                         </div>
                         <div>
                             <label class="input-label-premium">Catégorie *</label>
-                            <select name="type" id="update_type" class="input-field-premium" required>
-                                <option value="Flux Des Activités Operationnelles">Flux Des Activités Opérationnelles</option>
-                                <option value="Flux Des Activités Investissement">Flux Des Activités d'Investissement</option>
-                                <option value="Flux Des Activités de Financement">Flux Des Activités de Financement</option>
+                            <select name="category_id" id="update_category_id" class="input-field-premium" required>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
@@ -694,16 +700,16 @@
                     const button = event.relatedTarget;
                     const id = button.getAttribute('data-id');
                     const name = button.getAttribute('data-name');
-                    const type = button.getAttribute('data-type');
+                    const categoryId = button.getAttribute('data-category-id');
                     const form = this.querySelector('#updatePosteForm');
                     const nameInput = this.querySelector('#update_name');
-                    const typeSelect = this.querySelector('#update_type');
+                    const categorySelect = this.querySelector('#update_category_id');
                     const titleSpan = this.querySelector('#posteNameTitle');
 
                     form.setAttribute('action', `/postetresorerie/${id}`);
                     titleSpan.textContent = name;
                     nameInput.value = name;
-                    typeSelect.value = type;
+                    categorySelect.value = categoryId;
                 });
             }
 

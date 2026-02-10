@@ -1,0 +1,38 @@
+--- ANALYSE DETAILLEE DES CATEGORIES DE TRESORERIE ---
+
+[ID: 1] "Banques" | CompID: 1 | Postes liés: 0
+[ID: 3] "Comptes Courants" | CompID: 1 | Postes liés: 0
+[ID: 4] "Comptes d'Épargne" | CompID: 1 | Postes liés: 0
+[ID: 5] "Comptes de Dépôt" | CompID: 1 | Postes liés: 0
+[ID: 7] "flux d'investissement" | CompID: 1 | Postes liés: 0
+[ID: 8] "Caisses" | CompID: 1 | Postes liés: 0
+[ID: 9] "Autres" | CompID: 1 | Postes liés: 0
+[ID: 10] "I. Flux de trésorerie des activités opérationnelles" | CompID: 1 | Postes liés: 1
+[ID: 11] "II. Flux de trésorerie des activités d'investissement" | CompID: 1 | Postes liés: 0
+[ID: 12] "III. Flux de trésorerie des activités de financement" | CompID: 1 | Postes liés: 0
+[ID: 13] "I. Flux de trésorerie des activités opérationnelles" | CompID: 2 | Postes liés: 0
+[ID: 14] "II. Flux de trésorerie des activités d'investissement" | CompID: 2 | Postes liés: 0
+[ID: 15] "III. Flux de trésorerie des activités de financement" | CompID: 2 | Postes liés: 0
+[ID: 16] "I. Flux de trésorerie des activités opérationnelles" | CompID: 3 | Postes liés: 0
+[ID: 17] "II. Flux de trésorerie des activités d'investissement" | CompID: 3 | Postes liés: 0
+[ID: 18] "III. Flux de trésorerie des activités de financement" | CompID: 3 | Postes liés: 0
+[ID: 19] "I. Flux de trésorerie des activités opérationnelles" | CompID: 4 | Postes liés: 0
+[ID: 20] "II. Flux de trésorerie des activités d'investissement" | CompID: 4 | Postes liés: 0
+[ID: 21] "III. Flux de trésorerie des activités de financement" | CompID: 4 | Postes liés: 0
+
+--- REGROUPEMENT PAR NOM ---
+Doublon potentiel pour "I. Flux de trésorerie des activités opérationnelles" (Trouvé 4 fois):
+  - ID: 10, CompID: 1
+  - ID: 13, CompID: 2
+  - ID: 16, CompID: 3
+  - ID: 19, CompID: 4
+Doublon potentiel pour "II. Flux de trésorerie des activités d'investissement" (Trouvé 4 fois):
+  - ID: 11, CompID: 1
+  - ID: 14, CompID: 2
+  - ID: 17, CompID: 3
+  - ID: 20, CompID: 4
+Doublon potentiel pour "III. Flux de trésorerie des activités de financement" (Trouvé 4 fois):
+  - ID: 12, CompID: 1
+  - ID: 15, CompID: 2
+  - ID: 18, CompID: 3
+  - ID: 21, CompID: 4

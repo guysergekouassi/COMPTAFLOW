@@ -17,6 +17,7 @@ class CompteTresorerie extends Model
         'name',
         'type',
         'category_id',
+        'syscohada_line_id',
         'solde_initial',
         'solde_actuel', // Maintenu par les mouvements
         'plan_comptable_id',
@@ -42,6 +43,11 @@ class CompteTresorerie extends Model
     {
         // On ordonne par date de mouvement pour l'affichage du journal
         return $this->hasMany(MouvementTresorerie::class)->orderBy('date_mouvement', 'asc');
+    }
+
+    public function ecritures(): HasMany
+    {
+        return $this->hasMany(EcritureComptable::class, 'compte_tresorerie_id');
     }
 
 

@@ -9,7 +9,7 @@ class OperationsTresoreries extends Model
 {
     use HasFactory;
 
-    protected $fillables = [
+    protected $fillable = [
          'tresorerie_id',
         'date_operation',
         'libelle',

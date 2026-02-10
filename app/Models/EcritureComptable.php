@@ -33,6 +33,7 @@ class EcritureComptable extends Model
         'debit',
         'credit',
         'compte_tresorerie_id',
+        'poste_tresorerie_id',
         'type_flux',
         'user_id',
         'company_id',
@@ -85,7 +86,12 @@ class EcritureComptable extends Model
     public function compteTresorerie()
     {
         // Assurez-vous d'importer le modèle App\Models\CompteTresorerie si ce n'est pas déjà fait
-        return $this->belongsTo(CompteTresorerie::class);
+        return $this->belongsTo(CompteTresorerie::class, 'compte_tresorerie_id');
+    }
+
+    public function posteTresorerie()
+    {
+        return $this->belongsTo(CompteTresorerie::class, 'poste_tresorerie_id');
     }
 
     public function immobilisation()

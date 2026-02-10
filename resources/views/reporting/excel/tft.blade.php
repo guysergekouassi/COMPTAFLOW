@@ -30,51 +30,24 @@
             </tr>
         </thead>
         <tbody>
-            <!-- I. ACTIVITÉS OPÉRATIONNELLES -->
+            <!-- I. ACTIVITÉS OPÉRATIONNELLES (Méthode Indirecte) -->
             <tr class="section-header">
-                <td colspan="{{ count($data['months']) + 2 }}" class="label-col">I. Flux de trésorerie des activités opérationnelles</td>
+                <td colspan="{{ count($data['months']) + 2 }}" class="label-col">I. Flux de trésorerie des activités opérationnelles (Méthode Indirecte)</td>
             </tr>
             
-            <tr>
-                <td class="label-col">Clients (Encaissements)</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['encaissements']['clients'][$i] }}</td>
-                @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['encaissements']['clients']) }}</td>
-            </tr>
-            @if(isset($detailed) && $detailed)
-                @foreach($data['flux']['operationnel']['encaissements']['details']['clients'] as $compte)
-                <tr class="detail-row">
-                    <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                    @foreach($data['months'] as $i => $m)
-                        <td>{{ $compte['months'][$i] ?? 0 }}</td>
-                    @endforeach
-                    <td>{{ array_sum($compte['months'] ?? []) }}</td>
-                </tr>
-                @endforeach
-            @endif
-
+            <!-- A. CAF -->
             <tr class="sub-header">
-                <td class="label-col">Total des encaissements</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['encaissements']['total'][$i] }}</td>
-                @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['encaissements']['total']) }}</td>
+                <td colspan="{{ count($data['months']) + 2 }}" class="label-col">A. Capacité d'Autofinancement (CAF)</td>
             </tr>
-
-            <tr class="section-header">
-                <td colspan="{{ count($data['months']) + 2 }}" class="label-col">Décaissements</td>
-            </tr>
-
             <tr>
-                <td class="label-col">Dépenses de production (601-603)</td>
+                <td class="label-col">Produits encaissables (+)</td>
                 @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['decaissements']['production'][$i] }}</td>
+                    <td style="color: #008000;">+ {{ $data['flux']['operationnel']['caf']['produits_encaissables'][$i] }}</td>
                 @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['decaissements']['production']) }}</td>
+                <td style="font-weight: bold;">{{ array_sum($data['flux']['operationnel']['caf']['produits_encaissables']) }}</td>
             </tr>
             @if(isset($detailed) && $detailed)
-                @foreach($data['flux']['operationnel']['decaissements']['details']['production'] as $compte)
+                @foreach($data['flux']['operationnel']['caf']['details']['produits'] as $compte)
                 <tr class="detail-row">
                     <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
                     @foreach($data['months'] as $i => $m)
@@ -86,14 +59,46 @@
             @endif
 
             <tr>
-                <td class="label-col">Autres achats (604-608)</td>
+                <td class="label-col">Charges décaissables (-)</td>
                 @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['decaissements']['autres_achats'][$i] }}</td>
+                    <td style="color: #ff0000;">- {{ $data['flux']['operationnel']['caf']['charges_decaissables'][$i] }}</td>
                 @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['decaissements']['autres_achats']) }}</td>
+                <td style="font-weight: bold;">- {{ array_sum($data['flux']['operationnel']['caf']['charges_decaissables']) }}</td>
             </tr>
             @if(isset($detailed) && $detailed)
-                @foreach($data['flux']['operationnel']['decaissements']['details']['autres_achats'] as $compte)
+                @foreach($data['flux']['operationnel']['caf']['details']['charges'] as $compte)
+                <tr class="detail-row">
+                    <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                    @foreach($data['months'] as $i => $m)
+                        <td>- {{ $compte['months'][$i] ?? 0 }}</td>
+                    @endforeach
+                    <td>- {{ array_sum($compte['months'] ?? []) }}</td>
+                </tr>
+                @endforeach
+            @endif
+
+            <tr class="total-row">
+                <td class="label-col">Marge Brute d'Autofinancement (CAF)</td>
+                @foreach($data['months'] as $i => $m)
+                    <td>{{ $data['flux']['operationnel']['caf']['total'][$i] }}</td>
+                @endforeach
+                <td>{{ array_sum($data['flux']['operationnel']['caf']['total']) }}</td>
+            </tr>
+
+            <!-- B. VAR BFR -->
+            <tr class="sub-header">
+                <td colspan="{{ count($data['months']) + 2 }}" class="label-col">B. Variation du BFR</td>
+            </tr>
+
+            <tr>
+                <td class="label-col">Variation Stocks</td>
+                @foreach($data['months'] as $i => $m)
+                    <td>{{ $data['flux']['operationnel']['bfr']['variation_stocks'][$i] }}</td>
+                @endforeach
+                <td style="font-weight: bold;">{{ array_sum($data['flux']['operationnel']['bfr']['variation_stocks']) }}</td>
+            </tr>
+            @if(isset($detailed) && $detailed)
+                @foreach($data['flux']['operationnel']['bfr']['details']['stocks'] as $compte)
                 <tr class="detail-row">
                     <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
                     @foreach($data['months'] as $i => $m)
@@ -105,14 +110,14 @@
             @endif
 
             <tr>
-                <td class="label-col">Transport (61)</td>
+                <td class="label-col">Variation Créances</td>
                 @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['decaissements']['transport'][$i] }}</td>
+                    <td>{{ $data['flux']['operationnel']['bfr']['variation_creances'][$i] }}</td>
                 @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['decaissements']['transport']) }}</td>
+                <td style="font-weight: bold;">{{ array_sum($data['flux']['operationnel']['bfr']['variation_creances']) }}</td>
             </tr>
             @if(isset($detailed) && $detailed)
-                @foreach($data['flux']['operationnel']['decaissements']['details']['transport'] as $compte)
+                @foreach($data['flux']['operationnel']['bfr']['details']['creances'] as $compte)
                 <tr class="detail-row">
                     <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
                     @foreach($data['months'] as $i => $m)
@@ -124,52 +129,14 @@
             @endif
 
             <tr>
-                <td class="label-col">Services Extérieurs (62-63)</td>
+                <td class="label-col">Variation Dettes Circulantes</td>
                 @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['decaissements']['services_exterieurs'][$i] }}</td>
+                    <td>{{ $data['flux']['operationnel']['bfr']['variation_dettes'][$i] }}</td>
                 @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['decaissements']['services_exterieurs']) }}</td>
+                <td style="font-weight: bold;">{{ array_sum($data['flux']['operationnel']['bfr']['variation_dettes']) }}</td>
             </tr>
             @if(isset($detailed) && $detailed)
-                @foreach($data['flux']['operationnel']['decaissements']['details']['services_exterieurs'] as $compte)
-                <tr class="detail-row">
-                    <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                    @foreach($data['months'] as $i => $m)
-                        <td>{{ $compte['months'][$i] ?? 0 }}</td>
-                    @endforeach
-                    <td>{{ array_sum($compte['months'] ?? []) }}</td>
-                </tr>
-                @endforeach
-            @endif
-
-             <tr>
-                <td class="label-col">Charges de personnel (66)</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['decaissements']['personnel'][$i] }}</td>
-                @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['decaissements']['personnel']) }}</td>
-            </tr>
-            @if(isset($detailed) && $detailed)
-                @foreach($data['flux']['operationnel']['decaissements']['details']['personnel'] as $compte)
-                <tr class="detail-row">
-                    <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                    @foreach($data['months'] as $i => $m)
-                        <td>{{ $compte['months'][$i] ?? 0 }}</td>
-                    @endforeach
-                    <td>{{ array_sum($compte['months'] ?? []) }}</td>
-                </tr>
-                @endforeach
-            @endif
-
-             <tr>
-                <td class="label-col">Impôts et Taxes (64)</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['decaissements']['impots_taxes'][$i] }}</td>
-                @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['decaissements']['impots_taxes']) }}</td>
-            </tr>
-            @if(isset($detailed) && $detailed)
-                @foreach($data['flux']['operationnel']['decaissements']['details']['impots_taxes'] as $compte)
+                @foreach($data['flux']['operationnel']['bfr']['details']['dettes'] as $compte)
                 <tr class="detail-row">
                     <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
                     @foreach($data['months'] as $i => $m)
@@ -181,15 +148,15 @@
             @endif
 
             <tr class="total-row">
-                <td class="label-col">Total des Décaissements</td>
+                <td class="label-col">Variation Totale du BFR</td>
                 @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['flux']['operationnel']['decaissements']['total'][$i] }}</td>
+                    <td>{{ $data['flux']['operationnel']['bfr']['total'][$i] }}</td>
                 @endforeach
-                <td>{{ array_sum($data['flux']['operationnel']['decaissements']['total']) }}</td>
+                <td>{{ array_sum($data['flux']['operationnel']['bfr']['total']) }}</td>
             </tr>
 
             <tr class="main-total">
-                <td class="label-col">FLUX NET OPÉRATIONNEL (I)</td>
+                <td class="label-col">FLUX NET OPÉRATIONNEL (A + B)</td>
                 @foreach($data['months'] as $i => $m)
                     <td>{{ $data['flux']['operationnel']['net'][$i] }}</td>
                 @endforeach

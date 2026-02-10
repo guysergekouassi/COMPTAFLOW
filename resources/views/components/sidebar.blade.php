@@ -470,12 +470,12 @@
                     <span>Postes de Trésorerie</span>
                 </a>
                 @endif
-                @if(auth()->user()->hasPermission('admin.config.treasury_categories'))
+                {{-- @if(auth()->user()->hasPermission('admin.config.treasury_categories'))
                 <a href="{{ route('admin.config.treasury_categories') }}" class="menu-link-new {{ request()->routeIs('admin.config.treasury_categories') ? 'active' : '' }}">
                     <i class="fa-solid fa-layer-group"></i>
                     <span>Catégories de Trésorerie</span>
                 </a>
-                @endif
+                @endif --}}
             </div>
             @endif
 

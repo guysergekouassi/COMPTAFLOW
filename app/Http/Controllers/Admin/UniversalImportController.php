@@ -376,9 +376,20 @@ class UniversalImportController extends Controller
                      $p['code_journal_id'] = \App\Models\CodeJournal::where('company_id', $companyId)
                         ->where('code_journal', $p['code_journal'] ?? '')
                         ->value('id');
-                     $p['plan_comptable_id'] = \App\Models\PlanComptable::where('company_id', $companyId)
+                      $p['plan_comptable_id'] = \App\Models\PlanComptable::where('company_id', $companyId)
                         ->where('numero_de_compte', $p['numero_compte'] ?? '')
                         ->value('id');
+                     
+                     // Automating Treasury Post Selection
+                     if ($p['plan_comptable_id']) {
+                         $compteTreso = \App\Models\CompteTresorerie::where('company_id', $companyId)
+                             ->where('plan_comptable_id', $p['plan_comptable_id'])
+                             ->first();
+                         if ($compteTreso) {
+                             $p['compte_tresorerie_id'] = $compteTreso->id;
+                             $p['poste_tresorerie_id'] = $compteTreso->id;
+                         }
+                     }
                      
                      $p['plan_tiers_id'] = \App\Models\PlanTiers::where('company_id', $companyId)
                         ->where('numero_de_tiers', $p['compte_tiers'] ?? '')

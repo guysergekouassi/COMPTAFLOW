@@ -8,9 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('ecriture_comptables', function (Blueprint $table) {
-            $table->string('statut')->default('draft'); // ou 'approved' si tu veux
-        });
+        if (!Schema::hasColumn('ecriture_comptables', 'statut')) {
+            Schema::table('ecriture_comptables', function (Blueprint $table) {
+                $table->string('statut')->default('draft'); // ou 'approved' si tu veux
+            });
+        }
     }
 
     public function down(): void

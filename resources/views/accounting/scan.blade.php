@@ -181,6 +181,7 @@
                                             <th style="min-width: 200px;">Libellé / Détails</th>
                                             <th class="text-end" style="width: 130px;">Débit</th>
                                             <th class="text-end" style="width: 130px;">Crédit</th>
+                                            <th style="width: 150px;">Poste Trésorerie</th>
                                             <th style="width: 50px;"></th>
                                         </tr>
                                     </thead>
@@ -266,6 +267,7 @@
         const CONTEXT = @json($data);
         const GEN_ACCOUNTS = @json($plansComptables);
         const TIERS_LIST = @json($plansTiers);
+        const TREASURY_POST_LIST = @json($comptesTresorerie);
         const SAVE_ROUTE = "{{ route('api.ecriture.storeMultiple') }}";
         let NEXT_SAISIE = "{{ $nextSaisieNumber }}";
 
@@ -650,29 +652,66 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                 return null;
             };
  
+            const findTreasuryPost = (accountId) => {
+                if (!accountId) return { id: '', text: '' };
+                // On cherche un poste de trésorerie qui utilise ce compte général
+                const post = TREASURY_POST_LIST.find(p => p.plan_comptable_id == accountId);
+                if (post) return { id: post.id, text: post.name };
+                return { id: '', text: '' };
+            };
+
             const renderTable = (data) => {
                 entriesBody.innerHTML = '';
                 const ecritures = data.ecriture || data.lignes;
+                
+                // Get Poste Tresorerie options for the select
+                const posteTresOptions = Array.from(document.getElementById('poste_tresorerie')?.options || [])
+                    .filter(opt => opt.value)
+                    .map(opt => `<option value="${opt.value}">${opt.text}</option>`)
+                    .join('');
+
                 ecritures.forEach(l => {
                     const tr = document.createElement('tr');
                     const matchedAccId = findBestAccount(l.compte, l.type);
+                    const accCode = l.compte ? l.compte.toString() : '';
+                    const isTreasury = accCode.startsWith('5');
                     
-                    let matchedTierId = null;
                     if (l.type === 'FOURNISSEUR' || (l.compte && l.compte.toString().startsWith('40'))) {
                         const supplierName = (data.tiers || data.fournisseur || "").toUpperCase();
                         const t = TIERS_LIST.find(t => supplierName.includes(t.intitule.toUpperCase()) || t.intitule.toUpperCase().includes(supplierName));
                         if (t) matchedTierId = t.id;
                     }
+
+                    const matchedPoste = isTreasury ? findTreasuryPost(matchedAccId) : { id: '', text: '' };
+
                     tr.innerHTML = `
                         <td><select class="form-select select2 row-acc"><option value="">Choisir...</option>${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}</select></td>
                         <td><div class="d-flex gap-1"><select class="form-select select2 row-tier"><option value="">Néant</option>${TIERS_LIST.map(t => `<option value="${t.id}" ${t.id == matchedTierId ? 'selected' : ''}>${t.numero_de_tiers} - ${t.intitule}</option>`).join('')}</select><button type="button" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="modal" data-bs-target="#createTiersModal"><i class="bx bx-plus"></i></button></div></td>
                         <td><input type="text" class="form-control form-control-sm row-lib" value="${l.intitule || l.libelle || ''}"><div class="small text-muted mt-1 px-1">Pièce: ${data.reference || data.ref || ''} du ${data.date || ''}</div><input type="hidden" class="row-date" value="${data.date || ''}"><input type="hidden" class="row-ref" value="${data.reference || data.ref || ''}"></td>
                         <td><input type="number" class="form-control text-end row-debit" value="${l.debit || 0}"></td>
                         <td><input type="number" class="form-control text-end row-credit" value="${l.credit || 0}"></td>
+                        <td>
+                            <select class="form-select select2 row-poste-treso" ${isTreasury ? '' : 'disabled'}>
+                                <option value="">Néant</option>
+                                ${TREASURY_POST_LIST.map(p => `<option value="${p.id}" ${p.id == matchedPoste.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                            </select>
+                        </td>
                         <td class="text-center"><button class="btn btn-sm btn-icon text-danger" onclick="this.closest('tr').remove(); window.updateTotals();"><i class="bx bx-trash"></i></button></td>
                     `;
                     entriesBody.appendChild(tr);
                     $(tr).find('.select2').select2({ theme: 'bootstrap4', width: '100%' }).on('change', window.updateTotals);
+                    
+                    // Specific logic for row-acc change to toggle row-poste-treso
+                    $(tr).find('.row-acc').on('change', function() {
+                        const code = $(this).find('option:selected').text().split(' ')[0];
+                        const posteSelect = $(tr).find('.row-poste-treso');
+                        if (code.startsWith('5')) {
+                            posteSelect.prop('disabled', false);
+                        } else {
+                            posteSelect.val('').trigger('change').prop('disabled', true);
+                        }
+                    });
+
                     $(tr).find('input').on('input', window.updateTotals);
                 });
                 window.updateTotals();
@@ -787,6 +826,7 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                         reference_piece: tr.querySelector('.row-ref').value,
                         plan_comptable_id: tr.querySelector('.row-acc').value,
                         plan_tiers_id: tr.querySelector('.row-tier').value || null,
+                        poste_tresorerie_id: tr.querySelector('.row-poste-treso').value || null,
                         debit: tr.querySelector('.row-debit').value,
                         credit: tr.querySelector('.row-credit').value,
                         exercices_comptables_id: CONTEXT.id_exercice,
@@ -841,6 +881,7 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                         reference_piece: tr.querySelector('.row-ref').value,
                         plan_comptable_id: tr.querySelector('.row-acc').value,
                         plan_tiers_id: tr.querySelector('.row-tier').value || null,
+                        poste_tresorerie_id: tr.querySelector('.row-poste-treso').value || null,
                         debit: tr.querySelector('.row-debit').value,
                         credit: tr.querySelector('.row-credit').value,
                         exercices_comptables_id: CONTEXT.id_exercice,

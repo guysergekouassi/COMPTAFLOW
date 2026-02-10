@@ -208,6 +208,72 @@
         font-weight: 600 !important;
     }
 
+    /* Fix Select2 Premium Styling for Treasury */
+    .select2-container--default .select2-selection--single {
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 15px !important;
+        min-height: 50px !important;
+        height: auto !important;
+        padding: 0.5rem 0.5rem !important;
+        background-color: #ffffff !important;
+        transition: all 0.3s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #475569 !important;
+        font-weight: 500 !important;
+        font-size: 1rem !important;
+        padding-left: 0.7rem !important;
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 5px;
+        text-overflow: unset !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        line-height: 1.4 !important;
+        padding-top: 5px !important;
+        padding-bottom: 5px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 100% !important;
+        right: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    .select2-container--default.select2-container--disabled .select2-selection--single {
+        background-color: #f8f9fa !important;
+        border-color: #e2e8f0 !important;
+        cursor: not-allowed !important;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #94a3b8 !important;
+        box-shadow: 0 0 0 0.25rem rgba(148, 163, 184, 0.1) !important;
+    }
+    /* Results highlight - No Blue */
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #f1f5f9 !important;
+        color: #1e293b !important;
+    }
+    /* Selection background - No Blue */
+    .select2-container--default .select2-results__option[aria-selected=true] {
+        background-color: #e2e8f0 !important;
+    }
+    /* Neutral Dropdown category backround (No Blue) */
+    .treasury-category-badge {
+        background-color: #f1f5f9 !important; 
+        color: #475569 !important; 
+        border: 1px solid #e2e8f0 !important;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: 600;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
     /* Table Premium */
     .table-responsive {
         border-radius: 20px !important;
@@ -746,9 +812,9 @@
                                         </label>
                                         <div class="d-flex gap-2 align-items-center">
                                             <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2" style="flex: 1;">
-                                                <option value="" selected disabled>Chargement...</option>
+                                                <option value="" selected disabled>Sélectionner un compte...</option>
                                                 @foreach($comptesTresorerie as $treso)
-                                                    <option value="{{ $treso->id }}">{{ $treso->name }}</option>
+                                                    <option value="{{ $treso->id }}" data-category="{{ $treso->category->name ?? '' }}">{{ $treso->name }} - {{ $treso->category->name ?? 'Sans catégorie' }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -808,7 +874,7 @@
                                 </div>
                                 
                                 <div class="row g-4">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <label for="compte_general" class="form-label">
                                             <i class="bx bx-folder-open"></i>Compte Général <span class="text-danger">*</span>
                                         </label>
@@ -841,7 +907,7 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <label for="compte_tiers" class="form-label">
                                             <i class="bx bx-user"></i>Compte Tiers (Le cas échéant)
                                         </label>
@@ -868,6 +934,30 @@
                                                 transition: all 0.3s ease;
                                                 white-space: nowrap;
                                             " onmouseover="this.style.borderColor='#cbd5e1'; this.style.color='#1a202c';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#64748b';">
+                                                <i class="bx bx-plus"></i> Créer
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4" id="div_poste_tresorerie">
+                                        <label for="poste_tresorerie" class="form-label">
+                                            <i class="bx bx-receipt"></i>Poste Trésorerie
+                                        </label>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <select id="poste_tresorerie" name="poste_tresorerie" class="form-select select2" style="flex: 1;" disabled>
+                                                <option value="" selected disabled>Sélectionner un poste...</option>
+                                                @foreach($comptesTresorerie as $treso)
+                                                    <option value="{{ $treso->id }}" data-category="{{ $treso->category->name ?? '' }}">{{ $treso->name }} - {{ $treso->category->name ?? 'Sans catégorie' }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button type="button" id="btn_create_poste_entry" class="btn btn-outline-secondary btn-premium d-none" data-bs-toggle="modal" data-bs-target="#modalCreatePoste" title="Créer un nouveau poste de trésorerie" style="
+                                                background: #ffffff;
+                                                border: 2px solid #e2e8f0;
+                                                color: #64748b;
+                                                padding: 0.7rem 1rem;
+                                                font-weight: 600;
+                                                transition: all 0.3s ease;
+                                                white-space: nowrap;
+                                            ">
                                                 <i class="bx bx-plus"></i> Créer
                                             </button>
                                         </div>
@@ -970,6 +1060,31 @@
                                 </div>
                             </div>
 
+                            <style>
+                                .table-responsive {
+                                    overflow-x: auto !important;
+                                    display: block !important;
+                                    padding-bottom: 15px; /* Espace pour la barre de défilement */
+                                }
+                                #tableEcritures {
+                                    min-width: 1450px !important;
+                                }
+                                /* Assurer que la barre de défilement est visible */
+                                .table-responsive::-webkit-scrollbar {
+                                    height: 10px;
+                                }
+                                .table-responsive::-webkit-scrollbar-track {
+                                    background: #f1f5f9;
+                                    border-radius: 10px;
+                                }
+                                .table-responsive::-webkit-scrollbar-thumb {
+                                    background: #cbd5e1;
+                                    border-radius: 10px;
+                                }
+                                .table-responsive::-webkit-scrollbar-thumb:hover {
+                                    background: #94a3b8;
+                                }
+                            </style>
                             <div class="table-responsive">
                                 <table class="table table-bordered table-sm" id="tableEcritures">
                                     <thead>
@@ -983,6 +1098,7 @@
                                             <th>Cpte Tiers</th>
                                             <th>Débit</th>
                                             <th>Crédit</th>
+                                            <th>Poste Trésorerie</th>
                                             <th>Pièce</th>
                                             <th>ANALYTIQUE</th>
                                             <th>Modifier</th>
@@ -1104,6 +1220,48 @@
       <!-- / Layout wrapper -->
 
       <!-- Core JS -->
+
+      <!-- Modal Creation Poste Trésorerie -->
+      <div class="modal fade" id="modalCreatePoste" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+              <form id="createPosteForm" class="w-full">
+                  <div class="modal-content premium-modal-content">
+                      <div class="text-center mb-6 position-relative">
+                          <button type="button" class="btn-close position-absolute end-0 top-0 m-3" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                          <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                              Nouveau <span class="text-blue-gradient-premium">Poste</span>
+                          </h1>
+                          <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
+                      </div>
+
+                      <div class="space-y-4 px-4 pb-4">
+                          <div>
+                              <label class="input-label-premium">Nom du Poste *</label>
+                              <input type="text" id="poste_name" name="name" class="input-field-premium" required placeholder="Ex: Ventes de marchandises">
+                          </div>
+                          <div>
+                              <label class="input-label-premium">Catégorie *</label>
+                              <select id="poste_category_id" name="category_id" class="input-field-premium" required>
+                                  <option value="" disabled selected>-- Sélectionner --</option>
+                                  @foreach($categories as $category)
+                                      <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                  @endforeach
+                              </select>
+                          </div>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-4 pt-4 px-4 pb-4 row">
+                          <div class="col-6">
+                              <button type="button" class="btn-cancel-premium w-100" data-bs-dismiss="modal">Annuler</button>
+                          </div>
+                          <div class="col-6">
+                              <button type="button" id="btnSavePoste" onclick="createPosteSimple(event)" class="btn-save-premium w-100">Enregistrer</button>
+                          </div>
+                      </div>
+                  </div>
+              </form>
+          </div>
+      </div>
 
       <!-- Modal Nouveau Tiers (Plan Tiers Style) -->
       <div class="modal fade" id="createTiersModal" tabindex="-1" aria-hidden="true">
@@ -1451,6 +1609,250 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         };
     }
+
+    // --- GESTION DES POSTES TRÉSORERIE ---
+    const modalCreatePosteEl = document.getElementById('modalCreatePoste');
+    if (modalCreatePosteEl) {
+        const posteModal = new bootstrap.Modal(modalCreatePosteEl);
+        
+        window.createPosteSimple = function(event) {
+            if (event) event.preventDefault();
+            
+            const btn = document.getElementById('btnSavePoste');
+            const name = document.getElementById('poste_name').value.trim();
+            const category_id = document.getElementById('poste_category_id').value;
+
+            if (!name || !category_id) {
+                Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
+                return;
+            }
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
+
+            fetch('{{ route("postetresorerie.store_poste") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ name, category_id })
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    posteModal.hide();
+                    document.getElementById('createPosteForm').reset();
+                    
+                    // Mise à jour du dropdown
+                    const posteSelect = document.getElementById('poste_tresorerie');
+                    if (posteSelect) {
+                        const newOption = new Option(result.name, result.id, true, true);
+                        posteSelect.add(newOption);
+                    if (typeof $ !== 'undefined' && $(posteSelect).data('select2')) {
+                        $(posteSelect).trigger('change');
+                    } else {
+                        posteSelect.dispatchEvent(new Event('change'));
+                    }
+                    
+                    Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le poste de trésorerie a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
+                } else {
+                    throw new Error(result.error || 'Erreur lors de la création');
+                }
+            })
+            .catch(err => {
+                console.error('Erreur:', err);
+                Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            });
+        };
+    }
+
+    // --- QUICK EDIT/CREATE POSTE TRÉSORERIE IN ROWS ---
+    const treasuryCategories = @json($categories ?? []);
+    
+    // Define SYSCOHADA options (same as in list view)
+    const syscohadaOptions = {
+        '': 'Aucun (Non spécifié)',
+        'INV_ACQ': 'INV - Acquisition d\'immobilisations',
+        'INV_CES': 'INV - Cession d\'immobilisations',
+        'FIN_EMP': 'FIN - Emprunt (Encaissement)',
+        'FIN_RMB': 'FIN - Remboursement d\'emprunt',
+        'FIN_DIV': 'FIN - Dividendes versés',
+        'FIN_CAP': 'FIN - Augmentation de capital',
+        'FIN_SUB': 'FIN - Subvention d\'investissement'
+    };
+
+    function getSyscohadaOptionsHtml(selected = '') {
+        return Object.entries(syscohadaOptions).map(([key, label]) => 
+            `<option value="${key}" ${key === selected ? 'selected' : ''}>${label}</option>`
+        ).join('');
+    }
+
+    window.quickEditPosteRow = function(btn, posteId) {
+        const row = btn.closest('tr');
+        const currentText = row.querySelector('.poste-badge-text').innerText.trim();
+        const [currentName, currentCategory] = currentText.split(' - ');
+        
+        // We might want to pass current syscohada code here, but it's not stored in the row data currently.
+        // We could fetch it, or just let the user set it. 
+        // For simplicity in this context (creating on the fly), defaults to empty is acceptable 
+        // OR we could try to look it up if we had the full poste object.
+        // Since storeQuickAJAX returns it, we can store it in a data attribute.
+        const currentSyscohadaId = row.getAttribute('data-syscohada-id') || '';
+
+        const categoryOptions = treasuryCategories.map(c => 
+            `<option value="${c.id}" ${c.name === currentCategory ? 'selected' : ''}>${c.name}</option>`
+        ).join('');
+        const syscohadaOptionsHtml = getSyscohadaOptionsHtml(currentSyscohadaId);
+
+        Swal.fire({
+            title: 'Modifier le poste de trésorerie',
+            html: `
+                <div class="mb-3 text-start">
+                    <label class="form-label">Nom du poste</label>
+                    <input type="text" id="swal_row_poste_name" class="form-control" value="${currentName || ''}">
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Catégorie</label>
+                    <select id="swal_row_poste_category" class="form-select">
+                        <option value="">Sélectionner une catégorie...</option>
+                        ${categoryOptions}
+                    </select>
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Flux SYSCOHADA (TFT)</label>
+                    <div class="form-text text-muted mb-1 text-xs">Obligatoire pour Inv/Fin</div>
+                    <select id="swal_row_poste_syscohada" class="form-select">
+                        ${syscohadaOptionsHtml}
+                    </select>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Enregistrer',
+            cancelButtonText: 'Annuler',
+            preConfirm: () => {
+                const name = document.getElementById('swal_row_poste_name').value;
+                const category_id = document.getElementById('swal_row_poste_category').value;
+                const syscohada_line_id = document.getElementById('swal_row_poste_syscohada').value;
+                if (!name || !category_id) {
+                    Swal.showValidationMessage('Veuillez remplir tous les champs');
+                    return false;
+                }
+                return { name, category_id, syscohada_line_id };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saveQuickPosteRow(row, result.value.name, result.value.category_id, result.value.syscohada_line_id);
+            }
+        });
+    };
+
+    window.quickCreatePosteRow = function(btn) {
+        const row = btn.closest('tr');
+        const categoryOptions = treasuryCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        const syscohadaOptionsHtml = getSyscohadaOptionsHtml();
+
+        Swal.fire({
+            title: 'Nouveau poste de trésorerie',
+            html: `
+                <div class="mb-3 text-start">
+                    <label class="form-label">Nom du poste</label>
+                    <input type="text" id="swal_row_poste_name" class="form-control" placeholder="Ex: Caisse Menue Dépense">
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Catégorie</label>
+                    <select id="swal_row_poste_category" class="form-select">
+                        <option value="">Sélectionner une catégorie...</option>
+                        ${categoryOptions}
+                    </select>
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Flux SYSCOHADA (TFT)</label>
+                    <div class="form-text text-muted mb-1 text-xs">Obligatoire pour Inv/Fin</div>
+                    <select id="swal_row_poste_syscohada" class="form-select">
+                        ${syscohadaOptionsHtml}
+                    </select>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Créer et Assigner',
+            cancelButtonText: 'Annuler',
+            preConfirm: () => {
+                const name = document.getElementById('swal_row_poste_name').value;
+                const category_id = document.getElementById('swal_row_poste_category').value;
+                const syscohada_line_id = document.getElementById('swal_row_poste_syscohada').value;
+                if (!name || !category_id) {
+                    Swal.showValidationMessage('Veuillez remplir tous les champs');
+                    return false;
+                }
+                return { name, category_id, syscohada_line_id };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saveQuickPosteRow(row, result.value.name, result.value.category_id, result.value.syscohada_line_id);
+            }
+        });
+    };
+
+    function saveQuickPosteRow(row, name, categoryId, syscohadaLineId) {
+        // Here we just update the row attributes, as those rows are not yet saved in DB (unless editing)
+        // If it's a REAL entry being edited (e.g. from approval editing), we might want to call the API.
+        // But the primary flow here is constructing the rows for a NEW validation.
+        // For simplicity and to match the 'storeQuickAJAX' logic, let's call the API to ensure the Poste exists.
+        
+        fetch('{{ route("postetresorerie.store_quick") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name,
+                category_id: categoryId,
+                syscohada_line_id: syscohadaLineId
+                // We don't necessarily have an ecriture_id if this is a NEW row being added
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Update row's data attribute and UI
+                row.setAttribute('data-poste-tresorerie-id', data.id);
+                row.setAttribute('data-syscohada-id', data.syscohada_line_id || ''); // Store for future edits
+                const badge = row.querySelector('.poste-badge-text');
+                if (badge) badge.innerText = `${data.name} - ${data.category_name}`;
+                
+                // Update the button icon/onclick if it was a "Plus" button
+                const btnContainer = row.querySelector('.td-poste-treso-row .group');
+                if (btnContainer && btnContainer.querySelector('.bx-plus')) {
+                    btnContainer.innerHTML = `
+                        <span class="badge bg-label-info poste-badge-text">${data.name} - ${data.category_name}</span>
+                        <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
+                            onclick="window.quickEditPosteRow(this, ${data.id})" title="Modifier le poste">
+                            <i class="bx bx-edit-alt text-xs"></i>
+                        </button>
+                    `;
+                }
+
+                Swal.fire({ icon: 'success', title: 'Succès !', text: 'Poste mis à jour.', timer: 1500, showConfirmButton: false });
+            } else {
+                throw new Error(data.error || 'Erreur lors de la sauvegarde');
+            }
+        })
+        .catch(err => {
+            console.error('Erreur:', err);
+            Swal.fire({ icon: 'error', title: 'Oups...', text: err.message });
+        });
+    }
+
+    // --- AUTRES FONCTIONS ---
 });
 
 // 5. Fonctions existantes inchangées
@@ -1489,11 +1891,16 @@ function ajouterEcriture() {
             return;
         }
         
-        // Récupérer l'ID du compte de trésorerie s'il est visible
         const compteTresorerieSelect = document.getElementById('compte_tresorerie');
         const compteTresorerieId = compteTresorerieSelect && 
                                  window.getComputedStyle(compteTresorerieSelect.parentElement).display !== 'none' ? 
                                  compteTresorerieSelect.value : '';
+        
+        // Récupérer l'ID du poste de trésorerie
+        const posteTresorerieSelect = document.getElementById('poste_tresorerie');
+        const posteTresorerieId = posteTresorerieSelect && !posteTresorerieSelect.disabled ? 
+                                 posteTresorerieSelect.value : '';
+        const posteTresorerieText = posteTresorerieId ? posteTresorerieSelect.options[posteTresorerieSelect.selectedIndex].text : '';
 
         const newRow = tbody.insertRow();
 
@@ -1506,9 +1913,12 @@ function ajouterEcriture() {
         // Stocker le fichier globalement pour la visualisation
         let globalPieceFile = null;
         
-        // Stocker l'ID du compte de trésorerie dans la ligne
+        // Stocker l'ID du compte de trésorerie et du poste dans la ligne
         if (compteTresorerieId) {
             newRow.setAttribute('data-compte-tresorerie-id', compteTresorerieId);
+        }
+        if (posteTresorerieId) {
+            newRow.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
         }
         
         // Créer les cellules une par une pour pouvoir ajouter des attributs
@@ -1522,9 +1932,9 @@ function ajouterEcriture() {
             compteTiersValue,
             debit.value || '',
             credit.value || '',
+            '', // Poste Trésorerie - sera rempli avec l'élément personnalisé
             '', // Pièce justificative - sera rempli avec le bouton Voir
-            analytiqueValue,
-            compteTresorerieId // Ajout de l'ID du compte de trésorerie
+            analytiqueValue
         ];
 
         // Ajouter chaque cellule avec son contenu
@@ -1539,40 +1949,57 @@ function ajouterEcriture() {
                 cell.textContent = compteTiersValue;
                 cell.setAttribute('data-tiers-id', compteTiers.value);
             } else if (index === 9) {
-                // Pour la cellule de la pièce justificative, ajouter un bouton Voir
-                if (pieceFile) {
-                    globalPieceFile = pieceFile; // Stocker le fichier globalement
-                    cell.innerHTML = `<button class="btn btn-sm btn-primary-premium btn-premium" onclick="voirPieceJustificativeLocale()" style="border-radius: 10px;">
-                        <i class="bx bx-eye me-1"></i>Voir
-                    </button>`;
-                    cell.setAttribute('data-piece-filename', pieceFile.name);
-                } else {
-                    cell.textContent = '';
-                }
+                // Pour la cellule du poste de trésorerie, ajouter les icônes de gestion 'in-place'
+                cell.className = 'td-poste-treso-row';
+                cell.innerHTML = `
+                    <div class="flex items-center gap-2 group">
+                        <span class="badge bg-label-info poste-badge-text">
+                            ${posteTresorerieText || '-'}
+                        </span>
+                        ${posteTresorerieId ? `
+                            <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
+                                onclick="window.quickEditPosteRow(this, ${posteTresorerieId})" title="Modifier le poste">
+                                <i class="bx bx-edit-alt text-xs"></i>
+                            </button>
+                        ` : (compteText.startsWith('5') ? `
+                            <button type="button" class="btn btn-xs btn-icon btn-label-warning opacity-0 group-hover:opacity-100 transition-opacity" 
+                                onclick="window.quickCreatePosteRow(this)" title="Créer un poste">
+                                <i class="bx bx-plus text-xs"></i>
+                            </button>
+                        ` : '')}
+                    </div>
+                `;
             } else {
                 cell.textContent = content;
             }
         });
 
-        const modifierCell = document.createElement('td');
+        const modifierCell = newRow.insertCell();
+        modifierCell.className = "text-center";
         modifierCell.innerHTML = `
             <button type="button" class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Modifier cette ligne">
-                <i class="bx bx-edit"></i>
+                <i class="bx bx-edit text-white"></i>
             </button>
         `;
-        newRow.appendChild(modifierCell);
 
-        const supprimerCell = document.createElement('td');
+        const supprimerCell = newRow.insertCell();
+        supprimerCell.className = "text-center";
         supprimerCell.innerHTML = `
             <button type="button" class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Supprimer cette ligne">
-                <i class="bx bx-trash"></i>
+                <i class="bx bx-trash text-white"></i>
             </button>
         `;
-        newRow.appendChild(supprimerCell);
 
             // Réinitialisation SEULEMENT des champs spécifiques à chaque ligne
             compteGeneral.value = '';
             if (compteTiers) compteTiers.value = '';
+            const posteTresoSelect = document.getElementById('poste_tresorerie');
+            if (posteTresoSelect) {
+                posteTresoSelect.value = '';
+                if (typeof $ !== 'undefined' && $(posteTresoSelect).data('select2')) {
+                    $(posteTresoSelect).val('').trigger('change');
+                }
+            }
             debit.value = '';
             credit.value = '';
             if (planAnalytique) planAnalytique.value = '0';
@@ -1997,14 +2424,20 @@ function ajouterEcriture() {
         const credit = b.credit || 0;
         const analytique = b.plan_analytique ? 'Oui' : 'Non';
         const pieceFileName = b.piece_justificatif || '';
+        const posteTresorerieName = b.poste_tresorerie ? 
+            (b.poste_tresorerie.name + (b.poste_tresorerie.category ? ' - ' + b.poste_tresorerie.category.name : '')) : '';
+        const posteTresorerieId = b.poste_tresorerie_id || '';
 
         if (b.compte_tresorerie_id) {
             newRow.setAttribute('data-compte-tresorerie-id', b.compte_tresorerie_id);
         }
+        if (posteTresorerieId) {
+            newRow.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
+        }
 
         const cells = [
             date, nSaisie, imputation, description, reference,
-            compteText, tiersText, debit, credit, '', analytique
+            compteText, tiersText, debit, credit, posteTresorerieName, '', analytique
         ];
 
         cells.forEach((content, index) => {
@@ -2015,7 +2448,7 @@ function ajouterEcriture() {
             } else if (index === 6 && b.plan_tiers_id) {
                 cell.textContent = tiersText;
                 cell.setAttribute('data-tiers-id', b.plan_tiers_id);
-            } else if (index === 9) {
+            } else if (index === 10) {
                 if (pieceFileName) {
                     cell.innerHTML = `<button class="btn btn-sm btn-primary-premium btn-premium" onclick="voirPieceJustificative('${pieceFileName}')" style="border-radius: 10px;">
                         <i class="bx bx-eye me-1"></i>Voir
@@ -2029,13 +2462,13 @@ function ajouterEcriture() {
             }
         });
 
-        const modifierCell = document.createElement('td');
-        modifierCell.innerHTML = `<button type="button" class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Modifier cette ligne"><i class="bx bx-edit"></i></button>`;
-        newRow.appendChild(modifierCell);
+        const modifierCell = newRow.insertCell();
+        modifierCell.className = "text-center";
+        modifierCell.innerHTML = `<button type="button" class="btn btn-sm btn-warning btn-premium" onclick="modifierEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Modifier cette ligne"><i class="bx bx-edit text-white"></i></button>`;
 
-        const supprimerCell = document.createElement('td');
-        supprimerCell.innerHTML = `<button type="button" class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Supprimer cette ligne"><i class="bx bx-trash"></i></button>`;
-        newRow.appendChild(supprimerCell);
+        const supprimerCell = newRow.insertCell();
+        supprimerCell.className = "text-center";
+        supprimerCell.innerHTML = `<button type="button" class="btn btn-sm btn-danger btn-premium" onclick="supprimerEcriture(this.closest('tr'));" style="border-radius: 10px;" title="Supprimer cette ligne"><i class="bx bx-trash text-white"></i></button>`;
     }
 
     // ... (rest of local/draft logic can be kept or minimized if needed)
@@ -2094,7 +2527,8 @@ function ajouterEcriture() {
                 plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
                 id_exercice: formData.get('id_exercice'),
                 journaux_saisis_id: formData.get('journaux_saisis_id'),
-                compte_tresorerie_id: compteTresorerieId || null // Ajout de l'ID du compte de trésorerie
+                compte_tresorerie_id: compteTresorerieId || null,
+                poste_tresorerie_id: row.getAttribute('data-poste-tresorerie-id') || null
             });
         });
 
@@ -2414,11 +2848,12 @@ function ajouterEcriture() {
                 plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
                 debit: debit,
                 credit: credit,
-                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
+                plan_analytique: cells[11].textContent.trim() === 'Oui' ? 1 : 0,
                 exercices_comptables_id: formData.get('id_exercice'),
                 code_journal_id: formData.get('code_journal_id'),
                 journaux_saisis_id: formData.get('journaux_saisis_id'),
                 compte_tresorerie_id: compteTresorerieId || null,
+                poste_tresorerie_id: row.getAttribute('data-poste-tresorerie-id') || null,
                 source: 'manuel'
             });
         });
@@ -2623,17 +3058,15 @@ function ajouterEcriture() {
         const debit = cells[7].textContent.trim();
         const credit = cells[8].textContent.trim();
         
-        // Pour la case analytique, elle est dans la cellule 9 (index 9)
+        // Poste Trésorerie est à l'index 9
+        const posteTresorerie = cells[9].textContent.trim();
+        const posteTresorerieId = row.getAttribute('data-poste-tresorerie-id');
+        
+        // ANALYTIQUE est à l'index 11
         let analytique = false;
-        if (cells[9]) {
-            const checkbox = cells[9].querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                analytique = checkbox.checked;
-            } else {
-                // Si pas de checkbox, vérifier si le texte contient "Oui"
-                const text = cells[9].textContent.trim();
-                analytique = text === 'Oui' || text === 'true' || text === '1';
-            }
+        if (cells[11]) {
+            const text = cells[11].textContent.trim();
+            analytique = text === 'Oui' || text === 'true' || text === '1';
         }
         
         // Mettre à jour le formulaire principal avec les valeurs de la ligne
@@ -2641,8 +3074,43 @@ function ajouterEcriture() {
         document.getElementById('n_saisie').value = nSaisie;
         document.getElementById('description_operation').value = libelle;
         document.getElementById('reference_piece').value = referencePiece;
+        document.getElementById('debit').value = debit.replace(/\s/g, '').replace(',', '.') || '';
+        document.getElementById('credit').value = credit.replace(/\s/g, '').replace(',', '.') || '';
         
-        // Pour le journal, chercher dans le selecteur
+        if (document.getElementById('plan_analytique')) {
+            document.getElementById('plan_analytique').value = analytique ? '1' : '0';
+        }
+
+        // Gérer le compte général
+        const selectCompte = document.getElementById('compte_general');
+        if (selectCompte && compteGeneralId) {
+            selectCompte.value = compteGeneralId;
+            $(selectCompte).trigger('change');
+        }
+
+        // Gérer le tiers
+        const selectTiers = document.getElementById('compte_tiers');
+        if (selectTiers) {
+            if (compteTiersId) {
+                selectTiers.value = compteTiersId;
+                $(selectTiers).trigger('change');
+            } else {
+                selectTiers.value = '';
+                $(selectTiers).trigger('change');
+            }
+        }
+
+        // Gérer le poste de trésorerie
+        const selectPoste = document.getElementById('poste_tresorerie');
+        if (selectPoste) {
+            if (posteTresorerieId) {
+                selectPoste.value = posteTresorerieId;
+                $(selectPoste).trigger('change');
+            } else {
+                selectPoste.value = '';
+                $(selectPoste).trigger('change');
+            }
+        }
         const journalSelect = document.getElementById('code_journal_affiche');
         if (journalSelect && journalSelect.options) {
             // Chercher l'option qui correspond au texte du journal
@@ -2777,6 +3245,24 @@ function ajouterEcriture() {
                 const option = this.options[this.selectedIndex];
                 const numero = option ? (option.getAttribute('data-numero') || '') : '';
                 
+                // --- Logique Poste Trésorerie (Saisi) ---
+                const posteTresoSelect = document.getElementById('poste_tresorerie');
+                const btnCreatePoste = document.getElementById('btn_create_poste_entry');
+                if (posteTresoSelect) {
+                    if (numero.startsWith('5')) {
+                        posteTresoSelect.disabled = false;
+                        posteTresoSelect.setAttribute('required', 'required');
+                        if (btnCreatePoste) btnCreatePoste.classList.remove('d-none');
+                        $(posteTresoSelect).trigger('change');
+                    } else {
+                        posteTresoSelect.disabled = true;
+                        posteTresoSelect.removeAttribute('required');
+                        posteTresoSelect.value = '';
+                        if (btnCreatePoste) btnCreatePoste.classList.add('d-none');
+                        $(posteTresoSelect).val('').trigger('change');
+                    }
+                }
+
                 if (numero.startsWith('6')) {
                     compteTiersSelect.value = '';
                     $(compteTiersSelect).val('').trigger('change');
@@ -2794,6 +3280,45 @@ function ajouterEcriture() {
                         parent.style.pointerEvents = 'auto';
                     }
                 }
+            });
+        }
+
+        // 3. Custom Template for Treasury Posts (Select2)
+        function formatTreasuryResult(state) {
+            if (!state.id) return state.text;
+            const parts = state.text.split(' - ');
+            if (parts.length < 2) return state.text;
+            
+            const name = parts[0];
+            const type = parts.slice(1).join(' - ');
+            
+            // Format "nom - type" avec le type en fond gris clair/blanc via CSS class
+            return $(
+                '<span>' + name + ' - </span>' +
+                '<span class="treasury-category-badge">' + type + '</span>'
+            );
+        }
+
+        function formatTreasurySelection(state) {
+            if (!state.id) return state.text;
+            const parts = state.text.split(' - ');
+            if (parts.length < 2) return state.text.split(' - ')[0]; // Fallback to name if hyphen missing
+            
+            const name = parts[0];
+            const type = parts.slice(1).join(' - ');
+            
+            return $(
+                '<span>' + name + ' - </span>' +
+                '<span class="treasury-category-badge">' + type + '</span>'
+            );
+        }
+
+        if (typeof $ !== 'undefined' && typeof $.fn.select2 !== 'undefined') {
+            $('#compte_tresorerie, #poste_tresorerie').select2({
+                templateResult: formatTreasuryResult,
+                templateSelection: formatTreasurySelection,
+                escapeMarkup: function(m) { return m; },
+                width: '100%'
             });
         }
     });

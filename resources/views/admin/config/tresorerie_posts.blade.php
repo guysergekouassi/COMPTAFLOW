@@ -210,7 +210,7 @@
                                 <input type="text" name="name" class="form-control border-slate-200 py-3 rounded-xl shadow-none focus:border-primary" placeholder="Ex: Ventes de marchandises" required>
                             </div>
                             <div class="col-12">
-                                <label class="form-label font-black text-slate-700 uppercase text-xs">Catégorie</label>
+                                <label class="form-label font-black text-slate-700 uppercase text-xs">Catégorie (seulement ces trois flux)</label>
                                 <select name="category_id" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold" required>
                                     <option value="" disabled selected>-- Sélectionner une catégorie --</option>
                                     @foreach($categories as $category)
@@ -218,10 +218,9 @@
                                     @endforeach
                                 </select>
                                 @if($categories->isEmpty())
-                                    <small class="text-muted">
-                                        <i class="bx bx-info-circle"></i>
-                                        Aucune catégorie disponible. 
-                                        <a href="{{ route('admin.config.treasury_categories') }}" class="text-primary">Créer une catégorie</a>
+                                    <small class="text-danger">
+                                        <i class="bx bx-error-circle"></i>
+                                        Erreur : Les catégories prédéfinies n'ont pas été trouvées.
                                     </small>
                                 @endif
                             </div>
@@ -254,7 +253,7 @@
                                 <input type="text" name="name" id="edit_name" class="form-control border-slate-200 py-3 rounded-xl shadow-none focus:border-primary" required>
                             </div>
                             <div class="col-12">
-                                <label class="form-label font-black text-slate-700 uppercase text-xs">Catégorie</label>
+                                <label class="form-label font-black text-slate-700 uppercase text-xs">Catégorie (seulement ces trois flux)</label>
                                 <select name="category_id" id="edit_category_id" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold" required>
                                     <option value="" disabled>-- Sélectionner une catégorie --</option>
                                     @foreach($categories as $category)

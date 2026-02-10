@@ -351,6 +351,32 @@
                                                 value="{{ $data['code_journal'] ?? '' }}">
                                             <i class="fas fa-book absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                         </div>
+
+                                        <div class="relative w-full md:col-span-3">
+                                            <input type="text" id="filterGlobalSearch" placeholder="Recherche globale (N° compte, tiers, description...)" 
+                                                class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm"
+                                                value="{{ $data['recherche'] ?? '' }}">
+                                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        </div>
+
+                                        <div class="relative w-full md:col-span-3">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">État du Poste Trésorerie</label>
+                                            <div class="flex p-1 bg-slate-100 rounded-xl w-full md:w-fit">
+                                                <input type="hidden" id="filterEtatPoste" value="{{ $data['etat_poste'] ?? '' }}">
+                                                <button type="button" data-value="tous" onclick="setEtatPoste('tous')" 
+                                                    class="etat-poste-btn flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all {{ ($data['etat_poste'] ?? '') === 'tous' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700' }}">
+                                                    Tous
+                                                </button>
+                                                <button type="button" data-value="defini" onclick="setEtatPoste('defini')" 
+                                                    class="etat-poste-btn flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all {{ ($data['etat_poste'] ?? '') === 'defini' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700' }}">
+                                                    Définis
+                                                </button>
+                                                <button type="button" data-value="non_defini" onclick="setEtatPoste('non_defini')" 
+                                                    class="etat-poste-btn flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all {{ ($data['etat_poste'] ?? '') === 'non_defini' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700' }}">
+                                                    Non Définis
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="flex justify-end gap-3 mt-4">
@@ -475,16 +501,48 @@
                                                                 @endif
                                                             </div>
                                                         </td>
-                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">
-                                                            @if($ecriture->compteTresorerie)
-                                                                <span class="badge bg-label-info">{{ $ecriture->compteTresorerie->name }}</span>
-                                                            @else
-                                                                <span class="text-slate-400">-</span>
-                                                            @endif
-                                                        </td>
-                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->reference_piece }}</td>
                                                     @endif
-                                                    
+
+                                                    <td class="px-4 py-3 text-sm text-slate-700 td-poste-treso" data-ecriture-id="{{ $ecriture->id }}">
+                                                            <div class="flex items-center gap-2 group">
+                                                                @if($ecriture->posteTresorerie)
+                                                                    <span class="badge bg-label-info">
+                                                                        {{ $ecriture->posteTresorerie->name }}
+                                                                        @if($ecriture->posteTresorerie->category)
+                                                                            - {{ $ecriture->posteTresorerie->category->name }}
+                                                                        @endif
+                                                                    </span>
+                                                                    <button type="button" class="btn btn-xs btn-icon btn-label-secondary transition-opacity" 
+                                                                        onclick="window.quickEditPoste({{ $ecriture->id }}, {{ $ecriture->poste_tresorerie_id }}, '{{ $ecriture->posteTresorerie->syscohada_line_id ?? '' }}')" title="Modifier le poste">
+                                                                        <i class="bx bx-edit-alt text-xs"></i>
+                                                                    </button>
+                                                                @elseif($ecriture->compteTresorerie)
+                                                                    <span class="badge bg-label-secondary" title="Compte de trésorerie (Banque)">{{ $ecriture->compteTresorerie->name }}</span>
+                                                                    <button type="button" class="btn btn-xs btn-icon btn-label-primary transition-opacity" 
+                                                                        onclick="window.quickCreatePoste({{ $ecriture->id }}, {{ $ecriture->compte_tresorerie_id }})" title="Créer un poste pour ce compte">
+                                                                        <i class="bx bx-plus text-xs"></i>
+                                                                    </button>
+                                                                @else
+                                                                    @php
+                                                                        $isClass5 = $ecriture->planComptable && str_starts_with($ecriture->planComptable->numero_de_compte, '5');
+                                                                    @endphp
+                                                                    @if($isClass5)
+                                                                        <span class="text-slate-400">Non défini</span>
+                                                                        <button type="button" class="btn btn-xs btn-icon btn-label-warning transition-opacity" 
+                                                                            onclick="window.quickCreatePoste({{ $ecriture->id }}, null)" title="Créer un poste trésorerie">
+                                                                            <i class="bx bx-plus text-xs"></i>
+                                                                        </button>
+                                                                    @else
+                                                                        <span class="text-slate-200">-</span>
+                                                                    @endif
+                                                                @endif
+                                                            </div>
+                                                        </td>
+
+                                                        @if($index === 0)
+                                                            <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->reference_piece }}</td>
+                                                        @endif
+
                                                     <td class="px-4 py-3 text-sm text-slate-700">{{ $ecriture->description_operation }}</td>
                                                     <td class="px-4 py-3 text-sm text-slate-700">
                                                         <div class="flex flex-col">
@@ -1006,14 +1064,32 @@
         const numeroSaisie = document.getElementById('filterNumeroSaisie').value;
         const mois = document.getElementById('filterMois').value;
         const codeJournal = document.getElementById('filterCodeJournal').value;
+        const recherche = document.getElementById('filterGlobalSearch').value;
+        const etatPoste = document.getElementById('filterEtatPoste').value;
 
         const params = new URLSearchParams();
         if (numeroSaisie) params.append('numero_saisie', numeroSaisie);
         if (mois) params.append('mois', mois);
         if (codeJournal) params.append('code_journal', codeJournal);
+        if (recherche) params.append('recherche', recherche);
+        if (etatPoste && etatPoste !== '') params.append('etat_poste', etatPoste);
 
         window.location.href = window.location.pathname + '?' + params.toString();
     }
+
+    window.setEtatPoste = function(value) {
+        document.getElementById('filterEtatPoste').value = value;
+        document.querySelectorAll('.etat-poste-btn').forEach(btn => {
+            if (btn.getAttribute('data-value') === value) {
+                btn.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+                btn.classList.remove('text-slate-500', 'hover:text-slate-700');
+            } else {
+                btn.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+                btn.classList.add('text-slate-500', 'hover:text-slate-700');
+            }
+        });
+        filterEcritures();
+    };
 
     window.toggleAdvancedFilter = function() {
         const panel = document.getElementById('advancedFilterPanel');
@@ -1029,9 +1105,17 @@
         const numeroSaisie = document.getElementById('filterNumeroSaisie');
         const mois = document.getElementById('filterMois');
         const codeJournal = document.getElementById('filterCodeJournal');
+        const recherche = document.getElementById('filterGlobalSearch');
+        const etatPoste = document.getElementById('filterEtatPoste');
+        
         if (numeroSaisie) numeroSaisie.value = '';
         if (mois) mois.value = '';
         if (codeJournal) codeJournal.value = '';
+        if (recherche) recherche.value = '';
+        if (etatPoste) {
+            etatPoste.value = '';
+            setEtatPoste('');
+        }
         filterEcritures();
     };
 
@@ -1122,17 +1206,180 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Écriture mise à jour avec succès');
-                window.location.reload();
+                location.reload();
             } else {
-                alert('Erreur lors de la mise à jour: ' + (data.message || 'Erreur inconnue'));
+                alert('Erreur : ' + (data.message || 'Erreur inconnue'));
             }
         })
         .catch(error => {
-            console.error('Erreur:', error);
-            alert('Une erreur est survenue lors de la mise à jour');
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
         });
     });
+
+    const syscohadaOptions = {
+        '': 'Aucun (Non spécifié)',
+        'INV_ACQ': 'INV - Acquisition d\'immobilisations',
+        'INV_CES': 'INV - Cession d\'immobilisations',
+        'FIN_EMP': 'FIN - Emprunt (Encaissement)',
+        'FIN_RMB': 'FIN - Remboursement d\'emprunt',
+        'FIN_DIV': 'FIN - Dividendes versés',
+        'FIN_CAP': 'FIN - Augmentation de capital',
+        'FIN_SUB': 'FIN - Subvention d\'investissement'
+    };
+
+    function getSyscohadaOptionsHtml(selected = '') {
+        return Object.entries(syscohadaOptions).map(([key, label]) => 
+            `<option value="${key}" ${key === selected ? 'selected' : ''}>${label}</option>`
+        ).join('');
+    }
+
+    window.quickEditPoste = function(ecritureId, posteId, currentSyscohadaId = '') {
+        const categories = @json($treasury_categories ?? []);
+        const categoryOptions = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        const syscohadaOptionsHtml = getSyscohadaOptionsHtml(currentSyscohadaId);
+        
+        Swal.fire({
+            title: 'Modifier le poste de trésorerie',
+            html: `
+                <div class="mb-3 text-start">
+                    <label class="form-label">Nom du poste</label>
+                    <input type="text" id="swal_poste_name" class="form-control" placeholder="Ex: Caisse Menue Dépense">
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Catégorie</label>
+                    <select id="swal_poste_category" class="form-select">
+                        <option value="">Sélectionner une catégorie...</option>
+                        ${categoryOptions}
+                    </select>
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Flux SYSCOHADA (TFT)</label>
+                    <div class="form-text text-muted mb-1 text-xs">Obligatoire pour Inv/Fin, ignoré pour Opérationnel</div>
+                    <select id="swal_poste_syscohada" class="form-select">
+                        ${syscohadaOptionsHtml}
+                    </select>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Enregistrer',
+            cancelButtonText: 'Annuler',
+            didOpen: () => {
+                // Populate existing name? We don't have it easily here without fetching or passing it.
+                // For "Edit", we ideally want the name pre-filled. 
+                // Currently the logic passed posteId but not the name.
+                // Let's rely on user re-typing or maybe we should have passed it.
+                // For now, let's keep it simple as the original code did not pre-fill name except if we add it.
+            },
+            preConfirm: () => {
+                const name = document.getElementById('swal_poste_name').value;
+                const category_id = document.getElementById('swal_poste_category').value;
+                const syscohada_line_id = document.getElementById('swal_poste_syscohada').value;
+                if (!name || !category_id) {
+                    Swal.showValidationMessage('Veuillez remplir le nom et la catégorie');
+                    return false;
+                }
+                return { name, category_id, syscohada_line_id };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saveQuickPoste(ecritureId, result.value.name, result.value.category_id, result.value.syscohada_line_id);
+            }
+        });
+    };
+
+    window.quickCreatePoste = function(ecritureId, compteTresorerieId) {
+        // Similar to edit but for creation
+        const categories = @json($treasury_categories ?? []);
+        const categoryOptions = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        const syscohadaOptionsHtml = getSyscohadaOptionsHtml();
+
+        Swal.fire({
+            title: 'Nouveau poste de trésorerie',
+            html: `
+                <div class="mb-3 text-start">
+                    <label class="form-label">Nom du poste</label>
+                    <input type="text" id="swal_poste_name" class="form-control" placeholder="Ex: Caisse Menue Dépense">
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Catégorie</label>
+                    <select id="swal_poste_category" class="form-select">
+                        <option value="">Sélectionner une catégorie...</option>
+                        ${categoryOptions}
+                    </select>
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Flux SYSCOHADA (TFT)</label>
+                     <div class="form-text text-muted mb-1 text-xs">Obligatoire pour Inv/Fin, ignoré pour Opérationnel</div>
+                    <select id="swal_poste_syscohada" class="form-select">
+                        ${syscohadaOptionsHtml}
+                    </select>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Créer et Assigner',
+            cancelButtonText: 'Annuler',
+            preConfirm: () => {
+                const name = document.getElementById('swal_poste_name').value;
+                const category_id = document.getElementById('swal_poste_category').value;
+                const syscohada_line_id = document.getElementById('swal_poste_syscohada').value;
+                if (!name || !category_id) {
+                    Swal.showValidationMessage('Veuillez remplir le nom et la catégorie');
+                    return false;
+                }
+                return { name, category_id, syscohada_line_id };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saveQuickPoste(ecritureId, result.value.name, result.value.category_id, result.value.syscohada_line_id);
+            }
+        });
+    };
+
+    function saveQuickPoste(ecritureId, name, categoryId, syscohadaLineId) {
+        fetch('{{ route("postetresorerie.store_quick") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                ecriture_id: ecritureId,
+                name: name,
+                category_id: categoryId,
+                syscohada_line_id: syscohadaLineId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Succès !', text: data.message, timer: 1500, showConfirmButton: false });
+                
+                // Dimanic update of the table cell
+                const td = document.querySelector(`.td-poste-treso[data-ecriture-id="${ecritureId}"]`);
+                if (td) {
+                    td.innerHTML = `
+                        <div class="flex items-center gap-2 group">
+                            <span class="badge bg-label-info">
+                                ${data.name} - ${data.category_name}
+                            </span>
+                            <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
+                                onclick="window.quickEditPoste(${ecritureId}, ${data.id}, '${data.syscohada_line_id || ''}')" title="Modifier le poste">
+                                <i class="bx bx-edit-alt text-xs"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            } else {
+                throw new Error(data.error || 'Erreur lors de la sauvegarde');
+            }
+        })
+        .catch(err => {
+            console.error('Erreur:', err);
+            Swal.fire({ icon: 'error', title: 'Oups...', text: err.message });
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         initSearchSelect('compteGeneralSearch', 'compteGeneralDropdown', 'compteGeneralEcriture');

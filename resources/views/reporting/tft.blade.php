@@ -264,51 +264,22 @@
                                 </thead>
                                 <tbody>
                                     <tr class="section-row">
-                                        <td colspan="{{ count($data['months']) + 2 }}">I. Flux de trésorerie des activités opérationnelles</td>
+                                        <td colspan="{{ count($data['months']) + 2 }}">I. Flux de trésorerie des activités opérationnelles (Méthode Indirecte)</td>
                                     </tr>
                                     
-                                    <!-- ENCAISSEMENTS -->
-                                    <tr>
-                                        <td>Clients (Encaissements)</td>
-                                        @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['encaissements']['clients'][$i], 0, ',', ' ') }}</td>
-                                        @endforeach
-                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['encaissements']['clients']), 0, ',', ' ') }}</td>
-                                    </tr>
-                                    @if(request('detail'))
-                                        @foreach($data['flux']['operationnel']['encaissements']['details']['clients'] as $compte)
-                                        <tr class="detail-row">
-                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                                            @foreach($data['months'] as $i => $m)
-                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
-                                            @endforeach
-                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
-                                        </tr>
-                                        @endforeach
-                                    @endif
-
-                                    <tr class="total-row">
-                                        <td>Total Encaissements</td>
-                                        @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['encaissements']['total'][$i], 0, ',', ' ') }}</td>
-                                        @endforeach
-                                        <td>{{ number_format(array_sum($data['flux']['operationnel']['encaissements']['total']), 0, ',', ' ') }}</td>
-                                    </tr>
-
+                                    <!-- CAF -->
                                     <tr class="section-row">
-                                        <td colspan="{{ count($data['months']) + 2 }}" style="font-size: 0.75rem; color: #475569; background: #fff;">Décaissements</td>
+                                        <td colspan="{{ count($data['months']) + 2 }}" style="font-size: 0.75rem; color: #475569; background: #fff;">A. Capacité d'Autofinancement (CAF)</td>
                                     </tr>
-
-                                    <!-- DÉCAISSEMENTS (Production) -->
                                     <tr>
-                                        <td>Dépenses de production</td>
+                                        <td>Produits encaissables (+)</td>
                                         @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['production'][$i], 0, ',', ' ') }}</td>
+                                            <td class="text-success">+ {{ number_format($data['flux']['operationnel']['caf']['produits_encaissables'][$i], 0, ',', ' ') }}</td>
                                         @endforeach
-                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['production']), 0, ',', ' ') }}</td>
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['caf']['produits_encaissables']), 0, ',', ' ') }}</td>
                                     </tr>
                                     @if(request('detail'))
-                                        @foreach($data['flux']['operationnel']['decaissements']['details']['production'] as $compte)
+                                        @foreach($data['flux']['operationnel']['caf']['details']['produits'] as $compte)
                                         <tr class="detail-row">
                                             <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
                                             @foreach($data['months'] as $i => $m)
@@ -319,16 +290,47 @@
                                         @endforeach
                                     @endif
 
-                                    <!-- Autres Achats -->
                                     <tr>
-                                        <td>Autres achats</td>
+                                        <td>Charges décaissables (-)</td>
                                         @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['autres_achats'][$i], 0, ',', ' ') }}</td>
+                                            <td class="text-danger">- {{ number_format($data['flux']['operationnel']['caf']['charges_decaissables'][$i], 0, ',', ' ') }}</td>
                                         @endforeach
-                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['autres_achats']), 0, ',', ' ') }}</td>
+                                        <td class="fw-bold">- {{ number_format(array_sum($data['flux']['operationnel']['caf']['charges_decaissables']), 0, ',', ' ') }}</td>
                                     </tr>
                                     @if(request('detail'))
-                                        @foreach($data['flux']['operationnel']['decaissements']['details']['autres_achats'] as $compte)
+                                        @foreach($data['flux']['operationnel']['caf']['details']['charges'] as $compte)
+                                        <tr class="detail-row">
+                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
+                                            @foreach($data['months'] as $i => $m)
+                                                <td>- {{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
+                                            @endforeach
+                                            <td>- {{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                    <tr class="total-row">
+                                        <td>Marge Brute d'Autofinancement (CAF)</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['caf']['total'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td>{{ number_format(array_sum($data['flux']['operationnel']['caf']['total']), 0, ',', ' ') }}</td>
+                                    </tr>
+
+                                    <!-- BFR -->
+                                    <tr class="section-row">
+                                        <td colspan="{{ count($data['months']) + 2 }}" style="font-size: 0.75rem; color: #475569; background: #fff;">B. Variation du BFR</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Variation Stocks</td>
+                                        @foreach($data['months'] as $i => $m)
+                                            <td>{{ number_format($data['flux']['operationnel']['bfr']['variation_stocks'][$i], 0, ',', ' ') }}</td>
+                                        @endforeach
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['bfr']['variation_stocks']), 0, ',', ' ') }}</td>
+                                    </tr>
+                                    @if(request('detail'))
+                                        @foreach($data['flux']['operationnel']['bfr']['details']['stocks'] as $compte)
                                         <tr class="detail-row">
                                             <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
                                             @foreach($data['months'] as $i => $m)
@@ -339,16 +341,15 @@
                                         @endforeach
                                     @endif
 
-                                     <!-- Transport -->
                                     <tr>
-                                        <td>Transport</td>
+                                        <td>Variation Créances</td>
                                         @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['transport'][$i], 0, ',', ' ') }}</td>
+                                            <td>{{ number_format($data['flux']['operationnel']['bfr']['variation_creances'][$i], 0, ',', ' ') }}</td>
                                         @endforeach
-                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['transport']), 0, ',', ' ') }}</td>
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['bfr']['variation_creances']), 0, ',', ' ') }}</td>
                                     </tr>
                                     @if(request('detail'))
-                                        @foreach($data['flux']['operationnel']['decaissements']['details']['transport'] as $compte)
+                                        @foreach($data['flux']['operationnel']['bfr']['details']['creances'] as $compte)
                                         <tr class="detail-row">
                                             <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
                                             @foreach($data['months'] as $i => $m)
@@ -359,56 +360,15 @@
                                         @endforeach
                                     @endif
 
-                                     <!-- Services Extérieurs -->
-                                    <tr>
-                                        <td>Services Extérieurs</td>
+                                     <tr>
+                                        <td>Variation Dettes Circulantes</td>
                                         @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['services_exterieurs'][$i], 0, ',', ' ') }}</td>
+                                            <td>{{ number_format($data['flux']['operationnel']['bfr']['variation_dettes'][$i], 0, ',', ' ') }}</td>
                                         @endforeach
-                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['services_exterieurs']), 0, ',', ' ') }}</td>
+                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['bfr']['variation_dettes']), 0, ',', ' ') }}</td>
                                     </tr>
                                     @if(request('detail'))
-                                        @foreach($data['flux']['operationnel']['decaissements']['details']['services_exterieurs'] as $compte)
-                                        <tr class="detail-row">
-                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                                            @foreach($data['months'] as $i => $m)
-                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
-                                            @endforeach
-                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
-                                        </tr>
-                                        @endforeach
-                                    @endif
-
-                                    <!-- Personnel -->
-                                    <tr>
-                                        <td>Charges de personnel</td>
-                                        @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['personnel'][$i], 0, ',', ' ') }}</td>
-                                        @endforeach
-                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['personnel']), 0, ',', ' ') }}</td>
-                                    </tr>
-                                    @if(request('detail'))
-                                        @foreach($data['flux']['operationnel']['decaissements']['details']['personnel'] as $compte)
-                                        <tr class="detail-row">
-                                            <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                                            @foreach($data['months'] as $i => $m)
-                                                <td>{{ isset($compte['months'][$i]) ? number_format($compte['months'][$i], 0, ',', ' ') : '-' }}</td>
-                                            @endforeach
-                                            <td>{{ number_format(array_sum($compte['months'] ?? []), 0, ',', ' ') }}</td>
-                                        </tr>
-                                        @endforeach
-                                    @endif
-
-                                     <!-- Impots -->
-                                    <tr>
-                                        <td>Impôts et Taxes</td>
-                                        @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['impots_taxes'][$i], 0, ',', ' ') }}</td>
-                                        @endforeach
-                                        <td class="fw-bold">{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['impots_taxes']), 0, ',', ' ') }}</td>
-                                    </tr>
-                                    @if(request('detail'))
-                                        @foreach($data['flux']['operationnel']['decaissements']['details']['impots_taxes'] as $compte)
+                                        @foreach($data['flux']['operationnel']['bfr']['details']['dettes'] as $compte)
                                         <tr class="detail-row">
                                             <td>{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
                                             @foreach($data['months'] as $i => $m)
@@ -420,15 +380,15 @@
                                     @endif
 
                                     <tr class="total-row">
-                                        <td>Total Décaissements</td>
+                                        <td>Variation Totale du BFR</td>
                                         @foreach($data['months'] as $i => $m)
-                                            <td>{{ number_format($data['flux']['operationnel']['decaissements']['total'][$i], 0, ',', ' ') }}</td>
+                                            <td>{{ number_format($data['flux']['operationnel']['bfr']['total'][$i], 0, ',', ' ') }}</td>
                                         @endforeach
-                                        <td>{{ number_format(array_sum($data['flux']['operationnel']['decaissements']['total']), 0, ',', ' ') }}</td>
+                                        <td>{{ number_format(array_sum($data['flux']['operationnel']['bfr']['total']), 0, ',', ' ') }}</td>
                                     </tr>
 
                                     <tr class="main-total-row">
-                                        <td>I. Flux Net Opérationnel</td>
+                                        <td>I. Flux Net Opérationnel (A + B)</td>
                                         @foreach($data['months'] as $i => $m)
                                             <td>{{ number_format($data['flux']['operationnel']['net'][$i], 0, ',', ' ') }}</td>
                                         @endforeach

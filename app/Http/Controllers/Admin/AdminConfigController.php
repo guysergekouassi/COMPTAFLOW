@@ -3648,6 +3648,11 @@ class AdminConfigController extends Controller
             ->get();
 
         $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
+            ->whereIn('name', [
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ])
             ->orderBy('name')
             ->get();
 
@@ -3728,8 +3733,8 @@ class AdminConfigController extends Controller
             $poste = \App\Models\CompteTresorerie::where('company_id', $companyId)->findOrFail($id);
 
             // Vérifier s'il y a des mouvements ou des écritures liés
-            if ($poste->mouvements()->count() > 0) {
-                return redirect()->back()->with('error', 'Impossible de supprimer ce poste car il contient des mouvements de trésorerie.');
+            if ($poste->mouvements()->count() > 0 || $poste->ecritures()->count() > 0) {
+                return redirect()->back()->with('error', 'Impossible de supprimer ce poste car il contient des mouvements ou des écritures comptables.');
             }
 
             $poste->delete();

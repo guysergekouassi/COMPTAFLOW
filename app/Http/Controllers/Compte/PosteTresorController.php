@@ -21,9 +21,11 @@ use App\Models\EcritureComptable;
 use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use App\Traits\HandlesTreasuryPosts;
 
 class PosteTresorController extends Controller
 {
+    use HandlesTreasuryPosts;
 // Fichier : PosteTresorController.php (Méthode index() mise à jour)
 
     public function index(){
@@ -43,11 +45,23 @@ class PosteTresorController extends Controller
             ->get();
 
         // 3. Récupération des postes de trésorerie de la compagnie
-        $comptes = CompteTresorerie::where('company_id', $companyId)->get();
+        $comptes = CompteTresorerie::where('company_id', $companyId)
+            ->with('category')
+            ->get();
         $postesTresorerie = $comptes;
 
-        // 4. Passer toutes les listes à la vue
-        return view('Poste.posteTresor' , compact('comptes', 'postesTresorerie', 'comptes5'));
+        // 4. Récupération des catégories prédéfinies
+        $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
+            ->whereIn('name', [
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ])
+            ->orderBy('name')
+            ->get();
+
+        // 5. Passer toutes les listes à la vue
+        return view('Poste.posteTresor' , compact('comptes', 'postesTresorerie', 'comptes5', 'categories'));
     }
 
 
@@ -85,7 +99,9 @@ class PosteTresorController extends Controller
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
 
-        $comptes = CompteTresorerie::where('company_id', $companyId)->get();
+        $comptes = CompteTresorerie::where('company_id', $companyId)
+            ->with('category')
+            ->get();
         $postesTresorerie = $comptes;
         
         // S'assurer que le compte appartient à la compagnie
@@ -95,7 +111,17 @@ class PosteTresorController extends Controller
 
         $mouvements = $compte->mouvements()->orderBy('date_mouvement', 'desc')->paginate(20);
 
-        return view('Poste.posteTresor', compact('comptes','compte', 'mouvements', 'postesTresorerie'));
+        // Récupération des catégories prédéfinies
+        $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
+            ->whereIn('name', [
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ])
+            ->orderBy('name')
+            ->get();
+
+        return view('Poste.posteTresor', compact('comptes','compte', 'mouvements', 'postesTresorerie', 'categories'));
     }
 
 
@@ -172,7 +198,7 @@ class PosteTresorController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:Flux Des Activités Operationnelles,Flux Des Activités Investissement,Flux Des Activités de Financement',
+            'category_id' => 'required|exists:treasury_categories,id',
         ]);
 
         // Vérification d'unicité par compagnie
@@ -186,7 +212,7 @@ class PosteTresorController extends Controller
 
         $compte = CompteTresorerie::create([
             'name' => $validated['name'],
-            'type' => $validated['type'],
+            'category_id' => $validated['category_id'],
             'company_id' => $companyId,
             'solde_initial' => 0,
             'solde_actuel' => 0,
@@ -194,6 +220,64 @@ class PosteTresorController extends Controller
 
         return redirect()->route('postetresorerie.index')
                          ->with('success', 'Poste de trésorerie créé avec succès.');
+    }
+
+    // Méthode rapide pour l'enregistrement via AJAX (In-Place)
+    public function storeQuickAJAX(Request $request)
+    {
+        if (!auth()->user()->hasPermission('admin.config.tresorerie_posts')) {
+            return response()->json(['success' => false, 'error' => 'Permission refusée'], 403);
+        }
+
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:treasury_categories,id',
+            'ecriture_id' => 'nullable|exists:ecriture_comptables,id',
+            'syscohada_line_id' => 'nullable|string|max:50',
+        ]);
+
+        // Vérification d'unicité par compagnie
+        $existingPost = CompteTresorerie::where('company_id', $companyId)
+            ->where('name', $validated['name'])
+            ->first();
+
+        if ($existingPost) {
+            $compte = $existingPost;
+            // Optionnel : Mettre à jour le syscohada_line_id si fourni et différent ? 
+            // Pour l'instant, on suppose que le quick edit sert aussi à mettre à jour.
+            if (isset($validated['syscohada_line_id'])) {
+                $compte->update(['syscohada_line_id' => $validated['syscohada_line_id']]);
+            }
+        } else {
+            $compte = CompteTresorerie::create([
+                'name' => $validated['name'],
+                'category_id' => $validated['category_id'],
+                'syscohada_line_id' => $validated['syscohada_line_id'] ?? null,
+                'company_id' => $companyId,
+                'solde_initial' => 0,
+                'solde_actuel' => 0,
+            ]);
+        }
+
+        // Si ecriture_id est fourni, on lie l'écriture au poste
+        if (!empty($validated['ecriture_id'])) {
+            $ecriture = EcritureComptable::find($validated['ecriture_id']);
+            if ($ecriture && $ecriture->company_id == $companyId) {
+                $ecriture->update(['poste_tresorerie_id' => $compte->id]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'id' => $compte->id,
+            'name' => $compte->id == ($existingPost->id ?? null) ? $compte->name : $compte->name,
+            'category_name' => $compte->category->name ?? '',
+            'syscohada_line_id' => $compte->syscohada_line_id,
+            'message' => 'Poste de trésorerie enregistré avec succès'
+        ]);
     }
 
     public function update(Request $request, CompteTresorerie $compte)
@@ -211,7 +295,8 @@ class PosteTresorController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:Flux Des Activités Operationnelles,Flux Des Activités Investissement,Flux Des Activités de Financement',
+            'category_id' => 'required|exists:treasury_categories,id',
+            'syscohada_line_id' => 'nullable|string|max:50',
         ]);
 
         // Vérification d'unicité par compagnie
@@ -226,11 +311,58 @@ class PosteTresorController extends Controller
 
         $compte->update([
             'name' => $validated['name'],
-            'type' => $validated['type'],
+            'category_id' => $validated['category_id'],
+            'syscohada_line_id' => $validated['syscohada_line_id'] ?? null,
         ]);
 
         return redirect()->route('postetresorerie.index')
                          ->with('success', 'Poste de trésorerie "' . $compte->name . '" mis à jour avec succès.');
+    }
+
+    /**
+     * Répare rétroactivement les liens manquants pour les écritures de classe 5
+     */
+    public function repairLinks(Request $request)
+    {
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+        
+        $ecritures = EcritureComptable::where('company_id', $companyId)
+            ->whereHas('planComptable', function($q) {
+                $q->where('numero_de_compte', 'like', '5%');
+            })
+            ->whereNull('poste_tresorerie_id')
+            ->get();
+            
+        $fixedCount = 0;
+        foreach ($ecritures as $ecriture) {
+            $posteId = $this->resolveTreasuryPost($companyId, $ecriture->plan_comptable_id);
+            if ($posteId) {
+                $ecriture->update(['poste_tresorerie_id' => $posteId]);
+                $fixedCount++;
+            }
+        }
+        
+        return redirect()->back()->with('success', "$fixedCount écritures ont été liées à un poste de trésorerie.");
+    }
+
+    public function deleteCompteTresorerie($id)
+    {
+        try {
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $poste = CompteTresorerie::where('company_id', $companyId)->findOrFail($id);
+
+            // Vérifier s'il y a des mouvements ou des écritures liés
+            if ($poste->mouvements()->count() > 0 || $poste->ecritures()->count() > 0) {
+                return redirect()->back()->with('error', 'Impossible de supprimer ce poste car il contient des mouvements ou des écritures comptables.');
+            }
+
+            $poste->delete();
+            return redirect()->route('postetresorerie.index')->with('success', 'Poste de trésorerie supprimé avec succès.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
+        }
     }
 
 

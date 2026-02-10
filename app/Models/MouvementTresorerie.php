@@ -10,6 +10,8 @@ class MouvementTresorerie extends Model
 {
     use HasFactory;
 
+    protected $table = 'mouvement_tresorerie';
+
     /**
      * Les attributs qui peuvent être massivement assignés.
      *

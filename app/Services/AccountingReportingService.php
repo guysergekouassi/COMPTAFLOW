@@ -586,30 +586,24 @@ class AccountingReportingService
             $current->addMonth();
         }
 
-        // 2. Initialiser la structure de la matrice
+        // 2. Initialiser la structure de la matrice (Format DIRECT pour Inv/Fin, INDIRECT pour Opérationnel)
+        // Note: On change 'encaissements'/'decaissements' par 'caf' et 'bfr' pour l'opérationnel
         $matrix = [
             'months' => $months,
             'flux' => [
                 'operationnel' => [
-                    'encaissements' => [
-                        'clients' => array_fill(0, count($months), 0),
-                        'autres' => array_fill(0, count($months), 0),
+                    'caf' => [
+                        'produits_encaissables' => array_fill(0, count($months), 0),
+                        'charges_decaissables' => array_fill(0, count($months), 0),
                         'total' => array_fill(0, count($months), 0),
-                        'details' => ['clients' => [], 'autres' => []]
+                        'details' => ['produits' => [], 'charges' => []]
                     ],
-                    'decaissements' => [
-                        'production' => array_fill(0, count($months), 0), // 601, 602, 603
-                        'autres_achats' => array_fill(0, count($months), 0), // 604, 605, 608
-                        'transport' => array_fill(0, count($months), 0), // 61
-                        'services_exterieurs' => array_fill(0, count($months), 0), // 62, 63
-                        'impots_taxes' => array_fill(0, count($months), 0), // 64
-                        'personnel' => array_fill(0, count($months), 0), // 66
-                        'charges_diverses' => array_fill(0, count($months), 0), // 65
-                        'total' => array_fill(0, count($months), 0),
-                        'details' => [
-                            'production' => [], 'autres_achats' => [], 'transport' => [], 
-                            'services_exterieurs' => [], 'impots_taxes' => [], 'personnel' => [], 'charges_diverses' => []
-                        ]
+                    'bfr' => [
+                        'variation_stocks' => array_fill(0, count($months), 0),
+                        'variation_creances' => array_fill(0, count($months), 0),
+                        'variation_dettes' => array_fill(0, count($months), 0),
+                        'total' => array_fill(0, count($months), 0), // Variation Totale BFR
+                        'details' => ['stocks' => [], 'creances' => [], 'dettes' => []]
                     ],
                     'net' => array_fill(0, count($months), 0)
                 ],
@@ -625,7 +619,7 @@ class AccountingReportingService
                 ],
                 'tresorerie' => [
                     'net' => array_fill(0, count($months), 0),
-                    'variation' => array_fill(0, count($months), 0), // Variation par rapport au mois précédent
+                    'variation' => array_fill(0, count($months), 0),
                     'solde_fin' => array_fill(0, count($months), 0)
                 ]
             ]
@@ -634,19 +628,22 @@ class AccountingReportingService
         // 3. Récupérer toutes les écritures
         $ecritures = EcritureComptable::where('exercices_comptables_id', $exerciceId)
             ->where('company_id', $companyId)
-            ->with('planComptable')
+            ->with(['planComptable', 'posteTresorerie.category']) // Charger les postes et catégories
             ->get();
 
-        // 4. Parcourir les écritures et remplir la matrice
+        // Tracker les Saisies (Transactions) traitées via Poste de Tréso pour éviter le double comptage si fallback
+        $handledSaisiesInv = [];
+        $handledSaisiesFin = [];
+
+        // 4. PREMIÈRE PASSE : Postes de Trésorerie (Priorité) et Flux Opérationnels (Indirect)
         foreach ($ecritures as $ecriture) {
             $compte = $ecriture->planComptable;
             if (!$compte) continue;
 
             $num = $compte->numero_de_compte;
-            $montant = $ecriture->debit - $ecriture->credit; // D - C. 
-            // Pour Actif/Charges (D>C): Positif. Pour Passif/Produits (C>D): Négatif.
+            $montant = $ecriture->debit - $ecriture->credit; // Solde Algébrique (Debit +, Credit -)
             
-            // Trouver l'index du mois
+            // Index Mois
             $ecritureDate = \Carbon\Carbon::parse($ecriture->date);
             $monthIndex = -1;
             foreach ($months as $index => $m) {
@@ -657,129 +654,175 @@ class AccountingReportingService
             }
             if ($monthIndex === -1) continue;
 
-            // --- FLUX OPÉRATIONNELS ---
-
-            // Encaissements (Produits / Clients)
-            // Note: En trésorerie pure, on regarde les comptes 5. Mais ici on reconstitue via les comptes de gestion/tiers comme le TFT indirect
-            // Approche simplifiée : On classe les flux selon la nature du compte tiers ou de charge/produit impacté
+            // --- A. ACTIVITÉS OPÉRATIONNELLES (Méthode Indirecte) ---
             
-            // ENCAISSEMENTS
-            if (str_starts_with($num, '70') || str_starts_with($num, '41')) {
-                // Ventes ou Clients
-                // Si c'est un client (41), Crédit = Encaissement. Debit = Facturation (pas encore cash).
-                // Si on raisonne en flux de trésorerie direct, on devrait regarder la contrepartie 5.
-                // MAIS, le TFT souvent se calcule par variation BFR.
-                // ICI, l'utilisateur veut un tableau "Flux de trésorerie... Clients".
-                // On va supposer Encaissement = Credit sur compte 41 (Paiement client) ou Credit sur 70 (Vente comptant si pas passé par 41)
+            // 1. CAF (Produits Encaissables - Charges Décaissables)
+            // Charges (6) sauf dotations (68, 69)
+            if (str_starts_with($num, '6') && !str_starts_with($num, '68') && !str_starts_with($num, '69')) {
+                // Charge = Débit (+). Pour CAF c'est une sortie (-).
+                // On met en positif dans 'charges_decaissables' pour l'affichage, on soustraira au total
+                $matrix['flux']['operationnel']['caf']['charges_decaissables'][$monthIndex] += $ecriture->debit; // Prendre Debit brut (Charge)
+                if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['caf']['details']['charges'], $compte, $ecriture->debit, $monthIndex);
+            }
+            // Produits (7) sauf reprises (78, 79)
+            elseif (str_starts_with($num, '7') && !str_starts_with($num, '78') && !str_starts_with($num, '79')) {
+                // Produit = Crédit. Pour CAF c'est une entrée (+).
+                $matrix['flux']['operationnel']['caf']['produits_encaissables'][$monthIndex] += $ecriture->credit; // Prendre Credit brut
+                if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['caf']['details']['produits'], $compte, $ecriture->credit, $monthIndex);
+            }
+
+            // 2. VARIATION BFR (Actif Circulant + Passif Circulant)
+            // Stocks (3) et Tiers (4)
+            if (str_starts_with($num, '3')) {
+                // Actif : Variation = Solde Final - Solde Initial.
+                // Au niveau flux : Debit = Augmentation Stock = Besoin en fonds de roulement (Cash -)
+                // Credit = Diminution Stock = Ressource (Cash +)
+                // Donc Flux BFR = -(Debit - Credit) = Credit - Debit
+                $fluxBFR = $ecriture->credit - $ecriture->debit; 
+                $matrix['flux']['operationnel']['bfr']['variation_stocks'][$monthIndex] += $fluxBFR;
+                if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['bfr']['details']['stocks'], $compte, $fluxBFR, $monthIndex);
+            }
+            elseif (str_starts_with($num, '4')) {
+                // Tiers
+                // Passif (40, 42, 43, 44) : Credit = Augmentation Dette = Ressource (+). Debit = -
+                // Actif (41) : Debit = Augmentation Créance = Besoin (-). Credit = +
                 
-                // Pour faire simple et correspondre à l'image "Clients" : On prend les CRÉDITS sur les comptes 41 (Paiements reçus)
-                if (str_starts_with($num, '41') && $ecriture->credit > 0) {
-                     $val = $ecriture->credit; // Encaissement positif
-                     $matrix['flux']['operationnel']['encaissements']['clients'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['encaissements']['details']['clients'], $compte, $val, $monthIndex);
+                $isPassif = str_starts_with($num, '40') || str_starts_with($num, '42') || str_starts_with($num, '43') || str_starts_with($num, '44');
+                
+                if ($isPassif) {
+                     // Dette : BFR s'améliore si Dette augmente (Credit).
+                     $fluxBFR = $ecriture->credit - $ecriture->debit;
+                     $matrix['flux']['operationnel']['bfr']['variation_dettes'][$monthIndex] += $fluxBFR;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['bfr']['details']['dettes'], $compte, $fluxBFR, $monthIndex);
+                } else {
+                     // Créance : BFR empire si Créance augmente (Debit).
+                     // Flux Cash = -(Debit - Credit) = Credit - Debit
+                     $fluxBFR = $ecriture->credit - $ecriture->debit;
+                     $matrix['flux']['operationnel']['bfr']['variation_creances'][$monthIndex] += $fluxBFR;
+                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['bfr']['details']['creances'], $compte, $fluxBFR, $monthIndex);
                 }
             }
 
-            // DÉCAISSEMENTS (Charges)
-            // On regarde les DÉBITS sur les comptes de charges (6) ou DÉBITS sur Fournisseurs (40 - Paiement)
-            // L'utilisateur demande "Dépenses de production", "Autres achats". Ce sont des comptes de charges.
-            // Si on prend les comptes 6 directement, on est en "Engagements" pas en "Décaissements" (sauf si comptabilité de trésorerie).
-            // Toutefois pour un tableau de bord mensuel type "Budget vs Réel", souvent on affiche les charges.
-            // Si l'utilisateur veut "Flux de Trésorerie", il faut théoriquement prendre les Paiements (Debit 40).
-            // Mais comment ventiler le Debit 40 "Fourmisseur X" en "Transport" vs "Marchandises" ? Impossible sans lettrage analytique.
-            // HYPOTHÈSE FORTE : L'image montre "Dépenses de production", "Electricité". Ce sont des comptes 6.
-            // Le client appelle ça "TFT" mais l'image ressemble à un SIG mensuel ou un tableau de dépenses.
-            // Je vais utiliser les comptes de CLASSE 6 (Charges) comme proxy des décaissements (vision engagement ou tréso directe si achat comptant).
-            
-            if (str_starts_with($num, '6')) {
-                 $val = $ecriture->debit; // Charge = Débit. On considère ça comme une sortie de cash (ou dette court terme)
-                 
-                 if (str_starts_with($num, '601') || str_starts_with($num, '602') || str_starts_with($num, '603')) {
-                     $matrix['flux']['operationnel']['decaissements']['production'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['production'], $compte, $val, $monthIndex);
-                 }
-                 elseif (str_starts_with($num, '604') || str_starts_with($num, '605') || str_starts_with($num, '608')) {
-                     $matrix['flux']['operationnel']['decaissements']['autres_achats'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['autres_achats'], $compte, $val, $monthIndex);
-                 }
-                 elseif (str_starts_with($num, '61')) {
-                     $matrix['flux']['operationnel']['decaissements']['transport'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['transport'], $compte, $val, $monthIndex);
-                 }
-                 elseif (str_starts_with($num, '62') || str_starts_with($num, '63')) {
-                     $matrix['flux']['operationnel']['decaissements']['services_exterieurs'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['services_exterieurs'], $compte, $val, $monthIndex);
-                 }
-                 elseif (str_starts_with($num, '64')) {
-                     $matrix['flux']['operationnel']['decaissements']['impots_taxes'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['impots_taxes'], $compte, $val, $monthIndex);
-                 }
-                 elseif (str_starts_with($num, '66')) {
-                     $matrix['flux']['operationnel']['decaissements']['personnel'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['personnel'], $compte, $val, $monthIndex);
-                 }
-                 elseif (str_starts_with($num, '65')) {
-                     $matrix['flux']['operationnel']['decaissements']['charges_diverses'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['operationnel']['decaissements']['details']['charges_diverses'], $compte, $val, $monthIndex);
-                 }
-            }
+            // --- B & C. INVESTISSEMENT & FINANCEMENT (Méthode Directe via Postes) ---
+            // --- B & C. INVESTISSEMENT & FINANCEMENT (Méthode Directe via Postes) ---
+            // On regarde UNIQUEMENT les comptes de classe 5 qui ont un poste défini
+            if (str_starts_with($num, '5') && $ecriture->posteTresorerie) {
+                $poste = $ecriture->posteTresorerie;
+                $syscohadaLine = $poste->syscohada_line_id;
+                $categoryName = $poste->category ? strtolower($poste->category->name) : '';
+                
+                // Flux de trésorerie réel : Debit = Entrée (+), Credit = Sortie (-)
+                $fluxTresorerie = $ecriture->debit - $ecriture->credit;
 
-            // INVESTISSEMENT (Classe 2)
-            if (str_starts_with($num, '2') && !str_starts_with($num, '28') && !str_starts_with($num, '29')) {
-                if ($ecriture->debit > 0) { // Acquisition
-                     $val = $ecriture->debit;
-                     $matrix['flux']['investissement']['acquisitions'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['acquisitions'], $compte, $val, $monthIndex);
+                // Priorité au mapping explicite SYSCOHADA s'il existe
+                if ($syscohadaLine) {
+                    if (str_starts_with($syscohadaLine, 'INV_')) { // Investissement
+                        $handledSaisiesInv[$ecriture->numero_saisie] = true;
+                        if ($syscohadaLine === 'INV_CES') {
+                            // Cessions (Flux Positif attendu)
+                            $matrix['flux']['investissement']['cessions'][$monthIndex] += $fluxTresorerie; // Si positif = encaissement
+                            if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['cessions'], $compte, $fluxTresorerie, $monthIndex);
+                        } elseif ($syscohadaLine === 'INV_ACQ') {
+                            // Acquisitions (Flux Négatif attendu)
+                            $matrix['flux']['investissement']['acquisitions'][$monthIndex] += abs($fluxTresorerie); // On stocke en positif pour l'affichage (Acq = Sortie)
+                             if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['acquisitions'], $compte, abs($fluxTresorerie), $monthIndex);
+                        }
+                    } elseif (str_starts_with($syscohadaLine, 'FIN_')) { // Financement
+                        $handledSaisiesFin[$ecriture->numero_saisie] = true;
+                        $matrix['flux']['financement']['net'][$monthIndex] += $fluxTresorerie;
+                        if($detailed) $this->addDetailMatrix($matrix['flux']['financement']['details']['net'], $compte, $fluxTresorerie, $monthIndex);
+                    }
+                } 
+                // Fallback : Mapping basé sur la catégorie (Heuristique)
+                elseif (str_contains($categoryName, 'investissement')) {
+                    $handledSaisiesInv[$ecriture->numero_saisie] = true;
+                    // Classification simple : Positif = Cession, Négatif = Acquisition
+                    if ($fluxTresorerie > 0) {
+                        $matrix['flux']['investissement']['cessions'][$monthIndex] += $fluxTresorerie;
+                        if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['cessions'], $compte, $fluxTresorerie, $monthIndex);
+                    } else {
+                         $matrix['flux']['investissement']['acquisitions'][$monthIndex] += abs($fluxTresorerie);
+                         if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['acquisitions'], $compte, abs($fluxTresorerie), $monthIndex);
+                    }
                 }
-                if ($ecriture->credit > 0) { // Cession
-                     $val = $ecriture->credit;
-                     $matrix['flux']['investissement']['cessions'][$monthIndex] += $val;
-                     if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['cessions'], $compte, $val, $monthIndex);
+                elseif (str_contains($categoryName, 'financement')) {
+                    $handledSaisiesFin[$ecriture->numero_saisie] = true;
+                    $matrix['flux']['financement']['net'][$monthIndex] += $fluxTresorerie;
+                    if($detailed) $this->addDetailMatrix($matrix['flux']['financement']['details']['net'], $compte, $fluxTresorerie, $monthIndex);
                 }
             }
-
-            // FINANCEMENT (16, 10)
-             if ((str_starts_with($num, '16') || str_starts_with($num, '10')) && !str_starts_with($num, '169')) { // Exclure primes
-                 // Crédit = Augmentation dette/capital = Ressource (+). Débit = Remboursement = Emploi (-).
-                 $val = $ecriture->credit - $ecriture->debit; 
-                 $matrix['flux']['financement']['net'][$monthIndex] += $val;
-                 if($detailed) $this->addDetailMatrix($matrix['flux']['financement']['details']['net'], $compte, $val, $monthIndex);
-             }
         }
 
-        // 5. Calcul des totaux et nets mois par mois
-        $tresorerie_initiale = 0; // À récupérer potentiellement du report à nouveau N-1 ou précédent
-        
+        // 5. DEUXIÈME PASSE : Fallback pour Investissement/Financement (Ancienne Méthode)
+        // On ne traite que si la saisie n'a PAS été traitée par un poste de trésorerie
+        foreach ($ecritures as $ecriture) {
+            $compte = $ecriture->planComptable;
+            if (!$compte) continue;
+            
+            // On ignore si déjà traité
+            if (isset($handledSaisiesInv[$ecriture->numero_saisie]) || isset($handledSaisiesFin[$ecriture->numero_saisie])) {
+                continue; 
+            }
+
+            $num = $compte->numero_de_compte;
+            $monthIndex = -1; // Récupérer index (optimisation possible mais code plus simple ainsi)
+            $ecritureDate = \Carbon\Carbon::parse($ecriture->date);
+            foreach ($months as $index => $m) {
+                if ($m['id'] == $ecritureDate->month && $m['year'] == $ecritureDate->year) {
+                    $monthIndex = $index;
+                    break;
+                }
+            }
+            if ($monthIndex === -1) continue;
+
+            // Fallback Investissement (Classe 2)
+            if (str_starts_with($num, '2') && !str_starts_with($num, '28') && !str_starts_with($num, '29')) {
+                // Acquisition (Debit 2) = Sortie Cash (-). Cession (Credit 2) = Entrée Cash (+)
+                if ($ecriture->debit > 0) {
+                    $matrix['flux']['investissement']['acquisitions'][$monthIndex] += $ecriture->debit;
+                    if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['acquisitions'], $compte, $ecriture->debit, $monthIndex);
+                }
+                if ($ecriture->credit > 0) {
+                    $matrix['flux']['investissement']['cessions'][$monthIndex] += $ecriture->credit;
+                    if($detailed) $this->addDetailMatrix($matrix['flux']['investissement']['details']['cessions'], $compte, $ecriture->credit, $monthIndex);
+                }
+            }
+
+            // Fallback Financement (10, 16)
+            if ((str_starts_with($num, '16') || str_starts_with($num, '10')) && !str_starts_with($num, '169')) {
+                // Credit = Encaissement (+). Debit = Remboursement (-)
+                $val = $ecriture->credit - $ecriture->debit;
+                $matrix['flux']['financement']['net'][$monthIndex] += $val;
+                if($detailed) $this->addDetailMatrix($matrix['flux']['financement']['details']['net'], $compte, $val, $monthIndex);
+            }
+        }
+
+        // 6. Calculs Finaux
+        $tresorerie_initiale = 0; 
+
         for ($i = 0; $i < count($months); $i++) {
-            // Total Encaissements
-            $enc = $matrix['flux']['operationnel']['encaissements']['clients'][$i] 
-                 + $matrix['flux']['operationnel']['encaissements']['autres'][$i]; // Aujouer autres si besoin
-            $matrix['flux']['operationnel']['encaissements']['total'][$i] = $enc;
+            // Opérationnel
+            $caf = $matrix['flux']['operationnel']['caf']['produits_encaissables'][$i] - $matrix['flux']['operationnel']['caf']['charges_decaissables'][$i];
+            $matrix['flux']['operationnel']['caf']['total'][$i] = $caf;
 
-            // Total Décaissements
-            $dec = $matrix['flux']['operationnel']['decaissements']['production'][$i]
-                 + $matrix['flux']['operationnel']['decaissements']['autres_achats'][$i]
-                 + $matrix['flux']['operationnel']['decaissements']['transport'][$i]
-                 + $matrix['flux']['operationnel']['decaissements']['services_exterieurs'][$i]
-                 + $matrix['flux']['operationnel']['decaissements']['impots_taxes'][$i]
-                 + $matrix['flux']['operationnel']['decaissements']['personnel'][$i]
-                 + $matrix['flux']['operationnel']['decaissements']['charges_diverses'][$i];
-            $matrix['flux']['operationnel']['decaissements']['total'][$i] = $dec;
+            $bfr = $matrix['flux']['operationnel']['bfr']['variation_stocks'][$i]
+                 + $matrix['flux']['operationnel']['bfr']['variation_creances'][$i]
+                 + $matrix['flux']['operationnel']['bfr']['variation_dettes'][$i];
+            $matrix['flux']['operationnel']['bfr']['total'][$i] = $bfr;
 
-            // Net Opérationnel (Enc - Dec)
-            $matrix['flux']['operationnel']['net'][$i] = $enc - $dec;
+            // Net Opérationnel = CAF + Variation BFR (Attention aux signes, ici BFR est déjà un flux: + = Ressource, - = Emploi)
+            $matrix['flux']['operationnel']['net'][$i] = $caf + $bfr;
 
-            // Net Investissement (Cessions - Acquisitions)
+            // Investissement
             $matrix['flux']['investissement']['net'][$i] = $matrix['flux']['investissement']['cessions'][$i] - $matrix['flux']['investissement']['acquisitions'][$i];
 
-            // Variation Totale (Op + Inv + Fin)
+            // Variation Totale
             $variation = $matrix['flux']['operationnel']['net'][$i] 
                        + $matrix['flux']['investissement']['net'][$i] 
                        + $matrix['flux']['financement']['net'][$i];
             
             $matrix['flux']['tresorerie']['variation'][$i] = $variation;
             
-            // Calcul cumulé (Approximation simple, idéalement prendre le solde réel des comptes 5)
             $tresorerie_initiale += $variation;
             $matrix['flux']['tresorerie']['solde_fin'][$i] = $tresorerie_initiale;
         }

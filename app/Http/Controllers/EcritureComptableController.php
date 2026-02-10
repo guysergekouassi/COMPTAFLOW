@@ -14,11 +14,13 @@ use Carbon\Carbon;
 use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Models\Approval;
+use App\Models\TreasuryCategory;
+use App\Traits\HandlesTreasuryPosts;
 
 class EcritureComptableController extends Controller
 {
+    use HandlesTreasuryPosts;
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -59,7 +61,15 @@ class EcritureComptableController extends Controller
 
         $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule', 'numero_original')->orderBy('numero_de_compte')->get();
         $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general', 'numero_original')->with('compte')->get();
-        $comptesTresorerie = CompteTresorerie::select('id', 'name', 'type')->orderBy('name')->get();
+        $comptesTresorerie = CompteTresorerie::with('category')->orderBy('name')->get();
+            $categories = TreasuryCategory::where('company_id', $user->company_id)
+            ->whereIn('name', [
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ])
+            ->orderBy('name')
+            ->get();
 
         // Générer le numéro utilisateur au format CPT-XX_000000000001
         $initials = $user->initiales;
@@ -82,7 +92,7 @@ class EcritureComptableController extends Controller
             $query->where('exercices_comptables_id', $data['id_exercice']);
         }
 
-        $ecritures = $query->with(['planComptable', 'planTiers','compteTresorerie'])
+        $ecritures = $query->with(['planComptable', 'planTiers','compteTresorerie', 'posteTresorerie'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -120,7 +130,7 @@ class EcritureComptableController extends Controller
         return view('accounting_entry_real', compact(
             'plansComptables', 'plansTiers', 'data', 'ecritures', 
             'nextSaisieNumber', 'comptesTresorerie', 'exercicesVisibles',
-            'approvalEditingData'
+            'approvalEditingData', 'categories'
         ));
     }
 
@@ -140,7 +150,9 @@ class EcritureComptableController extends Controller
         $nextSequence = ($lastUserSaisie ? $lastUserSaisie + 1 : 1);
         $nextSaisieNumber = $prefix . str_pad($nextSequence, 12, '0', STR_PAD_LEFT);
 
-        return view('accounting.scan', compact('plansComptables', 'plansTiers', 'data', 'nextSaisieNumber'));
+        $comptesTresorerie = CompteTresorerie::with('category')->orderBy('name')->get();
+
+        return view('accounting.scan', compact('plansComptables', 'plansTiers', 'data', 'nextSaisieNumber', 'comptesTresorerie'));
     }
 
     private function determineFluxClasse($numeroCompte) {
@@ -156,7 +168,7 @@ class EcritureComptableController extends Controller
         try {
             $user = Auth::user();
             $primaryEcriture = EcritureComptable::where('company_id', $user->company_id)->findOrFail($id);
-            $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+            $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie', 'codeJournal'])
                 ->where('company_id', $user->company_id)
                 ->where('n_saisie', $primaryEcriture->n_saisie)
                 ->orderBy('id', 'asc')
@@ -172,7 +184,7 @@ class EcritureComptableController extends Controller
     {
         try {
             $user = Auth::user();
-            $ecriture = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+            $ecriture = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie', 'codeJournal'])
                 ->where('company_id', $user->company_id)
                 ->findOrFail($id);
                 
@@ -195,7 +207,7 @@ class EcritureComptableController extends Controller
             $activeCompanyId = session('current_company_id', $user->company_id);
             
             // Récupérer toutes les lignes d'écriture pour ce n_saisie
-            $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+            $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie', 'codeJournal'])
                 ->where('company_id', $activeCompanyId)
                 ->where('n_saisie', $n_saisie)
                 ->orderBy('id')
@@ -317,6 +329,7 @@ class EcritureComptableController extends Controller
                 'plan_analytique' => 'nullable|boolean',
                 'piece_justificatif' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'compte_tresorerie_id' => 'nullable|integer',
+                'poste_tresorerie_id' => 'nullable|integer',
             ]);
 
             // Gestion du fichier
@@ -382,6 +395,7 @@ class EcritureComptableController extends Controller
                 'type_flux' => $typeFlux,
                 'plan_analytique' => $data['plan_analytique'] ?? false,
                 'compte_tresorerie_id' => $request->compte_tresorerie_id ?? $data['compte_tresorerie_id'] ?? null,
+                'poste_tresorerie_id' => $this->resolveTreasuryPost($activeCompanyId, $data['plan_comptable_id']) ?? ($request->poste_tresorerie_id ?? $data['poste_tresorerie_id'] ?? null),
                 'piece_justificatif' => $data['piece_justificatif'] ?? null,
                 'statut' => $status,
                 'journaux_saisis_id' => $journalSaisi->id,
@@ -528,6 +542,7 @@ class EcritureComptableController extends Controller
                 $ecriture->exercices_comptables_id = $exerciceId;
                 $ecriture->journaux_saisis_id = $journalSaisi->id;
                 $ecriture->statut = $status;
+                $ecriture->poste_tresorerie_id = $this->resolveTreasuryPost($activeCompanyId, $planComptableId) ?? ($data['poste_tresorerie_id'] ?? null);
                 $ecriture->save();
 
                 if (!$firstEcriture) $firstEcriture = $ecriture;
@@ -624,8 +639,32 @@ class EcritureComptableController extends Controller
         if (!empty($data['code_journal'])) $baseQuery->whereHas('codeJournal', function($q) use ($data) {
             $q->where('code_journal', 'like', '%' . $data['code_journal'] . '%');
         });
+        if (!empty($data['recherche'])) {
+            $search = $data['recherche'];
+            $baseQuery->where(function($q) use ($search) {
+                $q->where('description_operation', 'like', '%' . $search . '%')
+                  ->orWhereHas('planComptable', function($sq) use ($search) {
+                      $sq->where('numero_de_compte', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('planTiers', function($sq) use ($search) {
+                      $sq->where('numero_de_tiers', 'like', '%' . $search . '%');
+                  });
+            });
+        }
         if (!empty($data['mois'])) $baseQuery->whereMonth('date', $data['mois']);
         if (!empty($data['statut'])) $baseQuery->where('statut', $data['statut']);
+        
+        if (!empty($data['etat_poste']) && $data['etat_poste'] !== '') {
+            $baseQuery->whereHas('planComptable', function($sq) {
+                $sq->where('numero_de_compte', 'like', '5%');
+            });
+
+            if ($data['etat_poste'] === 'defini') {
+                $baseQuery->whereNotNull('poste_tresorerie_id');
+            } elseif ($data['etat_poste'] === 'non_defini') {
+                $baseQuery->whereNull('poste_tresorerie_id');
+            }
+        }
 
         $paginatedSaisies = (clone $baseQuery)
             ->select('n_saisie', DB::raw('MAX(created_at) as latest_created_at'))
@@ -634,7 +673,7 @@ class EcritureComptableController extends Controller
             ->paginate(10);
             
         $saisieList = $paginatedSaisies->pluck('n_saisie')->toArray();
-        $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'codeJournal'])
+        $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie.category', 'codeJournal'])
             ->where('company_id', $activeCompanyId)
             ->whereIn('n_saisie', $saisieList)
             ->orderBy('created_at', 'desc')
@@ -642,11 +681,13 @@ class EcritureComptableController extends Controller
             ->get();
             
         $code_journaux = CodeJournal::where('company_id', $activeCompanyId)->get();
+        $treasury_categories = \App\Models\TreasuryCategory::where('company_id', $activeCompanyId)->get();
 
         return view('accounting_entry_list', [
             'ecritures' => $ecritures,
             'exerciceActif' => $exerciceActif,
             'code_journaux' => $code_journaux,
+            'treasury_categories' => $treasury_categories,
             'pagination' => $paginatedSaisies,
             'totalEntries' => $paginatedSaisies->total(),
             'data' => $data,

@@ -247,6 +247,9 @@ Route::get('/test-saisie-number', function() {
     Route::put('/ecriture/{ecriture}', [EcritureComptableController::class, 'update'])->name('ecriture.update');
     Route::delete('/ecriture/{ecriture}', [EcritureComptableController::class, 'destroy'])->name('ecriture.destroy');
 
+    Route::post('/postetresorerie/store-quick', [App\Http\Controllers\Compte\PosteTresorController::class, 'storeQuickAJAX'])->name('postetresorerie.store_quick');
+    Route::post('/postetresorerie/repair', [App\Http\Controllers\Compte\PosteTresorController::class, 'repairLinks'])->name('postetresorerie.repair');
+
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE GROUPES
     Route::get('/accounting_entry_real_goupes', [EcritureComptableGroupesController::class, 'index'])->name('accounting_entry_real_goupes');
     Route::put('/accounting_entry_real_goupes/{id}', [EcritureComptableGroupesController::class, 'update'])->name('accounting_entry_real_goupes.update');
@@ -416,12 +419,12 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
             Route::put('/update-tresorerie-post/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateTresoreriePost'])->name('update_tresorerie_post');
             Route::delete('/delete-tresorerie-post/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'deleteTresoreriePost'])->name('delete_tresorerie_post');
 
-            // Catégories de Trésorerie (Admin)
-            Route::get('/treasury-categories', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'index'])->name('treasury_categories');
-            Route::post('/store-treasury-category', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'store'])->name('store_treasury_category');
-            Route::put('/update-treasury-category/{id}', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'update'])->name('update_treasury_category');
-            Route::delete('/delete-treasury-category/{id}', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'destroy'])->name('delete_treasury_category');
-            Route::post('/load-standard-treasury-categories', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'loadStandardCategories'])->name('load_standard_treasury_categories');
+            // Catégories de Trésorerie (Admin) - SUPPRIMÉ car désormais prédefinies
+            // Route::get('/treasury-categories', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'index'])->name('treasury_categories');
+            // Route::post('/store-treasury-category', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'store'])->name('store_treasury_category');
+            // Route::put('/update-treasury-category/{id}', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'update'])->name('update_treasury_category');
+            // Route::delete('/delete-treasury-category/{id}', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'destroy'])->name('delete_treasury_category');
+            // Route::post('/load-standard-treasury-categories', [App\Http\Controllers\Admin\TreasuryCategoryController::class, 'loadStandardCategories'])->name('load_standard_treasury_categories');
 
         });
 
@@ -514,6 +517,7 @@ Route::post('/mouvement/store', [PosteTresorController::class, 'storeMouvement']
 
 // L'ancienne route 'Route::post('/poste', [PosteTresorController::class, 'store'])->name('postetresorerie.store');' est supprimée.
 Route::put('/poste/{compte}', [PosteTresorController::class, 'update'])->name('postetresorerie.update');
+Route::delete('/poste/{id}', [PosteTresorController::class, 'deleteCompteTresorerie'])->name('postetresorerie.delete');
 
 
 
