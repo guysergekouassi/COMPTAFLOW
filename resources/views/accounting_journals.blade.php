@@ -358,7 +358,7 @@
                     <div class="text-center mb-6 position-relative pt-4">
                         <button type="button" class="btn-close position-absolute end-0 top-0 mt-2 me-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
                         <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
-                            Nouveau <span class="text-blue-gradient-premium">Journal</span>
+                            Interface d'Administration - <span class="text-blue-gradient-premium">Configuration des Journaux</span>
                         </h1>
                         <div class="blue-bar-premium"></div>
                     </div>
@@ -367,12 +367,13 @@
                         <div class="row g-3">
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Code Journal *</label>
-                                <input type="text" id="code_journal_input" name="code_journal" class="input-field-premium uppercase-input" maxlength="4" placeholder="ex: VT" oninput="formatCodeJournal(this)">
+                                <input type="text" id="code_journal_input" name="code_journal" class="input-field-premium uppercase-input" maxlength="{{ auth()->user()->company->journal_code_digits ?? 4 }}" placeholder="ex: VT" oninput="formatCodeJournal(this)" readonly style="background-color: #f8fafc; cursor: not-allowed;">
                                 <div id="code_journal_error" class="text-danger small mt-1" style="display: none;"></div>
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
                                 <select id="type_select" name="type" class="input-field-premium" required onchange="toggleTresorerieFields(this); updateJournalCode('create')">
+                                    <option value="" disabled selected>-- Choisir un type --</option>
                                     <option value="Achats">Achats</option>
                                     <option value="Ventes">Ventes</option>
                                     <option value="Tresorerie">Trésorerie</option>
@@ -386,7 +387,7 @@
                             </div>
                             <div class="col-md-6 text-start d-none" id="compte_field">
                                 <label class="input-label-premium">Compte</label>
-                                <select name="compte_de_contrepartie" class="input-field-premium">
+                                <select name="compte_de_contrepartie" id="create_compte_select" class="input-field-premium">
                                     <option value="">-- Sélectionner --</option>
                                     @foreach($comptesCinq as $compte)
                                         <option value="{{ $compte->numero_de_compte }}">
@@ -410,11 +411,11 @@
                                         <div class="d-flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="poste_tresorerie" id="treso_caisse_create" value="Caisse" onchange="handleTresoChange('create'); updateJournalCode('create')">
-                                                <label class="form-check-label font-bold text-slate-700" for="treso_caisse_create">Caisse</label>
+                                                <label class="form-check-label font-bold text-slate-700" for="treso_caisse_create" onclick="event.stopPropagation()">Caisse</label>
                                             </div>
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="poste_tresorerie" id="treso_banque_create" value="Banque" onchange="handleTresoChange('create'); updateJournalCode('create')">
-                                                <label class="form-check-label font-bold text-slate-700" for="treso_banque_create">Banque</label>
+                                                <label class="form-check-label font-bold text-slate-700" for="treso_banque_create" onclick="event.stopPropagation()">Banque</label>
                                             </div>
                                         </div>
                                     </div>
@@ -424,7 +425,7 @@
                                     </div>
                                     <div class="col-md-12">
                                         <label class="input-label-premium">ETAT DE RAPPROCHEMENT BANCAIRE</label>
-                                        <select name="rapprochement_sur" class="input-field-premium">
+                                        <select name="rapprochement_sur" id="create_rapprochement_select" class="input-field-premium">
                                             <option value="">-- Sélectionner --</option>
                                             <option value="Manuel">Manuel</option>
                                             <option value="Automatique">Automatique</option>
@@ -506,11 +507,11 @@
                                         <div class="d-flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="poste_tresorerie" id="edit_treso_caisse" value="Caisse" onchange="handleTresoChange('edit')">
-                                                <label class="form-check-label font-bold text-slate-700" for="edit_treso_caisse">Caisse</label>
+                                                <label class="form-check-label font-bold text-slate-700" for="edit_treso_caisse" onclick="event.stopPropagation()">Caisse</label>
                                             </div>
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="poste_tresorerie" id="edit_treso_banque" value="Banque" onchange="handleTresoChange('edit')">
-                                                <label class="form-check-label font-bold text-slate-700" for="edit_treso_banque">Banque</label>
+                                                <label class="form-check-label font-bold text-slate-700" for="edit_treso_banque" onclick="event.stopPropagation()">Banque</label>
                                             </div>
                                         </div>
                                     </div>
@@ -586,6 +587,28 @@
         
         // Wait for jQuery and DataTables to be ready
         function initJournalsPage() {
+            if (typeof $.fn.select2 !== 'undefined') {
+                $('#create_compte_select, #create_rapprochement_select, #update_compte_de_contrepartie, #update_rapprochement_sur, #type_select, #update_type').select2({
+                    dropdownParent: $('.modal:visible').length ? $('.modal:visible') : null,
+                    width: '100%',
+                    theme: 'bootstrap-5',
+                    placeholder: $(this).data('placeholder'),
+                    allowClear: true,
+                    selectionCssClass: 'input-field-premium',
+                    dropdownCssClass: 'premium-dropdown'
+                });
+            }
+            
+            // Correction du bug de fermeture des radio buttons et selects
+            $('.form-check, .form-check-input, .form-check-label, select, .select2-container').on('click', function(e) {
+                e.stopPropagation();
+            });
+
+            // Forcer la stabilité des listes déroulantes natives si Select2 n'est pas utilisé
+            $('select.input-field-premium').on('mousedown', function(e) {
+                e.stopPropagation();
+            });
+
             if (typeof $ === 'undefined' || typeof $.fn.DataTable === 'undefined') {
                 console.log("⏳ En attente de jQuery/DataTables...");
                 setTimeout(initJournalsPage, 100);

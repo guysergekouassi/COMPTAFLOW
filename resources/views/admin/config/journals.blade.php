@@ -188,18 +188,19 @@
                 <form action="{{ route('admin.config.master_store_journal') }}" method="POST">
                     @csrf
                     <div class="modal-header bg-emerald-900 p-6">
-                        <h5 class="modal-title text-white font-black">Nouveau Journal Master</h5>
+                        <h5 class="modal-title text-white font-black">Interface d'Administration - Configuration des Journaux</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-8">
                         <div class="row g-6">
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700">Code Journal</label>
-                                <input type="text" name="code_journal" id="create_code_journal" class="form-control border-slate-200 py-3 rounded-xl shadow-none focus:border-emerald-500" placeholder="Ex: ACH" required>
+                                <input type="text" name="code_journal" id="create_code_journal" class="form-control border-slate-200 py-3 rounded-xl shadow-none focus:border-emerald-500" placeholder="Ex: ACH" maxlength="{{ $mainCompany->journal_code_digits ?? 3 }}" required readonly style="background-color: #f8fafc; cursor: not-allowed;">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700">Type</label>
                                 <select name="type" class="form-select border-slate-200 py-3 rounded-xl focus:border-emerald-500" id="journal_type_select" onchange="toggleTresorerieFields(this.value, 'create'); updateJournalCode('create')" required>
+                                    <option value="" disabled selected>-- Choisir un type --</option>
                                     <option value="Achats">Achats</option>
                                     <option value="Ventes">Ventes</option>
                                     <option value="Tresorerie">Trésorerie</option>
@@ -237,11 +238,11 @@
                                     <div class="d-flex gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="poste_tresorerie" id="treso_caisse_create" value="Caisse" onchange="handleTresoChange('create'); updateJournalCode('create')">
-                                            <label class="form-check-label font-bold text-slate-700" for="treso_caisse_create">Caisse</label>
+                                            <label class="form-check-label font-bold text-slate-700" for="treso_caisse_create" onclick="event.stopPropagation()">Caisse</label>
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="poste_tresorerie" id="treso_banque_create" value="Banque" onchange="handleTresoChange('create'); updateJournalCode('create')">
-                                            <label class="form-check-label font-bold text-slate-700" for="treso_banque_create">Banque</label>
+                                            <label class="form-check-label font-bold text-slate-700" for="treso_banque_create" onclick="event.stopPropagation()">Banque</label>
                                         </div>
                                     </div>
                                 </div>
@@ -362,11 +363,11 @@
                                     <div class="d-flex gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="poste_tresorerie" id="edit_treso_caisse" value="Caisse" onchange="handleTresoChange('edit')">
-                                            <label class="form-check-label font-bold text-slate-700" for="edit_treso_caisse">Caisse</label>
+                                            <label class="form-check-label font-bold text-slate-700" for="edit_treso_caisse" onclick="event.stopPropagation()">Caisse</label>
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="poste_tresorerie" id="edit_treso_banque" value="Banque" onchange="handleTresoChange('edit')">
-                                            <label class="form-check-label font-bold text-slate-700" for="edit_treso_banque">Banque</label>
+                                            <label class="form-check-label font-bold text-slate-700" for="edit_treso_banque" onclick="event.stopPropagation()">Banque</label>
                                         </div>
                                     </div>
                                 </div>
