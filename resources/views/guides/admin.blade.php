@@ -334,6 +334,11 @@
                     <li>Catégorie TFT (Exploitation, Investissement, Financement)</li>
                 </ul>
                 <p><span class="step-badge">Étape 3</span> Enregistrez</p>
+                
+                <div class="alert-info">
+                    <strong><i class="fa-solid fa-magic me-2"></i>Note</strong>
+                    Même si aucun poste n'est affecté, le système classera automatiquement les flux (Inv/Fin) selon le compte de contrepartie.
+                </div>
             </div>
             
             <!-- SECTION 4 -->
@@ -419,38 +424,38 @@
                     
                     <!-- Structure Journaux -->
                     <div class="col-md-6">
-                        <div class="card border border-blue-100 shadow-none">
+                        <div class="card border border-blue-100 shadow-none h-100">
                             <div class="card-body">
                                 <h5 class="text-blue-700 font-bold mb-3"><i class="fa-solid fa-book me-2"></i>Structure Journaux</h5>
-                                <p class="text-[0.7rem] text-muted mb-2">Les journaux seront créés ou mis à jour selon la configuration. Les comptes de trésorerie associés doivent être configurés pour permettre le rapprochement automatique.</p>
+                                <p class="text-[0.7rem] text-muted mb-2">Structure simple pour créer vos codes journaux.</p>
                                 <ul class="text-sm space-y-2">
-                                    <li><strong>Code Journal</strong> <span class="text-muted italic">(Auto-généré)</span></li>
-                                    <li><strong>Intitulé du Journal *</strong> : Libellé clair</li>
-                                    <li><strong>Type</strong> <span class="text-muted italic">(Auto-généré)</span></li>
-                                    <li><strong>Compte Trésorerie</strong></li>
-                                    <li><strong>Traitement Analytique</strong></li>
-                                    <li><strong>État Rapprochement</strong></li>
+                                    <li><strong>Code Journal *</strong> : Ex: ACH, VEN, BQ1</li>
+                                    <li><strong>Intitulé du Journal *</strong> : Libellé complet</li>
+                                    <li><strong>Type</strong> : Achats, Ventes, Banque, Caisse, OD <span class="text-muted italic">(Optionnel, défaut: OD)</span></li>
                                 </ul>
+                                <div class="mt-3 alert alert-secondary p-2 text-xs mb-0">
+                                    <i class="fa-solid fa-circle-info me-1"></i> Astuce : Les comptes de trésorerie se configurent après l'import.
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Écritures -->
                     <div class="col-md-6">
-                        <div class="card border border-blue-100 shadow-none">
+                        <div class="card border border-blue-100 shadow-none h-100">
                             <div class="card-body">
                                  <h5 class="text-blue-700 font-bold mb-3"><i class="fa-solid fa-pen-to-square me-2"></i>Écritures</h5>
-                                    <p class="text-[0.7rem] text-muted mb-2">L'importation des écritures nécessite une structure précise. Assurez-vous que vos totaux Débit/Crédit sont équilibrés.</p>
+                                    <p class="text-[0.7rem] text-muted mb-2">Les colonnes doivent respecter cet ordre ou avoir des entêtes claires.</p>
                                     <ul class="text-sm space-y-1">
-                                        <li><strong>Date / Jour *</strong> : JJ/MM/AAAA</li>
-                                        <li><strong>N° Saisie / Écriture</strong></li>
-                                        <li><strong>Code Journal *</strong> : Ex: ACH, VEN</li>
-                                        <li><strong>Référence Pièce</strong> : N° Facture</li>
-                                        <li><strong>Numéro Compte *</strong> : N° Compte général</li>
+                                        <li><strong>Date *</strong> : JJ/MM/AAAA</li>
+                                        <li><strong>Code Journal *</strong> : Doit exister</li>
+                                        <li><strong>Numéro Compte *</strong> : Compte général</li>
                                         <li><strong>Libellé Opération *</strong></li>
-                                        <li><strong>Montant Débit *</strong> / <strong>Montant Crédit *</strong></li>
-                                        <li><strong>Compte Tiers</strong> : Facultatif</li>
-                                        <li><strong>Type Écrit. (A/G)</strong></li>
+                                        <li><strong>Débit *</strong> / <strong>Crédit *</strong> : Montants numériques</li>
+                                        <li><strong>N° Pièce / Réf</strong> <span class="text-muted italic">(Optionnel)</span></li>
+                                        <li><strong>Compte Tiers</strong> <span class="text-muted italic">(Optionnel)</span></li>
+                                        <li><strong>N° Saisie</strong> <span class="text-muted italic">(Optionnel)</span></li>
+                                        <li><strong>Type (A/G)</strong> <span class="text-muted italic">(Optionnel, défaut: G)</span></li>
                                     </ul>
                             </div>
                         </div>
@@ -458,8 +463,16 @@
                 </div>
 
                 <div class="alert alert-info border-0 mt-4 rounded-2xl d-flex align-items-center gap-3">
-                    <i class="fa-solid fa-circle-check text-2xl"></i>
-                    <p class="mb-0 text-sm font-bold">Vérifier la configuration avant d'importer le plan général. Les numéros de compte généraux seront générés par le système en fonction de l'original et du nombre de caractères défini dans la configuration, tout en conservant l'origine pour avoir une trace.</p>
+                    <i class="fa-solid fa-circle-info text-2xl"></i>
+                    <div>
+                        <p class="mb-0 text-sm font-bold">Besoin d'un modèle ?</p>
+                        <p class="mb-0 text-xs text-muted">Sur la page d'importation, cliquez sur le bouton <span class="badge bg-primary">Guide d'Importation</span> en haut à droite pour voir les instructions détaillées.</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger border-0 mt-3 rounded-2xl d-flex align-items-center gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                    <p class="mb-0 text-sm font-black">NB : Avant l'importation, assurez-vous de faire la configuration pour l'unicité du nombre de caractères et le type.</p>
                 </div>
                 
                 <h3>5.2 Exportation de Données</h3>

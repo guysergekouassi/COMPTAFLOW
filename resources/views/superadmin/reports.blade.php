@@ -14,24 +14,32 @@
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
     }
 
-    .card-premium {
-        border-radius: 20px;
-        transition: all 0.3s ease;
+    .kpi-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        transition: transform 0.2s;
+        position: relative;
+        overflow: hidden;
     }
-    .card-premium:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+        border-color: #3b82f6;
     }
-    .icon-box {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
+
+    .kpi-icon-container {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
     }
-
 
     .chart-container {
         min-height: 350px;
@@ -79,79 +87,56 @@
                             </div>
                         </div>
 
-                        <!-- KPIs Grid (Premium TFT Style) -->
+                        <!-- KPIs Grid -->
                         <div class="row g-4 mb-6">
                             <!-- Entreprises -->
                             <div class="col-md-3">
-                                <div class="card border-0 shadow-sm card-premium h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Entreprises</h6>
-                                            <div class="icon-box bg-label-primary text-primary">
-                                                <i class="fa-solid fa-building"></i>
-                                            </div>
+                                <div class="kpi-card shadow-sm">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="kpi-icon-container bg-blue-50 text-blue-600">
+                                            <i class="fa-solid fa-building"></i>
                                         </div>
-                                        <h3 class="mb-2 fw-extrabold text-dark">{{ $kpis['total_companies'] }}</h3>
-                                        <div class="small fw-semibold text-primary">
-                                            <i class="fa-solid fa-circle-check me-1"></i> {{ $kpis['active_companies'] }} Actives
-                                        </div>
+                                        <span class="badge bg-green-100 text-green-700 rounded-pill font-bold fs-xs">
+                                            {{ $kpis['active_companies'] }} Actives
+                                        </span>
                                     </div>
+                                    <h3 class="font-black text-slate-800 mb-0">{{ $kpis['total_companies'] }}</h3>
+                                    <p class="text-slate-400 text-xs font-bold text-uppercase tracking-wider">Entreprises Totales</p>
                                 </div>
                             </div>
                             
                             <!-- Utilisateurs -->
                             <div class="col-md-3">
-                                <div class="card border-0 shadow-sm card-premium h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Utilisateurs</h6>
-                                            <div class="icon-box bg-label-info text-info">
-                                                <i class="fa-solid fa-users"></i>
-                                            </div>
-                                        </div>
-                                        <h3 class="mb-2 fw-extrabold text-dark">{{ $kpis['total_users'] }}</h3>
-                                        <div class="small fw-semibold text-info">
-                                            <i class="fa-solid fa-user-plus me-1"></i> Enregistrés
-                                        </div>
+                                <div class="kpi-card shadow-sm">
+                                    <div class="kpi-icon-container bg-purple-50 text-purple-600">
+                                        <i class="fa-solid fa-users"></i>
                                     </div>
+                                    <h3 class="font-black text-slate-800 mb-0">{{ $kpis['total_users'] }}</h3>
+                                    <p class="text-slate-400 text-xs font-bold text-uppercase tracking-wider">Utilisateurs Enregistrés</p>
                                 </div>
                             </div>
 
                             <!-- Écritures -->
                             <div class="col-md-3">
-                                <div class="card border-0 shadow-sm card-premium h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Transactions</h6>
-                                            <div class="icon-box bg-label-success text-success">
-                                                <i class="fa-solid fa-file-invoice-dollar"></i>
-                                            </div>
-                                        </div>
-                                        <h3 class="mb-2 fw-extrabold text-dark">{{ number_format($kpis['total_entries']) }}</h3>
-                                        <div class="small fw-semibold text-success">
-                                            <i class="fa-solid fa-database me-1"></i> Globales
-                                        </div>
+                                <div class="kpi-card shadow-sm">
+                                    <div class="kpi-icon-container bg-emerald-50 text-emerald-600">
+                                        <i class="fa-solid fa-file-invoice-dollar"></i>
                                     </div>
+                                    <h3 class="font-black text-slate-800 mb-0">{{ number_format($kpis['total_entries']) }}</h3>
+                                    <p class="text-slate-400 text-xs font-bold text-uppercase tracking-wider">Transactions Globales</p>
                                 </div>
                             </div>
 
                             <!-- Taux d'Utilisation -->
                             <div class="col-md-3">
-                                <div class="card border-0 shadow-sm card-premium h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Engagement</h6>
-                                            <div class="icon-box bg-label-warning text-warning">
-                                                <i class="fa-solid fa-gauge-high"></i>
-                                            </div>
-                                        </div>
-                                        <h3 class="mb-2 fw-extrabold text-dark">
-                                            {{ $kpis['total_companies'] > 0 ? round(($kpis['active_companies'] / $kpis['total_companies']) * 100) : 0 }}%
-                                        </h3>
-                                        <div class="small fw-semibold text-warning">
-                                            <i class="fa-solid fa-chart-line me-1"></i> Engagement
-                                        </div>
+                                <div class="kpi-card shadow-sm">
+                                    <div class="kpi-icon-container bg-orange-50 text-orange-600">
+                                        <i class="fa-solid fa-gauge-high"></i>
                                     </div>
+                                    <h3 class="font-black text-slate-800 mb-0">
+                                        {{ $kpis['total_companies'] > 0 ? round(($kpis['active_companies'] / $kpis['total_companies']) * 100) : 0 }}%
+                                    </h3>
+                                    <p class="text-slate-400 text-xs font-bold text-uppercase tracking-wider">Taux d'Engagement</p>
                                 </div>
                             </div>
                         </div>

@@ -779,16 +779,27 @@
                     <p class="mb-0">Le TFT explique les variations de trésorerie en classant les flux en trois catégories : Exploitation, Investissement et Financement.</p>
                 </div>
                 
-                <h4>Catégories de flux</h4>
+                <h4>Les 3 Règles d'Or du Calcul</h4>
                 <ul>
-                    <li><strong>Exploitation</strong> : Flux liés à l'activité courante</li>
-                    <li><strong>Investissement</strong> : Achats/ventes d'immobilisations</li>
-                    <li><strong>Financement</strong> : Emprunts, remboursements, apports en capital</li>
+                    <li><strong>1. Le Classement</strong> :
+                        <ul>
+                            <li><strong>Priorité 1</strong> : Poste de Trésorerie affecté manuellement.</li>
+                            <li><strong>Priorité 2 (Secours Automatique)</strong> : Si aucun poste, l'IA affecte selon la contrepartie (Classe 2 → Investissement, Classe 1 → Financement).</li>
+                            <li><strong>Défaut</strong> : Tout le reste va en Exploitation (Opérationnel).</li>
+                        </ul>
+                    </li>
+                    <li><strong>2. Le Sens (+ ou -)</strong> : Débit Banque = Encaissement (+), Crédit Banque = Décaissement (-).</li>
+                    <li><strong>3. L'Affichage</strong> : Le tableau montre le compte de contrepartie (ex: Fournisseur) pour plus de clarté.</li>
                 </ul>
                 
+                <div class="alert-success">
+                    <strong><i class="fa-solid fa-magic me-2"></i>Nouveauté : Imports Automatiques</strong>
+                    Plus besoin d'affecter un poste à chaque ligne ! Lors de vos imports, le système classe automatiquement les Achats d'Immobilisations (Comptes 2xxx) et les Emprunts (Comptes 16xx) dans les bonnes sections.
+                </div>
+
                 <div class="alert-info">
-                    <strong><i class="fa-solid fa-info-circle me-2"></i>Important</strong>
-                    Pour que le TFT soit correct, vous devez toujours renseigner le "Poste Trésorerie" lors de la saisie des écritures de classe 5.
+                    <strong><i class="fa-solid fa-info-circle me-2"></i>Note sur les Écarts</strong>
+                    Le TFT Mensuel suit les <strong>encaissements réels</strong>. Il peut différer du TFT Annuel (Normal) qui inclut des flux théoriques basés sur les factures non payées.
                 </div>
             </div>
             

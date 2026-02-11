@@ -1014,19 +1014,19 @@ class AccountingReportingService
             'treso_initiale' => 0,
             'activities' => [
                 'operationnelle' => [
-                    'label' => 'ACTIVITÉS OPÉRATIONNELLES',
+                    'label' => 'ACTIVITÉS OPÉRATIONNELLES (I)',
                     'encaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
                     'decaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
                     'net' => array_fill(0, $monthCount, 0)
                 ],
                 'investissement' => [
-                    'label' => 'ACTIVITÉS D\'INVESTISSEMENT',
+                    'label' => 'ACTIVITÉS D\'INVESTISSEMENT (II)',
                     'encaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
                     'decaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
                     'net' => array_fill(0, $monthCount, 0)
                 ],
                 'financement' => [
-                    'label' => 'ACTIVITÉS DE FINANCEMENT',
+                    'label' => 'ACTIVITÉS DE FINANCEMENT (III)',
                     'encaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
                     'decaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
                     'net' => array_fill(0, $monthCount, 0)
@@ -1036,112 +1036,85 @@ class AccountingReportingService
             'cumule' => array_fill(0, $monthCount, 0)
         ];
 
-        // Récupérer toutes les écritures pour le calcul
-        $ecritures = EcritureComptable::where('exercices_comptables_id', $exerciceId)
+        // 1. Récupérer TOUTES les écritures pour analyse complète (Saisie par Saisie)
+        $allEcritures = EcritureComptable::where('exercices_comptables_id', $exerciceId)
             ->where('company_id', $companyId)
             ->with(['planComptable', 'posteTresorerie.category'])
             ->get();
 
-        // 1. Calcul de la Trésorerie Initiale (RAN classe 5)
+        // 2. Calcul de la Trésorerie Initiale (RAN classe 5)
         $treso_initiale = 0;
-        foreach ($ecritures as $ec) {
+        foreach ($allEcritures as $ec) {
             if ($ec->is_ran && $ec->planComptable && str_starts_with($ec->planComptable->numero_de_compte, '5')) {
                 $treso_initiale += ($ec->debit - $ec->credit);
             }
         }
         $data['treso_initiale'] = $treso_initiale;
 
-        // Tracker pour investissement/financement par saisie (comme dans le standard)
-        $handledSaisiesInv = [];
-        $handledSaisiesFin = [];
+        // 3. Groupement par Transaction (n_saisie)
+        $transactions = $allEcritures->filter(fn($e) => !$e->is_ran)->groupBy('n_saisie');
 
-        foreach ($ecritures as $ec) {
-            $compte = $ec->planComptable;
-            if (!$compte || $ec->is_ran) continue;
+        foreach ($transactions as $saisieId => $lignes) {
+            // A. Analyser la partie Trésorerie (La "Boussole")
+            $lignesTreso = $lignes->filter(function($line) {
+                return $line->planComptable && str_starts_with($line->planComptable->numero_de_compte, '5');
+            });
 
-            $num = $compte->numero_de_compte;
-            $ecDate = \Carbon\Carbon::parse($ec->date);
-            $monthIndex = -1;
-            foreach ($months as $idx => $m) {
-                if ($m['id'] == $ecDate->month && $m['year'] == $ecDate->year) {
-                    $monthIndex = $idx;
-                    break;
-                }
-            }
-            if ($monthIndex === -1) continue;
+            if ($lignesTreso->isEmpty()) continue; 
 
-            // --- A. OPÉRATIONNEL (Méthode Indirecte adaptée) ---
+            // Calcul du Flux Net de Trésorerie pour cette saisie
+            $fluxTresoNet = $lignesTreso->sum(fn($l) => $l->debit - $l->credit);
+
+            // Ignorer les flux nuls
+            if (abs($fluxTresoNet) < 0.01) continue;
+
+            // Déterminer le Sens (Encaissement vs Décaissement)
+            $isEncaissement = $fluxTresoNet > 0;
+            $sensKey = $isEncaissement ? 'encaissements' : 'decaissements';
+            $absFluxTotal = abs($fluxTresoNet);
+
+            // Déterminer la Section (Via le Poste de Trésorerie PRINCIPAL)
+            $ligneTresoPrincipale = $lignesTreso->first(fn($l) => $l->posteTresorerie) ?? $lignesTreso->first();
             
-            // CAF - Produits (7 sauf 78/79)
-            if (str_starts_with($num, '7') && !str_starts_with($num, '78') && !str_starts_with($num, '79')) {
-                $val = $ec->credit - $ec->debit;
-                if ($val > 0) {
-                    $data['activities']['operationnelle']['encaissements']['total'][$monthIndex] += $val;
-                    $this->addManualCategoryDetail($data['activities']['operationnelle']['encaissements']['categories'], 'Produits encaissables', $val, $monthIndex, $monthCount);
+            $activityKey = 'operationnelle'; // Par défaut
+            if ($ligneTresoPrincipale->posteTresorerie) {
+                $poste = $ligneTresoPrincipale->posteTresorerie;
+                $sysCode = $poste->syscohada_line_id;
+                $catName = $poste->category ? strtolower($poste->category->name) : '';
+                
+                if (($sysCode && str_starts_with($sysCode, 'INV_')) || str_contains($catName, 'investissement')) {
+                    $activityKey = 'investissement';
+                } elseif (($sysCode && str_starts_with($sysCode, 'FIN_')) || str_contains($catName, 'financement')) {
+                    $activityKey = 'financement';
+                }
+            }
+
+            // FALLBACK : Si aucune activité spécifique via le poste, on regarde la CLASSE DES CONTREPARTIES
+            if ($activityKey === 'operationnelle') {
+                $hasInvest = $lignes->contains(function($l) {
+                     if (!$l->planComptable) return false;
+                     $num = $l->planComptable->numero_de_compte;
+                     // Classe 2 (Immo) sauf Amortissements (28) et Dépréciations (29)
+                     return str_starts_with($num, '2') && !str_starts_with($num, '28') && !str_starts_with($num, '29');
+                });
+                
+                if ($hasInvest) {
+                    $activityKey = 'investissement';
                 } else {
-                    $data['activities']['operationnelle']['decaissements']['total'][$monthIndex] += abs($val);
-                    $this->addManualCategoryDetail($data['activities']['operationnelle']['decaissements']['categories'], 'Annulations de produits', abs($val), $monthIndex, $monthCount);
-                }
-            }
-            // CAF - Charges (6 sauf 68/69)
-            elseif (str_starts_with($num, '6') && !str_starts_with($num, '68') && !str_starts_with($num, '69')) {
-                $val = $ec->debit - $ec->credit;
-                if ($val > 0) {
-                    $data['activities']['operationnelle']['decaissements']['total'][$monthIndex] += $val;
-                    $this->addManualCategoryDetail($data['activities']['operationnelle']['decaissements']['categories'], 'Charges décaissables', $val, $monthIndex, $monthCount);
-                } else {
-                    $data['activities']['operationnelle']['encaissements']['total'][$monthIndex] += abs($val);
-                    $this->addManualCategoryDetail($data['activities']['operationnelle']['encaissements']['categories'], 'Annulations de charges', abs($val), $monthIndex, $monthCount);
-                }
-            }
-            // BFR - Stocks (3) et Tiers (4)
-            elseif (str_starts_with($num, '3') || str_starts_with($num, '4')) {
-                $isPassif = str_starts_with($num, '40') || str_starts_with($num, '42') || str_starts_with($num, '43') || str_starts_with($num, '44');
-                $fluxBFR = $ec->credit - $ec->debit; // Flux de cash : + si dette augmente ou actif baisse
-
-                $label = 'Variation BFR';
-                if (str_starts_with($num, '3')) $label = 'Variation des Stocks';
-                elseif ($isPassif) $label = 'Variation des Dettes d\'exploitation';
-                else $label = 'Variation des Créances d\'exploitation';
-
-                if ($fluxBFR > 0) {
-                    $data['activities']['operationnelle']['encaissements']['total'][$monthIndex] += $fluxBFR;
-                    $this->addManualCategoryDetail($data['activities']['operationnelle']['encaissements']['categories'], $label, $fluxBFR, $monthIndex, $monthCount);
-                } elseif ($fluxBFR < 0) {
-                    $data['activities']['operationnelle']['decaissements']['total'][$monthIndex] += abs($fluxBFR);
-                    $this->addManualCategoryDetail($data['activities']['operationnelle']['decaissements']['categories'], $label, abs($fluxBFR), $monthIndex, $monthCount);
-                }
-            }
-
-            // --- B & C. INVESTISSEMENT & FINANCEMENT (Méthode Directe via Postes prioritaires) ---
-            if (str_starts_with($num, '5') && $ec->posteTresorerie) {
-                $poste = $ec->posteTresorerie;
-                $syscohadaLine = $poste->syscohada_line_id;
-                $fluxTreso = $ec->debit - $ec->credit;
-
-                if ($syscohadaLine && (str_starts_with($syscohadaLine, 'INV_') || str_starts_with($syscohadaLine, 'FIN_'))) {
-                    $actKey = str_starts_with($syscohadaLine, 'INV_') ? 'investissement' : 'financement';
-                    if ($actKey == 'investissement') $handledSaisiesInv[$ec->numero_saisie] = true;
-                    else $handledSaisiesFin[$ec->numero_saisie] = true;
-
-                    if ($fluxTreso > 0) {
-                        $data['activities'][$actKey]['encaissements']['total'][$monthIndex] += $fluxTreso;
-                        $this->addManualCategoryDetail($data['activities'][$actKey]['encaissements']['categories'], $poste->name, $fluxTreso, $monthIndex, $monthCount);
-                    } else {
-                        $data['activities'][$actKey]['decaissements']['total'][$monthIndex] += abs($fluxTreso);
-                        $this->addManualCategoryDetail($data['activities'][$actKey]['decaissements']['categories'], $poste->name, abs($fluxTreso), $monthIndex, $monthCount);
+                    $hasFin = $lignes->contains(function($l) {
+                        if (!$l->planComptable) return false;
+                        $num = $l->planComptable->numero_de_compte;
+                        // Classe 1 (Capitaux, Emprunts...)
+                        return str_starts_with($num, '1');
+                    });
+                    if ($hasFin) {
+                        $activityKey = 'financement';
                     }
                 }
             }
-        }
 
-        // --- D. DEUXIÈME PASSE : Fallback Inv/Fin (Méthode Indirecte pour alignement total) ---
-        foreach ($ecritures as $ec) {
-            $compte = $ec->planComptable;
-            if (!$compte || $ec->is_ran || isset($handledSaisiesInv[$ec->numero_saisie]) || isset($handledSaisiesFin[$ec->numero_saisie])) continue;
-
-            $num = $compte->numero_de_compte;
-            $ecDate = \Carbon\Carbon::parse($ec->date);
+            // Identifier le mois
+            $ecDate = \Carbon\Carbon::parse($ligneTresoPrincipale->date);
             $monthIndex = -1;
             foreach ($months as $idx => $m) {
                 if ($m['id'] == $ecDate->month && $m['year'] == $ecDate->year) {
@@ -1151,43 +1124,61 @@ class AccountingReportingService
             }
             if ($monthIndex === -1) continue;
 
-            // Fallback Investissement (Classe 2)
-            if (str_starts_with($num, '2') && !str_starts_with($num, '28') && !str_starts_with($num, '29')) {
-                // Acquisition (Debit 2) = Sortie Cash (-). Cession (Credit 2) = Entrée Cash (+)
-                if ($ec->credit > 0) {
-                    $data['activities']['investissement']['encaissements']['total'][$monthIndex] += $ec->credit;
-                    $this->addManualCategoryDetail($data['activities']['investissement']['encaissements']['categories'], 'Cessions d\'immobilisations', $ec->credit, $monthIndex, $monthCount);
-                }
-                if ($ec->debit > 0) {
-                    $data['activities']['investissement']['decaissements']['total'][$monthIndex] += $ec->debit;
-                    $this->addManualCategoryDetail($data['activities']['investissement']['decaissements']['categories'], 'Acquisitions d\'immobilisations', $ec->debit, $monthIndex, $monthCount);
-                }
+            // B. Identifier les Contreparties (L'Affichage)
+            $lignesContrepartie = $lignes->filter(function($line) {
+                return !$line->planComptable || !str_starts_with($line->planComptable->numero_de_compte, '5');
+            });
+            
+            $totalContrepartieAbs = $lignesContrepartie->sum(fn($l) => abs($l->debit - $l->credit));
+
+            if ($totalContrepartieAbs == 0) {
+                 // Fallback si pas de contrepartie claire (ex: 521 a 521)
+                 $compte = $ligneTresoPrincipale->planComptable;
+                 $labelFallback = $compte->numero_de_compte . ' - ' . $compte->intitule . ' (Sans contrepartie)';
+                 $data['activities'][$activityKey][$sensKey]['total'][$monthIndex] += $absFluxTotal;
+                 $this->addManualCategoryDetail($data['activities'][$activityKey][$sensKey]['categories'], $labelFallback, $absFluxTotal, $monthIndex, $monthCount);
+                 continue;
             }
-            // Fallback Financement (10, 16)
-            elseif ((str_starts_with($num, '16') || str_starts_with($num, '10')) && !str_starts_with($num, '169')) {
-                $val = $ec->credit - $ec->debit; // + si cash rentre (emprunt/capital), - si rembourse
-                if ($val > 0) {
-                    $data['activities']['financement']['encaissements']['total'][$monthIndex] += $val;
-                    $this->addManualCategoryDetail($data['activities']['financement']['encaissements']['categories'], 'Ressources de financement', $val, $monthIndex, $monthCount);
-                } elseif ($val < 0) {
-                    $data['activities']['financement']['decaissements']['total'][$monthIndex] += abs($val);
-                    $this->addManualCategoryDetail($data['activities']['financement']['decaissements']['categories'], 'Remboursements / Dividendes', abs($val), $monthIndex, $monthCount);
-                }
+
+            // Répartition
+            foreach ($lignesContrepartie as $cp) {
+                $compteCp = $cp->planComptable;
+                if (!$compteCp) continue;
+
+                $cpAmountAbs = abs($cp->debit - $cp->credit);
+                if ($cpAmountAbs < 0.01) continue;
+
+                // Prorata
+                $partDuFlux = ($cpAmountAbs / $totalContrepartieAbs) * $absFluxTotal;
+
+                // Format : [Numéro] - [Intitulé]
+                $labelAffichage = $compteCp->numero_de_compte . ' - ' . $compteCp->intitule;
+
+                $data['activities'][$activityKey][$sensKey]['total'][$monthIndex] += $partDuFlux;
+                $this->addManualCategoryDetail($data['activities'][$activityKey][$sensKey]['categories'], $labelAffichage, $partDuFlux, $monthIndex, $monthCount);
             }
         }
 
-        // Calculs finaux cumulés
-        $current_cumule = $treso_initiale;
+        // 4. Calculs Finaux (Nets et Cumuls)
+        $currentCumul = $treso_initiale;
+
         for ($i = 0; $i < $monthCount; $i++) {
-            $total_net_month = 0;
+            $globalNetMonth = 0;
+
             foreach (['operationnelle', 'investissement', 'financement'] as $key) {
-                $net_act = $data['activities'][$key]['encaissements']['total'][$i] - $data['activities'][$key]['decaissements']['total'][$i];
-                $data['activities'][$key]['net'][$i] = $net_act;
-                $total_net_month += $net_act;
+                $enc = $data['activities'][$key]['encaissements']['total'][$i];
+                $dec = $data['activities'][$key]['decaissements']['total'][$i];
+                
+                $net = $enc - $dec;
+                
+                $data['activities'][$key]['net'][$i] = $net;
+                $globalNetMonth += $net;
             }
-            $data['global_net'][$i] = $total_net_month;
-            $current_cumule += $total_net_month;
-            $data['cumule'][$i] = $current_cumule;
+
+            $data['global_net'][$i] = $globalNetMonth;
+            
+            $currentCumul += $globalNetMonth;
+            $data['cumule'][$i] = $currentCumul;
         }
 
         return $data;

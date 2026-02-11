@@ -109,6 +109,41 @@
                             </div>
                         </div>
 
+                        <!-- Scrolling Ticker -->
+                        <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-0 mb-6 shadow-sm rounded-r-lg overflow-hidden position-relative d-flex align-items-center" style="height: 48px;">
+                            <div class="marquee-content d-flex">
+                                <div class="animate-marquee whitespace-nowrap font-bold text-sm d-flex align-items-center py-3">
+                                    <i class="fa-solid fa-triangle-exclamation mx-3 text-amber-600"></i>
+                                    <span class="uppercase tracking-wider">IMPORTANT :</span>&nbsp;
+                                    Paramétrer la configuration avant d'importer le plan comptable, le compte tiers, les journaux pour assurer une unicité du nombre de caractères des numéros de compte, des codes journaux et tiers sans oublier leurs types.
+                                    <span class="mx-12"></span> <!-- Spacer between loops -->
+                                </div>
+                                <div class="animate-marquee whitespace-nowrap font-bold text-sm d-flex align-items-center py-3">
+                                    <i class="fa-solid fa-triangle-exclamation mx-3 text-amber-600"></i>
+                                    <span class="uppercase tracking-wider">IMPORTANT :</span>&nbsp;
+                                    Paramétrer la configuration avant d'importer le plan comptable, le compte tiers, les journaux pour assurer une unicité du nombre de caractères des numéros de compte, des codes journaux et tiers sans oublier leurs types.
+                                    <span class="mx-12"></span> <!-- Spacer between loops -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <style>
+                            .marquee-content {
+                                display: flex;
+                                width: max-content;
+                                animation: seamless-loop 40s linear infinite;
+                            }
+                            
+                            @keyframes seamless-loop {
+                                0% { transform: translateX(0); }
+                                100% { transform: translateX(-50%); }
+                            }
+                            
+                            .animate-marquee {
+                                flex-shrink: 0;
+                            }
+                        </style>
+
                         <ul class="nav nav-tabs nav-tabs-premium mb-6 gap-3 border-0" role="tablist">
                             <li class="nav-item">
                                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabReferentiels">

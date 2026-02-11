@@ -78,7 +78,7 @@ class AdminConfigController extends Controller
             'tier_id_type' => $request->tier_id_type ?? $company->tier_id_type,
         ]);
 
-        return redirect()->route('admin.config.external_import')->with('success', 'Paramètres mis à jour avec succès.');
+        return redirect()->back()->with('success', 'Paramètres mis à jour avec succès.');
     }
 
     /**
@@ -264,7 +264,7 @@ class AdminConfigController extends Controller
             ];
             $modeName = $modeNames[$mode] ?? 'SYSCOHADA';
 
-            return redirect()->route('admin.config.external_import')->with('success', "$count comptes chargés avec succès dans le format $modeName.");
+            return redirect()->back()->with('success', "$count comptes chargés avec succès dans le format $modeName.");
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -342,7 +342,7 @@ class AdminConfigController extends Controller
             }
             
             DB::commit();
-            return redirect()->route('admin.config.external_import')->with('success', "$count comptes générés avec succès.");
+            return redirect()->back()->with('success', "$count comptes générés avec succès.");
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -358,7 +358,7 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             PlanComptable::where('company_id', $user->company_id)->delete();
-            return redirect()->route('admin.config.external_import')->with('success', 'Plan comptable réinitialisé avec succès.');
+            return redirect()->back()->with('success', 'Plan comptable réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
         }
@@ -372,7 +372,7 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             PlanTiers::where('company_id', $user->company_id)->delete();
-            return redirect()->route('admin.config.external_import')->with('success', 'Plan tiers réinitialisé avec succès.');
+            return redirect()->back()->with('success', 'Plan tiers réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
         }
@@ -386,7 +386,7 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             CodeJournal::where('company_id', $user->company_id)->delete();
-            return redirect()->route('admin.config.external_import')->with('success', 'Modèle de journaux réinitialisé avec succès.');
+            return redirect()->back()->with('success', 'Modèle de journaux réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
         }
@@ -429,7 +429,7 @@ class AdminConfigController extends Controller
             'adding_strategy' => 'manuel'
         ]);
 
-        return redirect()->route('admin.config.external_import')->with('success', 'Compte ajouté au modèle avec succès.');
+        return redirect()->back()->with('success', 'Compte ajouté au modèle avec succès.');
     }
 
     /**
@@ -443,7 +443,7 @@ class AdminConfigController extends Controller
 
         try {
             Excel::import(new \App\Imports\MasterPlanImport, $request->file('file'));
-            return redirect()->route('admin.config.external_import')->with('success', 'Importation terminée avec succès.');
+            return redirect()->back()->with('success', 'Importation terminée avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de l\'importation : ' . $e->getMessage());
         }
@@ -460,7 +460,7 @@ class AdminConfigController extends Controller
 
         try {
             Excel::import(new \App\Imports\MasterTiersImport, $request->file('file'));
-            return redirect()->route('admin.config.external_import')->with('success', 'Importation des tiers terminée avec succès.');
+            return redirect()->back()->with('success', 'Importation des tiers terminée avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de l\'importation des tiers : ' . $e->getMessage());
         }
@@ -477,7 +477,7 @@ class AdminConfigController extends Controller
 
         try {
             Excel::import(new \App\Imports\MasterJournalImport, $request->file('file'));
-            return redirect()->route('admin.config.external_import')->with('success', 'Importation des journaux terminée avec succès.');
+            return redirect()->back()->with('success', 'Importation des journaux terminée avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de l\'importation des journaux : ' . $e->getMessage());
         }
@@ -519,7 +519,7 @@ class AdminConfigController extends Controller
             }
             DB::commit();
 
-            return redirect()->route('admin.config.external_import')->with('success', "$count journaux standards chargés avec succès.");
+            return redirect()->back()->with('success', "$count journaux standards chargés avec succès.");
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -734,7 +734,7 @@ class AdminConfigController extends Controller
             'company_id' => $user->company_id,
         ]);
 
-        return redirect()->route('admin.config.external_import')->with('success', 'Journal ajouté au modèle avec succès.');
+        return redirect()->back()->with('success', 'Journal ajouté au modèle avec succès.');
     }
 
     /**
@@ -877,7 +877,7 @@ class AdminConfigController extends Controller
             $user = Auth::user();
             $account = PlanComptable::where('company_id', $user->company_id)->findOrFail($id);
             $account->delete();
-            return redirect()->route('admin.config.external_import')->with('success', 'Compte supprimé du modèle avec succès.');
+            return redirect()->back()->with('success', 'Compte supprimé du modèle avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
         }
@@ -892,7 +892,7 @@ class AdminConfigController extends Controller
             $user = Auth::user();
             $tier = PlanTiers::where('company_id', $user->company_id)->findOrFail($id);
             $tier->delete();
-            return redirect()->route('admin.config.external_import')->with('success', 'Tiers supprimé du modèle avec succès.');
+            return redirect()->back()->with('success', 'Tiers supprimé du modèle avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
         }
@@ -907,7 +907,7 @@ class AdminConfigController extends Controller
             $user = Auth::user();
             $journal = CodeJournal::where('company_id', $user->company_id)->findOrFail($id);
             $journal->delete();
-            return redirect()->route('admin.config.external_import')->with('success', 'Journal supprimé du modèle avec succès.');
+            return redirect()->back()->with('success', 'Journal supprimé du modèle avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
         }
@@ -937,7 +937,7 @@ class AdminConfigController extends Controller
                 'numero_de_compte' => $request->numero_de_compte,
                 'intitule' => mb_strtoupper($request->intitule),
             ]);
-            return redirect()->route('admin.config.external_import')->with('success', 'Compte mis à jour avec succès.');
+            return redirect()->back()->with('success', 'Compte mis à jour avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
         }
@@ -963,7 +963,7 @@ class AdminConfigController extends Controller
                 'type_de_tiers' => $request->type_de_tiers,
                 'compte_general' => $request->compte_general,
             ]);
-            return redirect()->route('admin.config.external_import')->with('success', 'Tiers mis à jour avec succès.');
+            return redirect()->back()->with('success', 'Tiers mis à jour avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
         }
@@ -1036,7 +1036,7 @@ class AdminConfigController extends Controller
                 'traitement_analytique' => ($request->traitement_analytique === 'oui'),
                 'rapprochement_sur' => $request->rapprochement_sur,
             ]);
-            return redirect()->route('admin.config.external_import')->with('success', 'Journal mis à jour avec succès.');
+            return redirect()->back()->with('success', 'Journal mis à jour avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
         }
