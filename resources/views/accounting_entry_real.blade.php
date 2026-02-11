@@ -1339,13 +1339,9 @@
                           </div>
                       </div>
 
-                      <div class="grid grid-cols-2 gap-4 pt-4 px-4 pb-4 row">
-                          <div class="col-6">
-                              <button type="button" class="btn-cancel-premium w-100" data-bs-dismiss="modal">Annuler</button>
-                          </div>
-                          <div class="col-6">
-                              <button type="button" id="btnSavePoste" onclick="createPosteSimple(event)" class="btn-save-premium w-100">Enregistrer</button>
-                          </div>
+                      <div class="d-flex justify-content-between gap-3 pt-4 px-4 pb-4">
+                          <button type="button" class="btn-cancel-premium flex-fill" data-bs-dismiss="modal">Annuler</button>
+                          <button type="button" id="btnSavePoste" onclick="createPosteSimple(event)" class="btn-save-premium flex-fill">Enregistrer</button>
                       </div>
                   </div>
               </form>
@@ -1355,7 +1351,7 @@
       <!-- Modal Nouveau Tiers (Plan Tiers Style) -->
       <div class="modal fade" id="createTiersModal" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
-              <form id="createTiersForm" class="w-full">
+              <div id="createTiersForm" class="w-full">
                   <div class="modal-content premium-modal-content-tiers">
                       
                       <!-- En-tête -->
@@ -1415,29 +1411,20 @@
                       </div>
 
                       <!-- Actions -->
-                      <div class="row g-3 mt-4">
-                          <div class="col-6">
-                              <button type="button" class="btn-cancel-premium w-100" data-bs-dismiss="modal">
-                                  Annuler
-                              </button>
-                          </div>
-                          <div class="col-6">
-                              <button type="button" id="btnCreateTiers" onclick="window.createTiersSimple(event)" class="btn-save-premium w-100">
-                                  Enregistrer
-                              </button>
-                          </div>
+                      <div class="d-flex justify-content-between gap-3 mt-4">
+                          <button type="button" class="btn-cancel-premium flex-fill" data-bs-dismiss="modal">Annuler</button>
+                          <button type="button" id="btnCreateTiers" onclick="window.createTiersSimple(event)" class="btn-save-premium flex-fill">Enregistrer</button>
                       </div>
 
                   </div>
-              </form>
+              </div>
           </div>
       </div>
 
       <!-- Modal Creation Compte Général -->
       <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
-              <form action="{{ route('plan_comptable.store') }}" method="POST" id="planComptableForm" class="w-full">
-                  @csrf
+              <div id="planComptableForm" class="w-full">
                   <div class="modal-content premium-modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
                       <div class="text-center mb-4 position-relative" style="padding: 1.5rem 1.5rem 0;">
                           <button type="button" class="btn-close position-absolute end-0 top-0 m-3" data-bs-dismiss="modal" aria-label="Fermer"></button>
@@ -1459,17 +1446,13 @@
                                       placeholder="Entrez l'intitulé du compte" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px;">
                               </div>
                           </div>
-                          <div class="row g-3 mt-2">
-                              <div class="col-6">
-                                  <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal" style="padding: 0.75rem; border-radius: 12px; font-weight: 700; color: #64748b;">Annuler</button>
-                              </div>
-                              <div class="col-6">
-                                  <button type="submit" class="btn btn-primary-premium w-100" style="padding: 0.75rem; border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border: none; color: white;">Enregistrer</button>
-                              </div>
+                          <div class="d-flex justify-content-between gap-3 mt-2">
+                              <button type="button" class="btn btn-light flex-fill" data-bs-dismiss="modal" style="padding: 0.75rem; border-radius: 12px; font-weight: 700; color: #64748b;">Annuler</button>
+                              <button type="button" id="btnCreateCompte" onclick="window.createCompteSimple(event)" class="btn btn-primary-premium flex-fill" style="padding: 0.75rem; border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border: none; color: white;">Enregistrer</button>
                           </div>
                       </div>
                   </div>
-              </form>
+              </div>
           </div>
       </div>
 
@@ -1565,9 +1548,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reset au chargement
         createTiersModalEl.addEventListener('show.bs.modal', function () {
-            document.getElementById('createTiersForm').reset();
+            typeTiersSelect.value = '';
             compteGeneralTiers.innerHTML = '<option value="" selected disabled>Choisir le type...</option>';
             numeroTiersInput.value = '';
+            intituleTiersInput.value = '';
         });
 
         // Changement de type -> Filtre comptes & Génération numéro
@@ -1692,7 +1676,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify(data)
             })
@@ -1768,7 +1753,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Mise à jour du dropdown
                     const posteSelect = document.getElementById('poste_tresorerie');
                     if (posteSelect) {
-                        const newOption = new Option(result.name, result.id, true, true);
+                        const displayText = result.category_name ? `${result.name} - ${result.category_name}` : result.name;
+                        const newOption = new Option(displayText, result.id, true, true);
                         posteSelect.add(newOption);
                         if (typeof $ !== 'undefined' && $(posteSelect).data('select2')) {
                             $(posteSelect).trigger('change');
@@ -1789,6 +1775,64 @@ document.addEventListener('DOMContentLoaded', function() {
             .finally(() => {
                 btn.disabled = false;
                 btn.innerHTML = originalBtnHtml;
+            });
+        };
+    }
+
+    // --- GESTION DES COMPTES GÉNÉRAUX ---
+    const modalCenterCreateEl = document.getElementById('modalCenterCreate');
+    if (modalCenterCreateEl) {
+        const compteModal = new bootstrap.Modal(modalCenterCreateEl);
+        const numeroCompteInput = document.getElementById('numero_de_compte');
+        const intituleCompteInput = document.getElementById('intitule');
+        const btnCreateCompte = document.getElementById('btnCreateCompte');
+
+        window.createCompteSimple = function(event) {
+            if (event) event.preventDefault();
+            
+            const numero_de_compte = numeroCompteInput.value.trim();
+            const intitule = intituleCompteInput.value.trim();
+
+            if (!numero_de_compte || !intitule) {
+                Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
+                return;
+            }
+
+            const originalBtnHtml = btnCreateCompte.innerHTML;
+            btnCreateCompte.disabled = true;
+            btnCreateCompte.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
+
+            fetch('{{ route("plan_comptable.store") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ numero_de_compte, intitule })
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    compteModal.hide();
+                    
+                    // Réinitialiser les champs
+                    numeroCompteInput.value = '';
+                    intituleCompteInput.value = '';
+
+                    Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le compte général a été créé avec succès.', timer: 2000, showConfirmButton: false });
+                } else {
+                    throw new Error(result.error || 'Erreur lors de la création');
+                }
+            })
+            .catch(err => {
+                console.error('Erreur:', err);
+                Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
+            })
+            .finally(() => {
+                btnCreateCompte.disabled = false;
+                btnCreateCompte.innerHTML = originalBtnHtml;
             });
         };
     }

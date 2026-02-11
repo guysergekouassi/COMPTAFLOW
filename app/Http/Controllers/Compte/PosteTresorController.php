@@ -208,6 +208,9 @@ class PosteTresorController extends Controller
             ->exists();
 
         if ($exists) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => "Le poste '{$validated['name']}' existe déjà pour cette entreprise."], 422);
+            }
             return redirect()->back()->with('error', "Le poste '{$validated['name']}' existe déjà pour cette entreprise.");
         }
 
@@ -219,6 +222,16 @@ class PosteTresorController extends Controller
             'solde_initial' => 0,
             'solde_actuel' => 0,
         ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Poste de trésorerie créé avec succès.',
+                'id' => $compte->id,
+                'name' => $compte->name,
+                'category_name' => $compte->category->name ?? ''
+            ]);
+        }
 
         return redirect()->route('postetresorerie.index')
                          ->with('success', 'Poste de trésorerie créé avec succès.');

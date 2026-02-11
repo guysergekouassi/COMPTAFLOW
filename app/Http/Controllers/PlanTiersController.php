@@ -158,6 +158,9 @@ class PlanTiersController extends Controller
 
             if ($numeroExiste) {
                 Log::warning('Tentative de création d\'un numéro de tiers existant: ' . $request->numero_de_tiers . ' pour la société: ' . $currentCompanyId);
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'error' => 'Ce numéro de tiers existe déjà pour cette société.'], 422);
+                }
                 return redirect()->back()->with('error', 'Ce numéro de tiers existe déjà pour cette société.');
             }
 

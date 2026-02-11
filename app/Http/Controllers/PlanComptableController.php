@@ -158,13 +158,16 @@ class PlanComptableController extends Controller
             ->exists();
 
         if ($exists) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Ce numéro de compte ou cet intitulé existe déjà dans cette comptabilité.'], 422);
+            }
             return redirect()->back()->with('error', 'Ce numéro de compte ou cet intitulé existe déjà dans cette comptabilité.');
         }
 
         $user = Auth::user();
         
         // 3. ENREGISTRER AVEC LE BON company_id
-        PlanComptable::create([
+        $plan = PlanComptable::create([
             'numero_de_compte' => $numero_formate,
             'intitule' => $intitule_formate,
             'adding_strategy' => 'manuel',
@@ -172,6 +175,16 @@ class PlanComptableController extends Controller
             'company_id' => $companyId, // Utilise l'ID switché
             'classe' => $this->determinerClasse($numero_formate), // Utilise la classe au lieu du type
         ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Plan comptable ajouté avec succès à la comptabilité actuelle.',
+                'id' => $plan->id,
+                'numero_de_compte' => $plan->numero_de_compte,
+                'intitule' => $plan->intitule
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Plan comptable ajouté avec succès à la comptabilité actuelle.');
     } catch (\Exception $e) {
