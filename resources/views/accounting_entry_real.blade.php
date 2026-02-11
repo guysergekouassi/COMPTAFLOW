@@ -956,13 +956,33 @@
                                                 title="Sélectionner un compte général" required>
                                                 <option value="" selected disabled>Sélectionner un compte</option>
                                                 @if(isset($plansComptables))
-                                                    @foreach ($plansComptables as $plan)
-                                                        <option value="{{ $plan->id }}"
-                                                            data-numero="{{ $plan->numero_de_compte }}"
-                                                            data-intitule_compte_general="{{ $plan->numero_de_compte }}">
-                                                            {{ $plan->numero_de_compte }} -
-                                                            {{ $plan->intitule }}
-                                                        </option>
+                                                    @php
+                                                        $classLabels = [
+                                                            '1' => 'Classe 1 - Comptes de ressources durables',
+                                                            '2' => 'Classe 2 - Comptes d\'actif immobilisé',
+                                                            '3' => 'Classe 3 - Comptes de stocks',
+                                                            '4' => 'Classe 4 - Comptes de tiers',
+                                                            '5' => 'Classe 5 - Comptes de trésorerie',
+                                                            '6' => 'Classe 6 - Comptes de charges',
+                                                            '7' => 'Classe 7 - Comptes de produits',
+                                                            '8' => 'Classe 8 - Comptes spéciaux',
+                                                            '9' => 'Classe 9 - Comptes de coût'
+                                                        ];
+                                                        $groupedPlans = $plansComptables->groupBy(function($item) {
+                                                            return substr($item->numero_de_compte, 0, 1);
+                                                        });
+                                                    @endphp
+                                                    @foreach ($groupedPlans as $class => $accounts)
+                                                        <optgroup label="{{ $classLabels[$class] ?? 'Classe ' . $class }}">
+                                                            @foreach ($accounts as $plan)
+                                                                <option value="{{ $plan->id }}"
+                                                                    data-numero="{{ $plan->numero_de_compte }}"
+                                                                    data-intitule_compte_general="{{ $plan->numero_de_compte }}">
+                                                                    {{ $plan->numero_de_compte }} -
+                                                                    {{ $plan->intitule }}
+                                                                </option>
+                                                            @endforeach
+                                                        </optgroup>
                                                     @endforeach
                                                 @endif
                                             </select>
@@ -985,7 +1005,7 @@
                                         </label>
                                         <div class="d-flex gap-2 align-items-center">
                                             <select id="compte_tiers" name="compte_tiers"
-                                                class="form-select select2" style="max-width: 250px; flex: 1;" data-live-search="true"
+                                                class="form-select select2" style="flex: 1;" data-live-search="true"
                                                 title="Sélectionner un compte tiers">
                                                 <option value="" selected disabled>Sélectionner un compte tiers</option>
                                                 @if(isset($plansTiers))
@@ -1025,11 +1045,6 @@
                                                     </option>
                                                 @endforeach
                                             </select>
-                                            <div id="poste_mapping_indicator" class="mt-1" style="display: none;">
-                                                <small class="text-blue-600 fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">
-                                                    <i class="bx bx-bolt-circle"></i> <span id="poste_mapping_text">Classification Automatique</span>
-                                                </small>
-                                            </div>
                                             <button type="button" id="btn_create_poste_entry" class="btn btn-outline-secondary btn-premium d-none" data-bs-toggle="modal" data-bs-target="#modalCreatePoste" title="Créer un nouveau poste de trésorerie" style="
                                                 background: #ffffff;
                                                 border: 2px solid #e2e8f0;
@@ -1038,9 +1053,14 @@
                                                 font-weight: 600;
                                                 transition: all 0.3s ease;
                                                 white-space: nowrap;
-                                            ">
+                                            " onmouseover="this.style.borderColor='#cbd5e1'; this.style.color='#1a202c';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#64748b';">
                                                 <i class="bx bx-plus"></i> Créer
                                             </button>
+                                        </div>
+                                        <div id="poste_mapping_indicator" class="mt-1" style="display: none;">
+                                            <small class="text-blue-600 fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">
+                                                <i class="bx bx-bolt-circle"></i> <span id="poste_mapping_text">Classification Automatique</span>
+                                            </small>
                                         </div>
                                     </div>
 
@@ -1064,8 +1084,9 @@
                                         </label>
                                         <select id="plan_analytique" name="plan_analytique"
                                             class="form-select w-100" required>
+                                            <option value="" disabled selected>Sélectionner...</option>
                                             <option value="1">Oui</option>
-                                            <option value="0" selected>Non</option>
+                                            <option value="0">Non</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1461,6 +1482,9 @@
     </html>
 
 <script>
+// Helper function for text truncation
+const compasTextShortcut = (txt) => (txt && txt.length > 30) ? txt.substring(0, 27) + '...' : (txt || '');
+
 // Logic for Creating Tiers and Modal Management
 document.addEventListener('DOMContentLoaded', function() {
     // --- DATE HYBRIDE SYNCHRONIZATION ---
@@ -2021,7 +2045,12 @@ function ajouterEcriture() {
         }
         
         // Formattage des montants
-        const formatNumber = (val) => val ? parseFloat(val).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+        const formatNumber = (val) => {
+            if (!val) return '-';
+            // Remplacer la virgule par un point pour le calcul
+            const numericVal = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val;
+            return isNaN(numericVal) ? '-' : numericVal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
 
         // Ajouter chaque cellule avec son contenu
         newRow.innerHTML = `
@@ -2037,16 +2066,6 @@ function ajouterEcriture() {
             <td class="td-poste-treso-row">
                 <div class="d-flex align-items-center gap-2 group">
                     <span class="badge bg-label-info poste-badge-text" style="font-size: 0.65rem;">
-                        @php
-                            // Logic to display Name - Category Badge
-                            // We need to do this via JS since this is a JS function
-                        @endphp
-                        <script>
-                            (function() {
-                                // Self-invoking to avoid namespace pollution if needed, but here we are inside a function
-                                // This is just a placeholder comment to indicate logic placement
-                            })();
-                        </script>
                         ${(() => {
                             if (!posteTresorerieText) return '-';
                             const parts = posteTresorerieText.split(' - ');
@@ -2085,10 +2104,7 @@ function ajouterEcriture() {
             </td>
         `;
 
-        // Helper function inside scope or globally
-        if (typeof window.compasTextShortcut === 'undefined') {
-            window.compasTextShortcut = (txt) => txt.length > 30 ? txt.substring(0, 27) + '...' : txt;
-        }
+        // Helper function (now defined globally at script start)
 
         // Réinitialisation SEULEMENT des champs spécifiques à chaque ligne
         compteGeneral.value = '';
@@ -2282,16 +2298,24 @@ function ajouterEcriture() {
         const creditInput = document.getElementById('credit');
         if (debitInput && creditInput) {
             const toggleExclusivity = (source, target) => {
-                const val = parseFloat(source.value) || 0;
-                if (val > 0) {
+                const val = source.value.trim();
+                const numericVal = parseFloat(val) || 0;
+                
+                if (val !== '' && numericVal >= 0) {
                     target.value = '';
-                    target.setAttribute('readonly', 'readonly');
+                    target.readOnly = true;
                     target.style.backgroundColor = '#f1f5f9';
                     target.style.cursor = 'not-allowed';
+                    if (target.classList.contains('select2-hidden-accessible')) {
+                        $(target).prop('disabled', true).trigger('change');
+                    }
                 } else {
-                    target.removeAttribute('readonly');
+                    target.readOnly = false;
                     target.style.backgroundColor = '';
                     target.style.cursor = '';
+                    if (target.classList.contains('select2-hidden-accessible')) {
+                        $(target).prop('disabled', false).trigger('change');
+                    }
                 }
             };
 
@@ -2300,10 +2324,12 @@ function ajouterEcriture() {
             
             // Exécuter une fois pour initialiser (utile lors de l'ajout d'une ligne ou chargement)
             window.resetExclusivity = () => {
-                debitInput.removeAttribute('readonly');
+                debitInput.value = '';
+                creditInput.value = '';
+                debitInput.readOnly = false;
                 debitInput.style.backgroundColor = '';
                 debitInput.style.cursor = '';
-                creditInput.removeAttribute('readonly');
+                creditInput.readOnly = false;
                 creditInput.style.backgroundColor = '';
                 creditInput.style.cursor = '';
             };
@@ -2540,7 +2566,11 @@ function ajouterEcriture() {
             tr.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
         }
 
-        const formatNumber = (val) => val ? parseFloat(val).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+        const formatNumber = (val) => {
+            if (!val && val !== 0) return '-';
+            const numericVal = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val;
+            return isNaN(numericVal) ? '-' : numericVal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
         const analytiqueBadge = analytique ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>';
 
         tr.innerHTML = `
@@ -2910,7 +2940,11 @@ function ajouterEcriture() {
         const credit = parseFloat((ligne.credit || '0').replace(/\s/g, '').replace(',', '.')) || 0;
         const analytique = ligne.analytique === 'Oui' || ligne.analytique === true;
         
-        const formatNumber = (val) => val ? val.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+        const formatNumber = (val) => {
+            if (!val && val !== 0) return '-';
+            const numericVal = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val;
+            return isNaN(numericVal) ? '-' : numericVal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
         const analytiqueBadge = analytique ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>';
 
         const poste = ligne.poste || '-';
@@ -3060,10 +3094,12 @@ function ajouterEcriture() {
             const creditCell = row.cells[8]; // Colonne Crédit
 
             if (debitCell && debitCell.textContent) {
-                totalDebit += parseFloat(debitCell.textContent.replace(/\s/g, '').replace(',', '.') || 0);
+                const val = parseFloat(debitCell.textContent.replace(/\s/g, '').replace(',', '.'));
+                totalDebit += isNaN(val) ? 0 : val;
             }
             if (creditCell && creditCell.textContent) {
-                totalCredit += parseFloat(creditCell.textContent.replace(/\s/g, '').replace(',', '.') || 0);
+                const val = parseFloat(creditCell.textContent.replace(/\s/g, '').replace(',', '.'));
+                totalCredit += isNaN(val) ? 0 : val;
             }
         }
 
@@ -3319,37 +3355,38 @@ function ajouterEcriture() {
         if (compteGeneralSelect && compteTiersSelect) {
             $(compteGeneralSelect).on('select2:select change', function(e) {
                 const option = this.options[this.selectedIndex];
-                const numero = option ? (option.getAttribute('data-numero') || '') : '';
+                const numero = option ? (option.getAttribute('data-numero') || option.text.split(' - ')[0] || '') : '';
                 
                 // --- Logique Poste Trésorerie (Saisi) ---
                 const posteTresoSelect = document.getElementById('poste_tresorerie');
                 const btnCreatePoste = document.getElementById('btn_create_poste_entry');
                 if (posteTresoSelect) {
                     if (numero.startsWith('5')) {
-                        posteTresoSelect.disabled = false;
+                        $(posteTresoSelect).prop('disabled', false);
                         posteTresoSelect.setAttribute('required', 'required');
                         if (btnCreatePoste) btnCreatePoste.classList.remove('d-none');
-                        $(posteTresoSelect).trigger('change');
                     } else {
-                        posteTresoSelect.disabled = true;
+                        $(posteTresoSelect).prop('disabled', true);
                         posteTresoSelect.removeAttribute('required');
-                        posteTresoSelect.value = '';
+                        // Reset value if not class 5
+                        $(posteTresoSelect).val(null);
                         if (btnCreatePoste) btnCreatePoste.classList.add('d-none');
-                        $(posteTresoSelect).val('').trigger('change');
                     }
+                    $(posteTresoSelect).trigger('change');
                 }
 
-                if (numero.startsWith('6')) {
-                    compteTiersSelect.value = '';
-                    $(compteTiersSelect).val('').trigger('change');
-                    compteTiersSelect.disabled = true;
-                    const parent = compteTiersSelect.closest('.d-flex');
-                    if (parent) {
-                        parent.style.opacity = '0.5';
-                        parent.style.pointerEvents = 'none';
+                if (numero.startsWith('6') || numero.startsWith('7')) {
+                    if (numero.startsWith('6')) {
+                        $(compteTiersSelect).val(null).trigger('change');
+                        $(compteTiersSelect).prop('disabled', true).trigger('change');
+                        const parent = compteTiersSelect.closest('.d-flex');
+                        if (parent) {
+                            parent.style.opacity = '0.5';
+                            parent.style.pointerEvents = 'none';
+                        }
                     }
                 } else {
-                    compteTiersSelect.disabled = false;
+                    $(compteTiersSelect).prop('disabled', false).trigger('change');
                     const parent = compteTiersSelect.closest('.d-flex');
                     if (parent) {
                         parent.style.opacity = '1';
@@ -3359,7 +3396,41 @@ function ajouterEcriture() {
             });
         }
 
-        // 3. Custom Template for Treasury Posts (Select2)
+        // 3. Custom Matcher for Prefix-based filtering (especially for account numbers)
+        function prefixMatcher(params, data) {
+            if ($.trim(params.term) === '') {
+                return data;
+            }
+            if (typeof data.text === 'undefined') {
+                return null;
+            }
+
+            const term = params.term.toLowerCase();
+            const text = data.text.toLowerCase();
+
+            // If it's a digit, we prioritize "starts with"
+            if (/^\d/.test(term)) {
+                if (text.startsWith(term)) {
+                    return data;
+                }
+                // Also check if any part of the string (like after a hyphen) starts with it
+                const parts = text.split(/[\s-]+/);
+                for (let part of parts) {
+                    if (part.startsWith(term)) {
+                        return data;
+                    }
+                }
+                return null;
+            }
+
+            // For non-digits, keep standard "contains" behavior
+            if (text.indexOf(term) > -1) {
+                return data;
+            }
+            return null;
+        }
+
+        // 4. Custom Template for Treasury Posts (Select2)
         function formatTreasuryResult(state) {
             if (!state.id) return state.text;
             const parts = state.text.split(' - ');
@@ -3390,9 +3461,23 @@ function ajouterEcriture() {
         }
 
         if (typeof $ !== 'undefined' && typeof $.fn.select2 !== 'undefined') {
-            $('#compte_tresorerie, #poste_tresorerie').select2({
-                templateResult: formatTreasuryResult,
-                templateSelection: formatTreasurySelection,
+            $('#compte_general, #compte_tiers, #compte_tresorerie, #poste_tresorerie').select2({
+                matcher: prefixMatcher,
+                templateResult: (state) => {
+                    // Use custom template for treasury fields, default for others
+                    const id = state.element ? state.element.parentElement.id : '';
+                    if (id === 'compte_tresorerie' || id === 'poste_tresorerie') {
+                        return formatTreasuryResult(state);
+                    }
+                    return state.text;
+                },
+                templateSelection: (state) => {
+                    const id = state.element ? state.element.parentElement.id : '';
+                    if (id === 'compte_tresorerie' || id === 'poste_tresorerie') {
+                        return formatTreasurySelection(state);
+                    }
+                    return state.text;
+                },
                 escapeMarkup: function(m) { return m; },
                 width: '100%'
             });

@@ -414,6 +414,28 @@ class ImmobilisationService
         return true;
     }
 
+    /**
+     * Rattraper les lignes d'amortissement orphelines lors de la création d'un exercice
+     */
+    public function syncOrphanAmortissements(ExerciceComptable $exercice)
+    {
+        $annee = Carbon::parse($exercice->date_debut)->year;
+        
+        // Trouver les amortissements qui n'ont pas d'exercice_id mais dont l'année correspond
+        $amortissements = Amortissement::whereNull('exercice_id')
+            ->where('annee', $annee)
+            ->whereHas('immobilisation', function ($query) use ($exercice) {
+                $query->where('company_id', $exercice->company_id);
+            })
+            ->get();
+
+        foreach ($amortissements as $amortissement) {
+            $amortissement->update(['exercice_id' => $exercice->id]);
+        }
+
+        return $amortissements->count();
+    }
+
     // Méthodes utilitaires
 
     private function genererCodeUnique($companyId, $categorie)

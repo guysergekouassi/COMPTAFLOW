@@ -6,10 +6,27 @@
         font-family: 'Inter', sans-serif;
     }
     .text-premium-gradient {
-        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 700;
+        font-weight: 800;
+    }
+    .card-premium {
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+    .card-premium:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
     }
 </style>
 
@@ -40,65 +57,77 @@
                         </div>
                     @endif
 
-                    <!-- Statistiques rapides (Premium) -->
+                    <!-- Statistiques rapides (Premium TFT Style) -->
                     <div class="row g-4 mb-8">
+                        <!-- Entités -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-blue-200">
-                                        <i class="fa-solid fa-building text-white fs-4"></i>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Entités</h6>
+                                        <div class="icon-box bg-label-primary text-primary">
+                                            <i class="fa-solid fa-building"></i>
+                                        </div>
                                     </div>
-                                    <div class="text-end">
-                                        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Entités</span>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $companies->count() }}</h3>
+                                    <div class="small fw-semibold text-primary">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Total Entreprises
                                     </div>
                                 </div>
-                                <h6 class="text-gray-500 font-medium text-sm mb-1">Total Entreprises</h6>
-                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $companies->count() }}</h3>
                             </div>
                         </div>
 
+                        <!-- Restrictions -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-red-200">
-                                        <i class="fa-solid fa-ban text-white fs-4"></i>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Restrictions</h6>
+                                        <div class="icon-box bg-label-danger text-danger">
+                                            <i class="fa-solid fa-ban"></i>
+                                        </div>
                                     </div>
-                                    <div class="text-end text-danger">
-                                        <span class="text-xs font-bold uppercase tracking-wider">Restrictions</span>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $companies->where('is_blocked', true)->count() }}</h3>
+                                    <div class="small fw-semibold text-danger">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Entités Bloquées
                                     </div>
                                 </div>
-                                <h6 class="text-gray-500 font-medium text-sm mb-1">Entités Bloquées</h6>
-                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $companies->where('is_blocked', true)->count() }}</h3>
                             </div>
                         </div>
 
+                        <!-- Membres -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-emerald-200">
-                                        <i class="fa-solid fa-users text-white fs-4"></i>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Membres</h6>
+                                        <div class="icon-box bg-label-success text-success">
+                                            <i class="fa-solid fa-users"></i>
+                                        </div>
                                     </div>
-                                    <div class="text-end text-success">
-                                        <span class="text-xs font-bold uppercase tracking-wider">Membres</span>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $users->where('is_blocked', false)->count() }}</h3>
+                                    <div class="small fw-semibold text-success">
+                                        <i class="fa-solid fa-user-check me-1"></i> Utilisateurs Actifs
                                     </div>
                                 </div>
-                                <h6 class="text-gray-500 font-medium text-sm mb-1">Utilisateurs Actifs</h6>
-                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $users->where('is_blocked', false)->count() }}</h3>
                             </div>
                         </div>
 
+                        <!-- Alertes -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-amber-200">
-                                        <i class="fa-solid fa-user-slash text-white fs-4"></i>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Alertes</h6>
+                                        <div class="icon-box bg-label-warning text-warning">
+                                            <i class="fa-solid fa-user-slash"></i>
+                                        </div>
                                     </div>
-                                    <div class="text-end text-warning">
-                                        <span class="text-xs font-bold uppercase tracking-wider">Alertes</span>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $users->where('is_blocked', true)->count() }}</h3>
+                                    <div class="small fw-semibold text-warning">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Utilisateurs Bloqués
                                     </div>
                                 </div>
-                                <h6 class="text-gray-500 font-medium text-sm mb-1">Utilisateurs Bloqués</h6>
-                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $users->where('is_blocked', true)->count() }}</h3>
                             </div>
                         </div>
                     </div>

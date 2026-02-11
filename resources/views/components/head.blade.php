@@ -143,6 +143,13 @@
             background: white;
         }
 
+        .amount-font {
+            font-family: 'Inter', monospace;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+
         /* Typography spacing (non-premium only) */
         .content-wrapper:not(.premium-mode) h3 {
             font-size: 2rem;

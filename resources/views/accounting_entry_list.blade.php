@@ -819,6 +819,7 @@
                               <div class="col-md-4">
                                   <label for="edit_code_journal_id" class="input-label-premium" style="font-size: 0.7rem;">Code Journal</label>
                                   <select id="edit_code_journal_id" name="code_journal_id" class="input-field-premium" required style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
+                                      <option value="" disabled selected>Sélectionner un journal</option>
                                       @foreach($codeJournaux ?? [] as $journal)
                                           <option value="{{ $journal->id }}">{{ $journal->code_journal }} - {{ $journal->libelle }}</option>
                                       @endforeach
@@ -870,6 +871,7 @@
                               <div class="col-md-3">
                                   <label for="edit_plan_analytique" class="input-label-premium" style="font-size: 0.7rem;">Analytique</label>
                                   <select id="edit_plan_analytique" name="plan_analytique" class="input-field-premium" style="padding: 0.625rem 0.875rem; font-size: 0.8rem;">
+                                      <option value="" disabled selected>Sélectionner...</option>
                                       <option value="0">Non</option>
                                       <option value="1">Oui</option>
                                   </select>
@@ -1155,37 +1157,34 @@
         
         if (!input || !dropdown) return;
         
-        input.addEventListener('focus', function() {
-            const searchText = this.value.toLowerCase();
-            const items = dropdown.getElementsByClassName('list-group-item');
-            let hasVisibleItems = false;
-            
-            for (let item of items) {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(searchText)) {
-                    item.style.display = '';
-                    hasVisibleItems = true;
-                } else {
-                    item.style.display = 'none';
-                }
-            }
-            dropdown.style.display = hasVisibleItems ? 'block' : 'none';
-        });
-        
-        document.addEventListener('click', function(e) {
-            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.style.display = 'none';
-            }
-        });
-        
         input.addEventListener('input', function() {
             const searchText = this.value.toLowerCase();
             const items = dropdown.getElementsByClassName('list-group-item');
             let hasVisibleItems = false;
             
+            const isDigit = /^\d/.test(searchText);
+            
             for (let item of items) {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(searchText)) {
+                const text = item.textContent.toLowerCase().trim();
+                
+                let matches = false;
+                if (isDigit) {
+                    // Start matching at the beginning of any word/part (especially for account numbers)
+                    matches = text.startsWith(searchText);
+                    if (!matches) {
+                        const parts = text.split(/[\s-]+/);
+                        for (let part of parts) {
+                            if (part.startsWith(searchText)) {
+                                matches = true;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    matches = text.indexOf(searchText) > -1;
+                }
+
+                if (matches) {
                     item.style.display = '';
                     hasVisibleItems = true;
                 } else {
@@ -1193,6 +1192,51 @@
                 }
             }
             
+            dropdown.style.display = hasVisibleItems ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        // Add similar logic for focus event to consistency
+        input.addEventListener('focus', function() {
+            const searchText = this.value.toLowerCase();
+            const items = dropdown.getElementsByClassName('list-group-item');
+            let hasVisibleItems = false;
+            
+            const isDigit = /^\d/.test(searchText);
+            
+            for (let item of items) {
+                const text = item.textContent.toLowerCase().trim();
+                let matches = false;
+                
+                if (searchText === '') {
+                    matches = true;
+                } else if (isDigit) {
+                    matches = text.startsWith(searchText);
+                    if (!matches) {
+                        const parts = text.split(/[\s-]+/);
+                        for (let part of parts) {
+                            if (part.startsWith(searchText)) {
+                                matches = true;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    matches = text.indexOf(searchText) > -1;
+                }
+
+                if (matches) {
+                    item.style.display = '';
+                    hasVisibleItems = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            }
             dropdown.style.display = hasVisibleItems ? 'block' : 'none';
         });
         

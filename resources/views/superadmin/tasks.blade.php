@@ -6,10 +6,27 @@
         font-family: 'Inter', sans-serif;
     }
     .text-premium-gradient {
-        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 700;
+        font-weight: 800;
+    }
+    .card-premium {
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+    .card-premium:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
     }
     .priority-badge {
         font-size: 0.75rem;
@@ -63,69 +80,77 @@
                         </div>
                     @endif
 
-                    <!-- Statistiques rapides (Premium) -->
+                    <!-- Statistiques rapides (Premium TFT Style) -->
                     <div class="row g-4 mb-8">
                         <!-- KPI 1: Total -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-blue-200">
-                                        <i class="fa-solid fa-tasks text-white fs-4"></i>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Plateforme</h6>
+                                        <div class="icon-box bg-label-primary text-primary">
+                                            <i class="fa-solid fa-tasks"></i>
+                                        </div>
                                     </div>
-                                    <div class="text-end">
-                                        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Plateforme</span>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $tasks->total() }}</h3>
+                                    <div class="small fw-semibold text-primary">
+                                        <i class="fa-solid fa-list-check me-1"></i> Total Tâches
                                     </div>
                                 </div>
-                                <h6 class="text-gray-500 font-medium text-sm mb-1">Total Tâches</h6>
-                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $tasks->total() }}</h3>
                             </div>
                         </div>
 
                         <!-- KPI 2: En Attente -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-yellow-200">
-                                        <i class="fa-solid fa-clock text-white fs-4"></i>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">En Attente</h6>
+                                        <div class="icon-box bg-label-warning text-warning">
+                                            <i class="fa-solid fa-clock"></i>
+                                        </div>
                                     </div>
-                                    <div class="text-end text-warning">
-                                        <span class="text-xs font-bold uppercase tracking-wider">En Attente</span>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $tasks->where('status', 'pending')->count() }}</h3>
+                                    <div class="small fw-semibold text-warning">
+                                        <i class="fa-solid fa-hourglass-half me-1"></i> Tâches Ouvertes
                                     </div>
                                 </div>
-                                <h6 class="text-gray-500 font-medium text-sm mb-1">Tâches Ouvertes</h6>
-                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $tasks->where('status', 'pending')->count() }}</h3>
                             </div>
                         </div>
 
                         <!-- KPI 3: En Cours -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-purple-200">
-                                        <i class="fa-solid fa-spinner text-white fs-4"></i>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Action</h6>
+                                        <div class="icon-box bg-label-info text-info">
+                                            <i class="fa-solid fa-spinner"></i>
+                                        </div>
                                     </div>
-                                    <div class="text-end text-purple-600">
-                                        <span class="text-xs font-bold uppercase tracking-wider">Action</span>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $tasks->where('status', 'in_progress')->count() }}</h3>
+                                    <div class="small fw-semibold text-info">
+                                        <i class="fa-solid fa-person-digging me-1"></i> Tâches en cours
                                     </div>
                                 </div>
-                                <h6 class="text-gray-500 font-medium text-sm mb-1">Tâches en cours</h6>
-                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $tasks->where('status', 'in_progress')->count() }}</h3>
                             </div>
                         </div>
 
                         <!-- KPI 4: Complétées -->
                         <div class="col-md-3">
-                            <div class="bg-white rounded-2xl shadow-lg border border-white/30 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl d-flex align-items-center justify-content-center shadow-lg shadow-emerald-200">
-                                        <i class="fa-solid fa-check-circle text-white fs-4"></i>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Succès</h6>
+                                        <div class="icon-box bg-label-success text-success">
+                                            <i class="fa-solid fa-check-circle"></i>
+                                        </div>
                                     </div>
-                                    <div class="text-end text-success">
-                                        <span class="text-xs font-bold uppercase tracking-wider">Succès</span>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $tasks->where('status', 'completed')->count() }}</h3>
+                                    <div class="small fw-semibold text-success">
+                                        <i class="fa-solid fa-trophy me-1"></i> Total Complétées
                                     </div>
                                 </div>
-                                <h6 class="text-gray-500 font-medium text-sm mb-1">Total Complétées</h6>
-                                <h3 class="text-3xl font-bold text-gray-900 mb-0">{{ $tasks->where('status', 'completed')->count() }}</h3>
                             </div>
                         </div>
                     </div>

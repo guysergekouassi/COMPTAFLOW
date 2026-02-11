@@ -47,6 +47,7 @@
         color: #1e293b;
         text-align: right;
         font-family: 'Inter', monospace;
+        white-space: nowrap !important;
     }
     .table-matrix td:first-child {
         text-align: left;

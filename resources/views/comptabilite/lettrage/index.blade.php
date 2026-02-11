@@ -107,7 +107,7 @@
                                                                 @endif
                                                             </td>
                                                             <td class="px-4 py-3 text-sm text-slate-600">{{ \Carbon\Carbon::parse($ecriture->date)->format('d/m/Y') }}</td>
-                                                            <td class="px-4 py-3 text-sm text-slate-800">{{ Str::limit($ecriture->libelle ?? $ecriture->description_operation, 40) }}</td>
+                                                            <td class="px-4 py-3 text-sm text-slate-800">{{ \Illuminate\Support\Str::limit($ecriture->libelle ?? $ecriture->description_operation, 40) }}</td>
                                                             <td class="px-4 py-3 text-sm font-bold text-end">{{ number_format($ecriture->debit, 0, ',', ' ') }}</td>
                                                         </tr>
                                                     @empty
@@ -151,7 +151,7 @@
                                                                 @endif
                                                             </td>
                                                             <td class="px-4 py-3 text-sm text-slate-600">{{ \Carbon\Carbon::parse($ecriture->date)->format('d/m/Y') }}</td>
-                                                            <td class="px-4 py-3 text-sm text-slate-800">{{ Str::limit($ecriture->libelle ?? $ecriture->description_operation, 40) }}</td>
+                                                            <td class="px-4 py-3 text-sm text-slate-800">{{ \Illuminate\Support\Str::limit($ecriture->libelle ?? $ecriture->description_operation, 40) }}</td>
                                                             <td class="px-4 py-3 text-sm font-bold text-end">{{ number_format($ecriture->credit, 0, ',', ' ') }}</td>
                                                         </tr>
                                                     @empty

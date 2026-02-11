@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use App\Models\Company;
 use App\Models\EcritureComptable;
 use App\Services\AccountingReportingService;
+use App\Services\ImmobilisationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Models\InternalNotification;
@@ -20,11 +21,13 @@ use App\Models\PlanComptable;
 class ExerciceComptableController extends Controller
 {
     protected $reportingService;
+    protected $immobilisationService;
 
-    public function __construct(AccountingReportingService $reportingService)
+    public function __construct(AccountingReportingService $reportingService, ImmobilisationService $immobilisationService)
     {
         $this->middleware('auth');
         $this->reportingService = $reportingService;
+        $this->immobilisationService = $immobilisationService;
     }
 public function index()
 {
@@ -181,6 +184,11 @@ public function index()
 
             if (method_exists($exercice, 'syncJournaux')) {
                 $exercice->syncJournaux();
+            }
+
+            // Rattrapage des amortissements qui attendaient cet exercice
+            if ($this->immobilisationService) {
+                $this->immobilisationService->syncOrphanAmortissements($exercice);
             }
 
             DB::commit();

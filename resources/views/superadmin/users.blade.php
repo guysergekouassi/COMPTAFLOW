@@ -6,10 +6,27 @@
         font-family: 'Inter', sans-serif;
     }
     .text-premium-gradient {
-        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 700;
+        font-weight: 800;
+    }
+    .card-premium {
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+    .card-premium:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
     }
 </style>
 
@@ -51,79 +68,77 @@
                         </div>
                     @endif
 
-                    <style>
-                        .glass-card {
-                            background: #ffffff;
-                            border: 1px solid #e2e8f0;
-                            border-radius: 20px;
-                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-                            transition: transform 0.2s, box-shadow 0.2s;
-                        }
-                        .glass-card:hover {
-                            transform: translateY(-2px);
-                            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-                        }
-                    </style>
-
-                    <!-- Statistiques rapides (Standardisées) -->
+                    <!-- Statistiques rapides (Premium TFT Style) -->
                     <div class="row g-4 mb-8">
+                        <!-- Total Utilisateurs -->
                         <div class="col-md-3">
-                            <div class="glass-card p-5 border-l-4 border-l-primary h-100">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Utilisateurs</p>
-                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $totalUsers }}</h3>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Utilisateurs</h6>
+                                        <div class="icon-box bg-label-primary text-primary">
+                                            <i class="fa-solid fa-users"></i>
+                                        </div>
                                     </div>
-                                    <div class="p-3 bg-blue-50 text-primary rounded-2xl">
-                                        <i class="fa-solid fa-users text-lg"></i>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $totalUsers }}</h3>
+                                    <div class="small fw-semibold text-primary">
+                                        <i class="fa-solid fa-users-cog me-1"></i> Total Inscrits
                                     </div>
                                 </div>
-                                <p class="text-[10px] text-slate-500 mt-4 font-bold uppercase">Tous rôles confondus</p>
                             </div>
                         </div>
 
+                        <!-- Administrateurs -->
                         <div class="col-md-3">
-                            <div class="glass-card p-5 border-l-4 border-l-success h-100">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Administrateurs</p>
-                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $totalAdmins }}</h3>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Administrateurs</h6>
+                                        <div class="icon-box bg-label-success text-success">
+                                            <i class="fa-solid fa-user-shield"></i>
+                                        </div>
                                     </div>
-                                    <div class="p-3 bg-green-50 text-success rounded-2xl">
-                                        <i class="fa-solid fa-user-shield text-lg"></i>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $totalAdmins }}</h3>
+                                    <div class="small fw-semibold text-success">
+                                        <i class="fa-solid fa-shield-halved me-1"></i> Gestionnaires
                                     </div>
                                 </div>
-                                <p class="text-[10px] text-green-600 mt-4 font-bold uppercase">Gestionnaires d'entités</p>
                             </div>
                         </div>
 
+                        <!-- Comptables -->
                         <div class="col-md-3">
-                            <div class="glass-card p-5 border-l-4 border-l-purple-600 h-100">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Comptables</p>
-                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $totalComptables }}</h3>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Comptables</h6>
+                                        <div class="icon-box bg-label-info text-info">
+                                            <i class="fa-solid fa-calculator"></i>
+                                        </div>
                                     </div>
-                                    <div class="p-3 bg-purple-50 text-purple-600 rounded-2xl">
-                                        <i class="fa-solid fa-calculator text-lg"></i>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $totalComptables }}</h3>
+                                    <div class="small fw-semibold text-info">
+                                        <i class="fa-solid fa-keyboard me-1"></i> Opérateurs Saisie
                                     </div>
                                 </div>
-                                <p class="text-[10px] text-purple-600 mt-4 font-bold uppercase">Opérateurs saisie</p>
                             </div>
                         </div>
 
+                        <!-- Utilisateurs Actifs -->
                         <div class="col-md-3">
-                            <div class="glass-card p-5 border-l-4 border-l-warning h-100">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Utilisateurs Actifs</p>
-                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $totalActive }}</h3>
+                            <div class="card border-0 shadow-sm card-premium h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Actifs</h6>
+                                        <div class="icon-box bg-label-warning text-warning">
+                                            <i class="fa-solid fa-user-check"></i>
+                                        </div>
                                     </div>
-                                    <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-2xl">
-                                        <i class="fa-solid fa-user-check text-lg"></i>
+                                    <h3 class="mb-2 fw-extrabold text-dark">{{ $totalActive }}</h3>
+                                    <div class="small fw-semibold text-warning">
+                                        <i class="fa-solid fa-bolt me-1"></i> Comptes Opérationnels
                                     </div>
                                 </div>
-                                <p class="text-[10px] text-warning mt-4 font-bold uppercase">Comptes opérationnels</p>
                             </div>
                         </div>
                     </div>

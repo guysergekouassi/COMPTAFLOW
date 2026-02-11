@@ -989,12 +989,219 @@ class AccountingReportingService
             $detailsArray[$num] = [
                 'numero' => $num,
                 'intitule' => $compte->intitule,
-                'data' => [] // On ne connait pas la taille ici, on utilisera l'index
+                'data' => [] 
             ];
         }
         if (!isset($detailsArray[$num]['data'][$monthIndex])) {
              $detailsArray[$num]['data'][$monthIndex] = 0;
         }
         $detailsArray[$num]['data'][$monthIndex] += $montant;
+    }
+
+    /**
+     * Calcule le TFT Personnalisé (Encaissements / Décaissements / Flux Net).
+     */
+        /**
+     * Calcule le TFT Personnalisé (Encaissements / Décaissements / Flux Net par Activité).
+     */
+    public function getPersonalizedTFTData($exerciceId, $companyId, $detailed = false)
+    {
+        $months = $this->getMonthsForExercise($exerciceId);
+        $monthCount = count($months);
+        
+        $data = [
+            'months' => $months,
+            'treso_initiale' => 0,
+            'activities' => [
+                'operationnelle' => [
+                    'label' => 'ACTIVITÉS OPÉRATIONNELLES',
+                    'encaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
+                    'decaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
+                    'net' => array_fill(0, $monthCount, 0)
+                ],
+                'investissement' => [
+                    'label' => 'ACTIVITÉS D\'INVESTISSEMENT',
+                    'encaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
+                    'decaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
+                    'net' => array_fill(0, $monthCount, 0)
+                ],
+                'financement' => [
+                    'label' => 'ACTIVITÉS DE FINANCEMENT',
+                    'encaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
+                    'decaissements' => ['total' => array_fill(0, $monthCount, 0), 'categories' => []],
+                    'net' => array_fill(0, $monthCount, 0)
+                ]
+            ],
+            'global_net' => array_fill(0, $monthCount, 0),
+            'cumule' => array_fill(0, $monthCount, 0)
+        ];
+
+        // Récupérer toutes les écritures pour le calcul
+        $ecritures = EcritureComptable::where('exercices_comptables_id', $exerciceId)
+            ->where('company_id', $companyId)
+            ->with(['planComptable', 'posteTresorerie.category'])
+            ->get();
+
+        // 1. Calcul de la Trésorerie Initiale (RAN classe 5)
+        $treso_initiale = 0;
+        foreach ($ecritures as $ec) {
+            if ($ec->is_ran && $ec->planComptable && str_starts_with($ec->planComptable->numero_de_compte, '5')) {
+                $treso_initiale += ($ec->debit - $ec->credit);
+            }
+        }
+        $data['treso_initiale'] = $treso_initiale;
+
+        // Tracker pour investissement/financement par saisie (comme dans le standard)
+        $handledSaisiesInv = [];
+        $handledSaisiesFin = [];
+
+        foreach ($ecritures as $ec) {
+            $compte = $ec->planComptable;
+            if (!$compte || $ec->is_ran) continue;
+
+            $num = $compte->numero_de_compte;
+            $ecDate = \Carbon\Carbon::parse($ec->date);
+            $monthIndex = -1;
+            foreach ($months as $idx => $m) {
+                if ($m['id'] == $ecDate->month && $m['year'] == $ecDate->year) {
+                    $monthIndex = $idx;
+                    break;
+                }
+            }
+            if ($monthIndex === -1) continue;
+
+            // --- A. OPÉRATIONNEL (Méthode Indirecte adaptée) ---
+            
+            // CAF - Produits (7 sauf 78/79)
+            if (str_starts_with($num, '7') && !str_starts_with($num, '78') && !str_starts_with($num, '79')) {
+                $val = $ec->credit - $ec->debit;
+                if ($val > 0) {
+                    $data['activities']['operationnelle']['encaissements']['total'][$monthIndex] += $val;
+                    $this->addManualCategoryDetail($data['activities']['operationnelle']['encaissements']['categories'], 'Produits encaissables', $val, $monthIndex, $monthCount);
+                } else {
+                    $data['activities']['operationnelle']['decaissements']['total'][$monthIndex] += abs($val);
+                    $this->addManualCategoryDetail($data['activities']['operationnelle']['decaissements']['categories'], 'Annulations de produits', abs($val), $monthIndex, $monthCount);
+                }
+            }
+            // CAF - Charges (6 sauf 68/69)
+            elseif (str_starts_with($num, '6') && !str_starts_with($num, '68') && !str_starts_with($num, '69')) {
+                $val = $ec->debit - $ec->credit;
+                if ($val > 0) {
+                    $data['activities']['operationnelle']['decaissements']['total'][$monthIndex] += $val;
+                    $this->addManualCategoryDetail($data['activities']['operationnelle']['decaissements']['categories'], 'Charges décaissables', $val, $monthIndex, $monthCount);
+                } else {
+                    $data['activities']['operationnelle']['encaissements']['total'][$monthIndex] += abs($val);
+                    $this->addManualCategoryDetail($data['activities']['operationnelle']['encaissements']['categories'], 'Annulations de charges', abs($val), $monthIndex, $monthCount);
+                }
+            }
+            // BFR - Stocks (3) et Tiers (4)
+            elseif (str_starts_with($num, '3') || str_starts_with($num, '4')) {
+                $isPassif = str_starts_with($num, '40') || str_starts_with($num, '42') || str_starts_with($num, '43') || str_starts_with($num, '44');
+                $fluxBFR = $ec->credit - $ec->debit; // Flux de cash : + si dette augmente ou actif baisse
+
+                $label = 'Variation BFR';
+                if (str_starts_with($num, '3')) $label = 'Variation des Stocks';
+                elseif ($isPassif) $label = 'Variation des Dettes d\'exploitation';
+                else $label = 'Variation des Créances d\'exploitation';
+
+                if ($fluxBFR > 0) {
+                    $data['activities']['operationnelle']['encaissements']['total'][$monthIndex] += $fluxBFR;
+                    $this->addManualCategoryDetail($data['activities']['operationnelle']['encaissements']['categories'], $label, $fluxBFR, $monthIndex, $monthCount);
+                } elseif ($fluxBFR < 0) {
+                    $data['activities']['operationnelle']['decaissements']['total'][$monthIndex] += abs($fluxBFR);
+                    $this->addManualCategoryDetail($data['activities']['operationnelle']['decaissements']['categories'], $label, abs($fluxBFR), $monthIndex, $monthCount);
+                }
+            }
+
+            // --- B & C. INVESTISSEMENT & FINANCEMENT (Méthode Directe via Postes prioritaires) ---
+            if (str_starts_with($num, '5') && $ec->posteTresorerie) {
+                $poste = $ec->posteTresorerie;
+                $syscohadaLine = $poste->syscohada_line_id;
+                $fluxTreso = $ec->debit - $ec->credit;
+
+                if ($syscohadaLine && (str_starts_with($syscohadaLine, 'INV_') || str_starts_with($syscohadaLine, 'FIN_'))) {
+                    $actKey = str_starts_with($syscohadaLine, 'INV_') ? 'investissement' : 'financement';
+                    if ($actKey == 'investissement') $handledSaisiesInv[$ec->numero_saisie] = true;
+                    else $handledSaisiesFin[$ec->numero_saisie] = true;
+
+                    if ($fluxTreso > 0) {
+                        $data['activities'][$actKey]['encaissements']['total'][$monthIndex] += $fluxTreso;
+                        $this->addManualCategoryDetail($data['activities'][$actKey]['encaissements']['categories'], $poste->name, $fluxTreso, $monthIndex, $monthCount);
+                    } else {
+                        $data['activities'][$actKey]['decaissements']['total'][$monthIndex] += abs($fluxTreso);
+                        $this->addManualCategoryDetail($data['activities'][$actKey]['decaissements']['categories'], $poste->name, abs($fluxTreso), $monthIndex, $monthCount);
+                    }
+                }
+            }
+        }
+
+        // --- D. DEUXIÈME PASSE : Fallback Inv/Fin (Méthode Indirecte pour alignement total) ---
+        foreach ($ecritures as $ec) {
+            $compte = $ec->planComptable;
+            if (!$compte || $ec->is_ran || isset($handledSaisiesInv[$ec->numero_saisie]) || isset($handledSaisiesFin[$ec->numero_saisie])) continue;
+
+            $num = $compte->numero_de_compte;
+            $ecDate = \Carbon\Carbon::parse($ec->date);
+            $monthIndex = -1;
+            foreach ($months as $idx => $m) {
+                if ($m['id'] == $ecDate->month && $m['year'] == $ecDate->year) {
+                    $monthIndex = $idx;
+                    break;
+                }
+            }
+            if ($monthIndex === -1) continue;
+
+            // Fallback Investissement (Classe 2)
+            if (str_starts_with($num, '2') && !str_starts_with($num, '28') && !str_starts_with($num, '29')) {
+                // Acquisition (Debit 2) = Sortie Cash (-). Cession (Credit 2) = Entrée Cash (+)
+                if ($ec->credit > 0) {
+                    $data['activities']['investissement']['encaissements']['total'][$monthIndex] += $ec->credit;
+                    $this->addManualCategoryDetail($data['activities']['investissement']['encaissements']['categories'], 'Cessions d\'immobilisations', $ec->credit, $monthIndex, $monthCount);
+                }
+                if ($ec->debit > 0) {
+                    $data['activities']['investissement']['decaissements']['total'][$monthIndex] += $ec->debit;
+                    $this->addManualCategoryDetail($data['activities']['investissement']['decaissements']['categories'], 'Acquisitions d\'immobilisations', $ec->debit, $monthIndex, $monthCount);
+                }
+            }
+            // Fallback Financement (10, 16)
+            elseif ((str_starts_with($num, '16') || str_starts_with($num, '10')) && !str_starts_with($num, '169')) {
+                $val = $ec->credit - $ec->debit; // + si cash rentre (emprunt/capital), - si rembourse
+                if ($val > 0) {
+                    $data['activities']['financement']['encaissements']['total'][$monthIndex] += $val;
+                    $this->addManualCategoryDetail($data['activities']['financement']['encaissements']['categories'], 'Ressources de financement', $val, $monthIndex, $monthCount);
+                } elseif ($val < 0) {
+                    $data['activities']['financement']['decaissements']['total'][$monthIndex] += abs($val);
+                    $this->addManualCategoryDetail($data['activities']['financement']['decaissements']['categories'], 'Remboursements / Dividendes', abs($val), $monthIndex, $monthCount);
+                }
+            }
+        }
+
+        // Calculs finaux cumulés
+        $current_cumule = $treso_initiale;
+        for ($i = 0; $i < $monthCount; $i++) {
+            $total_net_month = 0;
+            foreach (['operationnelle', 'investissement', 'financement'] as $key) {
+                $net_act = $data['activities'][$key]['encaissements']['total'][$i] - $data['activities'][$key]['decaissements']['total'][$i];
+                $data['activities'][$key]['net'][$i] = $net_act;
+                $total_net_month += $net_act;
+            }
+            $data['global_net'][$i] = $total_net_month;
+            $current_cumule += $total_net_month;
+            $data['cumule'][$i] = $current_cumule;
+        }
+
+        return $data;
+    }
+
+    private function addManualCategoryDetail(&$categories, $label, $montant, $monthIndex, $monthCount)
+    {
+        if ($montant == 0) return;
+        if (!isset($categories[$label])) {
+            $categories[$label] = [
+                'label' => $label,
+                'data' => array_fill(0, $monthCount, 0),
+            ];
+        }
+        $categories[$label]['data'][$monthIndex] += $montant;
     }
 }

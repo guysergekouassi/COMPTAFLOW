@@ -256,4 +256,63 @@ class ReportingController extends Controller
 
         return back()->with('error', 'Format d\'exportation non supporté.');
     }
+
+    public function tftPersonalized(Request $request)
+    {
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+        $exerciceId = session('current_exercice_id');
+        $detail = $request->input('detail') == '1';
+
+        if (!$exerciceId) {
+            $activeExercice = ExerciceComptable::where('company_id', $companyId)
+                ->where('is_active', true)
+                ->first();
+            $exerciceId = $activeExercice ? $activeExercice->id : null;
+        }
+
+        if (!$exerciceId) {
+            return redirect()->route('exercice_comptable')->with('error', 'Veuillez sélectionner un exercice actif.');
+        }
+
+        $exercice = ExerciceComptable::find($exerciceId);
+        $data = $this->reportingService->getPersonalizedTFTData($exerciceId, $companyId, $detail);
+
+        return view('reporting.tft_personalized', compact('data', 'exercice'));
+    }
+
+    public function exportPersonalizedTFT(Request $request)
+    {
+        $format = $request->query('format', 'pdf');
+        $detail = $request->query('detail') == '1';
+
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+        $exerciceId = session('current_exercice_id');
+
+        if (!$exerciceId) {
+            $activeExercice = ExerciceComptable::where('company_id', $companyId)
+                ->where('is_active', true)
+                ->first();
+            $exerciceId = $activeExercice ? $activeExercice->id : null;
+        }
+
+        if (!$exerciceId) {
+            return redirect()->route('exercice_comptable')->with('error', 'Veuillez sélectionner un exercice actif.');
+        }
+
+        $exercice = ExerciceComptable::find($exerciceId);
+        $data = $this->reportingService->getPersonalizedTFTData($exerciceId, $companyId, $detail);
+
+        if ($format === 'pdf') {
+            $detailed = $detail;
+            $pdf = \PDF::loadView('reporting.pdf.tft_personalized', compact('data', 'exercice', 'detail', 'detailed'));
+            return $pdf->setPaper('a4', 'landscape')->download('TFT_Personnalise_' . $exercice->intitule . '.pdf');
+        } elseif ($format === 'excel') {
+            // If and when a specialized export is needed, it can be added here
+            return back()->with('error', 'Export Excel non disponible pour ce format personnalisé actuellement.');
+        }
+
+        return back()->with('error', 'Format d\'exportation non supporté.');
+    }
 }

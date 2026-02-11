@@ -21,16 +21,15 @@
         transform: translateY(-2px);
     }
 
-    .stat-card {
-        border-radius: 16px;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        background: white;
-        padding: 1.25rem;
-        transition: all 0.2s;
-        height: 100%;
+    .card-premium {
+        border-radius: 20px;
+        transition: all 0.3s ease;
     }
-
-    .stat-icon {
+    .card-premium:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+    .icon-box {
         width: 48px;
         height: 48px;
         border-radius: 12px;
@@ -38,8 +37,8 @@
         align-items: center;
         justify-content: center;
         font-size: 1.25rem;
-        margin-right: 1rem;
     }
+
 
     .activity-timeline-item {
         position: relative;
@@ -123,49 +122,76 @@
                             </div>
                         </div>
 
-                        <!-- KPIs Compacts sur une ligne -->
+                        <!-- KPIs Compacts sur une ligne (Premium TFT Style) -->
                         <div class="row g-4 mb-6">
+                            <!-- Utilisateurs Actifs -->
                             <div class="col-md-3">
-                                <div class="stat-card shadow-sm d-flex align-items-center">
-                                    <div class="stat-icon bg-blue-50 text-blue-600">
-                                        <i class="fa-solid fa-users"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-secondary text-xs fw-bold text-uppercase mb-0">Utilisateurs Actifs</p>
-                                        <h4 class="font-black mb-0 text-slate-800">{{ $stats['active_users_today'] }}</h4>
+                                <div class="card border-0 shadow-sm card-premium h-100">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Actifs</h6>
+                                            <div class="icon-box bg-label-primary text-primary">
+                                                <i class="fa-solid fa-users"></i>
+                                            </div>
+                                        </div>
+                                        <h3 class="mb-2 fw-extrabold text-dark">{{ $stats['active_users_today'] }}</h3>
+                                        <div class="small fw-semibold text-primary">
+                                            <i class="fa-solid fa-clock me-1"></i> Aujourd'hui
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Total Entreprises -->
                             <div class="col-md-3">
-                                <div class="stat-card shadow-sm d-flex align-items-center">
-                                    <div class="stat-icon bg-emerald-50 text-emerald-600">
-                                        <i class="fa-solid fa-building"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-secondary text-xs fw-bold text-uppercase mb-0">Total Entreprises</p>
-                                        <h4 class="font-black mb-0 text-slate-800">{{ $stats['total_companies'] }}</h4>
+                                <div class="card border-0 shadow-sm card-premium h-100">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Entités</h6>
+                                            <div class="icon-box bg-label-info text-info">
+                                                <i class="fa-solid fa-building"></i>
+                                            </div>
+                                        </div>
+                                        <h3 class="mb-2 fw-extrabold text-dark">{{ $stats['total_companies'] }}</h3>
+                                        <div class="small fw-semibold text-info">
+                                            <i class="fa-solid fa-database me-1"></i> Total Entreprises
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Écritures 24h -->
                             <div class="col-md-3">
-                                <div class="stat-card shadow-sm d-flex align-items-center">
-                                    <div class="stat-icon bg-violet-50 text-violet-600">
-                                        <i class="fa-solid fa-file-invoice"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-secondary text-xs fw-bold text-uppercase mb-0">Écritures (24h)</p>
-                                        <h4 class="font-black mb-0 text-slate-800">{{ $stats['total_entries_today'] }}</h4>
+                                <div class="card border-0 shadow-sm card-premium h-100">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Écritures</h6>
+                                            <div class="icon-box bg-label-success text-success">
+                                                <i class="fa-solid fa-file-invoice"></i>
+                                            </div>
+                                        </div>
+                                        <h3 class="mb-2 fw-extrabold text-dark">{{ $stats['total_entries_today'] }}</h3>
+                                        <div class="small fw-semibold text-success">
+                                            <i class="fa-solid fa-bolt me-1"></i> Dernières 24h
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Total Utilisateurs -->
                             <div class="col-md-3">
-                                <div class="stat-card shadow-sm d-flex align-items-center">
-                                    <div class="stat-icon bg-amber-50 text-amber-600">
-                                        <i class="fa-solid fa-database"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-secondary text-xs fw-bold text-uppercase mb-0">Total Utilisateurs</p>
-                                        <h4 class="font-black mb-0 text-slate-800">{{ $stats['total_users'] }}</h4>
+                                <div class="card border-0 shadow-sm card-premium h-100">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h6 class="text-uppercase text-muted fw-bold small mb-0" style="font-size: 0.7rem; letter-spacing: 0.5px;">Utilisateurs</h6>
+                                            <div class="icon-box bg-label-warning text-warning">
+                                                <i class="fa-solid fa-users"></i>
+                                            </div>
+                                        </div>
+                                        <h3 class="mb-2 fw-extrabold text-dark">{{ $stats['total_users'] }}</h3>
+                                        <div class="small fw-semibold text-warning">
+                                            <i class="fa-solid fa-user-check me-1"></i> Plateforme
+                                        </div>
                                     </div>
                                 </div>
                             </div>

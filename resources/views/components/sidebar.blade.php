@@ -813,6 +813,12 @@
                     <span>Flux de Trésorerie (TFT)</span>
                 </a>
                 @endif
+                @if(auth()->user()->hasPermission('bilan'))
+                <a href="{{ route('reporting.tft_personalized') }}" class="menu-link-new {{ request()->routeIs('reporting.tft_personalized') ? 'active' : '' }}">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>TFT Mensuel</span>
+                </a>
+                @endif
             </div>
             @endif
 

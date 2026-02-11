@@ -26,6 +26,26 @@
             <div class="content-wrapper">
                 <div class="container-xxl flex-grow-1 container-p-y">
 
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bx bx-check-circle fs-4 me-2"></i>
+                                <div>{{ session('success') }}</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bx bx-error-circle fs-4 me-2"></i>
+                                <div>{{ session('error') }}</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
                     <!-- KPIs -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
