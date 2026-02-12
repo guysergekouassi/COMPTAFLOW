@@ -108,6 +108,7 @@
         background-color: #f8fafc !important;
         color: #475569 !important;
     }
+</style>
 
 <body>
     <div class="layout-wrapper layout-content-navbar">
@@ -241,7 +242,7 @@
             </div>
         </div>
     </div>
-    </div>
+
 
     <!-- Modal Create Tiers -->
     <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">

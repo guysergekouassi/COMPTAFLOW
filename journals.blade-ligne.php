@@ -49,32 +49,6 @@
         padding: 0.4rem 1rem;
         border-radius: 30px;
     }
-    
-    /* Force la visibilité du titre du modal en production */
-    .modal-header .modal-title {
-         color: #ffffff !important;
-        font-weight: 900 !important;
-        display: block !important;
-        visibility: visible !important;
-    }
-
-    /* Fix pour éviter que les clics sur les labels ferment les menus */
-    .form-check-label, .form-check-input {
-        pointer-events: auto;
-    }
-
-    /* Empêche les Selects de Classe 5, Analytique et Rapprochement d'être perturbés par le modal */
-    select.form-select {
-        position: relative;
-        z-index: 1060; /* S'assure que la liste déroulante reste au-dessus du fond du modal */
-    }
-
-    /* Fix spécifique pour le focus sur les champs instables */
-    .form-select:focus, .form-control:focus {
-        border-color: #059669 !important;
-        box-shadow: 0 0 0 0.25 margin-right: rgba(5, 150, 105, 0.25) !important;
-}
-
 </style>
 
 <body>
@@ -205,10 +179,10 @@
             </div>
         </div>
     </div>
-
+    </div>
 
     <!-- Modal Create Journal -->
-    <div class="modal fade" id="modalCreateCodeJournal" tabindex="-1">
+    <div class="modal fade" id="modalCreateCodeJournal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <form action="{{ route('admin.config.master_store_journal') }}" method="POST">
@@ -250,7 +224,7 @@
                             <div id="tresorerie_fields_create" class="row g-6 mt-0 d-none">
                                 <div class="col-12">
                                     <label class="form-label font-black text-slate-700">Compte (Classe 5)</label>
-                                    <select name="compte_de_tresorerie" class="form-select border-slate-200 py-3 rounded-xl">
+                                    <select name="compte_de_tresorerie" id="create_compte_tresorerie" class="form-select border-slate-200 py-3 rounded-xl">
                                         <option value="">-- Sélectionner un compte --</option>
                                         @foreach($plansComptables as $plan)
                                             @if(str_starts_with($plan->numero_de_compte, '5'))
@@ -276,10 +250,10 @@
                                     <label class="form-label font-black text-slate-700">Autre</label>
                                     <input type="text" name="poste_tresorerie_autre" id="treso_autre_create" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('create'); updateJournalCode('create')">
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label font-black text-slate-700">État de Rapprochement</label>
-                                    <select name="rapprochement_sur" id="edit_rapprochement_sur" class="form-select border-slate-200 py-3 rounded-xl">
-                                        <option value="">Aucun</option>
+                                <div class="col-12">
+                                    <label class="form-label font-black text-slate-700">État de Rapprochement Bancaire</label>
+                                    <select name="rapprochement_sur" id="create_rapprochement_sur" class="form-select border-slate-200 py-3 rounded-xl">
+                                        <option value="">-- Aucun --</option>
                                         <option value="Manuel">Manuel</option>
                                         <option value="Automatique">Automatique</option>
                                     </select>
@@ -298,7 +272,7 @@
     </div>
 
     <!-- Modal Import Journals -->
-    <div class="modal fade" id="modalImportJournals" tabindex="-1">
+    <div class="modal fade" id="modalImportJournals" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <form action="{{ route('admin.import.upload') }}" method="POST" enctype="multipart/form-data">
@@ -334,7 +308,7 @@
     </div>
 
     <!-- Modal Edit Journal -->
-    <div class="modal fade" id="modalEditJournal" tabindex="-1">
+    <div class="modal fade" id="modalEditJournal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <form id="editJournalForm" method="POST">
@@ -364,7 +338,7 @@
                                 <label class="form-label font-black text-slate-700">Intitulé</label>
                                 <input type="text" name="intitule" id="edit_intitule_journal" class="form-control border-slate-200 py-3 rounded-xl focus:border-emerald-500" required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <label class="form-label font-black text-slate-700">Traitement Analytique</label>
                                 <select name="traitement_analytique" id="edit_traitement_analytique" class="form-select border-slate-200 py-3 rounded-xl">
                                     <option value="non">Non</option>
@@ -372,19 +346,18 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label font-black text-slate-700">Compte (Classe 5)</label>
-                                <select name="compte_de_tresorerie" id="edit_compte_tresorerie" class="form-select border-slate-200 py-3 rounded-xl">
-                                  <option value="">Sélectionner un compte...</option>
-                                  @foreach($plansComptables as $plan)
-                                  @if(str_starts_with($plan->numero_de_compte, '5'))
-                                  <option value="{{ $plan->numero_de_compte }}">
-                                    {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
-                                  </option>
-                                  @endif
-                                  @endforeach
-                                </select>
-                            </div>
+                            <div id="tresorerie_fields_edit" class="row g-6 mt-0 d-none">
+                                <div class="col-12">
+                                    <label class="form-label font-black text-slate-700">Compte (Classe 5)</label>
+                                    <select name="compte_de_tresorerie" id="edit_compte_tresorerie" class="form-select border-slate-200 py-3 rounded-xl">
+                                        <option value="">-- Sélectionner un compte --</option>
+                                        @foreach($plansComptables as $plan)
+                                            @if(str_starts_with($plan->numero_de_compte, '5'))
+                                                <option value="{{ $plan->numero_de_compte }}">{{ $plan->numero_de_compte }} - {{ $plan->intitule }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                </div>
                                 <div class="col-12">
                                     <label class="form-label font-black text-slate-700">Type de Trésorerie</label>
                                     <div class="d-flex gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
@@ -424,7 +397,7 @@
     </div>
 
     <!-- Modal Journal Settings -->
-    <div class="modal fade" id="modalJournalSettings" tabindex="-1">
+    <div class="modal fade" id="modalJournalSettings" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <form action="{{ route('admin.config.update_settings') }}" method="POST">
@@ -461,123 +434,196 @@
             </div>
         </div>
     </div>
+
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // 1. STABILITÉ DES CHAMPS
-        const unstableElements = [
-            'edit_compte_tresorerie', 'edit_traitement_analytique', 'edit_rapprochement_sur',
-            'create_compte_tresorerie', 'create_traitement_analytique', 'create_rapprochement_sur'
-        ];
-        unstableElements.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('click', (e) => e.stopPropagation());
-                el.addEventListener('mousedown', (e) => e.stopPropagation());
-            }
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.jQuery) {
+                // Initialisation spécifique lors de l'ouverture des modales pour garantir le dropdownParent
+                // (Pattern copié de accounting_journals.blade.php pour stabilité)
+                $('.modal').on('shown.bs.modal', function () {
+                    const modal = $(this);
+                    
+                    // Liste des IDs à initialiser avec Select2
+                    const idsToInit = [
+                        '#journal_type_select', 
+                        '#create_compte_tresorerie', 
+                        '#create_rapprochement_sur',
+                        '#edit_type_journal',
+                        '#edit_compte_tresorerie',
+                        '#edit_rapprochement_sur'
+                    ];
 
-        // 2. ÉCOUTEURS POUR LE GRISAGE (Banque/Caisse vs Autre)
-        // Pour le mode Création
-        ['treso_caisse_create', 'treso_banque_create'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.addEventListener('change', () => handleTresoChange('create'));
-        });
-        const autreCreate = document.getElementById('treso_autre_create');
-        if(autreCreate) autreCreate.addEventListener('input', () => handleOtherInput('create'));
-
-        // Pour le mode Édition
-        ['edit_treso_caisse', 'edit_treso_banque'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.addEventListener('change', () => handleTresoChange('edit'));
-        });
-        const autreEdit = document.getElementById('edit_treso_autre');
-        if(autreEdit) autreEdit.addEventListener('input', () => handleOtherInput('edit'));
-    });
-
-    // --- LOGIQUE DE GRISAGE (FIXED) ---
-    function handleTresoChange(mode) {
-        const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
-        const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
-        const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
-        
-        if (caisse.checked || banque.checked) {
-            autre.value = '';
-            autre.disabled = true;
-            autre.classList.add('bg-slate-50', 'opacity-50');
-        } else {
-            autre.disabled = false;
-            autre.classList.remove('bg-slate-50', 'opacity-50');
-        }
-        updateJournalCode(mode); // Relance la génération de code
-    }
-
-    function handleOtherInput(mode) {
-        const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
-        const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
-        const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
-        
-        if (autre.value.trim() !== '') {
-            caisse.checked = false;
-            banque.checked = false;
-            caisse.disabled = true;
-            banque.disabled = true;
-        } else {
-            caisse.disabled = false;
-            banque.disabled = false;
-        }
-        updateJournalCode(mode); // Relance la génération de code
-    }
-
-    // --- GÉNÉRATION DE CODE (FIXED) ---
-    function updateJournalCode(mode) {
-        const typeSelect = document.getElementById(mode === 'edit' ? 'edit_type_journal' : 'journal_type_select');
-        const codeInput = document.getElementById(mode === 'edit' ? 'edit_code_journal' : 'create_code_journal');
-        
-        if (!typeSelect || !codeInput) return;
-
-        let type = typeSelect.value;
-        let prefix = '';
-        
-        if (type === 'Achats') prefix = 'ACH';
-        else if (type === 'Ventes') prefix = 'VEN';
-        else if (type === 'Opérations Diverses') prefix = 'OD';
-        else if (['Tresorerie', 'Trésorerie', 'Banque', 'Caisse'].includes(type)) {
-            const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
-            const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
-            const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
-            
-            if (caisse && caisse.checked) prefix = 'CAI';
-            else if (banque && banque.checked) prefix = 'BQ';
-            else if (autre && autre.value.trim() !== '') {
-                prefix = autre.value.trim().substring(0, 3).toUpperCase();
-            }
-        }
-        
-        if (prefix) {
-            fetch(`/admin/config/get-next-journal-code?prefix=${prefix}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) codeInput.value = data.code;
-                })
-                .catch(() => {
-                    const digits = {{ $mainCompany->journal_code_digits ?? 3 }};
-                    codeInput.value = prefix.padEnd(digits, '0').substring(0, digits);
+                    idsToInit.forEach(function(id) {
+                        const element = modal.find(id);
+                        if (element.length) {
+                            // S'assurer qu'il n'est pas déjà init pour éviter doublons
+                            if (element.hasClass("select2-hidden-accessible")) {
+                                try {
+                                    element.select2('destroy');
+                                } catch (e) {
+                                    console.warn('Erreur destroy select2', e);
+                                }
+                            }
+                            
+                            element.select2({
+                                dropdownParent: modal,
+                                width: '100%',
+                                language: "fr",
+                                minimumResultsForSearch: 10 // Optionnel
+                            });
+                        }
+                    });
                 });
-        }
-    }
 
-    // --- SYNC AFFICHAGE CHAMPS ---
-    function toggleTresorerieFields(type, mode) {
-        const container = document.getElementById(`tresorerie_fields_${mode}`);
-        if (container) {
-            if (['Tresorerie', 'Trésorerie', 'Banque', 'Caisse'].includes(type)) {
+                // Correction du bug de fermeture des radio buttons et selects
+                $('.form-check, .form-check-input, .form-check-label, select, .select2-container').on('click', function(e) {
+                    e.stopPropagation();
+                });
+
+                // Forcer la stabilité des listes déroulantes natives
+                $('select').on('mousedown', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Empecher la propagation du click sur select2
+                $(document).on('mousedown', '.select2-container, .select2-dropdown', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
+        function toggleTresorerieFields(type, mode) {
+            const container = document.getElementById(`tresorerie_fields_${mode}`);
+            if (['Banque', 'Caisse', 'Tresorerie'].includes(type)) {
                 container.classList.remove('d-none');
             } else {
                 container.classList.add('d-none');
             }
         }
-    }
-</script>
+
+
+
+        function handleTresoChange(mode) {
+            const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+            const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+            const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+            
+            if (caisse.checked || banque.checked) {
+                autre.value = '';
+                autre.disabled = true;
+                autre.classList.add('bg-slate-50');
+            } else {
+                autre.disabled = false;
+                autre.classList.remove('bg-slate-50');
+            }
+        }
+
+        function handleOtherInput(mode) {
+            const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+            const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+            const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+            
+            if (autre.value.trim() !== '') {
+                caisse.checked = false;
+                banque.checked = false;
+                caisse.disabled = true;
+                banque.disabled = true;
+            } else {
+                caisse.disabled = false;
+                banque.disabled = false;
+            }
+        }
+
+        function editJournal(id, code, intitule, type, compteTresorerie, posteTresorerie, compteContrepartie, traitementAnalytique, rapprochementSur) {
+            const form = document.getElementById('editJournalForm');
+            form.action = `/admin/config/update-journal/${id}`;
+            
+            document.getElementById('edit_code_journal').value = code;
+            document.getElementById('edit_intitule_journal').value = intitule;
+            document.getElementById('edit_type_journal').value = type;
+            document.getElementById('edit_traitement_analytique').value = traitementAnalytique; // 'oui' ou 'non'
+            
+            // Remplissage des champs de trésorerie
+            document.getElementById('edit_compte_tresorerie').value = compteTresorerie;
+            document.getElementById('edit_rapprochement_sur').value = rapprochementSur;
+            
+            // Gestion poste_tresorerie (Caisse, Banque ou Autre)
+            const caisse = document.getElementById('edit_treso_caisse');
+            const banque = document.getElementById('edit_treso_banque');
+            const autre = document.getElementById('edit_treso_autre');
+            
+            caisse.checked = (posteTresorerie === 'Caisse');
+            banque.checked = (posteTresorerie === 'Banque');
+            
+            if (['Caisse', 'Banque'].includes(posteTresorerie)) {
+                autre.value = '';
+                autre.disabled = true;
+                autre.classList.add('bg-slate-50');
+                caisse.disabled = false;
+                banque.disabled = false;
+            } else {
+                autre.value = posteTresorerie;
+                autre.disabled = false;
+                autre.classList.remove('bg-slate-50');
+                if (posteTresorerie && posteTresorerie !== 'Automatique') {
+                    caisse.checked = false;
+                    banque.checked = false;
+                    caisse.disabled = true;
+                    banque.disabled = true;
+                } else {
+                    caisse.disabled = false;
+                    banque.disabled = false;
+                }
+            }
+            
+            // Affichage conditionnel
+            toggleTresorerieFields(type, 'edit');
+            
+            new bootstrap.Modal(document.getElementById('modalEditJournal')).show();
+        }
+        function updateJournalCode(mode) {
+            const typeSelect = document.getElementById(mode === 'edit' ? 'edit_type_journal' : 'journal_type_select');
+            const type = typeSelect.value;
+            const codeInput = document.getElementById(mode === 'edit' ? 'edit_code_journal' : 'create_code_journal');
+            
+            let prefix = '';
+            
+            if (type === 'Achats') prefix = 'ACH';
+            else if (type === 'Ventes') prefix = 'VEN';
+            else if (type === 'Opérations Diverses') prefix = 'OD';
+            else if (type === 'Standard') prefix = 'STD';
+            else if (type === 'Tresorerie') {
+                const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
+                const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');
+                const autre = document.getElementById(mode === 'edit' ? 'edit_treso_autre' : 'treso_autre_create');
+                
+                if (caisse.checked) prefix = 'CAI';
+                else if (banque.checked) prefix = 'BQ';
+                else if (autre.value.trim() !== '') {
+                    prefix = autre.value.trim().substring(0, 3).toUpperCase();
+                } else {
+                    return;
+                }
+            }
+            
+            if (prefix) {
+                // Appel API pour obtenir le prochain code disponible
+                fetch(`/admin/config/get-next-journal-code?prefix=${prefix}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            codeInput.value = data.code;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Erreur génération code:', err);
+                        // Fallback au padding si l'API échoue
+                        const digits = {{ $mainCompany->journal_code_digits ?? 3 }};
+                        let finalCode = prefix.padEnd(digits, '0');
+                        codeInput.value = finalCode.substring(0, digits);
+                    });
+            }
+        }
+    </script>
     @include('components.import_instructions_journals')
 </body>
 </html>
