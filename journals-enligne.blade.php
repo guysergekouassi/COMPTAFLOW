@@ -182,7 +182,7 @@
     </div>
 
     <!-- Modal Create Journal -->
-    <div class="modal fade" id="modalCreateCodeJournal" tabindex="-1">
+    <div class="modal fade" id="modalCreateCodeJournal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <form action="{{ route('admin.config.master_store_journal') }}" method="POST">
@@ -272,7 +272,7 @@
     </div>
 
     <!-- Modal Import Journals -->
-    <div class="modal fade" id="modalImportJournals" tabindex="-1">
+    <div class="modal fade" id="modalImportJournals" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <form action="{{ route('admin.import.upload') }}" method="POST" enctype="multipart/form-data">
@@ -308,7 +308,7 @@
     </div>
 
     <!-- Modal Edit Journal -->
-    <div class="modal fade" id="modalEditJournal" tabindex="-1">
+    <div class="modal fade" id="modalEditJournal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <form id="editJournalForm" method="POST">
@@ -397,7 +397,7 @@
     </div>
 
     <!-- Modal Journal Settings -->
-    <div class="modal fade" id="modalJournalSettings" tabindex="-1">
+    <div class="modal fade" id="modalJournalSettings" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <form action="{{ route('admin.config.update_settings') }}" method="POST">
