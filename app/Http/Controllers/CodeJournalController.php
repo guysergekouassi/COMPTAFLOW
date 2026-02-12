@@ -202,7 +202,7 @@ public function index(Request $request)
                 Tresoreries::create([
                     'code_journal' => strtoupper($request->code_journal),
                     'intitule' => $intitule_formate,
-                    'compte_de_contrepartie' => $request->compte_de_contrepartie,
+                    'compte_de_contrepartie' => $compteId,
                     'poste_tresorerie' => $posteTresorerie,
                     'categorie' => $categorie,
                     'user_id' => $user->id,
@@ -264,7 +264,14 @@ public function index(Request $request)
             }
             
             $posteTresorerie = $request->poste_tresorerie_autre ?: $request->poste_tresorerie;
+            $compteId = null;
+            if ($request->compte_de_contrepartie) {
+                $compteId = PlanComptable::where('company_id', $journal->company_id)
+                    ->where('numero_de_compte', $request->compte_de_contrepartie)
+                    ->value('id');
+            }
             $validated['poste_tresorerie'] = $posteTresorerie;
+            $validated['compte_de_tresorerie'] = $compteId;
 
             $journal->update($validated);
 
@@ -275,8 +282,8 @@ public function index(Request $request)
                 $data = [
                     'code_journal' => $journal->code_journal,
                     'intitule' => $journal->intitule,
-                    'compte_de_contrepartie' => $validated['compte_de_contrepartie'] ?? null,
-                    'poste_tresorerie' => $validated['poste_tresorerie'] ?? null,
+                    'compte_de_contrepartie' => $compteId,
+                    'poste_tresorerie' => $posteTresorerie,
                     'company_id' => $this->getCurrentCompanyId(),
                 ];
                 

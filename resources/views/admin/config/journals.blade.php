@@ -247,7 +247,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12 mt-2">
-                                    <label class="form-label font-black text-slate-700">Autre (Optionnel)</label>
+                                    <label class="form-label font-black text-slate-700">Autre</label>
                                     <input type="text" name="poste_tresorerie_autre" id="treso_autre_create" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('create'); updateJournalCode('create')">
                                 </div>
                                 <div class="col-12">
@@ -372,7 +372,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12 mt-2">
-                                    <label class="form-label font-black text-slate-700">Autre (Optionnel)</label>
+                                    <label class="form-label font-black text-slate-700">Autre</label>
                                     <input type="text" name="poste_tresorerie_autre" id="edit_treso_autre" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('edit')">
                                 </div>
                                 <div class="col-12">
@@ -444,6 +444,31 @@
                 container.classList.add('d-none');
             }
         }
+
+        // Wait for jQuery to be ready for stability fixes
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.jQuery) {
+                // Correction du bug de fermeture des radio buttons et selects
+                $('.form-check, .form-check-input, .form-check-label, select, .select2-container').on('click', function(e) {
+                    e.stopPropagation();
+                });
+
+                // Forcer la stabilité des listes déroulantes natives
+                $('select').on('mousedown', function(e) {
+                    e.stopPropagation();
+                });
+
+                // Si Select2 est utilisé (au cas où il serait inclus via components.head)
+                if ($.fn.select2) {
+                    $('select').on('select2:open', function() {
+                        const modal = $(this).closest('.modal');
+                        if (modal.length) {
+                            $('.select2-dropdown').css('z-index', 9999);
+                        }
+                    });
+                }
+            }
+        });
 
         function handleTresoChange(mode) {
             const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');

@@ -642,7 +642,7 @@
 
                                 <!-- Modal de confirmation de suppression -->
                                 <div class="modal fade" id="deleteConfirmationModalTiers" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered premium-modal-dialog">
+                                    <div class="modal-dialog modal-dialog-centered premium-modal-dialog" style="max-width: 400px !important; width: 400px !important;">
                                         <div class="modal-content premium-modal-content-tiers">
                                             <!-- Header -->
                                             <div class="text-center mb-6 position-relative">

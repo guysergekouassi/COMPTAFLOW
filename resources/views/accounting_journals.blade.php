@@ -45,14 +45,6 @@
         transform: translateY(-2px);
     }
 
-    /* DataTable Customization */
-    .dataTables_wrapper .dataTables_filter, 
-    .dataTables_wrapper .dataTables_length,
-    .dataTables_wrapper .dataTables_info,
-    .dataTables_wrapper .dataTables_paginate {
-        display: none;
-    }
-
     /* Premium Modal Design */
     .premium-modal-content {
         background: rgba(255, 255, 255, 0.98);
@@ -60,7 +52,15 @@
         border: 1px solid rgba(255, 255, 255, 1);
         border-radius: 20px;
         box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+        width: 400px !important;
+        max-width: 400px !important;
+        margin: auto !important;
         padding: 1.25rem !important;
+    }
+    .premium-modal-dialog {
+        width: 400px !important;
+        max-width: 400px !important;
+        margin: 1.75rem auto !important;
     }
     .input-field-premium {
         transition: all 0.2s ease;
@@ -107,6 +107,43 @@
         background-color: #1e40af;
         margin: 8px auto 0;
         border-radius: 9999px;
+    }
+
+    .btn-save-premium {
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        background-color: #1e40af !important;
+        color: white !important;
+        font-weight: 800 !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1) !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+    }
+
+    .btn-save-premium:hover {
+        background-color: #1e3a8a !important;
+        transform: translateY(-2px) !important;
+    }
+
+    .btn-cancel-premium {
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        color: #94a3b8 !important;
+        font-weight: 700 !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .btn-cancel-premium:hover {
+        background-color: #f8fafc !important;
+        color: #475569 !important;
     }
 </style>
 
@@ -354,7 +391,7 @@
     <!-- MODALS -->
     <!-- Create Modal -->
     <div class="modal fade" id="modalCreateCodeJournal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered premium-modal-dialog">
             <div class="modal-content premium-modal-content">
                 <form id="formCodeJournal" method="POST" action="{{ route('accounting_journals.store') }}">
                     @csrf
@@ -362,7 +399,7 @@
                     <div class="text-center mb-6 position-relative pt-4">
                         <button type="button" class="btn-close position-absolute end-0 top-0 mt-2 me-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
                         <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
-                            Interface d'Administration - <span class="text-blue-gradient-premium">Configuration des Journaux</span>
+                            nouveau <span class="text-blue-gradient-premium">Journal</span>
                         </h1>
                         <div class="blue-bar-premium"></div>
                     </div>
@@ -424,7 +461,7 @@
                                         </div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="input-label-premium">Autre (Optionnel)</label>
+                                        <label class="input-label-premium">Autre</label>
                                         <input type="text" name="poste_tresorerie_autre" id="treso_autre_create" class="input-field-premium" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('create'); updateJournalCode('create')">
                                     </div>
                                     <div class="col-md-12">
@@ -440,8 +477,8 @@
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">
-                        <button type="button" class="btn bg-slate-100 text-slate-500 font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0 shadow-lg shadow-blue-200 hover:bg-blue-800 transition" style="color: white; background-color: #1d4ed8;">Enregistrer</button>
+                        <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn-save-premium">Enregistrer</button>
                     </div>
                 </form>
             </div>
@@ -450,7 +487,7 @@
 
     <!-- Update Modal -->
     <div class="modal fade" id="modalEditJournalUnique" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered premium-modal-dialog">
             <div class="modal-content premium-modal-content">
                 <form id="formEditJournalUnique" method="POST" action="">
                     @csrf
@@ -520,7 +557,7 @@
                                         </div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="input-label-premium">Autre (Optionnel)</label>
+                                        <label class="input-label-premium">Autre</label>
                                         <input type="text" name="poste_tresorerie_autre" id="edit_treso_autre" class="input-field-premium" placeholder="Saisir un autre libellé..." oninput="handleOtherInput('edit')">
                                     </div>
                                     <div class="col-md-12">
@@ -536,8 +573,8 @@
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-6">
-                        <button type="button" class="btn bg-slate-100 text-slate-500 font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn font-bold uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl border-0 shadow-lg shadow-blue-200 hover:bg-blue-800 transition" style="color: white; background-color: #1d4ed8;">Enregistrer les modifications</button>
+                        <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn-save-premium">Enregistrer les modifications</button>
                     </div>
                 </form>
             </div>
