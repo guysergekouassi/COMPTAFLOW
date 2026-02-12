@@ -50,7 +50,7 @@ public function index(Request $request)
     $tresoreriesData = Tresoreries::get()
         ->keyBy('code_journal');
 
-    // B. Récupérer les comptes du Plan Comptable
+            // B. Récupérer les comptes du Plan Comptable
     // NOTE : On utilise la collection $code_journaux ici.
     $planComptableIds = $code_journaux->pluck('compte_de_tresorerie')->filter()->unique();
     $planComptableAccounts = PlanComptable::whereIn('id', $planComptableIds)
@@ -62,20 +62,27 @@ public function index(Request $request)
         $codeTresorerie = null;
         $posteTresorerie = null;
 
-        // Priorité 1: Vérifier si c'est un journal de trésorerie dans la table tresoreries
-        if ($tresoreriesData->has($journal->code_journal)) {
+        // Priorité 1: Utiliser les données de la table code_journals
+        if ($journal->compte_de_tresorerie && $planComptableAccounts->has($journal->compte_de_tresorerie)) {
+            $compte = $planComptableAccounts[$journal->compte_de_tresorerie];
+            $codeTresorerie = $compte->numero_de_compte ?? null;
+        } 
+        
+        // Si vide, regarder dans compte_de_contrepartie
+        if (!$codeTresorerie) {
+            $codeTresorerie = $journal->compte_de_contrepartie;
+        }
+
+        // Priorité 2: Vérifier dans la table tresoreries si toujours vide
+        if (!$codeTresorerie && $tresoreriesData->has($journal->code_journal)) {
             $tresorerieData = $tresoreriesData[$journal->code_journal];
             $codeTresorerie = $tresorerieData->compte_de_contrepartie;
-            $posteTresorerie = $tresorerieData->poste_tresorerie;
         }
-        // Priorité 2: Sinon, utiliser les données de la table code_journals
-        else {
-            if ($journal->compte_de_tresorerie && $planComptableAccounts->has($journal->compte_de_tresorerie)) {
-                $compte = $planComptableAccounts[$journal->compte_de_tresorerie];
-                $codeTresorerie = $compte->numero_de_compte ?? null;
-            }
-            // Utiliser le poste de trésorerie de la table code_journals
-            $posteTresorerie = $journal->poste_tresorerie;
+
+        // Poste Trésorerie
+        $posteTresorerie = $journal->poste_tresorerie;
+        if (!$posteTresorerie && $tresoreriesData->has($journal->code_journal)) {
+            $posteTresorerie = $tresoreriesData[$journal->code_journal]->poste_tresorerie;
         }
 
         $journal->code_tresorerie_display = $codeTresorerie;

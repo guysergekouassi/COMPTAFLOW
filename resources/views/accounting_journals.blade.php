@@ -276,7 +276,7 @@
                                     <tbody class="divide-y divide-slate-50">
                                         @foreach ($code_journaux as $journal)
                                             <tr class="table-row">
-                                                <td class="px-8 py-6" data-filter="{{ $journal->type }}">
+                                            <td class="px-8 py-6" data-filter="{{ $journal->type }}">
                                                     @php
                                                         $badge = match($journal->type) {
                                                             'Achats' => 'bg-purple-100 text-purple-700 border-purple-200',
@@ -301,7 +301,11 @@
                                                 </td>
                                                 <td class="px-8 py-6 font-semibold text-slate-800">{{ $journal->intitule }}</td>
                                                 <td class="px-8 py-6 font-mono text-sm text-slate-600">
-                                                    {{ $journal->code_tresorerie_display ?? '-' }}
+                                                    @if(in_array($journal->type, ['Banque', 'Caisse', 'Tresorerie']))
+                                                        {{ $journal->code_tresorerie_display ?? '-' }}
+                                                    @else
+                                                        -
+                                                    @endif
                                                 </td>
                                                 <td class="px-8 py-6 font-semibold text-slate-700">
                                                     {{ !empty($journal->rapprochement_sur) ? $journal->rapprochement_sur : '-' }}

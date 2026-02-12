@@ -142,7 +142,7 @@
                                                 {{ $journal->intitule }}
                                             </td>
                                             <td class="py-6">
-                                                @if(in_array($journal->type, ['Banque', 'Caisse', 'Trésorerie']))
+                                                @if(in_array($journal->type, ['Banque', 'Caisse', 'Trésorerie', 'Tresorerie']))
                                                     <span class="text-xs font-black text-slate-500">{{ $journal->code_tresorerie_display }}</span>
                                                 @else
                                                     <span class="text-xs text-slate-400 italic">-</span>
