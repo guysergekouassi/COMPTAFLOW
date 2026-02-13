@@ -182,7 +182,7 @@
                                                 data-intitule_j="{{ $code_j->intitule }}"
                                                 data-type_j="{{ $code_j->type }}"
                                                 data-code_tresorerie_j="{{ $codeTresorerie ?? '' }}">
-                                                {{ $displayCode }}  {{ $code_j->intitule }}
+                                                {{ rtrim($displayCode, '-') }} - {{ $code_j->intitule }}
                                             </option>
                                         @endforeach
                                     </select>
