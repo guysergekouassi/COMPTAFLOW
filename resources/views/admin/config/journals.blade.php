@@ -463,6 +463,16 @@
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // AJOUT: Forcer l'affichage des titres de modal
+        setTimeout(function() {
+            document.querySelectorAll('.modal-title').forEach(function(title) {
+                title.style.setProperty('color', '#ffffff', 'important');
+                title.style.setProperty('font-weight', '900', 'important');
+                title.style.setProperty('display', 'block', 'important');
+                title.style.setProperty('visibility', 'visible', 'important');
+            });
+        }, 100);
+        
         // 1. STABILITÉ DES CHAMPS
         const unstableElements = [
             'edit_compte_tresorerie', 'edit_traitement_analytique', 'edit_rapprochement_sur',
