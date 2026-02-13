@@ -845,7 +845,7 @@
                                         <label for="imputation" class="form-label">
                                             <i class="bx bx-book-bookmark"></i>Journal d'imputation
                                         </label>
-                                        <input type="text" id="code_journal_affiche" class="form-control" value="{{ $data['code'] ?? 'N/A' }}" readonly />
+                                        <input type="text" id="code_journal_affiche" class="form-control" value="{{ isset($data['code']) && isset($data['intitule']) ? $data['code'] . ' - ' . $data['intitule'] : ($data['code'] ?? 'N/A') }}" readonly />
                                         <input type="hidden" id="imputation" name="code_journal_id" value="{{ $data['id_code'] ?? 'N/A' }}" class="form-control" data-code_imputation="{{ $data['code'] ?? 'N/A' }}" />
                                         <input type="hidden" name="id_exercice" value="{{ $data['id_exercice'] ?? '' }}" />
                                         <input type="hidden" name="journaux_saisis_id" value="{{ $data['id_journal'] ?? '' }}" />
