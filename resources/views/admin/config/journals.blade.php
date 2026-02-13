@@ -214,7 +214,7 @@
                 <form action="{{ route('admin.config.master_store_journal') }}" method="POST">
                     @csrf
                     <div class="modal-header bg-emerald-900 p-6">
-                        <h5 class="modal-title text-white font-black">Interface d'Administration - Configuration des Journaux</h5>
+                        <h5 class="modal-title text-white fw-bold">Interface d'Administration - Configuration des Journaux</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-8">
