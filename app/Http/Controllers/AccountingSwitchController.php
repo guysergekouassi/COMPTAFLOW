@@ -53,8 +53,6 @@ class AccountingSwitchController extends Controller
         Session::put('current_company_id', Auth::user()->company_id);
 
 
-        $route = Route::has('admin.dashboard') ? 'admin.dashboard' : 'compta.dashboard';
-
-        return redirect()->route($route)->with('info', 'Vous avez quitté le compte de comptabilité.');
+        return redirect()->route('admin.switch')->with('info', 'Vous avez quitté le compte de comptabilité.');
     }
 }

@@ -1253,7 +1253,7 @@ class AdminConfigController extends Controller
             $import = ImportStaging::create([
                 'company_id' => $user->company_id,
                 'user_id' => $user->id,
-                'exercice_id' => $request->exercice,
+                'exercice_id' => ($request->type === 'courant') ? $request->exercice : null,
                 'source' => $request->source,
                 'type' => $request->type,
                 'file_name' => $file->getClientOriginalName(),

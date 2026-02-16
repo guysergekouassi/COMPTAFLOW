@@ -546,9 +546,7 @@ User::create($validated);
     public function resetContext()
     {
         session()->forget('current_company_id');
-        // Vérifier si admin.dashboard existe, sinon dashboard-compta
-        $route = Route::has('admin.dashboard') ? 'admin.dashboard' : 'compta.dashboard';
-        return redirect()->route($route)->with('success', 'Vous êtes revenu à votre vue principale.');
+        return redirect()->route('admin.switch')->with('success', 'Vous êtes revenu à votre vue principale.');
     }
 
 

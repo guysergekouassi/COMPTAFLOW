@@ -111,7 +111,7 @@ class SuperAdminSwitchController extends Controller
             // Reconnecter le Super Admin
             Auth::loginUsingId($originalAdminId);
             
-            return redirect()->route('superadmin.dashboard')
+            return redirect()->route('superadmin.switch')
                 ->with('success', 'Vous êtes de retour dans l\'interface Super Admin');
         }
         
