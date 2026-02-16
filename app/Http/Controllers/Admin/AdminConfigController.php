@@ -3647,14 +3647,31 @@ class AdminConfigController extends Controller
             ->orderBy('name')
             ->get();
 
+        $tftRequired = [
+            'I. Flux de trésorerie des activités opérationnelles',
+            'II. Flux de trésorerie des activités d\'investissement',
+            'III. Flux de trésorerie des activités de financement',
+        ];
+
         $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
-            ->whereIn('name', [
-                'I. Flux de trésorerie des activités opérationnelles',
-                'II. Flux de trésorerie des activités d\'investissement',
-                'III. Flux de trésorerie des activités de financement',
-            ])
+            ->whereIn('name', $tftRequired)
             ->orderBy('name')
             ->get();
+
+        // Auto-réparation pour les entreprises existantes
+        if ($categories->count() < 3) {
+            foreach ($tftRequired as $catName) {
+                \App\Models\TreasuryCategory::firstOrCreate([
+                    'company_id' => $companyId,
+                    'name' => $catName
+                ]);
+            }
+            // Re-fetch après création
+            $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
+                ->whereIn('name', $tftRequired)
+                ->orderBy('name')
+                ->get();
+        }
 
         return view('admin.config.tresorerie_posts', compact('postesTresorerie', 'mainCompany', 'categories'));
     }
