@@ -438,7 +438,7 @@
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700 uppercase text-xs">Longueur des Codes</label>
                                 <select name="journal_code_digits" class="form-select border-slate-200 py-3 rounded-xl font-bold">
-                                    @foreach([2,3,4,5,6] as $digit)
+                                    @foreach([4,5,6] as $digit)
                                         <option value="{{ $digit }}" {{ ($mainCompany->journal_code_digits ?? 3) == $digit ? 'selected' : '' }}>{{ $digit }} caractères</option>
                                     @endforeach
                                 </select>
