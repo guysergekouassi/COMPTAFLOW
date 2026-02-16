@@ -50,15 +50,31 @@ class PosteTresorController extends Controller
             ->get();
         $postesTresorerie = $comptes;
 
-        // 4. Récupération des catégories prédéfinies
+        $tftRequired = [
+            'I. Flux de trésorerie des activités opérationnelles',
+            'II. Flux de trésorerie des activités d\'investissement',
+            'III. Flux de trésorerie des activités de financement',
+        ];
+
         $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
-            ->whereIn('name', [
-                'I. Flux de trésorerie des activités opérationnelles',
-                'II. Flux de trésorerie des activités d\'investissement',
-                'III. Flux de trésorerie des activités de financement',
-            ])
+            ->whereIn('name', $tftRequired)
             ->orderBy('name')
             ->get();
+
+        // Auto-réparation pour les entreprises existantes
+        if ($categories->count() < 3) {
+            foreach ($tftRequired as $catName) {
+                \App\Models\TreasuryCategory::firstOrCreate([
+                    'company_id' => $companyId,
+                    'name' => $catName
+                ]);
+            }
+            // Re-fetch après création
+            $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
+                ->whereIn('name', $tftRequired)
+                ->orderBy('name')
+                ->get();
+        }
 
         // 5. Passer toutes les listes à la vue
         return view('Poste.posteTresor' , compact('comptes', 'postesTresorerie', 'comptes5', 'categories'));
@@ -111,15 +127,31 @@ class PosteTresorController extends Controller
 
         $mouvements = $compte->mouvements()->orderBy('date_mouvement', 'desc')->paginate(20);
 
-        // Récupération des catégories prédéfinies
+        $tftRequired = [
+            'I. Flux de trésorerie des activités opérationnelles',
+            'II. Flux de trésorerie des activités d\'investissement',
+            'III. Flux de trésorerie des activités de financement',
+        ];
+
         $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
-            ->whereIn('name', [
-                'I. Flux de trésorerie des activités opérationnelles',
-                'II. Flux de trésorerie des activités d\'investissement',
-                'III. Flux de trésorerie des activités de financement',
-            ])
+            ->whereIn('name', $tftRequired)
             ->orderBy('name')
             ->get();
+
+        // Auto-réparation pour les entreprises existantes
+        if ($categories->count() < 3) {
+            foreach ($tftRequired as $catName) {
+                \App\Models\TreasuryCategory::firstOrCreate([
+                    'company_id' => $companyId,
+                    'name' => $catName
+                ]);
+            }
+            // Re-fetch après création
+            $categories = \App\Models\TreasuryCategory::where('company_id', $companyId)
+                ->whereIn('name', $tftRequired)
+                ->orderBy('name')
+                ->get();
+        }
 
         return view('Poste.posteTresor', compact('comptes','compte', 'mouvements', 'postesTresorerie', 'categories'));
     }
