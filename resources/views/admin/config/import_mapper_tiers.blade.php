@@ -123,10 +123,10 @@
                                         </div>
 
                                         @foreach($fields as $key => $field)
-                                            <div class="mapping-row @if($field['auto_generate'] ?? false) opacity-70 bg-slate-50 @endif" @if($field['auto_generate'] ?? false) style="pointer-events: none;" @endif>
+                                            <div class="mapping-row">
                                                 <div class="row align-items-center">
                                                     <div class="col-md-5">
-                                                        <div class="field-label @if(($field['required'] ?? false) && !($field['auto_generate'] ?? false)) field-required @endif">
+                                                        <div class="field-label @if($field['required'] ?? false) field-required @endif">
                                                             <div class="w-8 h-8 rounded-lg bg-slate-100 d-flex align-items-center justify-content-center">
                                                                  <i class="fa-solid {{ $field['icon'] }} text-slate-500 text-xs"></i>
                                                              </div>
@@ -137,56 +137,33 @@
                                                                 @endif
                                                              </div>
                                                              @if($field['auto_generate'] ?? false)
-                                                                 <span class="badge bg-label-secondary ms-2 text-[10px]">AUTO-GÉNÉRÉ</span>
+                                                                 <span class="badge bg-label-secondary ms-2 text-[10px]">AUTO-GÉNÉRÉ PAR DÉFAUT</span>
                                                              @endif
                                                          </div>
                                                      </div>
                                                      <div class="col-md-7">
-                                                         @if($field['auto_generate'] ?? false)
-                                                             @php
-                                                                 $suggestedIdx = $field['suggested_col'] ?? "";
-                                                                 // Fallback manual detection if no suggestion
-                                                                 if ($suggestedIdx === "" && $key == 'numero_de_tiers') {
-                                                                     foreach($headers as $index => $header) {
+                                                         <select name="mapping[{{ $key }}]" class="select-mapping" @if($field['required'] ?? false) required @endif>
+                                                             <option value="">-- Ignorer cette colonne --</option>
+                                                             @foreach($headers as $index => $header)
+                                                                 @php
+                                                                     $selected = false;
+                                                                     if (isset($field['suggested_col'])) {
+                                                                         $selected = ($field['suggested_col'] === $index);
+                                                                     } else {
                                                                          $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $header)));
                                                                          foreach(($field['match'] ?? []) as $m) {
                                                                              if(str_contains($cleanHeader, $m)) {
-                                                                                 $suggestedIdx = $index;
+                                                                                 $selected = true;
                                                                                  break;
                                                                              }
                                                                          }
-                                                                         if ($suggestedIdx !== "") break;
                                                                      }
-                                                                 }
-                                                             @endphp
-                                                             <div class="form-control bg-slate-100 border-dashed text-slate-400 py-2 rounded-xl text-center text-xs">
-                                                                 <i class="fa-solid fa-lock me-2"></i> Ce champ est géré par le système
-                                                             </div>
-                                                             <input type="hidden" name="mapping[{{ $key }}]" value="{{ $headers[$suggestedIdx] ?? '' }}">
-                                                         @else
-                                                             <select name="mapping[{{ $key }}]" class="select-mapping" @if($field['required'] ?? false) required @endif>
-                                                                 <option value="">-- Ignorer cette colonne --</option>
-                                                                 @foreach($headers as $index => $header)
-                                                                     @php
-                                                                         $selected = false;
-                                                                         if (isset($field['suggested_col'])) {
-                                                                             $selected = ($field['suggested_col'] === $index);
-                                                                         } else {
-                                                                             $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $header)));
-                                                                             foreach(($field['match'] ?? []) as $m) {
-                                                                                 if(str_contains($cleanHeader, $m)) {
-                                                                                     $selected = true;
-                                                                                     break;
-                                                                                 }
-                                                                             }
-                                                                         }
-                                                                     @endphp
-                                                                     <option value="{{ $index }}" {{ $selected ? 'selected' : '' }}>
-                                                                         Colonne {{ $index + 1 }} : {{ $header }}
-                                                                     </option>
-                                                                 @endforeach
-                                                             </select>
-                                                         @endif
+                                                                 @endphp
+                                                                 <option value="{{ $index }}" {{ $selected ? 'selected' : '' }}>
+                                                                     Colonne {{ $index + 1 }} : {{ $header }}
+                                                                 </option>
+                                                             @endforeach
+                                                         </select>
                                                      </div>
                                                  </div>
                                              </div>
