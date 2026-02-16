@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\UserController; // Utilisé pour l'initialisation des habilitations
+use App\Models\TreasuryCategory;
 
 class CompanyController extends Controller
 
@@ -95,6 +96,20 @@ class CompanyController extends Controller
             // Mettre à jour l'utilisateur Admin avec l'ID de sa compagnie principale
             $adminUser->company_id = $company->id;
             $adminUser->save();
+
+            // Création automatique des trois catégories de flux indispensables pour le TFT
+            $tftCategories = [
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ];
+
+            foreach ($tftCategories as $catName) {
+                TreasuryCategory::create([
+                    'name' => $catName,
+                    'company_id' => $company->id,
+                ]);
+            }
 
 
             DB::commit();
@@ -191,6 +206,20 @@ class CompanyController extends Controller
                 'parent_company_id' => $user->company_id,
                 'user_id' => $user->id, // REQUIRED BY DB SCHEMA
             ]);
+
+            // Création automatique des trois catégories de flux indispensables pour le TFT
+            $tftCategories = [
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ];
+
+            foreach ($tftCategories as $catName) {
+                TreasuryCategory::create([
+                    'name' => $catName,
+                    'company_id' => $company->id,
+                ]);
+            }
 
             DB::commit();
 

@@ -124,12 +124,9 @@ class TreasuryCategoryController extends Controller
             $companyId = session('current_company_id', $user->company_id);
             
             $templates = [
-                'Banques',
-                'Caisses',
-                'Comptes Courants',
-                'Comptes d\'Épargne',
-                'Comptes de Dépôt',
-                'Autres',
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
             ];
 
             DB::beginTransaction();

@@ -125,7 +125,7 @@
                                     <form action="{{ route('admin.config.load_standard_treasury_categories') }}" method="POST" class="d-inline">
                                         @csrf
                                         <button type="submit" class="btn btn-outline-primary rounded-xl px-4 py-2">
-                                            <i class="bx bx-download me-2"></i> Charger Catégories Standards
+                                            <i class="bx bx-download me-2"></i> Charger les Flux TFT (I, II, III)
                                         </button>
                                     </form>
                                     <input type="text" id="searchCategory" class="form-control border-slate-200 rounded-xl" placeholder="Rechercher...">
