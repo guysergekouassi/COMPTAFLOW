@@ -51,7 +51,7 @@ trait HandlesTreasuryPosts
             'company_id' => $companyId,
             'name' => $account->intitule,
             'type' => 'banque',
-            'category_id' => $defaultCategory ? $defaultCategory->id : 1,
+            'category_id' => $defaultCategory ? $defaultCategory->id : null,
             'plan_comptable_id' => $planComptableId,
             'solde_initial' => 0,
             'solde_actuel' => 0,

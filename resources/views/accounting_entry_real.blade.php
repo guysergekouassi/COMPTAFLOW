@@ -845,7 +845,7 @@
                                         <label for="imputation" class="form-label">
                                             <i class="bx bx-book-bookmark"></i>Journal d'imputation
                                         </label>
-                                        <input type="text" id="code_journal_affiche" class="form-control" value="{{ $data['code'] ?? 'N/A' }}" readonly />
+                                        <input type="text" id="code_journal_affiche" class="form-control" value="{{ isset($data['code']) && isset($data['intitule']) ? $data['code'] . ' - ' . $data['intitule'] : ($data['code'] ?? 'N/A') }}" readonly />
                                         <input type="hidden" id="imputation" name="code_journal_id" value="{{ $data['id_code'] ?? 'N/A' }}" class="form-control" data-code_imputation="{{ $data['code'] ?? 'N/A' }}" />
                                         <input type="hidden" name="id_exercice" value="{{ $data['id_exercice'] ?? '' }}" />
                                         <input type="hidden" name="journaux_saisis_id" value="{{ $data['id_journal'] ?? '' }}" />
@@ -878,20 +878,7 @@
                                         <input type="text" id="reference_piece" name="reference_piece" class="form-control" placeholder="N° Facture, Chèque..." />
                                         <small class="form-text text-muted">Commun à toutes les lignes</small>
                                     </div>
-                                                                    <div class="col-md-5" id="div_compte_tresorerie" style="display: none;">
-                                        <label for="compte_tresorerie" class="form-label">
-                                            <i class="bx bx-receipt"></i>Compte Trésorerie
-                                        </label>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <select id="compte_tresorerie" name="compte_tresorerie" class="form-select select2" style="flex: 1;">
-                                                <option value="" selected disabled>Sélectionner un compte...</option>
-                                                @foreach($comptesTresorerie as $treso)
-                                                    <option value="{{ $treso->id }}" data-category="{{ $treso->category->name ?? '' }}">{{ $treso->name }} - {{ $treso->category->name ?? 'Sans catégorie' }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <small class="form-text text-muted">Compte automatique pour ce journal</small>
-                                    </div>
+                                
                                     <div class="col-md-8">
                                         <label for="piece_justificatif" class="form-label">
                                             <i class="bx bx-file"></i>Pièce justificative (PDF, Scan...)
@@ -2016,7 +2003,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- AUTRES FONCTIONS ---
+    // --- LOCK/UNLOCK COMMON FIELDS ---
+    window.lockCommonFields = function(lock) {
+        const tbody = document.getElementById('tableEcrituresBody');
+        const rowsCount = tbody ? tbody.rows.length : 0;
+        const emptyRow = document.getElementById('emptyStateRow');
+        const effectiveRows = emptyRow ? 0 : rowsCount;
+
+        // On ne verrouille que s'il y a au moins une ligne
+        // On ne déverrouille que s'il n'y a plus de lignes
+        const shouldLock = lock && effectiveRows > 0;
+        const shouldUnlock = !lock && effectiveRows === 0;
+
+        const commonFields = [
+            'reference_piece',
+            'piece_justificatif'
+        ];
+        
+        commonFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.disabled = effectiveRows > 0;
+                if (effectiveRows > 0) {
+                    el.style.backgroundColor = '#e9ecef';
+                    el.style.cursor = 'not-allowed';
+                } else {
+                    el.style.backgroundColor = '';
+                    el.style.cursor = '';
+                }
+            }
+        });
+
+        // Date Hybrid Field
+        const daySelect = document.getElementById('day_select');
+        if (daySelect) {
+            daySelect.disabled = effectiveRows > 0;
+            daySelect.style.cursor = effectiveRows > 0 ? 'not-allowed' : 'pointer';
+        }
+    };
 });
 
 // 5. Fonctions existantes inchangées
@@ -2061,10 +2085,7 @@ function ajouterEcriture() {
             emptyRow.remove();
         }
         
-        const compteTresorerieSelect = document.getElementById('compte_tresorerie');
-        const compteTresorerieId = compteTresorerieSelect && 
-                                 window.getComputedStyle(compteTresorerieSelect.parentElement).display !== 'none' ? 
-                                 compteTresorerieSelect.value : '';
+        const compteTresorerieId = ''; // Removed compte_tresorerie field
         
         // Récupérer l'ID du poste de trésorerie
         const posteTresorerieSelect = document.getElementById('poste_tresorerie');
@@ -2151,18 +2172,18 @@ function ajouterEcriture() {
         // Helper function (now defined globally at script start)
 
         // Réinitialisation SEULEMENT des champs spécifiques à chaque ligne
-        compteGeneral.value = '';
-        if (compteTiers) compteTiers.value = '';
+        $(compteGeneral).val('').trigger('change');
+        if (compteTiers) $(compteTiers).val('').trigger('change');
         const posteTresoSelect = document.getElementById('poste_tresorerie');
         if (posteTresoSelect) {
-            posteTresoSelect.value = '';
-            if (typeof $ !== 'undefined' && $(posteTresoSelect).data('select2')) {
-                $(posteTresoSelect).val('').trigger('change');
-            }
+            $(posteTresoSelect).val('').trigger('change');
         }
         debit.value = '';
         credit.value = '';
         if (planAnalytique) planAnalytique.value = '0';
+
+        // Verrouiller les champs communs si c'est la première ligne
+        lockCommonFields(true);
         
         // Réinitialisation des états et styles via notre fonction globale
         if (typeof window.resetExclusivity === 'function') {
@@ -2283,22 +2304,7 @@ function ajouterEcriture() {
     const prefixesTresorerie = ['BQ', 'CA', 'CH', 'CS', 'BANQUE', 'CAISSE'];
     
     function verifierTypeJournal(code) {
-        const divTreso = document.getElementById('div_compte_tresorerie');
-        const estTresorerie = prefixesTresorerie.some(prefix => 
-            code && code.toUpperCase().startsWith(prefix)
-        );
-        
-        if (divTreso) {
-            if (estTresorerie) {
-                divTreso.style.display = 'block';
-                const compteTresorerie = document.getElementById('compte_tresorerie');
-                if (compteTresorerie) compteTresorerie.setAttribute('required', 'required');
-            } else {
-                divTreso.style.display = 'none';
-                const compteTresorerie = document.getElementById('compte_tresorerie');
-                if (compteTresorerie) compteTresorerie.removeAttribute('required');
-            }
-        }
+        // Logique de compte de trésorerie supprimée selon la demande
     }
 
     // Initialisation
@@ -2310,32 +2316,31 @@ function ajouterEcriture() {
         }
         fetchNextSaisieNumber(); // Récupérer le vrai numéro du serveur
         
-        // Détection du journal au chargement
-        const journalId = document.getElementById('imputation').value;
+        /* const journalId = document.getElementById('imputation').value;
         if(journalId) {
             chargerCompteTresorerie(journalId);
-        }
+        } */ 
         const codeJournalInput = document.getElementById('code_journal_affiche');
         const codeJournal = codeJournalInput ? codeJournalInput.value : null;
         if (codeJournal && codeJournal !== 'N/A') {
             verifierTypeJournal(codeJournal);
         }
-            
-            // Ajouter un écouteur sur le changement de journal
-            const imputationSelect = document.getElementById('imputation');
-            if (imputationSelect) {
-                imputationSelect.addEventListener('change', function() {
-                    const selectedOption = this.options[this.selectedIndex];
-                    const codeJournal = selectedOption.getAttribute('data-code') || '';
-                    verifierTypeJournal(codeJournal);
-                    
-                    // Charger aussi le compte de trésorerie si journal sélectionné
-                    const journalId = this.value;
-                    if(journalId) {
-                        chargerCompteTresorerie(journalId);
-                    }
-                });
-            }
+        
+        // Ajouter un écouteur sur le changement de journal
+        const imputationSelect = document.getElementById('imputation');
+        if (imputationSelect) {
+            imputationSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const codeJournal = selectedOption.getAttribute('data-code') || '';
+                verifierTypeJournal(codeJournal);
+                
+                // La logique de compte de trésorerie est supprimée
+                // const journalId = this.value;
+                // if(journalId) {
+                //    chargerCompteTresorerie(journalId);
+                // }
+            });
+        }
         
         // --- EXCLUSIVITÉ DÉBIT / CRÉDIT ---
         const debitInput = document.getElementById('debit');
@@ -2437,8 +2442,8 @@ function ajouterEcriture() {
                     if (nSaisieUserInput) nSaisieUserInput.value = json.summary.n_saisie_user || '';
                 }
 
-                // Compte Trésorerie
-                if (json.summary.compte_tresorerie_id) {
+                // Compte Trésorerie (Supprimé de l'UI)
+                /* if (json.summary.compte_tresorerie_id) {
                     const selectTreso = document.getElementById('compte_tresorerie');
                     if (selectTreso) {
                         selectTreso.value = json.summary.compte_tresorerie_id;
@@ -2446,7 +2451,7 @@ function ajouterEcriture() {
                             $(selectTreso).trigger('change');
                         }
                     }
-                }
+                } */
 
                 // Pièce jointe (si elle existe dans le brouillon)
                 if (json.summary.piece_justificatif) {
@@ -2531,8 +2536,8 @@ function ajouterEcriture() {
                     if (nSaisieUserInput) nSaisieUserInput.value = json.summary.n_saisie_user || '';
                 }
 
-                // Compte Trésorerie
-                if (json.summary.compte_tresorerie_id) {
+                // Compte Trésorerie (Supprimé de l'UI)
+                /* if (json.summary.compte_tresorerie_id) {
                     const selectTreso = document.getElementById('compte_tresorerie');
                     if (selectTreso) {
                         selectTreso.value = json.summary.compte_tresorerie_id;
@@ -2540,7 +2545,7 @@ function ajouterEcriture() {
                             $(selectTreso).trigger('change');
                         }
                     }
-                }
+                } */
 
                 // Pièce jointe (si elle existe dans l'écriture)
                 if (json.summary.piece_justificatif) {
@@ -2938,6 +2943,7 @@ function ajouterEcriture() {
                 updateTotals();
                 fetchNextSaisieNumber(); // Rafraîchir le numéro depuis le serveur
                 viderFormulaireComplet(); // Vider complètement le formulaire après succès
+                lockCommonFields(false); // Déverrouiller les champs
                 
                 // Si on était en mode modification, rediriger vers la liste des écritures
                 if (nSaisieParam) {
@@ -3234,32 +3240,24 @@ function ajouterEcriture() {
             const row = button.closest('tr');
             if (row) {
                 row.remove();
+                
+                // Gérer l'état "vide" du tableau
+                const tbody = document.getElementById('tableEcrituresBody');
+                if (tbody && tbody.rows.length === 0) {
+                    const emptyTr = document.createElement('tr');
+                    emptyTr.id = 'emptyStateRow';
+                    emptyTr.innerHTML = '<td colspan="13" class="text-center py-5 text-muted"><i class="bx bx-info-circle fs-4 mb-2 d-block"></i>Aucune écriture ajoutée pour le moment.</td>';
+                    tbody.appendChild(emptyTr);
+                }
+
                 updateTotals();
+                lockCommonFields(false);
                 showAlert('success', 'Ligne supprimée avec succès');
             }
         }
     }
     
     // Fonction pour modifier une écriture
-    // Fonction pour charger le compte de trésorerie en fonction du journal sélectionné
-    function chargerCompteTresorerie(journalId) {
-        if (!journalId || journalId === 'N/A' || journalId === 'null') return;
-        
-        fetch(`/api/journal/compte-treso/${journalId}`)
-            .then(response => response.json())
-            .then(data => {
-                if(data.success) {
-                    const selectTreso = document.getElementById('compte_tresorerie');
-                    if (selectTreso) {
-                        selectTreso.value = data.compte.id;
-                        if (typeof $(selectTreso).select2 === 'function') {
-                            $(selectTreso).trigger('change'); // Si Select2 est utilisé
-                        }
-                    }
-                }
-            })
-            .catch(error => console.error('Erreur lors du chargement du compte de trésorerie:', error));
-    }
 
     function modifierEcriture(row) {
         // Récupérer les données de la ligne
@@ -3319,10 +3317,7 @@ function ajouterEcriture() {
         const journalField = document.getElementById('code_journal_affiche');
         if (journalField) journalField.value = journal;
 
-        // Trésorerie
-        if (compteTresorerieId) {
-            $('#compte_tresorerie').val(compteTresorerieId).trigger('change');
-        }
+        // Trésorerie (Poste uniquement, compte supprimé)
         if (posteTresorerieId) {
             $('#poste_tresorerie').val(posteTresorerieId).trigger('change');
         } else {
@@ -3342,6 +3337,7 @@ function ajouterEcriture() {
         }
         
         updateTotals();
+        lockCommonFields(false);
         
         // Focus
         document.getElementById('description_operation').focus();
@@ -3363,6 +3359,7 @@ function ajouterEcriture() {
             }
             
             updateTotals();
+            lockCommonFields(false);
             showAlert('success', 'Écriture supprimée avec succès !');
         }
     }
@@ -3452,25 +3449,25 @@ function ajouterEcriture() {
             const term = params.term.toLowerCase();
             const text = data.text.toLowerCase();
 
-            // If it's a digit, we prioritize "starts with"
+            // Séquentiel pour les chiffres (début du compte)
             if (/^\d/.test(term)) {
                 if (text.startsWith(term)) {
                     return data;
                 }
-                // Also check if any part of the string (like after a hyphen) starts with it
+                // Vérifier après un espace ou tiret (ex: "411 - CLIENT")
                 const parts = text.split(/[\s-]+/);
                 for (let part of parts) {
                     if (part.startsWith(term)) {
                         return data;
                     }
                 }
-                return null;
             }
 
-            // For non-digits, keep standard "contains" behavior
+            // Filtrage par nom (contient partout)
             if (text.indexOf(term) > -1) {
                 return data;
             }
+            
             return null;
         }
 
@@ -3505,7 +3502,7 @@ function ajouterEcriture() {
         }
 
         if (typeof $ !== 'undefined' && typeof $.fn.select2 !== 'undefined') {
-            $('#compte_general, #compte_tiers, #compte_tresorerie, #poste_tresorerie').select2({
+            $('#compte_general, #compte_tiers, #poste_tresorerie').select2({
                 matcher: prefixMatcher,
                 templateResult: (state) => {
                     // Use custom template for treasury fields, default for others

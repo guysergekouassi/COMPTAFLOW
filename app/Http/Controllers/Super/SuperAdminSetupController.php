@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\Controller;
+use App\Models\TreasuryCategory;
 
 class SuperAdminSetupController extends Controller
 {
@@ -106,7 +107,21 @@ class SuperAdminSetupController extends Controller
                 'is_online' => false,
             ]);
 
-            // DB::commit();
+            // Création automatique des trois catégories de flux indispensables pour le TFT
+            $tftCategories = [
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ];
+
+            foreach ($tftCategories as $catName) {
+                TreasuryCategory::create([
+                    'name' => $catName,
+                    'company_id' => $company->id,
+                ]);
+            }
+
+            DB::commit();
 
             // Optionnel : Connecter automatiquement le Super-Admin ou rediriger vers la page de connexion
             return redirect('/login')->with('success', 'Configuration initiale réussie. Connectez-vous en tant que Super-Admin.');

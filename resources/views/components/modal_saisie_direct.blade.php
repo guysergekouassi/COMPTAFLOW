@@ -172,17 +172,13 @@
                                             @php
                                                 $codeTresorerie = $code_j->code_tresorerie_display ?? null;
                                                 $displayCode = $code_j->code_journal;
-                                                if (!empty($codeTresorerie)) {
-                                                    $displayCode .= '' . $codeTresorerie ;
-                                                
-                                                }
                                             @endphp
                                             <option value="{{ $code_j->id }}"
                                                 data-code_journal_j="{{ $code_j->code_journal }}"
                                                 data-intitule_j="{{ $code_j->intitule }}"
                                                 data-type_j="{{ $code_j->type }}"
                                                 data-code_tresorerie_j="{{ $codeTresorerie ?? '' }}">
-                                                {{ $displayCode }}  {{ $code_j->intitule }}
+                                                {{ $displayCode }} - {{ $code_j->intitule }}
                                             </option>
                                         @endforeach
                                     </select>

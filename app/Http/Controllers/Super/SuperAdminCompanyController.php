@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Models\TreasuryCategory;
 
 class SuperAdminCompanyController extends Controller
 {
@@ -62,6 +63,20 @@ class SuperAdminCompanyController extends Controller
                 'identification_TVA' => $request->identification_TVA,
                 'parent_company_id' => $request->parent_company_id,
              ]);
+             
+            // Création automatique des trois catégories de flux indispensables pour le TFT
+            $tftCategories = [
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d\'investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ];
+
+            foreach ($tftCategories as $catName) {
+                TreasuryCategory::create([
+                    'name' => $catName,
+                    'company_id' => $company->id,
+                ]);
+            }
              
             DB::commit();
 

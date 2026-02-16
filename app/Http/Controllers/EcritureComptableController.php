@@ -528,7 +528,7 @@ class EcritureComptableController extends Controller
                     $ecriture->n_saisie_user = $userNSaisie; // Même numéro pour traçabilité
                 }
                 
-                $ecriture->description_operation = $data['description_operation'] ?? $data['description'] ?? '';
+                $ecriture->description_operation = $data['description_operation'] ?? $data['libelle'] ?? $data['description'] ?? '';
                 $ecriture->reference_piece = $data['reference_piece'] ?? $data['reference'] ?? null;
                 $ecriture->plan_comptable_id = $planComptableId;
                 $ecriture->plan_tiers_id = !empty($data['plan_tiers_id']) ? $data['plan_tiers_id'] : ($data['compte_tiers'] ?? null);
@@ -570,7 +570,7 @@ class EcritureComptableController extends Controller
             }
 
             return response()->json(['success' => true, 'message' => $status === 'approved' ? 'Écritures validées avec succès.' : 'Écritures enregistrées (en attente d\'approbation).']);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             \Illuminate\Support\Facades\Log::error('Error in storeMultiple: ' . $e->getMessage(), [
                 'exception' => $e,
