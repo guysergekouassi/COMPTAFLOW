@@ -569,7 +569,20 @@
                                                             <td rowspan="{{ $rowCount }}">{{ $ecriture->reference_piece }}</td>
                                                         @endif
 
-                                                    <td class="description-operation">{{ $ecriture->description_operation }}</td>
+                                                    <td class="description-operation">
+                                                        @php
+                                                            $numeroCompte = $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte : '';
+                                                            $intituleCompte = $ecriture->planComptable ? strtoupper($ecriture->planComptable->intitule) : '';
+                                                            $descUpper = strtoupper($ecriture->description_operation);
+                                                            
+                                                            // Détection robuste : Compte de TVA (443, 445) ou compte 44 avec "TVA" dans l'intitulé
+                                                            $isVatLine = (str_starts_with($numeroCompte, '443') || str_starts_with($numeroCompte, '445') || 
+                                                                         (str_starts_with($numeroCompte, '44') && str_contains($intituleCompte, 'TVA')));
+                                                            
+                                                            $hasPrefix = str_starts_with($descUpper, 'TVA');
+                                                        @endphp
+                                                        {{ ($isVatLine && !$hasPrefix) ? 'TVA / ' : '' }}{{ $ecriture->description_operation }}
+                                                    </td>
                                                     <td>
                                                         <div class="flex flex-col">
                                                             <span class="font-bold text-slate-800">{{ $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte : '-' }}</span>

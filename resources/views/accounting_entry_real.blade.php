@@ -1051,22 +1051,50 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-md-3">
-                                        <label for="debit" class="form-label">
+                                    <div class="col-md-2">
+                                        <label for="debit" class="form-label text-xs">
                                             <i class="bx bx-arrow-from-left"></i>Montant Débit
                                         </label>
-                                        <input type="number" id="debit" name="debit" class="form-control debit-amount" style="max-width: 200px;"
+                                        <input type="number" id="debit" name="debit" class="form-control debit-amount"
                                                step="0.01" min="0" placeholder="0.00" />
                                     </div>
-                                    <div class="col-md-3">
-                                        <label for="credit" class="form-label">
+                                    <div class="col-md-2">
+                                        <label for="credit" class="form-label text-xs">
                                             <i class="bx bx-arrow-from-right"></i>Montant Crédit
                                         </label>
-                                        <input type="number" id="credit" name="credit" class="form-control credit-amount" style="max-width: 200px;"
+                                        <input type="number" id="credit" name="credit" class="form-control credit-amount"
                                                step="0.01" min="0" placeholder="0.00" />
                                     </div>
+                                    <div class="col-md-2">
+                                        <label for="tva_amount" class="form-label text-primary fw-bold text-xs">
+                                            <i class="bx bx-plus-circle"></i>Appliquer TVA
+                                        </label>
+                                        <input type="number" id="tva_amount" name="tva_amount" class="form-control"
+                                               step="0.01" min="0" placeholder="0.00" style="border: 2px solid #3b82f6;" />
+                                    </div>
                                     <div class="col-md-4">
-                                        <label for="plan_analytique" class="form-label">
+                                        <label for="compte_tva" class="form-label text-xs">
+                                            <i class="bx bx-folder-open"></i>Compte TVA
+                                        </label>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <select id="compte_tva" name="compte_tva" class="form-select select2" style="flex: 1;">
+                                                <option value="" selected disabled>Choisir...</option>
+                                                @if(isset($plansComptables))
+                                                    @foreach ($plansComptables->filter(fn($p) => str_starts_with($p->numero_de_compte, '44')) as $plan)
+                                                        <option value="{{ $plan->id }}"
+                                                            data-numero="{{ $plan->numero_de_compte }}">
+                                                            {{ $plan->numero_de_compte }} - {{ $plan->intitule }}
+                                                        </option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary btn-premium p-2" data-bs-toggle="modal" data-bs-target="#modalCenterCreate" title="Créer un compte TVA">
+                                                <i class="bx bx-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="plan_analytique" class="form-label text-xs">
                                             <i class="bx bx-pie-chart"></i>Analytique
                                         </label>
                                         <select id="plan_analytique" name="plan_analytique"
@@ -1495,6 +1523,65 @@ document.addEventListener('DOMContentLoaded', function() {
             if (dateHidden) dateHidden.value = fullDate;
         }
     };
+
+    // --- GESTION ASSISTANT TVA ---
+    const tvaAmountInput = document.getElementById('tva_amount');
+    const compteTvaSelect = document.getElementById('compte_tva');
+    const compteGeneralSelect = document.getElementById('compte_general');
+    const compteTiersSelect = document.getElementById('compte_tiers');
+    const posteTresorerieSelect_vat = document.getElementById('poste_tresorerie');
+    const planAnalytiqueSelect = document.getElementById('plan_analytique');
+
+    if (tvaAmountInput) {
+        tvaAmountInput.addEventListener('input', function() {
+            const hasTva = parseFloat(this.value) > 0;
+            
+            // Griser les champs non essentiels
+            [compteTiersSelect, posteTresorerieSelect_vat, planAnalytiqueSelect].forEach(el => {
+                if (el) {
+                    el.disabled = hasTva;
+                    if (hasTva && el.id === 'plan_analytique') el.value = '0';
+                    // Si c'est un Select2, il faut le trigger
+                    if (typeof $ !== 'undefined' && $(el).data('select2')) {
+                        $(el).trigger('change');
+                    }
+                }
+            });
+        });
+    }
+
+    if (compteGeneralSelect) {
+        $(compteGeneralSelect).on('change', function() {
+            if (!tvaAmountInput || parseFloat(tvaAmountInput.value) <= 0) {
+                // On auto-sélectionne le compte de TVA même si le montant n'est pas encore saisi
+                // pour préparer le terrain
+                autoSelectTvaAccount();
+            }
+        });
+    }
+
+    function autoSelectTvaAccount() {
+        if (!compteGeneralSelect || !compteTvaSelect) return;
+        
+        const selectedOption = compteGeneralSelect.options[compteGeneralSelect.selectedIndex];
+        if (!selectedOption || !compteGeneralSelect.value) return;
+        
+        const numero = selectedOption.getAttribute('data-numero') || '';
+        let targetPrefix = '';
+        
+        if (numero.startsWith('6')) targetPrefix = '4452'; // TVA récupérable
+        else if (numero.startsWith('7')) targetPrefix = '4431'; // TVA facturée
+        
+        if (targetPrefix) {
+            for (let i = 0; i < compteTvaSelect.options.length; i++) {
+                const optNum = compteTvaSelect.options[i].getAttribute('data-numero') || '';
+                if (optNum.startsWith(targetPrefix)) {
+                    $(compteTvaSelect).val(compteTvaSelect.options[i].value).trigger('change');
+                    break;
+                }
+            }
+        }
+    }
 
     // --- GESTION DES TIERS (REFONTE ROBUSTE) ---
     const posteTresorSelect = document.getElementById('poste_tresorerie');
@@ -2020,6 +2107,20 @@ document.addEventListener('DOMContentLoaded', function() {
             'piece_justificatif'
         ];
         
+        // Multi-VAT Support: VAT Fields remain enabled for manual entry
+        const vatFields = ['tva_amount', 'compte_tva'];
+        vatFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                // We no longer disable these based on the presence of VAT rows
+                el.disabled = false;
+                el.style.backgroundColor = '';
+                if (typeof $ !== 'undefined' && $(el).data('select2')) {
+                    $(el).prop('disabled', false).trigger('change');
+                }
+            }
+        });
+
         commonFields.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -2058,6 +2159,9 @@ function ajouterEcriture() {
         const imputationInput = document.getElementById('code_journal_affiche');
         const planAnalytique = document.getElementById('plan_analytique');
 
+        const tvaAmount = document.getElementById('tva_amount');
+        const compteTva = document.getElementById('compte_tva');
+
         if (!date || !libelle || !compteGeneral) {
             alert('Champs du formulaire introuvables.');
             return;
@@ -2070,6 +2174,11 @@ function ajouterEcriture() {
 
         if (!debit.value && !credit.value) {
             alert('Veuillez saisir un montant au débit ou au crédit.');
+            return;
+        }
+
+        if (tvaAmount && parseFloat(tvaAmount.value) > 0 && (!compteTva || !compteTva.value)) {
+            alert('Veuillez sélectionner un compte de TVA.');
             return;
         }
 
@@ -2093,94 +2202,119 @@ function ajouterEcriture() {
                                  posteTresorerieSelect.value : '';
         const posteTresorerieText = posteTresorerieId ? posteTresorerieSelect.options[posteTresorerieSelect.selectedIndex].text : '';
 
-        const newRow = tbody.insertRow();
-
-        const imputationValue = imputationInput ? imputationInput.value : '';
-        const analytiqueValue = planAnalytique ? (planAnalytique.value === '1' ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>') : '';
-        const compteText = compteGeneral.options[compteGeneral.selectedIndex].text;
-        const compteTiersValue = compteTiers && compteTiers.value ? compteTiers.options[compteTiers.selectedIndex].text : '-';
-        const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
-
-        // Stocker l'ID du compte de trésorerie et du poste dans la ligne
-        if (compteTresorerieId) {
-            newRow.setAttribute('data-compte-tresorerie-id', compteTresorerieId);
-        }
-        if (posteTresorerieId) {
-            newRow.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
-        }
-        
         // Formattage des montants
         const formatNumber = (val) => {
-            if (!val) return '-';
+            if (!val && val !== 0 || val === '') return '-';
             // Remplacer la virgule par un point pour le calcul
-            const numericVal = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val;
+            const numericVal = typeof val === 'string' ? parseFloat(val.replace(/\s/g, '').replace(',', '.')) : val;
             return isNaN(numericVal) ? '-' : numericVal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
 
-        // Ajouter chaque cellule avec son contenu
-        newRow.innerHTML = `
-            <td>${date.value}</td>
-            <td class="fw-bold text-slate-700">${nSaisie ? nSaisie.value : ''}</td>
-            <td><span class="table-badge badge-journal">${imputationValue}</span></td>
-            <td><div class="text-truncate" style="max-width: 250px;" title="${libelle.value}">${libelle.value}</div></td>
-            <td><span class="text-muted small fw-bold">${referencePiece ? referencePiece.value || '-' : '-'}</span></td>
-            <td data-plan-comptable-id="${compteGeneral.value}"><span class="table-badge badge-compte">${compasTextShortcut(compteText)}</span></td>
-            <td data-tiers-id="${compteTiers ? compteTiers.value : ''}">${compteTiers && compteTiers.value ? `<span class="table-badge badge-compte">${compteTiersValue}</span>` : '-'}</td>
-            <td class="text-end amount-debit">${formatNumber(debit.value)}</td>
-            <td class="text-end amount-credit">${formatNumber(credit.value)}</td>
-            <td class="td-poste-treso-row">
-                <div class="d-flex align-items-center gap-2 group">
-                    <span class="badge bg-label-info poste-badge-text" style="font-size: 0.65rem;">
-                        ${(() => {
-                            if (!posteTresorerieText) return '-';
-                            const parts = posteTresorerieText.split(' - ');
-                            if (parts.length > 1) {
-                                return `${parts[0]} <span class="badge bg-white text-info shadow-sm ms-1">${parts.slice(1).join(' - ')}</span>`;
-                            }
-                            return posteTresorerieText;
-                        })()}
-                    </span>
-                    ${posteTresorerieId ? `
-                        <button type="button" class="btn btn-xs btn-icon btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
-                            onclick="window.quickEditPosteRow(this, ${posteTresorerieId})">
-                            <i class="bx bx-edit-alt text-xs"></i>
+        // --- FONCTION INTERNE POUR CRÉER UNE LIGNE ---
+        const createRow = (pcId, pcText, tiersId, tiersText, dVal, cVal, isVat = false) => {
+            const tr = tbody.insertRow();
+            if (isVat) {
+                tr.classList.add('table-primary', 'bg-opacity-10'); // Petite distinction visuelle
+                tr.setAttribute('data-is-vat', 'true');
+            }
+
+            const imputationValue = imputationInput ? imputationInput.value : '';
+            const analytiqueValue = planAnalytique && !isVat ? (planAnalytique.value === '1' ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>') : '<span class="badge bg-label-secondary">Non</span>';
+            const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
+
+            tr.innerHTML = `
+                <td>${date.value}</td>
+                <td class="fw-bold text-slate-700">${nSaisie ? nSaisie.value : ''}</td>
+                <td><span class="table-badge badge-journal">${imputationValue}</span></td>
+                <td><div class="text-truncate" style="max-width: 250px;" title="${isVat ? 'TVA / ' : ''}${libelle.value}">${isVat ? 'TVA / ' : ''}${libelle.value}</div></td>
+                <td><span class="text-muted small fw-bold">${referencePiece ? referencePiece.value || '-' : '-'}</span></td>
+                <td data-plan-comptable-id="${pcId}"><span class="table-badge badge-compte">${compasTextShortcut(pcText)}</span></td>
+                <td data-tiers-id="${tiersId || ''}">${tiersId ? `<span class="table-badge badge-compte">${tiersText}</span>` : '-'}</td>
+                <td class="text-end amount-debit">${formatNumber(dVal)}</td>
+                <td class="text-end amount-credit">${formatNumber(cVal)}</td>
+                <td class="td-poste-treso-row">
+                    ${!isVat ? `
+                    <div class="d-flex align-items-center gap-2 group">
+                        <span class="badge bg-label-info poste-badge-text" style="font-size: 0.65rem;">
+                            ${(() => {
+                                if (!posteTresorerieText) return '-';
+                                const parts = posteTresorerieText.split(' - ');
+                                if (parts.length > 1) {
+                                    return `${parts[0]} <span class="badge bg-white text-info shadow-sm ms-1">${parts.slice(1).join(' - ')}</span>`;
+                                }
+                                return posteTresorerieText;
+                            })()}
+                        </span>
+                        ${posteTresorerieId ? `
+                            <button type="button" class="btn btn-icon btn-xs btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
+                                onclick="window.quickEditPosteRow(this, ${posteTresorerieId})">
+                                <i class="bx bx-edit-alt text-xs"></i>
+                            </button>
+                        ` : (pcText.startsWith('5') ? `
+                            <button type="button" class="btn btn-icon btn-xs btn-label-warning opacity-0 group-hover:opacity-100 transition-opacity" 
+                                onclick="window.quickCreatePosteRow(this)">
+                                <i class="bx bx-plus text-xs"></i>
+                            </button>
+                        ` : '')}
+                    </div>` : '-'}
+                </td>
+                <td class="text-center">
+                    ${pieceFileName ? '<button type="button" class="btn btn-xs btn-icon btn-label-primary" onclick="voirPieceJustificativeLocale()"><i class="bx bx-show"></i></button>' : '-'}
+                </td>
+                <td class="text-center">${analytiqueValue}</td>
+                <td class="text-center">
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button type="button" class="btn btn-icon btn-sm btn-label-warning" onclick="modifierEcriture(this.closest('tr'));" title="Modifier">
+                            <i class="bx bx-edit"></i>
                         </button>
-                    ` : (compteText.startsWith('5') ? `
-                        <button type="button" class="btn btn-xs btn-icon btn-label-warning opacity-0 group-hover:opacity-100 transition-opacity" 
-                            onclick="window.quickCreatePosteRow(this)">
-                            <i class="bx bx-plus text-xs"></i>
+                        <button type="button" class="btn btn-icon btn-sm btn-label-danger" onclick="supprimerEcriture(this.closest('tr'));" title="Supprimer">
+                            <i class="bx bx-trash"></i>
                         </button>
-                    ` : '')}
-                </div>
-            </td>
-            <td class="text-center">
-                ${pieceFileName ? '<button type="button" class="btn btn-xs btn-icon btn-label-primary" onclick="voirPieceJustificativeLocale()"><i class="bx bx-show"></i></button>' : '-'}
-            </td>
-            <td class="text-center">${analytiqueValue}</td>
-            <td class="text-center">
-                <div class="d-flex gap-1 justify-content-center">
-                    <button type="button" class="btn btn-icon btn-sm btn-label-warning" onclick="modifierEcriture(this.closest('tr'));" title="Modifier">
-                        <i class="bx bx-edit"></i>
-                    </button>
-                    <button type="button" class="btn btn-icon btn-sm btn-label-danger" onclick="supprimerEcriture(this.closest('tr'));" title="Supprimer">
-                        <i class="bx bx-trash"></i>
-                    </button>
-                </div>
-            </td>
-        `;
+                    </div>
+                </td>
+            `;
+            
+            if (posteTresorerieId && !isVat) {
+                tr.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
+            }
+        };
+
+        const compGeneralId = compteGeneral.value;
+        const compGeneralText = compteGeneral.options[compteGeneral.selectedIndex].text;
+        const compTiersId = compteTiers ? compteTiers.value : '';
+        const compTiersText = (compteTiers && compTiersId) ? compteTiers.options[compteTiers.selectedIndex].text : '';
+
+        // Créer la ligne HT
+        createRow(compGeneralId, compGeneralText, compTiersId, compTiersText, debit.value, credit.value, false);
+
+        // Créer la ligne TVA si nécessaire
+        if (tvaAmount && parseFloat(tvaAmount.value) > 0 && compteTva && compteTva.value) {
+            const compTvaId = compteTva.value;
+            const compTvaText = compteTva.options[compteTva.selectedIndex].text;
+            createRow(compTvaId, compTvaText, '', '', debit.value ? tvaAmount.value : '', credit.value ? tvaAmount.value : '', true);
+        }
 
         // Helper function (now defined globally at script start)
 
         // Réinitialisation SEULEMENT des champs spécifiques à chaque ligne
         $(compteGeneral).val('').trigger('change');
-        if (compteTiers) $(compteTiers).val('').trigger('change');
-        const posteTresoSelect = document.getElementById('poste_tresorerie');
-        if (posteTresoSelect) {
-            $(posteTresoSelect).val('').trigger('change');
+        if (compteTiers) {
+            $(compteTiers).val('').trigger('change');
+            $(compteTiers).prop('disabled', false).trigger('change');
+        }
+        const posteTresoSelect_row = document.getElementById('poste_tresorerie');
+        if (posteTresoSelect_row) {
+            $(posteTresoSelect_row).val('').trigger('change');
+            $(posteTresoSelect_row).prop('disabled', false).trigger('change');
         }
         debit.value = '';
         credit.value = '';
-        if (planAnalytique) planAnalytique.value = '0';
+        if (tvaAmount) tvaAmount.value = '';
+        if (compteTva) $(compteTva).val('').trigger('change');
+        if (planAnalytique) {
+            planAnalytique.value = '0';
+            planAnalytique.disabled = false;
+        }
 
         // Verrouiller les champs communs si c'est la première ligne
         lockCommonFields(true);
@@ -2275,11 +2409,28 @@ function ajouterEcriture() {
         const credit = document.getElementById('credit');
         const planAnalytique = document.getElementById('plan_analytique');
         
-        if (compteGeneral) compteGeneral.value = '';
-        if (compteTiers) compteTiers.value = '';
+        if (compteGeneral) $(compteGeneral).val('').trigger('change');
+        if (compteTiers) {
+            $(compteTiers).val('').trigger('change');
+            $(compteTiers).prop('disabled', false).trigger('change');
+        }
         if (debit) debit.value = '';
         if (credit) credit.value = '';
-        if (planAnalytique) planAnalytique.value = '0';
+        if (planAnalytique) {
+            planAnalytique.value = '0';
+            planAnalytique.disabled = false;
+        }
+        const tvaAmount_v = document.getElementById('tva_amount');
+        const compteTva_v = document.getElementById('compte_tva');
+        if (tvaAmount_v) tvaAmount_v.value = '';
+        if (compteTva_v) $(compteTva_v).val('').trigger('change');
+        
+        const ptSelect = document.getElementById('poste_tresorerie');
+        if (ptSelect) {
+            $(ptSelect).val('').trigger('change');
+            $(ptSelect).prop('disabled', false).trigger('change');
+        }
+        lockCommonFields(false);
     }
 
     // Fonction pour récupérer le prochain numéro de saisie du serveur
@@ -2472,6 +2623,7 @@ function ajouterEcriture() {
                 });
                 
                 updateTotals();
+                lockCommonFields(true);
                 showAlert('success', 'Brouillon chargé avec succès');
             } else {
                 showAlert('danger', "Erreur: " + (json.message || "Impossible de charger le brouillon"));
@@ -2567,6 +2719,7 @@ function ajouterEcriture() {
                 });
                 
                 updateTotals();
+                lockCommonFields(true);
                 showAlert('success', 'Écriture chargée avec succès pour modification');
             } else {
                 showAlert('danger', "Erreur: " + (json.message || "Impossible de charger l'écriture"));
@@ -2593,6 +2746,14 @@ function ajouterEcriture() {
         if (emptyRow) emptyRow.remove();
 
         const tr = tbody.insertRow();
+        
+        // Identifier si c'est une ligne de TVA
+        const numeroCompte = b.plan_comptable ? b.plan_comptable.numero_de_compte : '';
+        const isVat = numeroCompte.startsWith('443') || numeroCompte.startsWith('445') || (numeroCompte.startsWith('44') && (b.description_operation || '').toUpperCase().includes('TVA'));
+        if (isVat) {
+            tr.classList.add('table-primary', 'bg-opacity-10');
+            tr.setAttribute('data-is-vat', 'true');
+        }
         
         const date = b.date || document.getElementById('date').value;
         const nSaisie = b.n_saisie || document.getElementById('n_saisie').value;
@@ -2622,11 +2783,14 @@ function ajouterEcriture() {
         };
         const analytiqueBadge = analytique ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>';
 
+        const isVatLine = tr.getAttribute('data-is-vat') === 'true';
+        const displayDescription = (isVatLine && !description.toUpperCase().startsWith('TVA')) ? 'TVA / ' + description : description;
+
         tr.innerHTML = `
             <td>${date}</td>
             <td class="fw-bold text-slate-700">${nSaisie}</td>
             <td><span class="table-badge badge-journal">${imputation}</span></td>
-            <td><div class="text-truncate" style="max-width: 250px;" title="${description}">${description}</div></td>
+            <td><div class="text-truncate" style="max-width: 250px;" title="${displayDescription}">${displayDescription}</div></td>
             <td><span class="text-muted small fw-bold">${reference || '-'}</span></td>
             <td data-plan-comptable-id="${b.plan_comptable_id}"><span class="table-badge badge-compte">${compasTextShortcut(compteText)}</span></td>
             <td data-tiers-id="${b.plan_tiers_id || ''}"><span class="table-badge badge-compte">${tiersText}</span></td>
@@ -2708,18 +2872,19 @@ function ajouterEcriture() {
             
             // Récupérer l'ID du compte de trésorerie depuis l'attribut de la ligne
             const compteTresorerieId = row.getAttribute('data-compte-tresorerie-id');
+            const isVatLine = row.getAttribute('data-is-vat') === 'true';
             
             ecritures.push({
-                date: dateCommune, // Utiliser la date commune
+                date: dateCommune,
                 n_saisie: nSaisie,
-                description_operation: descriptionCommune, // Utiliser la description commune
-                reference_piece: referencePieceCommune, // Utiliser la référence pièce commune
+                description_operation: isVatLine ? 'TVA / ' + descriptionCommune : descriptionCommune,
+                reference_piece: referencePieceCommune,
                 plan_comptable_id: cells[5].getAttribute('data-plan-comptable-id'),
                 plan_tiers_id: cells[6].getAttribute('data-tiers-id') || null,
                 code_journal_id: codeJournalId,
                 debit: debit,
                 credit: credit,
-                piece_justificatif: pieceFileName, // Utiliser le nom du fichier commun
+                piece_justificatif: pieceFileName,
                 plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
                 id_exercice: formData.get('id_exercice'),
                 journaux_saisis_id: formData.get('journaux_saisis_id'),
@@ -2999,11 +3164,14 @@ function ajouterEcriture() {
 
         const poste = ligne.poste || '-';
         
+        const isVatLineRaw = (compte.startsWith('443') || compte.startsWith('445') || (compte.startsWith('44') && libelle.toUpperCase().includes('TVA')));
+        const displayLibelle = (isVatLineRaw && !libelle.toUpperCase().startsWith('TVA')) ? 'TVA / ' + libelle : libelle;
+
         tr.innerHTML = `
             <td>${date}</td>
             <td class="fw-bold text-slate-700">${nSaisie}</td>
             <td><span class="table-badge badge-journal">${journal}</span></td>
-            <td><div class="text-truncate" style="max-width: 250px;" title="${libelle}">${libelle}</div></td>
+            <td><div class="text-truncate" style="max-width: 250px;" title="${displayLibelle}">${displayLibelle}</div></td>
             <td><span class="text-muted small fw-bold">${reference || '-'}</span></td>
             <td><span class="table-badge badge-compte">${compasTextShortcut(compte)}</span></td>
             <td><span class="table-badge badge-compte">${tiers}</span></td>
@@ -3251,7 +3419,7 @@ function ajouterEcriture() {
                 }
 
                 updateTotals();
-                lockCommonFields(false);
+                lockCommonFields(true);
                 showAlert('success', 'Ligne supprimée avec succès');
             }
         }
@@ -3337,7 +3505,7 @@ function ajouterEcriture() {
         }
         
         updateTotals();
-        lockCommonFields(false);
+        lockCommonFields(true);
         
         // Focus
         document.getElementById('description_operation').focus();
@@ -3359,7 +3527,7 @@ function ajouterEcriture() {
             }
             
             updateTotals();
-            lockCommonFields(false);
+            lockCommonFields(true);
             showAlert('success', 'Écriture supprimée avec succès !');
         }
     }

@@ -94,7 +94,19 @@
                                                                             <span class="text-muted">-</span>
                                                                         @endif
                                                                     </td>
-                                                                    <td class="small">{{ $item->description_operation }}</td>
+                                                                    <td class="small">
+                                                                        @php
+                                                                            $numeroCompte = $item->planComptable ? $item->planComptable->numero_de_compte : '';
+                                                                            $intituleCompte = $item->planComptable ? strtoupper($item->planComptable->intitule) : '';
+                                                                            $descUpper = strtoupper($item->description_operation);
+                                                                            
+                                                                            $isVatLine = (str_starts_with($numeroCompte, '443') || str_starts_with($numeroCompte, '445') || 
+                                                                                         (str_starts_with($numeroCompte, '44') && str_contains($intituleCompte, 'TVA')));
+                                                                            
+                                                                            $hasPrefix = str_starts_with($descUpper, 'TVA');
+                                                                        @endphp
+                                                                        {{ ($isVatLine && !$hasPrefix) ? 'TVA / ' : '' }}{{ $item->description_operation }}
+                                                                    </td>
                                                                     <td><span class="fw-medium">{{ $item->planComptable->numero_de_compte }}</span></td>
                                                                     <td class="text-dark fw-bold">{{ number_format($item->debit, 0, ',', ' ') }}</td>
                                                                     <td class="text-dark fw-bold">{{ number_format($item->credit, 0, ',', ' ') }}</td>

@@ -71,7 +71,19 @@
                                         $totalCredit += (float)$ec->credit;
                                     @endphp
                                     <tr>
-                                        <td>{{ $ec->description_operation }}</td>
+                                        <td>
+                                            @php
+                                                $numeroCompte = $ec->planComptable ? $ec->planComptable->numero_de_compte : '';
+                                                $intituleCompte = $ec->planComptable ? strtoupper($ec->planComptable->intitule) : '';
+                                                $descUpper = strtoupper($ec->description_operation);
+                                                
+                                                $isVatLine = (str_starts_with($numeroCompte, '443') || str_starts_with($numeroCompte, '445') || 
+                                                             (str_starts_with($numeroCompte, '44') && str_contains($intituleCompte, 'TVA')));
+                                                
+                                                $hasPrefix = str_starts_with($descUpper, 'TVA');
+                                            @endphp
+                                            {{ ($isVatLine && !$hasPrefix) ? 'TVA / ' : '' }}{{ $ec->description_operation }}
+                                        </td>
                                         <td>{{ $ec->planComptable ? $ec->planComptable->numero_de_compte . ' - ' . $ec->planComptable->intitule : '-' }}</td>
                                         <td>{{ $ec->planTiers ? $ec->planTiers->numero_de_tiers . ' - ' . $ec->planTiers->intitule : '-' }}</td>
                                         <td class="text-end">{{ number_format((float) $ec->debit, 2, ',', ' ') }}</td>
