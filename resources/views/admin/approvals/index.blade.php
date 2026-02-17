@@ -364,7 +364,16 @@
                                     <td>
                                         ${e.compte_tresorerie ? `<span class="badge bg-label-info">${e.compte_tresorerie.name}</span>` : '<span class="text-muted">-</span>'}
                                     </td>
-                                    <td>${e.description_operation}</td>
+                                    <td>
+                                        ${(() => {
+                                            const desc = e.description_operation || '';
+                                            const num = (e.plan_comptable && e.plan_comptable.numero_de_compte) ? e.plan_comptable.numero_de_compte : '';
+                                            const intitule = (e.plan_comptable && e.plan_comptable.intitule) ? e.plan_comptable.intitule.toUpperCase() : '';
+                                            const isVatLine = num.startsWith('443') || num.startsWith('445') || (num.startsWith('44') && intitule.includes('TVA'));
+                                            const hasPrefix = desc.toUpperCase().startsWith('TVA');
+                                            return (isVatLine && !hasPrefix) ? 'TVA / ' + desc : desc;
+                                        })()}
+                                    </td>
                                     <td class="text-end text-success fw-medium">${new Intl.NumberFormat('fr-FR').format(e.debit)}</td>
                                     <td class="text-end text-danger fw-medium">${new Intl.NumberFormat('fr-FR').format(e.credit)}</td>
                                 </tr>
