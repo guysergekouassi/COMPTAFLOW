@@ -35,4 +35,9 @@ class PlanComptable extends Model
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
+
+    public function analyticalRules()
+    {
+        return $this->hasMany(RegleVentilation::class, 'plan_comptable_id');
+    }
 }

@@ -103,4 +103,9 @@ class EcritureComptable extends Model
     {
         return $this->belongsTo(Lettrage::class, 'lettrage_id');
     }
+
+    public function ventilations()
+    {
+        return $this->hasMany(VentilationAnalytique::class, 'ecriture_id');
+    }
 }

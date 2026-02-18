@@ -43,6 +43,10 @@ use App\Http\Controllers\Souscrire\SubscriptionController;
 use App\Http\Controllers\Compte\PosteTresorController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\ImmobilisationController;
+use App\Http\Controllers\Analytique\AxeAnalytiqueController;
+use App\Http\Controllers\Analytique\SectionAnalytiqueController;
+use App\Http\Controllers\Analytique\AnalyticalReportController;
+use App\Http\Controllers\Analytique\VentilationController;
 
 use App\Http\Controllers\GeminiController;
 use App\Http\Controllers\IaController;
@@ -544,10 +548,27 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
 
 
     // Assurez-vous que cette ligne existe si vous utilisez 'companies.store'
-    Route::get('/companies', [CompanyController::class, 'index'])->name('companies');
-    // Route::post('/companies/store', [CompanyController::class, 'store'])->name('companies.store');
-    Route::post('/admin/companies/store', [CompanyController::class, 'adminStoreCompany'])->name('admin.store_sub_company');
     Route::get('/switch-company/{company_id}', [UserController::class, 'switchCompany'])->name('switch_company');
+
+    // ***************** ROUTES COMPTABILITÉ ANALYTIQUE *****************
+    Route::group(['prefix' => 'analytique', 'as' => 'analytique.'], function () {
+        Route::get('/axes', [AxeAnalytiqueController::class, 'index'])->name('axes.index');
+        Route::post('/axes', [AxeAnalytiqueController::class, 'store'])->name('axes.store');
+        Route::put('/axes/{id}', [AxeAnalytiqueController::class, 'update'])->name('axes.update');
+        Route::delete('/axes/{id}', [AxeAnalytiqueController::class, 'destroy'])->name('axes.destroy');
+
+        Route::get('/sections', [SectionAnalytiqueController::class, 'index'])->name('sections.index');
+        Route::post('/sections', [SectionAnalytiqueController::class, 'store'])->name('sections.store');
+        Route::put('/sections/{id}', [SectionAnalytiqueController::class, 'update'])->name('sections.update');
+        Route::delete('/sections/{id}', [SectionAnalytiqueController::class, 'destroy'])->name('sections.destroy');
+
+        Route::get('/regles', [VentilationController::class, 'rulesIndex'])->name('regles.index');
+        Route::post('/regles', [VentilationController::class, 'storeRule'])->name('regles.store');
+        Route::get('/regles/get/{accountId}', [VentilationController::class, 'getRules'])->name('regles.get');
+        Route::get('/balance', [AnalyticalReportController::class, 'balance'])->name('balance');
+        Route::get('/grand-livre', [AnalyticalReportController::class, 'grandLivre'])->name('grand_livre');
+        Route::get('/resultat', [AnalyticalReportController::class, 'resultat'])->name('resultat');
+    });
 });
 
 Route::middleware(['auth'])->group(function () {

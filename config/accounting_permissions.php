@@ -106,6 +106,14 @@ return [
             'accounting_ledger' => 'Grand livre',
             'accounting_balance' => 'Balance',
         ],
+        'Comptabilité Analytique' => [
+            'analytique.axes.index' => 'Gestion des Axes',
+            'analytique.sections.index' => 'Gestion des Sections',
+            'analytique.regles.index' => 'Règles de Ventilation',
+            'analytique.balance' => 'Balance Analytique',
+            'analytique.grand_livre' => 'Grand Livre Analytique',
+            'analytique.resultat' => 'Résultat Analytique',
+        ],
     ],
 
     // Mapping des rôles par défaut aux permissions
@@ -125,7 +133,9 @@ return [
             'accounting_ledger_tiers', 'accounting_balance', 'Balance_Tiers',
             'compte_exploitation', 'flux_tresorerie', 'tableau_amortissements',
             'etat_tiers', 'compte_resultat', 'bilan', 'etats_analytiques', 'etats_previsionnels', 'immobilisations.index', 'lettrage.index',
-            'reporting.monthly_resultat', 'reporting.tft'
+            'reporting.monthly_resultat', 'reporting.tft',
+            'analytique.axes.index', 'analytique.sections.index', 'analytique.regles.index',
+            'analytique.balance', 'analytique.grand_livre', 'analytique.resultat'
         ],
         'comptable' => [
             'compta.dashboard', 'plan_comptable', 'plan_tiers', 'accounting_journals',
@@ -133,7 +143,9 @@ return [
             'brouillons.index', 'accounting_entry_real',
             'gestion_tresorerie', 'accounting_ledger', 'accounting_ledger_tiers',
             'accounting_balance', 'Balance_Tiers', 'flux_tresorerie', 'tasks.view_daily', 'immobilisations.index', 'lettrage.index',
-            'reporting.monthly_resultat', 'reporting.tft'
+            'reporting.monthly_resultat', 'reporting.tft',
+            'analytique.axes.index', 'analytique.sections.index', 'analytique.regles.index',
+            'analytique.balance', 'analytique.grand_livre', 'analytique.resultat'
         ]
     ],
 ];

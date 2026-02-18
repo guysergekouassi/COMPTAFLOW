@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Approval;
 use App\Models\TreasuryCategory;
 use App\Traits\HandlesTreasuryPosts;
+use App\Models\AxeAnalytique;
+use App\Models\SectionAnalytique;
+use App\Models\VentilationAnalytique;
 
 class EcritureComptableController extends Controller
 {
@@ -127,10 +130,13 @@ class EcritureComptableController extends Controller
             }
         }
 
+        $axes = AxeAnalytique::where('company_id', $activeCompanyId)->get();
+        $sections = SectionAnalytique::where('company_id', $activeCompanyId)->get();
+
         return view('accounting_entry_real', compact(
             'plansComptables', 'plansTiers', 'data', 'ecritures', 
             'nextSaisieNumber', 'comptesTresorerie', 'exercicesVisibles',
-            'approvalEditingData', 'categories'
+            'approvalEditingData', 'categories', 'axes', 'sections'
         ));
     }
 
@@ -403,6 +409,17 @@ class EcritureComptableController extends Controller
 
             $ecriture = EcritureComptable::create($ecritureData);
             
+            // Sauvegarder les ventilations si présentes
+            if ($request->has('ventilations') && is_array($request->ventilations)) {
+                foreach ($request->ventilations as $v) {
+                    $ecriture->ventilations()->create([
+                        'section_id' => $v['section_id'],
+                        'montant' => $v['montant'],
+                        'pourcentage' => $v['pourcentage'],
+                    ]);
+                }
+            }
+            
             // Créer une demande d'approbation SI ce n'est pas déjà approuvé
             if ($status === 'pending') {
                 Approval::create([
@@ -545,6 +562,17 @@ class EcritureComptableController extends Controller
                 $ecriture->poste_tresorerie_id = $this->resolveTreasuryPost($activeCompanyId, $planComptableId) ?? ($data['poste_tresorerie_id'] ?? null);
                 $ecriture->save();
 
+                // Sauvegarder les ventilations si présentes
+                if (!empty($data['ventilations']) && is_array($data['ventilations'])) {
+                    foreach ($data['ventilations'] as $v) {
+                        $ecriture->ventilations()->create([
+                            'section_id' => $v['section_id'],
+                            'montant' => $v['montant'],
+                            'pourcentage' => $v['pourcentage'],
+                        ]);
+                    }
+                }
+
                 if (!$firstEcriture) $firstEcriture = $ecriture;
             }
 
@@ -673,7 +701,7 @@ class EcritureComptableController extends Controller
             ->paginate(10);
             
         $saisieList = $paginatedSaisies->pluck('n_saisie')->toArray();
-        $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie.category', 'codeJournal'])
+        $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie.category', 'codeJournal', 'ventilations.section.axe'])
             ->where('company_id', $activeCompanyId)
             ->whereIn('n_saisie', $saisieList)
             ->orderBy('created_at', 'desc')
