@@ -758,6 +758,49 @@
             </div>
             @endif
 
+            {{-- ANALYTIQUE --}}
+            @php
+                $showAnalytique = auth()->user()->hasPermission('analytique.axes.index') || 
+                                  auth()->user()->hasPermission('analytique.sections.index') || 
+                                  auth()->user()->hasPermission('analytique.regles.index') || 
+                                  auth()->user()->hasPermission('analytique.balance');
+            @endphp
+            @if ($showAnalytique)
+            <div class="menu-section">
+                <div class="menu-section-header">Analytique</div>
+                @if(auth()->user()->hasPermission('analytique.axes.index'))
+                <a href="{{ route('analytique.axes.index') }}" class="menu-link-new {{ request()->routeIs('analytique.axes.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Axes analytiques</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('analytique.sections.index'))
+                <a href="{{ route('analytique.sections.index') }}" class="menu-link-new {{ request()->routeIs('analytique.sections.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-shapes"></i>
+                    <span>Sections analytiques</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('analytique.regles.index'))
+                <a href="{{ route('analytique.regles.index') }}" class="menu-link-new {{ request()->routeIs('analytique.regles.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-gears"></i>
+                    <span>Règles de ventilation</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('analytique.balance'))
+                <a href="{{ route('analytique.balance') }}" class="menu-link-new {{ request()->routeIs('analytique.balance') ? 'active' : '' }}">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Balance analytique</span>
+                </a>
+                @endif
+                @if(auth()->user()->hasPermission('analytique.grand_livre'))
+                <a href="{{ route('analytique.grand_livre') }}" class="menu-link-new {{ request()->routeIs('analytique.grand_livre') ? 'active' : '' }}">
+                    <i class="fa-solid fa-file-contract"></i>
+                    <span>Grand livre analytique</span>
+                </a>
+                @endif
+            </div>
+            @endif
+
             {{-- Rapports Comptables --}}
             @php
                 $showRapports = auth()->user()->hasPermission('accounting_ledger') || 

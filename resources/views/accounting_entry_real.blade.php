@@ -1095,14 +1095,20 @@
                                     </div>
                                     <div class="col-md-2">
                                         <label for="plan_analytique" class="form-label text-xs">
-                                            <i class="bx bx-pie-chart"></i>Analytique
+                                            <i class="bx bx-pie-chart"></i>Analytique 
+                                            <i class="bx bx-info-circle text-info ms-1" id="auto_ventilation_info" style="display:none; cursor:pointer;" title="Règle automatique appliquée"></i>
                                         </label>
-                                        <select id="plan_analytique" name="plan_analytique"
-                                            class="form-select w-100" required>
-                                            <option value="" disabled selected>Sélectionner...</option>
-                                            <option value="1">Oui</option>
-                                            <option value="0">Non</option>
-                                        </select>
+                                        <div class="d-flex gap-2">
+                                            <select id="plan_analytique" name="plan_analytique"
+                                                class="form-select w-100" onchange="toggleVentilationBtn()" required>
+                                                <option value="" disabled selected>Sélectionner...</option>
+                                                <option value="1">Oui</option>
+                                                <option value="0">Non</option>
+                                            </select>
+                                            <button type="button" id="btn_ventiler" class="btn btn-outline-primary-premium btn-premium d-none" onclick="ouvrirVentilation()" title="Ventiler" style="padding: 0.5rem;">
+                                                <i class="bx bx-pie-chart-alt-2"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1325,7 +1331,69 @@
 
       <!-- Core JS -->
 
-      <!-- Modal Creation Poste Trésorerie -->
+       <!-- Modal Ventilation Analytique -->
+      <div class="modal fade" id="modalVentilationAnalytique" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+          <div class="modal-dialog modal-dialog-centered" style="width: 800px !important; max-width: 800px !important;">
+              <div class="modal-content border-0 shadow-lg" style="border-radius: 25px; overflow: hidden;">
+                  <div class="modal-body p-5 bg-white">
+                      <!-- Title Section (Image 2 style) -->
+                      <div class="text-center mb-5 position-relative">
+                          <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Close"></button>
+                          <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-0">
+                              Ventilation <span class="text-blue-gradient-premium">Analytique</span>
+                          </h1>
+                          <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
+                      </div>
+
+                      <div class="mb-5 text-center p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                          <span class="text-secondary fw-semibold">Montant à ventiler:</span> 
+                          <span id="montant_a_ventiler_display" class="fs-4 fw-bold text-dark ms-1">0.00</span>
+                          <span class="text-dark fw-bold ms-1">FCFA</span>
+                      </div>
+
+                      <form id="formVentilation">
+                          <div class="table-responsive">
+                              <table class="table table-hover align-middle mb-0" id="tableVentilation">
+                                  <thead>
+                                      <tr class="text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 1px; border-bottom: 2px solid #f1f5f9;">
+                                          <th style="width: 50%;">Section Analytique</th>
+                                          <th style="width: 20%;">%</th>
+                                          <th style="width: 25%;">Montant</th>
+                                          <th style="width: 5%;"></th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      <!-- Lignes de ventilation ajoutées dynamiquement -->
+                                  </tbody>
+                                  <tfoot>
+                                      <tr class="fw-bold border-top" style="background: #f8fafc; font-size: 0.8rem;">
+                                          <td class="text-end" style="padding: 0.5rem;">Total:</td>
+                                          <td id="total_pourcentage" class="text-primary" style="padding: 0.5rem;">0.00 %</td>
+                                          <td id="total_montant_ventile" class="text-dark" style="padding: 0.5rem;">0.00</td>
+                                          <td></td>
+                                      </tr>
+                                  </tfoot>
+                              </table>
+                          </div>
+                          <div class="mt-3 text-center">
+                              <button type="button" class="btn btn-outline-primary btn-xs rounded-pill fw-bold px-3" onclick="ajouterLigneVentilation()" style="border-width: 2px; font-size: 0.7rem; padding: 0.4rem 1rem;">
+                                  <i class="bx bx-plus-circle me-1"></i> Ajouter une section
+                              </button>
+                          </div>
+                      </form>
+
+                      <div class="d-flex justify-content-center gap-3 pt-5">
+                          <button type="button" class="btn-cancel-premium px-5" data-bs-dismiss="modal">Annuler</button>
+                          <button type="button" class="btn-save-premium px-5" onclick="validerVentilation()">
+                                <i class="bx bx-check-circle me-1"></i> Valider
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+       <!-- Modal Creation Poste Trésorerie -->
       <div class="modal fade" id="modalCreatePoste" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
               <form id="createPosteForm" class="w-full">
@@ -2211,7 +2279,7 @@ function ajouterEcriture() {
         };
 
         // --- FONCTION INTERNE POUR CRÉER UNE LIGNE ---
-        const createRow = (pcId, pcText, tiersId, tiersText, dVal, cVal, isVat = false) => {
+        const createRow = (pcId, pcText, tiersId, tiersText, dVal, cVal, isVat = false, ventilations = null) => {
             const tr = tbody.insertRow();
             if (isVat) {
                 tr.classList.add('table-primary', 'bg-opacity-10'); // Petite distinction visuelle
@@ -2219,8 +2287,20 @@ function ajouterEcriture() {
             }
 
             const imputationValue = imputationInput ? imputationInput.value : '';
-            const analytiqueValue = planAnalytique && !isVat ? (planAnalytique.value === '1' ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>') : '<span class="badge bg-label-secondary">Non</span>';
             const pieceFileName = pieceFile && pieceFile.files[0] ? pieceFile.files[0].name : '';
+
+            // Analytique display logic
+            let analytiqueBadge = '<span class="badge bg-label-secondary">Non</span>';
+            if (planAnalytique && !isVat && planAnalytique.value === '1') {
+                const isVentilated = ventilations && ventilations.length > 0;
+                analytiqueBadge = `
+                    <div class="d-flex flex-column align-items-center gap-1">
+                        <span class="badge bg-label-success">Oui</span>
+                        ${isVentilated ? '<span class="badge bg-info p-1" style="font-size: 0.6rem;" title="Ventilé"><i class="bx bx-check-double"></i></span>' : ''}
+                    </div>
+                `;
+            }
+            const analytiqueValue = analytiqueBadge;
 
             tr.innerHTML = `
                 <td>${date.value}</td>
@@ -2277,6 +2357,9 @@ function ajouterEcriture() {
             if (posteTresorerieId && !isVat) {
                 tr.setAttribute('data-poste-tresorerie-id', posteTresorerieId);
             }
+            if (ventilations && ventilations.length > 0) {
+                tr.setAttribute('data-ventilations', JSON.stringify(ventilations));
+            }
         };
 
         const compGeneralId = compteGeneral.value;
@@ -2285,7 +2368,7 @@ function ajouterEcriture() {
         const compTiersText = (compteTiers && compTiersId) ? compteTiers.options[compteTiers.selectedIndex].text : '';
 
         // Créer la ligne HT
-        createRow(compGeneralId, compGeneralText, compTiersId, compTiersText, debit.value, credit.value, false);
+        createRow(compGeneralId, compGeneralText, compTiersId, compTiersText, debit.value, credit.value, false, ventilations_temporaires);
 
         // Créer la ligne TVA si nécessaire
         if (tvaAmount && parseFloat(tvaAmount.value) > 0 && compteTva && compteTva.value) {
@@ -2314,7 +2397,12 @@ function ajouterEcriture() {
         if (planAnalytique) {
             planAnalytique.value = '0';
             planAnalytique.disabled = false;
+            if (typeof toggleVentilationBtn === 'function') toggleVentilationBtn();
         }
+        
+        ventilations_temporaires = [];
+        const infoIcon = document.getElementById('auto_ventilation_info');
+        if (infoIcon) infoIcon.style.display = 'none';
 
         // Verrouiller les champs communs si c'est la première ligne
         lockCommonFields(true);
@@ -2419,7 +2507,11 @@ function ajouterEcriture() {
         if (planAnalytique) {
             planAnalytique.value = '0';
             planAnalytique.disabled = false;
+            if (typeof toggleVentilationBtn === 'function') toggleVentilationBtn();
         }
+        ventilations_temporaires = [];
+        const infoIcon_v = document.getElementById('auto_ventilation_info');
+        if (infoIcon_v) infoIcon_v.style.display = 'none';
         const tvaAmount_v = document.getElementById('tva_amount');
         const compteTva_v = document.getElementById('compte_tva');
         if (tvaAmount_v) tvaAmount_v.value = '';
@@ -3160,7 +3252,15 @@ function ajouterEcriture() {
             const numericVal = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val;
             return isNaN(numericVal) ? '-' : numericVal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
-        const analytiqueBadge = analytique ? '<span class="badge bg-label-success">Oui</span>' : '<span class="badge bg-label-secondary">Non</span>';
+        
+        // Analytique display logic for Premium Design
+        const isVentilated = (ligne.ventilations && (Array.isArray(ligne.ventilations) ? ligne.ventilations.length : JSON.parse(ligne.ventilations).length) > 0);
+        const analytiqueBadge = analytique 
+            ? `<div class="d-flex flex-column align-items-center gap-1">
+                <span class="badge bg-label-success">Oui</span>
+                ${isVentilated ? '<span class="badge bg-info p-1" style="font-size: 0.6rem;" title="Ventilé"><i class="bx bx-check-double"></i></span>' : ''}
+              </div>` 
+            : '<span class="badge bg-label-secondary">Non</span>';
 
         const poste = ligne.poste || '-';
         
@@ -3208,6 +3308,11 @@ function ajouterEcriture() {
                 </div>
             </td>
         `;
+
+        // Hidden ventilations data
+        if (ligne.ventilations) {
+            tr.setAttribute('data-ventilations', typeof ligne.ventilations === 'string' ? ligne.ventilations : JSON.stringify(ligne.ventilations));
+        }
         
         tbody.appendChild(tr);
         updateTotals();
@@ -3471,6 +3576,20 @@ function ajouterEcriture() {
             document.getElementById('plan_analytique').value = analytique ? '1' : '0';
         }
 
+        // Recharger les ventilations temporaires
+        const ventilationsRaw = row.getAttribute('data-ventilations');
+        if (ventilationsRaw) {
+            try {
+                ventilations_temporaires = JSON.parse(ventilationsRaw);
+            } catch (e) {
+                console.error('Erreur parse ventilations:', e);
+                ventilations_temporaires = [];
+            }
+        } else {
+            ventilations_temporaires = [];
+        }
+        if (typeof toggleVentilationBtn === 'function') toggleVentilationBtn();
+
         // Comptes (Select2)
         if (compteGeneralId) {
             $('#compte_general').val(compteGeneralId).trigger('change');
@@ -3691,5 +3810,225 @@ function ajouterEcriture() {
                 width: '100%'
             });
         }
+        // --- GESTION ANALYTIQUE ---
+        let ventilations_temporaires = [];
+
+        window.toggleVentilationBtn = function() {
+            const planA = document.getElementById('plan_analytique');
+            const btnV = document.getElementById('btn_ventiler');
+            if (planA && btnV) {
+                if (planA.value === '1') {
+                    btnV.classList.remove('d-none');
+                } else {
+                    btnV.classList.add('d-none');
+                    ventilations_temporaires = [];
+                    const infoIcon = document.getElementById('auto_ventilation_info');
+                    if (infoIcon) infoIcon.style.display = 'none';
+                }
+            }
+        };
+
+        window.ouvrirVentilation = function() {
+            const debit = document.getElementById('debit').value;
+            const credit = document.getElementById('credit').value;
+            const montant = parseFloat(debit) || parseFloat(credit) || 0;
+
+            if (montant <= 0) {
+                Swal.fire('Erreur', 'Veuillez saisir un montant au débit ou au crédit avant de ventiler.', 'warning');
+                return;
+            }
+
+            document.getElementById('montant_a_ventiler_display').innerText = montant.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+            initialiserTableauVentilation(montant);
+            const modal = new bootstrap.Modal(document.getElementById('modalVentilationAnalytique'));
+            modal.show();
+        };
+
+        function initialiserTableauVentilation(montantTotal) {
+            const tbody = document.querySelector('#tableVentilation tbody');
+            tbody.innerHTML = '';
+            
+            if (ventilations_temporaires.length > 0) {
+                ventilations_temporaires.forEach((v, index) => {
+                    ajouterLigneVentilation(v.section_id, v.pourcentage, v.montant, index);
+                });
+            } else {
+                ajouterLigneVentilation();
+            }
+            calculerTotauxVentilation();
+        }
+
+        window.ajouterLigneVentilation = function(sectionId = '', pourcentage = '', montant = '', index = null) {
+            const tbody = document.querySelector('#tableVentilation tbody');
+            const tr = document.createElement('tr');
+            
+            tr.innerHTML = `
+                <td style="padding: 0.75rem 0.25rem;">
+                    <select class="form-select section-select select2-analytique" style="font-size: 0.85rem; border-radius: 12px; padding: 0.5rem;" required>
+                        <option value="">Chargement...</option>
+                    </select>
+                </td>
+                <td style="padding: 0.75rem 0.25rem;">
+                    <div class="input-group input-group-sm">
+                        <input type="number" class="form-control pct-input" step="0.01" min="0" max="100" value="${pourcentage}" oninput="recalculerLigneDepuisPourcentage(this)" style="font-size: 0.85rem; border-radius: 10px 0 0 10px;">
+                        <span class="input-group-text" style="font-size: 0.8rem; padding: 0.3rem 0.5rem;">%</span>
+                    </div>
+                </td>
+                <td style="padding: 0.75rem 0.25rem;">
+                    <div class="input-group input-group-sm">
+                        <input type="number" class="form-control amt-input" step="0.01" min="0" value="${montant}" oninput="recalculerLigneDepuisMontant(this)" style="font-size: 0.85rem; border-radius: 10px 0 0 10px;">
+                        <span class="input-group-text" style="font-size: 0.75rem; padding: 0.3rem 0.5rem;">FCFA</span>
+                    </div>
+                </td>
+                <td style="padding: 0.75rem 0.25rem;">
+                    <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); calculerTotauxVentilation();">
+                        <i class="bx bx-trash fs-4"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            
+            const select = tr.querySelector('.section-select');
+            fetchSections(select, sectionId);
+        };
+
+        window.recalculerLigneDepuisPourcentage = function(input) {
+            const tr = input.closest('tr');
+            const pct = parseFloat(input.value) || 0;
+            const total = parseFloat(document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '').replace(',', '.')) || 0;
+            const amtInput = tr.querySelector('.amt-input');
+            amtInput.value = ((pct * total) / 100).toFixed(2);
+            calculerTotauxVentilation();
+        };
+
+        window.recalculerLigneDepuisMontant = function(input) {
+            const tr = input.closest('tr');
+            const amt = parseFloat(input.value) || 0;
+            const total = parseFloat(document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '').replace(',', '.')) || 0;
+            const pctInput = tr.querySelector('.pct-input');
+            if (total > 0) {
+                pctInput.value = ((amt / total) * 100).toFixed(2);
+            }
+            calculerTotauxVentilation();
+        };
+
+        window.calculerTotauxVentilation = function() {
+            let totalPct = 0;
+            let totalAmt = 0;
+            document.querySelectorAll('.pct-input').forEach(input => totalPct += parseFloat(input.value) || 0);
+            document.querySelectorAll('.amt-input').forEach(input => totalAmt += parseFloat(input.value) || 0);
+            
+            document.getElementById('total_pourcentage').innerText = totalPct.toFixed(2) + ' %';
+            document.getElementById('total_montant_ventile').innerText = totalAmt.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+            
+            const totalPctEl = document.getElementById('total_pourcentage');
+            if (Math.abs(totalPct - 100) < 0.01) {
+                totalPctEl.classList.remove('text-danger');
+                totalPctEl.classList.add('text-success');
+            } else {
+                totalPctEl.classList.remove('text-success');
+                totalPctEl.classList.add('text-danger');
+            }
+        };
+
+        window.validerVentilation = function() {
+            const totalPct = parseFloat(document.getElementById('total_pourcentage').innerText) || 0;
+            if (Math.abs(totalPct - 100) > 0.01) {
+                Swal.fire('Attention', 'Le total des pourcentages doit être égal à 100%.', 'warning');
+                return;
+            }
+
+            const ventilations = [];
+            let isValid = true;
+            document.querySelectorAll('#tableVentilation tbody tr').forEach(tr => {
+                const sectionId = tr.querySelector('.section-select').value;
+                const pct = tr.querySelector('.pct-input').value;
+                const amt = tr.querySelector('.amt-input').value;
+                
+                if (!sectionId) {
+                    isValid = false;
+                    return;
+                }
+                ventilations.push({ section_id: sectionId, pourcentage: pct, montant: amt });
+            });
+
+            if (!isValid) {
+                Swal.fire('Erreur', 'Veuillez sélectionner une section pour chaque ligne.', 'error');
+                return;
+            }
+
+            ventilations_temporaires = ventilations;
+            bootstrap.Modal.getInstance(document.getElementById('modalVentilationAnalytique')).hide();
+            Swal.fire({
+                icon: 'success',
+                title: 'Ventilation enregistrée',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        };
+
+        function fetchSections(selectElement, selectedId = '') {
+            fetch('/analytique/sections/api/list')
+                .then(response => response.json())
+                .then(data => {
+                    selectElement.innerHTML = '<option value="">Sélectionner une section...</option>';
+                    data.forEach(axe => {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = axe.nom;
+                        axe.sections.forEach(section => {
+                            const option = document.createElement('option');
+                            option.value = section.id;
+                            option.text = section.code + ' - ' + section.nom;
+                            if (section.id == selectedId) option.selected = true;
+                            optgroup.appendChild(option);
+                        });
+                        selectElement.appendChild(optgroup);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des sections:', error);
+                    selectElement.innerHTML = '<option value="">Erreur de chargement</option>';
+                });
+        }
+
+        // --- RÈGLES AUTOMATIQUES ---
+        $('#compte_general').on('change', function() {
+            const accountId = $(this).val();
+            if (accountId) {
+                checkAndApplyVentilationRules(accountId);
+            }
+        });
+
+        function checkAndApplyVentilationRules(accountId) {
+            fetch(`/analytique/regles/check/${accountId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const infoIcon = document.getElementById('auto_ventilation_info');
+                    const planA = document.getElementById('plan_analytique');
+                    
+                    if (data.active && data.rules && data.rules.length > 0) {
+                        ventilations_temporaires = data.rules.map(r => ({
+                            section_id: r.section_analytique_id,
+                            pourcentage: r.pourcentage,
+                            montant: 0 
+                        }));
+                        
+                        if (planA) {
+                            planA.value = '1';
+                            toggleVentilationBtn();
+                            if (infoIcon) {
+                                infoIcon.style.display = 'inline-block';
+                                infoIcon.title = "Cette écriture sera ventilée selon la règle : " + data.nom;
+                            }
+                        }
+                    } else {
+                        if (infoIcon) infoIcon.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Erreur check règle ventilation:', error));
+        }
+
     });
 </script>

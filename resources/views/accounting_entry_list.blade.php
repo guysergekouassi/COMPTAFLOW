@@ -599,7 +599,27 @@
                                                             </span>
                                                         </div>
                                                     </td>
-                                                    <td class="text-center">{{ (int) $ecriture->plan_analytique === 1 ? 'Oui' : 'Non' }}</td>
+                                                    <td class="text-center">
+                                                        @if((int) $ecriture->plan_analytique === 1)
+                                                            <button type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-all text-[10px] font-black uppercase tracking-tight border border-green-200/50 shadow-sm" 
+                                                                    onclick="window.voirVentilations({{ $ecriture->id }}, '{{ $ecriture->n_saisie }}')" title="Voir le détail analytique">
+                                                                <i class="fas fa-chart-pie text-xs"></i>
+                                                                Oui
+                                                            </button>
+                                                            <script type="application/json" id="vent-data-{{ $ecriture->id }}">
+                                                                {!! json_encode($ecriture->ventilations->map(function($v) {
+                                                                    return [
+                                                                        'axe' => $v->section->axe->libelle,
+                                                                        'section' => $v->section->libelle,
+                                                                        'montant' => number_format($v->montant, 2, ',', ' ') . ' FCFA',
+                                                                        'pourcentage' => number_format($v->pourcentage, 2, ',', ' ') . '%'
+                                                                    ];
+                                                                })) !!}
+                                                            </script>
+                                                        @else
+                                                            <span class="text-slate-300 font-bold text-[10px]">Non</span>
+                                                        @endif
+                                                    </td>
                                                     <td class="amount-debit">{{ number_format((float) $ecriture->debit, 2, ',', ' ') }}</td>
                                                     <td class="amount-credit">{{ number_format((float) $ecriture->credit, 2, ',', ' ') }}</td>
                                                     
@@ -660,6 +680,51 @@
                             {{ $pagination->links('pagination::bootstrap-5') }}
                         </div>
                     @endif
+
+                    <!-- Modal Détails Analytique -->
+                    <div class="modal fade" id="modalDetailsAnalytique" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content premium-modal-content-wide transition-all border-0 shadow-2xl">
+                                <div class="modal-header border-0 pb-0 pt-6 px-6">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
+                                            <i class="fas fa-chart-pie text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="modal-title font-black text-slate-800 mb-0 leading-tight">Détails <span class="text-blue-600">Analytiques</span></h5>
+                                            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 mb-0 flex items-center gap-2" id="detail_n_saisie_label">
+                                                <i class="fas fa-hashtag text-[8px] opacity-50"></i>
+                                                ÉCRITURE N° ---
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-close bg-slate-50 p-3 rounded-xl transition-all hover:bg-slate-100" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body pt-8 px-6 pb-4">
+                                    <div class="table-responsive rounded-3xl border border-slate-100/80 overflow-hidden shadow-sm bg-white">
+                                        <table class="w-full text-sm text-left border-collapse">
+                                            <thead>
+                                                <tr class="bg-slate-50/50 border-b border-slate-100">
+                                                    <th class="px-6 py-4 font-black text-slate-700 uppercase text-[10px] tracking-widest">Axe Analytique</th>
+                                                    <th class="px-6 py-4 font-black text-slate-700 uppercase text-[10px] tracking-widest">Section Analytique</th>
+                                                    <th class="px-6 py-4 font-black text-slate-700 uppercase text-[10px] tracking-widest text-right">Répartition</th>
+                                                    <th class="px-6 py-4 font-black text-slate-700 uppercase text-[10px] tracking-widest text-right">Montant</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ventilations_details_body" class="divide-y divide-slate-50">
+                                                <!-- Rempli en JS -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0 pt-0 pb-8 px-6 justify-content-end">
+                                    <button type="button" class="btn-save-premium !w-fit px-10 py-3 shadow-lg shadow-blue-500/20" data-bs-dismiss="modal">
+                                        Fermer le détail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
           </div>
@@ -1579,4 +1644,35 @@
     function editEntry(ecritureId) {
         window.location.href = `/ecriture/${ecritureId}/edit`;
     }
+
+    window.voirVentilations = function(id, nSaisie) {
+        const dataElement = document.getElementById('vent-data-' + id);
+        if (!dataElement) return;
+
+        const ventilations = JSON.parse(dataElement.textContent);
+        const body = document.getElementById('ventilations_details_body');
+        const label = document.getElementById('detail_n_saisie_label');
+
+        label.innerHTML = `<i class="fas fa-hashtag text-[8px] opacity-50"></i> ÉCRITURE N° ${nSaisie}`;
+        body.innerHTML = '';
+
+        if (ventilations.length === 0) {
+            body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 font-medium">Aucune donnée de ventilation trouvée.</td></tr>';
+        } else {
+            ventilations.forEach(v => {
+                const row = `
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 font-bold text-slate-700">${v.axe}</td>
+                        <td class="px-6 py-4 text-slate-600 font-medium">${v.section}</td>
+                        <td class="px-6 py-4 text-right font-black text-blue-600">${v.pourcentage}</td>
+                        <td class="px-6 py-4 text-right font-black text-slate-900">${v.montant}</td>
+                    </tr>
+                `;
+                body.innerHTML += row;
+            });
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalDetailsAnalytique'));
+        modal.show();
+    };
 </script>
