@@ -564,6 +564,8 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
 
         Route::get('/regles', [VentilationController::class, 'rulesIndex'])->name('regles.index');
         Route::post('/regles', [VentilationController::class, 'storeRule'])->name('regles.store');
+        Route::get('/sections/api/list', [AxeAnalytiqueController::class, 'apiList'])->name('sections.api_list');
+        Route::get('/regles/check/{accountId}', [VentilationController::class, 'getRules'])->name('regles.check');
         Route::get('/regles/get/{accountId}', [VentilationController::class, 'getRules'])->name('regles.get');
         Route::get('/balance', [AnalyticalReportController::class, 'balance'])->name('balance');
         Route::get('/grand-livre', [AnalyticalReportController::class, 'grandLivre'])->name('grand_livre');

@@ -87,4 +87,29 @@ class AxeAnalytiqueController extends Controller
 
         return redirect()->route('analytique.axes.index')->with('success', 'Axe analytique supprimé.');
     }
+
+    public function apiList()
+    {
+        $companyId = Session::get('current_company_id') ?? auth()->user()->company_id;
+        $axes = AxeAnalytique::where('company_id', $companyId)
+            ->with(['sections' => function($q) use ($companyId) {
+                $q->where('company_id', $companyId);
+            }])
+            ->get()
+            ->map(function($axe) {
+                return [
+                    'id' => $axe->id,
+                    'nom' => $axe->libelle,
+                    'sections' => $axe->sections->map(function($s) {
+                        return [
+                            'id' => $s->id,
+                            'code' => $s->code,
+                            'nom' => $s->libelle
+                        ];
+                    })
+                ];
+            });
+            
+        return response()->json($axes);
+    }
 }

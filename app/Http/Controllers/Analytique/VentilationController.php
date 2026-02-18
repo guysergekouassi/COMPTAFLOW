@@ -76,26 +76,14 @@ class VentilationController extends Controller
     {
         $companyId = Session::get('current_company_id') ?? auth()->user()->company_id;
         
-        $rules = RegleVentilation::where('company_id', $companyId)
+        $rules = DB::table('regles_ventilation')
+            ->where('company_id', $companyId)
             ->where('plan_comptable_id', $accountId)
-            ->with(['section.axe'])
             ->get();
             
-        return response()->json($rules);
-    }
-
-    public function balanceIndex()
-    {
-        return view('analytique.rapports.balance');
-    }
-
-    public function ledgerIndex()
-    {
-        return view('analytique.rapports.grand_livre');
-    }
-
-    public function resultIndex()
-    {
-        return view('analytique.rapports.resultat');
+        return response()->json([
+            'active' => $rules->count() > 0,
+            'rules' => $rules
+        ]);
     }
 }
