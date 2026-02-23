@@ -156,65 +156,60 @@ class AccountingController extends Controller
         return response()->json($journal, 201);
     }
 
-    // --- FLUX ET POSTES DE TRÉSORERIE (TFT) ---
+    // --- POSTES DE TRÉSORERIE ---
 
-    public function tftCategoriesIndex(Request $request)
+    public function treasuryCategoriesIndex(Request $request)
     {
         $companyId = $request->header('X-Company-Id', $request->user()->company_id);
-        
-        $tftRequired = [
-            'I. Flux de trésorerie des activités opérationnelles',
-            'II. Flux de trésorerie des activités d\'investissement',
-            'III. Flux de trésorerie des activités de financement',
-        ];
-
-        // Auto-initialisation si manquant (comme dans le controller web)
-        foreach ($tftRequired as $catName) {
-            TreasuryCategory::firstOrCreate([
-                'company_id' => $companyId,
-                'name' => $catName
-            ]);
-        }
-
-        $categories = TreasuryCategory::where('company_id', $companyId)
-            ->whereIn('name', $tftRequired)
-            ->orderBy('name')
-            ->get();
-
+        $categories = TreasuryCategory::where('company_id', $companyId)->get();
         return response()->json($categories);
     }
 
-    public function tftPostesIndex(Request $request)
+    public function treasuryCategoriesStore(Request $request)
     {
         $companyId = $request->header('X-Company-Id', $request->user()->company_id);
-        $query = CompteTresorerie::where('company_id', $companyId)->with('category');
+        $request->validate(['name' => 'required|string|max:255']);
+
+        $category = TreasuryCategory::create([
+            'name' => $request->name,
+            'company_id' => $companyId
+        ]);
+
+        return response()->json($category, 201);
+    }
+
+    public function treasuryPostsIndex(Request $request)
+    {
+        $companyId = $request->header('X-Company-Id', $request->user()->company_id);
+        $query = CompteTresorerie::where('company_id', $companyId)->with('category', 'compteComptable');
 
         if ($request->has('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        return response()->json($query->orderBy('name')->get());
+        return response()->json($query->get());
     }
 
-    public function tftPosteStore(Request $request)
+    public function treasuryPostsStore(Request $request)
     {
         $companyId = $request->header('X-Company-Id', $request->user()->company_id);
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'type' => 'required|in:banque,caisse,mobile_money,autre',
             'category_id' => 'required|exists:treasury_categories,id',
-            'syscohada_line_id' => 'nullable|string|max:50',
-            'plan_comptable_id' => 'nullable|exists:plan_comptables,id',
+            'plan_comptable_id' => 'required|exists:plan_comptables,id',
+            'solde_initial' => 'nullable|numeric'
         ]);
 
         $post = CompteTresorerie::create([
             'name' => $request->name,
+            'type' => $request->type,
             'category_id' => $request->category_id,
-            'syscohada_line_id' => $request->syscohada_line_id,
             'plan_comptable_id' => $request->plan_comptable_id,
-            'company_id' => $companyId,
-            'solde_initial' => 0,
-            'solde_actuel' => 0,
+            'solde_initial' => $request->solde_initial ?? 0,
+            'solde_actuel' => $request->solde_initial ?? 0,
+            'company_id' => $companyId
         ]);
 
         return response()->json($post, 201);

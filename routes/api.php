@@ -69,10 +69,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/accounting/journals', [AccountingController::class, 'journalsIndex']);
         Route::post('/accounting/journals', [AccountingController::class, 'journalsStore']);
 
-        // Flux et Postes de Trésorerie (TFT)
-        Route::get('/accounting/tft-categories', [AccountingController::class, 'tftCategoriesIndex']);
-        Route::get('/accounting/tft-postes', [AccountingController::class, 'tftPostesIndex']);
-        Route::post('/accounting/tft-postes', [AccountingController::class, 'tftPosteStore']);
+        // Postes de Trésorerie
+        Route::get('/accounting/treasury-categories', [AccountingController::class, 'treasuryCategoriesIndex']);
+        Route::post('/accounting/treasury-categories', [AccountingController::class, 'treasuryCategoriesStore']);
+        Route::get('/accounting/treasury-posts', [AccountingController::class, 'treasuryPostsIndex']);
+        Route::post('/accounting/treasury-posts', [AccountingController::class, 'treasuryPostsStore']);
         
         // Écritures et Scan
         Route::get('/entries', [EntryController::class, 'index']);
