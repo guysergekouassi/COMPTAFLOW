@@ -426,166 +426,71 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                         }]
                     };
                     
-                    const makeGeminiRequest = async (payload, retryCount = 0) => {
+                    const makeGeminiRequest = async (formData, retryCount = 0) => {
                         const MAX_RETRIES = 5;
-                        const API_URL = '/ia_traitement_standalone.php';
-                        
-                        // Préparer les données à envoyer
-                        const requestData = {
-                            prompt: payload.contents[0].parts[0].text,
-                            image: payload.contents[0].parts[1]?.inlineData?.data
-                        };
-                        
+                        const API_URL = '{{ route("ia.traiter") }}';
+
                         try {
-                            // Créer FormData pour l'upload de fichier
-                            const formData = new FormData();
-                            
-                            // Envoyer aussi le prompt au script standalone
-                            if (requestData.prompt) {
-                                formData.append('prompt', requestData.prompt);
-                            }
-                            
-                            if (requestData.image) {
-                                // Convertir l'image base64 en blob
-                                const imageBlob = await fetch(`data:image/jpeg;base64,${requestData.image}`).then(r => r.blob());
-                                formData.append('facture', imageBlob, 'facture.jpg');
-                            }
-                            
-                            const response = await fetch(API_URL, { 
-                                method: 'POST', 
+                            const response = await fetch(API_URL, {
+                                method: 'POST',
                                 body: formData
                             });
 
                             const responseData = await response.json();
-                            
-                            // Gestion améliorée du quota 429
+
+                            // Gestion du quota 429
                             if (response.status === 429) {
                                 if (retryCount < MAX_RETRIES) {
-                                    // Backoff exponentiel avec jitter
                                     const baseWait = Math.pow(2, retryCount) * 2000;
                                     const jitter = Math.random() * 1000;
                                     let waitTime = Math.min(baseWait + jitter, 30000);
-
-                                    console.warn(`Quota atteint (${retryCount+1}/${MAX_RETRIES}). Attente ${Math.round(waitTime/1000)}s...`);
                                     
                                     const h6 = processingUI.querySelector('h6');
-                                    
-                                    // Compte à rebours visuel
                                     for (let i = Math.ceil(waitTime/1000); i > 0; i--) {
                                         h6.innerText = `QUOTA DÉPASSÉ (${retryCount+1}/${MAX_RETRIES}).\nPATIENTEZ ${i}s...`;
                                         await new Promise(r => setTimeout(r, 1000));
                                     }
-                                    
                                     h6.innerText = "ANALYSE EN COURS...";
-                                    return makeGeminiRequest(payload, retryCount + 1);
+                                    return makeGeminiRequest(formData, retryCount + 1);
                                 } else {
                                     throw new Error("Serveur Google saturé. Réessayez dans quelques minutes.");
                                 }
                             }
 
                             if (!response.ok) {
-                                const errorData = responseData;
-                                throw new Error(errorData.error || `Erreur HTTP ${response.status}`);
+                                throw new Error(responseData.error || `Erreur HTTP ${response.status}`);
                             }
 
-                            // Notre API retourne directement les données, pas le format Gemini
-                            return { candidates: [{ content: { parts: [{ text: JSON.stringify(responseData) }] } }] };
+                            return responseData;
                         } catch (e) {
-                            if (e.message.includes('quota') || e.message.includes('429')) {
-                                throw e;
-                            }
-                            throw new Error(`Erreur de communication: ${e.message}`);
+                            throw new Error(e.message.includes('quota') ? e.message : `Erreur de communication: ${e.message}`);
                         }
                     };
 
-                    const rData = await makeGeminiRequest(payload);
+                    const formData = new FormData();
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
                     
-                    if (rData.error) throw new Error(rData.error.message || "Erreur API");
-                    if (!rData.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Réponse vide");
+                    if (base64Content) {
+                        const imageBlob = await fetch(`data:image/jpeg;base64,${base64Content}`).then(r => r.blob());
+                        formData.append('facture', imageBlob, 'facture.jpg');
+                    }
 
-                    let textResponse = rData.candidates[0].content.parts[0].text;
+                    const result = await makeGeminiRequest(formData);
                     
-                    // Nettoyer la réponse
-                    textResponse = textResponse.replace(/```json\s*/g, '').replace(/```\s*$/g, '').trim();
-                    
-                    // Essayer plusieurs stratégies d'extraction
-                    let result = null;
-                    const jsonStrategies = [
-                        // Stratégie 1: Extraction du premier JSON valide
-                        () => {
-                            const jsonRegex = /\{[\s\S]*?\}/;
-                            const match = textResponse.match(jsonRegex);
-                            return match ? JSON.parse(match[0]) : null;
-                        },
-                        // Stratégie 2: Extraction du JSON le plus complet
-                        () => {
-                            const jsonRegex = /\{[\s\S]*\}/;
-                            const matches = textResponse.match(jsonRegex);
-                            if (!matches) return null;
-                            
-                            // Prendre le JSON le plus long (probablement le plus complet)
-                            const jsonStr = matches.reduce((longest, current) => 
-                                current.length > longest.length ? current : longest
-                            );
-                            return JSON.parse(jsonStr);
-                        },
-                        // Stratégie 3: Parser directement si tout est du JSON
-                        () => {
-                            if (textResponse.startsWith('{') && textResponse.endsWith('}')) {
-                                return JSON.parse(textResponse);
-                            }
-                            return null;
-                        }
-                    ];
-                    
-                    // Essayer chaque stratégie
-                    for (const strategy of jsonStrategies) {
-                        try {
-                            result = strategy();
-                            if (result && (result.ecriture && Array.isArray(result.ecriture) || result.lignes && Array.isArray(result.lignes))) {
-                                break;
-                            }
-                        } catch (e) {
-                            continue;
-                        }
-                    }
-                    
-                    if (!result) {
-                        throw new Error("Format JSON invalide. L'IA n'a pas pu structurer les données correctement.");
-                    }
-                    
-                    // GESTION DES ERREURS RETOURNÉES PAR LE SCRIPT (comme Quota dépassé)
-                    if (result.error) {
-                        let fullMsg = result.error;
-                        if (result.message) fullMsg += "\n" + result.message;
-                        if (result.details) fullMsg += "\n" + result.details;
-                        if (result.api_message) fullMsg += "\nGoogle API: " + result.api_message;
-                        if (result.curl_error) fullMsg += "\ncURL: " + result.curl_error;
-                        throw new Error(fullMsg);
-                    }
-                    
-                    // Validation des données critiques
+                    if (!result || result.error) throw new Error(result?.error || "Réponse invalide de l'IA");
+
+                    // Validation des données critiques (support des différents formats de clés possibles)
                     const ecritures = result.ecriture || result.ecritures || result.lignes || result.lines;
                     if (!ecritures || !Array.isArray(ecritures) || ecritures.length === 0) {
-                        console.error('Réponse IA sans lignes:', result);
-                        throw new Error("Aucune ligne d'écriture trouvée dans la réponse. (Vérifiez la qualité de l'image)");
-                    }
-                    
-                    // Validation de l'équilibre Débit/Crédit
-                    const totalDebit = ecritures.reduce((sum, l) => sum + (l.debit || 0), 0);
-                    const totalCredit = ecritures.reduce((sum, l) => sum + (l.credit || 0), 0);
-                    if (Math.abs(totalDebit - totalCredit) > 1) {
-                        console.warn('Déséquilibre détecté:', { debit: totalDebit, credit: totalCredit });
+                        throw new Error("Aucune ligne d'écriture trouvée. Vérifiez la qualité du document.");
                     }
                     
                     // Manage VAT button state
                     const btnVAT = document.getElementById('btnApplyVAT');
-                    if (result.hasVAT) {
-                        // La facture contient déjà la TVA → cacher et griser le bouton
+                    if (result.has_tva || (result.montant_tva && result.montant_tva > 0)) {
                         btnVAT.classList.add('d-none');
                         btnVAT.disabled = true;
                     } else {
-                        // La facture ne contient pas de TVA → rendre le bouton visible et actif
                         btnVAT.classList.remove('d-none');
                         btnVAT.disabled = false;
                         btnVAT.innerHTML = '<i class="bx bx-plus me-1"></i>APPLIQUER TVA 18%';

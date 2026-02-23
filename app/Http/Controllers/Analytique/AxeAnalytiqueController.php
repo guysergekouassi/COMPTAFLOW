@@ -99,12 +99,12 @@ class AxeAnalytiqueController extends Controller
             ->map(function($axe) {
                 return [
                     'id' => $axe->id,
-                    'nom' => $axe->libelle,
+                    'libelle' => $axe->libelle,
                     'sections' => $axe->sections->map(function($s) {
                         return [
                             'id' => $s->id,
                             'code' => $s->code,
-                            'nom' => $s->libelle
+                            'libelle' => $s->libelle
                         ];
                     })
                 ];

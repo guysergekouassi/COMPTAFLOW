@@ -145,21 +145,21 @@
                                     @endif
                                 </div>
                                 <div class="flex gap-2">
-                                    <button class="btn btn-xs btn-outline-primary rounded-lg font-bold"><i class="fas fa-file-excel me-1"></i> Excel</button>
-                                    <button class="btn btn-xs btn-outline-danger rounded-lg font-bold"><i class="fas fa-file-pdf me-1"></i> PDF</button>
+                                    <a href="{{ route('analytique.grand_livre.excel', request()->all()) }}" class="btn btn-xs btn-outline-primary rounded-lg font-bold"><i class="fas fa-file-excel me-1"></i> Excel</a>
+                                    <a href="{{ route('analytique.grand_livre.pdf', request()->all()) }}" class="btn btn-xs btn-outline-danger rounded-lg font-bold"><i class="fas fa-file-pdf me-1"></i> PDF</a>
                                 </div>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse">
                                     <thead>
                                         <tr class="bg-white border-b border-slate-100">
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">N° Saisie</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Compte</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Libellé de l'opération</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Vent. %</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Montant</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Sens</th>
+                                            <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest" style="width: 100px;">Date</th>
+                                            <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest" style="width: 120px;">N° Saisie</th>
+                                            <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest" style="width: 150px;">Compte</th>
+                                            <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Libellé de l'opération</th>
+                                            <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center" style="width: 80px;">Vent. %</th>
+                                            <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right" style="width: 150px;">Montant</th>
+                                            <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center" style="width: 60px;">Sens</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
@@ -173,30 +173,30 @@
                                                 else $totalCredit += $item->montant;
                                             @endphp
                                             <tr class="table-row group">
-                                                <td class="px-8 py-4 text-slate-600 font-medium whitespace-nowrap">
+                                                <td class="px-4 py-4 text-slate-600 font-medium whitespace-nowrap">
                                                     {{ \Carbon\Carbon::parse($item->date)->format('d/m/Y') }}
                                                 </td>
-                                                <td class="px-8 py-4">
+                                                <td class="px-4 py-4">
                                                     <span class="font-bold text-slate-900">{{ $item->n_saisie }}</span>
                                                 </td>
-                                                <td class="px-8 py-4">
+                                                <td class="px-4 py-4">
                                                     <div class="flex flex-col">
                                                         <span class="font-black text-blue-700 text-[11px]">{{ $item->numero_de_compte }}</span>
                                                         <span class="text-[10px] text-slate-500 truncate" style="max-width: 120px;" title="{{ $item->compte_libelle }}">{{ $item->compte_libelle }}</span>
                                                     </div>
                                                 </td>
-                                                <td class="px-8 py-4 text-slate-700 font-medium">
+                                                <td class="px-4 py-4 text-slate-700 font-medium">
                                                     {{ $item->description_operation }}
                                                 </td>
-                                                <td class="px-8 py-4 text-center">
+                                                <td class="px-4 py-4 text-center">
                                                     <span class="badge bg-blue-50 text-blue-700 rounded-pill font-black text-[10px] px-2 py-1">
                                                         {{ number_format($item->pourcentage, 0) }}%
                                                     </span>
                                                 </td>
-                                                <td class="px-8 py-4 text-right font-black text-slate-800">
+                                                <td class="px-4 py-4 text-right font-black text-slate-800">
                                                     {{ number_format($item->montant, 2, ',', ' ') }}
                                                 </td>
-                                                <td class="px-8 py-4 text-center">
+                                                <td class="px-4 py-4 text-center">
                                                     <span class="inline-flex w-7 h-7 items-center justify-center rounded-lg font-black text-[10px] {{ $item->sens == 'D' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600' }}">
                                                         {{ $item->sens }}
                                                     </span>
@@ -218,18 +218,21 @@
                                     @if($results->count() > 0)
                                     <tfoot class="bg-slate-50/50">
                                         <tr class="border-t-2 border-slate-200">
-                                            <td colspan="5" class="px-8 py-4 text-[10px] font-black text-slate-700 uppercase tracking-widest">Totaux Période</td>
-                                            <td class="px-8 py-4 text-right">
+                                            <td colspan="5" class="px-4 py-4 text-[10px] font-black text-slate-700 uppercase tracking-widest text-right">Totaux Période</td>
+                                            <td class="px-4 py-4 text-right">
                                                 <div class="flex flex-col items-end gap-1">
-                                                    <div class="text-xs font-black text-slate-900 border-b border-slate-200 pb-1">
-                                                        Débit : {{ number_format($totalDebit, 2, ',', ' ') }}
+                                                    <div class="text-xs font-black text-slate-900 border-b border-slate-100 pb-1 w-full">
+                                                        <span class="text-[9px] text-slate-400 mr-2">DÉBIT</span>
+                                                        {{ number_format($totalDebit, 2, ',', ' ') }}
                                                     </div>
-                                                    <div class="text-xs font-black text-slate-900 border-b border-slate-200 pb-1">
-                                                        Crédit : {{ number_format($totalCredit, 2, ',', ' ') }}
+                                                    <div class="text-xs font-black text-slate-900 border-b border-slate-100 pb-1 w-full">
+                                                        <span class="text-[9px] text-slate-400 mr-2">CRÉDIT</span>
+                                                        {{ number_format($totalCredit, 2, ',', ' ') }}
                                                     </div>
                                                     @php $solde = $totalDebit - $totalCredit; @endphp
-                                                    <div class="text-xs font-black {{ $solde >= 0 ? 'text-green-700' : 'text-red-700' }}">
-                                                        Solde : {{ number_format(abs($solde), 2, ',', ' ') }} {{ $solde >= 0 ? 'D' : 'C' }}
+                                                    <div class="text-xs font-black {{ $solde >= 0 ? 'text-green-700' : 'text-red-700' }} w-full font-mono">
+                                                        <span class="text-[9px] text-slate-400 mr-2 uppercase">Solde</span>
+                                                        {{ number_format(abs($solde), 2, ',', ' ') }} {{ $solde >= 0 ? 'D' : 'C' }}
                                                     </div>
                                                 </div>
                                             </td>

@@ -562,14 +562,30 @@ class EcritureComptableController extends Controller
                 $ecriture->poste_tresorerie_id = $this->resolveTreasuryPost($activeCompanyId, $planComptableId) ?? ($data['poste_tresorerie_id'] ?? null);
                 $ecriture->save();
 
+                // Validation Analytique : Si le plan analytique est activé, il faut au moins une ventilation
+                if ($ecriture->plan_analytique) {
+                    if (empty($data['ventilations']) || !is_array($data['ventilations'])) {
+                        $compte = $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte : 'Inconnu';
+                        throw new \Exception("La ventilation analytique est obligatoire pour le compte $compte car il est marqué comme analytique.");
+                    }
+                }
+
                 // Sauvegarder les ventilations si présentes
                 if (!empty($data['ventilations']) && is_array($data['ventilations'])) {
+                    $totalLignePct = 0;
                     foreach ($data['ventilations'] as $v) {
+                        $totalLignePct += $v['pourcentage'];
                         $ecriture->ventilations()->create([
                             'section_id' => $v['section_id'],
                             'montant' => $v['montant'],
                             'pourcentage' => $v['pourcentage'],
                         ]);
+                    }
+
+                    // Vérification de l'équilibre à 100%
+                    if (abs($totalLignePct - 100) > 0.1) {
+                        $compte = $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte : 'Inconnu';
+                        throw new \Exception("Le total des ventilations pour le compte $compte est de $totalLignePct%. Il doit être exactement de 100%.");
                     }
                 }
 

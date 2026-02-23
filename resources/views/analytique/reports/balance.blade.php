@@ -126,19 +126,19 @@
                                     <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Axe : {{ $axes->where('id', $selectedAxeId)->first()?->libelle ?? 'Aucun' }}</p>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button class="btn btn-xs btn-outline-primary rounded-lg font-bold"><i class="fas fa-file-excel me-1"></i> Excel</button>
-                                    <button class="btn btn-xs btn-outline-danger rounded-lg font-bold"><i class="fas fa-file-pdf me-1"></i> PDF</button>
+                                    <a href="{{ route('analytique.balance.excel', request()->all()) }}" class="btn btn-xs btn-outline-primary rounded-lg font-bold"><i class="fas fa-file-excel me-1"></i> Excel</a>
+                                    <a href="{{ route('analytique.balance.pdf', request()->all()) }}" class="btn btn-xs btn-outline-danger rounded-lg font-bold"><i class="fas fa-file-pdf me-1"></i> PDF</a>
                                 </div>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse">
                                     <thead>
                                         <tr class="bg-white border-b border-slate-100">
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Code Section</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Libellé Section</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Total Débit</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Total Crédit</th>
-                                            <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Solde</th>
+                                            <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest" style="width: 120px;">Code Section</th>
+                                            <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Libellé Section</th>
+                                            <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right" style="width: 180px;">Total Débit</th>
+                                            <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right" style="width: 180px;">Total Crédit</th>
+                                            <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right" style="width: 180px;">Solde</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-50">
@@ -153,19 +153,19 @@
                                                 $solde = $item->total_debit - $item->total_credit;
                                             @endphp
                                             <tr class="table-row group">
-                                                <td class="px-8 py-4">
+                                                <td class="px-6 py-4">
                                                     <span class="font-mono font-black text-blue-700">{{ $item->code }}</span>
                                                 </td>
-                                                <td class="px-8 py-4">
+                                                <td class="px-6 py-4">
                                                     <span class="font-bold text-slate-800">{{ $item->libelle }}</span>
                                                 </td>
-                                                <td class="px-8 py-4 text-right font-bold text-slate-700">
+                                                <td class="px-6 py-4 text-right font-bold text-slate-700">
                                                     {{ number_format($item->total_debit, 2, ',', ' ') }}
                                                 </td>
-                                                <td class="px-8 py-4 text-right font-bold text-slate-700">
+                                                <td class="px-6 py-4 text-right font-bold text-slate-700">
                                                     {{ number_format($item->total_credit, 2, ',', ' ') }}
                                                 </td>
-                                                <td class="px-8 py-4 text-right font-black {{ $solde >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                                <td class="px-6 py-4 text-right font-black {{ $solde >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                                     {{ number_format(abs($solde), 2, ',', ' ') }} {{ $solde >= 0 ? 'D' : 'C' }}
                                                 </td>
                                             </tr>
@@ -181,11 +181,11 @@
                                     @if($results->count() > 0)
                                     <tfoot class="bg-slate-50/50">
                                         <tr>
-                                            <td colspan="2" class="px-8 py-5 text-sm font-black text-slate-800 uppercase tracking-widest">Totaux</td>
-                                            <td class="px-8 py-5 text-right font-black text-slate-800">{{ number_format($grandTotalDebit, 2, ',', ' ') }}</td>
-                                            <td class="px-8 py-5 text-right font-black text-slate-800">{{ number_format($grandTotalCredit, 2, ',', ' ') }}</td>
+                                            <td colspan="2" class="px-6 py-5 text-sm font-black text-slate-800 uppercase tracking-widest">Totaux</td>
+                                            <td class="px-6 py-5 text-right font-black text-slate-800">{{ number_format($grandTotalDebit, 2, ',', ' ') }}</td>
+                                            <td class="px-6 py-5 text-right font-black text-slate-800">{{ number_format($grandTotalCredit, 2, ',', ' ') }}</td>
                                             @php $grandSolde = $grandTotalDebit - $grandTotalCredit; @endphp
-                                            <td class="px-8 py-5 text-right font-black {{ $grandSolde >= 0 ? 'text-green-700' : 'text-red-700' }}">
+                                            <td class="px-6 py-5 text-right font-black {{ $grandSolde >= 0 ? 'text-green-700' : 'text-red-700' }}">
                                                 {{ number_format(abs($grandSolde), 2, ',', ' ') }} {{ $grandSolde >= 0 ? 'D' : 'C' }}
                                             </td>
                                         </tr>

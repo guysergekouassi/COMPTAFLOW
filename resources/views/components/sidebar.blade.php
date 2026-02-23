@@ -798,6 +798,12 @@
                     <span>Grand livre analytique</span>
                 </a>
                 @endif
+                @if(auth()->user()->hasPermission('analytique.resultat') || auth()->user()->hasPermission('analytique.balance'))
+                <a href="{{ route('analytique.resultat') }}" class="menu-link-new {{ request()->routeIs('analytique.resultat') ? 'active' : '' }}">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Résultat analytique</span>
+                </a>
+                @endif
             </div>
             @endif
 

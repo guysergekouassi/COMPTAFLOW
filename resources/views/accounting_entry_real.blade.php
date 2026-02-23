@@ -90,6 +90,38 @@
             cursor: not-allowed;
             opacity: 0.7;
         }
+        .select2-container--open {
+            z-index: 9999999 !important;
+        }
+        .select2-dropdown {
+            z-index: 9999999 !important;
+            pointer-events: auto !important;
+        }
+        .select2-results__option {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+        .select2-results__option--highlighted[aria-selected] {
+            background-color: #2563eb !important;
+            color: white !important;
+        }
+        /* Correctif ultime pour les clics Select2 dans le modal */
+        .select2-container--open .select2-dropdown {
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            border: 1px solid #2563eb !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+        }
+        .select2-results__option {
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            cursor: pointer !important;
+            padding: 12px 15px !important;
+        }
+        .select2-results__option[aria-disabled="true"] {
+            opacity: 0.4 !important;
+            pointer-events: none !important;
+        }
     </style>
   </head>
 
@@ -988,7 +1020,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <label for="compte_tiers" class="form-label">
-                                            <i class="bx bx-user"></i>Compte Tiers (Le cas échéant)
+                                            <i class="bx bx-user"></i>Compte Tiers
                                         </label>
                                         <div class="d-flex gap-2 align-items-center">
                                             <select id="compte_tiers" name="compte_tiers"
@@ -1332,10 +1364,10 @@
       <!-- Core JS -->
 
        <!-- Modal Ventilation Analytique -->
-      <div class="modal fade" id="modalVentilationAnalytique" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+      <div class="modal fade" id="modalVentilationAnalytique" data-bs-backdrop="static">
           <div class="modal-dialog modal-dialog-centered" style="width: 800px !important; max-width: 800px !important;">
-              <div class="modal-content border-0 shadow-lg" style="border-radius: 25px; overflow: hidden;">
-                  <div class="modal-body p-5 bg-white">
+              <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
+                  <div class="modal-body p-5 bg-white" style="position: relative;">
                       <!-- Title Section (Image 2 style) -->
                       <div class="text-center mb-5 position-relative">
                           <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1548,6 +1580,10 @@
     </html>
 
 <script>
+// --- VARIABLES GLOBALES ANALYTIQUES ---
+let ventilations_temporaires = [];
+let sections_analytiques_cache = null;
+
 // Helper function for text truncation
 const compasTextShortcut = (txt) => (txt && txt.length > 30) ? txt.substring(0, 27) + '...' : (txt || '');
 
@@ -2554,6 +2590,18 @@ function ajouterEcriture() {
     const approvalEditingData = @json($approvalEditingData ?? null);
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Désactiver le focus enforcement de Bootstrap 5 pour Select2
+        if (window.bootstrap && bootstrap.Modal) {
+            bootstrap.Modal.prototype._enforceFocus = function() {};
+        }
+
+        // Correctif global pour le focus Select2 dans les modals Bootstrap
+        $(document).on('focusin', function(e) {
+            if ($(e.target).closest(".select2-container").length) {
+                e.stopImmediatePropagation();
+            }
+        });
+
         if (approvalEditingData) {
             chargerDonneesApprobation(approvalEditingData);
         }
@@ -2966,6 +3014,14 @@ function ajouterEcriture() {
             const compteTresorerieId = row.getAttribute('data-compte-tresorerie-id');
             const isVatLine = row.getAttribute('data-is-vat') === 'true';
             
+            const ventilationsStr = row.getAttribute('data-ventilations');
+            let ventilations = [];
+            try {
+                ventilations = ventilationsStr ? JSON.parse(ventilationsStr) : [];
+            } catch (e) {
+                console.error("Erreur parsing ventilations row", e);
+            }
+
             ecritures.push({
                 date: dateCommune,
                 n_saisie: nSaisie,
@@ -2977,11 +3033,12 @@ function ajouterEcriture() {
                 debit: debit,
                 credit: credit,
                 piece_justificatif: pieceFileName,
-                plan_analytique: cells[10].textContent.trim() === 'Oui' ? 1 : 0,
+                plan_analytique: (cells[11] && cells[11].textContent.includes('Oui')) ? 1 : 0,
                 id_exercice: formData.get('id_exercice'),
                 journaux_saisis_id: formData.get('journaux_saisis_id'),
                 compte_tresorerie_id: compteTresorerieId || null,
-                poste_tresorerie_id: row.getAttribute('data-poste-tresorerie-id') || null
+                poste_tresorerie_id: row.getAttribute('data-poste-tresorerie-id') || null,
+                ventilations: ventilations
             });
         });
 
@@ -3167,54 +3224,70 @@ function ajouterEcriture() {
         })
         .then(response => response.json().then(data => ({ status: response.status, body: data })))
         .then(({ status, body }) => {
-            if (status >= 400) {
-                throw new Error(body?.message || JSON.stringify(body?.errors) || 'Erreur serveur');
-            }
-            if (body?.success) {
-                const urlParams = new URLSearchParams(window.location.search);
-                const nSaisieParam = urlParams.get('n_saisie');
+            if (status >= 400 || !body.success) {
+                let errorMsg = body.error || body.message;
                 
-                if (nSaisieParam) {
-                    showAlert('success', 'Écriture mise à jour avec succès !');
-                } else {
-                    showAlert('success', 'Écritures enregistrées avec succès !');
-                }
-                
-                const tbody = document.querySelector('#tableEcritures tbody');
-                
-                // Mettre à jour les boutons "Voir" avec le nom de fichier sauvegardé
-                if (body.piece_filename && tbody) {
-                    const rows = tbody.querySelectorAll('tr');
-                    rows.forEach(row => {
-                        const pieceCell = row.cells[9]; // Cellule pièce justificative
-                        if (pieceCell && pieceCell.innerHTML.includes('voirPieceJustificativeLocale')) {
-                            pieceCell.innerHTML = `<button class="btn btn-sm btn-primary-premium btn-premium" onclick="voirPieceJustificative('${body.piece_filename}')" style="border-radius: 10px;">
-                                <i class="bx bx-eye me-1"></i>Voir
-                            </button>`;
-                            pieceCell.setAttribute('data-piece-filename', body.piece_filename);
-                        }
+                if (body.errors) {
+                    errorMsg = 'Respectez les restrictions suivantes :<br><ul class="text-start mt-2">';
+                    Object.values(body.errors).forEach(errArray => {
+                        errArray.forEach(err => {
+                            errorMsg += `<li>${err}</li>`;
+                        });
                     });
+                    errorMsg += '</ul>';
                 }
                 
-                if (tbody) tbody.innerHTML = '';
-                updateTotals();
-                fetchNextSaisieNumber(); // Rafraîchir le numéro depuis le serveur
-                viderFormulaireComplet(); // Vider complètement le formulaire après succès
-                lockCommonFields(false); // Déverrouiller les champs
-                
-                // Si on était en mode modification, rediriger vers la liste des écritures
-                if (nSaisieParam) {
-                    setTimeout(() => {
-                        window.location.href = '/accounting_entry_list';
-                    }, 1500);
-                }
-            } else {
-                throw new Error(body?.message || 'Erreur inconnue');
+                throw new Error(errorMsg || 'Erreur serveur inconnue');
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const nSaisieParam = urlParams.get('n_saisie');
+            
+            Swal.fire({
+                icon: 'success',
+                title: nSaisieParam ? 'Écriture mise à jour' : 'Écritures enregistrées',
+                text: body.message || (nSaisieParam ? 'Écriture mise à jour avec succès !' : 'Écritures enregistrées avec succès !'),
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            const tbody = document.querySelector('#tableEcritures tbody');
+            
+            // Mettre à jour les boutons "Voir" avec le nom de fichier sauvegardé
+            if (body.piece_filename && tbody) {
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const pieceCell = row.cells[9]; // Cellule pièce justificative
+                    if (pieceCell && pieceCell.innerHTML.includes('voirPieceJustificativeLocale')) {
+                        pieceCell.innerHTML = `<button class="btn btn-sm btn-primary-premium btn-premium" onclick="voirPieceJustificative('${body.piece_filename}')" style="border-radius: 10px;">
+                            <i class="bx bx-eye me-1"></i>Voir
+                        </button>`;
+                        pieceCell.setAttribute('data-piece-filename', body.piece_filename);
+                    }
+                });
+            }
+            
+            if (tbody) tbody.innerHTML = '';
+            updateTotals();
+            fetchNextSaisieNumber(); // Rafraîchir le numéro depuis le serveur
+            viderFormulaireComplet(); // Vider complètement le formulaire après succès
+            lockCommonFields(false); // Déverrouiller les champs
+            
+            // Si on était en mode modification, rediriger vers la liste des écritures
+            if (nSaisieParam) {
+                setTimeout(() => {
+                    window.location.href = '/accounting_entry_list';
+                }, 1500);
             }
         })
         .catch(error => {
             console.error('Erreur:', error);
-            showAlert('danger', 'Erreur lors de l\'enregistrement: ' + error.message);
+            Swal.fire({
+                title: 'Impossible d\'enregistrer',
+                html: `<div class="text-start">Une restriction empêche l'enregistrement :<br><br><b class="text-danger">${error.message}</b></div>`,
+                icon: 'error',
+                confirmButtonColor: '#2563eb'
+            });
         })
         .finally(() => {
             const btnEnregistrer = document.getElementById('btnEnregistrer');
@@ -3811,7 +3884,6 @@ function ajouterEcriture() {
             });
         }
         // --- GESTION ANALYTIQUE ---
-        let ventilations_temporaires = [];
 
         window.toggleVentilationBtn = function() {
             const planA = document.getElementById('plan_analytique');
@@ -3828,7 +3900,7 @@ function ajouterEcriture() {
             }
         };
 
-        window.ouvrirVentilation = function() {
+        window.ouvrirVentilation = async function() {
             const debit = document.getElementById('debit').value;
             const credit = document.getElementById('credit').value;
             const montant = parseFloat(debit) || parseFloat(credit) || 0;
@@ -3836,6 +3908,18 @@ function ajouterEcriture() {
             if (montant <= 0) {
                 Swal.fire('Erreur', 'Veuillez saisir un montant au débit ou au crédit avant de ventiler.', 'warning');
                 return;
+            }
+
+            // Charger les sections si elles ne le sont pas déjà
+            if (!sections_analytiques_cache) {
+                try {
+                    const response = await fetch('/analytique/sections/api/list');
+                    sections_analytiques_cache = await response.json();
+                } catch (error) {
+                    console.error('Erreur chargement sections:', error);
+                    Swal.fire('Erreur', 'Impossible de charger les sections analytiques.', 'error');
+                    return;
+                }
             }
 
             document.getElementById('montant_a_ventiler_display').innerText = montant.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
@@ -3932,9 +4016,23 @@ function ajouterEcriture() {
         };
 
         window.validerVentilation = function() {
-            const totalPct = parseFloat(document.getElementById('total_pourcentage').innerText) || 0;
+            let totalPct = 0;
+            document.querySelectorAll('.pct-input').forEach(input => totalPct += parseFloat(input.value) || 0);
+
             if (Math.abs(totalPct - 100) > 0.01) {
-                Swal.fire('Attention', 'Le total des pourcentages doit être égal à 100%.', 'warning');
+                const diff = (100 - totalPct).toFixed(2);
+                let msg = `Le total doit être égal à 100%. Actuellement : <b>${totalPct.toFixed(2)}%</b>. `;
+                if (diff > 0) {
+                    msg += `<br>Il manque encore <b>${diff}%</b>.`;
+                } else {
+                    msg += `<br>Vous avez un surplus de <b>${Math.abs(diff)}%</b>.`;
+                }
+                Swal.fire({
+                    title: 'Équilibre requis',
+                    html: msg,
+                    icon: 'warning',
+                    confirmButtonColor: '#2563eb'
+                });
                 return;
             }
 
@@ -3970,27 +4068,40 @@ function ajouterEcriture() {
         };
 
         function fetchSections(selectElement, selectedId = '') {
-            fetch('/analytique/sections/api/list')
-                .then(response => response.json())
-                .then(data => {
-                    selectElement.innerHTML = '<option value="">Sélectionner une section...</option>';
-                    data.forEach(axe => {
-                        const optgroup = document.createElement('optgroup');
-                        optgroup.label = axe.nom;
-                        axe.sections.forEach(section => {
-                            const option = document.createElement('option');
-                            option.value = section.id;
-                            option.text = section.code + ' - ' + section.nom;
-                            if (section.id == selectedId) option.selected = true;
-                            optgroup.appendChild(option);
-                        });
-                        selectElement.appendChild(optgroup);
-                    });
-                })
-                .catch(error => {
-                    console.error('Erreur lors du chargement des sections:', error);
-                    selectElement.innerHTML = '<option value="">Erreur de chargement</option>';
+            if (!sections_analytiques_cache) {
+                selectElement.innerHTML = '<option value="">Erreur : sections non chargées</option>';
+                return;
+            }
+
+            let html = '<option value="">Sélectionner une section...</option>';
+            sections_analytiques_cache.forEach(axe => {
+                axe.sections.forEach(section => {
+                    const selected = section.id == selectedId ? 'selected' : '';
+                    html += `<option value="${section.id}" ${selected}>${section.code} - ${section.libelle} (${axe.libelle})</option>`;
                 });
+            });
+            selectElement.innerHTML = html;
+
+            // Petit délai pour assurer que le DOM est prêt
+            setTimeout(() => {
+                if ($(selectElement).data('select2')) {
+                    $(selectElement).select2('destroy');
+                }
+
+                $(selectElement).select2({
+                    width: '100%',
+                    placeholder: 'Sélectionner une section...',
+                    dropdownAutoWidth: true,
+                    closeOnSelect: true,
+                    language: {
+                        noResults: function() { return "Aucune section trouvée"; }
+                    }
+                });
+
+                if (selectedId) {
+                    $(selectElement).val(selectedId).trigger('change');
+                }
+            }, 100);
         }
 
         // --- RÈGLES AUTOMATIQUES ---
@@ -4032,3 +4143,4 @@ function ajouterEcriture() {
 
     });
 </script>
+
