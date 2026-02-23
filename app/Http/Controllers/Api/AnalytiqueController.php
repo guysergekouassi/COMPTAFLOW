@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AxeAnalytique;
 use App\Models\SectionAnalytique;
+use App\Models\VentilationAnalytique;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -75,5 +76,16 @@ class AnalytiqueController extends Controller
         ]);
 
         return response()->json($section);
+    }
+    
+    public function ventilationIndex(Request $request)
+    {
+        $request->validate(['ecriture_id' => 'required|exists:ecriture_comptables,id']);
+        
+        $ventilations = VentilationAnalytique::where('ecriture_id', $request->ecriture_id)
+            ->with(['section.axe'])
+            ->get();
+            
+        return response()->json($ventilations);
     }
 }

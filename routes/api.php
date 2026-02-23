@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\AnalytiqueController;
 use App\Http\Controllers\Api\ImmoController;
 use App\Http\Controllers\Api\LettrageController;
 use App\Http\Controllers\Api\ExerciceController;
+use App\Http\Controllers\Api\ApprovalController;
 
 Route::prefix('v1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -26,6 +27,10 @@ Route::prefix('v1')->group(function () {
         
         Route::get('/dashboard', [DashboardController::class, 'index']);
         
+        // Approbations / Validation
+        Route::get('/approvals', [ApprovalController::class, 'index']);
+        Route::post('/approvals/{id}/handle', [ApprovalController::class, 'handle']);
+
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
@@ -48,10 +53,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/analytique/axes', [AnalytiqueController::class, 'axeStore']);
         Route::get('/analytique/sections', [AnalytiqueController::class, 'sectionIndex']);
         Route::post('/analytique/sections', [AnalytiqueController::class, 'sectionStore']);
+        Route::get('/analytique/ventilations', [AnalytiqueController::class, 'ventilationIndex']);
 
         // Immobilisations
         Route::get('/immobilisations', [ImmoController::class, 'index']);
         Route::get('/immobilisations/{id}', [ImmoController::class, 'show']);
+        Route::get('/immobilisations/{id}/amortissements', [ImmoController::class, 'amortissementIndex']);
 
         // Lettrage
         Route::get('/lettrage', [LettrageController::class, 'index']);
