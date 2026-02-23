@@ -56,7 +56,7 @@ class AnalyticalReportingService
     {
         $query = DB::table('ventilations_analytiques as v')
             ->join('ecriture_comptables as e', 'v.ecriture_id', '=', 'e.id')
-            ->join('plan_comptables as pc', 'e.plan_comptables_id', '=', 'pc.id')
+            ->join('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
             ->where('v.section_id', $sectionId)
             ->where('e.company_id', $companyId)
             ->where('e.statut', 'approved');
@@ -91,7 +91,7 @@ class AnalyticalReportingService
         $query = DB::table('ventilations_analytiques as v')
             ->join('ecriture_comptables as e', 'v.ecriture_id', '=', 'e.id')
             ->join('sections_analytiques as s', 'v.section_id', '=', 's.id')
-            ->join('plan_comptables as pc', 'e.plan_comptables_id', '=', 'pc.id')
+            ->join('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
             ->where('s.company_id', $companyId)
             ->where('e.statut', 'approved');
 

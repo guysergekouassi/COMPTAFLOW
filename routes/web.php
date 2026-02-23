@@ -52,18 +52,9 @@ use App\Http\Controllers\GeminiController;
 use App\Http\Controllers\IaController;
 use Illuminate\Support\Facades\Http;
 
-// Route pour le traitement IA SYSCOHADA CI
-Route::post('/ia-traitement', [IaController::class, 'traiterFacture']);
+// ⚠️ Routes IA déplacées dans le groupe auth (voir ci-dessous)
+// Les routes standalone et de test ont été supprimées pour des raisons de sécurité.
 
-// Route de test sans CSRF
-Route::post('/ia-traitement-test', function() {
-    require_once public_path('ia_traitement_test.php');
-});
-
-// Route pour le script standalone (sans Laravel)
-Route::post('/ia_traitement_standalone.php', function() {
-    require_once public_path('ia_traitement_standalone.php');
-});
 
 
 
@@ -111,6 +102,10 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::middleware(['auth', 'exercice.context'])->group(function () {
     // Déconnexion
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // *** ROUTES IA - SCAN DE FACTURES (Sécurisées) ***
+    Route::post('/ia-traitement', [IaController::class, 'traiterFacture'])->name('ia.traiter');
+    Route::post('/ia-correction', [IaController::class, 'enregistrerCorrection'])->name('ia.correction');
 
     // Pages principales
     Route::get('/', function () { return redirect()->route('app.dashboard'); })->name('index');
@@ -568,8 +563,16 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
         Route::get('/regles/check/{accountId}', [VentilationController::class, 'getRules'])->name('regles.check');
         Route::get('/regles/get/{accountId}', [VentilationController::class, 'getRules'])->name('regles.get');
         Route::get('/balance', [AnalyticalReportController::class, 'balance'])->name('balance');
+        Route::get('/balance/excel', [AnalyticalReportController::class, 'exportBalanceExcel'])->name('balance.excel');
+        Route::get('/balance/pdf', [AnalyticalReportController::class, 'exportBalancePdf'])->name('balance.pdf');
+        
         Route::get('/grand-livre', [AnalyticalReportController::class, 'grandLivre'])->name('grand_livre');
+        Route::get('/grand-livre/excel', [AnalyticalReportController::class, 'exportGrandLivreExcel'])->name('grand_livre.excel');
+        Route::get('/grand-livre/pdf', [AnalyticalReportController::class, 'exportGrandLivrePdf'])->name('grand_livre.pdf');
+        
         Route::get('/resultat', [AnalyticalReportController::class, 'resultat'])->name('resultat');
+        Route::get('/resultat/excel', [AnalyticalReportController::class, 'exportResultatExcel'])->name('resultat.excel');
+        Route::get('/resultat/pdf', [AnalyticalReportController::class, 'exportResultatPdf'])->name('resultat.pdf');
     });
 });
 

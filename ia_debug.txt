@@ -1,0 +1,50 @@
+ID: 13 | Time: 2026-02-20 14:49:13
+Status: error
+Erreur: JSON invalide généré par l'IA
+JSON Brut:
+{
+  "type_document": "Facture",
+  "tiers": "AMA VAISSELLE ET DECORATION",
+  "date": "2023-05-27",
+  "reference": "S/N",
+  "montant_ht": 90000,
+  "montant_tva": 0,
+  "montant_ttc": 90000,
+  "devise": "XOF",
+  "ecriture": [
+    {
+
+-------------------
+ID: 12 | Time: 2026-02-20 09:55:38
+Status: error
+Erreur: JSON invalide généré par l'IA
+JSON Brut:
+{
+  "type_document": "Facture",
+  "tiers": "AMA VAISSELLE ET DECORATION",
+  "date": "2023-05-27",
+  "reference": "270523",
+  "montant_ht": 90000,
+  "montant_tva": 0,
+  "montant_ttc": 90000,
+  "devise": "XOF",
+  "ecriture": [
+-------------------
+ID: 11 | Time: 2026-02-20 09:34:05
+Status: error
+Erreur: JSON invalide généré par l'IA
+JSON Brut:
+
+-------------------
+ID: 10 | Time: 2026-02-20 09:32:32
+Status: error
+Erreur: JSON invalide généré par l'IA
+JSON Brut:
+
+-------------------
+ID: 9 | Time: 2026-02-19 14:47:41
+Status: error
+Erreur: Quota Gemini dépassé. Réessayez dans quelques minutes.
+JSON Brut:
+
+-------------------

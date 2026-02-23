@@ -117,9 +117,15 @@
                         <!-- Tableau des Résultats -->
                         <div class="glass-card overflow-hidden">
                             <div class="px-8 py-5 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
-                                <div>
-                                    <h5 class="text-slate-800 font-black mb-0">Rentabilité par Section</h5>
-                                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Axe : {{ $axes->where('id', $selectedAxeId)->first()?->libelle ?? 'Non sélectionné' }}</p>
+                                <div class="flex items-center gap-3">
+                                    <div>
+                                        <h5 class="text-slate-800 font-black mb-0">Rentabilité par Section</h5>
+                                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Axe : {{ $axes->where('id', $selectedAxeId)->first()?->libelle ?? 'Non sélectionné' }}</p>
+                                    </div>
+                                    <div class="flex gap-2 ms-auto">
+                                        <a href="{{ route('analytique.resultat.excel', request()->all()) }}" class="btn btn-xs btn-outline-primary rounded-lg font-bold"><i class="fas fa-file-excel me-1"></i> Excel</a>
+                                        <a href="{{ route('analytique.resultat.pdf', request()->all()) }}" class="btn btn-xs btn-outline-danger rounded-lg font-bold"><i class="fas fa-file-pdf me-1"></i> PDF</a>
+                                    </div>
                                 </div>
                             </div>
                             <div class="overflow-x-auto">
