@@ -7,6 +7,8 @@ use App\Models\PlanComptable;
 use App\Models\PlanTiers;
 use App\Models\CodeJournal;
 use App\Models\EcritureComptable;
+use App\Models\TreasuryCategory;
+use App\Models\CompteTresorerie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -154,6 +156,70 @@ class AccountingController extends Controller
         return response()->json($journal, 201);
     }
 
+    // --- FLUX ET POSTES DE TRÉSORERIE (TFT) ---
+
+    public function tftCategoriesIndex(Request $request)
+    {
+        $companyId = $request->header('X-Company-Id', $request->user()->company_id);
+        
+        $tftRequired = [
+            'I. Flux de trésorerie des activités opérationnelles',
+            'II. Flux de trésorerie des activités d\'investissement',
+            'III. Flux de trésorerie des activités de financement',
+        ];
+
+        // Auto-initialisation si manquant (comme dans le controller web)
+        foreach ($tftRequired as $catName) {
+            TreasuryCategory::firstOrCreate([
+                'company_id' => $companyId,
+                'name' => $catName
+            ]);
+        }
+
+        $categories = TreasuryCategory::where('company_id', $companyId)
+            ->whereIn('name', $tftRequired)
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($categories);
+    }
+
+    public function tftPostesIndex(Request $request)
+    {
+        $companyId = $request->header('X-Company-Id', $request->user()->company_id);
+        $query = CompteTresorerie::where('company_id', $companyId)->with('category');
+
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        return response()->json($query->orderBy('name')->get());
+    }
+
+    public function tftPosteStore(Request $request)
+    {
+        $companyId = $request->header('X-Company-Id', $request->user()->company_id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:treasury_categories,id',
+            'syscohada_line_id' => 'nullable|string|max:50',
+            'plan_comptable_id' => 'nullable|exists:plan_comptables,id',
+        ]);
+
+        $post = CompteTresorerie::create([
+            'name' => $request->name,
+            'category_id' => $request->category_id,
+            'syscohada_line_id' => $request->syscohada_line_id,
+            'plan_comptable_id' => $request->plan_comptable_id,
+            'company_id' => $companyId,
+            'solde_initial' => 0,
+            'solde_actuel' => 0,
+        ]);
+
+        return response()->json($post, 201);
+    }
+
     // --- SUPPRESSION (Générique pour l'exemple) ---
 
     public function destroy(Request $request, $type, $id)
@@ -162,6 +228,8 @@ class AccountingController extends Controller
             'plan-comptable' => PlanComptable::class,
             'plan-tiers' => PlanTiers::class,
             'journal' => CodeJournal::class,
+            'treasury-category' => TreasuryCategory::class,
+            'treasury-post' => CompteTresorerie::class,
             default => null,
         };
 

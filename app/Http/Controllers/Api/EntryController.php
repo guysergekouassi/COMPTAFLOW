@@ -27,18 +27,25 @@ class EntryController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $companyId = $request->header('X-Company-Id', $user->company_id);
+        $companyId = $request->header('X-Company-Id', $request->user()->company_id);
         $exerciceId = $request->header('X-Exercice-Id');
 
-        $query = EcritureComptable::with(['planComptable', 'planTiers', 'codeJournal'])
-            ->where('company_id', $companyId);
+        $query = EcritureComptable::where('company_id', $companyId)->with(['planComptable', 'planTiers', 'codeJournal']);
+
 
         if ($exerciceId) {
             $query->where('exercices_comptables_id', $exerciceId);
         }
 
-        // Filtre par rôle
+        if ($request->has('statut')) {
+            $query->where('statut', $request->statut);
+        } else {
+            // Par défaut, seulement les validées
+            $query->where('statut', 'approved');
+        }
+
+        $user = $request->user();
+
         if (!$user->isSuperAdmin() && !$user->isAdmin() && !$user->hasPermission('admin.approvals')) {
             $query->where('user_id', $user->id);
         }
@@ -69,6 +76,8 @@ class EntryController extends Controller
             'code_journal_id' => 'required|exists:code_journaux,id',
             'description_operation' => 'required|string',
             'plan_comptable_id' => 'required|exists:plan_comptables,id',
+            'plan_tiers_id' => 'nullable|exists:plan_tiers,id',
+            'poste_tresorerie_id' => 'nullable|exists:compte_tresoreries,id',
             'debit' => 'nullable|numeric|min:0',
             'credit' => 'nullable|numeric|min:0',
             'piece_justificatif' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -103,6 +112,7 @@ class EntryController extends Controller
             'reference_piece' => $request->reference_piece,
             'plan_comptable_id' => $request->plan_comptable_id,
             'plan_tiers_id' => $request->plan_tiers_id,
+            'poste_tresorerie_id' => $request->poste_tresorerie_id,
             'debit' => $request->debit ?? 0,
             'credit' => $request->credit ?? 0,
             'piece_justificatif' => $pieceFilename,

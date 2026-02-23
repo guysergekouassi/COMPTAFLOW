@@ -91,6 +91,74 @@ class ReportController extends Controller
     }
 
     /**
+    /**
+     * Rapport : Résultat Mensuel (SIG détaillée mois par mois).
+     */
+    public function monthlyResultat(Request $request)
+    {
+        $user = $request->user();
+        $companyId = $request->header('X-Company-Id', $user->company_id);
+        $exerciceId = $request->header('X-Exercice-Id');
+        $detail = $request->query('detail') == '1';
+
+        if (!$exerciceId) {
+            $exerciceId = $this->getActiveExerciceId($companyId);
+        }
+
+        if (!$exerciceId) {
+            return response()->json(['message' => 'Aucun exercice actif trouvé.'], 422);
+        }
+
+        $data = $this->reportingService->getMonthlyResultatData($exerciceId, $companyId, $detail);
+        return response()->json($data);
+    }
+
+    /**
+     * Rapport : TFT Mensuel (Flux de trésorerie mois par mois).
+     */
+    public function monthlyTft(Request $request)
+    {
+        $user = $request->user();
+        $companyId = $request->header('X-Company-Id', $user->company_id);
+        $exerciceId = $request->header('X-Exercice-Id');
+        $detail = $request->query('detail') == '1';
+
+        if (!$exerciceId) {
+            $exerciceId = $this->getActiveExerciceId($companyId);
+        }
+
+        if (!$exerciceId) {
+            return response()->json(['message' => 'Aucun exercice actif trouvé.'], 422);
+        }
+
+        $data = $this->reportingService->getTFTMatrixData($exerciceId, $companyId, $detail);
+        return response()->json($data);
+    }
+
+    /**
+     * Rapport : TFT Personnalisé.
+     */
+    public function personalizedTft(Request $request)
+    {
+        $user = $request->user();
+        $companyId = $request->header('X-Company-Id', $user->company_id);
+        $exerciceId = $request->header('X-Exercice-Id');
+        $detail = $request->query('detail') == '1';
+
+        if (!$exerciceId) {
+            $exerciceId = $this->getActiveExerciceId($companyId);
+        }
+
+        if (!$exerciceId) {
+            return response()->json(['message' => 'Aucun exercice actif trouvé.'], 422);
+        }
+
+        $data = $this->reportingService->getPersonalizedTFTData($exerciceId, $companyId, $detail);
+        return response()->json($data);
+    }
+
+    /**
+
      * Rapport : Balance des comptes.
      */
     public function balance(Request $request)
