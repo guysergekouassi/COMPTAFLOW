@@ -4,15 +4,17 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
-use App\Models\PlanComptable;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth; // <-- AJOUTER
 use Illuminate\Support\Collection;   // <-- AJOUTER (pour la transformation)
+use App\Models\User;
 use App\Models\Company;
 use App\Models\ExerciceComptable;
 use App\Models\CodeJournal;
 use App\Models\InternalNotification;
 use App\Models\AdminTask;
+use App\Models\Approval;
+use App\Models\PlanComptable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,11 +38,11 @@ class AppServiceProvider extends ServiceProvider
             if (Auth::check()) {
                 $user = Auth::user();
                 $currentCompanyId = session('current_company_id', $user->company_id);
-                $currentCompany = \App\Models\Company::find($currentCompanyId);
+                $currentCompany = Company::find($currentCompanyId);
                 
                 $pendingApprovalsCount = 0;
                 if ($user->isAdmin()) {
-                    $pendingApprovalsCount = \App\Models\Approval::where('status', 'pending')
+                    $pendingApprovalsCount = Approval::where('status', 'pending')
                         ->get()
                         ->filter(function ($approval) use ($currentCompanyId) {
                             $approvable = $approval->approvable;
@@ -69,14 +71,14 @@ class AppServiceProvider extends ServiceProvider
                 // Logic moved from sidebar.blade.php
                 $isComptaAccountActive = session('plan_comptable', true) && session('current_compta_account_id', true);
                 
-                $exercices = \App\Models\ExerciceComptable::where('company_id', $currentCompanyId)
+                $exercices = ExerciceComptable::where('company_id', $currentCompanyId)
                     ->orderBy('date_debut', 'desc')
                     ->get()
                     ->unique(function ($item) {
                         return trim($item->intitule);
                     });
 
-                $code_journaux = \App\Models\CodeJournal::where('company_id', $currentCompanyId)
+                $code_journaux = CodeJournal::where('company_id', $currentCompanyId)
                     ->get()
                     ->unique('code_journal');
 
@@ -96,13 +98,13 @@ class AppServiceProvider extends ServiceProvider
 
                 // Companies for switch
                 if ($user->role === 'super_admin') {
-                    $companies_for_switch = \App\Models\Company::all();
+                    $companies_for_switch = Company::all();
                 } elseif ($user->role === 'admin') {
-                    $companies_for_switch = \App\Models\Company::where('id', $user->company_id)
+                    $companies_for_switch = Company::where('id', $user->company_id)
                         ->orWhere('parent_company_id', $user->company_id)
                         ->get();
                 } else {
-                    $companies_for_switch = \App\Models\Company::where('id', $user->company_id)->get();
+                    $companies_for_switch = Company::where('id', $user->company_id)->get();
                 }
 
                 $view->with([
