@@ -88,4 +88,38 @@ class AnalytiqueController extends Controller
             
         return response()->json($ventilations);
     }
+
+    /**
+     * Règles de ventilation automatique.
+     */
+    public function ruleIndex(Request $request)
+    {
+        $companyId = $request->header('X-Company-Id', Auth::user()->company_id);
+        $rules = \App\Models\RegleVentilation::where('company_id', $companyId)
+            ->with(['planComptable', 'section.axe'])
+            ->get();
+        return response()->json($rules);
+    }
+
+    public function ruleStore(Request $request)
+    {
+        $companyId = $request->header('X-Company-Id', Auth::user()->company_id);
+
+        $request->validate([
+            'plan_comptable_id' => 'required|exists:plan_comptables,id',
+            'section_id' => 'required|exists:sections_analytiques,id',
+            'pourcentage_defaut' => 'required|numeric|min:0|max:100'
+        ]);
+
+        $rule = \App\Models\RegleVentilation::updateOrCreate(
+            [
+                'company_id' => $companyId,
+                'plan_comptable_id' => $request->plan_comptable_id,
+                'section_id' => $request->section_id
+            ],
+            ['pourcentage_defaut' => $request->pourcentage_defaut]
+        );
+
+        return response()->json($rule);
+    }
 }

@@ -100,6 +100,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/reports/tft', [ReportController::class, 'tft']);
         Route::get('/reports/tft/monthly', [ReportController::class, 'monthlyTft']);
         Route::get('/reports/tft/personalized', [ReportController::class, 'personalizedTft']);
+        Route::get('/reports/analytique/balance', [ReportController::class, 'balanceAnalytique']);
+        Route::get('/reports/analytique/grand-livre', [ReportController::class, 'grandLivreAnalytique']);
+        Route::get('/reports/analytique/resultat', [ReportController::class, 'resultatAnalytique']);
+        
+        // Analytique - Paramétrage
+        Route::get('/analytique/rules', [AnalytiqueController::class, 'ruleIndex']);
+        Route::post('/analytique/rules', [AnalytiqueController::class, 'ruleStore']);
         
         // Suppression générique
         Route::delete('/accounting/{type}/{id}', [AccountingController::class, 'destroy']);

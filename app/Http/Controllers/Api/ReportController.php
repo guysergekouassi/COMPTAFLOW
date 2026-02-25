@@ -230,4 +230,65 @@ class ReportController extends Controller
             ->first();
         return $ex ? $ex->id : null;
     }
+
+    /**
+     * Rapport : Balance Analytique.
+     */
+    public function balanceAnalytique(Request $request)
+    {
+        $user = $request->user();
+        $companyId = $request->header('X-Company-Id', $user ? $user->company_id : null);
+        $exerciceId = $request->header('X-Exercice-Id');
+        $axeId = $request->query('axe_id');
+
+        if (!$axeId) return response()->json(['message' => 'L\'ID de l\'axe est requis.'], 422);
+
+        if (!$exerciceId) {
+            $exerciceId = $this->getActiveExerciceId($companyId);
+        }
+
+        $data = $this->reportingService->getBalanceAnalytiqueData($exerciceId, $companyId, $axeId);
+        return response()->json($data);
+    }
+
+    /**
+     * Rapport : Grand Livre Analytique.
+     */
+    public function grandLivreAnalytique(Request $request)
+    {
+        $user = $request->user();
+        $companyId = $request->header('X-Company-Id', $user ? $user->company_id : null);
+        $exerciceId = $request->header('X-Exercice-Id');
+        $axeId = $request->query('axe_id');
+        $sectionId = $request->query('section_id');
+
+        if (!$axeId) return response()->json(['message' => 'L\'ID de l\'axe est requis.'], 422);
+
+        if (!$exerciceId) {
+            $exerciceId = $this->getActiveExerciceId($companyId);
+        }
+
+        $data = $this->reportingService->getGrandLivreAnalytiqueData($exerciceId, $companyId, $axeId, $sectionId);
+        return response()->json($data);
+    }
+
+    /**
+     * Rapport : Résultat Analytique.
+     */
+    public function resultatAnalytique(Request $request)
+    {
+        $user = $request->user();
+        $companyId = $request->header('X-Company-Id', $user ? $user->company_id : null);
+        $exerciceId = $request->header('X-Exercice-Id');
+        $axeId = $request->query('axe_id');
+
+        if (!$axeId) return response()->json(['message' => 'L\'ID de l\'axe est requis.'], 422);
+
+        if (!$exerciceId) {
+            $exerciceId = $this->getActiveExerciceId($companyId);
+        }
+
+        $data = $this->reportingService->getResultatAnalytiqueData($exerciceId, $companyId, $axeId);
+        return response()->json($data);
+    }
 }

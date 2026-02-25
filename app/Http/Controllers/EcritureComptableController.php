@@ -20,10 +20,18 @@ use App\Traits\HandlesTreasuryPosts;
 use App\Models\AxeAnalytique;
 use App\Models\SectionAnalytique;
 use App\Models\VentilationAnalytique;
+use App\Services\TaxValidationService;
 
 class EcritureComptableController extends Controller
 {
     use HandlesTreasuryPosts;
+
+    protected $taxService;
+
+    public function __construct(TaxValidationService $taxService)
+    {
+        $this->taxService = $taxService;
+    }
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -481,6 +489,16 @@ class EcritureComptableController extends Controller
             if (empty($ecritures) || !is_array($ecritures)) {
                 return response()->json(['success' => false, 'error' => 'Aucune écriture à enregistrer.'], 400);
             }
+
+            // --- VALIDATION FISCALE & ÉQUILIBRE ---
+            if (!$this->taxService->checkBalance($ecritures)) {
+                return response()->json(['success' => false, 'error' => 'L\'opération est déséquilibrée (Débit != Crédit).'], 422);
+            }
+
+            $vatValidation = $this->taxService->validateVatConsistency($ecritures);
+            // On ne bloque pas forcément ici, mais on pourrait loguer ou alerter.
+            // Pour l'instant, on laisse passer si c'est juste un avertissement, 
+            // mais on peut le rendre bloquant si nécessaire.
 
             // Gestion du filtrage auto
             $hasApprovalPower = $user->hasPermission('admin.approvals');
