@@ -3282,11 +3282,28 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    // Cas 1: Excel stocke parfois une date sous forme de numéro de série (ex: 45672)
-                    // On convertit via PhpSpreadsheet
-                    if (is_numeric($dateStr) && (float)$dateStr > 59) {
+                    // Cas 0: Détection prioritaire des dates DDMMYY (6 chiffres, ex: 010126 = 01/01/2026)
+                    // Ce format doit être traité AVANT la détection des numéros de série Excel
+                    // car 010126 est numérique et serait sinon converti en une date erronée (~1927)
+                    $dateStrClean = preg_replace('/\s+/', '', $dateStr); // Supprimer espaces cachés
+                    if (is_numeric($dateStrClean) && strlen($dateStrClean) === 6) {
+                        $day2   = (int)substr($dateStrClean, 0, 2);
+                        $month2 = (int)substr($dateStrClean, 2, 2);
+                        $year2  = (int)substr($dateStrClean, 4, 2);
+                        // Pivot 70: 00-69 => 2000-2069, 70-99 => 1970-1999
+                        $year4  = ($year2 < 70) ? (2000 + $year2) : (1900 + $year2);
                         try {
-                            $dt = ExcelDate::excelToDateTimeObject((float)$dateStr);
+                            $date = Carbon::create($year4, $month2, $day2, 0, 0, 0);
+                        } catch (\Exception $e) {
+                            $errors[] = "Ligne " . ($index + 1) . " : Date DDMMYY invalide '$dateStr'.";
+                            continue;
+                        }
+
+                    // Cas 1: Excel stocke parfois une date sous forme de numéro de série (ex: 45672)
+                    // On convertit via PhpSpreadsheet (seulement si PAS 6 chiffres DDMMYY)
+                    } elseif (is_numeric($dateStrClean) && (float)$dateStrClean > 59) {
+                        try {
+                            $dt = ExcelDate::excelToDateTimeObject((float)$dateStrClean);
                             $date = Carbon::instance($dt);
                         } catch (\Exception $e) {
                             $errors[] = "Ligne " . ($index + 1) . " : Date Excel invalide '$dateStr'.";
@@ -3294,11 +3311,11 @@ class AdminConfigController extends Controller
                         }
 
                     // Cas 2: L'import fournit juste un quantième (jour du mois)
-                    } elseif (is_numeric($dateStr) && strlen($dateStr) <= 2) {
+                    } elseif (is_numeric($dateStrClean) && strlen($dateStrClean) <= 2) {
                         $year = $exercice ? $exercice->date_debut->year : now()->year;
                         $month = $exercice ? $exercice->date_debut->month : now()->month;
                         try {
-                            $date = Carbon::create($year, $month, (int)$dateStr);
+                            $date = Carbon::create($year, $month, (int)$dateStrClean);
                         } catch(\Exception $e) {
                             $errors[] = "Ligne " . ($index + 1) . " : Jour invalide '$dateStr'.";
                             continue;
