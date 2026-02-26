@@ -3218,19 +3218,25 @@ class AdminConfigController extends Controller
                          $normLib = trim($rowMapped['libelle'] ?? '');
                          $normDebit = str_replace([',', ' '], ['.', ''], $rowMapped['debit'] ?? '0');
                          $normCredit = str_replace([',', ' '], ['.', ''], $rowMapped['credit'] ?? '0');
+                         // IMPORTANT: Le tiers doit être inclus dans la signature pour éviter de considérer
+                         // comme doublons deux lignes identiques SAUF le tiers (ex: 401025 vs 401085)
+                         $normTiers = strtoupper(trim($rowMapped['tiers'] ?? ''));
                          
                          $sigParts = [
                              trim($rowMapped['jour'] ?? ''),
                              trim($rowJournal),
                              trim($rowCompte),
+                             $normTiers,
                              (string)(float)$normDebit, 
                              (string)(float)$normCredit
                          ];
 
                          // Logique stricte : Si Ref existe, on l'utilise. Sinon Libellé.
-                         // MAIS pour résoudre le problème "Surcharge", on force l'exclusion du libellé si on a une Ref.
                          if (!empty($normRef)) {
                              $sigParts[] = $normRef;
+                         } elseif (!empty($normLib)) {
+                             // Si pas de ref, inclure le libellé pour éviter de fusionner des lignes distinctes
+                             $sigParts[] = $normLib;
                          }
 
                          $signature = md5(implode('|', $sigParts));
