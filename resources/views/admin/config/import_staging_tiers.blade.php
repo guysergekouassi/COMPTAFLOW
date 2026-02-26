@@ -163,7 +163,7 @@
                                                                 return collect($r['errors'])
                                                                     ->filter(fn($e) => str_contains($e, "n'existe pas. Veuillez le créer au préalable."))
                                                                     ->map(function($e) {
-                                                                        preg_match('/Le compte collectif (.*) n\'existe pas/', $e, $matches);
+                                                                        preg_match('/compte collectif ([0-9]+) n\'existe pas/', $e, $matches);
                                                                         return $matches[1] ?? null;
                                                                     });
                                                             })

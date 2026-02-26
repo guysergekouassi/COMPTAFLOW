@@ -1998,6 +1998,14 @@ class AdminConfigController extends Controller
                 $rowCompte = trim($row['compte_general'] ?? '');
                 $rowType = trim($row['type_de_tiers'] ?? '');
 
+                // NETTOYAGE : Si le compte général contient du texte (ex: "Associés 1401000"), 
+                // on essaie d'extraire uniquement la partie numérique.
+                if (!empty($rowCompte) && !is_numeric($rowCompte)) {
+                    if (preg_match('/\d+/', $rowCompte, $matches)) {
+                        $rowCompte = $matches[0];
+                    }
+                }
+
                 if (empty($importedNum) || (isset($mapping['numero_de_tiers']) && $mapping['numero_de_tiers'] === 'AUTO')) {
                     // Si AUTO ou vide, on essaie de trouver la première colonne qui ressemble à un tiers (alphanumérique, classe 4)
                     foreach ($rowRaw as $val) {
@@ -2038,7 +2046,13 @@ class AdminConfigController extends Controller
                     '40' => 'Fournisseur',
                     '41' => 'Client',
                     '42' => 'Personnel',
+                    '43' => 'Organisme sociaux / CNPS',
+                    '44' => 'État / Impôts',
+                    '45' => 'Organisme international',
+                    '46' => 'Associé / Groupe',
                     '47' => 'Divers Tiers',
+                    '48' => 'Dettes sur acquisition (Immos)',
+                    '49' => 'Dépréciation',
                 ];
 
                 // --- STRATÉGIE 1 : Détection Directe (Code commence par 4) ---
@@ -2055,20 +2069,18 @@ class AdminConfigController extends Controller
                     $upperNum = strtoupper($importedNum);
                     
                     // 2a. Détection par préfixe de code (Alias Sage, Quadratus, etc.)
-                    // Fournisseurs : F, F-, FOU, FOUR, FRN, FRS, FR, FR-
                     if (preg_match('/^(FOU|FOUR|FRN|FRS|FR-|F-|F\d|FR\d)/', $upperNum)) {
                         $generationPrefix = '40';
                         $prefix = '40';
-                    } 
-                    // Clients : C, C-, CLI, CLT, CL, CL-
-                    elseif (preg_match('/^(CLI|CLT|CL-|C-|C\d|CL\d)/', $upperNum)) {
+                    } elseif (preg_match('/^(CLI|CLT|CL-|C-|C\d|CL\d)/', $upperNum)) {
                         $generationPrefix = '41';
                         $prefix = '41';
-                    }
-                    // Personnel : P, P-, PER, SAL
-                    elseif (preg_match('/^(PERS|PER|SAL|P-|P\d)/', $upperNum)) {
+                    } elseif (preg_match('/^(PERS|PER|SAL|P-|P\d)/', $upperNum)) {
                         $generationPrefix = '42';
                         $prefix = '42';
+                    } elseif (preg_match('/^(ETAT|IMP|TAX|E-|E\d)/', $upperNum)) {
+                        $generationPrefix = '44';
+                        $prefix = '44';
                     } else {
                         // 2b. Recherche sémantique dans l'intitulé
                         $searchStr = strtoupper($row['intitule'] ?? '');
@@ -2081,6 +2093,9 @@ class AdminConfigController extends Controller
                         } elseif (Str::contains($searchStr, ['PERSONNEL', 'SALAIRE', 'EMPLOYE'])) {
                             $generationPrefix = '42';
                             $prefix = '42';
+                        } elseif (Str::contains($searchStr, ['ETAT', 'IMPOT', 'TVA', 'CNPS'])) {
+                            $generationPrefix = Str::contains($searchStr, 'CNPS') ? '43' : '44';
+                            $prefix = $generationPrefix;
                         }
                     }
                 }
