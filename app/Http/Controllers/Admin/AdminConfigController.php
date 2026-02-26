@@ -3305,14 +3305,28 @@ class AdminConfigController extends Controller
                         }
                     } else {
                         // Cas 3: Date texte. On priorise d/m/Y pour éviter les inversions (m/d/Y)
-                        $dateStrNormalized = str_replace(['\\', '.'], ['/', '/'], $dateStr);
+                        $dateStrNormalized = str_replace(['\\', '.', ' '], ['/', '/', '/'], trim($dateStr));
+                        
+                        // FIX : Gestion explicite des années à 2 chiffres pour éviter les erreurs de siècle (ex: 27 -> 1927)
+                        // On cherche DD/MM/YY ou D/M/YY
+                        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/', $dateStrNormalized, $matches)) {
+                            $day = $matches[1];
+                            $month = $matches[2];
+                            $year2 = (int)$matches[3];
+                            // Seuil à 70 : 00-69 => 2000-2069, 70-99 => 1970-1999
+                            $year4 = ($year2 < 70) ? (2000 + $year2) : (1900 + $year2);
+                            $dateStrNormalized = sprintf('%02d/%02d/%04d', $day, $month, $year4);
+                        }
+
                         try {
-                            $formats = ['d/m/Y', 'j/n/Y', 'd/n/Y', 'j/m/Y', 'Y-m-d', 'd-m-Y', 'Y/m/d'];
+                            // On ajoute d/m/y et d-m-y en secours si le regex n'a pas tout capté
+                            $formats = ['d/m/Y', 'd/m/y', 'j/n/Y', 'j/n/y', 'd/n/Y', 'j/m/Y', 'Y-m-d', 'd-m-Y', 'Y/m/d'];
                             $date = null;
                             foreach ($formats as $fmt) {
                                 try {
                                     $d = Carbon::createFromFormat($fmt, $dateStrNormalized);
-                                    if ($d && $d->format($fmt) == $dateStrNormalized) {
+                                    // Vérification stricte car Carbon peut être "indulgent"
+                                    if ($d && ($d->format($fmt) == $dateStrNormalized || $d->format('d/m/Y') == $dateStrNormalized)) {
                                         $date = $d;
                                         break;
                                     }
@@ -3329,7 +3343,7 @@ class AdminConfigController extends Controller
 
                     // VALIDATION DATE HORS EXERCICE
                     if ($exercice && !$date->between($exercice->date_debut->startOfDay(), $exercice->date_fin->endOfDay())) {
-                        $errors[] = "Ligne " . ($index + 1) . " : Date hors exercice (" . $date->format('d/m/Y') . ").";
+                        $errors[] = "Ligne " . ($index + 1) . " : Date hors exercice (" . $date->format('d/m/Y') . "). Vérifiez si l'année est correcte.";
                         continue;
                     }
 

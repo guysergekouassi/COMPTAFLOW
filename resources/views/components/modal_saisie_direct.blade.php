@@ -252,35 +252,37 @@
 
 
  $(document).ready(function() {
-    // Détruire toute instance existante pour éviter les doublons
-    if ($('.selectpicker').data('selectpicker')) {
-        $('.selectpicker').selectpicker('destroy');
-    }
-    
-    // Initialisation propre
-    $('.selectpicker').selectpicker({
-        liveSearch: true,
-        width: '100%',
-        style: 'btn-outline-secondary',
-        noneSelectedText: '-- Sélectionner --'
-    });
-
-    // Réinitialiser proprement à chaque ouverture du modal
-    $('#saisieRedirectModal').on('show.bs.modal', function () {
-        // Détruire et recréer pour éviter les doublons
-        $('.selectpicker').selectpicker('destroy');
+    if (typeof $.fn.selectpicker === 'function') {
+        // Détruire toute instance existante pour éviter les doublons
+        if ($('.selectpicker').data('selectpicker')) {
+            $('.selectpicker').selectpicker('destroy');
+        }
+        
+        // Initialisation propre
         $('.selectpicker').selectpicker({
             liveSearch: true,
             width: '100%',
             style: 'btn-outline-secondary',
             noneSelectedText: '-- Sélectionner --'
         });
-    });
-    
-    // Refresh après affichage pour corriger les calculs de largeur
-    $('#saisieRedirectModal').on('shown.bs.modal', function () {
-        $('.selectpicker').selectpicker('refresh');
-    });
+
+        // Réinitialiser proprement à chaque ouverture du modal
+        $('#saisieRedirectModal').on('show.bs.modal', function () {
+            // Détruire et recréer pour éviter les doublons
+            $('.selectpicker').selectpicker('destroy');
+            $('.selectpicker').selectpicker({
+                liveSearch: true,
+                width: '100%',
+                style: 'btn-outline-secondary',
+                noneSelectedText: '-- Sélectionner --'
+            });
+        });
+        
+        // Refresh après affichage pour corriger les calculs de largeur
+        $('#saisieRedirectModal').on('shown.bs.modal', function () {
+            $('.selectpicker').selectpicker('refresh');
+        });
+    }
 });
     const accounting_entry_realUrl = "{{ route('accounting_entry_real') }}";
     const ecriture_scanUrl = "{{ route('ecriture.scan') }}";
