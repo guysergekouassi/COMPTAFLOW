@@ -3194,14 +3194,14 @@ class AdminConfigController extends Controller
                     $rowJournalRaw = trim($rowMapped['journal'] ?? '');
                     $rowJournal = $this->standardizeJournalCode($rowJournalRaw, $journalDigits);
 
-                    // CAS 2 : DÉDUPLICATION INTELLIGENTE & DÉTECTION AUTO DU TYPE
-                    // Si colonne Type NON mappée, on cherche "A" partout et on déduplique
+                    // CAS 2 : DÉDUPLICATION CONSERVATIVE (Vrais doublons techniques seulement)
+                    // Si colonne Type NON mappée, on déduplique sur l'ensemble des champs critiques
                     if (!$isTypeMapped) {
-                         // 2.1 : Détection "Aveugle" du Type A
-                         // On regarde si une des colonnes brutes (non mappée ou même mappée si on veut être agressif) contient juste "A"
-                         // On exclut les champs déjà identifiés comme Account/Debit/Credit pour éviter les faux positifs (peu probable pour "A")
+                         // 2.1 : Détection du Type A (Ligne à ignorer) - uniquement dans les colonnes NON mappées
                          $isHiddenA = false;
-                         foreach ($rowOrig as $cellVal) {
+                         $mappedColIndexes = array_filter(array_values($mapping), fn($v) => is_numeric($v));
+                         foreach ($rowOrig as $colIdx => $cellVal) {
+                             if (in_array($colIdx, $mappedColIndexes)) continue; // Ignorer les colonnes déjà traitées
                              $v = strtoupper(trim($cellVal ?? ''));
                              if ($v === 'A' || $v === 'ANALYTIQUE') {
                                  $isHiddenA = true;
@@ -3213,14 +3213,15 @@ class AdminConfigController extends Controller
                              continue;
                          }
 
-                         // 2.2 : Signature de déduplication (Fallback)
+                         // 2.2 : Signature de déduplication STRICTE
+                         // Pour être considérée comme doublon, deux lignes doivent être IDENTIQUES
+                         // sur date, journal, compte, tiers, montants, référence ET libellé.
                          $normRef = trim($rowMapped['reference'] ?? '');
                          $normLib = trim($rowMapped['libelle'] ?? '');
                          $normDebit = str_replace([',', ' '], ['.', ''], $rowMapped['debit'] ?? '0');
                          $normCredit = str_replace([',', ' '], ['.', ''], $rowMapped['credit'] ?? '0');
-                         // IMPORTANT: Le tiers doit être inclus dans la signature pour éviter de considérer
-                         // comme doublons deux lignes identiques SAUF le tiers (ex: 401025 vs 401085)
                          $normTiers = strtoupper(trim($rowMapped['tiers'] ?? ''));
+                         $normNSaisie = trim($rowMapped['n_saisie'] ?? '');
                          
                          $sigParts = [
                              trim($rowMapped['jour'] ?? ''),
@@ -3228,16 +3229,11 @@ class AdminConfigController extends Controller
                              trim($rowCompte),
                              $normTiers,
                              (string)(float)$normDebit, 
-                             (string)(float)$normCredit
+                             (string)(float)$normCredit,
+                             $normRef,
+                             $normLib,
+                             $normNSaisie
                          ];
-
-                         // Logique stricte : Si Ref existe, on l'utilise. Sinon Libellé.
-                         if (!empty($normRef)) {
-                             $sigParts[] = $normRef;
-                         } elseif (!empty($normLib)) {
-                             // Si pas de ref, inclure le libellé pour éviter de fusionner des lignes distinctes
-                             $sigParts[] = $normLib;
-                         }
 
                          $signature = md5(implode('|', $sigParts));
 
