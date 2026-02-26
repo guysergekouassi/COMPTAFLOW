@@ -1,2 +1,34 @@
 *
 !.gitignore
+# --- Fichiers texte ---
+*.txt
+
+# --- Tests ---
+# Ignore les dossiers de tests communs
+test/
+tests/
+spec/
+
+# Ignore les fichiers commençant ou finissant par "test"
+*test*
+**/tests/
+**/__pycache__/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.lcov
+
+# --- Environnement et Sécurité ---
+.env
+.venv
+env/
+venv/
+auth.json
+*.log
+
+# --- Système et IDE ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
