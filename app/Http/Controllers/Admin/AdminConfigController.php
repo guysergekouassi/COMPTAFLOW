@@ -2011,37 +2011,103 @@ class AdminConfigController extends Controller
                 }
 
 
-                // LOGIQUE DE DÉTECTION DE CATÉGORIE PAR PRÉFIXE (40->Fournisseur, 41->Client, etc.)
-                if (!empty($importedNum)) {
-                    if (!str_starts_with($importedNum, '4')) {
-                        $errors[] = "Numéro de tiers invalide : Doit commencer par '4'.";
-                        $row['numero_de_tiers'] = $importedNum; // On garde le brut pour affichage rouge
-                    }
-                    
+                // LOGIQUE DE DÉTECTION DE CATÉGORIE PAR PRÉFIXE (Stratégies Multiples)
+                
+                $generationPrefix = null;
+                $prefix = null;
+                $categoryMap = [
+                    '40' => 'Fournisseur',
+                    '41' => 'Client',
+                    '42' => 'Personnel',
+                    '43' => 'Organisme sociaux / CNPS',
+                    '44' => 'Impôt',
+                    '45' => 'Organisme international',
+                    '46' => 'Associé',
+                    '47' => 'Divers Tiers',
+                    '48' => 'Dettes sur acquisition d\'immobilisations',
+                    '49' => 'Dépréciation',
+                ];
+
+                // =========================================================================
+                // LOGIQUE DE DÉTECTION DU TYPE DE TIERS (3 STRATÉGIES)
+                // =========================================================================
+                
+                $generationPrefix = null;
+                $prefix = null;
+                $categoryMap = [
+                    '40' => 'Fournisseur',
+                    '41' => 'Client',
+                    '42' => 'Personnel',
+                    '47' => 'Divers Tiers',
+                ];
+
+                // --- STRATÉGIE 1 : Détection Directe (Code commence par 4) ---
+                if (!empty($importedNum) && str_starts_with($importedNum, '4')) {
                     $prefix = substr($importedNum, 0, 2);
-                    $categoryMap = [
-                        '40' => 'Fournisseur',
-                        '41' => 'Client',
-                        '42' => 'Personnel',
-                        '43' => 'Organisme sociaux / CNPS',
-                        '44' => 'Impôt',
-                        '45' => 'Organisme international',
-                        '46' => 'Associé',
-                        '47' => 'Divers Tiers',
-                        '48' => 'Dettes sur acquisition d\'immobilisations',
-                        '49' => 'Dépréciation',
-                    ];
-                    
-                    if (str_starts_with($importedNum, '4') && isset($categoryMap[$prefix])) {
-                        $rowType = $categoryMap[$prefix];
-                        $row['type_de_tiers'] = $rowType;
+                    if (isset($categoryMap[$prefix])) {
+                        $generationPrefix = $prefix;
                     }
                 }
-                
+
+                // --- STRATÉGIE 2 : Sémantique & Alias (Dernière volonté de l'utilisateur) ---
+                // Priorité aux préfixes (lettres) puis aux mots-clés dans l'intitulé
+                if (!$generationPrefix) {
+                    $upperNum = strtoupper($importedNum);
+                    
+                    // 2a. Détection par préfixe de code (Alias Sage, Quadratus, etc.)
+                    // Fournisseurs : F, F-, FOU, FOUR, FRN, FRS, FR, FR-
+                    if (preg_match('/^(FOU|FOUR|FRN|FRS|FR-|F-|F\d|FR\d)/', $upperNum)) {
+                        $generationPrefix = '40';
+                        $prefix = '40';
+                    } 
+                    // Clients : C, C-, CLI, CLT, CL, CL-
+                    elseif (preg_match('/^(CLI|CLT|CL-|C-|C\d|CL\d)/', $upperNum)) {
+                        $generationPrefix = '41';
+                        $prefix = '41';
+                    }
+                    // Personnel : P, P-, PER, SAL
+                    elseif (preg_match('/^(PERS|PER|SAL|P-|P\d)/', $upperNum)) {
+                        $generationPrefix = '42';
+                        $prefix = '42';
+                    } else {
+                        // 2b. Recherche sémantique dans l'intitulé
+                        $searchStr = strtoupper($row['intitule'] ?? '');
+                        if (Str::contains($searchStr, ['FOURNISSEUR', 'FOURN', 'FRN', 'ACHAT'])) {
+                            $generationPrefix = '40';
+                            $prefix = '40';
+                        } elseif (Str::contains($searchStr, ['CLIENT', 'CLT', 'VENTE'])) {
+                            $generationPrefix = '41';
+                            $prefix = '41';
+                        } elseif (Str::contains($searchStr, ['PERSONNEL', 'SALAIRE', 'EMPLOYE'])) {
+                            $generationPrefix = '42';
+                            $prefix = '42';
+                        }
+                    }
+                }
+
+                // --- STRATÉGIE 3 : Secours par le Compte Collectif (Compte Général) ---
+                // Uniquement si le compte commence par 4
+                if (!$generationPrefix && !empty($rowCompte)) {
+                    if (str_starts_with($rowCompte, '4')) {
+                        $comptePrefix = substr($rowCompte, 0, 2);
+                        if (isset($categoryMap[$comptePrefix])) {
+                            $generationPrefix = $comptePrefix;
+                            $prefix = $comptePrefix;
+                        }
+                    }
+                }
+
+                // --- FINALISATION ---
+                if ($generationPrefix && isset($categoryMap[$generationPrefix])) {
+                    $rowType = $categoryMap[$generationPrefix];
+                    $row['type_de_tiers'] = $rowType;
+                }
+
                 // Stockage du numéro original
                 $row['numero_original'] = $importedNum;
+                
                 // Si le compte général est vide, on peut aussi le déduire
-                if (empty($rowCompte) && !empty($prefix) && str_starts_with($importedNum, '4')) { // Ensure prefix is valid for deduction
+                if (empty($rowCompte) && !empty($generationPrefix)) { 
                     $rowCompte = $prefix . str_pad('0', ($accountDigits - 2), '0', STR_PAD_RIGHT);
                     $row['compte_general'] = $rowCompte;
                 }
@@ -2103,23 +2169,11 @@ class AdminConfigController extends Controller
                 $row['numero_original'] = $importedNum;
                 
                 // VALIDATION CLASSE 4 OBLIGATOIRE POUR LES TIERS
-                if (!str_starts_with($importedNum, '4')) {
+                if (!$generationPrefix) {
                     $row['numero_de_tiers'] = 'NON GÉNÉRÉ';
-                    $errors[] = "Numéro d'origine '{$importedNum}' invalide : Un tiers doit impérativement appartenir à la classe 4 (commencer par 4).";
+                    $errors[] = "Impossible de déduire le type de tiers (Fournisseur/Client) pour la génération. Veuillez vérifier le compte collectif ou l'intitulé.";
                 } else {
                     $row['numero_de_tiers'] = null; // Reset pour éviter de garder l'ancien si la génération échoue
-                    
-                    // NEW LOGIC: Determine Prefix from Imported Number FIRST
-                    // Le client veut que la génération soit basée sur le préfixe du numéro importé (catégorie)
-                    // et NON sur le compte collectif rattaché.
-                    $generationPrefix = null;
-                    if (!empty($importedNum) && strlen($importedNum) >= 2) {
-                         $tempPrefix = substr($importedNum, 0, 2);
-                         // On s'assure que c'est un préfixe logique (40-49)
-                         if (in_array($tempPrefix, ['40', '41', '42', '43', '44', '45', '46', '47', '48', '49'])) {
-                             $generationPrefix = $tempPrefix;
-                         }
-                    }
 
                     if (!empty($rowCompte)) {
                         // Correspondance automatique pour le compte collectif
