@@ -2146,11 +2146,11 @@ class AdminConfigController extends Controller
                         if ($planAcc) {
                             // Logique de génération avec mémoire locale pour éviter les doublons dans le staging
                             // PRIORITÉ : Variable $generationPrefix (Importé) > $prefix (Compte)
-                            $finalPrefix = $generationPrefix ?? ($prefix ?? substr($planAcc->numero_de_compte, 0, 2));
+                            $finalPrefix = $generationPrefix ?? ($prefix ?? ($planAcc ? substr($planAcc->numero_de_compte, 0, 2) : '40'));
 
                             if (!isset($localMaxTiers[$finalPrefix])) {
                                 $resp = $this->getNextTierNumber(new Request([
-                                    'plan_comptable_id' => $planAcc->id,
+                                    'plan_comptable_id' => $planAcc ? $planAcc->id : null,
                                     'prefix' => $finalPrefix,
                                     'intitule' => $row['intitule'] ?? ''
                                 ]));
@@ -2178,7 +2178,7 @@ class AdminConfigController extends Controller
                                 } else {
                                     // Cas alphanumérique ou erreur de format
                                     $resp = $this->getNextTierNumber(new Request([
-                                        'plan_comptable_id' => $planAcc->id,
+                                        'plan_comptable_id' => $planAcc ? $planAcc->id : null,
                                         'prefix' => $finalPrefix,
                                         'intitule' => $row['intitule'] ?? ''
                                     ]));
@@ -2189,16 +2189,62 @@ class AdminConfigController extends Controller
                                     }
                                 }
                             }
-                        } else {
-                            $errors[] = "Le compte collectif $rowCompte n'existe pas. Veuillez le créer au préalable.";
+                        }
+                        if (!$planAcc) {
+                            $errors[] = "Le compte collectif $rowCompte n'existe pas. Veuillez le corriger au préalable.";
+                            $row['is_virtual'] = true;
                         }
                     } else {
                         $errors[] = "Compte collectif absent ou impossible à déterminer.";
+                        $row['is_virtual'] = true;
                     }
                 }
 
+                // GÉNÉRATION DE SECOURS (Si le compte est absent ou inexistant)
                 if (empty($row['numero_de_tiers'])) {
-                    $errors[] = "Numéro de tiers impossible à générer";
+                    $finalPrefix = $generationPrefix ?? '40';
+                    $row['is_virtual'] = true;
+                    
+                    if (!isset($localMaxTiers[$finalPrefix])) {
+                        $resp = $this->getNextTierNumber(new Request([
+                            'plan_comptable_id' => null,
+                            'prefix' => $finalPrefix,
+                            'intitule' => $row['intitule'] ?? ''
+                        ]));
+                        $genData = $resp->getData();
+                        if ($genData->success) {
+                            $row['numero_de_tiers'] = $genData->next_id;
+                            $localMaxTiers[$finalPrefix] = $genData->next_id;
+                        }
+                    } else {
+                        $lastId = $localMaxTiers[$finalPrefix];
+                        $prefixLen = strlen($finalPrefix);
+                        $sequencePart = substr($lastId, $prefixLen);
+                        
+                        if (is_numeric($sequencePart)) {
+                            $nextSeq = (int)$sequencePart + 1;
+                            $availableSpace = max(1, $tierDigits - $prefixLen);
+                            $newId = $finalPrefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                            $row['numero_de_tiers'] = $newId;
+                            $localMaxTiers[$finalPrefix] = $newId;
+                        } else {
+                             // Cas alphanumérique fallback
+                             $resp = $this->getNextTierNumber(new Request([
+                                 'plan_comptable_id' => null,
+                                 'prefix' => $finalPrefix,
+                                 'intitule' => $row['intitule'] ?? ''
+                             ]));
+                             $genData = $resp->getData();
+                             if ($genData->success) {
+                                 $row['numero_de_tiers'] = $genData->next_id;
+                                 $localMaxTiers[$finalPrefix] = $genData->next_id;
+                             }
+                        }
+                    }
+                    
+                    if (empty($row['numero_de_tiers'])) {
+                        $errors[] = "Numéro de tiers impossible à générer avec le préfixe $finalPrefix.";
+                    }
                 }
                 
                 // Normalisation finale du type de tiers pour l'affichage
@@ -2607,6 +2653,7 @@ class AdminConfigController extends Controller
             $ecrMapping = []; 
             $localMaxTiers = [];
             $localMaxJournals = [];
+            $journalDigits = $user->company->journal_code_digits ?? 4;
             $localMaxAccounts = [];
             $batchAccounts = [];
 
@@ -2867,7 +2914,7 @@ class AdminConfigController extends Controller
                     // --- IMPORT JOURNAUX ---
                     $msg_type = "journaux";
                     $rowCodeRaw = trim($rowMapped['code_journal'] ?? '');
-                    $rowCode = $rowCodeRaw;
+                    $rowCode = $this->standardizeJournalCode($rowCodeRaw, $journalDigits);
                     $numeroOriginalJournal = (!empty($rowCodeRaw) && $rowCodeRaw !== 'AUTO') ? $rowCodeRaw : null;
                     if (empty($rowCode) && !($mapping['code_journal'] === 'AUTO')) {
                         $errors[] = "Ligne " . ($index + 1) . " : Code journal manquant.";
@@ -2985,7 +3032,8 @@ class AdminConfigController extends Controller
                     }
 
                     $rowCompte = $this->standardizeAccountNumber(trim($rowMapped['compte'] ?? ''), $accountDigits);
-                    $rowJournal = trim($rowMapped['journal'] ?? '');
+                    $rowJournalRaw = trim($rowMapped['journal'] ?? '');
+                    $rowJournal = $this->standardizeJournalCode($rowJournalRaw, $journalDigits);
 
                     // CAS 2 : DÉDUPLICATION INTELLIGENTE & DÉTECTION AUTO DU TYPE
                     // Si colonne Type NON mappée, on cherche "A" partout et on déduplique
@@ -3608,6 +3656,25 @@ class AdminConfigController extends Controller
         }
 
         return $number;
+    }
+
+    /**
+     * Standardise un code journal sur la longueur configurée
+     */
+    private function standardizeJournalCode($code, $digits)
+    {
+        $code = strtoupper(trim($code ?? ''));
+        if (empty($code)) {
+            return $code;
+        }
+
+        if (strlen($code) < $digits) {
+            return str_pad($code, $digits, '0', STR_PAD_RIGHT);
+        } elseif (strlen($code) > $digits) {
+            return substr($code, 0, $digits);
+        }
+
+        return $code;
     }
 
     private function generateGlobalSaisieNumber($companyId)

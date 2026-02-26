@@ -11,12 +11,14 @@ class MasterJournalImport implements ToModel, WithHeadingRow
 {
     protected $userId;
     protected $companyId;
+    protected $journalDigits;
 
     public function __construct()
     {
         $user = Auth::user();
         $this->userId = $user->id;
         $this->companyId = $user->company_id;
+        $this->journalDigits = $user->company->journal_code_digits ?? 4;
     }
 
     /**
@@ -40,7 +42,8 @@ class MasterJournalImport implements ToModel, WithHeadingRow
             return null;
         }
 
-        $codeFormatted = strtoupper($code);
+        $codeRaw = $code;
+        $codeFormatted = $this->standardizeJournalCode($code, $this->journalDigits);
 
         $exists = CodeJournal::where('company_id', $this->companyId)
             ->where('code_journal', $codeFormatted)
@@ -51,11 +54,31 @@ class MasterJournalImport implements ToModel, WithHeadingRow
         }
 
         return new CodeJournal([
-            'code_journal' => $codeFormatted,
-            'intitule'     => strtoupper($label),
+            'code_journal'    => $codeFormatted,
+            'numero_original' => $codeRaw,
+            'intitule'        => strtoupper($label),
             'type'         => $type,
             'user_id'      => $this->userId,
             'company_id'   => $this->companyId,
         ]);
+    }
+
+    /**
+     * Standardise un code journal sur la longueur configurée
+     */
+    private function standardizeJournalCode($code, $digits)
+    {
+        $code = strtoupper(trim($code ?? ''));
+        if (empty($code)) {
+            return $code;
+        }
+
+        if (strlen($code) < $digits) {
+            return str_pad($code, $digits, '0', STR_PAD_RIGHT);
+        } elseif (strlen($code) > $digits) {
+            return substr($code, 0, $digits);
+        }
+
+        return $code;
     }
 }
