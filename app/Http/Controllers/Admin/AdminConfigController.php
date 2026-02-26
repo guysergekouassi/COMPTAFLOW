@@ -2984,7 +2984,7 @@ class AdminConfigController extends Controller
                                  'classe' => $classe,
                                  'user_id' => $user->id,
                                  'company_id' => $user->company_id,
-                                 'adding_strategy' => 'auto-generated'
+                                 'adding_strategy' => 'auto'
                              ]);
                              $compteCollectifId = $newAcc->id;
                              $planComptableIds[$rowCompteNum] = $newAcc->id;
@@ -3804,8 +3804,17 @@ class AdminConfigController extends Controller
     private function standardizeAccountNumber($number, $digits)
     {
         $number = trim($number ?? '');
-        if (empty($number) || !is_numeric($number)) {
+        if (empty($number)) {
             return $number;
+        }
+
+        // Si le numéro contient du texte (ex: "Associés 1401000"), on extrait uniquement les chiffres
+        if (!is_numeric($number)) {
+            if (preg_match('/\d+/', $number, $matches)) {
+                $number = $matches[0];
+            } else {
+                return $number; // On laisse tel quel si vraiment pas de chiffres
+            }
         }
 
         if (strlen($number) < $digits) {
