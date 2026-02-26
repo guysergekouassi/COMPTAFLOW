@@ -3560,6 +3560,39 @@ class AdminConfigController extends Controller
     }
 
     /**
+     * Suppression multiple de lignes de staging
+     */
+    public function deleteMultipleRows($id, Request $request)
+    {
+        try {
+            $import = ImportStaging::findOrFail($id);
+            $indices = $request->input('indices', []);
+            
+            if (empty($indices)) {
+                return response()->json(['success' => false, 'message' => 'Aucune ligne sélectionnée.'], 400);
+            }
+
+            $data = $import->raw_data;
+            
+            // Trier les indices par ordre décroissant pour éviter les décalages lors de la suppression
+            sort($indices);
+            $indices = array_reverse($indices);
+
+            foreach ($indices as $index) {
+                if (isset($data[$index])) {
+                    array_splice($data, $index, 1);
+                }
+            }
+            
+            $import->update(['raw_data' => $data]);
+
+            return response()->json(['success' => true, 'message' => count($indices) . ' lignes supprimées de l\'import.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Module d'Exportation - Hub principal
      */
     public function exportHub()
