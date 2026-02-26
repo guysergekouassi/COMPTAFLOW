@@ -2997,68 +2997,85 @@ class AdminConfigController extends Controller
                         continue;
                     }
                     
-                    // LOGIQUE DE GÉNÉRATION BASÉE SUR LE PRÉFIXE IMPORTÉ (si AUTO ou vide)
-                    if (($mapping['numero_de_tiers'] === 'AUTO' || empty($rowNum) || $rowNum === 'AUTO' || str_starts_with($rowNum, '-')) && $compteCollectifId) {
-                        $importedNum = trim($rowMapped['numero_de_tiers'] ?? '');
-                        $generationPrefix = null;
-                        if (!empty($importedNum) && strlen($importedNum) >= 2) {
-                            $tempPrefix = substr($importedNum, 0, 2);
-                            if (in_array($tempPrefix, ['40', '41', '42', '43', '44', '45', '46', '47', '48', '49'])) {
-                                $generationPrefix = $tempPrefix;
-                            }
+                    // LOGIQUE DE GÉNÉRATION BASÉE SUR LE PRÉFIXE IMPORTÉ
+                    // On force la génération d'un numéro conforme au format de l'entreprise
+                    // Tout en gardant le numéro importé comme "numéro original" pour la traçabilité
+                    $numeroGenere = null;
+                    $importedNum = trim($rowMapped['numero_de_tiers'] ?? '');
+                    
+                    // On essaie de déterminer le préfixe de génération (ex: 401)
+                    $generationPrefix = null;
+                    if (!empty($importedNum) && strlen($importedNum) >= 2) {
+                        $tempPrefix = substr($importedNum, 0, 2);
+                        if (in_array($tempPrefix, ['40', '41', '42', '43', '44', '45', '46', '47', '48', '49'])) {
+                            $generationPrefix = $tempPrefix;
                         }
+                    }
+                    $prefix = $generationPrefix ?? substr($rowCompteNum, 0, 2);
 
-                        $prefix = $generationPrefix ?? substr($rowCompteNum, 0, 2);
-
-                        if (!isset($localMaxTiers[$prefix])) {
-                            $resp = $this->getNextTierNumber(new Request([
-                                'plan_comptable_id' => $compteCollectifId,
-                                'prefix' => $prefix,
-                                'intitule' => $rowMapped['intitule'] ?? ''
-                            ]));
-                            $genData = $resp->getData();
-                            if ($genData->success) {
-                                $rowNum = $genData->next_id;
-                                $localMaxTiers[$prefix] = $genData->next_id;
-                            }
-                        } else {
-                            // Génération locale pour le batch
-                            $lastId = $localMaxTiers[$prefix];
-                            $prefixLen = strlen($prefix);
-                            $sequencePart = substr($lastId, $prefixLen);
-                            if (is_numeric($sequencePart)) {
-                                $nextSeq = (int)$sequencePart + 1;
-                                $availableSpace = (int)($user->company->tier_digits ?? 8) - $prefixLen;
-                                $newId = $prefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
-                                $rowNum = $newId;
-                                $localMaxTiers[$prefix] = $newId;
-                            }
+                    // Génération du numéro séquentiel
+                    if (!isset($localMaxTiers[$prefix])) {
+                        $resp = $this->getNextTierNumber(new Request([
+                            'plan_comptable_id' => $compteCollectifId,
+                            'prefix' => $prefix,
+                            'intitule' => $rowMapped['intitule'] ?? ''
+                        ]));
+                        $genData = $resp->getData();
+                        if ($genData->success) {
+                            $numeroGenere = $genData->next_id;
+                            $localMaxTiers[$prefix] = $genData->next_id;
+                        }
+                    } else {
+                        // Génération locale pour le batch
+                        $lastId = $localMaxTiers[$prefix];
+                        $prefixLen = strlen($prefix);
+                        $sequencePart = substr($lastId, $prefixLen);
+                        if (is_numeric($sequencePart)) {
+                            $nextSeq = (int)$sequencePart + 1;
+                            $availableSpace = (int)($user->company->tier_digits ?? 8) - $prefixLen;
+                            $newId = $prefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                            $numeroGenere = $newId;
+                            $localMaxTiers[$prefix] = $newId;
                         }
                     }
 
-                    // Fallback ultime si toujours vide ou AUTO (ne devrait pas arriver avec les corrections)
-                    if (empty($rowNum) || $rowNum === 'AUTO') {
-                        continue;
-                    }
+                    // On utilise le numéro généré pour numero_de_tiers
+                    // Et on garde le numéro du fichier dans numero_original
+                    $finalNum = $numeroGenere ?? $rowNum;
 
+                    // RECHERCHE ROBUSTE DU TIERS EXISTANT
+                    // On cherche par le numéro original fourni OU par le numéro de tiers s'il correspondait déjà
                     $existingTier = PlanTiers::where('company_id', $user->company_id)
-                        ->where('numero_de_tiers', $rowNum)
+                        ->where(function($q) use ($numeroOriginalTiers, $importedNum) {
+                            $q->where('numero_original', $numeroOriginalTiers)
+                              ->orWhere('numero_original', $importedNum)
+                              ->orWhere('numero_de_tiers', $numeroOriginalTiers)
+                              ->orWhere('numero_de_tiers', $importedNum);
+                        })
                         ->first();
 
                     if ($existingTier) {
-                        // UPDATE existant
-                        $existingTier->update([
+                        // UPDATE existant : On met à jour l'intitulé et le numéro original
+                        // Mais on ne change le numero_de_tiers que s'il n'était pas encore au format généré
+                        $updateData = [
                             'intitule' => strtoupper($rowMapped['intitule'] ?? 'TIERS SANS NOM'),
                             'type_de_tiers' => ucfirst(strtolower($rowMapped['type_de_tiers'] ?? 'Autre')),
                             'compte_general' => $compteCollectifId,
-                            'numero_original' => $numeroOriginalTiers,
+                            'numero_original' => $numeroOriginalTiers ?: $existingTier->numero_original,
                             'user_id' => $user->id
-                        ]);
+                        ];
+                        
+                        // Si le numéro actuel ressemble à un numéro "original" (pas conforme à la config), on le remplace
+                        if ($existingTier->numero_de_tiers && strlen($existingTier->numero_de_tiers) < 4) {
+                             $updateData['numero_de_tiers'] = strtoupper($finalNum);
+                        }
+
+                        $existingTier->update($updateData);
                         $duplicateCount++;
                     } else {
                         // CREATE nouveau
                         PlanTiers::create([
-                            'numero_de_tiers' => strtoupper($rowNum),
+                            'numero_de_tiers' => strtoupper($finalNum),
                             'intitule' => strtoupper($rowMapped['intitule'] ?? 'TIERS SANS NOM'),
                             'type_de_tiers' => ucfirst(strtolower($rowMapped['type_de_tiers'] ?? 'Autre')),
                             'compte_general' => $compteCollectifId,
