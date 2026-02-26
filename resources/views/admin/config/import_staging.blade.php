@@ -748,11 +748,32 @@
                     cell.setAttribute('data-original', originalValue);
                 }
 
-                if (isNumeric(originalValue)) {
+                // Priorité 1 : Détection DDMMYY (exactement 6 chiffres)
+                // Ex: 010126 = 01/01/2026, 050126 = 05/01/2026
+                // Ce cas DOIT être traité avant la détection des serials Excel
+                // car des valeurs comme 050126 tombent dans la plage des serials Excel (30000-60000)
+                if (/^\d{6}$/.test(originalValue)) {
+                    const day   = originalValue.substring(0, 2);
+                    const month = originalValue.substring(2, 4);
+                    const yr2   = parseInt(originalValue.substring(4, 6), 10);
+                    // Pivot 70 : 00-69 => 2000-2069, 70-99 => 1970-1999
+                    const year  = yr2 < 70 ? 2000 + yr2 : 1900 + yr2;
+                    // Vérification basique que c'est une date valide (mois entre 01-12, jour entre 01-31)
+                    const dayN = parseInt(day, 10);
+                    const monN = parseInt(month, 10);
+                    if (monN >= 1 && monN <= 12 && dayN >= 1 && dayN <= 31) {
+                        cell.innerHTML = `<span class="text-success fw-bold">${day}/${month}/${year}</span>`;
+                        return;
+                    }
+                }
+
+                // Priorité 2 : Serial Excel (plage 30000-60000, typiquement 1982-2064)
+                // On exclut les 6 chiffres déjà traités ci-dessus
+                if (isNumeric(originalValue) && originalValue.length !== 6) {
                     const num = parseFloat(originalValue);
                     if (num >= 30000 && num <= 60000) {
                         const dateStr = excelDateToJSDate(num);
-                        cell.innerHTML = `<span class="text-success fw-bold">${dateStr}</span>`;
+                        cell.innerHTML = `<span class="text-info fw-bold">${dateStr}</span>`;
                     }
                 }
             });
