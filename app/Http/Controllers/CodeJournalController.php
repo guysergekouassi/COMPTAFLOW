@@ -364,7 +364,7 @@ public function index(Request $request)
             $prefix = strtoupper($request->prefix);
             $user = Auth::user();
             $company = $user->company;
-            $digits = $company->journal_code_digits ?? 3;
+            $digits = $company->journal_code_digits ?? 4;
 
             // Chercher les codes existants qui commencent par le préfixe pour CETTE entreprise
             $codes = CodeJournal::where('company_id', $company->id)

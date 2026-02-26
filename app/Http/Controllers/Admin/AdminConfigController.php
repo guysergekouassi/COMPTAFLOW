@@ -60,7 +60,7 @@ class AdminConfigController extends Controller
         $request->validate([
             'accounting_system' => 'required|string|in:SYSCOHADA,PCG,CUSTOM',
             'account_digits' => 'required|integer|min:4|max:12',
-            'journal_code_digits' => 'nullable|integer|min:1|max:10',
+            'journal_code_digits' => 'nullable|integer|min:4|max:10',
             'journal_code_type' => 'nullable|string|in:alphanumeric',
             'tier_digits' => 'nullable|integer|min:4|max:15',
             'tier_id_type' => 'nullable|string|in:numeric,alphanumeric',
@@ -677,7 +677,7 @@ class AdminConfigController extends Controller
     {
         $user = Auth::user();
         $company = Company::findOrFail($user->company_id);
-        $digits = $company->journal_code_digits ?? 3;
+            $digits = $company->journal_code_digits ?? 4;
         $codeType = $company->journal_code_type ?? 'alphabetical';
 
         $request->validate([
@@ -976,7 +976,7 @@ class AdminConfigController extends Controller
     {
         $user = Auth::user();
         $company = Company::findOrFail($user->company_id);
-        $digits = $company->journal_code_digits ?? 3;
+        $digits = $company->journal_code_digits ?? 4;
         $codeType = $company->journal_code_type ?? 'alphabetical';
 
         $request->validate([
