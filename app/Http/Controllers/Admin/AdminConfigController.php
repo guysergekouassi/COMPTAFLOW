@@ -2078,6 +2078,7 @@ class AdminConfigController extends Controller
                 if (!empty($rowCompte)) {
                     $newCompte = $this->standardizeAccountNumber($rowCompte, $accountDigits);
                     if ($newCompte !== $rowCompte) {
+                        $row['numero_original_compte'] = $rowCompte;
                         $row['compte_general'] = $newCompte;
                         $rowCompte = $newCompte;
                     }
@@ -2557,7 +2558,7 @@ class AdminConfigController extends Controller
             ->orderBy('numero_de_compte')
             ->get();
 
-        return view($viewName, compact('import', 'rowsWithStatus', 'errorCount', 'validCount', 'importTitle', 'user', 'plansComptables'));
+        return view($viewName, compact('import', 'rowsWithStatus', 'errorCount', 'validCount', 'importTitle', 'user', 'plansComptables', 'accountDigits'));
     }
 
     /**
