@@ -2134,14 +2134,6 @@ class AdminConfigController extends Controller
                         $planAcc = PlanComptable::where('company_id', $user->company_id)
                             ->where('numero_de_compte', $rowCompte)
                             ->first();
-                        
-                        // Si pas trouvé, on cherche un compte racine cohérent avec le préfixe
-                        if (!$planAcc) {
-                           $planAcc = PlanComptable::where('company_id', $user->company_id)
-                               ->where('numero_de_compte', 'LIKE', $prefix . '%')
-                               ->orderBy('numero_de_compte', 'asc')
-                               ->first();
-                        }
 
                         if ($planAcc) {
                             // Logique de génération avec mémoire locale pour éviter les doublons dans le staging
@@ -2150,7 +2142,7 @@ class AdminConfigController extends Controller
 
                             if (!isset($localMaxTiers[$finalPrefix])) {
                                 $resp = $this->getNextTierNumber(new Request([
-                                    'plan_comptable_id' => $planAcc ? $planAcc->id : null,
+                                    'plan_comptable_id' => $planAcc->id,
                                     'prefix' => $finalPrefix,
                                     'intitule' => $row['intitule'] ?? ''
                                 ]));
@@ -2178,7 +2170,7 @@ class AdminConfigController extends Controller
                                 } else {
                                     // Cas alphanumérique ou erreur de format
                                     $resp = $this->getNextTierNumber(new Request([
-                                        'plan_comptable_id' => $planAcc ? $planAcc->id : null,
+                                        'plan_comptable_id' => $planAcc->id,
                                         'prefix' => $finalPrefix,
                                         'intitule' => $row['intitule'] ?? ''
                                     ]));
@@ -2189,9 +2181,8 @@ class AdminConfigController extends Controller
                                     }
                                 }
                             }
-                        }
-                        if (!$planAcc) {
-                            $errors[] = "Le compte collectif $rowCompte n'existe pas. Veuillez le corriger au préalable.";
+                        } else {
+                            $errors[] = "Le compte collectif $rowCompte n'existe pas. Veuillez le créer au préalable.";
                             $row['is_virtual'] = true;
                         }
                     } else {

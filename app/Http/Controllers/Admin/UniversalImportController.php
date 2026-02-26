@@ -229,16 +229,25 @@ class UniversalImportController extends Controller
                         continue;
                     }
                 } elseif ($internalType === 'tiers') {
-                // LOGIQUE DE GÉNÉRATION AUTOMATIQUE ANTIGRAVITY (Replacement)
+                // LOGIQUE DE GÉNÉRATION AUTOMATIQUE (Replacement)
                 $importedNum = $payload['numero_de_tiers'] ?? '';
                 $payload['numero_original'] = $importedNum; // Sauvegarde du numéro original
                 $intitule = $payload['intitule'] ?? '';
                 $compteGeneral = $payload['compte_general'] ?? '';
                 $category = $payload['type_de_tiers'] ?? '';
 
+                $generationPrefix = '40'; // Fallback standard
+
                 // 1. Détection de catégorie par préfixe si le numéro importé est présent
                 if (!empty($importedNum)) {
                     $prefix = substr($importedNum, 0, 2);
+                    if (str_starts_with($importedNum, '4')) {
+                        $generationPrefix = $prefix;
+                    } else {
+                        $errors[] = "Ligne $lineNumber : Le numéro tiers d'origine doit commencer par 4.";
+                        continue;
+                    }
+
                     $categoryMap = [
                         '40' => 'Fournisseur', '41' => 'Client', '42' => 'Personnel',
                         '43' => 'Organisme sociaux / CNPS', '44' => 'Impôt',
@@ -248,46 +257,45 @@ class UniversalImportController extends Controller
                         $category = $categoryMap[$prefix];
                         $payload['type_de_tiers'] = $category;
                         if (empty($compteGeneral)) {
-                            $compteGeneral = $prefix . str_pad('0', (8 - 2), '0', STR_PAD_RIGHT); // Fallback standard digits
+                            // On déduit un compte général par défaut (ex: 41100000)
+                            // 40 => 401, 41 => 411, sinon le préfixe
+                            $compteRoot = in_array($prefix, ['40', '41']) ? $prefix . '1' : $prefix;
+                            $compteGeneral = $compteRoot . str_pad('0', (8 - strlen($compteRoot)), '0', STR_PAD_RIGHT);
                             $payload['compte_general'] = $compteGeneral;
                         }
                     }
                 }
 
                 // 2. Génération du nouveau numéro séquentiel
-                if (!empty($compteGeneral)) {
-                    $prefix = substr($compteGeneral, 0, 2);
-                    $company = \App\Models\Company::find($companyId);
-                    $digits = (int)($company->tier_digits ?? 8);
-                    $base = $prefix;
-                    $seqLength = max(1, $digits - strlen($base));
+                $company = \App\Models\Company::find($companyId);
+                $digits = (int)($company->tier_digits ?? 8);
+                $base = $generationPrefix;
+                $seqLength = max(1, $digits - strlen($base));
 
-                    // Cache du max pour éviter O(N^2) et les collisions
-                    if (!isset($importBatchMax[$base])) {
-                        $maxSeq = 0;
-                        $existingTiers = \App\Models\PlanTiers::where('company_id', $companyId)
-                            ->where('numero_de_tiers', 'like', $base . '%')
-                            ->get();
+                // Cache du max pour éviter O(N^2) et les collisions
+                if (!isset($importBatchMax[$base])) {
+                    $maxSeq = 0;
+                    $existingTiers = \App\Models\PlanTiers::where('company_id', $companyId)
+                        ->where('numero_de_tiers', 'like', $base . '%')
+                        ->get();
 
-                        foreach ($existingTiers as $tier) {
-                            $suffix = substr($tier->numero_de_tiers, strlen($base));
-                            if (is_numeric($suffix)) {
-                                $maxSeq = max($maxSeq, (int)$suffix);
-                            }
+                    foreach ($existingTiers as $tier) {
+                        $suffix = substr($tier->numero_de_tiers, strlen($base));
+                        if (is_numeric($suffix)) {
+                            $maxSeq = max($maxSeq, (int)$suffix);
                         }
-                        $importBatchMax[$base] = $maxSeq;
                     }
-
-                    $importBatchMax[$base]++;
-                    $nextId = $base . str_pad($importBatchMax[$base], $seqLength, '0', STR_PAD_LEFT);
-                    
-                    if (strlen($nextId) > $digits) {
-                        // En cas de dépassement, on utilise le max brut sans padding forcé si nécessaire, ou on tronque intelligemment
-                         $nextId = substr($nextId, 0, $digits);
-                    }
-                    
-                    $payload['numero_de_tiers'] = $nextId;
+                    $importBatchMax[$base] = $maxSeq;
                 }
+
+                $importBatchMax[$base]++;
+                $nextId = $base . str_pad($importBatchMax[$base], $seqLength, '0', STR_PAD_LEFT);
+                
+                if (strlen($nextId) > $digits) {
+                     $nextId = substr($nextId, 0, $digits);
+                }
+                
+                $payload['numero_de_tiers'] = $nextId;
 
                 if (empty($payload['numero_de_tiers']) || empty($payload['intitule'])) {
                      $errors[] = "Ligne $lineNumber : Numéro Tiers impossible à générer ou Nom manquant.";
