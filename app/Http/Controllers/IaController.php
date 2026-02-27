@@ -106,10 +106,10 @@ class IaController extends Controller
                         ]
                     ]
                 ],
-                "generationConfig" => [
+                "generation_config" => [
                     "temperature" => 0.1,
-                    "maxOutputTokens" => 4096,
-                    "responseMimeType" => "application/json"
+                    "max_output_tokens" => 4096,
+                    "response_mime_type" => "application/json"
                 ]
             ];
 
