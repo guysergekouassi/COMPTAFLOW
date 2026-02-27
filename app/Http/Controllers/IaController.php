@@ -74,7 +74,7 @@ class IaController extends Controller
             if (!$api_key) {
                 return response()->json(['error' => 'Clé API Gemini manquante dans le fichier .env'], 500);
             }
-            $model = "gemini-1.5-flash";
+            $model = "gemini-1.5-flash-latest";
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
             // 1. Préparation de l'image (Compression automatique pour stabilité)
