@@ -115,6 +115,23 @@
         display: flex !important;
         align-items: center !important;
     }
+
+    /* Hide number input spinners for cleaner accounting view */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    .row-debit, .row-credit {
+        font-weight: 700 !important;
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+        font-size: 0.95rem !important;
+    }
 </style>
 <body>
     <div class="layout-wrapper layout-content-navbar">
@@ -163,7 +180,21 @@
                         <div class="table-container-card">
                             <div class="d-flex justify-content-between align-items-center mb-4 px-2">
                                 <h5 class="mb-0 fw-extrabold text-dark"><i class="bx bx-list-check me-2 text-primary"></i>ÉCRITURES GÉNÉRÉES</h5>
-                                <div class="d-flex gap-2">
+                                <div class="d-flex gap-3 align-items-center">
+                                    <div id="manualVATContainer" class="d-flex gap-2 align-items-center bg-light p-2 rounded-3 border d-none">
+                                        <div style="width: 140px;">
+                                            <input type="number" id="manualVATAmount" class="form-control form-control-sm" placeholder="Montant TVA">
+                                        </div>
+                                        <div style="width: 200px;">
+                                            <select id="manualVATAccount" class="form-select form-select-sm select2">
+                                                <option value="">Compte TVA...</option>
+                                                @foreach($plansComptables->filter(fn($a) => str_starts_with($a->numero_de_compte, '445')) as $acc)
+                                                    <option value="{{ $acc->id }}">{{ $acc->numero_de_compte }} - {{ $acc->intitule }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-primary btn-sm" onclick="window.applyManualVAT()">APPLIQUER</button>
+                                    </div>
                                     <button id="btnApplyVAT" class="btn btn-primary btn-sm rounded-pivot px-3 d-none" onclick="window.applyVAT18()">
                                         <i class="bx bx-plus me-1"></i>APPLIQUER TVA 18%
                                     </button>
@@ -176,13 +207,13 @@
                                 <table id="tableEntries" class="table table-accounting">
                                     <thead>
                                         <tr>
-                                            <th style="width: 200px;">Compte Général</th>
+                                            <th style="width: 250px;">Compte Général</th>
                                             <th style="width: 200px;">Compte Tiers</th>
                                             <th style="min-width: 200px;">Libellé / Détails</th>
-                                            <th class="text-end" style="width: 130px;">Débit</th>
-                                            <th class="text-end" style="width: 130px;">Crédit</th>
+                                            <th class="text-end" style="width: 150px;">Débit</th>
+                                            <th class="text-end" style="width: 150px;">Crédit</th>
                                             <th style="width: 150px;">Poste Trésorerie</th>
-                                            <th style="width: 50px;"></th>
+                                            <th class="text-center" style="width: 100px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="entriesBody">
@@ -237,6 +268,62 @@
         </div>
     </div>
 
+    <!-- Modal Ventilation Analytique -->
+    <div class="modal fade" id="modalVentilationAnalytique" data-bs-backdrop="static" style="z-index: 10001;">
+        <div class="modal-dialog modal-dialog-centered" style="width: 800px !important; max-width: 800px !important;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
+                <div class="modal-body p-5 bg-white" style="position: relative;">
+                    <div class="text-center mb-5 position-relative">
+                        <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-0">
+                            Ventilation <span class="text-primary">Analytique</span>
+                        </h1>
+                        <div class="h-1 w-8 bg-primary mx-auto mt-2 rounded-full"></div>
+                    </div>
+                    <div class="mb-5 text-center p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                        <span class="text-secondary fw-semibold">Montant à ventiler:</span> 
+                        <span id="montant_a_ventiler_display" class="fs-4 fw-bold text-dark ms-1">0.00</span>
+                        <span class="text-dark fw-bold ms-1">FCFA</span>
+                    </div>
+                    <form id="formVentilation">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="tableVentilation">
+                                <thead>
+                                    <tr class="text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 1px; border-bottom: 2px solid #f1f5f9;">
+                                        <th style="width: 50%;">Section Analytique</th>
+                                        <th style="width: 20%;">%</th>
+                                        <th style="width: 25%;">Montant</th>
+                                        <th style="width: 5%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                                <tfoot>
+                                    <tr class="fw-bold border-top" style="background: #f8fafc; font-size: 0.8rem;">
+                                        <td class="text-end" style="padding: 0.5rem;">Total:</td>
+                                        <td id="total_pourcentage" class="text-primary" style="padding: 0.5rem;">0.00 %</td>
+                                        <td id="total_montant_ventile" class="text-dark" style="padding: 0.5rem;">0.00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <button type="button" class="btn btn-outline-primary btn-xs rounded-pill fw-bold px-3" onclick="ajouterLigneVentilation()">
+                                <i class="bx bx-plus-circle me-1"></i> Ajouter une section
+                            </button>
+                        </div>
+                    </form>
+                    <div class="d-flex justify-content-center gap-3 pt-5">
+                        <button type="button" class="btn btn-outline-secondary px-5" data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" class="btn btn-primary px-5" onclick="validerVentilation()">
+                            <i class="bx bx-check-circle me-1"></i> Valider
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Tier Creation Modal -->
     <div class="modal fade" id="createTiersModal" tabindex="-1" aria-hidden="true" style="z-index: 10000;">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -269,7 +356,9 @@
         const TIERS_LIST = @json($plansTiers);
         const TREASURY_POST_LIST = @json($comptesTresorerie);
         const SAVE_ROUTE = "{{ route('api.ecriture.storeMultiple') }}";
+        const SECTIONS_ANALYTIQUES = @json(\App\Models\SectionAnalytique::with('axe')->get());
         let NEXT_SAISIE = "{{ $nextSaisieNumber }}";
+        let currentRowForVentilation = null;
 
         async function fetchNextSaisieNumber() {
             try {
@@ -284,6 +373,195 @@
                 console.error("Erreur sync n_saisie:", e);
             }
         }
+
+        // --- GESTION TVA MANUELLE ---
+        window.applyManualVAT = () => {
+            const amount = parseFloat(document.getElementById('manualVATAmount').value) || 0;
+            const accountId = document.getElementById('manualVATAccount').value;
+            const accountNum = document.getElementById('manualVATAccount').options[document.getElementById('manualVATAccount').selectedIndex]?.text.split(' ')[0];
+
+            if (amount <= 0 || !accountId) {
+                Swal.fire('Erreur', 'Veuillez saisir un montant et sélectionner un compte de TVA.', 'error');
+                return;
+            }
+
+            const rows = Array.from(document.querySelectorAll('#entriesBody tr'));
+            let mainLine = rows.find(tr => {
+                const accSelect = tr.querySelector('.row-acc');
+                const accCode = accSelect.options[accSelect.selectedIndex]?.text.split(' ')[0] || "";
+                return accCode.startsWith('40') || accCode.startsWith('57') || accCode.startsWith('41');
+            });
+
+            if (!mainLine) {
+                Swal.fire('Erreur', 'Impossible de trouver la ligne de contrepartie (Fournisseur/Caisse).', 'error');
+                return;
+            }
+
+            // Création de la ligne TVA
+            const tr = document.createElement('tr');
+            const date = mainLine.querySelector('.row-date').value;
+            const ref = mainLine.querySelector('.row-ref').value;
+
+            tr.innerHTML = `
+                <td><select class="form-select select2 row-acc"><option value="${accountId}" selected>${accountNum} - TVA MANUELLE</option></select></td>
+                <td><div class="d-flex gap-1"><select class="form-select select2 row-tier"><option value="" selected>Néant</option></select></div></td>
+                <td><input type="text" class="form-control form-control-sm row-lib" value="TVA MANUELLE"><div class="small text-muted mt-1 px-1">Pièce: ${ref} du ${date}</div><input type="hidden" class="row-date" value="${date}"><input type="hidden" class="row-ref" value="${ref}"></td>
+                <td><input type="number" class="form-control text-end row-debit" value="${amount}"></td>
+                <td><input type="number" class="form-control text-end row-credit" value="0"></td>
+                <td><select class="form-select select2 row-poste-treso" disabled><option value="">Néant</option></select></td>
+                <td class="text-center">
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button class="btn btn-sm btn-icon text-danger" onclick="this.closest('tr').remove(); window.updateTotals();"><i class="bx bx-trash"></i></button>
+                    </div>
+                </td>
+            `;
+
+            mainLine.parentNode.insertBefore(tr, mainLine);
+            $(tr).find('.select2').select2({ theme: 'bootstrap4', width: '100%' }).on('change', window.updateTotals);
+
+            // Mise à jour de la contrepartie
+            const currentCredit = parseFloat(mainLine.querySelector('.row-credit').value) || 0;
+            const currentDebit = parseFloat(mainLine.querySelector('.row-debit').value) || 0;
+            
+            if (currentCredit > 0) mainLine.querySelector('.row-credit').value = currentCredit + amount;
+            else if (currentDebit > 0) mainLine.querySelector('.row-debit').value = currentDebit - amount; // Cas rare
+
+            window.updateTotals();
+            document.getElementById('manualVATContainer').classList.add('d-none');
+        };
+
+        // --- GESTION VENTILATION ANALYTIQUE ---
+        window.ouvrirVentilation = (btn) => {
+            const tr = btn.closest('tr');
+            currentRowForVentilation = tr;
+            
+            const debit = parseFloat(tr.querySelector('.row-debit').value) || 0;
+            const credit = parseFloat(tr.querySelector('.row-credit').value) || 0;
+            const montant = Math.abs(debit - credit);
+
+            document.getElementById('montant_a_ventiler_display').innerText = montant.toLocaleString();
+            
+            const tbody = document.querySelector('#tableVentilation tbody');
+            tbody.innerHTML = '';
+
+            // Charger les données existantes si présentes
+            const existingData = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : [];
+            if (existingData.length > 0) {
+                existingData.forEach(v => ajouterLigneVentilation(v.section_id, v.pourcentage, v.montant));
+            } else {
+                ajouterLigneVentilation();
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('modalVentilationAnalytique'));
+            modal.show();
+            mettreAJourMontantsVentilation();
+        };
+
+        window.ajouterLigneVentilation = (sectionId = '', pourcentage = '', montant = '') => {
+            const tbody = document.querySelector('#tableVentilation tbody');
+            const tr = document.createElement('tr');
+            
+            let options = '<option value="" disabled selected>Sélectionner une section...</option>';
+            const grouped = {};
+            SECTIONS_ANALYTIQUES.forEach(s => {
+                const axeName = s.axe ? s.axe.nom : 'Autre';
+                if (!grouped[axeName]) grouped[axeName] = [];
+                grouped[axeName].push(s);
+            });
+
+            for (const [axe, sections] of Object.entries(grouped)) {
+                options += `<optgroup label="${axe}">`;
+                sections.forEach(s => {
+                    options += `<option value="${s.id}" ${s.id == sectionId ? 'selected' : ''}>${s.code} - ${s.intitule}</option>`;
+                });
+                options += `</optgroup>`;
+            }
+
+            tr.innerHTML = `
+                <td><select class="form-select form-select-sm select2-vent" required>${options}</select></td>
+                <td><input type="number" class="form-control form-control-sm vent-pct" step="0.01" min="0" max="100" value="${pourcentage}" placeholder="0.00"></td>
+                <td><input type="number" class="form-control form-control-sm vent-mnt" step="0.01" value="${montant}" placeholder="0.00"></td>
+                <td class="text-center"><button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); mettreAJourMontantsVentilation();"><i class="bx bx-trash"></i></button></td>
+            `;
+
+            tbody.appendChild(tr);
+            $(tr).find('.select2-vent').select2({ 
+                theme: 'bootstrap4', 
+                width: '100%', 
+                dropdownParent: $('#modalVentilationAnalytique') 
+            });
+
+            tr.querySelector('.vent-pct').oninput = () => calculerDepuisPct(tr);
+            tr.querySelector('.vent-mnt').oninput = () => calculerDepuisMnt(tr);
+        };
+
+        const calculerDepuisPct = (tr) => {
+            const total = parseFloat(document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '')) || 0;
+            const pct = parseFloat(tr.querySelector('.vent-pct').value) || 0;
+            tr.querySelector('.vent-mnt').value = (total * pct / 100).toFixed(2);
+            mettreAJourMontantsVentilation();
+        };
+
+        const calculerDepuisMnt = (tr) => {
+            const total = parseFloat(document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '')) || 0;
+            const mnt = parseFloat(tr.querySelector('.vent-mnt').value) || 0;
+            tr.querySelector('.vent-pct').value = total > 0 ? (mnt / total * 100).toFixed(2) : 0;
+            mettreAJourMontantsVentilation();
+        };
+
+        window.mettreAJourMontantsVentilation = () => {
+            let totalPct = 0;
+            let totalMnt = 0;
+            const totalAVentiler = parseFloat(document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '')) || 0;
+
+            document.querySelectorAll('#tableVentilation tbody tr').forEach(tr => {
+                totalPct += parseFloat(tr.querySelector('.vent-pct').value) || 0;
+                totalMnt += parseFloat(tr.querySelector('.vent-mnt').value) || 0;
+            });
+
+            document.getElementById('total_pourcentage').innerText = totalPct.toFixed(2) + ' %';
+            document.getElementById('total_montant_ventile').innerText = totalMnt.toFixed(2);
+
+            const isOk = Math.abs(totalPct - 100) < 0.1;
+            document.getElementById('total_pourcentage').className = isOk ? 'text-success' : 'text-danger';
+        };
+
+        window.validerVentilation = () => {
+            const totalPct = parseFloat(document.getElementById('total_pourcentage').innerText) || 0;
+            if (Math.abs(totalPct - 100) > 0.1) {
+                Swal.fire('Attention', 'Le total doit être égal à 100%. Actuellement : ' + totalPct.toFixed(2) + '%', 'warning');
+                return;
+            }
+
+            const ventilations = [];
+            let error = false;
+            document.querySelectorAll('#tableVentilation tbody tr').forEach(tr => {
+                const sectionId = tr.querySelector('.select2-vent').value;
+                const pourcentage = tr.querySelector('.vent-pct').value;
+                const montant = tr.querySelector('.vent-mnt').value;
+
+                if (!sectionId) error = true;
+                ventilations.push({ section_id: sectionId, pourcentage, montant });
+            });
+
+            if (error) {
+                Swal.fire('Erreur', 'Veuillez sélectionner une section pour chaque ligne.', 'error');
+                return;
+            }
+
+            currentRowForVentilation.dataset.ventilations = JSON.stringify(ventilations);
+            const badge = currentRowForVentilation.querySelector('.ventilated-badge');
+            if (badge) badge.classList.remove('d-none');
+            else {
+                const libCell = currentRowForVentilation.querySelector('td:nth-child(3)');
+                const newBadge = document.createElement('span');
+                newBadge.className = 'badge bg-label-info ms-2 ventilated-badge';
+                newBadge.innerHTML = '<i class="bx bx-pie-chart-alt me-1"></i>Ventilé';
+                libCell.appendChild(newBadge);
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalVentilationAnalytique')).hide();
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             const dropZone = document.getElementById('dropZone');
@@ -374,57 +652,6 @@
                     uploadContainer.classList.add('d-none');
                     
                     const base64Content = compressedBase64.split(',')[1];
-                    const prompt = `Tu es un expert-comptable SYSCOHADA expérimenté. Analyse cette facture et retourne UN SEUL JSON valide.
-
-INSTRUCTIONS STRUCTUREES :
-1. IDENTIFICATION : Identifie le type de document (facture, reçu, etc.)
-2. EXTRACTION : Extrais les informations financières essentielles
-3. COMPTABILISATION : Applique les règles SYSCOHADA strictes
-
-RÈGLES COMPTABLES CRITIQUES :
-- Si payé en espèces/reçu "OK" : Compte 571 (Caisse) au crédit
-- Si facture non payée : Compte 401 (Fournisseur) au crédit  
-- Location matériel (bâches, chaises, sono) : Compte 6223 OBLIGATOIRE
-- Transport/livraison : Compte 611 OBLIGATOIRE
-- Maintenance/entretien : Compte 6242 OBLIGATOIRE
-- TVA mentionnée : Compte 445
-- Services divers : Compte 611 ou 624 selon nature
-
-FORMAT JSON EXIGÉ (respecte exactement cette structure) :
-{
-    "hasVAT": true/false,
-    "fournisseur": "NOM EXACT FOURNISSEUR",
-    "date": "AAAA-MM-JJ",
-    "ref": "NUMÉRO PIÈCE",
-    "lignes": [
-        {
-            "compte": "CODE_SYSCOHADA_EXACT",
-            "type": "CHARGE|TVA|FOURNISSEUR|CAISSE|BANQUE",
-            "libelle": "DESCRIPTION PRÉCISE",
-            "debit": MONTANT_NUMÉRIQUE,
-            "credit": MONTANT_NUMÉRIQUE
-        }
-    ]
-}
-
-CONTRAINTES :
-- Total Débit = Total Crédit (vérification mathématique)
-- Codes comptables à 6 chiffres minimum
-- Montants en chiffres uniquement (pas de texte)
-- Une seule ligne par compte comptable
-- Structure JSON valide obligatoire
-
-VALIDATION FINALE :
-Vérifie que le JSON est parfaitement formé avant de répondre.`;
-
-                    const payload = { 
-                        contents: [{ 
-                            parts: [
-                                { text: prompt }, 
-                                { inlineData: { mimeType: "image/jpeg", data: base64Content } }
-                            ] 
-                        }]
-                    };
                     
                     const makeGeminiRequest = async (formData, retryCount = 0) => {
                         const MAX_RETRIES = 5;
@@ -457,13 +684,32 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                                 }
                             }
 
+                            // Gestion de la surcharge 503 (service temporairement indisponible)
+                            if (response.status === 503) {
+                                if (retryCount < MAX_RETRIES) {
+                                    const waitTime = Math.pow(2, retryCount) * 3000;
+                                    const h6 = processingUI.querySelector('h6');
+                                    for (let i = Math.ceil(waitTime/1000); i > 0; i--) {
+                                        h6.innerText = `IA SURCHARGÉE - Nouvelle tentative dans ${i}s... (${retryCount+1}/${MAX_RETRIES})`;
+                                        await new Promise(r => setTimeout(r, 1000));
+                                    }
+                                    h6.innerText = "NOUVELLE TENTATIVE EN COURS...";
+                                    return makeGeminiRequest(formData, retryCount + 1);
+                                } else {
+                                    throw new Error("L'IA Gemini est temporairement surchargée. Réessayez dans quelques instants.");
+                                }
+                            }
+
                             if (!response.ok) {
                                 throw new Error(responseData.error || `Erreur HTTP ${response.status}`);
                             }
 
                             return responseData;
                         } catch (e) {
-                            throw new Error(e.message.includes('quota') ? e.message : `Erreur de communication: ${e.message}`);
+                            const msg = e.message;
+                            if (msg.includes('503') || msg.includes('surcharg')) throw new Error("⚠️ L'IA est temporairement indisponible. Réessayez dans 30 secondes.");
+                            if (msg.includes('quota') || msg.includes('429')) throw new Error("⚠️ Quota IA dépassé. Réessayez dans quelques minutes.");
+                            throw new Error(`Erreur de communication: ${msg}`);
                         }
                     };
 
@@ -487,13 +733,16 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                     
                     // Manage VAT button state
                     const btnVAT = document.getElementById('btnApplyVAT');
-                    if (result.has_tva || (result.montant_tva && result.montant_tva > 0)) {
+                    const manualVAT = document.getElementById('manualVATContainer');
+                    if (result.has_tva || (result.montant_tva && result.montant_tva > 0) || result.hasVAT) {
                         btnVAT.classList.add('d-none');
                         btnVAT.disabled = true;
+                        manualVAT.classList.add('d-none');
                     } else {
                         btnVAT.classList.remove('d-none');
                         btnVAT.disabled = false;
                         btnVAT.innerHTML = '<i class="bx bx-plus me-1"></i>APPLIQUER TVA 18%';
+                        manualVAT.classList.remove('d-none');
                     }
 
                     renderTable(result);
@@ -569,39 +818,80 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                 entriesBody.innerHTML = '';
                 const ecritures = data.ecriture || data.lignes;
                 
-                // Get Poste Tresorerie options for the select
-                const posteTresOptions = Array.from(document.getElementById('poste_tresorerie')?.options || [])
-                    .filter(opt => opt.value)
-                    .map(opt => `<option value="${opt.value}">${opt.text}</option>`)
-                    .join('');
+                // Group treasury posts by category for the select
+                const groupedPosts = {};
+                TREASURY_POST_LIST.forEach(p => {
+                    const catName = p.category ? p.category.name : 'Autres';
+                    if (!groupedPosts[catName]) groupedPosts[catName] = [];
+                    groupedPosts[catName].push(p);
+                });
+
+                let treasuryOptionsHtml = '<option value="">Néant</option>';
+                for (const [cat, posts] of Object.entries(groupedPosts)) {
+                    treasuryOptionsHtml += `<optgroup label="${cat}">`;
+                    posts.forEach(p => {
+                        treasuryOptionsHtml += `<option value="${p.id}">${p.name}</option>`;
+                    });
+                    treasuryOptionsHtml += `</optgroup>`;
+                }
 
                 ecritures.forEach(l => {
                     const tr = document.createElement('tr');
                     const matchedAccId = findBestAccount(l.compte, l.type);
                     const accCode = l.compte ? l.compte.toString() : '';
                     const isTreasury = accCode.startsWith('5');
+                    const isVAT = l.type === 'TVA' || accCode.startsWith('445');
                     
+                    // Nettoyage des montants (suppression des espaces insérés par l'IA)
+                    const cleanAmount = (val) => {
+                        if (typeof val === 'number') return val;
+                        if (!val) return 0;
+                        return parseFloat(val.toString().replace(/[^\d.-]/g, '')) || 0;
+                    };
+
+                    const debit = cleanAmount(l.debit);
+                    const credit = cleanAmount(l.credit);
+
+                    // Déclaration et réinitialisation à chaque ligne
+                    let matchedTierId = '';
                     if (l.type === 'FOURNISSEUR' || (l.compte && l.compte.toString().startsWith('40'))) {
-                        const supplierName = (data.tiers || data.fournisseur || "").toUpperCase();
-                        const t = TIERS_LIST.find(t => supplierName.includes(t.intitule.toUpperCase()) || t.intitule.toUpperCase().includes(supplierName));
+                        const supplierName = (data.tiers || data.fournisseur || "").toUpperCase().trim();
+                        const t = TIERS_LIST.find(t => {
+                            const tierIntitule = t.intitule.toUpperCase().trim();
+                            return supplierName.includes(tierIntitule) || tierIntitule.includes(supplierName);
+                        });
                         if (t) matchedTierId = t.id;
                     }
 
                     const matchedPoste = isTreasury ? findTreasuryPost(matchedAccId) : { id: '', text: '' };
 
+                    // Generate treasury options with groups and selection
+                    let treasuryOptions = '<option value="">Néant</option>';
+                    for (const [cat, posts] of Object.entries(groupedPosts)) {
+                        treasuryOptions += `<optgroup label="${cat}">`;
+                        posts.forEach(p => {
+                            treasuryOptions += `<option value="${p.id}" ${p.id == matchedPoste.id ? 'selected' : ''}>${p.name}</option>`;
+                        });
+                        treasuryOptions += `</optgroup>`;
+                    }
+
                     tr.innerHTML = `
                         <td><select class="form-select select2 row-acc"><option value="">Choisir...</option>${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}</select></td>
                         <td><div class="d-flex gap-1"><select class="form-select select2 row-tier"><option value="">Néant</option>${TIERS_LIST.map(t => `<option value="${t.id}" ${t.id == matchedTierId ? 'selected' : ''}>${t.numero_de_tiers} - ${t.intitule}</option>`).join('')}</select><button type="button" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="modal" data-bs-target="#createTiersModal"><i class="bx bx-plus"></i></button></div></td>
                         <td><input type="text" class="form-control form-control-sm row-lib" value="${l.intitule || l.libelle || ''}"><div class="small text-muted mt-1 px-1">Pièce: ${data.reference || data.ref || ''} du ${data.date || ''}</div><input type="hidden" class="row-date" value="${data.date || ''}"><input type="hidden" class="row-ref" value="${data.reference || data.ref || ''}"></td>
-                        <td><input type="number" class="form-control text-end row-debit" value="${l.debit || 0}"></td>
-                        <td><input type="number" class="form-control text-end row-credit" value="${l.credit || 0}"></td>
+                        <td><input type="number" class="form-control text-end row-debit" value="${debit}" ${isVAT ? 'readonly style="background-color: #f8f9fa;"' : ''}></td>
+                        <td><input type="number" class="form-control text-end row-credit" value="${credit}" ${isVAT ? 'readonly style="background-color: #f8f9fa;"' : ''}></td>
                         <td>
                             <select class="form-select select2 row-poste-treso" ${isTreasury ? '' : 'disabled'}>
-                                <option value="">Néant</option>
-                                ${TREASURY_POST_LIST.map(p => `<option value="${p.id}" ${p.id == matchedPoste.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                                ${treasuryOptions}
                             </select>
                         </td>
-                        <td class="text-center"><button class="btn btn-sm btn-icon text-danger" onclick="this.closest('tr').remove(); window.updateTotals();"><i class="bx bx-trash"></i></button></td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                ${accCode.startsWith('6') ? `<button class="btn btn-sm btn-icon text-primary" onclick="window.ouvrirVentilation(this)" title="Ventiler"><i class="bx bx-pie-chart-alt"></i></button>` : ''}
+                                <button class="btn btn-sm btn-icon text-danger" onclick="this.closest('tr').remove(); window.updateTotals();" title="Supprimer"><i class="bx bx-trash"></i></button>
+                            </div>
+                        </td>
                     `;
                     entriesBody.appendChild(tr);
                     $(tr).find('.select2').select2({ theme: 'bootstrap4', width: '100%' }).on('change', window.updateTotals);
@@ -735,7 +1025,8 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                         debit: tr.querySelector('.row-debit').value,
                         credit: tr.querySelector('.row-credit').value,
                         exercices_comptables_id: CONTEXT.id_exercice,
-                        code_journal_id: CONTEXT.id_code
+                        code_journal_id: CONTEXT.id_code,
+                        ventilations: tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : []
                     };
                 });
 
@@ -791,7 +1082,8 @@ Vérifie que le JSON est parfaitement formé avant de répondre.`;
                         credit: tr.querySelector('.row-credit').value,
                         exercices_comptables_id: CONTEXT.id_exercice,
                         code_journal_id: CONTEXT.id_code,
-                        source: 'scan'
+                        source: 'scan',
+                        ventilations: tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : []
                     };
                 });
 

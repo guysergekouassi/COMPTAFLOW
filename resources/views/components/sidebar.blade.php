@@ -607,6 +607,10 @@
                     <i class="fa-solid fa-history"></i>
                     <span>Traçabilité & Activités</span>
                 </a>
+                <a href="{{ route('admin.ia.dashboard') }}" class="menu-link-new {{ request()->routeIs('admin.ia.dashboard') ? 'active' : '' }}">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span>Audit de l'IA</span>
+                </a>
                 @endif
                 @if(auth()->user()->hasPermission('admin.access'))
                 <a href="{{ route('admin.access') }}" class="menu-link-new {{ request()->routeIs('admin.access') ? 'active' : '' }}">

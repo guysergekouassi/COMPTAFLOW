@@ -1195,4 +1195,74 @@ class AccountingReportingService
         }
         $categories[$label]['data'][$monthIndex] += $montant;
     }
+
+    /**
+     * Rapport : Balance Analytique.
+     * Somme les ventilations par section pour un axe donné.
+     */
+    public function getBalanceAnalytiqueData($exerciceId, $companyId, $axeId)
+    {
+        return \App\Models\VentilationAnalytique::query()
+            ->join('ecriture_comptables', 'ventilations_analytiques.ecriture_id', '=', 'ecriture_comptables.id')
+            ->join('sections_analytiques', 'ventilations_analytiques.section_id', '=', 'sections_analytiques.id')
+            ->where('ecriture_comptables.exercices_comptables_id', $exerciceId)
+            ->where('ecriture_comptables.company_id', $companyId)
+            ->where('sections_analytiques.axe_id', $axeId)
+            ->select(
+                'sections_analytiques.code',
+                'sections_analytiques.libelle',
+                DB::raw('SUM(ventilations_analytiques.montant) as total_montant')
+            )
+            ->groupBy('sections_analytiques.code', 'sections_analytiques.libelle')
+            ->get();
+    }
+
+    /**
+     * Rapport : Grand Livre Analytique.
+     * Liste chronologique des écritures ventilées.
+     */
+    public function getGrandLivreAnalytiqueData($exerciceId, $companyId, $axeId, $sectionId = null)
+    {
+        $query = \App\Models\VentilationAnalytique::query()
+            ->with(['ecriture.planComptable', 'section'])
+            ->join('ecriture_comptables', 'ventilations_analytiques.ecriture_id', '=', 'ecriture_comptables.id')
+            ->join('sections_analytiques', 'ventilations_analytiques.section_id', '=', 'sections_analytiques.id')
+            ->where('ecriture_comptables.exercices_comptables_id', $exerciceId)
+            ->where('ecriture_comptables.company_id', $companyId)
+            ->where('sections_analytiques.axe_id', $axeId);
+
+        if ($sectionId) {
+            $query->where('ventilations_analytiques.section_id', $sectionId);
+        }
+
+        return $query->orderBy('ecriture_comptables.date')->get();
+    }
+
+    /**
+     * Rapport : Résultat Analytique.
+     * Calcul (Produits - Charges) ventilé par axe/section.
+     */
+    public function getResultatAnalytiqueData($exerciceId, $companyId, $axeId)
+    {
+        $ventilations = \App\Models\VentilationAnalytique::query()
+            ->join('ecriture_comptables', 'ventilations_analytiques.ecriture_id', '=', 'ecriture_comptables.id')
+            ->join('plan_comptables', 'ecriture_comptables.plan_comptable_id', '=', 'plan_comptables.id')
+            ->join('sections_analytiques', 'ventilations_analytiques.section_id', '=', 'sections_analytiques.id')
+            ->where('ecriture_comptables.exercices_comptables_id', $exerciceId)
+            ->where('ecriture_comptables.company_id', $companyId)
+            ->where('sections_analytiques.axe_id', $axeId)
+            ->where(function($q) {
+                $q->where('plan_comptables.numero_de_compte', 'LIKE', '6%')
+                  ->orWhere('plan_comptables.numero_de_compte', 'LIKE', '7%');
+            })
+            ->select(
+                'sections_analytiques.code',
+                'sections_analytiques.libelle',
+                DB::raw('SUM(CASE WHEN plan_comptables.numero_de_compte LIKE "7%" THEN ventilations_analytiques.montant ELSE -ventilations_analytiques.montant END) as resultat')
+            )
+            ->groupBy('sections_analytiques.code', 'sections_analytiques.libelle')
+            ->get();
+
+        return $ventilations;
+    }
 }

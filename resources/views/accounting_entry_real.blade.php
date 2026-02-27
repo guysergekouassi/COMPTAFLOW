@@ -1054,16 +1054,23 @@
                                             <i class="bx bx-receipt"></i>Poste Trésorerie
                                         </label>
                                         <div class="d-flex gap-2 align-items-center">
-                                            <select id="poste_tresorerie" name="poste_tresorerie" class="form-select select2" style="flex: 1;" disabled>
-                                                <option value="" selected disabled>Sélectionner un poste...</option>
-                                                @foreach($comptesTresorerie as $treso)
-                                                    <option value="{{ $treso->id }}" 
-                                                        data-category="{{ $treso->category->name ?? '' }}"
-                                                        data-syscohada-line-id="{{ $treso->syscohada_line_id ?? '' }}">
-                                                        {{ $treso->name }} - {{ $treso->category->name ?? 'Sans catégorie' }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                             <select id="poste_tresorerie" name="poste_tresorerie" class="form-select select2" style="flex: 1;" disabled>
+                                                 <option value="" selected disabled>Sélectionner un poste...</option>
+                                                 @php
+                                                     $groupedTreso = $comptesTresorerie->groupBy(fn($t) => $t->category->name ?? 'Sans catégorie');
+                                                 @endphp
+                                                 @foreach($groupedTreso as $catName => $postes)
+                                                     <optgroup label="{{ $catName }}">
+                                                         @foreach($postes as $treso)
+                                                             <option value="{{ $treso->id }}" 
+                                                                 data-category="{{ $catName }}"
+                                                                 data-syscohada-line-id="{{ $treso->syscohada_line_id ?? '' }}">
+                                                                 {{ $treso->name }}
+                                                             </option>
+                                                         @endforeach
+                                                     </optgroup>
+                                                 @endforeach
+                                             </select>
                                             <button type="button" id="btn_create_poste_entry" class="btn btn-outline-secondary btn-premium d-none" data-bs-toggle="modal" data-bs-target="#modalCreatePoste" title="Créer un nouveau poste de trésorerie" style="
                                                 background: #ffffff;
                                                 border: 2px solid #e2e8f0;
@@ -2249,7 +2256,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 5. Fonctions existantes inchangées
-function ajouterEcriture() {
+async function ajouterEcriture() {
     try {
         const date = document.getElementById('date');
         const nSaisie = document.getElementById('n_saisie');
@@ -2281,9 +2288,29 @@ function ajouterEcriture() {
             return;
         }
 
-        if (tvaAmount && parseFloat(tvaAmount.value) > 0 && (!compteTva || !compteTva.value)) {
-            alert('Veuillez sélectionner un compte de TVA.');
-            return;
+        if (tvaAmount && parseFloat(tvaAmount.value) > 0) {
+            if (!compteTva || !compteTva.value) {
+                alert('Veuillez sélectionner un compte de TVA.');
+                return;
+            }
+
+            // --- VALIDATION COHÉRENCE TVA ---
+            const montantHt = parseFloat(debit.value || credit.value || 0);
+            const montantTva = parseFloat(tvaAmount.value);
+            const tvaTheorique = Math.round(montantHt * 0.18);
+            const diff = Math.abs(montantTva - tvaTheorique);
+
+            if (diff > 5) { // Tolérance de 5 FCFA pour les arrondis
+                const confirmTva = await Swal.fire({
+                    icon: 'question',
+                    title: 'Incohérence TVA ?',
+                    text: `Le montant de TVA (${montantTva}) diffère de 18% du HT (${tvaTheorique}). Confirmez-vous ce montant ?`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, confirmer',
+                    cancelButtonText: 'Non, corriger'
+                });
+                if (!confirmTva.isConfirmed) return;
+            }
         }
 
         const tbody = document.getElementById('tableEcrituresBody');
@@ -2304,7 +2331,9 @@ function ajouterEcriture() {
         const posteTresorerieSelect = document.getElementById('poste_tresorerie');
         const posteTresorerieId = posteTresorerieSelect && !posteTresorerieSelect.disabled ? 
                                  posteTresorerieSelect.value : '';
-        const posteTresorerieText = posteTresorerieId ? posteTresorerieSelect.options[posteTresorerieSelect.selectedIndex].text : '';
+        const selectedPosteOpt = posteTresorerieSelect ? posteTresorerieSelect.options[posteTresorerieSelect.selectedIndex] : null;
+        const posteTresorerieText = (posteTresorerieId && selectedPosteOpt) ? selectedPosteOpt.text : '';
+        const posteTresorerieCat = (posteTresorerieId && selectedPosteOpt) ? selectedPosteOpt.getAttribute('data-category') : '';
 
         // Formattage des montants
         const formatNumber = (val) => {
@@ -2352,14 +2381,7 @@ function ajouterEcriture() {
                     ${!isVat ? `
                     <div class="d-flex align-items-center gap-2 group">
                         <span class="badge bg-label-info poste-badge-text" style="font-size: 0.65rem;">
-                            ${(() => {
-                                if (!posteTresorerieText) return '-';
-                                const parts = posteTresorerieText.split(' - ');
-                                if (parts.length > 1) {
-                                    return `${parts[0]} <span class="badge bg-white text-info shadow-sm ms-1">${parts.slice(1).join(' - ')}</span>`;
-                                }
-                                return posteTresorerieText;
-                            })()}
+                            ${posteTresorerieText ? `${posteTresorerieText}${posteTresorerieCat ? ` <span class="badge bg-white text-info shadow-sm ms-1">${posteTresorerieCat}</span>` : ''}` : '-'}
                         </span>
                         ${posteTresorerieId ? `
                             <button type="button" class="btn btn-icon btn-xs btn-label-secondary opacity-0 group-hover:opacity-100 transition-opacity" 
@@ -2683,6 +2705,40 @@ function ajouterEcriture() {
             chargerBrouillonBackend(batchId);
         } else if (nSaisie) {
             chargerEcritureBackend(nSaisie);
+        }
+
+        // --- CONTRÔLE DES DOUBLONS DE RÉFÉRENCE ---
+        const refPieceInput = document.getElementById('reference_piece');
+        if (refPieceInput) {
+            refPieceInput.addEventListener('change', async function() {
+                const ref = this.value.trim();
+                if (!ref || ref === '-') return;
+
+                try {
+                    const response = await fetch(`/ecritures/check-reference?reference=${encodeURIComponent(ref)}`);
+                    const data = await response.json();
+                    
+                    if (data.is_duplicate) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Doublon Détecté',
+                            text: `Une écriture avec la référence "${ref}" existe déjà dans cet exercice. Souhaitez-vous continuer ?`,
+                            showCancelButton: true,
+                            confirmButtonText: 'Oui, continuer',
+                            cancelButtonText: 'Non, vérifier',
+                            confirmButtonColor: '#3b82f6',
+                            cancelButtonColor: '#64748b'
+                        }).then((result) => {
+                            if (!result.isConfirmed) {
+                                this.value = '';
+                                this.focus();
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('Erreur check-reference:', e);
+                }
+            });
         }
     });
 

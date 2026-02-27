@@ -208,6 +208,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::get('/accounting_entry_list', [EcritureComptableController::class, 'list'])->name('accounting_entry_list');
     Route::get('/ecritures/rejetees', [EcritureComptableController::class, 'rejectedList'])->name('ecriture.rejected');
     Route::post('/ecritures/update-approval', [EcritureComptableController::class, 'updateFromApproval'])->name('ecriture.update_approval');
+    Route::get('/ecritures/check-reference', [EcritureComptableController::class, 'checkReference'])->name('ecriture.check_reference');
     Route::delete('/ecritures/saisie/{n_saisie}', [EcritureComptableController::class, 'deleteBySaisie'])->name('ecriture.delete_saisie');
 
     // Brouillons
@@ -361,7 +362,8 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
 
         // Audit & Suivi
         Route::get('/audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit');
-    Route::get('/audit/export', [App\Http\Controllers\Admin\AuditController::class, 'export'])->name('audit.export');
+        Route::get('/audit/export', [App\Http\Controllers\Admin\AuditController::class, 'export'])->name('audit.export');
+        Route::get('/ia-dashboard', [App\Http\Controllers\IaController::class, 'dashboard'])->name('ia.dashboard');
         
         // Contrôle d'Accès
         Route::get('/access-control', [App\Http\Controllers\Admin\AccessController::class, 'index'])->name('access');

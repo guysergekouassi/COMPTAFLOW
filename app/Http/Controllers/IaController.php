@@ -17,6 +17,31 @@ class IaController extends Controller
         $this->middleware('auth');
     }
 
+    public function dashboard(Request $request)
+    {
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+
+        $stats = [
+            'total' => IaLog::where('company_id', $companyId)->count(),
+            'success' => IaLog::where('company_id', $companyId)->where('status', 'success')->count(),
+            'error' => IaLog::where('company_id', $companyId)->where('status', 'error')->count(),
+            'corrected' => IaLog::where('company_id', $companyId)->where('status', 'corrected')->count(),
+            'avg_tokens' => IaLog::where('company_id', $companyId)
+                ->where('status', 'success')
+                ->selectRaw('AVG(prompt_tokens + response_tokens) as avg')
+                ->first()->avg ?? 0,
+        ];
+
+        $recentLogs = IaLog::where('company_id', $companyId)
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        return view('admin.ia.dashboard', compact('stats', 'recentLogs'));
+    }
+
     /**
      * Traite une facture scannée via l'API Gemini.
      * Injecte le Plan Comptable et les Tiers de l'entreprise dans le prompt.
@@ -36,7 +61,6 @@ class IaController extends Controller
             $image_hash = md5_file($image->getPathname()) . '_' . $image->getSize();
             $cache_key = "ia_analysis_{$companyId}_{$image_hash}";
 
-            // Cache : éviter les appels répétés pour la même image
             if (Cache::has($cache_key)) {
                 return response()->json([
                     'message' => 'Résultat récupéré du cache',
@@ -50,8 +74,8 @@ class IaController extends Controller
             if (!$api_key) {
                 return response()->json(['error' => 'Clé API Gemini manquante dans le fichier .env'], 500);
             }
-            $model = "gemini-flash-latest";
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$api_key}";
+            $model = "gemini-1.5-flash";
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
             // 1. Préparation de l'image (Compression automatique pour stabilité)
             $raw_image_data = file_get_contents($image->getPathname());
@@ -84,13 +108,13 @@ class IaController extends Controller
                 ],
                 "generationConfig" => [
                     "temperature" => 0.1,
-                    "maxOutputTokens" => 8192,
+                    "maxOutputTokens" => 4096,
                     "responseMimeType" => "application/json"
                 ]
             ];
 
             // 5. Appel API avec retry exponentiel anti-429
-            $result = $this->callGeminiApi($url, $payload);
+            $result = $this->callGeminiApi($url, $payload, $api_key);
 
             if (isset($result['error'])) {
                 // Log de l'erreur avec JSON brut si disponible
@@ -249,7 +273,10 @@ RÈGLES ABSOLUES :
 5. TVA CI = 18% (compte 445100 pour déductible, 445200 pour collectée).
 6. Facture non payée → 401000 (fournisseur) ou 411000 (client).
 7. Paiement espèces → 571000, par banque → 521000.
-8. soit intelligent , reflichit , met toi dans la peau d'un expert-comptable SYSCOHADA Côte d'Ivoire. 
+8. LIBELLÉS : Utilise EXCLUSIVEMENT les intitulés réels présents sur la facture (ex: "Achat de chaises", "Maintenance sono"). NE PAS inventer de libellés génériques.
+9. TVA : N'ajoute une ligne de TVA QUE SI un montant ou un taux de TVA est EXPLICITEMENT écrit sur le document. Si aucune TVA n'est visible, ne génère PAS de ligne de type "TVA".
+10. MONTANTS : Fournis uniquement des nombres entiers ou décimaux, SANS séparateurs de milliers (ex: 90000 et non 90 000).
+11. FIDÉLITÉ : Sois un expert-comptable rigoureux, colle au document.
 
 FORMAT EXIGÉ : Réponds avec UNIQUEMENT le bloc JSON, sans aucun texte avant ou après, sans balises ```json ou ```. Ton résultat doit commencer par { et finir par }.
 
@@ -276,7 +303,7 @@ PROMPT;
     /**
      * Appelle l'API Gemini avec retry exponentiel.
      */
-    private function callGeminiApi(string $url, array $payload): array
+    private function callGeminiApi(string $url, array $payload, string $api_key): array
     {
         $max_retries = 5;
         $retry_count = 0;
@@ -290,7 +317,10 @@ PROMPT;
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'X-goog-api-key: ' . $api_key,
+            ]);
             curl_setopt($ch, CURLOPT_TIMEOUT, 120);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -307,12 +337,22 @@ PROMPT;
         
             curl_close($ch);
 
-            if ($http_code == 429) {
+            if ($http_code == 429 || $http_code == 503) {
                 $retry_count++;
                 if ($retry_count >= $max_retries) {
-                    return ['error' => 'Quota Gemini dépassé. Réessayez dans quelques minutes.'];
+                    if ($http_code == 429) {
+                        // Vérifier si c'est un problème de Free Tier vs billing
+                        $resp = json_decode($response, true);
+                        $isFreeT = str_contains($response, 'free_tier');
+                        $msg = $isFreeT
+                            ? 'Clé API Gemini sur Free Tier (quota 0). Activez la facturation sur console.cloud.google.com pour votre projet Google Cloud.'
+                            : 'Quota Gemini dépassé. Réessayez dans quelques minutes.';
+                    } else {
+                        $msg = 'Le service IA est temporairement surchargé (503). Veuillez réessayer dans quelques instants.';
+                    }
+                    return ['error' => $msg, 'http_code' => $http_code];
                 }
-                $delay = $base_delay * pow(3, $retry_count - 1) + rand(1, 3);
+                $delay = $base_delay * pow(2, $retry_count - 1) + rand(1, 3);
                 sleep($delay);
                 continue;
             }
@@ -325,15 +365,28 @@ PROMPT;
             if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
                 $json_text = $result['candidates'][0]['content']['parts'][0]['text'];
                 
-                // Extraction robuste : tout ce qui est entre { et } inclusivement
-                if (preg_match('/\{.*\}/s', $json_text, $matches)) {
-                    $json_text = $matches[0];
+                // Nettoyage Markdown (si présent)
+                $json_text = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $json_text);
+                
+                // Extraction du premier bloc { ... }
+                $start = strpos($json_text, '{');
+                $end = strrpos($json_text, '}');
+                
+                if ($start !== false && $end !== false) {
+                    $json_text = substr($json_text, $start, $end - $start + 1);
                 }
+
+                // Supprimer d'éventuels caractères invisibles/parasites
+                $json_text = trim($json_text);
+                $json_text = preg_replace('/[\x00-\x1F\x7F]/', '', $json_text);
 
                 $data = json_decode($json_text, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     return ['data' => $data];
                 }
+                
+                // Log de l'erreur JSON pour débogage
+                \Log::error("Gemini JSON Parse Error: " . json_last_error_msg() . " | Content: " . substr($json_text, 0, 100) . "...");
                 return ['error' => 'JSON invalide généré par l\'IA', 'raw' => $json_text];
             }
         }
@@ -343,7 +396,7 @@ PROMPT;
     /**
      * Compresse l'image si nécessaire pour éviter les timeouts API.
      */
-    private function compressImage(string $path, int $maxWidthPx = 1200, int $quality = 75): string
+    private function compressImage(string $path, int $maxWidthPx = 1000, int $quality = 70): string
     {
         $info = @getimagesize($path);
         if (!$info) return file_get_contents($path);
