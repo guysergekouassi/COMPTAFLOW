@@ -85,7 +85,7 @@ class EntryController extends Controller
         $request->validate([
             'date' => 'required|date',
             'n_saisie' => 'nullable|string',
-            'code_journal_id' => 'required|exists:code_journaux,id',
+            'code_journal_id' => 'required|exists:code_journals,id',
             'description_operation' => 'required|string',
             'plan_comptable_id' => 'required|exists:plan_comptables,id',
             'plan_tiers_id' => 'nullable|exists:plan_tiers,id',
@@ -160,7 +160,7 @@ class EntryController extends Controller
 
         $request->validate([
             'date' => 'required|date',
-            'code_journal_id' => 'required|exists:code_journaux,id',
+            'code_journal_id' => 'required|exists:code_journals,id',
             'reference_piece' => 'nullable|string',
             'lines' => 'required|array|min:2',
             'lines.*.plan_comptable_id' => 'required|exists:plan_comptables,id',
