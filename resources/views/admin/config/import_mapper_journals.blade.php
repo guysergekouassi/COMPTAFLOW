@@ -122,30 +122,32 @@
                                                      </div>
                                                      <div class="col-md-7">
                                                          <div class="d-flex gap-2">
-                                                            <select name="mapping[{{ $key }}]" class="select-mapping flex-grow-1" @if($field['required'] ?? false) required @endif id="select_{{ $key }}">
-                                                                <option value="">-- Ignorer cette colonne --</option>
-                                                                 @foreach($headers as $index => $header)
-                                                                     @php
-                                                                         $selected = false;
-                                                                         if (isset($field['suggested_col'])) {
-                                                                             $selected = ($field['suggested_col'] === $index);
-                                                                         } else {
-                                                                             $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $header)));
-                                                                             foreach(($field['match'] ?? []) as $m) {
-                                                                                 if(str_contains($cleanHeader, $m)) {
-                                                                                     $selected = true;
-                                                                                     break;
-                                                                                 }
-                                                                             }
-                                                                         }
-                                                                     @endphp
-                                                                    <option value="{{ $index }}" {{ $selected ? 'selected' : '' }}>
-                                                                        Colonne {{ $index + 1 }} : {{ $header }}
-                                                                    </option>
-                                                                 @endforeach
-                                                                 @if($key === 'type')
-                                                                     <option value="FIXED" class="text-primary font-bold">--- UTILISER UNE VALEUR FIXE ---</option>
-                                                                 @endif
+                                                             <select name="mapping[{{ $key }}]" class="select-mapping flex-grow-1 @if($key === 'type') bg-slate-100 opacity-60 pointer-events-none @endif" @if($field['required'] ?? false) required @endif id="select_{{ $key }}">
+                                                                @if($key === 'type')
+                                                                    <option value="AUTO" selected>Auto-détection activée (depuis le code ou compte)</option>
+                                                                @else
+                                                                    <option value="">-- Ignorer cette colonne --</option>
+                                                                    @foreach($headers as $index => $header)
+                                                                        @php
+                                                                            $selected = false;
+                                                                            if (isset($field['suggested_col'])) {
+                                                                                $selected = ($field['suggested_col'] === $index);
+                                                                            } else {
+                                                                                $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $header)));
+                                                                                foreach(($field['match'] ?? []) as $m) {
+                                                                                    if(str_contains($cleanHeader, $m)) {
+                                                                                        $selected = true;
+                                                                                        break;
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        @endphp
+                                                                        <option value="{{ $index }}" {{ $selected ? 'selected' : '' }}>
+                                                                            Colonne {{ $index + 1 }} : {{ $header }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                    <option value="FIXED" class="text-primary font-bold">--- UTILISER UNE VALEUR FIXE ---</option>
+                                                                @endif
                                                             </select>
 
                                                             @if($key === 'type')
@@ -158,11 +160,12 @@
                                                                 </select>
                                                             @endif
                                                          </div>
-                                                         @if($field['auto_generate'] ?? false && isset($field['info']))
+                                                         @if(($field['auto_generate'] ?? false) && isset($field['info']))
                                                              <div class="mt-2 text-[11px] text-slate-500 italic bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
                                                                  <i class="fa-solid fa-circle-info me-1 text-blue-400"></i> {{ $field['info'] }}
                                                              </div>
                                                          @endif
+
                                                      </div>
                                                  </div>
                                              </div>

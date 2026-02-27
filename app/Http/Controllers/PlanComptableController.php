@@ -29,6 +29,9 @@ class PlanComptableController extends Controller
         $comptesSysteme = PlanComptable::where('company_id', $companyId)
             ->where('adding_strategy', 'auto')
             ->count();
+        $comptesImportes = PlanComptable::where('company_id', $companyId)
+            ->where('adding_strategy', 'imported')
+            ->count();
 
         // 3. Récupérer TOUS les plans de cette société (auto + manuel)
         $query = PlanComptable::where('company_id', $companyId);
@@ -46,6 +49,9 @@ class PlanComptableController extends Controller
         
         // Nombre de plans créés AUTOMATIQUEMENT (Système)
         $plansSys = $plansComptables->where('adding_strategy', 'auto')->count();
+
+        // Nombre de plans IMPORTÉS
+        $plansImported = $plansComptables->where('adding_strategy', 'imported')->count();
         
         $hasAutoStrategy = $plansSys > 0;
 
@@ -54,12 +60,14 @@ class PlanComptableController extends Controller
             'totalPlans' => $totalPlans,
             'plansByUser' => $plansByUser,
             'plansSys' => $plansSys,
+            'plansImported' => $plansImported,
             'hasAutoStrategy' => $hasAutoStrategy,
             'isDefaultView' => true,
             // Variables pour les KPI
             'totalComptes' => $totalComptes,
             'comptesManuels' => $comptesManuels,
-            'comptesSysteme' => $comptesSysteme
+            'comptesSysteme' => $comptesSysteme,
+            'comptesImportes' => $comptesImportes
         ]);
 
     } catch (\Exception $e) {

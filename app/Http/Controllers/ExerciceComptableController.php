@@ -438,6 +438,7 @@ public function index()
                     'company_id' => $companyId,
                     'user_id' => Auth::id(),
                     'is_ran' => true,
+                    'plan_analytique' => 0, // Ajouté pour corriger l'erreur SQL (pas de valeur par défaut)
                     'statut' => 'approved' // Directement validé pour le RAN
                 ]);
             }

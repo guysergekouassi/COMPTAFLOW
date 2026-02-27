@@ -221,6 +221,17 @@
                                     <h3 class="text-2xl font-bold text-slate-800">{{ $plansSys }}</h3>
                                 </div>
                             </div>
+
+                            <!-- Imported -->
+                            <div class="glass-card !p-6 flex items-center cursor-pointer filter-card" data-filter-type="imported">
+                                <div class="p-3 rounded-full bg-orange-100 text-orange-600 mr-4">
+                                    <i class="bx bx-file-import text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Plans Importés</p>
+                                    <h3 class="text-2xl font-bold text-slate-800">{{ $plansImported }}</h3>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Actions Bar -->
@@ -362,11 +373,16 @@
                                             <td class="px-8 py-6">
                                                 @php
                                                     $strategy = $plan->adding_strategy ?? 'Manuel';
-                                                    $isManuel = (strtolower($strategy) === 'manuel' || strtolower($strategy) === 'manual');
-                                                    $color = $isManuel ? '#3b82f6' : '#10b981';
+                                                    $strategyLower = strtolower($strategy);
+                                                    $isManuel = ($strategyLower === 'manuel' || $strategyLower === 'manual');
+                                                    $isImported = ($strategyLower === 'imported');
+                                                    
+                                                    $color = '#10b981'; // Default green for auto
+                                                    if ($isManuel) $color = '#3b82f6'; // Blue for manual
+                                                    if ($isImported) $color = '#f59e0b'; // Orange for imported
                                                 @endphp
                                                 <span class="px-3 py-1 text-xs font-medium rounded-full" style="background-color: {{ $color }}; color: white;">
-                                                    {{ $strategy }}
+                                                    {{ ucfirst($strategy) }}
                                                 </span>
                                             </td>
 
@@ -745,6 +761,7 @@
                     
                     if (type === 'user') table.column(3).search('manuel').draw();
                     else if (type === 'system') table.column(3).search('auto').draw();
+                    else if (type === 'imported') table.column(3).search('imported').draw();
                     else table.column(3).search('').draw();
                 });
             }

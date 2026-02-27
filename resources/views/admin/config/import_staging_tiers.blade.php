@@ -149,17 +149,46 @@
                                                     <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
                                                         <i class="fa-solid fa-book"></i>
                                                     </div>
-                                                    <h6 class="font-bold mb-0">Comptabilité ({{ $missingAccountErrors + $missingPrefixErrors }})</h6>
+                                                    <h6 class="font-bold mb-0">Comptes Généraux Manquants ({{ $missingAccountErrors + $missingPrefixErrors }})</h6>
                                                 </div>
                                                 <div class="mb-3">
                                                     <span class="text-[10px] fw-black text-rose-500 uppercase tracking-widest">RAISON</span>
-                                                    <p class="text-xs text-slate-500 mb-0">Comptes inexistants ou format incorrect.</p>
+                                                    <p class="text-xs text-slate-500 mb-0">Comptes collectifs inexistants ou format incorrect.</p>
                                                 </div>
                                                 <div>
-                                                    <span class="text-[10px] fw-black text-emerald-500 uppercase tracking-widest">SOLUTION</span>
-                                                    <div class="alert alert-emerald py-2 px-3 text-[10px] mb-0 border-0 bg-emerald-50 text-emerald-700">
-                                                        Les correspondances seront automatiquement établies lors de l'importation.
-                                                    </div>
+                                                    <span class="text-[10px] fw-black text-emerald-500 uppercase tracking-widest">ACTION REQUISE</span>
+                                                    @php
+                                                        $missingAccountNumbers = collect($rowsWithStatus)
+                                                            ->flatMap(function($r) {
+                                                                return collect($r['errors'])
+                                                                    ->filter(fn($e) => str_contains($e, "n'existe pas. Veuillez le créer au préalable."))
+                                                                    ->map(function($e) {
+                                                                        preg_match('/compte collectif ([0-9]+) n\'existe pas/', $e, $matches);
+                                                                        return $matches[1] ?? null;
+                                                                    });
+                                                            })
+                                                            ->filter()
+                                                            ->unique()
+                                                            ->values();
+                                                    @endphp
+                                                    @if($missingAccountNumbers->count() > 0)
+                                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                                            @foreach($missingAccountNumbers as $accNum)
+                                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" 
+                                                                        data-accnum="{{ trim($accNum) }}"
+                                                                        data-acclen="{{ $accountDigits ?? 8 }}"
+                                                                        onclick="quickCreateGeneralAccount(this.dataset.accnum, parseInt(this.dataset.acclen) || 8)"
+                                                                        title="Cliquer pour créer ce compte">
+                                                                    <i class="fa-solid fa-plus me-1"></i> {{ trim($accNum) }}
+                                                                </button>
+                                                            @endforeach
+                                                        </div>
+                                                        <p class="text-xs text-slate-500 mt-2 mb-0 italic">Cliquez sur un compte rouge pour le créer. Les lignes seront mises à jour automatiquement.</p>
+                                                    @else
+                                                        <div class="alert alert-emerald py-2 px-3 text-[10px] mb-0 border-0 bg-emerald-50 text-emerald-700">
+                                                            Les correspondances seront automatiquement établies lors de l'importation.
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -745,6 +774,90 @@
                         }
                     })
                     .catch(error => {
+                        Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error');
+                    });
+                }
+            });
+        }
+
+        function quickCreateGeneralAccount(baseNumero, requiredLength) {
+            // Propose a padded number if shorter than required
+            let proposedNumero = baseNumero.toString();
+            if (proposedNumero.length < requiredLength) {
+                proposedNumero = proposedNumero.padEnd(requiredLength, '0');
+            } else if (proposedNumero.length > requiredLength) {
+                proposedNumero = proposedNumero.substring(0, requiredLength);
+            }
+
+            Swal.fire({
+                title: 'Créer le compte collectif',
+                html: `
+                    <div class="text-start">
+                        <p class="text-sm text-slate-500 mb-3">Le système propose ce numéro de compte basé sur vos paramètres (${requiredLength} caractères max).</p>
+                        <div class="mb-3">
+                            <label class="form-label text-xs font-bold text-slate-500">Numéro de Compte</label>
+                            <input type="text" id="swal-new-acc-num" class="form-control" value="${proposedNumero}" maxlength="${requiredLength}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-xs font-bold text-slate-500">Intitulé du Compte</label>
+                            <input type="text" id="swal-new-acc-name" class="form-control" placeholder="Ex: FOURNISSEURS COLLECTIF" value="COMPTE COLLECTIF ${baseNumero}">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Créer',
+                cancelButtonText: 'Annuler',
+                customClass: {
+                    confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
+                    cancelButton: 'btn btn-label-secondary rounded-xl px-4'
+                },
+                buttonsStyling: false,
+                preConfirm: () => {
+                    const num = document.getElementById('swal-new-acc-num').value.trim();
+                    const name = document.getElementById('swal-new-acc-name').value.trim();
+                    if (!num || !name) {
+                        Swal.showValidationMessage('Veuillez remplir tous les champs');
+                        return false;
+                    }
+                    if (num.length !== requiredLength && requiredLength > 0) {
+                        Swal.showValidationMessage(`Le numéro doit faire exactement ${requiredLength} caractères`);
+                        return false;
+                    }
+                    return { numero: num, intitule: name };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.showLoading();
+                    fetch("{{ route('admin.import.quick_account') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            numero_compte: result.value.numero,
+                            intitule: result.value.intitule,
+                            type_de_compte: 'Bilan'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: 'Succès',
+                                text: 'Création réussie. Actualisation en cours...',
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Erreur', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
                         Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error');
                     });
                 }

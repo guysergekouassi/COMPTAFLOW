@@ -229,10 +229,15 @@
                             </div>
                         </div>
 
-                        <div class="mb-4 text-center">
+                        <div class="mb-4 d-flex justify-content-center gap-2">
                             <button type="button" id="toggleDatesBtn" class="btn btn-sm btn-outline-primary" onclick="toggleDateDisplay()">
                                 <i class="fa-solid fa-calendar me-1"></i> Afficher les dates
                             </button>
+                            @if($errorCount > 0)
+                            <button type="button" id="bulkDeleteErrorsBtn" class="btn btn-sm btn-outline-danger" onclick="selectAndBulkDeleteErrors()">
+                                <i class="fa-solid fa-trash-can me-1"></i> Suppression Totale ({{ $errorCount }} erreurs)
+                            </button>
+                            @endif
                         </div>
 
                         <div class="staging-card p-0 overflow-hidden mb-6">
@@ -241,6 +246,9 @@
                                     <table class="table table-staging mb-0">
                                         <thead>
                                             <tr>
+                                                <th style="width: 40px;" class="text-center">
+                                                    <input type="checkbox" id="masterCheckbox" class="form-check-input" onclick="toggleAllCheckboxes(this)">
+                                                </th>
                                                 <th style="width: 50px;">STATUT</th>
                                                 @if($import->type == 'initial')
                                                     <th>NUMÉRO DE COMPTE</th>
@@ -267,7 +275,7 @@
                                                     <th>TIERS</th>
                                                     <th>LIBELLÉ</th>
                                                     <th class="text-end">DÉBIT</th>
-                                                    <th class="text-end">CRÉDIT</th>
+                                                <th class="text-end">CRÉDIT</th>
                                                 @endif
                                                 <th class="text-center">ACTIONS</th>
                                             </tr>
@@ -278,7 +286,10 @@
                                             @endphp
  
                                             @foreach($rowsWithStatus as $rowIndex => $row)
-                                                <tr class="{{ $row['status'] == 'valid' ? 'row-valid' : ($row['status'] == 'ignored' ? 'row-warning' : 'row-error') }}">
+                                                <tr class="staging-row {{ $row['status'] == 'valid' ? 'row-valid' : ($row['status'] == 'ignored' ? 'row-warning' : 'row-error') }}" data-status="{{ $row['status'] }}">
+                                                    <td class="text-center">
+                                                        <input type="checkbox" class="row-checkbox form-check-input" data-index="{{ $rowIndex }}">
+                                                    </td>
                                                     <td class="text-center">
                                                         <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : ($row['status'] == 'ignored' ? 'bg-warning' : 'bg-rose-500') }}" 
                                                                title="{{ count($row['errors'] ?? []) ? implode(', ', $row['errors']) : 'Erreur de validation inconnue' }}"></span>
@@ -737,11 +748,32 @@
                     cell.setAttribute('data-original', originalValue);
                 }
 
-                if (isNumeric(originalValue)) {
+                // Priorité 1 : Détection DDMMYY (exactement 6 chiffres)
+                // Ex: 010126 = 01/01/2026, 050126 = 05/01/2026
+                // Ce cas DOIT être traité avant la détection des serials Excel
+                // car des valeurs comme 050126 tombent dans la plage des serials Excel (30000-60000)
+                if (/^\d{6}$/.test(originalValue)) {
+                    const day   = originalValue.substring(0, 2);
+                    const month = originalValue.substring(2, 4);
+                    const yr2   = parseInt(originalValue.substring(4, 6), 10);
+                    // Pivot 70 : 00-69 => 2000-2069, 70-99 => 1970-1999
+                    const year  = yr2 < 70 ? 2000 + yr2 : 1900 + yr2;
+                    // Vérification basique que c'est une date valide (mois entre 01-12, jour entre 01-31)
+                    const dayN = parseInt(day, 10);
+                    const monN = parseInt(month, 10);
+                    if (monN >= 1 && monN <= 12 && dayN >= 1 && dayN <= 31) {
+                        cell.innerHTML = `<span class="text-success fw-bold">${day}/${month}/${year}</span>`;
+                        return;
+                    }
+                }
+
+                // Priorité 2 : Serial Excel (plage 30000-60000, typiquement 1982-2064)
+                // On exclut les 6 chiffres déjà traités ci-dessus
+                if (isNumeric(originalValue) && originalValue.length !== 6) {
                     const num = parseFloat(originalValue);
                     if (num >= 30000 && num <= 60000) {
                         const dateStr = excelDateToJSDate(num);
-                        cell.innerHTML = `<span class="text-success fw-bold">${dateStr}</span>`;
+                        cell.innerHTML = `<span class="text-info fw-bold">${dateStr}</span>`;
                     }
                 }
             });
@@ -756,6 +788,89 @@
 
         function isNumeric(n) {
             return !isNaN(parseFloat(n)) && isFinite(n);
+        }
+
+        // --- GESTION DE LA SUPPRESSION GROUPÉE ---
+
+        function toggleAllCheckboxes(master) {
+            const visibleRows = Array.from(document.querySelectorAll('.staging-row')).filter(row => row.style.display !== 'none');
+            visibleRows.forEach(row => {
+                const cb = row.querySelector('.row-checkbox');
+                if (cb) cb.checked = master.checked;
+            });
+        }
+
+        function selectAndBulkDeleteErrors() {
+            // 1. Sélectionner toutes les lignes en erreur (même cachées par filtre, mais le bouton est explicite)
+            const errorCheckboxes = document.querySelectorAll('.staging-row[data-status="error"] .row-checkbox');
+            
+            if (errorCheckboxes.length === 0) {
+                Swal.fire('Info', 'Aucune ligne en erreur à supprimer.', 'info');
+                return;
+            }
+
+            errorCheckboxes.forEach(cb => cb.checked = true);
+
+            const count = errorCheckboxes.length;
+            
+            Swal.fire({
+                title: 'Suppression Totale',
+                text: `Voulez-vous supprimer les ${count} lignes en erreur ?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Oui, supprimer tout',
+                cancelButtonText: 'Annuler',
+                confirmButtonColor: '#d33',
+                customClass: {
+                    confirmButton: 'btn btn-danger rounded-xl px-4 me-2',
+                    cancelButton: 'btn btn-label-secondary rounded-xl px-4'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const indices = Array.from(errorCheckboxes).map(cb => parseInt(cb.dataset.index));
+                    performBulkDelete(indices);
+                }
+            });
+        }
+
+        function performBulkDelete(indices) {
+            Swal.fire({
+                title: 'Suppression en cours...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch("{{ route('admin.import.delete_rows', $import->id) }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ indices: indices })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Supprimé !',
+                        text: data.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Erreur', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error("Bulk Delete Error:", error);
+                Swal.fire('Erreur', 'Une erreur est survenue lors de la suppression groupée.', 'error');
+            });
         }
 
         function excelDateToJSDate(serial) {

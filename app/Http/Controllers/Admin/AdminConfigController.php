@@ -60,7 +60,7 @@ class AdminConfigController extends Controller
         $request->validate([
             'accounting_system' => 'required|string|in:SYSCOHADA,PCG,CUSTOM',
             'account_digits' => 'required|integer|min:4|max:12',
-            'journal_code_digits' => 'nullable|integer|min:1|max:10',
+            'journal_code_digits' => 'nullable|integer|min:4|max:10',
             'journal_code_type' => 'nullable|string|in:alphanumeric',
             'tier_digits' => 'nullable|integer|min:4|max:15',
             'tier_id_type' => 'nullable|string|in:numeric,alphanumeric',
@@ -677,7 +677,7 @@ class AdminConfigController extends Controller
     {
         $user = Auth::user();
         $company = Company::findOrFail($user->company_id);
-        $digits = $company->journal_code_digits ?? 3;
+            $digits = $company->journal_code_digits ?? 4;
         $codeType = $company->journal_code_type ?? 'alphabetical';
 
         $request->validate([
@@ -976,7 +976,7 @@ class AdminConfigController extends Controller
     {
         $user = Auth::user();
         $company = Company::findOrFail($user->company_id);
-        $digits = $company->journal_code_digits ?? 3;
+        $digits = $company->journal_code_digits ?? 4;
         $codeType = $company->journal_code_type ?? 'alphabetical';
 
         $request->validate([
@@ -1687,6 +1687,10 @@ class AdminConfigController extends Controller
         $localMaxTiers = [];
         $localMaxJournals = [];
         $localMaxAccounts = [];
+        
+        // Mappage de lot pour assurer la cohérence (Ex: CAI -> CAIS001 pour toutes les lignes identiques)
+        $batchJournalMap = []; 
+        $batchTierMap = [];
 
         $maxMappingIndex = 0;
         foreach ($mapping as $mIdx) {
@@ -1862,30 +1866,45 @@ class AdminConfigController extends Controller
 
                 $detectedType = null;
                 
+                // --- STANDARTISATION DU CODE JOURNAL ---
+                // On applique la longueur configurée si le code n'est pas vide
+                if (!empty($rowCode)) {
+                    $rowCode = $this->standardizeJournalCode($rowCode, $journalDigits);
+                    $row['code_journal'] = $rowCode;
+                }
+
                 // Si une valeur manuelle existe (suite à une édition utilisateur), elle gagne TOUJOURS
                 if (!empty($manualType)) {
                     $row['type'] = $manualType;
                 } else {
                     // Sinon, on lance la détection automatique
+                    
                     // PRIORITÉ 1 : Présence d'un compte de trésorerie (Classe 5)
-                    $rowCompteTreso = $this->standardizeAccountNumber(trim($row['compte_de_tresorerie'] ?? ''), $accountDigits);
-                    $row['compte_de_tresorerie'] = $rowCompteTreso;
-
+                    // Si la colonne 'compte_de_tresorerie' est mappée ou contient une valeur
+                    $rowCompteTreso = trim($row['compte_de_tresorerie'] ?? '');
                     if (!empty($rowCompteTreso)) {
-                         // Si un compte est spécifié, on vérifie s'il ressemble à un compte de trésorerie
-                         if (str_starts_with($rowCompteTreso, '5')) {
-                             $detectedType = 'Trésorerie';
-                         }
+                        $rowCompteTreso = $this->standardizeAccountNumber($rowCompteTreso, $accountDigits);
+                        $row['compte_de_tresorerie'] = $rowCompteTreso;
+
+                        if (str_starts_with($rowCompteTreso, '5')) {
+                            $detectedType = 'Trésorerie';
+                            // Détection automatique du poste de trésorerie
+                            $searchStrPoste = strtoupper($rowCode . ' ' . ($row['intitule'] ?? ''));
+                            if (Str::contains($searchStrPoste, ['CAI', 'CASH', 'CAISSE'])) {
+                                $row['poste_tresorerie'] = 'Caisse';
+                            } else {
+                                $row['poste_tresorerie'] = 'Banque';
+                            }
+                        }
                     }
 
-                    // PRIORITÉ 2 : Analyse sémantique si pas de compte
+                    // PRIORITÉ 2 : Analyse sémantique si pas de compte ou type non encore détecté
                     if (!$detectedType) {
                         $searchStr = strtoupper($rowCode . ' ' . ($row['intitule'] ?? ''));
                         if (Str::contains($searchStr, ['ACH', 'FOURN', 'FRN'])) $detectedType = 'Achats';
                         elseif (Str::contains($searchStr, ['VEN', 'CLT', 'CLI'])) $detectedType = 'Ventes';
                         elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'CAI', 'CASH', 'BANQUE', 'CAISSE'])) {
                             $detectedType = 'Trésorerie';
-                            // Détection automatique du poste de trésorerie
                             if (Str::contains($searchStr, ['CAI', 'CASH', 'CAISSE'])) {
                                 $row['poste_tresorerie'] = 'Caisse';
                             } else {
@@ -1896,12 +1915,12 @@ class AdminConfigController extends Controller
                     }
 
                     // Assignation du type détecté ou par défaut
-                    if (empty($row['type']) || $mapping['type'] === 'AUTO') {
+                    if (empty($row['type']) || ($mapping['type'] ?? 'AUTO') === 'AUTO') {
                         $row['type'] = $detectedType ?? 'Standard';
                     }
                 }
 
-                // Surcharges de trésorerie
+                // Surcharges de trésorerie (Analytique, Rapprochement, etc.)
                 if (in_array($row['type'], ['Trésorerie', 'Banque', 'Caisse'])) {
                     if (!empty($manualPoste)) $row['poste_tresorerie'] = $manualPoste;
                     if (!empty($manualCompte)) $row['compte_de_tresorerie'] = $manualCompte;
@@ -1963,14 +1982,58 @@ class AdminConfigController extends Controller
                 }
 
 
+                // --- DÉDUPLICATION ET UNICITÉ DES CODES JOURNAUX (BATCH CONSISTENCY) ---
+                if (!empty($rowCode)) {
+                    $upperOrig = strtoupper($rowCode);
+                    
+                    // Si on a déjà traité ce code original exact dans ce lot, on le réutilise (Cohérence demandée)
+                    if (isset($batchJournalMap[$upperOrig])) {
+                        $rowCode = $batchJournalMap[$upperOrig];
+                    } else {
+                        $baseCode = $rowCode;
+                        $counter = 1;
+                        $tempCode = $rowCode;
+                        
+                        // Si le code est purement alphabétique (ex: CAIS), on force un premier suffixe séquentiel
+                        // Cela évite CAIS00 et donne directement CAIS01 ou CAIS001
+                        if (preg_match('/^[A-Z]+$/i', $baseCode)) {
+                            $prefix = strtoupper($baseCode);
+                            $availableSpace = max(1, $journalDigits - strlen($prefix));
+                            $tempCode = $prefix . str_pad($counter, $availableSpace, '0', STR_PAD_LEFT);
+                        } else {
+                            // Si c'est déjà BQ1, standardizeJournalCode s'occupe de faire BQ01
+                            $tempCode = $this->standardizeJournalCode($baseCode, $journalDigits);
+                        }
+
+                        // On boucle tant que le code existe déjà dans la base OU dans le lot actuel (collision avec un AUTRE code original)
+                        while (in_array(strtoupper($tempCode), array_map('strtoupper', $existingJournals)) || isset($localMaxJournals[strtoupper($tempCode)])) {
+                            // On cherche l'incrément propre (ex: BQ01 -> BQ02)
+                            if (preg_match('/^([A-Z]+)/i', $baseCode, $matches)) {
+                                $prefix = strtoupper($matches[1]);
+                                $availableSpace = max(1, $journalDigits - strlen($prefix));
+                                $tempCode = $prefix . str_pad($counter, $availableSpace, '0', STR_PAD_LEFT);
+                            } else {
+                                $tempCode = $baseCode . $counter;
+                            }
+                            $counter++;
+                            if ($counter > 100) break;
+                        }
+                        
+                        $rowCode = $tempCode;
+                        $batchJournalMap[$upperOrig] = $rowCode; // Sauvegarde pour les prochaines occurrences de "CAI"
+                        $localMaxJournals[strtoupper($rowCode)] = $rowCode;
+                    }
+                    
+                    $row['code_journal'] = $rowCode;
+                }
+
                 if (empty($rowCode) && !($mapping['code_journal'] === 'AUTO')) {
                     $errors[] = "Code journal manquant";
                 } elseif (strlen($rowCode) > 10) {
                     $errors[] = "Code '$rowCode' invalide : Max 10 caractères.";
-                } elseif (in_array(strtoupper($rowCode), array_map('strtoupper', $existingJournals))) {
-                    $errors[] = "Doublon : Le code journal '$rowCode' existe déjà.";
                 }
-
+                // Plus besoin de l'erreur de doublon car géré par la séquence
+                
                 // Validation Compte Trésorerie
                 $typeNorm = mb_strtolower($row['type'] ?? '');
                 if (str_contains($typeNorm, 'trésorerie') || str_contains($typeNorm, 'tresorerie') || str_contains($typeNorm, 'banque') || str_contains($typeNorm, 'caisse')) {
@@ -1998,6 +2061,14 @@ class AdminConfigController extends Controller
                 $rowCompte = trim($row['compte_general'] ?? '');
                 $rowType = trim($row['type_de_tiers'] ?? '');
 
+                // NETTOYAGE : Si le compte général contient du texte (ex: "Associés 1401000"), 
+                // on essaie d'extraire uniquement la partie numérique.
+                if (!empty($rowCompte) && !is_numeric($rowCompte)) {
+                    if (preg_match('/\d+/', $rowCompte, $matches)) {
+                        $rowCompte = $matches[0];
+                    }
+                }
+
                 if (empty($importedNum) || (isset($mapping['numero_de_tiers']) && $mapping['numero_de_tiers'] === 'AUTO')) {
                     // Si AUTO ou vide, on essaie de trouver la première colonne qui ressemble à un tiers (alphanumérique, classe 4)
                     foreach ($rowRaw as $val) {
@@ -2011,37 +2082,110 @@ class AdminConfigController extends Controller
                 }
 
 
-                // LOGIQUE DE DÉTECTION DE CATÉGORIE PAR PRÉFIXE (40->Fournisseur, 41->Client, etc.)
-                if (!empty($importedNum)) {
-                    if (!str_starts_with($importedNum, '4')) {
-                        $errors[] = "Numéro de tiers invalide : Doit commencer par '4'.";
-                        $row['numero_de_tiers'] = $importedNum; // On garde le brut pour affichage rouge
-                    }
-                    
+                // LOGIQUE DE DÉTECTION DE CATÉGORIE PAR PRÉFIXE (Stratégies Multiples)
+                
+                $generationPrefix = null;
+                $prefix = null;
+                $categoryMap = [
+                    '40' => 'Fournisseur',
+                    '41' => 'Client',
+                    '42' => 'Personnel',
+                    '43' => 'Organisme sociaux / CNPS',
+                    '44' => 'Impôt',
+                    '45' => 'Organisme international',
+                    '46' => 'Associé',
+                    '47' => 'Divers Tiers',
+                    '48' => 'Dettes sur acquisition d\'immobilisations',
+                    '49' => 'Dépréciation',
+                ];
+
+                // =========================================================================
+                // LOGIQUE DE DÉTECTION DU TYPE DE TIERS (3 STRATÉGIES)
+                // =========================================================================
+                
+                $generationPrefix = null;
+                $prefix = null;
+                $categoryMap = [
+                    '40' => 'Fournisseur',
+                    '41' => 'Client',
+                    '42' => 'Personnel',
+                    '43' => 'Organisme sociaux / CNPS',
+                    '44' => 'État / Impôts',
+                    '45' => 'Organisme international',
+                    '46' => 'Associé / Groupe',
+                    '47' => 'Divers Tiers',
+                    '48' => 'Dettes sur acquisition (Immos)',
+                    '49' => 'Dépréciation',
+                ];
+
+                // --- STRATÉGIE 1 : Détection Directe (Code commence par 4) ---
+                if (!empty($importedNum) && str_starts_with($importedNum, '4')) {
                     $prefix = substr($importedNum, 0, 2);
-                    $categoryMap = [
-                        '40' => 'Fournisseur',
-                        '41' => 'Client',
-                        '42' => 'Personnel',
-                        '43' => 'Organisme sociaux / CNPS',
-                        '44' => 'Impôt',
-                        '45' => 'Organisme international',
-                        '46' => 'Associé',
-                        '47' => 'Divers Tiers',
-                        '48' => 'Dettes sur acquisition d\'immobilisations',
-                        '49' => 'Dépréciation',
-                    ];
-                    
-                    if (str_starts_with($importedNum, '4') && isset($categoryMap[$prefix])) {
-                        $rowType = $categoryMap[$prefix];
-                        $row['type_de_tiers'] = $rowType;
+                    if (isset($categoryMap[$prefix])) {
+                        $generationPrefix = $prefix;
                     }
                 }
-                
+
+                // --- STRATÉGIE 2 : Sémantique & Alias (Dernière volonté de l'utilisateur) ---
+                // Priorité aux préfixes (lettres) puis aux mots-clés dans l'intitulé
+                if (!$generationPrefix) {
+                    $upperNum = strtoupper($importedNum);
+                    
+                    // 2a. Détection par préfixe de code (Alias Sage, Quadratus, etc.)
+                    if (preg_match('/^(FOU|FOUR|FRN|FRS|FR-|F-|F\d|FR\d)/', $upperNum)) {
+                        $generationPrefix = '40';
+                        $prefix = '40';
+                    } elseif (preg_match('/^(CLI|CLT|CL-|C-|C\d|CL\d)/', $upperNum)) {
+                        $generationPrefix = '41';
+                        $prefix = '41';
+                    } elseif (preg_match('/^(PERS|PER|SAL|P-|P\d)/', $upperNum)) {
+                        $generationPrefix = '42';
+                        $prefix = '42';
+                    } elseif (preg_match('/^(ETAT|IMP|TAX|E-|E\d)/', $upperNum)) {
+                        $generationPrefix = '44';
+                        $prefix = '44';
+                    } else {
+                        // 2b. Recherche sémantique dans l'intitulé
+                        $searchStr = strtoupper($row['intitule'] ?? '');
+                        if (Str::contains($searchStr, ['FOURNISSEUR', 'FOURN', 'FRN', 'ACHAT'])) {
+                            $generationPrefix = '40';
+                            $prefix = '40';
+                        } elseif (Str::contains($searchStr, ['CLIENT', 'CLT', 'VENTE'])) {
+                            $generationPrefix = '41';
+                            $prefix = '41';
+                        } elseif (Str::contains($searchStr, ['PERSONNEL', 'SALAIRE', 'EMPLOYE'])) {
+                            $generationPrefix = '42';
+                            $prefix = '42';
+                        } elseif (Str::contains($searchStr, ['ETAT', 'IMPOT', 'TVA', 'CNPS'])) {
+                            $generationPrefix = Str::contains($searchStr, 'CNPS') ? '43' : '44';
+                            $prefix = $generationPrefix;
+                        }
+                    }
+                }
+
+                // --- STRATÉGIE 3 : Secours par le Compte Collectif (Compte Général) ---
+                // Uniquement si le compte commence par 4
+                if (!$generationPrefix && !empty($rowCompte)) {
+                    if (str_starts_with($rowCompte, '4')) {
+                        $comptePrefix = substr($rowCompte, 0, 2);
+                        if (isset($categoryMap[$comptePrefix])) {
+                            $generationPrefix = $comptePrefix;
+                            $prefix = $comptePrefix;
+                        }
+                    }
+                }
+
+                // --- FINALISATION ---
+                if ($generationPrefix && isset($categoryMap[$generationPrefix])) {
+                    $rowType = $categoryMap[$generationPrefix];
+                    $row['type_de_tiers'] = $rowType;
+                }
+
                 // Stockage du numéro original
                 $row['numero_original'] = $importedNum;
+                
                 // Si le compte général est vide, on peut aussi le déduire
-                if (empty($rowCompte) && !empty($prefix) && str_starts_with($importedNum, '4')) { // Ensure prefix is valid for deduction
+                if (empty($rowCompte) && !empty($generationPrefix)) { 
                     $rowCompte = $prefix . str_pad('0', ($accountDigits - 2), '0', STR_PAD_RIGHT);
                     $row['compte_general'] = $rowCompte;
                 }
@@ -2078,6 +2222,7 @@ class AdminConfigController extends Controller
                 if (!empty($rowCompte)) {
                     $newCompte = $this->standardizeAccountNumber($rowCompte, $accountDigits);
                     if ($newCompte !== $rowCompte) {
+                        $row['numero_original_compte'] = $rowCompte;
                         $row['compte_general'] = $newCompte;
                         $rowCompte = $newCompte;
                     }
@@ -2102,81 +2247,38 @@ class AdminConfigController extends Controller
                 $row['numero_original'] = $importedNum;
                 
                 // VALIDATION CLASSE 4 OBLIGATOIRE POUR LES TIERS
-                if (!str_starts_with($importedNum, '4')) {
+                if (!$generationPrefix) {
                     $row['numero_de_tiers'] = 'NON GÉNÉRÉ';
-                    $errors[] = "Numéro d'origine '{$importedNum}' invalide : Un tiers doit impérativement appartenir à la classe 4 (commencer par 4).";
+                    $errors[] = "Impossible de déduire le type de tiers (Fournisseur/Client) pour la génération. Veuillez vérifier le compte collectif ou l'intitulé.";
                 } else {
-                    $row['numero_de_tiers'] = null; // Reset pour éviter de garder l'ancien si la génération échoue
-                    
-                    // NEW LOGIC: Determine Prefix from Imported Number FIRST
-                    // Le client veut que la génération soit basée sur le préfixe du numéro importé (catégorie)
-                    // et NON sur le compte collectif rattaché.
-                    $generationPrefix = null;
-                    if (!empty($importedNum) && strlen($importedNum) >= 2) {
-                         $tempPrefix = substr($importedNum, 0, 2);
-                         // On s'assure que c'est un préfixe logique (40-49)
-                         if (in_array($tempPrefix, ['40', '41', '42', '43', '44', '45', '46', '47', '48', '49'])) {
-                             $generationPrefix = $tempPrefix;
-                         }
-                    }
+                    // --- COHÉRENCE DU LOT (BATCH CONSISTENCY) ---
+                    $upperOrigNum = strtoupper($importedNum);
+                    if (!empty($importedNum) && isset($batchTierMap[$upperOrigNum])) {
+                        $row['numero_de_tiers'] = $batchTierMap[$upperOrigNum];
+                    } else {
+                        $row['numero_de_tiers'] = null; // Reset pour éviter de garder l'ancien si la génération échoue
 
-                    if (!empty($rowCompte)) {
-                        // Correspondance automatique pour le compte collectif
-                        if (!in_array($rowCompte, $existingAccounts) && isset($accountMapping[$rowCompte])) {
-                            $row['numero_original_compte'] = $rowCompte;
-                            $row['compte_general'] = $accountMapping[$rowCompte];
-                            $rowCompte = $row['compte_general'];
-                        }
+                        if (!empty($rowCompte)) {
+                            // Correspondance automatique pour le compte collectif
+                            if (!in_array($rowCompte, $existingAccounts) && isset($accountMapping[$rowCompte])) {
+                                $row['numero_original_compte'] = $rowCompte;
+                                $row['compte_general'] = $accountMapping[$rowCompte];
+                                $rowCompte = $row['compte_general'];
+                            }
 
-                        $prefix = substr($rowCompte, 0, 2);
-                        
-                        // On cherche le compte spécifique
-                        $planAcc = PlanComptable::where('company_id', $user->company_id)
-                            ->where('numero_de_compte', $rowCompte)
-                            ->first();
-                        
-                        // Si pas trouvé, on cherche un compte racine cohérent avec le préfixe
-                        if (!$planAcc) {
-                           $planAcc = PlanComptable::where('company_id', $user->company_id)
-                               ->where('numero_de_compte', 'LIKE', $prefix . '%')
-                               ->orderBy('numero_de_compte', 'asc')
-                               ->first();
-                        }
+                            $prefix = substr($rowCompte, 0, 2);
+                            
+                            // On cherche le compte spécifique
+                            $planAcc = PlanComptable::where('company_id', $user->company_id)
+                                ->where('numero_de_compte', $rowCompte)
+                                ->first();
 
-                        if ($planAcc) {
-                            // Logique de génération avec mémoire locale pour éviter les doublons dans le staging
-                            // PRIORITÉ : Variable $generationPrefix (Importé) > $prefix (Compte)
-                            $finalPrefix = $generationPrefix ?? ($prefix ?? substr($planAcc->numero_de_compte, 0, 2));
+                            if ($planAcc) {
+                                // Logique de génération avec mémoire locale pour éviter les doublons dans le staging
+                                // PRIORITÉ : Variable $generationPrefix (Importé) > $prefix (Compte)
+                                $finalPrefix = $generationPrefix ?? ($prefix ?? ($planAcc ? substr($planAcc->numero_de_compte, 0, 2) : '40'));
 
-                            if (!isset($localMaxTiers[$finalPrefix])) {
-                                $resp = $this->getNextTierNumber(new Request([
-                                    'plan_comptable_id' => $planAcc->id,
-                                    'prefix' => $finalPrefix,
-                                    'intitule' => $row['intitule'] ?? ''
-                                ]));
-                                $genData = $resp->getData();
-                                if ($genData->success) {
-                                    $row['numero_de_tiers'] = $genData->next_id;
-                                    // On stocke le dernier numéro généré pour ce préfixe
-                                    $localMaxTiers[$finalPrefix] = $genData->next_id;
-                                } else {
-                                    $errors[] = "Erreur de génération : " . ($genData->message ?? 'Inconnue');
-                                }
-                            } else {
-                                // On repart du dernier numéro généré localement pour ce préfixe
-                                $lastId = $localMaxTiers[$finalPrefix];
-                                $prefixLen = strlen($finalPrefix);
-                                $sequencePart = substr($lastId, $prefixLen);
-                                
-                                if (is_numeric($sequencePart)) {
-                                    $nextSeq = (int)$sequencePart + 1;
-                                    $availableSpace = $tierDigits - $prefixLen;
-                                    $newId = $finalPrefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
-                                    
-                                    $row['numero_de_tiers'] = $newId;
-                                    $localMaxTiers[$finalPrefix] = $newId;
-                                } else {
-                                    // Cas alphanumérique ou erreur de format
+                                if (!isset($localMaxTiers[$finalPrefix])) {
                                     $resp = $this->getNextTierNumber(new Request([
                                         'plan_comptable_id' => $planAcc->id,
                                         'prefix' => $finalPrefix,
@@ -2185,20 +2287,99 @@ class AdminConfigController extends Controller
                                     $genData = $resp->getData();
                                     if ($genData->success) {
                                         $row['numero_de_tiers'] = $genData->next_id;
+                                        // On stocke le dernier numéro généré pour ce préfixe
                                         $localMaxTiers[$finalPrefix] = $genData->next_id;
+                                    } else {
+                                        $errors[] = "Erreur de génération : " . ($genData->message ?? 'Inconnue');
+                                    }
+                                } else {
+                                    // On repart du dernier numéro généré localement pour ce préfixe
+                                    $lastId = $localMaxTiers[$finalPrefix];
+                                    $prefixLen = strlen($finalPrefix);
+                                    $sequencePart = substr($lastId, $prefixLen);
+                                    
+                                    if (is_numeric($sequencePart)) {
+                                        $nextSeq = (int)$sequencePart + 1;
+                                        $availableSpace = max(1, $tierDigits - $prefixLen);
+                                        $newId = $finalPrefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                                        
+                                        $row['numero_de_tiers'] = $newId;
+                                        $localMaxTiers[$finalPrefix] = $newId;
+                                    } else {
+                                        // Cas alphanumérique ou erreur de format
+                                        $resp = $this->getNextTierNumber(new Request([
+                                            'plan_comptable_id' => $planAcc->id,
+                                            'prefix' => $finalPrefix,
+                                            'intitule' => $row['intitule'] ?? ''
+                                        ]));
+                                        $genData = $resp->getData();
+                                        if ($genData->success) {
+                                            $row['numero_de_tiers'] = $genData->next_id;
+                                            $localMaxTiers[$finalPrefix] = $genData->next_id;
+                                        }
                                     }
                                 }
+                            } else {
+                                $errors[] = "Le compte collectif $rowCompte n'existe pas. Veuillez le créer au préalable.";
+                                $row['is_virtual'] = true;
                             }
                         } else {
-                            $errors[] = "Le compte collectif $rowCompte n'existe pas. Veuillez le créer au préalable.";
+                            $errors[] = "Compte collectif absent ou impossible à déterminer.";
+                            $row['is_virtual'] = true;
                         }
-                    } else {
-                        $errors[] = "Compte collectif absent ou impossible à déterminer.";
-                    }
-                }
 
-                if (empty($row['numero_de_tiers'])) {
-                    $errors[] = "Numéro de tiers impossible à générer";
+                        // GÉNÉRATION DE SECOURS (Si le compte est absent ou inexistant)
+                        if (empty($row['numero_de_tiers'])) {
+                            $finalPrefix = $generationPrefix ?? '40';
+                            $row['is_virtual'] = true;
+                            
+                            if (!isset($localMaxTiers[$finalPrefix])) {
+                                $resp = $this->getNextTierNumber(new Request([
+                                    'plan_comptable_id' => null,
+                                    'prefix' => $finalPrefix,
+                                    'intitule' => $row['intitule'] ?? ''
+                                ]));
+                                $genData = $resp->getData();
+                                if ($genData->success) {
+                                    $row['numero_de_tiers'] = $genData->next_id;
+                                    $localMaxTiers[$finalPrefix] = $genData->next_id;
+                                }
+                            } else {
+                                $lastId = $localMaxTiers[$finalPrefix];
+                                $prefixLen = strlen($finalPrefix);
+                                $sequencePart = substr($lastId, $prefixLen);
+                                
+                                if (is_numeric($sequencePart)) {
+                                    $nextSeq = (int)$sequencePart + 1;
+                                    $availableSpace = max(1, $tierDigits - $prefixLen);
+                                    $newId = $finalPrefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                                    $row['numero_de_tiers'] = $newId;
+                                    $localMaxTiers[$finalPrefix] = $newId;
+                                } else {
+                                     // Cas alphanumérique fallback
+                                     $resp = $this->getNextTierNumber(new Request([
+                                         'plan_comptable_id' => null,
+                                         'prefix' => $finalPrefix,
+                                         'intitule' => $row['intitule'] ?? ''
+                                     ]));
+                                     $genData = $resp->getData();
+                                     if ($genData->success) {
+                                         $row['numero_de_tiers'] = $genData->next_id;
+                                         $localMaxTiers[$finalPrefix] = $genData->next_id;
+                                     }
+                                }
+                            }
+                        }
+                        
+                        // Enregistrer l'ID généré pour ce code original dans ce lot
+                        if (!empty($row['numero_de_tiers'])) {
+                            $batchTierMap[$upperOrigNum] = $row['numero_de_tiers'];
+                        }
+                    }
+
+                    if (empty($row['numero_de_tiers'])) {
+                        $errors[] = "Numéro de tiers impossible à générer avec le préfixe $finalPrefix.";
+                    }
                 }
                 
                 // Normalisation finale du type de tiers pour l'affichage
@@ -2520,7 +2701,7 @@ class AdminConfigController extends Controller
             ->orderBy('numero_de_compte')
             ->get();
 
-        return view($viewName, compact('import', 'rowsWithStatus', 'errorCount', 'validCount', 'importTitle', 'user', 'plansComptables'));
+        return view($viewName, compact('import', 'rowsWithStatus', 'errorCount', 'validCount', 'importTitle', 'user', 'plansComptables', 'accountDigits'));
     }
 
     /**
@@ -2607,6 +2788,7 @@ class AdminConfigController extends Controller
             $ecrMapping = []; 
             $localMaxTiers = [];
             $localMaxJournals = [];
+            $journalDigits = $user->company->journal_code_digits ?? 4;
             $localMaxAccounts = [];
             $batchAccounts = [];
 
@@ -2738,52 +2920,76 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    // DÉDUCTION INTELLIGENTE DU COMPTE COLLECTIF SI AUTO OU VIDE
-                    if (empty($rowCompteNum) || $rowCompteNum === 'AUTO' || $mapping['compte_general'] === 'AUTO') {
-                        // 1. Essayer de trouver une colonne brute qui ressemble à un compte 401/411
-                        foreach ($rowOrig as $cell) {
-                            $cell = trim($cell ?? '');
-                            if (preg_match('/^(401|411)\d*/', $cell)) {
-                                $rowCompteNum = $this->standardizeAccountNumber($cell, $accountDigits);
-                                break;
-                            }
-                        }
+                    // DÉDUCTION INTELLIGENTE DU COMPTE COLLECTIF (SIMILAIRE AU STAGING)
+                    if (empty($rowCompteNum) || $rowCompteNum === 'AUTO' || (isset($mapping['compte_general']) && $mapping['compte_general'] === 'AUTO')) {
+                        $rowCompteNum = null;
 
-                        // 2. Sinon, déduire par rapport au type de tiers si présent
-                        if ((empty($rowCompteNum) || $rowCompteNum === 'AUTO') && !empty($rowType)) {
-                            $typeLower = strtolower($rowType);
-                            if (in_array($typeLower, ['client', 'cli', 'clt'])) {
-                                $rowCompteNum = '411' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
-                            } elseif (in_array($typeLower, ['fournisseur', 'four', 'frs', 'fourn'])) {
+                        // 1. Stratégie par préfixe du numéro de tiers importé (Alias Sage, Quadratus, etc.)
+                        $upperNum = strtoupper($numeroOriginalTiers);
+                        if (!empty($upperNum)) {
+                            if (preg_match('/^(40|FOU|FOUR|FRN|FRS|FR-|F-|F\d|FR\d)/', $upperNum)) {
                                 $rowCompteNum = '401' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+                            } elseif (preg_match('/^(41|CLI|CLT|CL-|C-|C\d|CL\d)/', $upperNum)) {
+                                $rowCompteNum = '411' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+                            } elseif (preg_match('/^(42|PERS|PER|SAL|P-|P\d)/', $upperNum)) {
+                                $rowCompteNum = '421' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+                            } elseif (preg_match('/^(44|ETAT|IMP|TAX|E-|E\d)/', $upperNum)) {
+                                $rowCompteNum = '441' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
                             }
                         }
 
-                        // 3. Fallback ultime : déduction via le préfixe du numéro de tiers importé
-                        if ((empty($rowCompteNum) || $rowCompteNum === 'AUTO') && !empty($numeroOriginalTiers)) {
-                             if (str_starts_with($numeroOriginalTiers, '40')) $rowCompteNum = '401' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
-                             elseif (str_starts_with($numeroOriginalTiers, '41')) $rowCompteNum = '411' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
-                             elseif (str_starts_with($numeroOriginalTiers, '42')) $rowCompteNum = '421' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
-                             elseif (str_starts_with($numeroOriginalTiers, '43')) $rowCompteNum = '431' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
-                             elseif (str_starts_with($numeroOriginalTiers, '44')) $rowCompteNum = '441' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+                        // 2. Stratégie Sémantique (Intitulé)
+                        if (empty($rowCompteNum)) {
+                            $upperIntitule = strtoupper($rowIntitule);
+                            if (Str::contains($upperIntitule, ['FOURNISSEUR', 'FOURN', 'FRN', 'ACHAT'])) {
+                                $rowCompteNum = '401' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+                            } elseif (Str::contains($upperIntitule, ['CLIENT', 'CLT', 'VENTE'])) {
+                                $rowCompteNum = '411' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+                            } elseif (Str::contains($upperIntitule, ['PERSONNEL', 'SALAIRE', 'EMPLOYE'])) {
+                                $rowCompteNum = '421' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+                            } elseif (Str::contains($upperIntitule, ['ETAT', 'IMPOT', 'TVA', 'CNPS'])) {
+                                $rowCompteNum = (Str::contains($upperIntitule, 'CNPS') ? '431' : '441') . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+                            }
                         }
 
-                        // 4. Fallback de sécurité : Si toujours rien, on utilise le compte Fournisseur par défaut pour éviter le blocage
-                        if (empty($rowCompteNum) || $rowCompteNum === 'AUTO') {
+                        // 3. Fallback d'urgence (Fournisseur par défaut) pour éviter le blocage
+                        if (empty($rowCompteNum)) {
                             $rowCompteNum = '401' . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
                         }
                     }
 
                     // Récupérer l'ID du compte collectif
+                    $rowCompteNum = $this->standardizeAccountNumber($rowCompteNum, $accountDigits);
                     $compteCollectifId = $planComptableIds[$rowCompteNum] ?? null;
 
-                    // Si pas trouvé par numéro exact, chercher par racine (ex: 411)
-                    if (!$compteCollectifId && !empty($rowCompteNum) && $rowCompteNum !== 'AUTO') {
-                         $prefix = substr($rowCompteNum, 0, 3); // 401, 411...
-                         $compteCollectifId = PlanComptable::where('company_id', $user->company_id)
+                    // Si pas trouvé par numéro exact, chercher par racine (ex: 401, 411...)
+                    if (!$compteCollectifId && !empty($rowCompteNum)) {
+                         $prefix = substr($rowCompteNum, 0, 3);
+                         $match = PlanComptable::where('company_id', $user->company_id)
                             ->where('numero_de_compte', 'LIKE', $prefix . '%')
                             ->orderBy('numero_de_compte', 'asc')
-                            ->value('id');
+                            ->first();
+                         
+                         if ($match) {
+                             $compteCollectifId = $match->id;
+                             $rowCompteNum = $match->numero_de_compte;
+                         } else {
+                             // CRÉATION AUTO DU COMPTE COLLECTIF SI ABSENT (Pour éviter le blocage)
+                             $classe = substr($rowCompteNum, 0, 1);
+                             $type = 'Bilan';
+                             $newAcc = PlanComptable::create([
+                                 'numero_de_compte' => $rowCompteNum,
+                                 'intitule' => 'COMPTE COLLECTIF ' . $rowCompteNum,
+                                 'type_de_compte' => $type,
+                                 'classe' => $classe,
+                                 'user_id' => $user->id,
+                                 'company_id' => $user->company_id,
+                                 'adding_strategy' => 'auto'
+                             ]);
+                             $compteCollectifId = $newAcc->id;
+                             $planComptableIds[$rowCompteNum] = $newAcc->id;
+                             $report['new_accounts']++;
+                         }
                     }
 
                     if (!$compteCollectifId) {
@@ -2791,68 +2997,85 @@ class AdminConfigController extends Controller
                         continue;
                     }
                     
-                    // LOGIQUE DE GÉNÉRATION BASÉE SUR LE PRÉFIXE IMPORTÉ (si AUTO ou vide)
-                    if (($mapping['numero_de_tiers'] === 'AUTO' || empty($rowNum) || $rowNum === 'AUTO' || str_starts_with($rowNum, '-')) && $compteCollectifId) {
-                        $importedNum = trim($rowMapped['numero_de_tiers'] ?? '');
-                        $generationPrefix = null;
-                        if (!empty($importedNum) && strlen($importedNum) >= 2) {
-                            $tempPrefix = substr($importedNum, 0, 2);
-                            if (in_array($tempPrefix, ['40', '41', '42', '43', '44', '45', '46', '47', '48', '49'])) {
-                                $generationPrefix = $tempPrefix;
-                            }
+                    // LOGIQUE DE GÉNÉRATION BASÉE SUR LE PRÉFIXE IMPORTÉ
+                    // On force la génération d'un numéro conforme au format de l'entreprise
+                    // Tout en gardant le numéro importé comme "numéro original" pour la traçabilité
+                    $numeroGenere = null;
+                    $importedNum = trim($rowMapped['numero_de_tiers'] ?? '');
+                    
+                    // On essaie de déterminer le préfixe de génération (ex: 401)
+                    $generationPrefix = null;
+                    if (!empty($importedNum) && strlen($importedNum) >= 2) {
+                        $tempPrefix = substr($importedNum, 0, 2);
+                        if (in_array($tempPrefix, ['40', '41', '42', '43', '44', '45', '46', '47', '48', '49'])) {
+                            $generationPrefix = $tempPrefix;
                         }
+                    }
+                    $prefix = $generationPrefix ?? substr($rowCompteNum, 0, 2);
 
-                        $prefix = $generationPrefix ?? substr($rowCompteNum, 0, 2);
-
-                        if (!isset($localMaxTiers[$prefix])) {
-                            $resp = $this->getNextTierNumber(new Request([
-                                'plan_comptable_id' => $compteCollectifId,
-                                'prefix' => $prefix,
-                                'intitule' => $rowMapped['intitule'] ?? ''
-                            ]));
-                            $genData = $resp->getData();
-                            if ($genData->success) {
-                                $rowNum = $genData->next_id;
-                                $localMaxTiers[$prefix] = $genData->next_id;
-                            }
-                        } else {
-                            // Génération locale pour le batch
-                            $lastId = $localMaxTiers[$prefix];
-                            $prefixLen = strlen($prefix);
-                            $sequencePart = substr($lastId, $prefixLen);
-                            if (is_numeric($sequencePart)) {
-                                $nextSeq = (int)$sequencePart + 1;
-                                $availableSpace = (int)($user->company->tier_digits ?? 8) - $prefixLen;
-                                $newId = $prefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
-                                $rowNum = $newId;
-                                $localMaxTiers[$prefix] = $newId;
-                            }
+                    // Génération du numéro séquentiel
+                    if (!isset($localMaxTiers[$prefix])) {
+                        $resp = $this->getNextTierNumber(new Request([
+                            'plan_comptable_id' => $compteCollectifId,
+                            'prefix' => $prefix,
+                            'intitule' => $rowMapped['intitule'] ?? ''
+                        ]));
+                        $genData = $resp->getData();
+                        if ($genData->success) {
+                            $numeroGenere = $genData->next_id;
+                            $localMaxTiers[$prefix] = $genData->next_id;
+                        }
+                    } else {
+                        // Génération locale pour le batch
+                        $lastId = $localMaxTiers[$prefix];
+                        $prefixLen = strlen($prefix);
+                        $sequencePart = substr($lastId, $prefixLen);
+                        if (is_numeric($sequencePart)) {
+                            $nextSeq = (int)$sequencePart + 1;
+                            $availableSpace = (int)($user->company->tier_digits ?? 8) - $prefixLen;
+                            $newId = $prefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                            $numeroGenere = $newId;
+                            $localMaxTiers[$prefix] = $newId;
                         }
                     }
 
-                    // Fallback ultime si toujours vide ou AUTO (ne devrait pas arriver avec les corrections)
-                    if (empty($rowNum) || $rowNum === 'AUTO') {
-                        continue;
-                    }
+                    // On utilise le numéro généré pour numero_de_tiers
+                    // Et on garde le numéro du fichier dans numero_original
+                    $finalNum = $numeroGenere ?? $rowNum;
 
+                    // RECHERCHE ROBUSTE DU TIERS EXISTANT
+                    // On cherche par le numéro original fourni OU par le numéro de tiers s'il correspondait déjà
                     $existingTier = PlanTiers::where('company_id', $user->company_id)
-                        ->where('numero_de_tiers', $rowNum)
+                        ->where(function($q) use ($numeroOriginalTiers, $importedNum) {
+                            $q->where('numero_original', $numeroOriginalTiers)
+                              ->orWhere('numero_original', $importedNum)
+                              ->orWhere('numero_de_tiers', $numeroOriginalTiers)
+                              ->orWhere('numero_de_tiers', $importedNum);
+                        })
                         ->first();
 
                     if ($existingTier) {
-                        // UPDATE existant
-                        $existingTier->update([
+                        // UPDATE existant : On met à jour l'intitulé et le numéro original
+                        // Mais on ne change le numero_de_tiers que s'il n'était pas encore au format généré
+                        $updateData = [
                             'intitule' => strtoupper($rowMapped['intitule'] ?? 'TIERS SANS NOM'),
                             'type_de_tiers' => ucfirst(strtolower($rowMapped['type_de_tiers'] ?? 'Autre')),
                             'compte_general' => $compteCollectifId,
-                            'numero_original' => $numeroOriginalTiers,
+                            'numero_original' => $numeroOriginalTiers ?: $existingTier->numero_original,
                             'user_id' => $user->id
-                        ]);
+                        ];
+                        
+                        // Si le numéro actuel ressemble à un numéro "original" (pas conforme à la config), on le remplace
+                        if ($existingTier->numero_de_tiers && strlen($existingTier->numero_de_tiers) < 4) {
+                             $updateData['numero_de_tiers'] = strtoupper($finalNum);
+                        }
+
+                        $existingTier->update($updateData);
                         $duplicateCount++;
                     } else {
                         // CREATE nouveau
                         PlanTiers::create([
-                            'numero_de_tiers' => strtoupper($rowNum),
+                            'numero_de_tiers' => strtoupper($finalNum),
                             'intitule' => strtoupper($rowMapped['intitule'] ?? 'TIERS SANS NOM'),
                             'type_de_tiers' => ucfirst(strtolower($rowMapped['type_de_tiers'] ?? 'Autre')),
                             'compte_general' => $compteCollectifId,
@@ -2867,7 +3090,7 @@ class AdminConfigController extends Controller
                     // --- IMPORT JOURNAUX ---
                     $msg_type = "journaux";
                     $rowCodeRaw = trim($rowMapped['code_journal'] ?? '');
-                    $rowCode = $rowCodeRaw;
+                    $rowCode = $this->standardizeJournalCode($rowCodeRaw, $journalDigits);
                     $numeroOriginalJournal = (!empty($rowCodeRaw) && $rowCodeRaw !== 'AUTO') ? $rowCodeRaw : null;
                     if (empty($rowCode) && !($mapping['code_journal'] === 'AUTO')) {
                         $errors[] = "Ligne " . ($index + 1) . " : Code journal manquant.";
@@ -2985,16 +3208,17 @@ class AdminConfigController extends Controller
                     }
 
                     $rowCompte = $this->standardizeAccountNumber(trim($rowMapped['compte'] ?? ''), $accountDigits);
-                    $rowJournal = trim($rowMapped['journal'] ?? '');
+                    $rowJournalRaw = trim($rowMapped['journal'] ?? '');
+                    $rowJournal = $this->standardizeJournalCode($rowJournalRaw, $journalDigits);
 
-                    // CAS 2 : DÉDUPLICATION INTELLIGENTE & DÉTECTION AUTO DU TYPE
-                    // Si colonne Type NON mappée, on cherche "A" partout et on déduplique
+                    // CAS 2 : DÉDUPLICATION CONSERVATIVE (Vrais doublons techniques seulement)
+                    // Si colonne Type NON mappée, on déduplique sur l'ensemble des champs critiques
                     if (!$isTypeMapped) {
-                         // 2.1 : Détection "Aveugle" du Type A
-                         // On regarde si une des colonnes brutes (non mappée ou même mappée si on veut être agressif) contient juste "A"
-                         // On exclut les champs déjà identifiés comme Account/Debit/Credit pour éviter les faux positifs (peu probable pour "A")
+                         // 2.1 : Détection du Type A (Ligne à ignorer) - uniquement dans les colonnes NON mappées
                          $isHiddenA = false;
-                         foreach ($rowOrig as $cellVal) {
+                         $mappedColIndexes = array_filter(array_values($mapping), fn($v) => is_numeric($v));
+                         foreach ($rowOrig as $colIdx => $cellVal) {
+                             if (in_array($colIdx, $mappedColIndexes)) continue; // Ignorer les colonnes déjà traitées
                              $v = strtoupper(trim($cellVal ?? ''));
                              if ($v === 'A' || $v === 'ANALYTIQUE') {
                                  $isHiddenA = true;
@@ -3006,25 +3230,27 @@ class AdminConfigController extends Controller
                              continue;
                          }
 
-                         // 2.2 : Signature de déduplication (Fallback)
+                         // 2.2 : Signature de déduplication STRICTE
+                         // Pour être considérée comme doublon, deux lignes doivent être IDENTIQUES
+                         // sur date, journal, compte, tiers, montants, référence ET libellé.
                          $normRef = trim($rowMapped['reference'] ?? '');
                          $normLib = trim($rowMapped['libelle'] ?? '');
                          $normDebit = str_replace([',', ' '], ['.', ''], $rowMapped['debit'] ?? '0');
                          $normCredit = str_replace([',', ' '], ['.', ''], $rowMapped['credit'] ?? '0');
+                         $normTiers = strtoupper(trim($rowMapped['tiers'] ?? ''));
+                         $normNSaisie = trim($rowMapped['n_saisie'] ?? '');
                          
                          $sigParts = [
                              trim($rowMapped['jour'] ?? ''),
                              trim($rowJournal),
                              trim($rowCompte),
+                             $normTiers,
                              (string)(float)$normDebit, 
-                             (string)(float)$normCredit
+                             (string)(float)$normCredit,
+                             $normRef,
+                             $normLib,
+                             $normNSaisie
                          ];
-
-                         // Logique stricte : Si Ref existe, on l'utilise. Sinon Libellé.
-                         // MAIS pour résoudre le problème "Surcharge", on force l'exclusion du libellé si on a une Ref.
-                         if (!empty($normRef)) {
-                             $sigParts[] = $normRef;
-                         }
 
                          $signature = md5(implode('|', $sigParts));
 
@@ -3075,11 +3301,28 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    // Cas 1: Excel stocke parfois une date sous forme de numéro de série (ex: 45672)
-                    // On convertit via PhpSpreadsheet
-                    if (is_numeric($dateStr) && (float)$dateStr > 59) {
+                    // Cas 0: Détection prioritaire des dates DDMMYY (6 chiffres, ex: 010126 = 01/01/2026)
+                    // Ce format doit être traité AVANT la détection des numéros de série Excel
+                    // car 010126 est numérique et serait sinon converti en une date erronée (~1927)
+                    $dateStrClean = preg_replace('/\s+/', '', $dateStr); // Supprimer espaces cachés
+                    if (is_numeric($dateStrClean) && strlen($dateStrClean) === 6) {
+                        $day2   = (int)substr($dateStrClean, 0, 2);
+                        $month2 = (int)substr($dateStrClean, 2, 2);
+                        $year2  = (int)substr($dateStrClean, 4, 2);
+                        // Pivot 70: 00-69 => 2000-2069, 70-99 => 1970-1999
+                        $year4  = ($year2 < 70) ? (2000 + $year2) : (1900 + $year2);
                         try {
-                            $dt = ExcelDate::excelToDateTimeObject((float)$dateStr);
+                            $date = Carbon::create($year4, $month2, $day2, 0, 0, 0);
+                        } catch (\Exception $e) {
+                            $errors[] = "Ligne " . ($index + 1) . " : Date DDMMYY invalide '$dateStr'.";
+                            continue;
+                        }
+
+                    // Cas 1: Excel stocke parfois une date sous forme de numéro de série (ex: 45672)
+                    // On convertit via PhpSpreadsheet (seulement si PAS 6 chiffres DDMMYY)
+                    } elseif (is_numeric($dateStrClean) && (float)$dateStrClean > 59) {
+                        try {
+                            $dt = ExcelDate::excelToDateTimeObject((float)$dateStrClean);
                             $date = Carbon::instance($dt);
                         } catch (\Exception $e) {
                             $errors[] = "Ligne " . ($index + 1) . " : Date Excel invalide '$dateStr'.";
@@ -3087,25 +3330,39 @@ class AdminConfigController extends Controller
                         }
 
                     // Cas 2: L'import fournit juste un quantième (jour du mois)
-                    } elseif (is_numeric($dateStr) && strlen($dateStr) <= 2) {
+                    } elseif (is_numeric($dateStrClean) && strlen($dateStrClean) <= 2) {
                         $year = $exercice ? $exercice->date_debut->year : now()->year;
                         $month = $exercice ? $exercice->date_debut->month : now()->month;
                         try {
-                            $date = Carbon::create($year, $month, (int)$dateStr);
+                            $date = Carbon::create($year, $month, (int)$dateStrClean);
                         } catch(\Exception $e) {
                             $errors[] = "Ligne " . ($index + 1) . " : Jour invalide '$dateStr'.";
                             continue;
                         }
                     } else {
                         // Cas 3: Date texte. On priorise d/m/Y pour éviter les inversions (m/d/Y)
-                        $dateStrNormalized = str_replace(['\\', '.'], ['/', '/'], $dateStr);
+                        $dateStrNormalized = str_replace(['\\', '.', ' '], ['/', '/', '/'], trim($dateStr));
+                        
+                        // FIX : Gestion explicite des années à 2 chiffres pour éviter les erreurs de siècle (ex: 27 -> 1927)
+                        // On cherche DD/MM/YY ou D/M/YY
+                        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/', $dateStrNormalized, $matches)) {
+                            $day = $matches[1];
+                            $month = $matches[2];
+                            $year2 = (int)$matches[3];
+                            // Seuil à 70 : 00-69 => 2000-2069, 70-99 => 1970-1999
+                            $year4 = ($year2 < 70) ? (2000 + $year2) : (1900 + $year2);
+                            $dateStrNormalized = sprintf('%02d/%02d/%04d', $day, $month, $year4);
+                        }
+
                         try {
-                            $formats = ['d/m/Y', 'j/n/Y', 'd/n/Y', 'j/m/Y', 'Y-m-d', 'd-m-Y', 'Y/m/d'];
+                            // On ajoute d/m/y et d-m-y en secours si le regex n'a pas tout capté
+                            $formats = ['d/m/Y', 'd/m/y', 'j/n/Y', 'j/n/y', 'd/n/Y', 'j/m/Y', 'Y-m-d', 'd-m-Y', 'Y/m/d'];
                             $date = null;
                             foreach ($formats as $fmt) {
                                 try {
                                     $d = Carbon::createFromFormat($fmt, $dateStrNormalized);
-                                    if ($d && $d->format($fmt) == $dateStrNormalized) {
+                                    // Vérification stricte car Carbon peut être "indulgent"
+                                    if ($d && ($d->format($fmt) == $dateStrNormalized || $d->format('d/m/Y') == $dateStrNormalized)) {
                                         $date = $d;
                                         break;
                                     }
@@ -3122,7 +3379,7 @@ class AdminConfigController extends Controller
 
                     // VALIDATION DATE HORS EXERCICE
                     if ($exercice && !$date->between($exercice->date_debut->startOfDay(), $exercice->date_fin->endOfDay())) {
-                        $errors[] = "Ligne " . ($index + 1) . " : Date hors exercice (" . $date->format('d/m/Y') . ").";
+                        $errors[] = "Ligne " . ($index + 1) . " : Date hors exercice (" . $date->format('d/m/Y') . "). Vérifiez si l'année est correcte.";
                         continue;
                     }
 
@@ -3347,6 +3604,39 @@ class AdminConfigController extends Controller
             $import->update(['raw_data' => $data]);
 
             return response()->json(['success' => true, 'message' => 'Ligne supprimée de l\'import.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Suppression multiple de lignes de staging
+     */
+    public function deleteMultipleRows($id, Request $request)
+    {
+        try {
+            $import = ImportStaging::findOrFail($id);
+            $indices = $request->input('indices', []);
+            
+            if (empty($indices)) {
+                return response()->json(['success' => false, 'message' => 'Aucune ligne sélectionnée.'], 400);
+            }
+
+            $data = $import->raw_data;
+            
+            // Trier les indices par ordre décroissant pour éviter les décalages lors de la suppression
+            sort($indices);
+            $indices = array_reverse($indices);
+
+            foreach ($indices as $index) {
+                if (isset($data[$index])) {
+                    array_splice($data, $index, 1);
+                }
+            }
+            
+            $import->update(['raw_data' => $data]);
+
+            return response()->json(['success' => true, 'message' => count($indices) . ' lignes supprimées de l\'import.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
@@ -3597,8 +3887,17 @@ class AdminConfigController extends Controller
     private function standardizeAccountNumber($number, $digits)
     {
         $number = trim($number ?? '');
-        if (empty($number) || !is_numeric($number)) {
+        if (empty($number)) {
             return $number;
+        }
+
+        // Si le numéro contient du texte (ex: "Associés 1401000"), on extrait uniquement les chiffres
+        if (!is_numeric($number)) {
+            if (preg_match('/\d+/', $number, $matches)) {
+                $number = $matches[0];
+            } else {
+                return $number; // On laisse tel quel si vraiment pas de chiffres
+            }
         }
 
         if (strlen($number) < $digits) {
@@ -3608,6 +3907,36 @@ class AdminConfigController extends Controller
         }
 
         return $number;
+    }
+
+    /**
+     * Standardise un code journal sur la longueur configurée
+     */
+    private function standardizeJournalCode($code, $digits)
+    {
+        $code = strtoupper(trim($code ?? ''));
+        if (empty($code)) {
+            return $code;
+        }
+
+        // Cas Alphanumérique : "BQ1" -> "BQ01"
+        // On isole la partie alphabétique et la partie numérique
+        if (preg_match('/^([A-Z]+)(\d+)$/i', $code, $matches)) {
+            $prefix = $matches[1];
+            $number = $matches[2];
+            $availableSpace = max(1, $digits - strlen($prefix));
+            
+            // On complète avec des zéros à GAUCHE du numéro
+            return $prefix . str_pad($number, $availableSpace, '0', STR_PAD_LEFT);
+        }
+
+        // Cas Purement Alphabétique (ex: BQ, CAIS)
+        // On ne rajoute plus de zéros à droite (BQ00) pour permettre BQ01 via la séquence
+        if (strlen($code) > $digits) {
+            return substr($code, 0, $digits);
+        }
+
+        return $code;
     }
 
     private function generateGlobalSaisieNumber($companyId)

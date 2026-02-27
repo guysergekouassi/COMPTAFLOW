@@ -114,7 +114,7 @@
                                     </form>
                                     <div class="d-flex flex-column gap-2 mt-2">
                                         <button class="btn btn-outline-warning w-100 border-2 font-black rounded-xl" data-bs-toggle="modal" data-bs-target="#modalJournalSettings">
-                                            <i class="fa-solid fa-gears me-2"></i> Configurer (Code: {{ $mainCompany->journal_code_digits ?? '3' }} {{ strtoupper(substr($mainCompany->journal_code_type ?? 'alpha', 0, 3)) }})
+                                            <i class="fa-solid fa-gears me-2"></i> Configurer (Code: {{ $mainCompany->journal_code_digits ?? '4' }} {{ strtoupper(substr($mainCompany->journal_code_type ?? 'alpha', 0, 3)) }})
                                         </button>
                                         <button class="btn btn-outline-light w-100 border-2 font-black rounded-xl" data-bs-toggle="modal" data-bs-target="#modalImportJournals">
                                             <i class="fa-solid fa-file-import me-2"></i> Importer Journaux (Excel/CSV)
@@ -221,7 +221,7 @@
                         <div class="row g-6">
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700">Code Journal</label>
-                                <input type="text" name="code_journal" id="create_code_journal" class="form-control border-slate-200 py-3 rounded-xl shadow-none focus:border-emerald-500" placeholder="Ex: ACH" maxlength="{{ $mainCompany->journal_code_digits ?? 3 }}" required readonly style="background-color: #f8fafc; cursor: not-allowed;">
+                                <input type="text" name="code_journal" id="create_code_journal" class="form-control border-slate-200 py-3 rounded-xl shadow-none focus:border-emerald-500" placeholder="Ex: ACH" maxlength="{{ $mainCompany->journal_code_digits ?? 4 }}" required readonly style="background-color: #f8fafc; cursor: not-allowed;">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700">Type</label>
@@ -439,7 +439,7 @@
                                 <label class="form-label font-black text-slate-700 uppercase text-xs">Longueur des Codes</label>
                                 <select name="journal_code_digits" class="form-select border-slate-200 py-3 rounded-xl font-bold">
                                     @foreach([4,5,6] as $digit)
-                                        <option value="{{ $digit }}" {{ ($mainCompany->journal_code_digits ?? 3) == $digit ? 'selected' : '' }}>{{ $digit }} caractères</option>
+                                        <option value="{{ $digit }}" {{ ($mainCompany->journal_code_digits ?? 4) == $digit ? 'selected' : '' }}>{{ $digit }} caractères</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -570,7 +570,7 @@
                     if (data.success) codeInput.value = data.code;
                 })
                 .catch(() => {
-                    const digits = {{ $mainCompany->journal_code_digits ?? 3 }};
+                    const digits = {{ $mainCompany->journal_code_digits ?? 4 }};
                     codeInput.value = prefix.padEnd(digits, '0').substring(0, digits);
                 });
         }
