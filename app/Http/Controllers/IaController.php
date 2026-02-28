@@ -9,6 +9,7 @@ use App\Models\IaMapping;
 use App\Models\IaLog;
 use App\Models\PlanComptable;
 use App\Models\PlanTiers;
+use App\Models\Company;
 
 class IaController extends Controller
 {
@@ -87,9 +88,10 @@ class IaController extends Controller
             $planComptableContext = $this->buildPlanComptableContext($companyId);
             $tiersContext = $this->buildTiersContext($companyId);
             $mappingsContext = $this->buildMappingsContext($companyId);
+            $companyName = Company::find($companyId)->raison_sociale ?? 'Mon Entreprise';
 
             // 3. Construction du prompt enrichi
-            $prompt = $this->buildPrompt($planComptableContext, $tiersContext, $mappingsContext);
+            $prompt = $this->buildPrompt($planComptableContext, $tiersContext, $mappingsContext, $companyName);
 
             // 4. Payload pour Gemini
             $payload = [
@@ -108,7 +110,7 @@ class IaController extends Controller
                 ],
                 "generation_config" => [
                     "temperature" => 0.1,
-                    "max_output_tokens" => 4096
+                    "responseMimeType" => "application/json"
                 ]
             ];
 
@@ -202,18 +204,26 @@ class IaController extends Controller
      */
     private function buildPlanComptableContext(int $companyId): string
     {
+        // On récupère en priorité les comptes de charges (6), tiers (4) et immo (2)
         $comptes = PlanComptable::where('company_id', $companyId)
+            ->where(function($query) {
+                $query->where('numero_de_compte', 'LIKE', '6%')
+                      ->orWhere('numero_de_compte', 'LIKE', '4%')
+                      ->orWhere('numero_de_compte', 'LIKE', '2%')
+                      ->orWhere('numero_de_compte', 'LIKE', '5%')
+                      ->orWhere('numero_de_compte', 'LIKE', '7%');
+            })
             ->whereRaw('LENGTH(numero_de_compte) >= 4')
             ->orderBy('numero_de_compte')
-            ->limit(200)
+            ->limit(1000) // On peut se permettre d'en envoyer plus
             ->get(['numero_de_compte', 'intitule']);
 
         if ($comptes->isEmpty()) {
             return "Plan comptable non disponible. Utiliser les comptes SYSCOHADA standard.";
         }
 
-        $lines = $comptes->map(fn($c) => "{$c->numero_de_compte} - {$c->intitule}")->join("\n");
-        return "PLAN COMPTABLE RÉEL DE L'ENTREPRISE (utiliser UNIQUEMENT ces comptes) :\n{$lines}";
+        $lines = $comptes->map(fn($c) => "COMPTE : {$c->numero_de_compte} - CATEGORIE : {$c->intitule}")->join("\n");
+        return "PLAN COMPTABLE DE L'ENTREPRISE (Note: 'FR.' dans un libellé de compte général type '200000' ne signifie PAS forcément un compte fournisseur, vérifiez toujours le premier chiffre: 6=Charge, 4=Tiers) :\n{$lines}";
     }
 
     /**
@@ -257,7 +267,7 @@ class IaController extends Controller
     /**
      * Construit le prompt complet pour Gemini.
      */
-    private function buildPrompt(string $planComptable, string $tiers, string $mappings): string
+    private function buildPrompt(string $planComptable, string $tiers, string $mappings, string $companyName): string
     {
         $mappingsSection = $mappings ? "\n\n{$mappings}" : '';
 
@@ -268,22 +278,28 @@ Tu es un expert-comptable SYSCOHADA Côte d'Ivoire. Analyse cette pièce comptab
 
 {$tiers}{$mappingsSection}
 
-RÈGLES ABSOLUES :
-1. Utilise UNIQUEMENT les numéros de compte du plan comptable fourni ci-dessus.
-2. Si le tiers correspond à un tiers existant, utilise son nom exact.
-3. Total débit DOIT être égal au total crédit.
-4. Utilise les comptes le nombre de chiffre configurer ( ceux disponible , ceux de l'entreprise ).
-5. TVA CI = 18% (compte 445100 pour déductible, 445200 pour collectée).
-6. Facture non payée → 401000 (fournisseur) ou 411000 (client).
-7. Paiement espèces → 571000, par banque → 521000.
-8. LIBELLÉS : Utilise EXCLUSIVEMENT les intitulés réels présents sur la facture (ex: "Achat de chaises", "Maintenance sono"). NE PAS inventer de libellés génériques.
-9. TVA : N'ajoute une ligne de TVA QUE SI un montant ou un taux de TVA est EXPLICITEMENT écrit sur le document. Si aucune TVA n'est visible, ne génère PAS de ligne de type "TVA".
-10. MONTANTS : Fournis uniquement des nombres entiers ou décimaux, SANS séparateurs de milliers (ex: 90000 et non 90 000).
-11. FIDÉLITÉ : Sois un expert-comptable rigoureux, colle au document.
+RÈGLES D'EXTRACTION STRICTE (LITÉRALE) :
+1. RÈGLE 1 LIGNE = 1 OBJET JSON : Tu dois créer un objet séparé dans le tableau "ecriture" pour CHAQUE ligne visible dans le tableau de la facture. INTERDICTION FORMELLE de regrouper plusieurs prestations sur une même ligne.
+2. FIDÉLITÉ DES LIBELLÉS (COPIER-COLLER) : Recopie le texte EXACT et COMPLET de la colonne "Désignation" pour chaque ligne. 
+   - INTERDICTION de résumer ou de changer un mot.
+   - INTERDICTION d'ajouter la date, le numéro de pièce ou le nom du client dans le libellé de la ligne.
+3. LECTURE LITÉRALE DES MONTANTS : Recopie les montants EXACTEMENT comme ils sont écrits dans les colonnes. NE FAIS AUCUN CALCUL.
+4. INTERDICTIONS FORMELLES :
+   - INTERDIT de calculer la TVA ou le Hors-Taxe par déduction (ne divise jamais par 1.18). Si la TVA n'est pas écrite explicitement sur sa ligne, le montant TVA est 0.
+   - INTERDIT d'utiliser des décimales (virgules) si elles ne sont pas imprimées. Utilise des nombres entiers ronds.
+   - INTERDIT d'inventer des lignes de type "Remise" ou "Ajustement".
+5. COMPTES : 
+   - DÉBIT (Charges) : Utilise obligatoirement un compte de Classe 6.
+   - CRÉDIT (Tiers) : Identifie le rôle :
+     * Si l'entreprise "{$companyName}" est le DESTINATAIRE (reçoit la facture), utilise un compte de type FOURNISSEUR (commençant par '401').
+     * Si l'entreprise "{$companyName}" est l'ÉMETTEUR (fournit le service), utilise un compte de type CLIENT (commençant par '411').
+6. TIERS (IDENTIFICATION) : 
+   - Recherche le nom du tiers (fournisseur ou client) sur la facture. 
+   - Si tu le trouves dans la liste fournie ci-dessus, utilise son compte exact.
+   - S'IL N'EST PAS DANS LA LISTE : Utilise son NOM RÉEL lu sur la facture comme "intitule" dans l'objet JSON de la ligne de compte tiers (ex: "AMA VAISSELLE ET DÉCORATION").
+7. TOTAL : Le montant au CRÉDIT du fournisseur (ou débit du client) dans le JSON doit être EXACTEMENT le total TTC écrit sur la facture (ex: 90000).
 
-FORMAT EXIGÉ : Réponds avec UNIQUEMENT le bloc JSON, sans aucun texte avant ou après, sans balises ```json ou ```. Ton résultat doit commencer par { et finir par }.
-
-FORMAT JSON :
+FORMAT EXIGÉ : Réponds avec UNIQUEMENT le bloc JSON.
 {
   "type_document": "Facture|Reçu|Note de frais|Autre",
   "tiers": "Nom exact du fournisseur ou client",
@@ -360,42 +376,56 @@ PROMPT;
                 continue;
             }
 
+            if ($http_code === 200) {
+                $result = json_decode($response, true);
+                if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+                    $candidate = $result['candidates'][0];
+                    $finishReason = $candidate['finishReason'] ?? 'UNKNOWN';
+                    $json_text = $candidate['content']['parts'][0]['text'];
+                    
+                    \Illuminate\Support\Facades\Log::info("Gemini Model Output: Reason={$finishReason}, Length=" . strlen($json_text));
+
+                    // Nettoyage Markdown (si présent)
+                    $json_text = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $json_text);
+                    
+                    // Extraction du premier bloc { ... }
+                    $start = strpos($json_text, '{');
+                    $end = strrpos($json_text, '}');
+                    
+                    if ($start !== false && $end !== false) {
+                        $json_text = substr($json_text, $start, $end - $start + 1);
+                    }
+
+                    // Supprimer d'éventuels caractères invisibles/parasites
+                    $json_text = trim($json_text);
+                    $json_text = preg_replace('/[\x00-\x1F\x7F]/', '', $json_text);
+
+                    $data = json_decode($json_text, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        return ['data' => $data];
+                    }
+                    
+                    // Si la conversion JSON échoue (ex: texte tronqué), on log l'erreur et on réessaie si possible
+                    \Illuminate\Support\Facades\Log::warning("Gemini JSON Parse Error (Tentative " . ($retry_count + 1) . "): " . json_last_error_msg() . " | Content: " . substr($json_text, 0, 100) . "...");
+                    
+                    $retry_count++;
+                    if ($retry_count >= $max_retries) {
+                        \Illuminate\Support\Facades\Log::error("Gemini JSON Parse Error définitif: " . json_last_error_msg() . " | Content: " . substr($json_text, 0, 100) . "...");
+                        return ['error' => 'JSON invalide généré par l\'IA après plusieurs tentatives', 'raw' => $json_text];
+                    }
+                    
+                    $delay = $base_delay * pow(2, $retry_count - 1) + rand(1, 3);
+                    sleep($delay);
+                    continue;
+                }
+            }
+
             break;
         }
 
-        if ($http_code === 200) {
-            $result = json_decode($response, true);
-            if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-                $json_text = $result['candidates'][0]['content']['parts'][0]['text'];
-                
-                // Nettoyage Markdown (si présent)
-                $json_text = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $json_text);
-                
-                // Extraction du premier bloc { ... }
-                $start = strpos($json_text, '{');
-                $end = strrpos($json_text, '}');
-                
-                if ($start !== false && $end !== false) {
-                    $json_text = substr($json_text, $start, $end - $start + 1);
-                }
-
-                // Supprimer d'éventuels caractères invisibles/parasites
-                $json_text = trim($json_text);
-                $json_text = preg_replace('/[\x00-\x1F\x7F]/', '', $json_text);
-
-                $data = json_decode($json_text, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    return ['data' => $data];
-                }
-                
-                // Log de l'erreur JSON pour débogage
-                \Log::error("Gemini JSON Parse Error: " . json_last_error_msg() . " | Content: " . substr($json_text, 0, 100) . "...");
-                return ['error' => 'JSON invalide généré par l\'IA', 'raw' => $json_text];
-            }
-        }
-
-        return ['error' => "Erreur API ({$http_code})", 'details' => json_decode($response, true)];
+        return ['error' => "Erreur API ({$http_code})", 'details' => json_decode($response, true) ?? ['raw' => $response]];
     }
+
     /**
      * Compresse l'image si nécessaire pour éviter les timeouts API.
      */

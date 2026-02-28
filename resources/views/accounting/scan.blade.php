@@ -127,10 +127,14 @@
     }
 
     .row-debit, .row-credit {
-        font-weight: 700 !important;
-        padding-left: 5px !important;
-        padding-right: 5px !important;
-        font-size: 0.95rem !important;
+        font-weight: 800 !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        font-size: 1.05rem !important;
+        height: 42px !important;
+        color: #0f172a !important;
+        background-color: #fbfcfe !important;
+        border: 1px solid #cbd5e1 !important;
     }
 </style>
 <body>
@@ -208,16 +212,17 @@
                                     <thead>
                                         <tr>
                                             <th style="width: 250px;">Compte Général</th>
+                                            <th style="width: 50px;" class="text-center">TVA</th>
                                             <th style="width: 200px;">Compte Tiers</th>
                                             <th style="min-width: 200px;">Libellé / Détails</th>
-                                            <th class="text-end" style="width: 150px;">Débit</th>
-                                            <th class="text-end" style="width: 150px;">Crédit</th>
+                                            <th class="text-end" style="width: 200px;">Débit</th>
+                                            <th class="text-end" style="width: 200px;">Crédit</th>
                                             <th style="width: 150px;">Poste Trésorerie</th>
                                             <th class="text-center" style="width: 100px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="entriesBody">
-                                        <tr><td colspan="6" class="text-center py-5 text-muted"><i class="bx bx-info-circle me-1"></i>En attente de document pour analyse précise.</td></tr>
+                                        <tr><td colspan="8" class="text-center py-5 text-muted"><i class="bx bx-info-circle me-1"></i>En attente de document pour analyse précise.</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -365,6 +370,7 @@
                 const res = await fetch("{{ route('api.next-saisie-number') }}");
                 const json = await res.json();
                 if (json.success) {
+                    console.log("Sync N° Saisie successful:", json.numero);
                     NEXT_SAISIE = json.numero;
                     const display = document.getElementById('displayNSaisie');
                     if (display) display.innerText = NEXT_SAISIE;
@@ -386,14 +392,16 @@
             }
 
             const rows = Array.from(document.querySelectorAll('#entriesBody tr'));
+            
+            // On cherche la ligne de contrepartie (401, 57, 41)
             let mainLine = rows.find(tr => {
                 const accSelect = tr.querySelector('.row-acc');
                 const accCode = accSelect.options[accSelect.selectedIndex]?.text.split(' ')[0] || "";
-                return accCode.startsWith('40') || accCode.startsWith('57') || accCode.startsWith('41');
+                return accCode.startsWith('40') || accCode.startsWith('57') || accCode.startsWith('41') || accCode.startsWith('52');
             });
 
             if (!mainLine) {
-                Swal.fire('Erreur', 'Impossible de trouver la ligne de contrepartie (Fournisseur/Caisse).', 'error');
+                Swal.fire('Erreur', 'Impossible de trouver la ligne de contrepartie (Fournisseur/Banque/Caisse).', 'error');
                 return;
             }
 
@@ -402,10 +410,19 @@
             const date = mainLine.querySelector('.row-date').value;
             const ref = mainLine.querySelector('.row-ref').value;
 
+            // Récupération des libellés des lignes cochées pour le nouveau libellé
+            const checkedLabels = rows.filter(r => r.querySelector('.row-vat-check')?.checked)
+                                      .map(r => r.querySelector('.row-lib')?.value || "")
+                                      .filter(l => l.length > 0);
+            
+            const sourceLabel = checkedLabels.length > 0 ? checkedLabels.join(' / ') : "MANUELLE";
+            const vataLabel = "TVA / " + sourceLabel;
+
             tr.innerHTML = `
                 <td><select class="form-select select2 row-acc"><option value="${accountId}" selected>${accountNum} - TVA MANUELLE</option></select></td>
+                <td class="text-center"><i class="bx bx-check text-success"></i></td>
                 <td><div class="d-flex gap-1"><select class="form-select select2 row-tier"><option value="" selected>Néant</option></select></div></td>
-                <td><input type="text" class="form-control form-control-sm row-lib" value="TVA MANUELLE"><div class="small text-muted mt-1 px-1">Pièce: ${ref} du ${date}</div><input type="hidden" class="row-date" value="${date}"><input type="hidden" class="row-ref" value="${ref}"></td>
+                <td><input type="text" class="form-control form-control-sm row-lib" value="${vataLabel}"><div class="small text-muted mt-1 px-1">Pièce: ${ref} du ${date}</div><input type="hidden" class="row-date" value="${date}"><input type="hidden" class="row-ref" value="${ref}"></td>
                 <td><input type="number" class="form-control text-end row-debit" value="${amount}"></td>
                 <td><input type="number" class="form-control text-end row-credit" value="0"></td>
                 <td><select class="form-select select2 row-poste-treso" disabled><option value="">Néant</option></select></td>
@@ -419,15 +436,18 @@
             mainLine.parentNode.insertBefore(tr, mainLine);
             $(tr).find('.select2').select2({ theme: 'bootstrap4', width: '100%' }).on('change', window.updateTotals);
 
-            // Mise à jour de la contrepartie
+            // Mise à jour de la contrepartie (On ajoute la TVA au crédit de la ligne principale)
             const currentCredit = parseFloat(mainLine.querySelector('.row-credit').value) || 0;
             const currentDebit = parseFloat(mainLine.querySelector('.row-debit').value) || 0;
             
             if (currentCredit > 0) mainLine.querySelector('.row-credit').value = currentCredit + amount;
-            else if (currentDebit > 0) mainLine.querySelector('.row-debit').value = currentDebit - amount; // Cas rare
+            else if (currentDebit > 0) mainLine.querySelector('.row-debit').value = currentDebit - amount; // Cas rare d'ajustement débit
 
             window.updateTotals();
-            document.getElementById('manualVATContainer').classList.add('d-none');
+            // document.getElementById('manualVATContainer').classList.add('d-none'); // On ne cache plus les champs
+            
+            // On décoche tout après application
+            document.querySelectorAll('.row-vat-check').forEach(c => c.checked = false);
         };
 
         // --- GESTION VENTILATION ANALYTIQUE ---
@@ -576,6 +596,9 @@
             fileInput.value = '';
             processingUI.classList.add('d-none');
 
+            // Force sync N° Saisie au chargement
+            fetchNextSaisieNumber();
+
             // Vérifier si un batch_id est présent pour charger un brouillon
             const urlParams = new URLSearchParams(window.location.search);
             const batchId = urlParams.get('batch_id');
@@ -637,14 +660,19 @@
             });
 
             dropZone.addEventListener('drop', e => {
-                const dt = e.dataTransfer;
+            const dt = e.dataTransfer;
                 const file = dt.files[0];
                 if (file) handleUpload(file);
             }, false);
 
+            let isScanning = false;
             const handleUpload = async (file) => {
-                if (!file) return;
+                if (!file || isScanning) return;
+                
+                isScanning = true;
                 processingUI.classList.remove('d-none');
+                const h6 = processingUI.querySelector('h6');
+                
                 try {
                     const compressedBase64 = await compressImage(file);
                     imagePreview.src = compressedBase64;
@@ -653,6 +681,19 @@
                     
                     const base64Content = compressedBase64.split(',')[1];
                     
+                    // Lancement du décompte visuel de 20 secondes
+                    let countdown = 20;
+                    const countdownInterval = setInterval(() => {
+                        countdown--;
+                        if (countdown > 0) {
+                            h6.innerText = `ANALYSE EN COURS...\nPATIENTEZ ENVIRON ${countdown}s`;
+                        } else {
+                            h6.innerText = "FINALISATION DE L'ANALYSE...";
+                            clearInterval(countdownInterval);
+                        }
+                    }, 1000);
+                    h6.innerText = `ANALYSE EN COURS...\nPATIENTEZ ENVIRON ${countdown}s`;
+
                     const makeGeminiRequest = async (formData, retryCount = 0) => {
                         const MAX_RETRIES = 5;
                         const API_URL = '{{ route("ia.traiter") }}';
@@ -672,12 +713,11 @@
                                     const jitter = Math.random() * 1000;
                                     let waitTime = Math.min(baseWait + jitter, 30000);
                                     
-                                    const h6 = processingUI.querySelector('h6');
                                     for (let i = Math.ceil(waitTime/1000); i > 0; i--) {
-                                        h6.innerText = `QUOTA DÉPASSÉ (${retryCount+1}/${MAX_RETRIES}).\nPATIENTEZ ${i}s...`;
+                                        h6.innerText = `QUOTA DÉPASSÉ (${retryCount+1}/${MAX_RETRIES}).\nRE-TENTATIVE DANS ${i}s...`;
                                         await new Promise(r => setTimeout(r, 1000));
                                     }
-                                    h6.innerText = "ANALYSE EN COURS...";
+                                    h6.innerText = "NOUVELLE TENTATIVE...";
                                     return makeGeminiRequest(formData, retryCount + 1);
                                 } else {
                                     throw new Error("Serveur Google saturé. Réessayez dans quelques minutes.");
@@ -688,12 +728,10 @@
                             if (response.status === 503) {
                                 if (retryCount < MAX_RETRIES) {
                                     const waitTime = Math.pow(2, retryCount) * 3000;
-                                    const h6 = processingUI.querySelector('h6');
                                     for (let i = Math.ceil(waitTime/1000); i > 0; i--) {
-                                        h6.innerText = `IA SURCHARGÉE - Nouvelle tentative dans ${i}s... (${retryCount+1}/${MAX_RETRIES})`;
+                                        h6.innerText = `SERVICE SURCHARGÉ - Ré-tentative dans ${i}s... (${retryCount+1}/${MAX_RETRIES})`;
                                         await new Promise(r => setTimeout(r, 1000));
                                     }
-                                    h6.innerText = "NOUVELLE TENTATIVE EN COURS...";
                                     return makeGeminiRequest(formData, retryCount + 1);
                                 } else {
                                     throw new Error("L'IA Gemini est temporairement surchargée. Réessayez dans quelques instants.");
@@ -723,6 +761,9 @@
 
                     const result = await makeGeminiRequest(formData);
                     
+                    // Une fois la requête terminée, on s'assure que l'intervalle est stoppé
+                    clearInterval(countdownInterval);
+
                     if (!result || result.error) throw new Error(result?.error || "Réponse invalide de l'IA");
 
                     // Validation des données critiques (support des différents formats de clés possibles)
@@ -750,7 +791,9 @@
                     alert("Erreur: " + e.message); 
                     resetUI();
                 } finally { 
+                    isScanning = false;
                     processingUI.classList.add('d-none'); 
+                    h6.innerText = "ANALYSE...";
                 }
             };
 
@@ -854,13 +897,16 @@
 
                     // Déclaration et réinitialisation à chaque ligne
                     let matchedTierId = '';
-                    if (l.type === 'FOURNISSEUR' || (l.compte && l.compte.toString().startsWith('40'))) {
-                        const supplierName = (data.tiers || data.fournisseur || "").toUpperCase().trim();
+                    let identifiedTierName = (data.tiers || data.fournisseur || "").toUpperCase().trim();
+                    
+                    if (l.type === 'FOURNISSEUR' || (l.compte && l.compte.toString().startsWith('40')) || (l.compte && l.compte.toString().startsWith('41'))) {
                         const t = TIERS_LIST.find(t => {
                             const tierIntitule = t.intitule.toUpperCase().trim();
-                            return supplierName.includes(tierIntitule) || tierIntitule.includes(supplierName);
+                            return identifiedTierName.includes(tierIntitule) || tierIntitule.includes(identifiedTierName);
                         });
-                        if (t) matchedTierId = t.id;
+                        if (t) {
+                            matchedTierId = t.id;
+                        }
                     }
 
                     const matchedPoste = isTreasury ? findTreasuryPost(matchedAccId) : { id: '', text: '' };
@@ -875,10 +921,27 @@
                         treasuryOptions += `</optgroup>`;
                     }
 
+                    // On prépare le bouton "+" pour pré-remplir le modal si le tiers est nouveau
+                    const btnPlusAttr = matchedTierId ? '' : `onclick="document.getElementById('intitule_tiers').value = '${identifiedTierName.replace(/'/g, "\\'")}'; document.getElementById('type_tiers').value = '${accCode.startsWith('41') ? 'Client' : 'Fournisseur'}'; document.getElementById('type_tiers').dispatchEvent(new Event('change'));"`;
+
                     tr.innerHTML = `
                         <td><select class="form-select select2 row-acc"><option value="">Choisir...</option>${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}</select></td>
-                        <td><div class="d-flex gap-1"><select class="form-select select2 row-tier"><option value="">Néant</option>${TIERS_LIST.map(t => `<option value="${t.id}" ${t.id == matchedTierId ? 'selected' : ''}>${t.numero_de_tiers} - ${t.intitule}</option>`).join('')}</select><button type="button" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="modal" data-bs-target="#createTiersModal"><i class="bx bx-plus"></i></button></div></td>
-                        <td><input type="text" class="form-control form-control-sm row-lib" value="${l.intitule || l.libelle || ''}"><div class="small text-muted mt-1 px-1">Pièce: ${data.reference || data.ref || ''} du ${data.date || ''}</div><input type="hidden" class="row-date" value="${data.date || ''}"><input type="hidden" class="row-ref" value="${data.reference || data.ref || ''}"></td>
+                        <td class="text-center">
+                            <input type="checkbox" class="form-check-input row-vat-check" style="width: 20px; height: 20px;">
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 flex-column">
+                                <div class="d-flex gap-1">
+                                    <select class="form-select select2 row-tier">
+                                        <option value="">${matchedTierId ? 'Néant' : 'Nouveau Tiers ?'}</option>
+                                        ${TIERS_LIST.map(t => `<option value="${t.id}" ${t.id == matchedTierId ? 'selected' : ''}>${t.numero_de_tiers} - ${t.intitule}</option>`).join('')}
+                                    </select>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="modal" data-bs-target="#createTiersModal" ${btnPlusAttr}><i class="bx bx-plus"></i></button>
+                                </div>
+                                ${!matchedTierId && identifiedTierName ? `<span class="text-danger small fw-bold px-1 mt-1 animate__animated animate__pulse animate__infinite" style="font-size: 0.75rem;"><i class="bx bx-error-circle me-1"></i>Existe pas, créer</span>` : ''}
+                            </div>
+                        </td>
+                        <td><input type="text" class="form-control form-control-sm row-lib" value="${l.intitule || identifiedTierName || ''}"><div class="small text-muted mt-1 px-1">Pièce: ${data.reference || data.ref || ''} du ${data.date || ''}</div><input type="hidden" class="row-date" value="${data.date || ''}"><input type="hidden" class="row-ref" value="${data.reference || data.ref || ''}"></td>
                         <td><input type="number" class="form-control text-end row-debit" value="${debit}" ${isVAT ? 'readonly style="background-color: #f8f9fa;"' : ''}></td>
                         <td><input type="number" class="form-control text-end row-credit" value="${credit}" ${isVAT ? 'readonly style="background-color: #f8f9fa;"' : ''}></td>
                         <td>
@@ -914,40 +977,62 @@
 
             window.applyVAT18 = () => {
                 const rows = Array.from(document.querySelectorAll('#entriesBody tr'));
-                let totalCharge = 0;
+                let totalBase = 0;
                 let mainLine = null; // Line to update credit (401 or 571)
                 let date = null, ref = null;
+                let checkedCount = 0;
 
                 rows.forEach(tr => {
+                    const vatCheck = tr.querySelector('.row-vat-check');
                     const accSelect = tr.querySelector('.row-acc');
-                    const accCode = accSelect.options[accSelect.selectedIndex]?.text.split(' ')[0] || "";
-                    const debit = parseFloat(tr.querySelector('.row-debit').value) || 0;
-                    const credit = parseFloat(tr.querySelector('.row-credit').value) || 0;
+                    const accCode = accSelect?.options[accSelect.selectedIndex]?.text.split(' ')[0] || "";
+                    const debit = parseFloat(tr.querySelector('.row-debit')?.value) || 0;
 
-                    if (accCode.startsWith('6')) {
-                        totalCharge += debit;
+                    if (vatCheck && vatCheck.checked) {
+                        totalBase += debit;
+                        checkedCount++;
                     }
-                    if (accCode.startsWith('40') || accCode.startsWith('57') || accCode.startsWith('41')) {
+
+                    if (accCode.startsWith('40') || accCode.startsWith('57') || accCode.startsWith('41') || accCode.startsWith('52')) {
                         mainLine = tr;
                     }
-                    if (!date) date = tr.querySelector('.row-date').value;
-                    if (!ref) ref = tr.querySelector('.row-ref').value;
+                    if (!date) date = tr.querySelector('.row-date')?.value;
+                    if (!ref) ref = tr.querySelector('.row-ref')?.value;
                 });
 
-                if (totalCharge > 0 && mainLine) {
-                    const vataAmount = Math.round(totalCharge * 0.18);
+                if (checkedCount === 0) {
+                    Swal.fire('Info', 'Veuillez d\'abord cocher les lignes sur lesquelles appliquer la TVA.', 'info');
+                    return;
+                }
+
+                if (totalBase > 0 && mainLine) {
+                    const vataAmount = Math.round(totalBase * 0.18);
                     
+                    // Récupération des libellés des lignes cochées
+                    const checkedLabels = rows.filter(r => r.querySelector('.row-vat-check')?.checked)
+                                              .map(r => r.querySelector('.row-lib')?.value || "")
+                                              .filter(l => l.length > 0);
+                    
+                    const sourceLabel = checkedLabels.length > 0 ? checkedLabels.join(' / ') : "SÉLECTION";
+                    const vataLabel = "TVA / " + sourceLabel;
+
                     // Add VAT row
                     const tr = document.createElement('tr');
                     const vataAcc = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('445')) || { id: null, numero_de_compte: '445' };
                     
                     tr.innerHTML = `
-                        <td><select class="form-select select2 row-acc"><option value="${vataAcc.id}" selected>${vataAcc.numero_de_compte} - TVA RÉCUPÉRABLE</option></select></td>
+                        <td><select class="form-select select2 row-acc"><option value="${vataAcc.id}" selected>${vataAcc.numero_de_compte} - TVA RÉCUPÉRABLE (18%)</option></select></td>
+                        <td class="text-center"><i class="bx bx-check text-success"></i></td>
                         <td><div class="d-flex gap-1"><select class="form-select select2 row-tier"><option value="" selected>Néant</option></select></div></td>
-                        <td><input type="text" class="form-control form-control-sm row-lib" value="TVA 18%"><div class="small text-muted mt-1 px-1">Pièce: ${ref} du ${date}</div><input type="hidden" class="row-date" value="${date}"><input type="hidden" class="row-ref" value="${ref}"></td>
+                        <td><input type="text" class="form-control form-control-sm row-lib" value="${vataLabel}"><div class="small text-muted mt-1 px-1">Pièce: ${ref} du ${date}</div><input type="hidden" class="row-date" value="${date}"><input type="hidden" class="row-ref" value="${ref}"></td>
                         <td><input type="number" class="form-control text-end row-debit" value="${vataAmount}"></td>
                         <td><input type="number" class="form-control text-end row-credit" value="0"></td>
-                        <td class="text-center"><button class="btn btn-sm btn-icon text-danger" onclick="this.closest('tr').remove(); window.updateTotals();"><i class="bx bx-trash"></i></button></td>
+                        <td><select class="form-select select2 row-poste-treso" disabled><option value="">Néant</option></select></td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <button class="btn btn-sm btn-icon text-danger" onclick="this.closest('tr').remove(); window.updateTotals();"><i class="bx bx-trash"></i></button>
+                            </div>
+                        </td>
                     `;
                     
                     // Insert VAT before main credit line
@@ -958,12 +1043,12 @@
                     const currentCredit = parseFloat(mainLine.querySelector('.row-credit').value) || 0;
                     mainLine.querySelector('.row-credit').value = currentCredit + vataAmount;
 
-                    // Disable button to prevent multiple applications
-                    const btnVAT = document.getElementById('btnApplyVAT');
-                    btnVAT.disabled = true;
-                    btnVAT.innerHTML = '<i class="bx bx-check me-1"></i>TVA APPLIQUÉE';
+                    // On décoche tout après application
+                    document.querySelectorAll('.row-vat-check').forEach(c => c.checked = false);
                     
                     window.updateTotals();
+                } else if (!mainLine) {
+                    Swal.fire('Erreur', 'Impossible de trouver la ligne de contrepartie (Fournisseur/Banque/Caisse).', 'error');
                 }
             };
 
@@ -1120,6 +1205,12 @@
                 const select = document.getElementById('compte_general_tiers');
                 select.innerHTML = '<option value="" disabled selected>Choisir un compte...</option>';
                 GEN_ACCOUNTS.forEach(a => { if (a.numero_de_compte.startsWith(prefix)) select.innerHTML += `<option value="${a.id}">${a.numero_de_compte} - ${a.intitule}</option>`; });
+                
+                // Sélection automatique du premier compte disponible pour gagner du temps
+                if (select.options.length > 1) {
+                    select.selectedIndex = 1; 
+                }
+
                 if (prefix) fetch("/plan_tiers/" + prefix).then(r => r.json()).then(d => document.getElementById('numero_tiers').value = d.numero);
             };
 
@@ -1132,7 +1223,15 @@
                 const data = { type_de_tiers: document.getElementById('type_tiers').value, compte_general: document.getElementById('compte_general_tiers').value, intitule: document.getElementById('intitule_tiers').value, numero_de_tiers: document.getElementById('numero_tiers').value };
                 
                 btn.disabled = true; btn.innerText = "Création...";
-                fetch('{{ route("plan_tiers.store") }}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'}, body: JSON.stringify(data) }).then(r => r.json()).then(res => {
+                fetch('{{ route("plan_tiers.store") }}', { 
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json', 
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }, 
+                    body: JSON.stringify(data) 
+                }).then(r => r.json()).then(res => {
                     if (res.success) {
                         const option = new Option(`${res.numero_de_tiers} - ${res.intitule}`, res.id, true, true);
                         document.querySelectorAll('.row-tier').forEach(sel => $(sel).append(option).trigger('change'));

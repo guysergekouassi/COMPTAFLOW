@@ -114,20 +114,38 @@ class PlanTiersController extends Controller
     try {
         $longueurTotal = 8;
 
-        // Récupérer le dernier tiers existant (filtré auto)
-        $dernierTiers = PlanTiers::where('numero_de_tiers', 'like', $racine . '%')
-            ->orderBy('numero_de_tiers', 'desc')
+        $user = Auth::user();
+        $currentCompanyId = session('current_company_id', $user->company_id);
+        $longueurSuffixe = $longueurTotal - strlen($racine);
+
+        Log::debug("Génération numéro tiers - Racine: $racine, Company: $currentCompanyId");
+
+        // Récupérer le dernier tiers existant (trié par longueur puis valeur pour être plus robuste)
+        // On utilise withoutGlobalScopes() pour être certain de contrôler le filtrage manuellement ici
+        $dernierTiers = PlanTiers::withoutGlobalScopes()
+            ->where('company_id', $currentCompanyId)
+            ->where('numero_de_tiers', 'like', $racine . '%')
+            ->orderByRaw('LENGTH(numero_de_tiers) DESC, numero_de_tiers DESC')
             ->first();
 
-        if ($dernierTiers) {
-            // Calculer le suffixe à incrémenter
-            $suffixe = (int) substr($dernierTiers->numero_de_tiers, strlen($racine));
-            $suffixe++;
-            $nouveauNumero = $racine . str_pad($suffixe, $longueurTotal - strlen($racine), '0', STR_PAD_LEFT);
-        } else {
-            // Aucun tiers existant, premier suffixe = 1
-            $nouveauNumero = $racine . str_pad(1, $longueurTotal - strlen($racine), '0', STR_PAD_LEFT);
-        }
+        Log::debug("Dernier tiers trouvé: " . ($dernierTiers ? $dernierTiers->numero_de_tiers : 'Aucun'));
+
+        $suffixe = $dernierTiers ? (int) substr($dernierTiers->numero_de_tiers, strlen($racine)) + 1 : 1;
+
+        // Boucle pour trouver le premier numéro DISPONIBLE (évite les collisions même s'il y a des doublons ou des trous)
+        do {
+            $nouveauNumero = $racine . str_pad($suffixe, $longueurSuffixe, '0', STR_PAD_LEFT);
+            $existe = PlanTiers::withoutGlobalScopes()
+                ->where('company_id', $currentCompanyId)
+                ->where('numero_de_tiers', $nouveauNumero)
+                ->exists();
+            if ($existe) {
+                Log::debug("Collision détectée pour $nouveauNumero, incrémentation...");
+                $suffixe++;
+            }
+        } while ($existe && $suffixe < pow(10, $longueurSuffixe));
+
+        Log::debug("Nouveau numéro proposé: $nouveauNumero");
 
         return response()->json(['numero' => $nouveauNumero]);
     } catch (\Exception $e) {
