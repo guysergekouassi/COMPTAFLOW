@@ -75,7 +75,7 @@ class IaController extends Controller
             if (!$api_key) {
                 return response()->json(['error' => 'Clé API Gemini manquante dans le fichier .env'], 500);
             }
-            $model = "gemini-pro-vision";
+            $model = "gemini-2.5-flash";
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$api_key}";
 
             // 1. Préparation de l'image (Compression automatique pour stabilité)
@@ -108,11 +108,13 @@ class IaController extends Controller
                         ]
                     ]
                 ],
-                "generation_config" => [
-                    "temperature" => 0.1,
-                    "responseMimeType" => "application/json"
+                "generationConfig" => [
+                    "temperature" => 0.1
                 ]
             ];
+
+            \Illuminate\Support\Facades\Log::debug("Gemini Request URL: " . $url);
+            \Illuminate\Support\Facades\Log::debug("Gemini Request Payload: " . json_encode($payload));
 
             // 5. Appel API avec retry exponentiel anti-429
             $result = $this->callGeminiApi($url, $payload, $api_key);
@@ -338,7 +340,6 @@ PROMPT;
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
-                'X-goog-api-key: ' . $api_key,
             ]);
             curl_setopt($ch, CURLOPT_TIMEOUT, 120);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
