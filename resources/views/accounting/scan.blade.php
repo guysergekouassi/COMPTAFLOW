@@ -922,7 +922,7 @@
                     }
 
                     // On prépare le bouton "+" pour pré-remplir le modal si le tiers est nouveau
-                    const btnPlusAttr = matchedTierId ? '' : `onclick="document.getElementById('intitule_tiers').value = '${identifiedTierName.replace(/'/g, "\\'")}'; document.getElementById('type_tiers').value = '${accCode.startsWith('41') ? 'Client' : 'Fournisseur'}'; document.getElementById('type_tiers').dispatchEvent(new Event('change'));"`;
+                    const btnPlusAttr = matchedTierId ? '' : `onclick="window.currentTierSelect = this.parentNode.querySelector('.row-tier'); document.getElementById('intitule_tiers').value = '${identifiedTierName.replace(/'/g, "\\'")}'; document.getElementById('type_tiers').value = '${(accCode.startsWith('41') || l.type === 'CLIENT') ? 'Client' : 'Fournisseur'}'; document.getElementById('type_tiers').dispatchEvent(new Event('change'));"`;
 
                     tr.innerHTML = `
                         <td><select class="form-select select2 row-acc"><option value="">Choisir...</option>${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}</select></td>
@@ -938,7 +938,10 @@
                                     </select>
                                     <button type="button" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="modal" data-bs-target="#createTiersModal" ${btnPlusAttr}><i class="bx bx-plus"></i></button>
                                 </div>
-                                ${!matchedTierId && identifiedTierName ? `<span class="text-danger small fw-bold px-1 mt-1 animate__animated animate__pulse animate__infinite" style="font-size: 0.75rem;"><i class="bx bx-error-circle me-1"></i>Existe pas, créer</span>` : ''}
+                                ${!matchedTierId && identifiedTierName ? `
+                                    <span class="text-danger small fw-bold px-1 mt-1 animate__animated animate__pulse animate__infinite" style="font-size: 0.75rem;"><i class="bx bx-error-circle me-1"></i>Existe pas, créer</span>
+                                    <span class="text-muted small px-1" style="font-size: 0.70rem;">Origine: ${identifiedTierName}</span>
+                                ` : ''}
                             </div>
                         </td>
                         <td><input type="text" class="form-control form-control-sm row-lib" value="${l.intitule || identifiedTierName || ''}"><div class="small text-muted mt-1 px-1">Pièce: ${data.reference || data.ref || ''} du ${data.date || ''}</div><input type="hidden" class="row-date" value="${data.date || ''}"><input type="hidden" class="row-ref" value="${data.reference || data.ref || ''}"></td>
@@ -1233,8 +1236,17 @@
                     body: JSON.stringify(data) 
                 }).then(r => r.json()).then(res => {
                     if (res.success) {
-                        const option = new Option(`${res.numero_de_tiers} - ${res.intitule}`, res.id, true, true);
-                        document.querySelectorAll('.row-tier').forEach(sel => $(sel).append(option).trigger('change'));
+                        TIERS_LIST.push({id: res.id, numero_de_tiers: res.numero_de_tiers, intitule: res.intitule});
+                        document.querySelectorAll('.row-tier').forEach(sel => {
+                            const isCurrent = (window.currentTierSelect === sel);
+                            const newOption = new Option(`${res.numero_de_tiers} - ${res.intitule}`, res.id, isCurrent, isCurrent);
+                            $(sel).append(newOption);
+                            if (isCurrent) {
+                                $(sel).trigger('change');
+                                const warning = sel.closest('td').querySelector('.text-danger');
+                                if (warning) warning.remove();
+                            }
+                        });
                         bootstrap.Modal.getInstance(document.getElementById('createTiersModal')).hide();
                         form.reset();
                     } else alert("Erreur: " + res.error);

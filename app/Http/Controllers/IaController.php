@@ -62,13 +62,21 @@ class IaController extends Controller
             $image_hash = md5_file($image->getPathname()) . '_' . $image->getSize();
             $cache_key = "ia_analysis_{$companyId}_{$image_hash}";
 
+            /* On commente ce bloc pour forcer un nouveau scan IA à chaque fois
             if (Cache::has($cache_key)) {
+                $cachedData = Cache::get($cache_key);
+                if (is_array($cachedData)) {
+                    $cachedData['message'] = 'Résultat récupéré du cache';
+                    $cachedData['from_cache'] = true;
+                    return response()->json($cachedData);
+                }
                 return response()->json([
                     'message' => 'Résultat récupéré du cache',
-                    'data' => Cache::get($cache_key),
+                    'data' => $cachedData,
                     'from_cache' => true,
                 ]);
             }
+            */
 
             // --- CONFIGURATION ---
             $api_key = env('GEMINI_API_KEY');

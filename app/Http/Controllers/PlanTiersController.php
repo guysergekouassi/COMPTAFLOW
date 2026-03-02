@@ -112,25 +112,40 @@ class PlanTiersController extends Controller
     public function getDernierNumero($racine)
 {
     try {
-        $longueurTotal = 8;
-
         $user = Auth::user();
         $currentCompanyId = session('current_company_id', $user->company_id);
+        
+        // Retrieve the dynamic length of tier accounts for this company
+        $company = \App\Models\Company::find($currentCompanyId);
+        $longueurTotal = $company && $company->tier_digits ? (int) $company->tier_digits : 8;
+
         $longueurSuffixe = $longueurTotal - strlen($racine);
 
-        Log::debug("Génération numéro tiers - Racine: $racine, Company: $currentCompanyId");
+        Log::debug("Génération numéro tiers - Racine: $racine, Company: $currentCompanyId, Longueur ciblée: $longueurTotal");
 
-        // Récupérer le dernier tiers existant (trié par longueur puis valeur pour être plus robuste)
-        // On utilise withoutGlobalScopes() pour être certain de contrôler le filtrage manuellement ici
-        $dernierTiers = PlanTiers::withoutGlobalScopes()
+        // Récupérer tous les tiers de cette racine pour cette société
+        $tiersRacine = PlanTiers::withoutGlobalScopes()
             ->where('company_id', $currentCompanyId)
             ->where('numero_de_tiers', 'like', $racine . '%')
-            ->orderByRaw('LENGTH(numero_de_tiers) DESC, numero_de_tiers DESC')
-            ->first();
+            ->get();
 
-        Log::debug("Dernier tiers trouvé: " . ($dernierTiers ? $dernierTiers->numero_de_tiers : 'Aucun'));
+        $maxSuffixe = 0;
 
-        $suffixe = $dernierTiers ? (int) substr($dernierTiers->numero_de_tiers, strlen($racine)) + 1 : 1;
+        foreach ($tiersRacine as $t) {
+            // Identifier les tiers qui ont exactement la bonne longueur pour ne pas interférer avec des numéros obsolètes
+            if (strlen($t->numero_de_tiers) === $longueurTotal) {
+                $suffixeBrut = substr($t->numero_de_tiers, strlen($racine));
+                preg_match('/\d+/', $suffixeBrut, $matches);
+                if (!empty($matches)) {
+                    $val = (int) $matches[0];
+                    if ($val > $maxSuffixe) {
+                        $maxSuffixe = $val;
+                    }
+                }
+            }
+        }
+
+        $suffixe = $maxSuffixe + 1;
 
         // Boucle pour trouver le premier numéro DISPONIBLE (évite les collisions même s'il y a des doublons ou des trous)
         do {
