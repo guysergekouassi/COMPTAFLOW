@@ -724,7 +724,7 @@
         }
 
         function exportErrorsToCSV() {
-            window.location.href = "{{ route('admin.config.import.export_errors', $import->id) }}";
+            window.location.href = "{{ route('admin.import.export_errors', $import->id) }}";
         }
 
         function selectAndBulkDeleteErrors() {
@@ -737,7 +737,7 @@
                 buttonsStyling: false,
                 showLoaderOnConfirm: true,
                 preConfirm: () => {
-                    return fetch("{{ route('admin.config.import.delete_errors', $import->id) }}", {
+                    return fetch("{{ route('admin.import.delete_errors', $import->id) }}", {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
                     }).then(response => {
