@@ -313,10 +313,18 @@
                             </div>
                         </div>
 
-                        <div class="staging-card p-0 overflow-hidden mb-6">
-                            <div class="staging-table-container">
-                                <div class="table-responsive" style="max-height: 500px;">
-                                    <table class="table table-staging mb-0">
+                        @if($errorCount > 0)
+                        <div class="mb-4 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="exportErrorsToCSV()">
+                                <i class="fa-solid fa-file-excel me-1"></i> Exporter Erreurs
+                            </button>
+                        </div>
+                        @endif
+
+                        <div class="staging-card p-0 mb-6">
+                            <div class="staging-table-container" style="overflow: hidden;">
+                                <div class="table-responsive" style="max-height: 600px; overflow-y: auto; overflow-x: auto;">
+                                    <table class="table table-staging mb-0" style="min-width: 1200px;">
                                         <thead>
                                             <tr>
                                                 <th style="width: 50px;">STATUT</th>
@@ -862,6 +870,62 @@
                     });
                 }
             });
+            });
+        }
+
+        function exportErrorsToCSV() {
+            const errorRows = document.querySelectorAll('.table-staging tbody tr.row-error, .table-staging tbody tr[data-status="error"]');
+            if (errorRows.length === 0) {
+                Swal.fire('Info', 'Aucune erreur à exporter.', 'info');
+                return;
+            }
+
+            let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
+            const headers = [];
+            document.querySelectorAll('.table-staging thead th').forEach(th => {
+                const text = th.innerText.trim();
+                // Omit checkbox column, status map, and actions
+                if(text !== 'STATUT' && text !== 'ACTIONS' && text !== '') {
+                    headers.push('"' + text.replace(/"/g, '""') + '"');
+                }
+            });
+            headers.push('"ANOMALIES"');
+            csvContent += headers.join(';') + "\n";
+
+            errorRows.forEach(row => {
+                let rowData = [];
+                const cells = row.querySelectorAll('td');
+                
+                cells.forEach(cell => {
+                    // Skip columns we don't need
+                    if (cell.querySelector('input.row-checkbox') || cell.querySelector('.status-indicator') || cell.querySelector('button[onclick*="deleteStagingRow"]')) {
+                        return;
+                    }
+                    
+                    let text = cell.innerText.trim().replace(/"/g, '""');
+                    text = text.replace(/\n/g, ' | ');
+                    rowData.push('"' + text + '"');
+                });
+                
+                let errorText = "";
+                const statusInd = row.querySelector('.status-indicator');
+                if(statusInd && statusInd.title) {
+                    errorText = statusInd.title.replace(/"/g, '""');
+                }
+                rowData.push('"' + errorText + '"');
+                
+                csvContent += rowData.join(';') + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "erreurs_import_tiers.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
     </script>
