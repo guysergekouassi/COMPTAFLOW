@@ -1647,9 +1647,18 @@ class AdminConfigController extends Controller
         $existingAccounts = PlanComptable::where('company_id', $user->company_id)
             ->pluck('numero_de_compte')
             ->toArray();
-        
+            
+        $accountDetails = PlanComptable::where('company_id', $user->company_id)
+            ->select('id', 'numero_de_compte', 'intitule')
+            ->get()
+            ->keyBy('numero_de_compte');
+
         $existingJournals = CodeJournal::where('company_id', $user->company_id)
             ->pluck('code_journal')
+            ->toArray();
+            
+        $existingTiers = PlanTiers::where('company_id', $user->company_id)
+            ->pluck('numero_de_tiers')
             ->toArray();
 
         // --- DICTIONNAIRES DE CORRESPONDANCE (AUTO-LOOKUP) ---
@@ -2280,10 +2289,11 @@ class AdminConfigController extends Controller
                     if (!in_array($rowCompte, $existingAccounts)) {
                          for ($len = strlen($rowCompte); $len >= 2; $len--) {
                             $searchVal = substr($rowCompte, 0, $len);
-                            $match = PlanComptable::where('company_id', $user->company_id)
-                                ->where('numero_de_compte', 'LIKE', $searchVal . '%')
-                                ->orderBy('numero_de_compte')
-                                ->first();
+                            // Recherche dans le dictionnaire pré-chargé au lieu d'une requête N+1
+                            $match = $accountDetails->filter(function($item, $key) use ($searchVal) {
+                                return str_starts_with($key, $searchVal);
+                            })->sortBy('numero_de_compte')->first();
+                            
                             if ($match) {
                                 $row['suggested_account'] = $match->numero_de_compte;
                                 $row['suggested_account_label'] = $match->intitule;
@@ -2344,9 +2354,7 @@ class AdminConfigController extends Controller
                             $prefix = substr($rowCompte, 0, 2);
                             
                             // On cherche le compte spécifique
-                            $planAcc = PlanComptable::where('company_id', $user->company_id)
-                                ->where('numero_de_compte', $rowCompte)
-                                ->first();
+                            $planAcc = $accountDetails->get($rowCompte);
 
                             if ($planAcc) {
                                 // Logique de génération avec mémoire locale pour éviter les doublons dans le staging
@@ -2463,7 +2471,22 @@ class AdminConfigController extends Controller
                 }
             } else {
                 // Validation pour Écritures
-                // Validation pour Écritures
+                // Fonction robuste d'analyse de montants (SAGE met parfois des points, espaces, ou virgules)
+                $parseAmount = function($val) {
+                    if (empty($val)) return 0.0;
+                    $val = trim((string)$val);
+                    $val = str_replace([' ', ' ', "\xC2\xA0"], '', $val); // Enlève les espaces insécables SAGE
+                    $isNegative = str_starts_with($val, '-');
+                    $val = ltrim($val, '-');
+                    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+                        $val = (strrpos($val, ',') > strrpos($val, '.')) ? str_replace(['.', ','], ['', '.'], $val) : str_replace(',', '', $val);
+                    } else {
+                        $val = str_replace(',', '.', $val);
+                    }
+                    $val = preg_replace('/[^0-9.]/', '', $val);
+                    return $isNegative ? -(float)$val : (float)$val;
+                };
+
                 $rowCompte = trim($row['compte'] ?? '');
                 $rowJournal = trim($row['journal'] ?? '');
                 $rowTiers = trim($row['tiers'] ?? '');
@@ -2471,8 +2494,8 @@ class AdminConfigController extends Controller
                 // 0. Filtrage Analytiques (Type A) : ignorées et exclues des contrôles
                 $typeEcriture = strtoupper(trim((string)($row['type_ecriture'] ?? '')));
                 if ($typeEcriture === 'A' || $typeEcriture === 'ANALYTIQUE') {
-                    $rowDebit = (float)str_replace(',', '.', preg_replace('/[^0-9,.]/', '', $row['debit'] ?? 0));
-                    $rowCredit = (float)str_replace(',', '.', preg_replace('/[^0-9,.]/', '', $row['credit'] ?? 0));
+                    $rowDebit = $parseAmount($row['debit'] ?? 0);
+                    $rowCredit = $parseAmount($row['credit'] ?? 0);
                     $row['debit_val'] = $rowDebit;
                     $row['credit_val'] = $rowCredit;
                     $errors = ["Ignorée (analytique - type A)"];
@@ -2520,8 +2543,8 @@ class AdminConfigController extends Controller
                     }
                 }
 
-                $rowDebit = (float)str_replace(',', '.', preg_replace('/[^0-9,.]/', '', $row['debit'] ?? 0));
-                $rowCredit = (float)str_replace(',', '.', preg_replace('/[^0-9,.]/', '', $row['credit'] ?? 0));
+                $rowDebit = $parseAmount($row['debit'] ?? 0);
+                $rowCredit = $parseAmount($row['credit'] ?? 0);
                 $rowDateStr = trim($row['jour'] ?? '');
 
                 // 1. Validation de l'existence minimale
@@ -2623,9 +2646,7 @@ class AdminConfigController extends Controller
                 }
                 
                 if (!empty($rowTiers)) {
-                    $tierExists = PlanTiers::where('company_id', $user->company_id)
-                        ->where('numero_de_tiers', $rowTiers)
-                        ->exists();
+                    $tierExists = in_array($rowTiers, $existingTiers);
                     if (!$tierExists) {
                         $originalPart = !empty($row['numero_original_tiers']) ? " (L'original '{$row['numero_original_tiers']}' n'a pas pu être rattaché)" : "";
                         $errors[] = "Tiers inconnu : $rowTiers$originalPart";
@@ -2866,6 +2887,22 @@ class AdminConfigController extends Controller
             $journalDigits = $user->company->journal_code_digits ?? 4;
             $localMaxAccounts = [];
             $batchAccounts = [];
+
+            // Fonction robuste d'analyse de montants pour les différentes syntaxes SAGE (ex: 1.000,50 ou 1 000,50)
+            $parseAmount = function($val) {
+                if (empty($val)) return 0.0;
+                $val = trim((string)$val);
+                $val = str_replace([' ', ' ', "\xC2\xA0"], '', $val);
+                $isNegative = str_starts_with($val, '-');
+                $val = ltrim($val, '-');
+                if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+                    $val = (strrpos($val, ',') > strrpos($val, '.')) ? str_replace(['.', ','], ['', '.'], $val) : str_replace(',', '', $val);
+                } else {
+                    $val = str_replace(',', '.', $val);
+                }
+                $val = preg_replace('/[^0-9.]/', '', $val);
+                return $isNegative ? -(float)$val : (float)$val;
+            };
 
             // DEDUPLICATION_BUFFER: Pour le CAS 2 (Sans colonne Type)
             $deduplicationBuffer = [];
@@ -3310,8 +3347,8 @@ class AdminConfigController extends Controller
                          // sur date, journal, compte, tiers, montants, référence ET libellé.
                          $normRef = trim($rowMapped['reference'] ?? '');
                          $normLib = trim($rowMapped['libelle'] ?? '');
-                         $normDebit = str_replace([',', ' '], ['.', ''], $rowMapped['debit'] ?? '0');
-                         $normCredit = str_replace([',', ' '], ['.', ''], $rowMapped['credit'] ?? '0');
+                         $normDebit = (string)$parseAmount($rowMapped['debit'] ?? 0);
+                         $normCredit = (string)$parseAmount($rowMapped['credit'] ?? 0);
                          $normTiers = strtoupper(trim($rowMapped['tiers'] ?? ''));
                          $normNSaisie = trim($rowMapped['n_saisie'] ?? '');
                          
@@ -3361,8 +3398,8 @@ class AdminConfigController extends Controller
                     $tiersNum = trim($rowMapped['tiers'] ?? '');
                     $tiersId = !empty($tiersNum) ? ($planTiersIds[strtoupper($tiersNum)] ?? $planTiersOriginalIds[strtoupper($tiersNum)] ?? null) : null;
 
-                    $debit = (float)str_replace(',', '.', preg_replace('/[^0-9,.]/', '', $rowMapped['debit'] ?? 0));
-                    $credit = (float)str_replace(',', '.', preg_replace('/[^0-9,.]/', '', $rowMapped['credit'] ?? 0));
+                    $debit = $parseAmount($rowMapped['debit'] ?? 0);
+                    $credit = $parseAmount($rowMapped['credit'] ?? 0);
 
                     // VALIDATION MONTANT NUL
                     if (abs($debit) < 0.01 && abs($credit) < 0.01) {

@@ -375,7 +375,7 @@
                                     <div class="bg-white p-4 rounded-2xl border border-slate-100 d-flex align-items-center" style="width: 300px;">
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." onkeyup="filterTable()">
+                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." onkeyup="filterTableDebounced()">
                                         </div>
                                     </div>
                                 </div>
@@ -617,40 +617,61 @@
             });
         }
 
+        let searchCache = null;
+
+        function buildSearchCache() {
+            if (searchCache) return;
+            searchCache = [];
+            const rows = document.querySelectorAll('.table-staging tbody tr');
+            rows.forEach(row => {
+                const searchTargets = row.querySelectorAll('.search-target');
+                const text = Array.from(searchTargets).map(td => td.textContent.toLowerCase()).join(' ');
+                searchCache.push({
+                    element: row,
+                    text: text,
+                    isValid: row.classList.contains('row-valid'),
+                    isError: row.classList.contains('row-error')
+                });
+            });
+        }
+
         function filterTable(type, event) {
             if (type) currentFilter = type;
             
+            buildSearchCache();
+
             const searchText = document.getElementById('stagingSearch').value.toLowerCase();
-            const rows = document.querySelectorAll('.table-staging tbody tr');
             
-            rows.forEach(row => {
-                const rowStatus = row.classList.contains('row-valid') ? 'valid' : 'row-error' ? 'error' : '';
+            // On utilise une boucle simple (plus rapide que querySelectorAll en temps réel)
+            for (let i = 0; i < searchCache.length; i++) {
+                const item = searchCache[i];
                 
-                // Content Match (Search targets)
                 let textMatch = true;
                 if (searchText) {
-                    const searchTargets = row.querySelectorAll('.search-target');
-                    textMatch = Array.from(searchTargets).some(td => td.textContent.toLowerCase().includes(searchText));
+                    textMatch = item.text.includes(searchText);
                 }
 
-                // Status Match
                 let statusMatch = true;
                 if (currentFilter === 'valid') {
-                    statusMatch = row.classList.contains('row-valid');
+                    statusMatch = item.isValid;
                 } else if (currentFilter === 'error') {
-                    statusMatch = row.classList.contains('row-error');
+                    statusMatch = item.isError;
                 }
 
-                row.style.display = (textMatch && statusMatch) ? '' : 'none';
-            });
+                item.element.style.display = (textMatch && statusMatch) ? '' : 'none';
+            }
 
             // Update active state of cards
-            if (type) {
-                document.querySelectorAll('.card-filter').forEach(card => card.classList.remove('active', 'border-primary'));
-                if (currentFilter !== 'all') {
-                    event.currentTarget.classList.add('active', 'border-primary');
-                }
+            if (type && event) {
+                document.querySelectorAll('.card-filter').forEach(card => card.classList.remove('active', 'border-primary', 'border-2', 'shadow-sm'));
+                event.currentTarget.classList.add('active', 'border-primary', 'border-2', 'shadow-sm');
             }
+        }
+
+        let filterTimeout;
+        function filterTableDebounced() {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(() => filterTable(), 300);
         }
 
         function deleteStagingRow(importId, rowIndex) {
