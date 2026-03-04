@@ -3224,38 +3224,73 @@ class AdminConfigController extends Controller
                         elseif (Str::contains($searchStr, ['CAI', 'CASH', 'CAS'])) $type = 'Caisse';
                     }
 
-                    // GÉNÉRATION SÉQUENTIELLE SI AUTO OU VIDE
-                    if (empty($rowCode) || $rowCode === 'AUTO' || $mapping['code_journal'] === 'AUTO') {
-                        $prefix = 'OD';
-                        if ($type === 'Achats') $prefix = 'ACH';
-                        elseif ($type === 'Ventes') $prefix = 'VEN';
-                        elseif ($type === 'Banque') $prefix = 'BQ';
-                        elseif ($type === 'Caisse') $prefix = 'CAI';
+                    // --- FORCE SQUENTIEL: On ignore le code original (sauf comme prefixe de repli) ---
+                    $prefix = 'JRN';
+                    $typeLower = mb_strtolower($type ?? '');
+                    $origAlpha = preg_replace('/[^A-Z]/', '', strtoupper($numeroOriginalJournal ?? ''));
 
-                        if (!isset($localMaxJournals[$prefix])) {
-                            // Chercher en base pour le premier du lot
-                            $lastCode = CodeJournal::where('company_id', $user->company_id)
-                                ->where('code_journal', 'LIKE', $prefix . '%')
-                                ->orderBy('code_journal', 'desc')
-                                ->value('code_journal');
-
-                            if ($lastCode) {
-                                $num = filter_var($lastCode, FILTER_SANITIZE_NUMBER_INT);
-                                $nextNum = (int)$num + 1;
+                    // Deduction du préfixe comme dans l'importStaging
+                    if (str_contains($typeLower, 'achat')) $prefix = 'ACH';
+                    elseif (str_contains($typeLower, 'vente')) $prefix = 'VEN';
+                    elseif (str_contains($typeLower, 'trésorerie') || str_contains($typeLower, 'banque') || str_contains($typeLower, 'caisse')) {
+                        if (isset($rowMapped['poste_tresorerie'])) {
+                            if ($rowMapped['poste_tresorerie'] === 'Caisse') {
+                                $prefix = 'CAI';
+                            } elseif ($rowMapped['poste_tresorerie'] === 'Banque') {
+                                $prefix = 'BQ';
                             } else {
-                                $nextNum = 1;
+                                if (!empty($origAlpha)) {
+                                    $prefix = substr($origAlpha, 0, 3);
+                                } else {
+                                    $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($rowMapped['intitule'] ?? 'TRZ'));
+                                    $prefix = substr($intituleNorm, 0, 3);
+                                    if (empty($prefix)) $prefix = 'TRZ';
+                                }
                             }
-                            $rowCode = $prefix . $nextNum;
-                            $localMaxJournals[$prefix] = $rowCode;
                         } else {
-                            // Incrémenter localement
-                            $lastCode = $localMaxJournals[$prefix];
-                            $num = filter_var($lastCode, FILTER_SANITIZE_NUMBER_INT);
-                            $nextNum = (int)$num + 1;
-                            $rowCode = $prefix . $nextNum;
-                            $localMaxJournals[$prefix] = $rowCode;
+                            $prefix = 'BQ';
                         }
                     }
+                    elseif (str_contains($typeLower, 'opération') || str_contains($typeLower, 'diverse') || str_contains($typeLower, 'standard')) {
+                        if (in_array(strtoupper($origAlpha), ['RAN', 'OD'])) {
+                            $prefix = strtoupper($origAlpha);
+                        } else {
+                            $prefix = 'ST';
+                        }
+                    }
+
+                    // Génération du code incrémenté
+                    if (!isset($localMaxJournals[$prefix])) {
+                        $lastCode = CodeJournal::where('company_id', $user->company_id)
+                            ->where('code_journal', 'LIKE', $prefix . '%')
+                            ->orderBy('code_journal', 'desc')
+                            ->value('code_journal');
+
+                        if ($lastCode && preg_match('/(\d+)$/', $lastCode, $matches)) {
+                            $nextNum = (int)$matches[1] + 1;
+                        } else {
+                            $nextNum = 1;
+                        }
+                    } else {
+                        $lastCode = $localMaxJournals[$prefix];
+                        if (preg_match('/(\d+)$/', $lastCode, $matches)) {
+                            $nextNum = (int)$matches[1] + 1;
+                        } else {
+                            $nextNum = 1;
+                        }
+                    }
+                    
+                    $numStr = (string)$nextNum;
+                    $numLen = strlen($numStr);
+                        
+                    if ($numLen >= $journalDigits) {
+                        $rowCode = substr($numStr, -$journalDigits);
+                    } else {
+                        $maxPrefixLen = $journalDigits - $numLen;
+                        $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                        $rowCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                    }
+                    $localMaxJournals[$prefix] = $rowCode;
 
                     $compteNum = $this->standardizeAccountNumber(trim($rowMapped['compte_de_tresorerie'] ?? ''), $accountDigits);
                     $compteId = $planComptableIds[$compteNum] ?? null;
