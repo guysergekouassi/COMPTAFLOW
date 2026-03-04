@@ -1617,7 +1617,7 @@ class AdminConfigController extends Controller
     /**
      * Tunnel d'Importation - Revue & Correction (Staging)
      */
-    public function importStaging($id)
+    public function importStaging($id, $returnData = false)
     {
         $import = ImportStaging::findOrFail($id);
         $user = Auth::user();
@@ -2804,20 +2804,51 @@ class AdminConfigController extends Controller
             ->orderBy('numero_de_compte')
             ->get();
 
+        // --- FILTRAGE côté serveur ---
+        $statusFilter = request('status', 'all');
+        $searchFilter = request('search');
+        
+        $rowsWithStatusFiltered = $rowsWithStatus;
+
+        if ($statusFilter !== 'all') {
+            $rowsWithStatusFiltered = array_filter($rowsWithStatusFiltered, function($r) use ($statusFilter) {
+                return ($r['status'] ?? null) === $statusFilter;
+            });
+        }
+
+        if (!empty($searchFilter)) {
+            $searchFilter = strtolower($searchFilter);
+            $rowsWithStatusFiltered = array_filter($rowsWithStatusFiltered, function($r) use ($searchFilter) {
+                $dataStr = implode(' ', array_map(fn($v) => (string)$v, $r['data'] ?? []));
+                return str_contains(strtolower($dataStr), $searchFilter);
+            });
+        }
+
         // --- PAGINATION côté serveur (pour éviter les pages trop lourdes sur 33k lignes) ---
         $perPage = 150;
         $currentPage = max(1, (int) request('page', 1));
-        $totalRows = count($rowsWithStatus);
+        $totalRows = count($rowsWithStatusFiltered);
         $totalPages = (int) ceil($totalRows / $perPage);
         $currentPage = min($currentPage, max(1, $totalPages));
         $offset = ($currentPage - 1) * $perPage;
-        $rowsWithStatusPaged = array_slice($rowsWithStatus, $offset, $perPage);
+        $rowsWithStatusPaged = array_slice(array_values($rowsWithStatusFiltered), $offset, $perPage);
+
+        if ($returnData) {
+            return [
+                'rowsWithStatus' => $rowsWithStatus,
+                'errorCount' => $errorCount,
+                'validCount' => $validCount,
+                'user' => $user,
+                'accountDigits' => $accountDigits
+            ];
+        }
 
         return view($viewName, compact(
             'import', 'rowsWithStatus', 'rowsWithStatusPaged',
             'errorCount', 'validCount', 'importTitle',
             'user', 'plansComptables', 'accountDigits',
-            'currentPage', 'totalPages', 'totalRows', 'perPage'
+            'currentPage', 'totalPages', 'totalRows', 'perPage',
+            'statusFilter', 'searchFilter'
         ));
     }
 
@@ -4259,6 +4290,104 @@ class AdminConfigController extends Controller
             return redirect()->route('admin.config.tresorerie_posts')->with('success', 'Poste de trésorerie supprimé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Helper pour obtenir les lignes validées sans charger la vue complète (pour export et suppression en masse)
+     */
+    private function getValidatedRows($import)
+    {
+        // On récupère temporairement le contrôleur pour appeler la logique (ou on la duplique/isole)
+        // Étant donné la taille du fichier, je vais extraire la logique de importStaging() plus tard.
+        // Pour l'instant on va simuler l'appel à importStaging mais capturer les données.
+        
+        // ATTENTION: importStaging() retourne une vue. On va injecter un flag pour qu'il retourne les données.
+        // Ou plus simplement, on va copier la logique vitale ici.
+        
+        // Je vais implémenter une version qui ne dépend pas de la vue.
+        return $this->importStaging($import->id, true); // On ajoute un paramètre 'return_data'
+    }
+
+    /**
+     * Exportation des erreurs en Excel
+     */
+    public function exportErrors($id)
+    {
+        $import = ImportStaging::findOrFail($id);
+        $data = $this->importStaging($import->id, true);
+        $rowsWithStatus = $data['rowsWithStatus'] ?? [];
+        
+        $errorRows = array_filter($rowsWithStatus, fn($r) => ($r['status'] ?? '') === 'error');
+        
+        if (empty($errorRows)) {
+            return back()->with('error', "Aucune ligne en erreur à exporter.");
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        $headers = ['Index', 'N° Saisie', 'Date', 'Journal', 'Référence', 'Compte', 'Tiers', 'Libellé', 'Débit', 'Crédit', 'Erreurs'];
+        $sheet->fromArray($headers, NULL, 'A1');
+        
+        $rowNum = 2;
+        foreach ($errorRows as $r) {
+            $rowData = $r['data'];
+            $sheet->setCellValue('A'.$rowNum, $r['index']);
+            $sheet->setCellValue('B'.$rowNum, $rowData['n_saisie'] ?? '');
+            $sheet->setCellValue('C'.$rowNum, $rowData['jour'] ?? '');
+            $sheet->setCellValue('D'.$rowNum, $rowData['journal'] ?? '');
+            $sheet->setCellValue('E'.$rowNum, $rowData['reference'] ?? '');
+            $sheet->setCellValue('F'.$rowNum, $rowData['compte'] ?? '');
+            $sheet->setCellValue('G'.$rowNum, $rowData['tiers'] ?? '');
+            $sheet->setCellValue('H'.$rowNum, $rowData['libelle'] ?? '');
+            $sheet->setCellValue('I'.$rowNum, $r['debit'] ?? 0);
+            $sheet->setCellValue('J'.$rowNum, $r['credit'] ?? 0);
+            $sheet->setCellValue('K'.$rowNum, implode(' | ', $r['errors'] ?? []));
+            $rowNum++;
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $fileName = 'erreurs_import_' . $id . '.xlsx';
+        $tempPath = storage_path('app/' . $fileName);
+        $writer->save($tempPath);
+
+        return response()->download($tempPath)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Suppression de TOUTES les erreurs du staging
+     */
+    public function bulkDeleteErrors($id)
+    {
+        try {
+            $import = ImportStaging::findOrFail($id);
+            $data = $this->importStaging($import->id, true);
+            $rowsWithStatus = $data['rowsWithStatus'] ?? [];
+            
+            $indicesToDelete = [];
+            foreach ($rowsWithStatus as $r) {
+                if (($r['status'] ?? '') === 'error') {
+                    $indicesToDelete[] = $r['index'];
+                }
+            }
+
+            if (empty($indicesToDelete)) {
+                return response()->json(['success' => false, 'message' => "Aucune erreur à supprimer."]);
+            }
+
+            $rawData = $import->raw_data;
+            rsort($indicesToDelete);
+
+            foreach ($indicesToDelete as $index) {
+                array_splice($rawData, (int)$index, 1);
+            }
+
+            $import->update(['raw_data' => $rawData]);
+
+            return response()->json(['success' => true, 'message' => count($indicesToDelete) . " erreur(s) supprimée(s)."]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }

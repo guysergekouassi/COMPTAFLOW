@@ -115,42 +115,29 @@
     }
     function filterTableDebounced() { clearTimeout(window._ft); window._ft = setTimeout(() => filterTable(), 300); }
     function exportErrorsToCSV() {
-        const rows = document.querySelectorAll('.table-staging tbody tr.row-error');
-        if (!rows.length) { alert('Aucune ligne en erreur à exporter.'); return; }
-        let csv = ['Statut,N° Saisie,Journal,Compte,Tiers,Libellé,Débit,Crédit,Erreurs'];
-        rows.forEach(tr => {
-            const cells = tr.querySelectorAll('td');
-            const errBtn = tr.querySelector('[data-errors]');
-            const errors = errBtn ? JSON.parse(errBtn.dataset.errors || '[]').join(' | ') : '';
-            const vals = Array.from(cells).slice(1, cells.length - 1).map(td => '"' + td.textContent.trim().replace(/"/g,'""') + '"');
-            vals.push('"' + errors.replace(/"/g,'""') + '"');
-            csv.push(vals.join(','));
-        });
-        const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = 'erreurs_import.csv'; a.click();
+        window.location.href = "{{ route('admin.config.import.export_errors', $import->id) }}";
     }
     function selectAndBulkDeleteErrors() {
-        const checkboxes = document.querySelectorAll('.row-checkbox');
-        const errorRows = document.querySelectorAll('.table-staging tbody tr.row-error');
-        checkboxes.forEach(cb => { cb.checked = false; });
-        errorRows.forEach(tr => {
-            const cb = tr.querySelector('.row-checkbox');
-            if (cb) cb.checked = true;
-        });
-        const selected = document.querySelectorAll('.row-checkbox:checked');
-        if (!selected.length) { Swal.fire('Info','Aucune ligne en erreur sur cette page.','info'); return; }
         Swal.fire({
-            title: selected.length + ' ligne(s) en erreur sélectionnée(s)',
-            text: 'Supprimer ces ' + selected.length + ' ligne(s) ?',
+            title: 'Supprimer TOUTES les erreurs ?',
+            text: 'Cette action supprimera toutes les lignes en erreur ({{ $errorCount }} lignes) de cet import.',
             icon: 'warning', showCancelButton: true,
-            confirmButtonText: 'Oui, supprimer', cancelButtonText: 'Annuler',
+            confirmButtonText: 'Oui, tout supprimer', cancelButtonText: 'Annuler',
             customClass: { confirmButton: 'btn btn-danger rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-            buttonsStyling: false
+            buttonsStyling: false,
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                return fetch("{{ route('admin.config.import.delete_errors', $import->id) }}", {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                }).then(response => {
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                }).catch(error => { Swal.showValidationMessage(`Erreur: ${error}`); });
+            }
         }).then(result => {
-            if (result.isConfirmed) {
-                const indices = Array.from(selected).map(cb => cb.dataset.rowIndex);
-                performBulkDelete(indices);
+            if (result.isConfirmed && result.value.success) {
+                Swal.fire('Supprimé !', result.value.message, 'success').then(() => { window.location.reload(); });
             }
         });
     }
@@ -263,20 +250,20 @@
 
                         <div class="row mb-6">
                             <div class="col-md-3">
-                                <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 cursor-pointer card-filter" onclick="filterTable('valid', this)">
+                                <div class="bg-emerald-50 p-4 rounded-2xl border {{ $statusFilter == 'valid' ? 'border-emerald-500 active' : 'border-emerald-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'valid', 'page' => 1]) }}'">
                                     <div class="text-xs font-bold text-emerald-600 uppercase mb-1">Lignes Valides</div>
                                     <div class="h4 font-black text-emerald-700 mb-0">{{ $validCount }}</div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="bg-rose-50 p-4 rounded-2xl border border-rose-100 cursor-pointer card-filter" onclick="filterTable('error', this)">
+                                <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
                                     <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="d-flex gap-3 h-100">
-                                    <div class="bg-white p-4 rounded-2xl border border-slate-100 cursor-pointer card-filter flex-grow-1" onclick="filterTable('all', this)">
+                                    <div class="bg-white p-4 rounded-2xl border {{ $statusFilter == 'all' ? 'border-primary active' : 'border-slate-100' }} cursor-pointer card-filter flex-grow-1" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'all', 'page' => 1]) }}'">
                                         <div class="text-xs font-bold text-slate-400 uppercase mb-2">Tout afficher</div>
                                         <div class="d-flex gap-4">
                                             <div class="text-xs d-flex align-items-center gap-2">
@@ -293,7 +280,7 @@
                                     <div class="bg-white p-4 rounded-2xl border border-slate-100 d-flex align-items-center" style="width: 300px;">
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." onkeyup="filterTable()">
+                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
                                         </div>
                                     </div>
                                 </div>
@@ -564,44 +551,9 @@
             });
         }
 
-        function filterTable(type, clickedEl) {
-            if (type) currentFilter = type;
-            
-            const searchText = document.getElementById('stagingSearch').value.toLowerCase();
-            const rows = document.querySelectorAll('.table-staging tbody tr');
-            
-            rows.forEach(row => {
-                const rowStatus = row.classList.contains('row-valid')
-                    ? 'valid'
-                    : (row.classList.contains('row-error') ? 'error' : (row.classList.contains('row-warning') ? 'ignored' : ''));
-                
-                // Content Match (Search targets)
-                let textMatch = true;
-                if (searchText) {
-                    const searchTargets = row.querySelectorAll('.search-target');
-                    textMatch = Array.from(searchTargets).some(td => td.textContent.toLowerCase().includes(searchText));
-                }
-
-                // Status Match
-                let statusMatch = true;
-                if (currentFilter === 'valid') {
-                    statusMatch = (rowStatus === 'valid');
-                } else if (currentFilter === 'error') {
-                    statusMatch = (rowStatus === 'error');
-                }
-
-                row.style.display = (textMatch && statusMatch) ? '' : 'none';
-            });
-
-            // Update active state of cards
-            if (type) {
-                document.querySelectorAll('.card-filter').forEach(card => card.classList.remove('active', 'border-primary'));
-                if (clickedEl && typeof clickedEl.classList !== 'undefined') {
-                    clickedEl.classList.add('active', 'border-primary');
-                }
-            }
-        }
-
+        // Les fonctions filterTable() et exportErrorsToCSV() ont été remplacées par une logique côté serveur
+        // pour gérer les gros volumes de données (33k+ lignes).
+        
         function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',

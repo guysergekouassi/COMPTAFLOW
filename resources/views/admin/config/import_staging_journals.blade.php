@@ -345,20 +345,20 @@
 
                         <div class="row mb-6">
                             <div class="col-md-3">
-                                <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 cursor-pointer card-filter" onclick="filterTable('valid', event)">
+                                <div class="bg-emerald-50 p-4 rounded-2xl border {{ $statusFilter == 'valid' ? 'border-emerald-500 active' : 'border-emerald-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'valid', 'page' => 1]) }}'">
                                     <div class="text-xs font-bold text-emerald-600 uppercase mb-1">Lignes Valides</div>
                                     <div class="h4 font-black text-emerald-700 mb-0">{{ $validCount }}</div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="bg-rose-50 p-4 rounded-2xl border border-rose-100 cursor-pointer card-filter" onclick="filterTable('error', event)">
+                                <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
                                     <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="d-flex gap-3 h-100">
-                                    <div class="bg-white p-4 rounded-2xl border border-slate-100 cursor-pointer card-filter flex-grow-1 active border-primary" onclick="filterTable('all', event)">
+                                    <div class="bg-white p-4 rounded-2xl border {{ $statusFilter == 'all' ? 'border-primary active' : 'border-slate-100' }} cursor-pointer card-filter flex-grow-1" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'all', 'page' => 1]) }}'">
                                         <div class="text-xs font-bold text-slate-400 uppercase mb-2">Tout afficher</div>
                                         <div class="d-flex gap-4">
                                             <div class="text-xs d-flex align-items-center gap-2">
@@ -375,20 +375,23 @@
                                     <div class="bg-white p-4 rounded-2xl border border-slate-100 d-flex align-items-center" style="width: 300px;">
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." onkeyup="filterTableDebounced()">
+                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        @if($errorCount > 0)
                         <div class="mb-4 d-flex justify-content-end gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="exportErrorsToCSV()">
-                                <i class="fa-solid fa-file-excel me-1"></i> Exporter Erreurs
-                            </button>
+                             @if($errorCount > 0)
+                             <button type="button" class="btn btn-label-danger btn-sm rounded-xl px-4" onclick="selectAndBulkDeleteErrors()" title="Supprimer toutes les erreurs">
+                                 <i class="fa-solid fa-trash-can me-1"></i> Suppression Totale Erreurs
+                             </button>
+                             @endif
+                             <button type="button" class="btn btn-label-success btn-sm rounded-xl px-4" onclick="exportErrorsToCSV()" title="Exporter en Excel">
+                                 <i class="fa-solid fa-file-excel me-1"></i> Exporter Erreurs
+                             </button>
                         </div>
-                        @endif
 
                         <div class="staging-card p-0 mb-6">
                             <div class="staging-table-container" style="overflow: hidden;">
@@ -432,7 +435,7 @@
                                                 $mapping = $import->mapping;
                                             @endphp
 
-                                                    @foreach($rowsWithStatus as $rowIndex => $row)
+                                                    @foreach($rowsWithStatusPaged as $rowIndex => $row)
                                                 <tr class="{{ $row['status'] == 'valid' ? 'row-valid' : 'row-error' }}" data-status="{{ $row['status'] }}">
                                                     <td class="text-center">
                                                         <input type="checkbox" class="row-checkbox form-check-input" data-row-index="{{ $row['index'] ?? $rowIndex }}">
@@ -1029,58 +1032,32 @@
         }
 
         function exportErrorsToCSV() {
-            const errorRows = document.querySelectorAll('.table-staging tbody tr.row-error, .table-staging tbody tr[data-status="error"]');
-            if (errorRows.length === 0) {
-                Swal.fire('Info', 'Aucune erreur à exporter.', 'info');
-                return;
-            }
+            window.location.href = "{{ route('admin.config.import.export_errors', $import->id) }}";
+        }
 
-            let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
-            const headers = [];
-            document.querySelectorAll('.table-staging thead th').forEach(th => {
-                const text = th.innerText.trim();
-                // Omit checkbox column, status map, and actions
-                if(text !== 'STATUT' && text !== 'ACTIONS' && text !== '') {
-                    headers.push('"' + text.replace(/"/g, '""') + '"');
+        function selectAndBulkDeleteErrors() {
+            Swal.fire({
+                title: 'Supprimer TOUTES les erreurs ?',
+                text: 'Cette action supprimera toutes les lignes en erreur ({{ $errorCount }} lignes) de cet import.',
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: 'Oui, tout supprimer', cancelButtonText: 'Annuler',
+                customClass: { confirmButton: 'btn btn-danger rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
+                buttonsStyling: false,
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return fetch("{{ route('admin.config.import.delete_errors', $import->id) }}", {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                    }).then(response => {
+                        if (!response.ok) throw new Error(response.statusText);
+                        return response.json();
+                    }).catch(error => { Swal.showValidationMessage(`Erreur: ${error}`); });
+                }
+            }).then(result => {
+                if (result.isConfirmed && result.value.success) {
+                    Swal.fire('Supprimé !', result.value.message, 'success').then(() => { window.location.reload(); });
                 }
             });
-            headers.push('"ANOMALIES"');
-            csvContent += headers.join(';') + "\n";
-
-            errorRows.forEach(row => {
-                let rowData = [];
-                const cells = row.querySelectorAll('td');
-                
-                cells.forEach(cell => {
-                    // Skip columns we don't need
-                    if (cell.querySelector('input.row-checkbox') || cell.querySelector('.status-indicator') || cell.querySelector('button[onclick*="deleteStagingRow"]')) {
-                        return;
-                    }
-                    
-                    let text = cell.innerText.trim().replace(/"/g, '""');
-                    text = text.replace(/\n/g, ' | ');
-                    rowData.push('"' + text + '"');
-                });
-                
-                let errorText = "";
-                const statusInd = row.querySelector('.status-indicator');
-                if(statusInd && statusInd.title) {
-                    errorText = statusInd.title.replace(/"/g, '""');
-                }
-                rowData.push('"' + errorText + '"');
-                
-                csvContent += rowData.join(';') + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "erreurs_import_journaux.csv");
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
     </script>
 </body>
