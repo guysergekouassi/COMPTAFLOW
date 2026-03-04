@@ -85,6 +85,76 @@
     .card-filter.active { ring: 2px; ring-color: var(--bs-primary); }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Defined early so onclick handlers work even if the rest of the page is slow to load
+    let currentFilter = 'all';
+    function filterTable(type, clickedEl) {
+        if (type) currentFilter = type;
+        const searchText = (document.getElementById('stagingSearch') || {value:''}).value.toLowerCase();
+        const rows = document.querySelectorAll('.table-staging tbody tr');
+        rows.forEach(row => {
+            const rowStatus = row.classList.contains('row-valid') ? 'valid'
+                : (row.classList.contains('row-error') ? 'error'
+                : (row.classList.contains('row-warning') ? 'ignored' : ''));
+            let textMatch = true;
+            if (searchText) {
+                const targets = row.querySelectorAll('.search-target');
+                textMatch = Array.from(targets).some(td => td.textContent.toLowerCase().includes(searchText));
+            }
+            let statusMatch = true;
+            if (currentFilter === 'valid') statusMatch = (rowStatus === 'valid');
+            else if (currentFilter === 'error') statusMatch = (rowStatus === 'error');
+            row.style.display = (textMatch && statusMatch) ? '' : 'none';
+        });
+        if (type) {
+            document.querySelectorAll('.card-filter').forEach(c => c.classList.remove('active','border-primary'));
+            if (clickedEl && clickedEl.classList) clickedEl.classList.add('active','border-primary');
+        }
+    }
+    function filterTableDebounced() { clearTimeout(window._ft); window._ft = setTimeout(() => filterTable(), 300); }
+    function exportErrorsToCSV() {
+        const rows = document.querySelectorAll('.table-staging tbody tr.row-error');
+        if (!rows.length) { alert('Aucune ligne en erreur à exporter.'); return; }
+        let csv = ['Statut,N° Saisie,Journal,Compte,Tiers,Libellé,Débit,Crédit,Erreurs'];
+        rows.forEach(tr => {
+            const cells = tr.querySelectorAll('td');
+            const errBtn = tr.querySelector('[data-errors]');
+            const errors = errBtn ? JSON.parse(errBtn.dataset.errors || '[]').join(' | ') : '';
+            const vals = Array.from(cells).slice(1, cells.length - 1).map(td => '"' + td.textContent.trim().replace(/"/g,'""') + '"');
+            vals.push('"' + errors.replace(/"/g,'""') + '"');
+            csv.push(vals.join(','));
+        });
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'erreurs_import.csv'; a.click();
+    }
+    function selectAndBulkDeleteErrors() {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        const errorRows = document.querySelectorAll('.table-staging tbody tr.row-error');
+        checkboxes.forEach(cb => { cb.checked = false; });
+        errorRows.forEach(tr => {
+            const cb = tr.querySelector('.row-checkbox');
+            if (cb) cb.checked = true;
+        });
+        const selected = document.querySelectorAll('.row-checkbox:checked');
+        if (!selected.length) { Swal.fire('Info','Aucune ligne en erreur sur cette page.','info'); return; }
+        Swal.fire({
+            title: selected.length + ' ligne(s) en erreur sélectionnée(s)',
+            text: 'Supprimer ces ' + selected.length + ' ligne(s) ?',
+            icon: 'warning', showCancelButton: true,
+            confirmButtonText: 'Oui, supprimer', cancelButtonText: 'Annuler',
+            customClass: { confirmButton: 'btn btn-danger rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
+            buttonsStyling: false
+        }).then(result => {
+            if (result.isConfirmed) {
+                const indices = Array.from(selected).map(cb => cb.dataset.rowIndex);
+                performBulkDelete(indices);
+            }
+        });
+    }
+</script>
+
 <body>
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
@@ -288,7 +358,7 @@
                                                 $mapping = $import->mapping;
                                             @endphp
  
-                                            @foreach($rowsWithStatus as $rowIndex => $row)
+                                            @foreach($rowsWithStatusPaged as $rowIndex => $row)
                                                 <tr class="staging-row {{ $row['status'] == 'valid' ? 'row-valid' : ($row['status'] == 'ignored' ? 'row-warning' : 'row-error') }}" data-status="{{ $row['status'] }}">
                                                     <td class="text-center">
                                                         <input type="checkbox" class="row-checkbox form-check-input" data-row-index="{{ $row['index'] ?? $rowIndex }}">
@@ -422,8 +492,34 @@
                                 </div>
                             </div>
 
-
-                        </div>
+                            {{-- PAGINATION --}}
+                            @if($totalPages > 1)
+                            <div class="d-flex justify-content-between align-items-center mt-4 px-2">
+                                <div class="text-slate-500 text-sm">
+                                    Page <strong>{{ $currentPage }}</strong> / {{ $totalPages }} &nbsp;&mdash;&nbsp;
+                                    Affichage lignes {{ (($currentPage-1)*$perPage)+1 }} – {{ min($currentPage*$perPage, $totalRows) }}
+                                    sur <strong>{{ $totalRows }}</strong>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    @if($currentPage > 1)
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $currentPage - 1]) }}" class="btn btn-sm btn-outline-secondary rounded-xl px-4">
+                                            <i class="fa-solid fa-chevron-left me-1"></i> Préc.
+                                        </a>
+                                    @endif
+                                    @for($p = max(1, $currentPage - 2); $p <= min($totalPages, $currentPage + 2); $p++)
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $p]) }}"
+                                           class="btn btn-sm {{ $p == $currentPage ? 'btn-primary' : 'btn-outline-secondary' }} rounded-xl px-3">
+                                            {{ $p }}
+                                        </a>
+                                    @endfor
+                                    @if($currentPage < $totalPages)
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $currentPage + 1]) }}" class="btn btn-sm btn-outline-secondary rounded-xl px-4">
+                                            Suiv. <i class="fa-solid fa-chevron-right ms-1"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
 
                         <div class="d-flex justify-content-between align-items-center bg-white p-6 rounded-[24px] shadow-sm border border-slate-100">
                             <div>

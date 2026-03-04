@@ -2797,7 +2797,21 @@ class AdminConfigController extends Controller
             ->orderBy('numero_de_compte')
             ->get();
 
-        return view($viewName, compact('import', 'rowsWithStatus', 'errorCount', 'validCount', 'importTitle', 'user', 'plansComptables', 'accountDigits'));
+        // --- PAGINATION côté serveur (pour éviter les pages trop lourdes sur 33k lignes) ---
+        $perPage = 150;
+        $currentPage = max(1, (int) request('page', 1));
+        $totalRows = count($rowsWithStatus);
+        $totalPages = (int) ceil($totalRows / $perPage);
+        $currentPage = min($currentPage, max(1, $totalPages));
+        $offset = ($currentPage - 1) * $perPage;
+        $rowsWithStatusPaged = array_slice($rowsWithStatus, $offset, $perPage);
+
+        return view($viewName, compact(
+            'import', 'rowsWithStatus', 'rowsWithStatusPaged',
+            'errorCount', 'validCount', 'importTitle',
+            'user', 'plansComptables', 'accountDigits',
+            'currentPage', 'totalPages', 'totalRows', 'perPage'
+        ));
     }
 
     /**
