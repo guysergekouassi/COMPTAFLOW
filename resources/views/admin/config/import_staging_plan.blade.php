@@ -503,7 +503,7 @@
             const rows = document.querySelectorAll('.table-staging tbody tr');
             
             rows.forEach(row => {
-                const rowStatus = row.classList.contains('row-valid') ? 'valid' : 'row-error' ? 'error' : '';
+                const rowStatus = row.classList.contains('row-valid') ? 'valid' : (row.classList.contains('row-error') ? 'error' : '');
                 
                 // Content Match (Search targets)
                 let textMatch = true;
@@ -526,8 +526,10 @@
             // Update active state of cards
             if (type) {
                 document.querySelectorAll('.card-filter').forEach(card => card.classList.remove('active', 'border-primary'));
-                if (currentFilter !== 'all') {
+                if (event && event.currentTarget) {
                     event.currentTarget.classList.add('active', 'border-primary');
+                } else if (event instanceof HTMLElement) {
+                    event.classList.add('active', 'border-primary');
                 }
             }
         }

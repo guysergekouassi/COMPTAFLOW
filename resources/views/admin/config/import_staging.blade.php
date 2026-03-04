@@ -499,7 +499,7 @@
             // Update active state of cards
             if (type) {
                 document.querySelectorAll('.card-filter').forEach(card => card.classList.remove('active', 'border-primary'));
-                if (clickedEl && currentFilter !== 'all') {
+                if (clickedEl && typeof clickedEl.classList !== 'undefined') {
                     clickedEl.classList.add('active', 'border-primary');
                 }
             }

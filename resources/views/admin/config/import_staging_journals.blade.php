@@ -634,11 +634,12 @@
             rows.forEach(row => {
                 const searchTargets = row.querySelectorAll('.search-target');
                 const text = Array.from(searchTargets).map(td => td.textContent.toLowerCase()).join(' ');
+                const rowStatus = row.classList.contains('row-valid') ? 'valid' : (row.classList.contains('row-error') ? 'error' : '');
                 searchCache.push({
                     element: row,
                     text: text,
-                    isValid: row.classList.contains('row-valid'),
-                    isError: row.classList.contains('row-error')
+                    isValid: rowStatus === 'valid',
+                    isError: rowStatus === 'error'
                 });
             });
         }
@@ -670,9 +671,13 @@
             }
 
             // Update active state of cards
-            if (type && event) {
+            if (type) {
                 document.querySelectorAll('.card-filter').forEach(card => card.classList.remove('active', 'border-primary', 'border-2', 'shadow-sm'));
-                event.currentTarget.classList.add('active', 'border-primary', 'border-2', 'shadow-sm');
+                if (event && event.currentTarget) {
+                    event.currentTarget.classList.add('active', 'border-primary', 'border-2', 'shadow-sm');
+                } else if (event instanceof HTMLElement) {
+                    event.classList.add('active', 'border-primary', 'border-2', 'shadow-sm');
+                }
             }
         }
 
