@@ -2525,11 +2525,18 @@ class AdminConfigController extends Controller
                 // 2. Compte Général
                 if (!empty($rowCompte)) {
                     $rowCompteNormalized = strtoupper(trim((string)$rowCompte));
+                    
+                    // Standardisation automatique (ex: 6011 -> 60110000)
+                    $rowCompteNormalized = $this->standardizeAccountNumber($rowCompteNormalized, $accountDigits);
+                    
                     if (isset($accountMapping[$rowCompteNormalized])) {
                         $row['numero_original_compte'] = $rowCompte;
                         $row['compte'] = $accountMapping[$rowCompteNormalized];
                         $rowCompte = $row['compte'];
+                    } else {
+                        $rowCompte = $rowCompteNormalized;
                     }
+                    $row['compte'] = $rowCompte;
                 }
 
                 // 3. Tiers
@@ -2603,7 +2610,7 @@ class AdminConfigController extends Controller
                     else {
                         try {
                             // On ajoute j/n/Y etc pour être plus souple sur les zéros non significatifs
-                            $formats = ['d/m/Y', 'j/n/Y', 'd/n/Y', 'j/m/Y', 'Y-m-d', 'd-m-Y', 'Y/m/d'];
+                            $formats = ['d/m/Y', 'j/n/Y', 'd/n/Y', 'j/m/Y', 'Y-m-d', 'd-m-Y', 'Y/m/d', 'dmy', 'dmY'];
                             foreach($formats as $fmt) {
                                 try {
                                     $d = \Carbon\Carbon::createFromFormat($fmt, $rowDateStr);

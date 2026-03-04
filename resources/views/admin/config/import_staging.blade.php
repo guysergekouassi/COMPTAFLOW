@@ -19,8 +19,9 @@
 
     .staging-table-container {
         border-radius: 16px;
-        overflow: hidden;
+        overflow: auto;
         border: 1px solid #e2e8f0;
+        max-height: 70vh;
     }
 
     .table-staging thead th {
