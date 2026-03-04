@@ -291,7 +291,7 @@
                                             @foreach($rowsWithStatus as $rowIndex => $row)
                                                 <tr class="staging-row {{ $row['status'] == 'valid' ? 'row-valid' : ($row['status'] == 'ignored' ? 'row-warning' : 'row-error') }}" data-status="{{ $row['status'] }}">
                                                     <td class="text-center">
-                                                        <input type="checkbox" class="row-checkbox form-check-input" data-record-id="{{ $row['record_id'] ?? $rowIndex }}">
+                                                        <input type="checkbox" class="row-checkbox form-check-input" data-row-index="{{ $row['index'] ?? $rowIndex }}">
                                                     </td>
                                                     <td class="text-center">
                                                         <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : ($row['status'] == 'ignored' ? 'bg-warning' : 'bg-rose-500') }}" 
@@ -394,8 +394,7 @@
                                                             @endif
                                                             <button class="btn btn-icon btn-sm btn-label-primary rounded-pill me-1" 
                                                                     data-import-id="{{ $import->id }}"
-                                                                    data-record-id="{{ $row['record_id'] ?? $row['index'] }}"
-                                                                    data-row-index="{{ $row["index"] }}"
+                                                                    data-row-index="{{ $row['index'] }}"
                                                                     data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-mapping="{{ json_encode($mapping) }}"
                                                                     onclick="editStagingRow(this)"
@@ -542,7 +541,7 @@
         function editStagingRow(btn) {
             const importId = btn.dataset.importId;
             const rowIndex = btn.dataset.rowIndices || btn.dataset.rowIndex;
-            const recordId = btn.dataset.recordId || rowIndex; // Uses db id if available
+            // recordId variable removed
             const rowData = JSON.parse(btn.dataset.rowData);
             const mapping = JSON.parse(btn.dataset.mapping);
 
@@ -835,7 +834,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const indices = Array.from(errorCheckboxes).map(cb => cb.dataset.recordId);
+                    const indices = Array.from(errorCheckboxes).map(cb => cb.dataset.rowIndex);
                     performBulkDelete(indices);
                 }
             });

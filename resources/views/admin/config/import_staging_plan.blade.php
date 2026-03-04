@@ -341,7 +341,7 @@
                                             @foreach($rowsWithStatus as $rowIndex => $row)
                                                 <tr class="{{ $row['status'] == 'valid' ? 'row-valid' : 'row-error' }}" data-status="{{ $row['status'] }}">
                                                     <td class="text-center">
-                                                        <input type="checkbox" class="row-checkbox form-check-input" data-record-id="{{ $row['record_id'] ?? $rowIndex }}">
+                                                        <input type="checkbox" class="row-checkbox form-check-input" data-row-index="{{ $row['index'] ?? $rowIndex }}">
                                                     </td>
                                                     <td class="text-center">
                                                         <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : 'bg-rose-500' }}" 
@@ -424,8 +424,7 @@
                                                             @endif
                                                             <button class="btn btn-icon btn-sm btn-label-primary rounded-pill me-1" 
                                                                     data-import-id="{{ $import->id }}"
-                                                                    data-record-id="{{ $row['record_id'] ?? $row['index'] }}"
-                                                                    data-row-index="{{ $row["index"] }}"
+                                                                    data-row-index="{{ $row['index'] }}"
                                                                     data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-mapping="{{ json_encode($mapping) }}"
                                                                     onclick="editStagingRow(this)"
@@ -541,7 +540,7 @@
             }
         }
 
-        function deleteStagingRow(importId, recordId) {
+        function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
                 text: "Cette action retirera définitivement la ligne de l'importation en cours.",
@@ -556,7 +555,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/import/delete-row/${importId}/${recordId}`, {
+                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -577,7 +576,7 @@
         function editStagingRow(btn) {
             const importId = btn.dataset.importId;
             const rowIndex = btn.dataset.rowIndices || btn.dataset.rowIndex;
-            const recordId = btn.dataset.recordId || rowIndex;
+            // recordId variable removed
             const rowData = JSON.parse(btn.dataset.rowData);
             const mapping = JSON.parse(btn.dataset.mapping);
 
@@ -626,7 +625,7 @@
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     Swal.showLoading();
-                    fetch(`/admin/import/update-row/${importId}/${recordId}`, {
+                    fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

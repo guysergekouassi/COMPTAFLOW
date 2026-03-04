@@ -435,7 +435,7 @@
                                                     @foreach($rowsWithStatus as $rowIndex => $row)
                                                 <tr class="{{ $row['status'] == 'valid' ? 'row-valid' : 'row-error' }}" data-status="{{ $row['status'] }}">
                                                     <td class="text-center">
-                                                        <input type="checkbox" class="row-checkbox form-check-input" data-record-id="{{ $row['record_id'] ?? $rowIndex }}">
+                                                        <input type="checkbox" class="row-checkbox form-check-input" data-row-index="{{ $row['index'] ?? $rowIndex }}">
                                                     </td>
                                                     <td class="text-center">
                                                         <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : 'bg-rose-500' }}" 
@@ -537,8 +537,7 @@
                                                             @endif
                                                              <button class="btn btn-icon btn-sm btn-label-primary rounded-pill me-1" 
                                                                     data-import-id="{{ $import->id }}"
-                                                                    data-record-id="{{ $row['record_id'] ?? $row['index'] }}"
-                                                                    data-row-index="{{ $row["index"] }}"
+                                                                    data-row-index="{{ $row['index'] }}"
                                                                     data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-mapping="{{ json_encode($mapping) }}"
                                                                     data-overrides="{{ json_encode([
@@ -694,7 +693,7 @@
             filterTimeout = setTimeout(() => filterTable(), 300);
         }
 
-        function deleteStagingRow(importId, recordId) {
+        function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
                 text: "Cette action retirera définitivement la ligne de l'importation en cours.",
@@ -709,7 +708,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/import/delete-row/${importId}/${recordId}`, {
+                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -733,31 +732,28 @@
             console.log("Edit Journal - Button clicked", btn);
             try {
                 const importId = btn.dataset.importId;
-                const recordId = btn.dataset.recordId; // Use recordId directly
-                const rawData = JSON.parse(btn.dataset.rowData);
+                const rowIndex = btn.dataset.rowIndex;
+                const rowData = JSON.parse(btn.dataset.rowData);
                 const mapping = JSON.parse(btn.dataset.mapping);
                 const overrideIndexes = JSON.parse(btn.dataset.overrides || '{}');
 
-                console.log("Edit Journal - Data parsed", { importId, recordId, rawData, mapping, overrideIndexes });
+                console.log("Edit Journal - Data parsed", { importId, rowIndex, rowData, mapping, overrideIndexes });
 
-                // Récupération des données actuelles
-                const intituleCol = mapping['intitule'] !== "AUTO" ? mapping['intitule'] : null;
-                let currentIntitule = intituleCol !== null ? (rawData[intituleCol] || "") : "";
+                // Récupération des données actuelles depuis rowData
+                let currentIntitule = rowData['intitule'] || "";
 
                 const codeOrigCol = overrideIndexes.codeOrig;
-                const codeMappéCol = mapping['code_journal'] !== "AUTO" ? mapping['code_journal'] : null;
-                let currentCodeOrig = (codeOrigCol !== null && rawData[codeOrigCol] !== undefined) ? rawData[codeOrigCol] : (codeMappéCol !== null ? (rawData[codeMappéCol] || "") : "");
+                let currentCodeOrig = rowData['code_original_journal'] || rowData['code_journal'] || "";
 
                 const typeCol = overrideIndexes.type;
-                const typeMappéCol = mapping['type'] !== "AUTO" ? mapping['type'] : null;
-                let currentType = (typeCol !== null && rawData[typeCol] !== undefined) ? rawData[typeCol] : (typeMappéCol !== null ? (rawData[typeMappéCol] || "") : "");
+                let currentType = rowData['type'] || "";
                 
                 if (currentType === 'Trésorerie') currentType = 'Tresorerie';
 
-                let currentPoste = (overrideIndexes.poste !== null) ? (rawData[overrideIndexes.poste] || "") : "";
-                let currentCompte = (overrideIndexes.compte !== null) ? (rawData[overrideIndexes.compte] || "") : (mapping['compte_de_tresorerie'] !== "AUTO" ? (rawData[mapping['compte_de_tresorerie']] || "") : "");
-                let currentAnalytique = (overrideIndexes.analytique !== null) ? (rawData[overrideIndexes.analytique] || "non") : (mapping['traitement_analytique'] !== "AUTO" ? (rawData[mapping['traitement_analytique']] || "non") : "non");
-                let currentRapprochement = (overrideIndexes.rapprochement !== null) ? (rawData[overrideIndexes.rapprochement] || "") : (mapping['rapprochement_sur'] !== "AUTO" ? (rawData[mapping['rapprochement_sur']] || "") : "");
+                let currentPoste = rowData['poste'] || rowData['compte_general'] || "";
+                let currentCompte = rowData['compte_de_tresorerie'] || rowData['compte'] || "";
+                let currentAnalytique = rowData['traitement_analytique'] || "non";
+                let currentRapprochement = rowData['rapprochement_sur'] || "";
 
                 // Génération des options de comptes
                 let optionsCompteTreso = '<option value="">-- Sélectionner un compte --</option>';
@@ -787,11 +783,11 @@
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label font-black text-slate-700">Intitulé</label>
-                            <input type="text" class="form-control swal-edit-input" data-col="${intituleCol || ''}" value="${esc(currentIntitule)}">
+                            <input type="text" class="form-control swal-edit-input" data-col="${mapping['intitule'] !== 'AUTO' ? mapping['intitule'] : ''}" value="${esc(currentIntitule)}">
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label font-black text-slate-700">Traitement Analytique</label>
-                            <select class="form-select swal-edit-input" data-col="${overrideIndexes.analytique}">
+                            <select class="form-select swal-edit-input" data-col="${overrideIndexes.analytique || mapping['traitement_analytique']}">
                                 <option value="non" ${String(currentAnalytique).toLowerCase() === 'non' ? 'selected' : ''}>Non</option>
                                 <option value="oui" ${String(currentAnalytique).toLowerCase() === 'oui' ? 'selected' : ''}>Oui</option>
                             </select>
@@ -817,15 +813,17 @@
                                             <label class="form-check-label" for="treso_banque_swal">Banque</label>
                                         </div>
                                     </div>
-                                    <input type="hidden" class="swal-edit-input" data-col="${overrideIndexes.poste}" id="swal_poste_hidden" value="${esc(currentPoste)}">
-                                </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label font-black text-slate-700">Rapprochement</label>
+                            <input type="text" class="form-control swal-edit-input d-none" id="swal_poste_hidden" data-col="${overrideIndexes.poste || ''}" value="${esc(currentPoste)}">
+                        </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label font-black text-slate-700">Autre (Optionnel)</label>
                                     <input type="text" id="treso_autre_swal" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellé..." value="${esc(!['Banque', 'Caisse'].includes(currentPoste) ? currentPoste : '')}" oninput="syncPosteToInput(this.value)">
                                 </div>
                                 <div>
                                     <label class="form-label font-black">Rapprochement</label>
-                                    <select class="form-select swal-edit-input" data-col="${overrideIndexes.rapprochement}">
+                                    <select class="form-select swal-edit-input" data-col="${overrideIndexes.rapprochement || mapping['rapprochement_sur']}">
                                         <option value="">-- Aucun --</option>
                                         <option value="Manuel" ${currentRapprochement === 'Manuel' ? 'selected' : ''}>Manuel</option>
                                         <option value="Automatique" ${currentRapprochement === 'Automatique' ? 'selected' : ''}>Automatique</option>
@@ -906,7 +904,7 @@
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
                         Swal.showLoading();
-                        fetch(`/admin/import/update-row/${importId}/${recordId}`, {
+                        fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
