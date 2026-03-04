@@ -467,7 +467,7 @@
                                                         </td>
                                                         <td>{{ $row['data']['rapprochement_sur'] ?? '-' }}</td>
                                                     @elseif($import->type == 'tiers')
-                                                        <td class="@if($row['status'] == 'error' && empty($row['data']['numero_de_tiers']) && empty($row['data']['auto_num'])) cell-warning @endif">
+                                                        <td class="search-target @if($row['status'] == 'error' && empty($row['data']['numero_de_tiers']) && empty($row['data']['auto_num'])) cell-warning @endif">
                                                             @if(!empty($row['data']['auto_num']))
                                                                 <span class="text-primary font-black"><i class="fa-solid fa-magic me-1"></i> {{ $row['data']['auto_num'] }}</span>
                                                             @elseif(!empty($row['data']['numero_de_tiers']))
@@ -476,7 +476,7 @@
                                                                 <span class="badge bg-label-warning italic text-[10px]">Sera auto-généré</span>
                                                             @endif
                                                         </td>
-                                                        <td class="fw-bold">{{ $row['data']['intitule'] ?? '-' }}</td>
+                                                        <td class="fw-bold search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
                                                         <td>
                                                             <span class="badge bg-label-primary">
                                                                 {{ $row['data']['type_de_tiers'] ?? 'Client' }}
@@ -485,13 +485,13 @@
                                                         <td>{{ $row['data']['compte_general'] ?? '-' }}</td>
                                                     @else
                                                         <td>{{ $row['data']['jour'] ?? '-' }}</td>
-                                                        <td>{{ $row['data']['journal'] ?? '-' }}</td>
-                                                        <td>{{ $row['data']['reference'] ?? '-' }}</td>
-                                                        <td class="@if(in_array('error', $row['errors']) || str_contains(implode(' ', $row['errors']), 'Compte')) cell-error @endif" 
+                                                        <td class="search-target">{{ $row['data']['journal'] ?? '-' }}</td>
+                                                        <td class="search-target">{{ $row['data']['reference'] ?? '-' }}</td>
+                                                        <td class="search-target @if(in_array('error', $row['errors']) || str_contains(implode(' ', $row['errors']), 'Compte')) cell-error @endif" 
                                                             title="{{ implode(', ', array_filter($row['errors'], fn($e) => str_contains($e, 'Compte'))) }}">
                                                             {{ $row['data']['compte'] ?? '-' }}
                                                         </td>
-                                                        <td>{{ Str::limit($row['data']['libelle'] ?? '-', 30) }}</td>
+                                                        <td class="search-target">{{ Str::limit($row['data']['libelle'] ?? '-', 30) }}</td>
                                                         <td class="text-end fw-bold">{{ number_format($row['debit'], 0, ',', ' ') }}</td>
                                                         <td class="text-end fw-bold">{{ number_format($row['credit'], 0, ',', ' ') }}</td>
                                                     @endif
