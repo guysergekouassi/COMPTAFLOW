@@ -1,0 +1,166 @@
+<svg viewBox="0 0 900 720" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif" font-size="10.5" style="min-width:700px;width:100%;max-width:900px;">
+
+<!-- ══════════════════ LIGNES DE CONNEXION ══════════════════ -->
+<line x1="105" y1="90" x2="230" y2="90" stroke="#1B365D" stroke-width="1.5" />
+<text x="180" y="85" font-size="11" fill="#1B365D" font-weight="bold">1,n</text>
+<line x1="320" y1="90" x2="435" y2="90" stroke="#1B365D" stroke-width="1.5" />
+<text x="330" y="85" font-size="11" fill="#1B365D" font-weight="bold">1,1</text>
+
+<line x1="105" y1="90" x2="600" y2="75" stroke="#1B365D" stroke-width="1.5" />
+<text x="480" y="70" font-size="11" fill="#1B365D" font-weight="bold">1,n</text>
+<line x1="630" y1="75" x2="765" y2="75" stroke="#1B365D" stroke-width="1.5" />
+<text x="660" y="70" font-size="11" fill="#1B365D" font-weight="bold">1,1</text>
+
+<line x1="105" y1="160" x2="105" y2="175" stroke="#1B365D" stroke-width="1.5" />
+<text x="110" y="170" font-size="11" fill="#1B365D" font-weight="bold">1,n</text>
+<line x1="105" y1="235" x2="105" y2="260" stroke="#1B365D" stroke-width="1.5" />
+<text x="110" y="250" font-size="11" fill="#1B365D" font-weight="bold">1,1</text>
+
+<line x1="105" y1="90" x2="545" y2="165" stroke="#1B365D" stroke-width="1.5" />
+<text x="420" y="160" font-size="11" fill="#1B365D" font-weight="bold">1,n</text>
+<line x1="545" y1="225" x2="545" y2="260" stroke="#1B365D" stroke-width="1.5" />
+<text x="550" y="245" font-size="11" fill="#1B365D" font-weight="bold">1,1</text>
+
+<line x1="190" y1="315" x2="185" y2="315" stroke="#D35400" stroke-width="1.5" />
+<text x="195" y="310" font-size="11" fill="#D35400" font-weight="bold">1,n</text>
+<line x1="245" y1="315" x2="240" y2="315" stroke="#D35400" stroke-width="1.5" />
+<text x="225" y="310" font-size="11" fill="#D35400" font-weight="bold">1,1</text>
+
+<line x1="105" y1="370" x2="105" y2="380" stroke="#1B365D" stroke-width="1.5" />
+<text x="110" y="380" font-size="11" fill="#1B365D" font-weight="bold">1,n</text>
+<line x1="105" y1="440" x2="200" y2="500" stroke="#1B365D" stroke-width="1.5" />
+<text x="140" y="460" font-size="11" fill="#1B365D" font-weight="bold">0,n</text>
+
+<line x1="325" y1="355" x2="325" y2="380" stroke="#1B365D" stroke-width="1.5" />
+<text x="330" y="370" font-size="11" fill="#1B365D" font-weight="bold">1,1</text>
+<line x1="325" y1="440" x2="325" y2="480" stroke="#1B365D" stroke-width="1.5" />
+<text x="330" y="460" font-size="11" fill="#1B365D" font-weight="bold">0,n</text>
+
+<line x1="545" y1="385" x2="545" y2="380" stroke="#1B365D" stroke-width="1.5" />
+<text x="550" y="380" font-size="11" fill="#1B365D" font-weight="bold">1,1</text>
+<line x1="545" y1="440" x2="545" y2="480" stroke="#1B365D" stroke-width="1.5" />
+<text x="550" y="460" font-size="11" fill="#1B365D" font-weight="bold">0,n</text>
+
+<line x1="765" y1="355" x2="765" y2="380" stroke="#27ae60" stroke-width="1.5" />
+<text x="770" y="370" font-size="11" fill="#27ae60" font-weight="bold">0,1</text>
+<line x1="765" y1="440" x2="670" y2="500" stroke="#27ae60" stroke-width="1.5" />
+<text x="710" y="480" font-size="11" fill="#27ae60" font-weight="bold">0,n</text>
+
+<line x1="435" y1="160" x2="435" y2="120" stroke="#1B365D" stroke-width="1.5" />
+<text x="440" y="140" font-size="11" fill="#1B365D" font-weight="bold">1,1</text>
+<line x1="435" y1="180" x2="435" y2="480" stroke="#1B365D" stroke-width="1.5" />
+<text x="440" y="220" font-size="11" fill="#1B365D" font-weight="bold">0,n</text>
+
+<!-- ══════════════════ ASSOCIATIONS ══════════════════ -->
+<circle cx="260" cy="90" r="30" fill="white" stroke="#1B365D" stroke-width="1.5" />
+<text x="260" y="94" text-anchor="middle" fill="#1B365D" font-size="10" font-weight="bold">Appartient</text>
+<circle cx="600" cy="75" r="30" fill="white" stroke="#1B365D" stroke-width="1.5" />
+<text x="600" y="79" text-anchor="middle" fill="#1B365D" font-size="10" font-weight="bold">Possède</text>
+<circle cx="105" cy="205" r="30" fill="white" stroke="#1B365D" stroke-width="1.5" />
+<text x="105" y="209" text-anchor="middle" fill="#1B365D" font-size="10" font-weight="bold">Définit</text>
+<circle cx="545" cy="195" r="30" fill="white" stroke="#1B365D" stroke-width="1.5" />
+<text x="545" y="199" text-anchor="middle" fill="#1B365D" font-size="10" font-weight="bold">A pour</text>
+<circle cx="215" cy="315" r="30" fill="white" stroke="#D35400" stroke-width="1.5" />
+<text x="215" y="319" text-anchor="middle" fill="#D35400" font-size="10" font-weight="bold">Rattaché</text>
+<circle cx="105" cy="410" r="30" fill="white" stroke="#1B365D" stroke-width="1.5" />
+<text x="105" y="414" text-anchor="middle" fill="#1B365D" font-size="10" font-weight="bold">Génère 1</text>
+<circle cx="325" cy="410" r="30" fill="white" stroke="#1B365D" stroke-width="1.5" />
+<text x="325" y="414" text-anchor="middle" fill="#1B365D" font-size="10" font-weight="bold">Génère 2</text>
+<circle cx="545" cy="410" r="30" fill="white" stroke="#1B365D" stroke-width="1.5" />
+<text x="545" y="414" text-anchor="middle" fill="#1B365D" font-size="10" font-weight="bold">Inscrit</text>
+<circle cx="765" cy="410" r="30" fill="white" stroke="#27ae60" stroke-width="1.5" />
+<text x="765" y="414" text-anchor="middle" fill="#27ae60" font-size="10" font-weight="bold">Impacte</text>
+<circle cx="435" cy="150" r="30" fill="white" stroke="#1B365D" stroke-width="1.5" />
+<text x="435" y="154" text-anchor="middle" fill="#1B365D" font-size="10" font-weight="bold">Valide</text>
+
+<!-- ══════════════════ ENTITÉS ══════════════════ -->
+<rect x="20" y="20" width="170" height="140" rx="3" fill="#EBF5FB" stroke="#1B365D" stroke-width="2" />
+<rect x="20" y="20" width="170" height="26" rx="3" fill="#1B365D" />
+<text x="105.0" y="37" text-anchor="middle" fill="white" font-weight="bold" font-size="11">COMPANIES</text>
+<line x1="20" y1="46" x2="190" y2="46" stroke="#1B365D" stroke-width="1" />
+<text x="28" y="62" fill="#2C3E50">id</text>
+<text x="28" y="76" fill="#2C3E50">company_name</text>
+<text x="28" y="90" fill="#2C3E50">juridique_form</text>
+<text x="28" y="104" fill="#2C3E50">social_capital</text>
+<text x="28" y="118" fill="#2C3E50">adresse / city</text>
+<text x="28" y="132" fill="#2C3E50">email_adresse</text>
+<text x="28" y="146" fill="#2C3E50">is_blocked / is_active</text>
+
+<rect x="350" y="20" width="170" height="140" rx="3" fill="#EBF5FB" stroke="#1B365D" stroke-width="2" />
+<rect x="350" y="20" width="170" height="26" rx="3" fill="#1B365D" />
+<text x="435.0" y="37" text-anchor="middle" fill="white" font-weight="bold" font-size="11">USERS</text>
+<line x1="350" y1="46" x2="520" y2="46" stroke="#1B365D" stroke-width="1" />
+<text x="358" y="62" fill="#2C3E50">id</text>
+<text x="358" y="76" fill="#2C3E50">name / last_name</text>
+<text x="358" y="90" fill="#2C3E50">email_adresse</text>
+<text x="358" y="104" fill="#2C3E50">password</text>
+<text x="358" y="118" fill="#2C3E50">role</text>
+<text x="358" y="132" fill="#2C3E50">is_online</text>
+<text x="358" y="146" fill="#2C3E50">profile_photo_path</text>
+
+<rect x="680" y="20" width="170" height="110" rx="3" fill="#EBF5FB" stroke="#1B365D" stroke-width="2" />
+<rect x="680" y="20" width="170" height="26" rx="3" fill="#1B365D" />
+<text x="765.0" y="37" text-anchor="middle" fill="white" font-weight="bold" font-size="11">EXERCICES_COMPTABLES</text>
+<line x1="680" y1="46" x2="850" y2="46" stroke="#1B365D" stroke-width="1" />
+<text x="688" y="62" fill="#2C3E50">id</text>
+<text x="688" y="76" fill="#2C3E50">intitule / date_debut</text>
+<text x="688" y="90" fill="#2C3E50">date_fin / is_active</text>
+<text x="688" y="104" fill="#2C3E50">cloturer / nb_journaux</text>
+
+<rect x="20" y="260" width="170" height="110" rx="3" fill="#FEF9E7" stroke="#D35400" stroke-width="2" />
+<rect x="20" y="260" width="170" height="26" rx="3" fill="#D35400" />
+<text x="105.0" y="277" text-anchor="middle" fill="white" font-weight="bold" font-size="11">PLAN_COMPTABLES</text>
+<line x1="20" y1="286" x2="190" y2="286" stroke="#D35400" stroke-width="1" />
+<text x="28" y="302" fill="#2C3E50">id</text>
+<text x="28" y="316" fill="#2C3E50">numero_de_compte</text>
+<text x="28" y="330" fill="#2C3E50">intitule / classe</text>
+<text x="28" y="344" fill="#2C3E50">type_de_compte</text>
+<text x="28" y="358" fill="#2C3E50">adding_strategy</text>
+
+<rect x="240" y="260" width="170" height="95" rx="3" fill="#FEF9E7" stroke="#D35400" stroke-width="2" />
+<rect x="240" y="260" width="170" height="26" rx="3" fill="#D35400" />
+<text x="325.0" y="277" text-anchor="middle" fill="white" font-weight="bold" font-size="11">PLAN_TIERS</text>
+<line x1="240" y1="286" x2="410" y2="286" stroke="#D35400" stroke-width="1" />
+<text x="248" y="302" fill="#2C3E50">id</text>
+<text x="248" y="316" fill="#2C3E50">numero_de_tiers</text>
+<text x="248" y="330" fill="#2C3E50">intitule</text>
+<text x="248" y="344" fill="#2C3E50">type_de_tiers</text>
+
+<rect x="460" y="260" width="170" height="125" rx="3" fill="#FEF9E7" stroke="#D35400" stroke-width="2" />
+<rect x="460" y="260" width="170" height="26" rx="3" fill="#D35400" />
+<text x="545.0" y="277" text-anchor="middle" fill="white" font-weight="bold" font-size="11">CODE_JOURNALS</text>
+<line x1="460" y1="286" x2="630" y2="286" stroke="#D35400" stroke-width="1" />
+<text x="468" y="302" fill="#2C3E50">id</text>
+<text x="468" y="316" fill="#2C3E50">code_journal / intitule</text>
+<text x="468" y="330" fill="#2C3E50">type / traite_analytique</text>
+<text x="468" y="344" fill="#2C3E50">compte_contrepartie</text>
+<text x="468" y="358" fill="#2C3E50">compte_tresorerie</text>
+<text x="468" y="372" fill="#2C3E50">rapprochement_sur</text>
+
+<rect x="680" y="260" width="170" height="95" rx="3" fill="#EAFAF1" stroke="#27ae60" stroke-width="2" />
+<rect x="680" y="260" width="170" height="26" rx="3" fill="#27ae60" />
+<text x="765.0" y="277" text-anchor="middle" fill="white" font-weight="bold" font-size="11">COMPTE_TRESORERIES</text>
+<line x1="680" y1="286" x2="850" y2="286" stroke="#27ae60" stroke-width="1" />
+<text x="688" y="302" fill="#2C3E50">id</text>
+<text x="688" y="316" fill="#2C3E50">name</text>
+<text x="688" y="330" fill="#2C3E50">type</text>
+<text x="688" y="344" fill="#2C3E50">solde_initial / solde_actuel</text>
+
+<rect x="200" y="480" width="470" height="110" rx="3" fill="#E8F4F8" stroke="#1B365D" stroke-width="2" />
+<rect x="200" y="480" width="470" height="26" rx="3" fill="#1B365D" />
+<text x="435.0" y="497" text-anchor="middle" fill="white" font-weight="bold" font-size="11">ECRITURE_COMPTABLES</text>
+<line x1="200" y1="506" x2="670" y2="506" stroke="#1B365D" stroke-width="1" />
+<text x="208" y="522" fill="#2C3E50">id</text>
+<text x="208" y="536" fill="#2C3E50">date</text>
+<text x="208" y="550" fill="#2C3E50">n_saisie_user / n_saisie</text>
+<text x="208" y="564" fill="#2C3E50">description_operation</text>
+<text x="500" y="522" fill="#2C3E50">reference_piece / piece_justificatif</text>
+<text x="500" y="536" fill="#2C3E50">debit / credit</text>
+<text x="500" y="550" fill="#2C3E50">statut / type_flux / plan_analytique</text>
+
+<!-- Légende -->
+<rect x="20" y="600" width="110" height="40" rx="3" fill="#F8F9FA" stroke="#E2E8F0" />
+<text x="25" y="615" font-size="10" fill="#1B365D" font-weight="bold">LÉGENDE</text>
+<text x="25" y="630" font-size="10" fill="#555">id = Clé Primaire</text>
+
+</svg>

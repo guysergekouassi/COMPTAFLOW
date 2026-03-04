@@ -1630,7 +1630,8 @@ class AdminConfigController extends Controller
         $headerIndex = $mapping['_header_index'] ?? 0;
         
         // Nettoyage des données : Ignorer les lignes avant les titres et les lignes totalement vides basées sur les colonnes mappées
-        $data = array_filter(array_slice($import->raw_data, $headerIndex + 1, null, true), function($row) use ($mapping) {
+        $rawRows = array_slice($import->raw_data, $headerIndex + 1, null, true);
+        $data = array_filter($rawRows, function($row) use ($mapping) {
             $hasData = false;
             foreach ($mapping as $field => $index) {
                 if ($field !== '_header_index' && $index !== null && $index !== "" && !empty(trim($row[$index] ?? ''))) {
@@ -1640,6 +1641,8 @@ class AdminConfigController extends Controller
             }
             return $hasData;
         });
+        
+        $ignoredEmptyLines = count($rawRows) - count($data);
 
         $existingAccounts = PlanComptable::where('company_id', $user->company_id)
             ->pluck('numero_de_compte')
@@ -1898,6 +1901,19 @@ class AdminConfigController extends Controller
                         }
                     }
 
+                    // PRIORITÉ 1.5 : Si on a un compte de trésorerie de renseigné, c'est D'OFFICE une trésorerie
+                    if (!$detectedType && !empty($row['compte_de_tresorerie'])) {
+                        $detectedType = 'Trésorerie';
+                        $searchStr = strtoupper($rowCode . ' ' . ($row['intitule'] ?? ''));
+                        if (Str::contains($searchStr, ['CAI', 'CASH', 'CAISSE'])) {
+                            $row['poste_tresorerie'] = 'Caisse';
+                        } elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'BANQUE'])) {
+                            $row['poste_tresorerie'] = 'Banque';
+                        } else {
+                            $row['poste_tresorerie'] = 'Autre';
+                        }
+                    }
+
                     // PRIORITÉ 2 : Analyse sémantique si pas de compte ou type non encore détecté
                     if (!$detectedType) {
                         $searchStr = strtoupper($rowCode . ' ' . ($row['intitule'] ?? ''));
@@ -1940,18 +1956,43 @@ class AdminConfigController extends Controller
                 $row['code_journal_override_index'] = $codeJournalOverrideIndex;
 
                 // --- GÉNÉRATION SÉQUENTIELLE DU CODE JOURNAL ---
+                // FORCÉE: On génère toujours automatiquement selon le type (comme pour les tiers)
                 if (!empty($manualCodeOrig)) {
                      $row['code_journal'] = $manualCodeOrig;
-                } elseif (empty($rowCode) || (isset($mapping['code_journal']) && $mapping['code_journal'] === 'AUTO')) {
+                } else {
                     $prefix = 'JRN';
                     $typeLower = mb_strtolower($row['type'] ?? '');
+                    $origAlpha = preg_replace('/[^A-Z]/', '', strtoupper($row['numero_original'] ?? ''));
+
                     if (str_contains($typeLower, 'achat')) $prefix = 'ACH';
                     elseif (str_contains($typeLower, 'vente')) $prefix = 'VEN';
                     elseif (str_contains($typeLower, 'trésorerie') || str_contains($typeLower, 'banque') || str_contains($typeLower, 'caisse')) {
-                        $prefix = (isset($row['poste_tresorerie']) && $row['poste_tresorerie'] === 'Caisse') ? 'CAI' : 'BQ';
+                        if (isset($row['poste_tresorerie'])) {
+                            if ($row['poste_tresorerie'] === 'Caisse') {
+                                $prefix = 'CAI';
+                            } elseif ($row['poste_tresorerie'] === 'Banque') {
+                                $prefix = 'BQ';
+                            } else {
+                                // "Autre" : On déduit du code original d'abord, puis de l'intitulé
+                                if (!empty($origAlpha)) {
+                                    $prefix = substr($origAlpha, 0, 3);
+                                } else {
+                                    $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($row['intitule'] ?? 'TRZ'));
+                                    $prefix = substr($intituleNorm, 0, 3);
+                                    if (empty($prefix)) $prefix = 'TRZ';
+                                }
+                            }
+                        } else {
+                            $prefix = 'BQ';
+                        }
                     }
-                    elseif (str_contains($typeLower, 'opération') || str_contains($typeLower, 'diverse')) $prefix = 'OD';
-                    elseif (str_contains($typeLower, 'standard')) $prefix = 'STD';
+                    elseif (str_contains($typeLower, 'opération') || str_contains($typeLower, 'diverse') || str_contains($typeLower, 'standard')) {
+                        if (in_array(strtoupper($origAlpha), ['RAN', 'OD'])) {
+                            $prefix = strtoupper($origAlpha);
+                        } else {
+                            $prefix = 'ST';
+                        }
+                    }
 
                     if (!isset($localMaxJournals[$prefix])) {
                         $resp = app(\App\Http\Controllers\CodeJournalController::class)->getNextSequentialCode(new Request(['prefix' => $prefix]));
@@ -1960,23 +2001,43 @@ class AdminConfigController extends Controller
                             $row['code_journal'] = $genData->code;
                             $localMaxJournals[$prefix] = $genData->code;
                         } else {
-                            $row['code_journal'] = $prefix . '1';
-                        }
-                    } else {
-                        $lastCode = $localMaxJournals[$prefix];
-                        $suffix = substr($lastCode, strlen($prefix));
-                        if (is_numeric($suffix)) {
-                            $nextNum = (int)$suffix + 1;
-                            $availableSpace = max(1, $journalDigits - strlen($prefix));
-                            $newCode = $prefix . str_pad((string)$nextNum, $availableSpace, '0', STR_PAD_LEFT);
-                            if (strlen($newCode) > $journalDigits && strlen($prefix) < $journalDigits) {
-                                $newCode = substr($newCode, 0, $journalDigits);
+                            // Repli en cas d'erreur API interne
+                            $numStr = "1";
+                            $numLen = strlen($numStr);
+                            if ($numLen >= $journalDigits) {
+                                $newCode = substr($numStr, -$journalDigits);
+                            } else {
+                                $maxPrefixLen = $journalDigits - $numLen;
+                                $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                                $newCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
                             }
                             $row['code_journal'] = $newCode;
                             $localMaxJournals[$prefix] = $newCode;
-                        } else {
-                            $row['code_journal'] = $prefix . '1';
                         }
+                    } else {
+                        $lastCode = $localMaxJournals[$prefix];
+                        // S'il n'y a pas de chiffres dans le dernier code, on part de zéro
+                        if (!preg_match('/(\d+)$/', $lastCode, $matches)) {
+                            $suffix = "0";
+                        } else {
+                            $suffix = $matches[1];
+                        }
+                        
+                        $nextNum = (int)$suffix + 1;
+                        $numStr = (string)$nextNum;
+                        $numLen = strlen($numStr);
+                        
+                        // Logique intelligente qui réduit le préfixe si le numéro prend trop de place pour respecter la configuration
+                        if ($numLen >= $journalDigits) {
+                            $newCode = substr($numStr, -$journalDigits);
+                        } else {
+                            $maxPrefixLen = $journalDigits - $numLen;
+                            $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                            $newCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                        }
+                        
+                        $row['code_journal'] = $newCode;
+                        $localMaxJournals[$prefix] = $newCode;
                     }
                     $rowCode = $row['code_journal'];
                 }
@@ -1984,53 +2045,67 @@ class AdminConfigController extends Controller
 
                 // --- DÉDUPLICATION ET UNICITÉ DES CODES JOURNAUX (BATCH CONSISTENCY) ---
                 if (!empty($rowCode)) {
-                    $upperOrig = strtoupper($rowCode);
+                    // On se base sur le numéro original pour la détection de doublons dans le lot
+                    $upperOrig = strtoupper($row['numero_original'] ?? $rowCode);
                     
-                    // Si on a déjà traité ce code original exact dans ce lot, on le réutilise (Cohérence demandée)
+                    // En import de Journaux, un doublon de code = ERREUR (Chaque ligne = un journal unique)
                     if (isset($batchJournalMap[$upperOrig])) {
                         $rowCode = $batchJournalMap[$upperOrig];
+                        $errors[] = "Doublon dans le fichier : Le code d'origine '$upperOrig' est défini plusieurs fois.";
                     } else {
                         $baseCode = $rowCode;
                         $counter = 1;
-                        $tempCode = $rowCode;
                         
-                        // Si le code est purement alphabétique (ex: CAIS), on force un premier suffixe séquentiel
-                        // Cela évite CAIS00 et donne directement CAIS01 ou CAIS001
-                        if (preg_match('/^[A-Z]+$/i', $baseCode)) {
+                        // Si le code est purement alphabétique, et trop court -> on le force avec '1' (ex: BQ -> BQ01)
+                        if (preg_match('/^[A-Z]+$/i', $baseCode) && strlen($baseCode) < $journalDigits) {
                             $prefix = strtoupper($baseCode);
                             $availableSpace = max(1, $journalDigits - strlen($prefix));
                             $tempCode = $prefix . str_pad($counter, $availableSpace, '0', STR_PAD_LEFT);
                         } else {
-                            // Si c'est déjà BQ1, standardizeJournalCode s'occupe de faire BQ01
                             $tempCode = $this->standardizeJournalCode($baseCode, $journalDigits);
                         }
 
-                        // On boucle tant que le code existe déjà dans la base OU dans le lot actuel (collision avec un AUTRE code original)
+                        // On boucle tant que le code existe déjà
                         while (in_array(strtoupper($tempCode), array_map('strtoupper', $existingJournals)) || isset($localMaxJournals[strtoupper($tempCode)])) {
-                            // On cherche l'incrément propre (ex: BQ01 -> BQ02)
+                            $counter++;
+                            
+                            $numStr = (string)$counter;
+                            $numLen = strlen($numStr);
+                            
                             if (preg_match('/^([A-Z]+)/i', $baseCode, $matches)) {
                                 $prefix = strtoupper($matches[1]);
-                                $availableSpace = max(1, $journalDigits - strlen($prefix));
-                                $tempCode = $prefix . str_pad($counter, $availableSpace, '0', STR_PAD_LEFT);
                             } else {
-                                $tempCode = $baseCode . $counter;
+                                $prefix = 'JRN';
                             }
-                            $counter++;
-                            if ($counter > 100) break;
+                            
+                            if ($numLen >= $journalDigits) {
+                                $tempCode = substr($numStr, -$journalDigits);
+                            } else {
+                                $maxPrefixLen = $journalDigits - $numLen;
+                                $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                                $tempCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                            }
+
+                            if ($counter > 500) break; // Sécurité
                         }
                         
                         $rowCode = $tempCode;
-                        $batchJournalMap[$upperOrig] = $rowCode; // Sauvegarde pour les prochaines occurrences de "CAI"
+                        
+                        // Validation stricte finale (après tous les traitements)
+                        if (strlen($rowCode) !== $journalDigits) {
+                            $errors[] = "Erreur de formatage : Le code '" . $rowCode . "' ne respecte pas la configuration ($journalDigits caractères exigés).";
+                            // On garde le code erroné pour qu'il soit affiché au user dans la case (en rouge)
+                        }
+
+                        $batchJournalMap[$upperOrig] = $rowCode; 
                         $localMaxJournals[strtoupper($rowCode)] = $rowCode;
                     }
                     
                     $row['code_journal'] = $rowCode;
                 }
 
-                if (empty($rowCode) && !($mapping['code_journal'] === 'AUTO')) {
-                    $errors[] = "Code journal manquant";
-                } elseif (strlen($rowCode) > 10) {
-                    $errors[] = "Code '$rowCode' invalide : Max 10 caractères.";
+                if (empty($row['code_journal'])) {
+                    $errors[] = "Erreur système : Impossible de générer un code journal.";
                 }
                 // Plus besoin de l'erreur de doublon car géré par la séquence
                 

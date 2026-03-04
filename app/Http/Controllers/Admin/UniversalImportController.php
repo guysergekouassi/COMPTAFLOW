@@ -328,25 +328,29 @@ class UniversalImportController extends Controller
             }
 
             // PHASE 2: Insertion
+            $ignoredCount = 0;
             foreach ($validPayloads as $p) {
                 // Add System Fields
                 $p['company_id'] = $companyId;
                 
                 if ($internalType === 'accounts') {
-                     \App\Models\PlanComptable::firstOrCreate(
+                     $model = \App\Models\PlanComptable::firstOrCreate(
                         ['company_id' => $companyId, 'numero_de_compte' => $p['numero_de_compte']],
                         array_merge($p, ['user_id' => $userId, 'classe' => substr($p['numero_de_compte'], 0, 1)])
                      );
+                     if ($model->wasRecentlyCreated) $count++; else $ignoredCount++;
                 } elseif ($internalType === 'tiers') {
-                     \App\Models\PlanTiers::firstOrCreate(
+                     $model = \App\Models\PlanTiers::firstOrCreate(
                         ['company_id' => $companyId, 'numero_de_tiers' => $p['numero_de_tiers']],
                         array_merge($p, ['user_id' => $userId])
                      );
+                     if ($model->wasRecentlyCreated) $count++; else $ignoredCount++;
                 } elseif ($internalType === 'journals') {
-                     \App\Models\CodeJournal::firstOrCreate(
+                     $model = \App\Models\CodeJournal::firstOrCreate(
                         ['company_id' => $companyId, 'code_journal' => $p['code_journal']],
                         $p
                      );
+                     if ($model->wasRecentlyCreated) $count++; else $ignoredCount++;
                 } elseif ($internalType === 'entries') {
                      // Need 'exercice_comptable_id'
                      $p['user_id'] = $userId;
@@ -423,15 +427,20 @@ class UniversalImportController extends Controller
                      }
 
                      \App\Models\EcritureComptable::create($p);
+                     $count++;
                 }
-                $count++;
             }
 
             // Clean Staging
             ImportStaging::where('batch_id', $batchId)->delete();
             DB::commit();
 
-            return redirect()->route('admin.config.external_import')->with('success', "Import effectué avec succès ($count enregistrements).");
+            $msg = "Import effectué avec succès ($count enregistrements ajoutés).";
+            if ($ignoredCount > 0) {
+                $msg = "Import effectué : $count ajoutés, $ignoredCount ignorés (déjà existants).";
+            }
+
+            return redirect()->route('admin.config.external_import')->with('success', $msg);
 
         } catch (\Exception $e) {
             DB::rollBack();

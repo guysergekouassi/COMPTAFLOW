@@ -383,21 +383,19 @@ public function index(Request $request)
 
             $nextNum = $maxNum + 1;
             
-            // Calculer la longueur disponible pour le numéro
-            $availableSpace = max(0, $digits - strlen($prefix));
+            $numStr = (string)$nextNum;
+            $numLen = strlen($numStr);
             
-            if ($availableSpace <= 0) {
-                // Si le préfixe est déjà à la taille max ou plus, on retourne juste le préfixe tronqué
-                $nextCode = substr($prefix, 0, $digits);
+            if ($numLen >= $digits) {
+                // Le nombre à lui seul prend toute la place
+                $nextCode = substr($numStr, -$digits);
             } else {
-                // Padding avec des 0 à GAUCHE du numéro pour remplir l'espace disponible
-                $nextCode = $prefix . str_pad((string)$nextNum, $availableSpace, '0', STR_PAD_LEFT);
+                // On garde la partie du préfixe qui rentre
+                $maxPrefixLen = $digits - $numLen;
+                $actualPrefix = substr($prefix, 0, $maxPrefixLen);
                 
-                // Si le numéro est trop grand pour l'espace, il dépassera mais str_pad ne coupera pas à droite.
-                // Si on veut rester strict sur $digits :
-                if (strlen($nextCode) > $digits) {
-                    $nextCode = substr($nextCode, 0, $digits);
-                }
+                // Si le préfixe original était plus court que l'espace max, on pad avec des 0
+                $nextCode = $actualPrefix . str_pad($numStr, $digits - strlen($actualPrefix), '0', STR_PAD_LEFT);
             }
 
             return response()->json([

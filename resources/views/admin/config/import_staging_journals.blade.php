@@ -126,8 +126,9 @@
                         @php
                             $existingAccountsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'déjà présent') || str_contains(implode(' ', $r['errors']), 'existe déjà'))->count();
                             $existingJournalsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'déjà existant') || str_contains(implode(' ', $r['errors']), 'existe déjà') || str_contains(implode(' ', $r['errors']), 'Doublon'))->count();
-                            $lengthErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'ne respecte pas la configuration') || str_contains(implode(' ', $r['errors']), 'invalide') || str_contains(implode(' ', $r['errors']), 'Max'))->count();
+                            $lengthErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'ne respecte pas la configuration') || str_contains(implode(' ', $r['errors']), 'invalide') || str_contains(implode(' ', $r['errors']), 'Max') || str_contains(implode(' ', $r['errors']), 'Erreur de formatage'))->count();
                             $formatErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Longueur incorrecte') || str_contains(implode(' ', $r['errors']), 'inconnu'))->count();
+                            $missingTresoErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Compte Inconnu : Le compte'))->count();
                             $missingErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'manquant') || str_contains(implode(' ', $r['errors']), 'Configuration'))->count();
                             $otherErrors = collect($rowsWithStatus)->filter(fn($r) => !empty($r['errors']) && 
                                 !str_contains(implode(' ', $r['errors']), 'manquant') && 
@@ -136,9 +137,26 @@
                                 !str_contains(implode(' ', $r['errors']), 'invalide') && 
                                 !str_contains(implode(' ', $r['errors']), 'Max') && 
                                 !str_contains(implode(' ', $r['errors']), 'inconnu') && 
+                                !str_contains(implode(' ', $r['errors']), 'Erreur de formatage') && 
+                                !str_contains(implode(' ', $r['errors']), 'Compte Inconnu') && 
                                 !str_contains(implode(' ', $r['errors']), 'déjà') && 
                                 !str_contains(implode(' ', $r['errors']), 'Doublon'))->count();
                         @endphp
+
+                        @if(isset($ignoredEmptyLines) && $ignoredEmptyLines > 0)
+                            <div class="alert alert-warning alert-dismissible fade show rounded-[20px] mb-4 border-0 shadow-sm" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-warning/10 p-2 rounded-lg me-3">
+                                        <i class="fa-solid fa-info-circle text-warning fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="alert-heading font-black mb-1">Information sur le fichier</h6>
+                                        <p class="mb-0 text-sm font-medium">{{ $ignoredEmptyLines }} ligne(s) ont été ignorée(s) car elles étaient totalement vides ou en dehors de la zone des données.</p>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        @endif
 
                         @if($errorCount > 0)
                         <div class="row mb-6">
@@ -174,6 +192,54 @@
                                                     <span class="badge bg-label-danger text-start py-2 px-3 fw-normal whitespace-normal">
                                                         <i class="fa-solid fa-trash me-1"></i> Supprimez les lignes inutiles.
                                                     </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @endif
+
+                                        @if($missingTresoErrors > 0)
+                                        <div class="col-md-4">
+                                            <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm h-100">
+                                                <div class="d-flex align-items-center gap-3 mb-2">
+                                                    <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
+                                                        <i class="fa-solid fa-building-columns"></i>
+                                                    </div>
+                                                    <h6 class="font-bold mb-0">Comptes Tréso. Inconnus ({{ $missingTresoErrors }})</h6>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <span class="text-[10px] fw-black text-rose-500 uppercase tracking-widest">RAISON</span>
+                                                    <p class="text-xs text-slate-500 mb-0">Comptes de trésorerie non existants dans le plan.</p>
+                                                </div>
+                                                <div>
+                                                    <span class="text-[10px] fw-black text-emerald-500 uppercase tracking-widest">ACTION REQUISE</span>
+                                                    @php
+                                                        $missingTresoNumbers = collect($rowsWithStatus)
+                                                            ->flatMap(function($r) {
+                                                                return collect($r['errors'])
+                                                                    ->filter(fn($e) => str_contains($e, "Compte Inconnu : Le compte"))
+                                                                    ->map(function($e) {
+                                                                        preg_match('/Le compte \'([^\']+)\'/', $e, $matches);
+                                                                        return $matches[1] ?? null;
+                                                                    });
+                                                            })
+                                                            ->filter()
+                                                            ->unique()
+                                                            ->values();
+                                                    @endphp
+                                                    @if($missingTresoNumbers->count() > 0)
+                                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                                            @foreach($missingTresoNumbers as $accNum)
+                                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" 
+                                                                        data-compte="{{ trim($accNum) }}"
+                                                                        data-libelle="Nouveau Compte Trésorerie"
+                                                                        onclick="quickCreateAccount(this)"
+                                                                        title="Cliquer pour créer ce compte">
+                                                                    <i class="fa-solid fa-plus me-1"></i> {{ trim($accNum) }}
+                                                                </button>
+                                                            @endforeach
+                                                        </div>
+                                                        <p class="text-xs text-slate-500 mt-2 mb-0 italic">Cliquez sur un compte rouge pour le créer. Les journaux seront mis à jour.</p>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -440,6 +506,20 @@
                                                                         title="Créer ce compte à la volée">
                                                                     <i class="fa-solid fa-plus-circle"></i>
                                                                 </button>
+                                                            @endif
+                                                            @if($import->type == 'journals' && $row['status'] == 'error' && str_contains(implode(' ', $row['errors']), 'Compte Inconnu'))
+                                                                @php 
+                                                                    $compteToCreate = $row["data"]["numero_original_compte"] ?? '';
+                                                                @endphp
+                                                                @if($compteToCreate)
+                                                                <button class="btn btn-icon btn-sm btn-label-success rounded-pill me-1" 
+                                                                        data-compte="{{ $compteToCreate }}"
+                                                                        data-libelle="Trésorerie {{ $row['data']['intitule'] ?? 'Nouveau' }}"
+                                                                        onclick="quickCreateAccount(this)"
+                                                                        title="Créer ce compte de trésorerie à la volée">
+                                                                    <i class="fa-solid fa-plus-circle"></i>
+                                                                </button>
+                                                                @endif
                                                             @endif
                                                              <button class="btn btn-icon btn-sm btn-label-primary rounded-pill me-1" 
                                                                     data-import-id="{{ $import->id }}"
