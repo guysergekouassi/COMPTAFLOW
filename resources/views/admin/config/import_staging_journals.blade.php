@@ -396,6 +396,9 @@
                                     <table class="table table-staging mb-0" style="min-width: 1200px;">
                                         <thead>
                                             <tr>
+                                                <th style="width: 40px;" class="text-center">
+                                                    <input type="checkbox" id="masterCheckbox" class="form-check-input" onclick="toggleAllCheckboxes(this)">
+                                                </th>
                                                 <th style="width: 50px;">STATUT</th>
                                                 @if($import->type == 'initial')
                                                     <th>NUMÉRO DE COMPTE</th>
@@ -430,7 +433,10 @@
                                             @endphp
 
                                                     @foreach($rowsWithStatus as $rowIndex => $row)
-                                                <tr class="{{ $row['status'] == 'valid' ? 'row-valid' : 'row-error' }}">
+                                                <tr class="{{ $row['status'] == 'valid' ? 'row-valid' : 'row-error' }}" data-status="{{ $row['status'] }}">
+                                                    <td class="text-center">
+                                                        <input type="checkbox" class="row-checkbox form-check-input" data-record-id="{{ $row['record_id'] ?? $rowIndex }}">
+                                                    </td>
                                                     <td class="text-center">
                                                         <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : 'bg-rose-500' }}" 
                                                               title="{{ implode(', ', $row['errors']) }}"></span>
@@ -531,8 +537,9 @@
                                                             @endif
                                                              <button class="btn btn-icon btn-sm btn-label-primary rounded-pill me-1" 
                                                                     data-import-id="{{ $import->id }}"
+                                                                    data-record-id="{{ $row['record_id'] ?? $row['index'] }}"
                                                                     data-row-index="{{ $row["index"] }}"
-                                                                    data-raw-data="{{ json_encode($import->raw_data[$row["index"]]) }}"
+                                                                    data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-mapping="{{ json_encode($mapping) }}"
                                                                     data-overrides="{{ json_encode([
                                                                         'type' => $row['data']['type_override_index'] ?? null,
@@ -554,7 +561,7 @@
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
-                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['index'] }})"
+                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['record_id'] ?? $row['index'] }})"
                                                                     title="Supprimer cette ligne de l'import">
                                                                 <i class="fa-solid fa-trash"></i>
                                                             </button>
@@ -687,7 +694,7 @@
             filterTimeout = setTimeout(() => filterTable(), 300);
         }
 
-        function deleteStagingRow(importId, rowIndex) {
+        function deleteStagingRow(importId, recordId) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
                 text: "Cette action retirera définitivement la ligne de l'importation en cours.",
@@ -702,7 +709,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/import/delete-row/${importId}/${recordId}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -726,12 +733,12 @@
             console.log("Edit Journal - Button clicked", btn);
             try {
                 const importId = btn.dataset.importId;
-                const rowIndex = btn.dataset.rowIndex;
-                const rawData = JSON.parse(btn.dataset.rawData);
+                const recordId = btn.dataset.recordId; // Use recordId directly
+                const rawData = JSON.parse(btn.dataset.rowData);
                 const mapping = JSON.parse(btn.dataset.mapping);
                 const overrideIndexes = JSON.parse(btn.dataset.overrides || '{}');
 
-                console.log("Edit Journal - Data parsed", { importId, rowIndex, rawData, mapping, overrideIndexes });
+                console.log("Edit Journal - Data parsed", { importId, recordId, rawData, mapping, overrideIndexes });
 
                 // Récupération des données actuelles
                 const intituleCol = mapping['intitule'] !== "AUTO" ? mapping['intitule'] : null;
@@ -899,7 +906,7 @@
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
                         Swal.showLoading();
-                        fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
+                        fetch(`/admin/import/update-row/${importId}/${recordId}`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

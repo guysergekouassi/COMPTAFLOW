@@ -291,7 +291,7 @@
                                             @foreach($rowsWithStatus as $rowIndex => $row)
                                                 <tr class="staging-row {{ $row['status'] == 'valid' ? 'row-valid' : ($row['status'] == 'ignored' ? 'row-warning' : 'row-error') }}" data-status="{{ $row['status'] }}">
                                                     <td class="text-center">
-                                                        <input type="checkbox" class="row-checkbox form-check-input" data-index="{{ $rowIndex }}">
+                                                        <input type="checkbox" class="row-checkbox form-check-input" data-record-id="{{ $row['record_id'] ?? $rowIndex }}">
                                                     </td>
                                                     <td class="text-center">
                                                         <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : ($row['status'] == 'ignored' ? 'bg-warning' : 'bg-rose-500') }}" 
@@ -394,8 +394,9 @@
                                                             @endif
                                                             <button class="btn btn-icon btn-sm btn-label-primary rounded-pill me-1" 
                                                                     data-import-id="{{ $import->id }}"
+                                                                    data-record-id="{{ $row['record_id'] ?? $row['index'] }}"
                                                                     data-row-index="{{ $row["index"] }}"
-                                                                    data-raw-data="{{ json_encode($import->raw_data[$row["index"]]) }}"
+                                                                    data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-mapping="{{ json_encode($mapping) }}"
                                                                     onclick="editStagingRow(this)"
                                                                     title="Modifier cette ligne">
@@ -409,7 +410,7 @@
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
-                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['index'] }})"
+                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['record_id'] ?? $rowIndex }})"
                                                                     title="Supprimer cette ligne de l'import">
                                                                 <i class="fa-solid fa-trash"></i>
                                                             </button>
@@ -541,7 +542,8 @@
         function editStagingRow(btn) {
             const importId = btn.dataset.importId;
             const rowIndex = btn.dataset.rowIndices || btn.dataset.rowIndex;
-            const rawData = JSON.parse(btn.dataset.rawData);
+            const recordId = btn.dataset.recordId || rowIndex; // Uses db id if available
+            const rowData = JSON.parse(btn.dataset.rowData);
             const mapping = JSON.parse(btn.dataset.mapping);
 
             let html = '<div class="text-start">';
@@ -551,7 +553,7 @@
                 if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
                 
                 let label = fieldKey.replace(/_/g, ' ').toUpperCase();
-                let val = rawData[colIndex] || "";
+                let val = rowData[fieldKey] || ""; // Use the mapped fieldkey from row data
                 
                 html += `<div class="mb-3">
                             <label class="form-label text-xs font-bold text-slate-500">${label}</label>
@@ -580,7 +582,9 @@
                     let inputs = document.querySelectorAll('.swal-edit-input');
                     if (inputs.length === 0) return null;
                     inputs.forEach(input => {
+                        // send both field and col
                         values[input.dataset.col] = input.value;
+                        values[input.dataset.field] = input.value;
                     });
                     console.log("Staging Edit - Collected values:", values);
                     return values;
@@ -831,7 +835,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const indices = Array.from(errorCheckboxes).map(cb => parseInt(cb.dataset.index));
+                    const indices = Array.from(errorCheckboxes).map(cb => cb.dataset.recordId);
                     performBulkDelete(indices);
                 }
             });

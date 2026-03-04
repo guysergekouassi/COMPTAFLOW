@@ -327,6 +327,9 @@
                                     <table class="table table-staging mb-0" style="min-width: 1200px;">
                                         <thead>
                                             <tr>
+                                                <th style="width: 30px;">
+                                                    <input type="checkbox" id="masterCheckbox" class="form-check-input" onclick="toggleAllCheckboxes(this)">
+                                                </th>
                                                 <th style="width: 50px;">STATUT</th>
                                                 @if($import->type == 'initial')
                                                     <th>NUMÉRO DE COMPTE</th>
@@ -361,7 +364,10 @@
                                             @endphp
 
                                             @foreach($rowsWithStatus as $rowIndex => $row)
-                                                 <tr class="{{ $row['status'] == 'valid' ? 'row-valid' : 'row-error' }}">
+                                                 <tr class="staging-row {{ $row['status'] == 'valid' ? 'row-valid' : ($row['status'] == 'ignored' ? 'row-warning' : 'row-error') }}" data-status="{{ $row['status'] }}">
+                                                     <td class="text-center">
+                                                         <input type="checkbox" class="row-checkbox form-check-input" data-record-id="{{ $row['record_id'] ?? $rowIndex }}">
+                                                     </td>
                                                      <td class="text-center">
                                                          <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : 'bg-rose-500' }}" 
                                                                title="{{ implode(', ', $row['errors']) }}"></span>
@@ -429,8 +435,9 @@
                                                             @endif
                                                             <button class="btn btn-icon btn-sm btn-label-primary rounded-pill me-1" 
                                                                     data-import-id="{{ $import->id }}"
+                                                                    data-record-id="{{ $row['record_id'] ?? $row['index'] }}"
                                                                     data-row-index="{{ $row["index"] }}"
-                                                                    data-raw-data="{{ json_encode($import->raw_data[$row["index"]]) }}"
+                                                                    data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-mapping="{{ json_encode($mapping) }}"
                                                                     onclick="editStagingRow(this)"
                                                                     title="Modifier cette ligne">
@@ -444,7 +451,7 @@
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
-                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['index'] }})"
+                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['record_id'] ?? $row['index'] }})"
                                                                     title="Supprimer cette ligne de l'import">
                                                                 <i class="fa-solid fa-trash"></i>
                                                             </button>
@@ -564,7 +571,7 @@
             }
         }
 
-        function deleteStagingRow(importId, rowIndex) {
+        function deleteStagingRow(importId, recordId) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
                 text: "Cette action retirera définitivement la ligne de l'importation en cours.",
@@ -579,7 +586,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/import/delete-row/${importId}/${recordId}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -601,11 +608,12 @@
             console.log("Edit Tiers - Button clicked", btn);
             try {
                 const importId = btn.dataset.importId;
-                const rowIndex = btn.dataset.rowIndex;
-                const rawData = JSON.parse(btn.dataset.rawData);
+                const rowIndex = btn.dataset.rowIndices || btn.dataset.rowIndex;
+                const recordId = btn.dataset.recordId || rowIndex;
+                const rowData = JSON.parse(btn.dataset.rowData);
                 const mapping = JSON.parse(btn.dataset.mapping);
 
-                console.log("Edit Tiers - Data parsed", { importId, rowIndex, rawData, mapping });
+                console.log("Edit Tiers - Data parsed", { importId, rowIndex, recordId, rowData, mapping });
 
                 let html = '<div class="text-start">';
                 
@@ -614,15 +622,14 @@
                     if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
                     
                     let label = fieldKey.replace(/_/g, ' ').toUpperCase();
-                    let val = rawData[colIndex] || "";
+                    let val = rowData[fieldKey] || "";
                     
                     html += `<div class="mb-3">
                                 <label class="form-label text-xs font-bold text-slate-500">${label}</label>
                                 <input type="text" class="form-control swal-edit-input" 
                                        data-field="${fieldKey}" 
                                        data-col="${colIndex}" 
-                                       value="${val}"
-                                       oninput="syncSameColInputs(this)">
+                                       value="${val}">
                              </div>`;
                 });
                 html += '</div>';
@@ -643,9 +650,8 @@
                         let inputs = document.querySelectorAll('.swal-edit-input');
                         if (inputs.length === 0) return null;
                         inputs.forEach(input => {
-                            if (input.dataset.col !== undefined) {
-                                values[input.dataset.col] = input.value;
-                            }
+                            values[input.dataset.col] = input.value;
+                            values[input.dataset.field] = input.value;
                         });
                         console.log("Staging Edit - Collected values:", values);
                         return values;
@@ -653,7 +659,7 @@
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
                         Swal.showLoading();
-                        fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
+                        fetch(`/admin/import/update-row/${importId}/${recordId}`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

@@ -2669,6 +2669,7 @@ class AdminConfigController extends Controller
 
             $rowsWithStatus[] = [
                 'index' => $index,
+                'record_id' => $rowRecord->id,
                 'data' => $row,
                 'status' => $status,
                 'errors' => $errors,
@@ -3693,36 +3694,32 @@ class AdminConfigController extends Controller
      */
     public function updateRow(Request $request, $id, $index)
     {
-        Log::info("STAGING UPDATE ATTEMPT: ID=$id, Index=$index");
+        Log::info("STAGING UPDATE ATTEMPT: BatchID=$id, RecordID=$index");
         try {
-            $import = ImportStaging::findOrFail($id);
-            $data = $import->raw_data;
+            // L'index envoyé par le frontend est maintenant l'ID de l'enregistrement ImportStaging
+            $importRow = ImportStaging::findOrFail($index);
             
-            if (!isset($data[(int)$index]) && !isset($data[(string)$index])) {
-                Log::warning("STAGING UPDATE: Index $index not found in raw_data", ['data_keys' => array_keys($data)]);
-                return response()->json(['success' => false, 'message' => "Ligne non trouvée (Index: $index)."], 404);
-            }
-
-            $targetIndex = isset($data[(int)$index]) ? (int)$index : (string)$index;
+            // Le champ raw_data contient le JSON de la ligne spécifique
+            $data = is_string($importRow->raw_data) ? json_decode($importRow->raw_data, true) : $importRow->raw_data;
+            if (!$data) $data = [];
+            
             $newValues = $request->input('values');
             
             Log::info("STAGING UPDATE: Data received", [
-                'target_index' => $targetIndex,
                 'provided_values' => $newValues,
-                'current_row' => $data[$targetIndex] ?? 'MISSING'
+                'current_row' => $data
             ]);
 
-            foreach ($newValues as $colIndex => $value) {
-                $data[$targetIndex][(string)$colIndex] = $value;
-                // Si c'est un tableau numérique, PHP gère la conversion
+            foreach ($newValues as $colKey => $value) {
+                $data[(string)$colKey] = $value;
             }
 
-            // Forcer l'assignation et la sauvegarde
-            $import->raw_data = $data;
-            $import->save();
+            // Mettre à jour et sauvegarder la ligne
+            $importRow->raw_data = json_encode($data);
+            $importRow->save();
 
             Log::info("STAGING UPDATE: SUCCESS", [
-                'saved_row' => $import->raw_data[$targetIndex] ?? 'ERROR'
+                'saved_row' => $importRow->raw_data
             ]);
 
             return response()->json(['success' => true, 'message' => 'Ligne mise à jour avec succès.']);
@@ -3738,17 +3735,9 @@ class AdminConfigController extends Controller
     public function deleteRow($id, $index)
     {
         try {
-            $import = ImportStaging::findOrFail($id);
-            $data = $import->raw_data;
-            
-            if (!isset($data[$index])) {
-                return response()->json(['success' => false, 'message' => 'Ligne non trouvée.'], 404);
-            }
-
-            // Supprimer la ligne et réindexer
-            array_splice($data, $index, 1);
-            
-            $import->update(['raw_data' => $data]);
+            // L'index envoyé est l'ID de la ligne ImportStaging
+            $importRow = ImportStaging::findOrFail($index);
+            $importRow->delete();
 
             return response()->json(['success' => true, 'message' => 'Ligne supprimée de l\'import.']);
         } catch (\Exception $e) {
@@ -3762,26 +3751,20 @@ class AdminConfigController extends Controller
     public function deleteMultipleRows($id, Request $request)
     {
         try {
-            $import = ImportStaging::findOrFail($id);
+            // L'ID reçu est le batch_id, et les indices sont les index absolus dans la vue.
+            // Cependant, pour bien faire, JS nous a envoyé les "index" (rowIndex data attr).
+            // Mais wait, si on supprime par index loop, C'EST DANGEREUX car la requête ne donne pas tjs l'ID DB.
+            // On a besoin des `record_id`. Si $indices contient les db ids:
             $indices = $request->input('indices', []);
             
             if (empty($indices)) {
                 return response()->json(['success' => false, 'message' => 'Aucune ligne sélectionnée.'], 400);
             }
 
-            $data = $import->raw_data;
-            
-            // Trier les indices par ordre décroissant pour éviter les décalages lors de la suppression
-            sort($indices);
-            $indices = array_reverse($indices);
-
-            foreach ($indices as $index) {
-                if (isset($data[$index])) {
-                    array_splice($data, $index, 1);
-                }
-            }
-            
-            $import->update(['raw_data' => $data]);
+            // S'assurer de ne supprimer que les rows de ce batch
+            $deletedCount = ImportStaging::where('batch_id', $id)
+                ->whereIn('id', $indices)
+                ->delete();
 
             return response()->json(['success' => true, 'message' => count($indices) . ' lignes supprimées de l\'import.']);
         } catch (\Exception $e) {
