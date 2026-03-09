@@ -319,6 +319,30 @@ class UniversalImportController extends Controller
                 $validPayloads[] = $payload;
             }
 
+            // PHASE 1.5: Balance Verification for Entries
+            if ($internalType === 'entries') {
+                $groups = [];
+                foreach ($validPayloads as $index => $p) {
+                    $key = ($p['date_ecriture'] ?? 'no-date') . '_' . ($p['n_saisie'] ?? 'no-saisie');
+                    if (!isset($groups[$key])) {
+                        $groups[$key] = ['debit' => 0.0, 'credit' => 0.0, 'lines' => []];
+                    }
+                    $groups[$key]['debit'] += (float)($p['debit'] ?? 0);
+                    $groups[$key]['credit'] += (float)($p['credit'] ?? 0);
+                    $groups[$key]['lines'][] = $index + 2; // Approximative line number
+                }
+
+                foreach ($groups as $key => $totals) {
+                    // Use a small epsilon for float comparison
+                    if (abs($totals['debit'] - $totals['credit']) > 0.001) {
+                        $parts = explode('_', $key);
+                        $date = $parts[0];
+                        $saisie = $parts[1] ?? 'Inconnue';
+                        $errors[] = "Écriture déséquilibrée pour la saisie '$saisie' du $date (Débit: {$totals['debit']}, Crédit: {$totals['credit']}).";
+                    }
+                }
+            }
+
             if (count($errors) > 0) {
                 // Fail immediately "Infallible"
                 DB::rollBack();
@@ -389,7 +413,7 @@ class UniversalImportController extends Controller
                         ->where('code_journal', $p['code_journal'] ?? '')
                         ->value('id');
                       $p['plan_comptable_id'] = \App\Models\PlanComptable::where('company_id', $companyId)
-                        ->where('numero_de_compte', $p['numero_compte'] ?? '')
+                        ->where('numero_de_compte', $p['numero_de_compte'] ?? '')
                         ->value('id');
                      
                      // Automating Treasury Post Selection
@@ -404,7 +428,7 @@ class UniversalImportController extends Controller
                      }
                      
                      $p['plan_tiers_id'] = \App\Models\PlanTiers::where('company_id', $companyId)
-                        ->where('numero_de_tiers', $p['compte_tiers'] ?? '')
+                        ->where('numero_de_tiers', $p['numero_de_tiers'] ?? '')
                         ->value('id');
 
                      if (!$p['code_journal_id']) {

@@ -62,18 +62,54 @@ class UniversalParser
                 throw new \Exception("Le fichier est vide.");
             }
 
-            // Assume first row is headers
-            $headers = array_shift($rows);
-            $headers = array_map('trim', $headers);
+            // Heuristic to find the header row instead of just shifting the first row
+            $headerRowIndex = -1;
+            $headerTokens = [
+                'date', 'jour', 'journal', 'codejournal', 'compte', 'tiers', 'libelle', 'debit', 'credit',
+                'reference', 'piece', 'saisie', 'nsaisie', 'intitule', 'numero'
+            ];
+
+            foreach ($rows as $index => $row) {
+                if ($index > 20) break; // Don't search too deep
+                $hits = 0;
+                foreach ($row as $cell) {
+                    $cell = trim((string)$cell);
+                    if ($cell === '') continue;
+                    $clean = strtolower(preg_replace('/[^a-z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $cell)));
+                    if ($clean === '') continue;
+                    foreach ($headerTokens as $t) {
+                        if (str_contains($clean, $t)) { $hits++; break; }
+                    }
+                }
+                // If we find a row with at least 2 header-like columns, assume it's the header
+                if ($hits >= 2) {
+                    $headerRowIndex = $index;
+                    break;
+                }
+            }
+
+            if ($headerRowIndex !== -1) {
+                // If we found a header row, everything before it is title/junk
+                // We keep everything AFTER the header row as data
+                $headers = array_map('trim', $rows[$headerRowIndex]);
+                $rows = array_slice($rows, $headerRowIndex + 1);
+            } else {
+                // Fallback to legacy behavior if no clear headers found
+                $headers = array_shift($rows);
+                $headers = array_map('trim', $headers);
+            }
             
             // Verify headers are not empty
             if (empty(array_filter($headers))) {
                  throw new \Exception("Les en-têtes de colonnes sont vides ou introuvables.");
             }
 
+            // Filter out empty rows at the end of data
+            $rows = array_filter($rows, fn($r) => !empty(array_filter($r)));
+
             return [
                 'headers' => $headers,
-                'rows' => $rows
+                'rows' => array_values($rows)
             ];
 
         } catch (\Exception $e) {
