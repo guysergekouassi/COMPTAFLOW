@@ -81,30 +81,38 @@ class AccountingReportingService
         // Structure détaillée Actif
         $actif = [
             'immobilise' => [
-                'total' => 0,
+                'total_brut' => 0,
+                'total_amort' => 0,
+                'total_net' => 0,
                 'subcategories' => [
-                    'charges_immo' => ['label' => 'Charges immobilisées', 'total' => 0, 'details' => []], // 20
-                    'immo_incorp' => ['label' => 'Immobilisations incorporelles', 'total' => 0, 'details' => []], // 21
-                    'immo_corp' => ['label' => 'Immobilisations corporelles', 'total' => 0, 'details' => []], // 22, 23, 24
-                    'immo_fin' => ['label' => 'Immobilisations financières', 'total' => 0, 'details' => []], // 25, 26, 27
+                    'charges_immo' => ['label' => 'Charges immobilisées', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 20
+                    'immo_incorp' => ['label' => 'Immobilisations incorporelles', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 21
+                    'immo_corp' => ['label' => 'Immobilisations corporelles', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 22, 23, 24
+                    'immo_fin' => ['label' => 'Immobilisations financières', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 25, 26, 27
                 ]
             ],
             'circulant' => [
-                'total' => 0,
+                'total_brut' => 0,
+                'total_amort' => 0,
+                'total_net' => 0,
                 'subcategories' => [
-                    'stocks' => ['label' => 'Stocks', 'total' => 0, 'details' => []], // 3
-                    'creances' => ['label' => 'Créances', 'total' => 0, 'details' => []], // 4 (Débiteur)
+                    'stocks' => ['label' => 'Stocks', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 3
+                    'creances' => ['label' => 'Créances', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 4 (Débiteur)
                 ]
             ],
             'tresorerie' => [
-                'total' => 0,
+                'total_brut' => 0,
+                'total_amort' => 0,
+                'total_net' => 0,
                 'subcategories' => [
-                    'titres' => ['label' => 'Titres de placement', 'total' => 0, 'details' => []], // 50
-                    'banque' => ['label' => 'Banque', 'total' => 0, 'details' => []], // 52, 53... (Débiteur)
-                    'caisse' => ['label' => 'Caisse', 'total' => 0, 'details' => []], // 57, 58 (Débiteur)
+                    'titres' => ['label' => 'Titres de placement', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 50
+                    'banque' => ['label' => 'Banque', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 52, 53... (Débiteur)
+                    'caisse' => ['label' => 'Caisse', 'brut' => 0, 'amort' => 0, 'net' => 0, 'details' => []], // 57, 58 (Débiteur)
                 ]
             ],
-            'total' => 0
+            'total_brut' => 0,
+            'total_amort' => 0,
+            'total_net' => 0
         ];
 
         // Structure détaillée Passif
@@ -152,49 +160,57 @@ class AccountingReportingService
             $solde = $ecriture->debit - $ecriture->credit;
             if (abs($solde) < 0.01) continue;
 
-            // --- ACTIF (Solde Débiteur > 0 en général, sauf 28, 29 Amort/Prov qui sont Créditeurs mais classés en Actif en moins) ---
-            // Pour simplifier selon l'image : on classe selon la racine.
-            
+            // --- ACTIF ---
             // CLASSE 2 : IMMOBILISATIONS
             if (str_starts_with($n, '2')) {
-                // Gestion des amortissements/provisions (28, 29) -> Vont en diminution de l'actif
-                // Mais ici on fait un bilan NET ou BRUT ? Image montre "Actif Immobilisé". Souvent NET.
-                // Si on fait NET, on ajoute le solde (qui peut être négatif si Amortissement).
-                
-                if (str_starts_with($n, '20')) $target = &$actif['immobilise']['subcategories']['charges_immo'];
-                elseif (str_starts_with($n, '21')) $target = &$actif['immobilise']['subcategories']['immo_incorp'];
-                elseif (str_starts_with($n, '22') || str_starts_with($n, '23') || str_starts_with($n, '24')) $target = &$actif['immobilise']['subcategories']['immo_corp'];
+                // Determine category
+                if (str_starts_with($n, '20')) $cat = 'charges_immo';
+                elseif (str_starts_with($n, '21')) $cat = 'immo_incorp';
+                elseif (str_starts_with($n, '22') || str_starts_with($n, '23') || str_starts_with($n, '24')) $cat = 'immo_corp';
                 elseif (str_starts_with($n, '28') || str_starts_with($n, '29')) {
-                    // Amortissements : on les met dans la catégorie de l'immo correspondante ou globale ?
-                    // Simplifions : 280/290->charges, 281/291->incorp, reste->corp
-                    if(str_starts_with($n, '280') || str_starts_with($n, '290')) $target = &$actif['immobilise']['subcategories']['charges_immo'];
-                    elseif(str_starts_with($n, '281') || str_starts_with($n, '291')) $target = &$actif['immobilise']['subcategories']['immo_incorp'];
-                    else $target = &$actif['immobilise']['subcategories']['immo_corp'];
+                    if(str_starts_with($n, '280') || str_starts_with($n, '290')) $cat = 'charges_immo';
+                    elseif(str_starts_with($n, '281') || str_starts_with($n, '291')) $cat = 'immo_incorp';
+                    else $cat = 'immo_corp';
                 }
-                else $target = &$actif['immobilise']['subcategories']['immo_fin']; // 25, 26, 27
+                else $cat = 'immo_fin';
 
-                if ($target) {
-                    $target['total'] += $solde;
-                    if ($detailed) $this->addDetail($target['details'], $compte, $solde);
+                $target = &$actif['immobilise']['subcategories'][$cat];
+                
+                if (str_starts_with($n, '28') || str_starts_with($n, '29')) {
+                    $target['amort'] += abs($solde); // Amortissements/Depreciations are credits so solde is negative, we take positive value
+                } else {
+                    $target['brut'] += $solde;
                 }
+                
+                $target['net'] = $target['brut'] - $target['amort'];
+                if ($detailed) $this->addDetail($target['details'], $compte, $solde);
             }
 
             // CLASSE 3 : STOCKS
             elseif (str_starts_with($n, '3')) {
                 $target = &$actif['circulant']['subcategories']['stocks'];
-                $target['total'] += $solde;
+                if (str_starts_with($n, '39')) {
+                    $target['amort'] += abs($solde);
+                } else {
+                    $target['brut'] += $solde;
+                }
+                $target['net'] = $target['brut'] - $target['amort'];
                 if ($detailed) $this->addDetail($target['details'], $compte, $solde);
             }
 
-            // CLASSE 4 : TIERS (Active ou Passive selon solde)
+            // CLASSE 4 : TIERS
             elseif (str_starts_with($n, '4')) {
                 if ($solde > 0) {
-                    // ACTIF : CRÉANCES
                     $target = &$actif['circulant']['subcategories']['creances'];
-                    $target['total'] += $solde;
+                    if (str_starts_with($n, '49')) {
+                        $target['amort'] += abs($solde);
+                    } else {
+                        $target['brut'] += $solde;
+                    }
+                    $target['net'] = $target['brut'] - $target['amort'];
                     if ($detailed) $this->addDetail($target['details'], $compte, $solde);
                 } else {
-                    // PASSIF : DETTES (Solde Credit < 0, on prend valeur absolue)
+                    // PASSIF : DETTES
                     if (str_starts_with($n, '40')) $target = &$passif['passif_circ']['subcategories']['fournisseurs'];
                     elseif (str_starts_with($n, '44')) $target = &$passif['passif_circ']['subcategories']['fiscales'];
                     elseif (str_starts_with($n, '42') || str_starts_with($n, '43')) $target = &$passif['passif_circ']['subcategories']['sociales'];
@@ -208,58 +224,58 @@ class AccountingReportingService
             // CLASSE 5 : TRÉSORERIE
             elseif (str_starts_with($n, '5')) {
                 if ($solde >= 0) {
-                    // ACTIF
-                    if (str_starts_with($n, '50')) $target = &$actif['tresorerie']['subcategories']['titres'];
-                    elseif (str_starts_with($n, '57') || str_starts_with($n, '58')) $target = &$actif['tresorerie']['subcategories']['caisse'];
-                    else $target = &$actif['tresorerie']['subcategories']['banque'];
-
-                    $target['total'] += $solde;
+                    if (str_starts_with($n, '50')) $cat = 'titres';
+                    elseif (str_starts_with($n, '57') || str_starts_with($n, '58')) $cat = 'caisse';
+                    else $cat = 'banque';
+                    
+                    $target = &$actif['tresorerie']['subcategories'][$cat];
+                    if (str_starts_with($n, '59')) {
+                        $target['amort'] += abs($solde);
+                    } else {
+                        $target['brut'] += $solde;
+                    }
+                    $target['net'] = $target['brut'] - $target['amort'];
                     if ($detailed) $this->addDetail($target['details'], $compte, $solde);
                 } else {
-                    // PASSIF
                     $target = &$passif['tresorerie']['subcategories']['decouverts'];
                     $target['total'] += abs($solde);
                     if ($detailed) $this->addDetail($target['details'], $compte, abs($solde));
                 }
             }
 
-            // CLASSE 1 : CAPITAUX & DETTES FIN
+            // CLASSE 1 : CAPITAUX
             elseif (str_starts_with($n, '1')) {
                 if (str_starts_with($n, '16')) {
-                    // Dettes financières
                     $target = &$passif['dettes_fin']['subcategories']['emprunts'];
-                    $target['total'] += abs($solde); // Créditeur
-                    if ($detailed) $this->addDetail($target['details'], $compte, abs($solde));
+                    $target['total'] += abs($solde);
                 } elseif (str_starts_with($n, '13')) {
-                    // Résultat Net (si clos)
                     $target = &$passif['capitaux']['subcategories']['resultat'];
-                    $target['total'] += (-$solde); // Compte 13 : Crediteur = Benefice (Positif dans capitaux), Debiteur = Perte (Negatif)
-                    if ($detailed) $this->addDetail($target['details'], $compte, -$solde);
+                    $target['total'] += (-$solde);
                 } else {
-                    // Capitaux
                     if (str_starts_with($n, '10')) $target = &$passif['capitaux']['subcategories']['capital'];
                     elseif (str_starts_with($n, '11')) $target = &$passif['capitaux']['subcategories']['reserves'];
                     elseif (str_starts_with($n, '12')) $target = &$passif['capitaux']['subcategories']['report'];
                     elseif (str_starts_with($n, '14')) $target = &$passif['capitaux']['subcategories']['subventions'];
                     elseif (str_starts_with($n, '15')) $target = &$passif['capitaux']['subcategories']['provisions'];
-                    else {
-                        // Autres capitaux, mis dans Reserves par defaut
-                        $target = &$passif['capitaux']['subcategories']['reserves'];
-                    }
+                    else $target = &$passif['capitaux']['subcategories']['reserves'];
 
                     $target['total'] += abs($solde);
-                    if ($detailed) $this->addDetail($target['details'], $compte, abs($solde));
                 }
+                if ($detailed) $this->addDetail($target['details'], $compte, -$solde);
             }
         }
 
         // Calculs Totaux Sections Actif
-        $actif['immobilise']['total'] = array_sum(array_column($actif['immobilise']['subcategories'], 'total'));
-        $actif['circulant']['total'] = array_sum(array_column($actif['circulant']['subcategories'], 'total'));
-        $actif['tresorerie']['total'] = array_sum(array_column($actif['tresorerie']['subcategories'], 'total'));
-        $actif['total'] = $actif['immobilise']['total'] + $actif['circulant']['total'] + $actif['tresorerie']['total'];
+        foreach (['immobilise', 'circulant', 'tresorerie'] as $section) {
+            $actif[$section]['total_brut'] = array_sum(array_column($actif[$section]['subcategories'], 'brut'));
+            $actif[$section]['total_amort'] = array_sum(array_column($actif[$section]['subcategories'], 'amort'));
+            $actif[$section]['total_net'] = array_sum(array_column($actif[$section]['subcategories'], 'net'));
+        }
+        $actif['total_brut'] = $actif['immobilise']['total_brut'] + $actif['circulant']['total_brut'] + $actif['tresorerie']['total_brut'];
+        $actif['total_amort'] = $actif['immobilise']['total_amort'] + $actif['circulant']['total_amort'] + $actif['tresorerie']['total_amort'];
+        $actif['total_net'] = $actif['immobilise']['total_net'] + $actif['circulant']['total_net'] + $actif['tresorerie']['total_net'];
 
-        // Calculs Totaux Sections Passif (Hors Résultat pour l'instant si pas de 13)
+        // Calculs Totaux Sections Passif
         $passif['capitaux']['total'] = array_sum(array_column($passif['capitaux']['subcategories'], 'total'));
         $passif['dettes_fin']['total'] = array_sum(array_column($passif['dettes_fin']['subcategories'], 'total'));
         $passif['passif_circ']['total'] = array_sum(array_column($passif['passif_circ']['subcategories'], 'total'));
@@ -267,8 +283,8 @@ class AccountingReportingService
         
         $totalPassifProvisoire = $passif['capitaux']['total'] + $passif['dettes_fin']['total'] + $passif['passif_circ']['total'] + $passif['tresorerie']['total'];
 
-        // Calcul automatique du résultat si déséquilibre (Comptes 6 et 7 non soldés)
-        $difference = $actif['total'] - $totalPassifProvisoire;
+        // Calcul automatique du résultat si déséquilibre
+        $difference = $actif['total_net'] - $totalPassifProvisoire;
         
         // Si la différence n'est pas nulle, c'est le résultat de la période
         // (Actif = Passif + Résultat). Donc Résultat = Actif - Passif.
@@ -294,8 +310,8 @@ class AccountingReportingService
         return [
             'actif' => $actif,
             'passif' => $passif,
-            'equilibre' => abs($actif['total'] - $passif['total']) < 0.01,
-            'difference' => $actif['total'] - $passif['total']
+            'equilibre' => abs($actif['total_net'] - $passif['total']) < 0.01,
+            'difference' => $actif['total_net'] - $passif['total']
         ];
     }
 

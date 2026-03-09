@@ -579,6 +579,14 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
         Route::get('/resultat/excel', [AnalyticalReportController::class, 'exportResultatExcel'])->name('resultat.excel');
         Route::get('/resultat/pdf', [AnalyticalReportController::class, 'exportResultatPdf'])->name('resultat.pdf');
     });
+
+    // ***************** ROUTES LIASSE FISCALE *****************
+    Route::group(['prefix' => 'reporting/liasse', 'as' => 'reporting.liasse.'], function () {
+        Route::get('/', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'index'])->name('index');
+        Route::get('/page/{page}', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'getPage'])->name('page');
+        Route::post('/save', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'storeManualData'])->name('save');
+        Route::get('/export/{format}', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'export'])->name('export');
+    });
 });
 
 Route::middleware(['auth'])->group(function () {

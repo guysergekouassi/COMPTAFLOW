@@ -875,6 +875,20 @@
             </div>
             @endif
 
+            {{-- DOCUMENT COMPTABLE --}}
+            @php
+                $showDocumentComptable = auth()->user()->hasPermission('bilan');
+            @endphp
+            @if ($showDocumentComptable)
+            <div class="menu-section">
+                <div class="menu-section-header">DOCUMENT COMPTABLE</div>
+                <a href="{{ route('reporting.liasse.index') }}" class="menu-link-new {{ request()->routeIs('reporting.liasse.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Liasse Fiscale (DGI)</span>
+                </a>
+            </div>
+            @endif
+
 
         @else
             {{-- MODE GOUVERNANCE (Pas de compte actif) --}}

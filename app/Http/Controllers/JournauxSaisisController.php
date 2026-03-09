@@ -47,7 +47,7 @@ class JournauxSaisisController extends Controller
     }
 
     /**
-     * Trouve un journal spécifique via AJAX.
+     * Trouve un journal spécifique ou le crée s'il n'existe pas.
      */
     public function find(Request $request)
     {
@@ -59,8 +59,10 @@ class JournauxSaisisController extends Controller
             ], 400);
         }
         
-        // SÉCURITÉ : Vérifier que l'exercice demandé correspond au contexte session
+        $companyId = session('current_company_id', Auth::user()->company_id);
         $exerciceContextId = session('current_exercice_id');
+
+        // SÉCURITÉ : Vérifier que l'exercice demandé correspond au contexte session
         if ($exerciceContextId && $request->exercice_id != $exerciceContextId) {
             return response()->json([
                 'success' => false,
@@ -68,26 +70,30 @@ class JournauxSaisisController extends Controller
             ], 403);
         }
 
+        // Tenter de trouver le journal
         $journal = JournalSaisi::where([
                 ['annee', '=', $request->annee],
                 ['mois', '=', $request->mois],
                 ['exercices_comptables_id', '=', $request->exercice_id],
                 ['code_journals_id', '=', $request->code_journal_id],
-                ['company_id', '=', session('current_company_id', Auth::user()->company_id)]
-            ])
-            ->select('id') // On ne récupère que l'ID pour optimiser la mémoire
-            ->first();
+                ['company_id', '=', $companyId]
+            ])->first();
 
-        if ($journal) {
-            return response()->json([
-                'success' => true,
-                'id' => $journal->id
+        // Si le journal n'existe pas, on le crée dynamiquement (Globalisation)
+        if (!$journal) {
+            $journal = JournalSaisi::create([
+                'annee' => $request->annee,
+                'mois' => $request->mois,
+                'exercices_comptables_id' => $request->exercice_id,
+                'code_journals_id' => $request->code_journal_id,
+                'user_id' => Auth::id(),
+                'company_id' => $companyId,
             ]);
         }
 
         return response()->json([
-            'success' => false,
-            'message' => 'Aucun journal trouvé pour cette période'
-        ], 200);
+            'success' => true,
+            'id' => $journal->id
+        ]);
     }
 }

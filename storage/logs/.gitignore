@@ -2,6 +2,9 @@
 !.gitignore
 # --- Fichiers texte ---
 *.txt
+*.html
+*.py
+
 
 # --- Tests ---
 # Ignore les dossiers de tests communs
