@@ -9,7 +9,8 @@
         echo "<tr class='{$rowClass}'>";
         echo "<td class='text-center fw-bold text-secondary'>{$ref}</td>";
         echo "<td class='col-label'>" . ($isTotal ? "<strong>{$label}</strong>" : $label) . "</td>";
-        echo "<td class='text-center'><input type='text' class='form-control form-control-sm text-center border-0 bg-transparent' name='note_{$fieldBase}' value='{$data['note_'.$fieldBase] ?? $noteCode}'></td>";
+        $noteVal = $data['note_'.$fieldBase] ?? $noteCode;
+        echo "<td class='text-center'><input type='text' class='form-control form-control-sm text-center border-0 bg-transparent' name='note_{$fieldBase}' value='{$noteVal}'></td>";
         echo "<td class='col-val bg-light-green'><input type='number' step='0.01' class='{$inputClass} liasse-input' name='{$fieldBase}' value='{$valN}'></td>";
         echo "<td class='col-val px-3'>" . number_format($valN1, 0, ',', ' ') . "</td>";
         echo "</tr>";

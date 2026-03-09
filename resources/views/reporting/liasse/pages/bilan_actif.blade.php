@@ -11,7 +11,8 @@
         echo "<tr class='{$rowClass}'>";
         echo "<td class='text-center fw-bold text-secondary'>{$ref}</td>";
         echo "<td class='col-label'>" . ($isTotal ? "<strong>{$label}</strong>" : $label) . "</td>";
-        echo "<td class='text-center'><input type='text' class='form-control form-control-sm text-center border-0 bg-transparent' name='note_{$fieldBase}' value='{$data['note_'.$fieldBase] ?? $noteCode}'></td>";
+        $noteVal = $data['note_'.$fieldBase] ?? $noteCode;
+        echo "<td class='text-center'><input type='text' class='form-control form-control-sm text-center border-0 bg-transparent' name='note_{$fieldBase}' value='{$noteVal}'></td>";
         echo "<td class='col-val'><input type='number' step='0.01' class='{$inputClass} liasse-input' name='{$fieldBase}_brut' value='{$brut}'></td>";
         echo "<td class='col-val'><input type='number' step='0.01' class='{$inputClass} liasse-input' name='{$fieldBase}_amort' value='{$amort}'></td>";
         echo "<td class='col-val col-val-net px-3'>" . number_format($net, 0, ',', ' ') . "</td>";
