@@ -883,10 +883,11 @@
                                             <label class="form-check-label" for="treso_banque_swal">Banque</label>
                                         </div>
                                     </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label font-black text-slate-700">Rapprochement</label>
-                            <input type="text" class="form-control swal-edit-input d-none" id="swal_poste_hidden" data-col="${overrideIndexes.poste || ''}" value="${esc(currentPoste)}">
-                        </div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label font-black text-slate-700">Rapprochement</label>
+                                    <input type="text" class="form-control swal-edit-input d-none" id="swal_poste_hidden" data-col="${overrideIndexes.poste || ''}" value="${esc(currentPoste)}">
+                                </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label font-black text-slate-700">Autre (Optionnel)</label>
                                     <input type="text" id="treso_autre_swal" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellé..." value="${esc(!['Banque', 'Caisse'].includes(currentPoste) ? currentPoste : '')}" oninput="syncPosteToInput(this.value)">

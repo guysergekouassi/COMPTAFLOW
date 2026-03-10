@@ -946,7 +946,6 @@
                     });
                 }
             });
-            });
         }
 
         function exportErrorsToCSV() {
