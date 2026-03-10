@@ -1,4 +1,4 @@
-@include('components.head')
+﻿@include('components.head')
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap');
@@ -115,7 +115,7 @@
                                         <i class="fa-solid fa-circle-check text-success fs-4"></i>
                                     </div>
                                     <div>
-                                        <h6 class="alert-heading font-black mb-1">Succès !</h6>
+                                        <h6 class="alert-heading font-black mb-1">SuccÃ¨s !</h6>
                                         <p class="mb-0 text-sm font-medium">{{ session('success') }}</p>
                                     </div>
                                 </div>
@@ -133,11 +133,11 @@
                                     
                                     <div class="row g-4">
                                         @php
-                                            $existingAccountsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'déjà présent'))->count();
+                                            $existingAccountsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'dÃ©jÃ  prÃ©sent'))->count();
                                             $lengthErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Longueur incorrecte'))->count();
                                             $missingErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'manquant'))->count();
                                             $otherErrors = collect($rowsWithStatus)->filter(fn($r) => !empty($r['errors']) && 
-                                                !str_contains(implode(' ', $r['errors']), 'déjà présent') && 
+                                                !str_contains(implode(' ', $r['errors']), 'dÃ©jÃ  prÃ©sent') && 
                                                 !str_contains(implode(' ', $r['errors']), 'Longueur incorrecte') && 
                                                 !str_contains(implode(' ', $r['errors']), 'manquant'))->count();
                                         @endphp
@@ -151,10 +151,10 @@
                                                     </div>
                                                     <h6 class="font-bold mb-0">Comptes Existants ({{ $existingAccountsErrors }})</h6>
                                                 </div>
-                                                <p class="text-xs text-slate-500 mb-3">Ces comptes sont déjà enregistrés.</p>
+                                                <p class="text-xs text-slate-500 mb-3">Ces comptes sont dÃ©jÃ  enregistrÃ©s.</p>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="badge bg-label-primary text-start py-2 px-3 fw-normal whitespace-normal">
-                                                        <i class="fa-solid fa-pen me-1"></i> Modifiez le numéro du compte.
+                                                        <i class="fa-solid fa-pen me-1"></i> Modifiez le numÃ©ro du compte.
                                                     </span>
                                                     <span class="badge bg-label-danger text-start py-2 px-3 fw-normal whitespace-normal">
                                                         <i class="fa-solid fa-trash me-1"></i> Supprimez la ligne.
@@ -176,7 +176,7 @@
                                                 <p class="text-xs text-slate-500 mb-3">La longueur ne respecte pas les <strong>{{ $user->company->account_digits }} chiffres</strong>.</p>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="badge bg-label-warning text-start py-2 px-3 fw-normal whitespace-normal text-dark">
-                                                        <i class="fa-solid fa-wrench me-1"></i> Les numéros seront automatiquement standardisés à l'importation.
+                                                        <i class="fa-solid fa-wrench me-1"></i> Les numÃ©ros seront automatiquement standardisÃ©s Ã  l'importation.
                                                     </span>
                                                 </div>
                                             </div>
@@ -190,11 +190,11 @@
                                                     <div class="bg-slate-100 text-slate-600 p-2 rounded-lg">
                                                         <i class="fa-solid fa-circle-exclamation"></i>
                                                     </div>
-                                                    <h6 class="font-bold mb-0">Données Manquantes ({{ $missingErrors }})</h6>
+                                                    <h6 class="font-bold mb-0">DonnÃ©es Manquantes ({{ $missingErrors }})</h6>
                                                 </div>
                                                 <p class="text-xs text-slate-500 mb-3">Certaines colonnes obligatoires sont vides.</p>
                                                 <div class="alert alert-secondary py-2 px-3 text-[10px] mb-0 border-0">
-                                                    Complétez via le bouton modifier <i class="fa-solid fa-pen"></i>.
+                                                    ComplÃ©tez via le bouton modifier <i class="fa-solid fa-pen"></i>.
                                                 </div>
                                             </div>
                                         </div>
@@ -231,7 +231,7 @@
                                                     @endforeach
 
                                                     @if($uniqueOtherErrors->isEmpty())
-                                                        <p class="text-xs text-slate-500 mb-0">Erreur non classifiée. Voir lignes.</p>
+                                                        <p class="text-xs text-slate-500 mb-0">Erreur non classifiÃ©e. Voir lignes.</p>
                                                     @endif
                                                 </div>
                                             </div>
@@ -250,7 +250,7 @@
                                     </div>
                                     <div>
                                         <h5 class="font-black text-emerald-900 mb-0">Plan Comptable Conforme !</h5>
-                                        <p class="text-emerald-700 text-sm mb-0">Toutes les lignes sont prêtes pour l'importation.</p>
+                                        <p class="text-emerald-700 text-sm mb-0">Toutes les lignes sont prÃªtes pour l'importation.</p>
                                     </div>
                                 </div>
                             </div>
@@ -266,7 +266,7 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
-                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
+                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs dÃ©tectÃ©es</div>
                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
                                 </div>
                             </div>
@@ -276,7 +276,7 @@
                                         <div class="text-xs font-bold text-slate-400 uppercase mb-2">Tout afficher</div>
                                         <div class="d-flex gap-4">
                                             <div class="text-xs d-flex align-items-center gap-2">
-                                                <span class="status-indicator bg-emerald-500"></span> Prêt à l'import
+                                                <span class="status-indicator bg-emerald-500"></span> PrÃªt Ã  l'import
                                             </div>
                                             <div class="text-xs d-flex align-items-center gap-2">
                                                 <span class="status-indicator bg-rose-500"></span> Erreur bloquante
@@ -295,7 +295,7 @@
                                         </button>
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2 flex-grow-1">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
+                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numÃ©ro / libellÃ©..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
                                         </div>
                                     </div>
                                 </div>
@@ -313,28 +313,28 @@
                                                 </th>
                                                 <th style="width: 50px;">STATUT</th>
                                                 @if($import->type == 'initial')
-                                                    <th>NUMÉRO DE COMPTE</th>
-                                                    <th>INTITULÉ DU COMPTE</th>
+                                                    <th>NUMÃ‰RO DE COMPTE</th>
+                                                    <th>INTITULÃ‰ DU COMPTE</th>
                                                 @elseif($import->type == 'journals')
                                                     <th>CODE JOURNAL</th>
-                                                    <th>INTITULÉ DU JOURNAL</th>
+                                                    <th>INTITULÃ‰ DU JOURNAL</th>
                                                     <th>TYPE</th>
                                                     <th>COMPTE</th>
                                                     <th>ANALYTIQUE</th>
                                                     <th>RAPPROCHEMENT</th>
                                                 @elseif($import->type == 'tiers')
-                                                    <th>N° TIERS / IDENTIFIANT</th>
-                                                    <th>NOM / INTITULÉ</th>
-                                                    <th>CATÉGORIE</th>
-                                                    <th>COMPTE GÉNÉRAL</th>
+                                                    <th>NÂ° TIERS / IDENTIFIANT</th>
+                                                    <th>NOM / INTITULÃ‰</th>
+                                                    <th>CATÃ‰GORIE</th>
+                                                    <th>COMPTE GÃ‰NÃ‰RAL</th>
                                                 @else
                                                     <th>DATE</th>
                                                     <th>JOURNAL</th>
-                                                    <th>RÉFÉRENCE</th>
+                                                    <th>RÃ‰FÃ‰RENCE</th>
                                                     <th>COMPTE</th>
-                                                    <th>LIBELLÉ</th>
-                                                    <th class="text-end">DÉBIT</th>
-                                                    <th class="text-end">CRÉDIT</th>
+                                                    <th>LIBELLÃ‰</th>
+                                                    <th class="text-end">DÃ‰BIT</th>
+                                                    <th class="text-end">CRÃ‰DIT</th>
                                                 @endif
                                                 <th class="text-center">ACTIONS</th>
                                             </tr>
@@ -365,7 +365,7 @@
                                                                  @endif
                                                                  @if(!empty($row['data']['suggested_account']) && $row['data']['suggested_account'] != ($row['data']['numero_de_compte'] ?? ''))
                                                                      <div class="text-[9px] text-emerald-500 font-black italic mt-1">
-                                                                         <i class="fa-solid fa-arrow-turn-up fa-rotate-90 me-1"></i> Suggéré: {{ $row['data']['suggested_account'] }}
+                                                                         <i class="fa-solid fa-arrow-turn-up fa-rotate-90 me-1"></i> SuggÃ©rÃ©: {{ $row['data']['suggested_account'] }}
                                                                      </div>
                                                                  @endif
                                                             </div>
@@ -394,7 +394,7 @@
                                                             @elseif(!empty($row['data'][$mapping['numero_de_tiers'] ?? '']))
                                                                 {{ $row['data'][$mapping['numero_de_tiers']] }}
                                                             @else
-                                                                <span class="badge bg-label-warning italic text-[10px]">Sera auto-généré</span>
+                                                                <span class="badge bg-label-warning italic text-[10px]">Sera auto-gÃ©nÃ©rÃ©</span>
                                                             @endif
                                                         </td>
                                                         <td class="fw-bold">{{ $row['data']['intitule'] ?? '-' }}</td>
@@ -424,7 +424,7 @@
                                                                         data-compte="{{ $row["data"]["compte"] ?? '' }}"
                                                                         data-libelle="{{ $row["data"]["libelle"] ?? '' }}"
                                                                         onclick="quickCreateAccount(this)"
-                                                                        title="Créer ce compte à la volée">
+                                                                        title="CrÃ©er ce compte Ã  la volÃ©e">
                                                                     <i class="fa-solid fa-plus-circle"></i>
                                                                 </button>
                                                             @endif
@@ -441,7 +441,7 @@
                                                                     data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-errors="{{ json_encode($row['errors']) }}"
                                                                     onclick="showRowDetails(this)"
-                                                                    title="Voir les détails">
+                                                                    title="Voir les dÃ©tails">
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
@@ -468,7 +468,7 @@
                                 </a>
                             </div>
                             <div class="d-flex gap-3">
-                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les données temporaires seront supprimées.')">
+                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les donnÃ©es temporaires seront supprimÃ©es.')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-label-danger rounded-xl px-6 py-3 border-0">
@@ -508,13 +508,13 @@
             });
         }
 
-        // filterTable() remplacée par la logique côté serveur via URL params
+        // filterTable() remplacÃ©e par la logique cÃ´tÃ© serveur via URL params
                                     
 
         function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
-                text: "Cette action retirera définitivement la ligne de l'importation en cours.",
+                text: "Cette action retirera dÃ©finitivement la ligne de l'importation en cours.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Oui, supprimer',
@@ -585,7 +585,7 @@
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     Swal.showLoading();
-                    fetch(`/admin/config/import-staging/add-row/${importId}`, {
+                    fetch(`/admin/import/add-row/${importId}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -614,7 +614,7 @@
 
             let html = '<div class="text-start">';
             
-            // On crée un champ pour chaque colonne mappée
+            // On crÃ©e un champ pour chaque colonne mappÃ©e
             Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
                 if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
                 
@@ -657,7 +657,7 @@
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     Swal.showLoading();
-                    fetch(`/admin/config/import-staging/update-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -672,7 +672,7 @@
                             return JSON.parse(text);
                         } catch (e) {
                             console.error("Staging Edit - Invalid JSON response:", text);
-                            throw new Error(`Réponse serveur invalide (${response.status}).`);
+                            throw new Error(`RÃ©ponse serveur invalide (${response.status}).`);
                         }
                     })
                     .then(data => {
@@ -680,12 +680,12 @@
                         if (data.success) {
                             window.location.reload();
                         } else {
-                            Swal.fire('Erreur', data.message || 'Erreur lors de la mise à jour.', 'error');
+                            Swal.fire('Erreur', data.message || 'Erreur lors de la mise Ã  jour.', 'error');
                         }
                     })
                     .catch(err => {
                         console.error("Staging Edit - Fetch error:", err);
-                        Swal.fire('Erreur', 'Détail : ' + err.message, 'error');
+                        Swal.fire('Erreur', 'DÃ©tail : ' + err.message, 'error');
                     });
                 }
             });
@@ -712,7 +712,7 @@
 
             if (errors && errors.length > 0) {
                 dataHtml += '<div class="p-4 rounded-2xl bg-rose-50 border border-rose-100">';
-                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies détectées</h6>';
+                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies dÃ©tectÃ©es</h6>';
                 dataHtml += '<ul class="ps-4 mb-0">';
                 errors.forEach(err => {
                     dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>';
@@ -721,12 +721,12 @@
             } else {
                 dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 d-flex align-items-center gap-3">';
                 dataHtml += '<div class="bg-emerald-500 text-white p-2 rounded-full"><i class="fa-solid fa-check"></i></div>';
-                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l\'importation.</div></div>';
+                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prÃªte pour l\'importation.</div></div>';
             }
             dataHtml += '</div>';
 
             Swal.fire({
-                title: 'Détails de la ligne',
+                title: 'DÃ©tails de la ligne',
                 html: dataHtml,
                 icon: (errors && errors.length > 0) ? 'warning' : 'info',
                 confirmButtonText: 'Fermer',
@@ -742,11 +742,11 @@
             const libelle = btn.dataset.libelle;
 
             Swal.fire({
-                title: 'Création du compte',
-                text: `Voulez-vous créer le compte ${numero} - ${libelle} ?`,
+                title: 'CrÃ©ation du compte',
+                text: `Voulez-vous crÃ©er le compte ${numero} - ${libelle} ?`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Oui, créer',
+                confirmButtonText: 'Oui, crÃ©er',
                 cancelButtonText: 'Annuler',
                 customClass: {
                     confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
@@ -771,7 +771,7 @@
                     .then(data => {
                         if (data.success) {
                             Swal.fire({
-                                title: 'Succès',
+                                title: 'SuccÃ¨s',
                                 text: data.message,
                                 icon: 'success',
                                 timer: 1500,
@@ -784,7 +784,7 @@
                         }
                     })
                     .catch(error => {
-                        Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error');
+                        Swal.fire('Erreur', 'Une erreur est survenue lors de la crÃ©ation.', 'error');
                     });
                 }
             });
@@ -814,7 +814,7 @@
                 }
             }).then(result => {
                 if (result.isConfirmed && result.value.success) {
-                    Swal.fire('Supprimé !', result.value.message, 'success').then(() => { window.location.reload(); });
+                    Swal.fire('SupprimÃ© !', result.value.message, 'success').then(() => { window.location.reload(); });
                 }
             });
         }

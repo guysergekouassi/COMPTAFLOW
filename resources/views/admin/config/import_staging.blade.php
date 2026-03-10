@@ -1,4 +1,4 @@
-@include('components.head')
+﻿@include('components.head')
 
 @use('Illuminate\Support\Str')
 
@@ -137,7 +137,7 @@
             }
         }).then(result => {
             if (result.isConfirmed && result.value.success) {
-                Swal.fire('Supprimé !', result.value.message, 'success').then(() => { window.location.reload(); });
+                Swal.fire('SupprimÃ© !', result.value.message, 'success').then(() => { window.location.reload(); });
             }
         });
     }
@@ -167,12 +167,12 @@
         }).then((result) => {
             if (result.isConfirmed && result.value) {
                 Swal.showLoading();
-                fetch(`/admin/config/import-staging/update-row/${importId}/${rowIndex}`, {
+                fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '' },
                     body: JSON.stringify({ values: result.value })
                 }).then(r => r.json()).then(data => {
-                    if (data.success) { window.location.reload(); } else { Swal.fire('Erreur', data.message || 'Erreur lors de la mise à jour.', 'error'); }
+                    if (data.success) { window.location.reload(); } else { Swal.fire('Erreur', data.message || 'Erreur lors de la mise Ã  jour.', 'error'); }
                 }).catch(err => { Swal.fire('Erreur', err.message, 'error'); });
             }
         });
@@ -192,19 +192,44 @@
             errors.forEach(err => { dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>'; });
             dataHtml += '</ul></div>';
         } else {
-            dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l\'importation.</div></div>';
+            dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><div class="text-xs font-bold text-emerald-700">Cette ligne est prÃªte pour l\'importation.</div></div>';
         }
         dataHtml += '</div>';
-        Swal.fire({ title: 'Détails de la ligne', html: dataHtml, icon: (errors && errors.length > 0) ? 'warning' : 'info', confirmButtonText: 'Fermer', customClass: { confirmButton: 'btn btn-primary rounded-xl px-12 py-3' }, buttonsStyling: false });
+        Swal.fire({ title: 'DÃ©tails de la ligne', html: dataHtml, icon: (errors && errors.length > 0) ? 'warning' : 'info', confirmButtonText: 'Fermer', customClass: { confirmButton: 'btn btn-primary rounded-xl px-12 py-3' }, buttonsStyling: false });
     }
     function addStagingRow(btn) {
         const importId = btn.dataset.importId;
         const mapping = JSON.parse(btn.dataset.mapping);
+        
+        let prefillData = {};
+        const checkedBox = document.querySelector('.row-checkbox:checked');
+        if (checkedBox) {
+            const tr = checkedBox.closest('tr');
+            if (tr) {
+                const infoBtn = tr.querySelector('[data-row-data]');
+                if (infoBtn) {
+                    try {
+                        prefillData = JSON.parse(infoBtn.getAttribute('data-row-data'));
+                    } catch(e) {}
+                }
+            }
+        }
+
         let html = '<div class="text-start">';
         Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
             if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
             let label = fieldKey.replace(/_/g, ' ').toUpperCase();
-            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-add-input" data-field="${fieldKey}" data-col="${colIndex}" value=""></div>`;
+            
+            // Logique de pré-remplissage
+            let value = "";
+            if (prefillData[fieldKey]) {
+                // Sauf les montants
+                if (!['debit', 'credit', 'montant'].includes(fieldKey.toLowerCase())) {
+                    value = prefillData[fieldKey];
+                }
+            }
+
+            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-add-input" data-field="${fieldKey}" data-col="${colIndex}" value="${value.replace(/"/g, '&quot;')}"></div>`;
         });
         html += '</div>';
         Swal.fire({
@@ -221,7 +246,7 @@
             if (result.isConfirmed && result.value) {
                 Swal.showLoading();
                 const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-                fetch(`/admin/config/import-staging/add-row/${importId}`, {
+                fetch(`/admin/import/add-row/${importId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfMeta ? csrfMeta.content : '' },
                     body: JSON.stringify({ values: result.value })
@@ -258,6 +283,36 @@
                             </div>
                         @endif
 
+                        @if(!empty($missingAccounts) || !empty($missingJournals) || !empty($missingTiers))
+                            <div class="alert alert-warning rounded-[20px] mb-4 shadow-sm border border-warning-subtle">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fa-solid fa-exclamation-triangle text-warning fs-3 me-3"></i>
+                                    <h5 class="mb-0 fw-bold">Entités Manquantes Détectées</h5>
+                                </div>
+                                <p class="text-sm mb-3">Certaines données font référence à des comptes, journaux ou tiers inexistants. Cliquez sur les boutons ci-dessous pour les créer rapidement avec des valeurs par défaut.</p>
+                                
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach($missingJournals ?? [] as $code => $intitule)
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateJournal('{{ $code }}', '{{ addslashes($intitule) }}')" title="Créer automatiquement le journal {{ $code }}">
+                                            <i class="fa-solid fa-book me-1"></i> Créer Journal : {{ $code }}
+                                        </button>
+                                    @endforeach
+
+                                    @foreach($missingAccounts ?? [] as $num => $intitule)
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateAccount('{{ $num }}', '{{ addslashes($intitule) }}')" title="Créer automatiquement le compte {{ $num }}">
+                                            <i class="fa-solid fa-hashtag me-1"></i> Créer Compte : {{ $num }}
+                                        </button>
+                                    @endforeach
+
+                                    @foreach($missingTiers ?? [] as $num => $intitule)
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateTier('{{ $num }}', '{{ addslashes($intitule) }}')" title="Créer automatiquement le tiers {{ $num }}">
+                                            <i class="fa-solid fa-user-tag me-1"></i> Créer Tiers : {{ $num }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         @if(session('success'))
                             <div class="alert alert-success alert-dismissible fade show rounded-[20px] mb-4 border-0 shadow-sm" role="alert">
                                 <div class="d-flex align-items-center">
@@ -265,7 +320,7 @@
                                         <i class="fa-solid fa-circle-check text-success fs-4"></i>
                                     </div>
                                     <div>
-                                        <h6 class="alert-heading font-black mb-1">Succès !</h6>
+                                        <h6 class="alert-heading font-black mb-1">SuccÃ¨s !</h6>
                                         <p class="mb-0 text-sm font-medium">{{ session('success') }}</p>
                                     </div>
                                 </div>
@@ -296,11 +351,11 @@
                                                     <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
                                                         <i class="fa-solid fa-scale-unbalanced"></i>
                                                     </div>
-                                                    <h6 class="font-bold mb-0">Déséquilibre ({{ number_format($balance, 0, ',', ' ') }})</h6>
+                                                    <h6 class="font-bold mb-0">DÃ©sÃ©quilibre ({{ number_format($balance, 0, ',', ' ') }})</h6>
                                                 </div>
-                                                <p class="text-xs text-slate-500 mb-3">Le total débit ne correspond pas au total crédit.</p>
+                                                <p class="text-xs text-slate-500 mb-3">Le total dÃ©bit ne correspond pas au total crÃ©dit.</p>
                                                 <div class="alert alert-danger py-2 px-3 text-[10px] mb-0 border-0">
-                                                    Vérifiez les montants ou les lignes manquantes.
+                                                    VÃ©rifiez les montants ou les lignes manquantes.
                                                 </div>
                                             </div>
                                         </div>
@@ -314,7 +369,7 @@
                                                     </div>
                                                     <h6 class="font-bold mb-0">Diagnostic</h6>
                                                 </div>
-                                                <p class="text-xs text-slate-500 mb-2">Utilisez le bouton <i class="fa-solid fa-eye text-info"></i> pour voir les erreurs détaillées par ligne.</p>
+                                                <p class="text-xs text-slate-500 mb-2">Utilisez le bouton <i class="fa-solid fa-eye text-info"></i> pour voir les erreurs dÃ©taillÃ©es par ligne.</p>
                                                 <p class="text-[10px] text-slate-400 italic">Corrigez les comptes inconnus via le bouton modifier <i class="fa-solid fa-pen text-primary"></i>.</p>
                                             </div>
                                         </div>
@@ -330,8 +385,8 @@
                                         <i class="fa-solid fa-check-double fa-xl"></i>
                                     </div>
                                     <div>
-                                        <h5 class="font-black text-emerald-900 mb-0">Écritures Équilibrées et Valides !</h5>
-                                        <p class="text-emerald-700 text-sm mb-0">Toutes les lignes sont conformes aux règles comptables.</p>
+                                        <h5 class="font-black text-emerald-900 mb-0">Ã‰critures Ã‰quilibrÃ©es et Valides !</h5>
+                                        <p class="text-emerald-700 text-sm mb-0">Toutes les lignes sont conformes aux rÃ¨gles comptables.</p>
                                     </div>
                                 </div>
                             </div>
@@ -347,7 +402,7 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
-                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
+                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs dÃ©tectÃ©es</div>
                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
                                 </div>
                             </div>
@@ -357,7 +412,7 @@
                                         <div class="text-xs font-bold text-slate-400 uppercase mb-2">Tout afficher</div>
                                         <div class="d-flex gap-4">
                                             <div class="text-xs d-flex align-items-center gap-2">
-                                                <span class="status-indicator bg-emerald-500"></span> Prêt à l'import
+                                                <span class="status-indicator bg-emerald-500"></span> PrÃªt Ã  l'import
                                             </div>
                                             <div class="text-xs d-flex align-items-center gap-2">
                                                 <span class="status-indicator bg-rose-500"></span> Erreur bloquante
@@ -370,7 +425,7 @@
                                     <div class="bg-white p-4 rounded-2xl border border-slate-100 d-flex align-items-center" style="width: 300px;">
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
+                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numÃ©ro / libellÃ©..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
                                         </div>
                                     </div>
                                 </div>
@@ -405,31 +460,31 @@
                                                 </th>
                                                 <th style="width: 50px;">STATUT</th>
                                                 @if($import->type == 'initial')
-                                                    <th>NUMÉRO DE COMPTE</th>
-                                                    <th>INTITULÉ DU COMPTE</th>
+                                                    <th>NUMÃ‰RO DE COMPTE</th>
+                                                    <th>INTITULÃ‰ DU COMPTE</th>
                                                 @elseif($import->type == 'journals')
                                                     <th>CODE JOURNAL</th>
-                                                    <th>INTITULÉ DU JOURNAL</th>
+                                                    <th>INTITULÃ‰ DU JOURNAL</th>
                                                     <th>TYPE</th>
                                                     <th>COMPTE</th>
                                                     <th>ANALYTIQUE</th>
                                                     <th>RAPPROCHEMENT</th>
                                                 @elseif($import->type == 'tiers')
-                                                    <th>N° TIERS / IDENTIFIANT</th>
+                                                    <th>NÂ° TIERS / IDENTIFIANT</th>
                                                     <th>NOM / RAISON SOCIALE</th>
-                                                    <th>CATÉGORIE</th>
-                                                    <th>COMPTE GÉNÉRAL</th>
+                                                    <th>CATÃ‰GORIE</th>
+                                                    <th>COMPTE GÃ‰NÃ‰RAL</th>
                                                 @else
-                                                    <th>N° SAISIE</th>
-                                                    <th>ÉQUILIBRE</th>
+                                                    <th>NÂ° SAISIE</th>
+                                                    <th>Ã‰QUILIBRE</th>
                                                     <th>DATE</th>
                                                     <th>JOURNAL</th>
-                                                    <th>RÉFÉRENCE</th>
+                                                    <th>RÃ‰FÃ‰RENCE</th>
                                                     <th>COMPTE</th>
                                                     <th>TIERS</th>
-                                                    <th>LIBELLÉ</th>
-                                                    <th class="text-end">DÉBIT</th>
-                                                <th class="text-end">CRÉDIT</th>
+                                                    <th>LIBELLÃ‰</th>
+                                                    <th class="text-end">DÃ‰BIT</th>
+                                                <th class="text-end">CRÃ‰DIT</th>
                                                 @endif
                                                 <th class="text-center">ACTIONS</th>
                                             </tr>
@@ -478,7 +533,7 @@
                                                              @elseif(!empty($row['data']['numero_de_tiers']))
                                                                  {{ $row['data']['numero_de_tiers'] }}
                                                              @else
-                                                                 <span class="badge bg-label-warning italic text-[10px]">Sera auto-généré</span>
+                                                                 <span class="badge bg-label-warning italic text-[10px]">Sera auto-gÃ©nÃ©rÃ©</span>
                                                              @endif
                                                          </td>
                                                          <td class="fw-bold search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
@@ -493,13 +548,13 @@
                                                         <td>
                                                             @php $gd = $row['group_diff'] ?? null; @endphp
                                                             @if($row['status'] == 'ignored')
-                                                                <span class="badge bg-label-warning">Ignorée</span>
+                                                                <span class="badge bg-label-warning">IgnorÃ©e</span>
                                                             @elseif($gd === null)
                                                                 <span class="badge bg-label-secondary">-</span>
                                                             @elseif(abs((float)$gd) <= 0.01)
-                                                                <span class="badge bg-label-success">Équilibré</span>
+                                                                <span class="badge bg-label-success">Ã‰quilibrÃ©</span>
                                                             @else
-                                                                <span class="badge bg-label-danger">Déséquilibré ({{ number_format(abs((float)$gd), 0, ',', ' ') }})</span>
+                                                                <span class="badge bg-label-danger">DÃ©sÃ©quilibrÃ© ({{ number_format(abs((float)$gd), 0, ',', ' ') }})</span>
                                                             @endif
 
                                                             @if(($row['group_debit'] ?? null) !== null && ($row['group_credit'] ?? null) !== null)
@@ -539,7 +594,7 @@
                                                                         data-compte="{{ $row["data"]["compte"] ?? '' }}"
                                                                         data-libelle="{{ $row["data"]["libelle"] ?? '' }}"
                                                                         onclick="quickCreateAccount(this)"
-                                                                        title="Créer ce compte à la volée">
+                                                                        title="CrÃ©er ce compte Ã  la volÃ©e">
                                                                     <i class="fa-solid fa-plus-circle"></i>
                                                                 </button>
                                                             @endif
@@ -556,7 +611,7 @@
                                                                     data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-errors="{{ json_encode($row['errors']) }}"
                                                                     onclick="showRowDetails(this)"
-                                                                    title="Voir les détails">
+                                                                    title="Voir les dÃ©tails">
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
@@ -578,13 +633,13 @@
                             <div class="d-flex justify-content-between align-items-center mt-4 px-2">
                                 <div class="text-slate-500 text-sm">
                                     Page <strong>{{ $currentPage }}</strong> / {{ $totalPages }} &nbsp;&mdash;&nbsp;
-                                    Affichage lignes {{ (($currentPage-1)*$perPage)+1 }} – {{ min($currentPage*$perPage, $totalRows) }}
+                                    Affichage lignes {{ (($currentPage-1)*$perPage)+1 }} â€“ {{ min($currentPage*$perPage, $totalRows) }}
                                     sur <strong>{{ $totalRows }}</strong>
                                 </div>
                                 <div class="d-flex gap-2">
                                     @if($currentPage > 1)
                                         <a href="{{ request()->fullUrlWithQuery(['page' => $currentPage - 1]) }}" class="btn btn-sm btn-outline-secondary rounded-xl px-4">
-                                            <i class="fa-solid fa-chevron-left me-1"></i> Préc.
+                                            <i class="fa-solid fa-chevron-left me-1"></i> PrÃ©c.
                                         </a>
                                     @endif
                                     @for($p = max(1, $currentPage - 2); $p <= min($totalPages, $currentPage + 2); $p++)
@@ -609,7 +664,7 @@
                                 </a>
                             </div>
                             <div class="d-flex gap-3">
-                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les données temporaires seront supprimées.')">
+                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les donnÃ©es temporaires seront supprimÃ©es.')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-label-danger rounded-xl px-6 py-3 border-0">
@@ -642,13 +697,13 @@
             });
         }
 
-        // Les fonctions filterTable() et exportErrorsToCSV() ont été remplacées par une logique côté serveur
-        // pour gérer les gros volumes de données (33k+ lignes).
+        // Les fonctions filterTable() et exportErrorsToCSV() ont Ã©tÃ© remplacÃ©es par une logique cÃ´tÃ© serveur
+        // pour gÃ©rer les gros volumes de donnÃ©es (33k+ lignes).
         
         function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
-                text: "Cette action retirera définitivement la ligne de l'importation en cours.",
+                text: "Cette action retirera dÃ©finitivement la ligne de l'importation en cours.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Oui, supprimer',
@@ -719,7 +774,7 @@
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     Swal.showLoading();
-                    fetch(`/admin/config/import-staging/add-row/${importId}`, {
+                    fetch(`/admin/import/add-row/${importId}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -748,7 +803,7 @@
 
             let html = '<div class="text-start">';
             
-            // On crée un champ pour chaque colonne mappée
+            // On crÃ©e un champ pour chaque colonne mappÃ©e
             Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
                 if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
                 
@@ -792,7 +847,7 @@
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     Swal.showLoading();
-                    fetch(`/admin/config/import-staging/update-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -807,7 +862,7 @@
                             return JSON.parse(text);
                         } catch (e) {
                             console.error("Staging Edit - Invalid JSON response:", text);
-                            throw new Error(`Réponse serveur invalide (${response.status}).`);
+                            throw new Error(`RÃ©ponse serveur invalide (${response.status}).`);
                         }
                     })
                     .then(data => {
@@ -815,12 +870,12 @@
                         if (data.success) {
                             window.location.reload();
                         } else {
-                            Swal.fire('Erreur', data.message || 'Erreur lors de la mise à jour.', 'error');
+                            Swal.fire('Erreur', data.message || 'Erreur lors de la mise Ã  jour.', 'error');
                         }
                     })
                     .catch(err => {
                         console.error("Staging Edit - Fetch error:", err);
-                        Swal.fire('Erreur', 'Détail : ' + err.message, 'error');
+                        Swal.fire('Erreur', 'DÃ©tail : ' + err.message, 'error');
                     });
                 }
             });
@@ -847,7 +902,7 @@
 
             if (errors && errors.length > 0) {
                 dataHtml += '<div class="p-4 rounded-2xl bg-rose-50 border border-rose-100">';
-                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies détectées</h6>';
+                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies dÃ©tectÃ©es</h6>';
                 dataHtml += '<ul class="ps-4 mb-0">';
                 errors.forEach(err => {
                     dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>';
@@ -856,12 +911,12 @@
             } else {
                 dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 d-flex align-items-center gap-3">';
                 dataHtml += '<div class="bg-emerald-500 text-white p-2 rounded-full"><i class="fa-solid fa-check"></i></div>';
-                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l\'importation.</div></div>';
+                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prÃªte pour l\'importation.</div></div>';
             }
             dataHtml += '</div>';
 
             Swal.fire({
-                title: 'Détails de la ligne',
+                title: 'DÃ©tails de la ligne',
                 html: dataHtml,
                 icon: (errors && errors.length > 0) ? 'warning' : 'info',
                 confirmButtonText: 'Fermer',
@@ -872,10 +927,7 @@
             });
         }
 
-        function quickCreateAccount(btn) {
-            const numero = btn.dataset.compte;
-            const libelle = btn.dataset.libelle;
-            
+        function quickCreateAccount(numero, libelle) {
             Swal.fire({
                 title: 'Création du compte',
                 text: `Voulez-vous créer le compte ${numero} - ${libelle} ?`,
@@ -883,44 +935,78 @@
                 showCancelButton: true,
                 confirmButtonText: 'Oui, créer',
                 cancelButtonText: 'Annuler',
-                customClass: {
-                    confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
-                    cancelButton: 'btn btn-label-secondary rounded-xl px-4'
-                },
+                customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.showLoading();
                     fetch("{{ route('admin.import.quick_account') }}", {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            numero_compte: numero,
-                            intitule: libelle,
-                            type_de_compte: 'Bilan'
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: JSON.stringify({ numero_compte: numero, intitule: libelle, type_de_compte: 'Bilan' })
+                    }).then(response => response.json()).then(data => {
                         if (data.success) {
-                            Swal.fire({
-                                title: 'Succès',
-                                text: data.message,
-                                icon: 'success',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload();
-                            });
+                            Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
                         } else {
                             Swal.fire('Erreur', data.message, 'error');
                         }
-                    })
-                    .catch(error => {
-                        Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error');
-                    });
+                    }).catch(error => { Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error'); });
+                }
+            });
+        }
+
+        function quickCreateTier(numero, libelle) {
+            Swal.fire({
+                title: 'Création du tiers',
+                text: `Voulez-vous créer le tiers ${numero} - ${libelle} ?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Oui, créer',
+                cancelButtonText: 'Annuler',
+                customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.showLoading();
+                    fetch("{{ route('admin.import.quick_tier') }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: JSON.stringify({ numero_tiers: numero, intitule: libelle, type_de_tiers: 'Client' })
+                    }).then(response => response.json()).then(data => {
+                        if (data.success) {
+                            Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
+                        } else {
+                            Swal.fire('Erreur', data.message, 'error');
+                        }
+                    }).catch(error => { Swal.fire('Erreur', 'Une erreur est survenue.', 'error'); });
+                }
+            });
+        }
+
+        function quickCreateJournal(code, libelle) {
+            Swal.fire({
+                title: 'Création du journal',
+                text: `Voulez-vous créer le journal ${code} - ${libelle} ?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Oui, créer',
+                cancelButtonText: 'Annuler',
+                customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.showLoading();
+                    fetch("{{ route('admin.import.quick_journal') }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: JSON.stringify({ code_journal: code, intitule: libelle, type_journal: 'Opérations diverses' })
+                    }).then(response => response.json()).then(data => {
+                        if (data.success) {
+                            Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
+                        } else {
+                            Swal.fire('Erreur', data.message, 'error');
+                        }
+                    }).catch(error => { Swal.fire('Erreur', 'Une erreur est survenue.', 'error'); });
                 }
             });
         }
@@ -955,9 +1041,9 @@
                     cell.setAttribute('data-original', originalValue);
                 }
 
-                // Priorité 1 : Détection DDMMYY (exactement 6 chiffres)
+                // PrioritÃ© 1 : DÃ©tection DDMMYY (exactement 6 chiffres)
                 // Ex: 010126 = 01/01/2026, 050126 = 05/01/2026
-                // Ce cas DOIT être traité avant la détection des serials Excel
+                // Ce cas DOIT Ãªtre traitÃ© avant la dÃ©tection des serials Excel
                 // car des valeurs comme 050126 tombent dans la plage des serials Excel (30000-60000)
                 if (/^\d{6}$/.test(originalValue)) {
                     const day   = originalValue.substring(0, 2);
@@ -965,7 +1051,7 @@
                     const yr2   = parseInt(originalValue.substring(4, 6), 10);
                     // Pivot 70 : 00-69 => 2000-2069, 70-99 => 1970-1999
                     const year  = yr2 < 70 ? 2000 + yr2 : 1900 + yr2;
-                    // Vérification basique que c'est une date valide (mois entre 01-12, jour entre 01-31)
+                    // VÃ©rification basique que c'est une date valide (mois entre 01-12, jour entre 01-31)
                     const dayN = parseInt(day, 10);
                     const monN = parseInt(month, 10);
                     if (monN >= 1 && monN <= 12 && dayN >= 1 && dayN <= 31) {
@@ -974,8 +1060,8 @@
                     }
                 }
 
-                // Priorité 2 : Serial Excel (plage 30000-60000, typiquement 1982-2064)
-                // On exclut les 6 chiffres déjà traités ci-dessus
+                // PrioritÃ© 2 : Serial Excel (plage 30000-60000, typiquement 1982-2064)
+                // On exclut les 6 chiffres dÃ©jÃ  traitÃ©s ci-dessus
                 if (isNumeric(originalValue) && originalValue.length !== 6) {
                     const num = parseFloat(originalValue);
                     if (num >= 30000 && num <= 60000) {
@@ -997,7 +1083,7 @@
             return !isNaN(parseFloat(n)) && isFinite(n);
         }
 
-        // --- GESTION DE LA SUPPRESSION GROUPÉE ---
+        // --- GESTION DE LA SUPPRESSION GROUPÃ‰E ---
 
         function toggleAllCheckboxes(master) {
             const visibleRows = Array.from(document.querySelectorAll('.staging-row')).filter(row => row.style.display !== 'none');
@@ -1008,11 +1094,11 @@
         }
 
         function selectAndBulkDeleteErrors() {
-            // 1. Sélectionner toutes les lignes en erreur (même cachées par filtre, mais le bouton est explicite)
+            // 1. SÃ©lectionner toutes les lignes en erreur (mÃªme cachÃ©es par filtre, mais le bouton est explicite)
             const errorCheckboxes = document.querySelectorAll('.staging-row[data-status="error"] .row-checkbox');
             
             if (errorCheckboxes.length === 0) {
-                Swal.fire('Info', 'Aucune ligne en erreur à supprimer.', 'info');
+                Swal.fire('Info', 'Aucune ligne en erreur Ã  supprimer.', 'info');
                 return;
             }
 
@@ -1062,7 +1148,7 @@
             .then(data => {
                 if (data.success) {
                     Swal.fire({
-                        title: 'Supprimé !',
+                        title: 'SupprimÃ© !',
                         text: data.message,
                         icon: 'success',
                         timer: 1500,
@@ -1076,14 +1162,14 @@
             })
             .catch(error => {
                 console.error("Bulk Delete Error:", error);
-                Swal.fire('Erreur', 'Une erreur est survenue lors de la suppression groupée.', 'error');
+                Swal.fire('Erreur', 'Une erreur est survenue lors de la suppression groupÃ©e.', 'error');
             });
         }
 
         function exportErrorsToCSV() {
             const errorRows = document.querySelectorAll('.table-staging tbody tr.row-error, .table-staging tbody tr[data-status="error"]');
             if (errorRows.length === 0) {
-                Swal.fire('Info', 'Aucune erreur à exporter.', 'info');
+                Swal.fire('Info', 'Aucune erreur Ã  exporter.', 'info');
                 return;
             }
 

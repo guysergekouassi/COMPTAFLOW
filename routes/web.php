@@ -453,6 +453,8 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
         Route::post('/import/commit/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'commitImport'])->name('import.commit');
         Route::delete('/import/cancel/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'cancelImport'])->name('import.cancel');
         Route::post('/import/quick-account', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickAccountCreate'])->name('import.quick_account');
+        Route::post('/import/quick-tier', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickTierCreate'])->name('import.quick_tier');
+        Route::post('/import/quick-journal', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickJournalCreate'])->name('import.quick_journal');
         Route::post('/import/update-row/{id}/{index}', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateRow'])->name('import.update_row');
         Route::delete('/import/delete-row/{id}/{index}', [App\Http\Controllers\Admin\AdminConfigController::class, 'deleteRow'])->name('import.delete_row');
         Route::post('/import/add-row/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'addRow'])->name('import.add_row');

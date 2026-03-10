@@ -1735,6 +1735,10 @@ class AdminConfigController extends Controller
         $batchAccounts = []; // [ 'numero_standard' => 'numero_original' ]
         $errorCount = 0;
         $validCount = 0;
+        
+        $missingAccounts = [];
+        $missingJournals = [];
+        $missingTiers = [];
 
         foreach($data as $index => $rowRaw) {
             // PADDING : Forcer la ligne à avoir au moins assez de colonnes pour couvrir le mapping
@@ -2558,13 +2562,17 @@ class AdminConfigController extends Controller
                 }
 
                 // 3. Tiers
-                // 3. Tiers
                 if (!empty($rowTiers)) {
                     $rowTiersUpper = strtoupper(trim($rowTiers));
                     if (isset($tierMapping[$rowTiersUpper])) {
                         $row['numero_original_tiers'] = $rowTiers;
                         $row['tiers'] = $tierMapping[$rowTiersUpper];
                         $rowTiers = $row['tiers'];
+                    } else {
+                        if (!in_array($rowTiersUpper, array_map('strtoupper', $existingTiers))) {
+                            $errors[] = "Tiers inconnu : $rowTiers";
+                            $missingTiers[$rowTiersUpper] = $row['intitule'] ?? 'Tiers ' . $rowTiersUpper;
+                        }
                     }
                 }
 
@@ -2577,12 +2585,14 @@ class AdminConfigController extends Controller
                     $errors[] = "Compte manquant";
                 } elseif (!in_array($rowCompte, $existingAccounts)) {
                     $errors[] = "Compte inconnu : $rowCompte";
+                    $missingAccounts[$rowCompte] = $row['intitule'] ?? 'Compte ' . $rowCompte;
                 }
 
                 if (empty($rowJournal)) {
                     $errors[] = "Journal manquant";
                 } elseif (!in_array(strtoupper($rowJournal), array_map('strtoupper', $existingJournals))) {
                     $errors[] = "Journal inconnu : $rowJournal";
+                    $missingJournals[$rowJournal] = $row['intitule'] ?? 'Journal ' . $rowJournal;
                 }
 
                 if (array_key_exists('n_saisie', $mapping) && $mapping['n_saisie'] !== null && $mapping['n_saisie'] !== '' && $mapping['n_saisie'] !== 'AUTO') {
@@ -2866,7 +2876,8 @@ class AdminConfigController extends Controller
             'errorCount', 'validCount', 'importTitle',
             'user', 'plansComptables', 'accountDigits',
             'currentPage', 'totalPages', 'totalRows', 'perPage',
-            'statusFilter', 'searchFilter', 'mapping'
+            'statusFilter', 'searchFilter', 'mapping',
+            'missingAccounts', 'missingJournals', 'missingTiers'
         ));
     }
 
