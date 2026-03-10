@@ -445,11 +445,11 @@
                                                     <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
                                                         <i class="fa-solid fa-scale-unbalanced"></i>
                                                     </div>
-                                                    <h6 class="font-bold mb-0">DÃ©sÃ©quilibre ({{ number_format($balance, 0, ',', ' ') }})</h6>
+                                                    <h6 class="font-bold mb-0">Déséquilibre ({{ number_format($balance, 0, ',', ' ') }})</h6>
                                                 </div>
                                                 <p class="text-xs text-slate-500 mb-3">Le total débit ne correspond pas au total crédit.</p>
                                                 <div class="alert alert-danger py-2 px-3 text-[10px] mb-0 border-0">
-                                                    VÃ©rifiez les montants ou les lignes manquantes.
+                                                    Vérifiez les montants ou les lignes manquantes.
                                                 </div>
                                             </div>
                                         </div>
@@ -463,7 +463,7 @@
                                                     </div>
                                                     <h6 class="font-bold mb-0">Diagnostic</h6>
                                                 </div>
-                                                <p class="text-xs text-slate-500 mb-2">Utilisez le bouton <i class="fa-solid fa-eye text-info"></i> pour voir les erreurs dÃ©taillÃ©es par ligne.</p>
+                                                <p class="text-xs text-slate-500 mb-2">Utilisez le bouton <i class="fa-solid fa-eye text-info"></i> pour voir les erreurs détaillées par ligne.</p>
                                                 <p class="text-[10px] text-slate-400 italic">Corrigez les comptes inconnus via le bouton modifier <i class="fa-solid fa-pen text-primary"></i>.</p>
                                             </div>
                                         </div>
@@ -479,8 +479,8 @@
                                         <i class="fa-solid fa-check-double fa-xl"></i>
                                     </div>
                                     <div>
-                                        <h5 class="font-black text-emerald-900 mb-0">Ã‰critures Ã‰quilibrÃ©es et Valides !</h5>
-                                        <p class="text-emerald-700 text-sm mb-0">Toutes les lignes sont conformes aux rÃ¨gles comptables.</p>
+                                        <h5 class="font-black text-emerald-900 mb-0">Ecritures équilibrées et valides !</h5>
+                                        <p class="text-emerald-700 text-sm mb-0">Toutes les lignes sont conformes aux règles comptables.</p>
                                     </div>
                                 </div>
                             </div>
@@ -642,13 +642,13 @@
                                                         <td>
                                                             @php $gd = $row['group_diff'] ?? null; @endphp
                                                             @if($row['status'] == 'ignored')
-                                                                <span class="badge bg-label-warning">IgnorÃ©e</span>
+                                                                <span class="badge bg-label-warning">Ignorée</span>
                                                             @elseif($gd === null)
                                                                 <span class="badge bg-label-secondary">-</span>
                                                             @elseif(abs((float)$gd) <= 0.01)
-                                                                <span class="badge bg-label-success">Ã‰quilibrÃ©</span>
+                                                                <span class="badge bg-label-success">Équilibré</span>
                                                             @else
-                                                                <span class="badge bg-label-danger">DÃ©sÃ©quilibrÃ© ({{ number_format(abs((float)$gd), 0, ',', ' ') }})</span>
+                                                                <span class="badge bg-label-danger">Déséquilibré ({{ number_format(abs((float)$gd), 0, ',', ' ') }})</span>
                                                             @endif
 
                                                             @if(($row['group_debit'] ?? null) !== null && ($row['group_credit'] ?? null) !== null)
@@ -727,7 +727,7 @@
                             <div class="d-flex justify-content-between align-items-center mt-4 px-2">
                                 <div class="text-slate-500 text-sm">
                                     Page <strong>{{ $currentPage }}</strong> / {{ $totalPages }} &nbsp;&mdash;&nbsp;
-                                    Affichage lignes {{ (($currentPage-1)*$perPage)+1 }} â€“ {{ min($currentPage*$perPage, $totalRows) }}
+                                    Affichage lignes {{ (($currentPage-1)*$perPage)+1 }} à {{ min($currentPage*$perPage, $totalRows) }}
                                     sur <strong>{{ $totalRows }}</strong>
                                 </div>
                                 <div class="d-flex gap-2">
