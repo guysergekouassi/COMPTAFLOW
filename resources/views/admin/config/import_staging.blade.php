@@ -192,7 +192,7 @@
             errors.forEach(err => { dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>'; });
             dataHtml += '</ul></div>';
         } else {
-            dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l'importation.</div></div>';
+            dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l\\'importation.</div></div>';
         }
         dataHtml += '</div>';
         Swal.fire({ title: 'Détails de la ligne', html: dataHtml, icon: (errors && errors.length > 0) ? 'warning' : 'info', confirmButtonText: 'Fermer', customClass: { confirmButton: 'btn btn-primary rounded-xl px-12 py-3' }, buttonsStyling: false });
@@ -1005,7 +1005,7 @@
             } else {
                 dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 d-flex align-items-center gap-3">';
                 dataHtml += '<div class="bg-emerald-500 text-white p-2 rounded-full"><i class="fa-solid fa-check"></i></div>';
-                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l'importation.</div></div>';
+                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l\\'importation.</div></div>';
             }
             dataHtml += '</div>';
 
