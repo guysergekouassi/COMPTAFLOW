@@ -1434,51 +1434,69 @@ class AdminConfigController extends Controller
         $typeKey = $import->type == 'initial' ? 'initial' : ($import->type == 'journals' ? 'journals' : ($import->type == 'tiers' ? 'tiers' : 'courant'));
         $fields = $fieldsDictionary[$typeKey];
 
-        // LOGIQUE D'INTELLIGENCE : Détection de la meilleure ligne d'en-tête
+        // LOGIQUE D'INTELLIGENCE AVANCÉE : Détection En-tête vs Données vs Titre (Junk)
         $headers = [];
-        $headerIndex = -1; // -1 signifie PAS d'en-tête (on commence à la ligne 0)
-        $maxMatches = 0;
+        $headerIndex = -1; 
+        $dataStartIndex = 0;
+        $maxHeaderMatches = 0;
         $scanLimit = min(count($import->raw_data), 20);
 
         for ($i = 0; $i < $scanLimit; $i++) {
             $row = $import->raw_data[$i];
-            if (empty($row)) continue;
+            if (empty(array_filter($row))) continue;
             
-            $currentMatches = 0;
-            $matchedFields = [];
+            $headerMatches = 0;
+            $dataMatches = 0;
 
             foreach ($row as $cell) {
-                if (empty($cell) || is_numeric($cell)) continue;
-                
-                try {
-                     $cleanCell = strtolower(preg_replace('/[^a-z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $cell)));
-                } catch (\Exception $e) {
-                     $cleanCell = '';
+                $cell = trim((string)$cell);
+                if ($cell === '') continue;
+
+                // 1. Détection de patterns de DONNÉES (Dates, Comptes, Montants)
+                if (preg_match('/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/', $cell) || 
+                    preg_match('/^\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}$/', $cell)) {
+                    $dataMatches += 2;
                 }
+                // Compte ou Numéro : numérique 4+ chiffres
+                if (is_numeric($cell) && strlen($cell) >= 4 && strlen($cell) <= 12) {
+                    $dataMatches++;
+                }
+
+                // 2. Détection de MOTS-CLÉS d'en-tête
+                try {
+                    $cleanCell = strtolower(preg_replace('/[^a-z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $cell)));
+                } catch (\Exception $e) { $cleanCell = ''; }
+                
                 if (empty($cleanCell) || strlen($cleanCell) < 3) continue;
 
-                foreach ($fields as $fieldKey => $field) {
-                    if (in_array($fieldKey, $matchedFields)) continue;
-                    
+                foreach ($fields as $field) {
                     foreach ($field['match'] as $m) {
                         try {
-                             $cleanM = strtolower(preg_replace('/[^a-z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $m)));
-                        } catch (\Exception $e) {
-                             $cleanM = ''; // Should not happen for hardcoded matches but safe
-                        }
-                        if ($cleanCell === $cleanM || str_contains($cleanCell, $cleanM)) {
-                            $currentMatches++;
-                            $matchedFields[] = $fieldKey;
+                            $cleanM = strtolower(preg_replace('/[^a-z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $m)));
+                        } catch (\Exception $e) { $cleanM = ''; }
+                        
+                        if ($cleanCell === $cleanM || (strlen($cleanCell) > 3 && str_contains($cleanCell, $cleanM))) {
+                            $headerMatches++;
                             break 2;
                         }
                     }
                 }
             }
 
-            // Seuil de détection : on a besoin d'au moins 1 match solide ou 2 partiels
-            if ($currentMatches >= 1 && $currentMatches > $maxMatches) {
-                $maxMatches = $currentMatches;
-                $headerIndex = $i;
+            // DÉCISION : Si la ligne contient des patterns de données, c'est le début des informations utiles.
+            if ($dataMatches >= 2) {
+                // Si on a déjà trouvé un en-tête avant, on s'arrête là (données après en-tête).
+                // Si on n'en a pas trouvé, c'est un fichier SANS en-tête.
+                $dataStartIndex = ($headerIndex === -1) ? $i : ($headerIndex + 1);
+                break;
+            }
+
+            // Si c'est un en-tête probable (3+ matches) sans patterns de données
+            if ($headerMatches >= 3 && $dataMatches == 0) {
+                if ($headerMatches > $maxHeaderMatches) {
+                    $maxHeaderMatches = $headerMatches;
+                    $headerIndex = $i;
+                }
             }
         }
 
@@ -1494,7 +1512,7 @@ class AdminConfigController extends Controller
 
         // MOTEUR DE CORRESPONDANCE "INFAILLIBLE" : Multicritère
         // 1. Dictionnaire étendu, 2. Regex Pattern, 3. Analyse statistique
-        $dataSamples = array_slice($import->raw_data, $headerIndex + 1, 20);
+        $dataSamples = array_slice($import->raw_data, $dataStartIndex, 20);
         
         foreach ($fields as $fieldKey => &$field) {
             $field['suggested_col'] = null;

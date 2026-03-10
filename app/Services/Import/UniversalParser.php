@@ -64,6 +64,8 @@ class UniversalParser
 
             // Heuristic to find the header row instead of just shifting the first row
             $headerRowIndex = -1;
+            $dataStartIndex = 0;
+            $maxHeaderHits = 0;
             $headerTokens = [
                 'date', 'jour', 'journal', 'codejournal', 'compte', 'tiers', 'libelle', 'debit', 'credit',
                 'reference', 'piece', 'saisie', 'nsaisie', 'intitule', 'numero'
@@ -71,32 +73,59 @@ class UniversalParser
 
             foreach ($rows as $index => $row) {
                 if ($index > 20) break; // Don't search too deep
-                $hits = 0;
+                if (empty(array_filter($row))) continue;
+
+                $headerHits = 0;
+                $dataHits = 0;
+
                 foreach ($row as $cell) {
                     $cell = trim((string)$cell);
                     if ($cell === '') continue;
+
+                    // 1. Data Patterns (Date, Account, Amounts)
+                    if (preg_match('/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/', $cell) || 
+                        preg_match('/^\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}$/', $cell)) {
+                        $dataHits += 2;
+                    }
+                    if (is_numeric($cell) && strlen($cell) >= 4 && strlen($cell) <= 12) {
+                        $dataHits++;
+                    }
+
+                    // 2. Header Keywords
                     $clean = strtolower(preg_replace('/[^a-z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $cell)));
-                    if ($clean === '') continue;
                     foreach ($headerTokens as $t) {
-                        if (str_contains($clean, $t)) { $hits++; break; }
+                        if (str_contains($clean, $t)) { $headerHits++; break; }
                     }
                 }
-                // If we find a row with at least 2 header-like columns, assume it's the header
-                if ($hits >= 2) {
-                    $headerRowIndex = $index;
+
+                // If we see data patterns, it's a data row. Stop searching.
+                if ($dataHits >= 2) {
+                    $dataStartIndex = ($headerRowIndex === -1) ? $index : ($headerRowIndex + 1);
                     break;
+                }
+
+                // If we see header keywords and no data patterns
+                if ($headerHits >= 3 && $dataHits == 0) {
+                    if ($headerHits > $maxHeaderHits) {
+                        $maxHeaderHits = $headerHits;
+                        $headerRowIndex = $index;
+                    }
                 }
             }
 
             if ($headerRowIndex !== -1) {
-                // If we found a header row, everything before it is title/junk
-                // We keep everything AFTER the header row as data
+                // We found a header row
                 $headers = array_map('trim', $rows[$headerRowIndex]);
-                $rows = array_slice($rows, $headerRowIndex + 1);
+                $rows = array_slice($rows, $dataStartIndex);
             } else {
-                // Fallback to legacy behavior if no clear headers found
-                $headers = array_shift($rows);
-                $headers = array_map('trim', $headers);
+                // NO HEADER FOUND: Generate generic headers and keep all data from dataStartIndex
+                $maxCols = 0;
+                foreach(array_slice($rows, $dataStartIndex, 10) as $r) $maxCols = max($maxCols, count($r));
+                $headers = [];
+                for ($i = 0; $i < $maxCols; $i++) {
+                    $headers[] = "Colonne " . chr(65 + ($i % 26)) . ($i > 25 ? floor($i/26) : '');
+                }
+                $rows = array_slice($rows, $dataStartIndex);
             }
             
             // Verify headers are not empty
