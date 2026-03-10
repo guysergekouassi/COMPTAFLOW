@@ -56,10 +56,16 @@ class UniversalParser
             
             $sheet = $spreadsheet->getActiveSheet();
             // On active formatData (3ème param) pour obtenir les valeurs formatées (ex: Dates lisibles)
-            $rows = $sheet->toArray(null, true, true, false);
+            $rawRows = $sheet->toArray(null, true, true, false);
 
-            if (empty($rows)) {
+            if (empty($rawRows)) {
                 throw new \Exception("Le fichier est vide.");
+            }
+
+            // Normalisation des données
+            $rows = [];
+            foreach ($rawRows as $r) {
+                $rows[] = array_map([$this, 'normalizeString'], (array)$r);
             }
 
             // Heuristic to find the header row instead of just shifting the first row
@@ -159,6 +165,7 @@ class UniversalParser
         }
 
         $lines = explode(PHP_EOL, $content);
+        $lines = array_map([$this, 'normalizeString'], $lines);
         $lines = array_filter($lines, fn($l) => !empty(trim($l))); // Remove empty lines
         $lines = array_values($lines); // Re-index
 
@@ -272,7 +279,7 @@ class UniversalParser
             // Look for th
             $ths = $tr->getElementsByTagName('th');
             if ($ths->length > 0) {
-                foreach ($ths as $th) $cells[] = trim($th->textContent);
+                foreach ($ths as $th) $cells[] = $this->normalizeString($th->textContent);
                 if (empty($headers)) {
                     $headers = $cells;
                     continue; 
@@ -282,7 +289,7 @@ class UniversalParser
             // Look for td
             $tds = $tr->getElementsByTagName('td');
             if ($tds->length > 0) {
-                foreach ($tds as $td) $cells[] = trim($td->textContent);
+                foreach ($tds as $td) $cells[] = $this->normalizeString($td->textContent);
             }
 
             // Fallback: If no th found, first row with checking is headers
@@ -343,11 +350,39 @@ class UniversalParser
             $cleanRow = [];
             foreach ($headers as $h) {
                 $val = $r[$h] ?? '';
-                $cleanRow[] = is_array($val) ? json_encode($val) : trim((string)$val);
+                $cleanRow[] = is_array($val) ? json_encode($val) : $this->normalizeString((string)$val);
             }
             $cleanRows[] = $cleanRow;
         }
 
         return ['headers' => $headers, 'rows' => $cleanRows];
+    }
+
+    /**
+     * Nettoyage et normalisation Unicode/SAGE
+     */
+    protected function normalizeString($str)
+    {
+        if ($str === null || $str === '') return $str;
+        if (!is_string($str)) return $str;
+
+        // 1. Conversion UTF-8 robuste
+        if (!mb_check_encoding($str, 'UTF-8')) {
+            $str = mb_convert_encoding($str, 'UTF-8', 'ISO-8859-1');
+        }
+
+        // 2. Suppression des espaces insécables (SAGE / Unicode)
+        // \u00A0 (UTF-8 C2 A0)
+        $str = str_replace(["\xc2\xa0", "\xa0", "\u{00A0}"], ' ', $str);
+
+        // 3. Normalisation Unicode (NFKC pour les caractères combinés comme les accents)
+        if (class_exists('Normalizer')) {
+            $str = \Normalizer::normalize($str, \Normalizer::FORM_C);
+        }
+
+        // 4. Nettoyage final des espaces et caractères de contrôle invisibles
+        $str = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $str);
+        
+        return trim($str);
     }
 }

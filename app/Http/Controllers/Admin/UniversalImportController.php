@@ -238,14 +238,11 @@ class UniversalImportController extends Controller
 
                 $generationPrefix = '40'; // Fallback standard
 
-                // 1. Détection de catégorie par préfixe si le numéro importé est présent
+                // 1. Déduction de catégorie par préfixe si le numéro importé est présent
                 if (!empty($importedNum)) {
                     $prefix = substr($importedNum, 0, 2);
                     if (str_starts_with($importedNum, '4')) {
                         $generationPrefix = $prefix;
-                    } else {
-                        $errors[] = "Ligne $lineNumber : Le numéro tiers d'origine doit commencer par 4.";
-                        continue;
                     }
 
                     $categoryMap = [
@@ -257,8 +254,6 @@ class UniversalImportController extends Controller
                         $category = $categoryMap[$prefix];
                         $payload['type_de_tiers'] = $category;
                         if (empty($compteGeneral)) {
-                            // On déduit un compte général par défaut (ex: 41100000)
-                            // 40 => 401, 41 => 411, sinon le préfixe
                             $compteRoot = in_array($prefix, ['40', '41']) ? $prefix . '1' : $prefix;
                             $compteGeneral = $compteRoot . str_pad('0', (8 - strlen($compteRoot)), '0', STR_PAD_RIGHT);
                             $payload['compte_general'] = $compteGeneral;
@@ -266,11 +261,38 @@ class UniversalImportController extends Controller
                     }
                 }
 
+                // Nettoyage strict du compte général
+                if (!empty($payload['compte_general'])) {
+                    $payload['compte_general'] = preg_replace('/[^0-9]/', '', (string)$payload['compte_general']);
+                }
+
+                // RECHERCHE PAR NUMÉRO ORIGINAL (PRÉVENTION DOUBLE)
+                if (!empty($importedNum)) {
+                    $existing = \App\Models\PlanTiers::where('company_id', $companyId)
+                        ->where(function($q) use ($importedNum) {
+                            $q->where('numero_original', $importedNum)
+                              ->orWhere('numero_de_tiers', $importedNum);
+                        })->first();
+                    if ($existing) {
+                        $payload['numero_de_tiers'] = $existing->numero_de_tiers;
+                        $validPayloads[] = $payload;
+                        continue;
+                    }
+                }
+
                 // 2. Génération du nouveau numéro séquentiel
                 $company = \App\Models\Company::find($companyId);
                 $digits = (int)($company->tier_digits ?? 8);
-                $base = $generationPrefix;
-                $seqLength = max(1, $digits - strlen($base));
+                $tierIdType = $company->tier_id_type ?? 'numeric';
+                $prefix = $generationPrefix;
+                $base = $prefix;
+
+                if ($tierIdType === 'alphanumeric' && !empty($intitule)) {
+                    $cleanName = strtoupper(preg_replace('/[^a-zA-Z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $intitule)));
+                    $namePart = substr($cleanName, 0, 3);
+                    if (strlen($namePart) < 1) $namePart = 'XXX';
+                    $base = $prefix . $namePart;
+                }
 
                 // Cache du max pour éviter O(N^2) et les collisions
                 if (!isset($importBatchMax[$base])) {
@@ -289,6 +311,7 @@ class UniversalImportController extends Controller
                 }
 
                 $importBatchMax[$base]++;
+                $seqLength = max(1, $digits - strlen($base));
                 $nextId = $base . str_pad($importBatchMax[$base], $seqLength, '0', STR_PAD_LEFT);
                 
                 if (strlen($nextId) > $digits) {

@@ -3152,6 +3152,7 @@ class AdminConfigController extends Controller
                     }
 
                     // Récupérer l'ID du compte collectif
+                    $rowCompteNum = preg_replace('/[^0-9]/', '', (string)$rowCompteNum); // Nettoyage strict numérique
                     $rowCompteNum = $this->standardizeAccountNumber($rowCompteNum, $accountDigits);
                     $compteCollectifId = $planComptableIds[$rowCompteNum] ?? null;
 
@@ -3207,28 +3208,38 @@ class AdminConfigController extends Controller
                     $prefix = $generationPrefix ?? substr($rowCompteNum, 0, 2);
 
                     // Génération du numéro séquentiel
-                    if (!isset($localMaxTiers[$prefix])) {
+                    $tierIdType = $user->company->tier_id_type ?? 'numeric';
+                    $base = $prefix;
+                    
+                    if ($tierIdType === 'alphanumeric' && !empty($rowIntitule)) {
+                        $cleanName = strtoupper(preg_replace('/[^a-zA-Z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $rowIntitule)));
+                        $namePart = substr($cleanName, 0, 3);
+                        if (strlen($namePart) < 1) $namePart = 'XXX';
+                        $base = $prefix . $namePart;
+                    }
+
+                    if (!isset($localMaxTiers[$base])) {
                         $resp = $this->getNextTierNumber(new Request([
                             'plan_comptable_id' => $compteCollectifId,
                             'prefix' => $prefix,
-                            'intitule' => $rowMapped['intitule'] ?? ''
+                            'intitule' => $rowIntitule
                         ]));
                         $genData = $resp->getData();
                         if ($genData->success) {
                             $numeroGenere = $genData->next_id;
-                            $localMaxTiers[$prefix] = $genData->next_id;
+                            $localMaxTiers[$base] = $genData->next_id;
                         }
                     } else {
                         // Génération locale pour le batch
-                        $lastId = $localMaxTiers[$prefix];
-                        $prefixLen = strlen($prefix);
-                        $sequencePart = substr($lastId, $prefixLen);
+                        $lastId = $localMaxTiers[$base];
+                        $baseLen = strlen($base);
+                        $sequencePart = substr($lastId, $baseLen);
                         if (is_numeric($sequencePart)) {
                             $nextSeq = (int)$sequencePart + 1;
-                            $availableSpace = (int)($user->company->tier_digits ?? 8) - $prefixLen;
-                            $newId = $prefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                            $availableSpace = max(0, (int)($user->company->tier_digits ?? 8) - $baseLen);
+                            $newId = $base . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
                             $numeroGenere = $newId;
-                            $localMaxTiers[$prefix] = $newId;
+                            $localMaxTiers[$base] = $newId;
                         }
                     }
 
@@ -3238,14 +3249,18 @@ class AdminConfigController extends Controller
 
                     // RECHERCHE ROBUSTE DU TIERS EXISTANT
                     // On cherche par le numéro original fourni OU par le numéro de tiers s'il correspondait déjà
-                    $existingTier = PlanTiers::where('company_id', $user->company_id)
-                        ->where(function($q) use ($numeroOriginalTiers, $importedNum) {
-                            $q->where('numero_original', $numeroOriginalTiers)
-                              ->orWhere('numero_original', $importedNum)
-                              ->orWhere('numero_de_tiers', $numeroOriginalTiers)
-                              ->orWhere('numero_de_tiers', $importedNum);
-                        })
-                        ->first();
+                    // IMPORTANT : On ne matche pas si le numéro original est vide pour éviter les collisions (doublons)
+                    $existingTier = null;
+                    if (!empty($numeroOriginalTiers)) {
+                        $existingTier = PlanTiers::where('company_id', $user->company_id)
+                            ->where(function($q) use ($numeroOriginalTiers, $importedNum) {
+                                $q->where('numero_original', $numeroOriginalTiers);
+                                if (!empty($importedNum)) $q->orWhere('numero_original', $importedNum);
+                                $q->orWhere('numero_de_tiers', $numeroOriginalTiers);
+                                if (!empty($importedNum)) $q->orWhere('numero_de_tiers', $importedNum);
+                            })
+                            ->first();
+                    }
 
                     if ($existingTier) {
                         // UPDATE existant : On met à jour l'intitulé et le numéro original
@@ -3859,6 +3874,7 @@ class AdminConfigController extends Controller
             }
 
             $typeTiers = $request->type_de_tiers ?? 'Client';
+            // Utilisation des racines standards si non spécifié
             $compteGeneral = ($typeTiers === 'Fournisseur') ? '401100' : '411100';
 
             PlanTiers::create([
@@ -3866,6 +3882,7 @@ class AdminConfigController extends Controller
                 'intitule' => strtoupper($request->intitule),
                 'type_de_tiers' => $typeTiers,
                 'compte_general' => $compteGeneral,
+                'numero_original' => $request->original_numero ?? null,
                 'user_id' => $user->id,
                 'company_id' => $user->company_id,
             ]);
@@ -3879,20 +3896,21 @@ class AdminConfigController extends Controller
                 if ($original !== $nouveau) {
                     $import = ImportStaging::find($importId);
                     if ($import) {
-                        $data = $import->raw_data;
-                        $mapping = $import->mapping;
-                        // On trouve la colonne "tiers"
-                        $colTiers = $mapping['tiers'] ?? null;
-                        if ($colTiers !== null) {
+                        $data = json_decode($import->raw_data, true);
+                        if (is_array($data)) {
                             $updated = false;
-                            foreach ($data as $index => &$row) {
-                                if (isset($row[$colTiers]) && trim($row[$colTiers]) === $original) {
-                                    $row[$colTiers] = $nouveau;
-                                    $updated = true;
+                            foreach ($data as &$row) {
+                                // On cherche dans toute la ligne si une cellule correspond au numéro original
+                                // car le mapping peut varier. C'est plus sûr.
+                                foreach ($row as $k => $v) {
+                                    if (trim((string)$v) === $original) {
+                                        $row[$k] = $nouveau;
+                                        $updated = true;
+                                    }
                                 }
                             }
                             if ($updated) {
-                                $import->raw_data = $data;
+                                $import->raw_data = json_encode($data);
                                 $import->save();
                             }
                         }
