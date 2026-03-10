@@ -3828,10 +3828,14 @@ class AdminConfigController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ce tiers existe déjà.']);
             }
 
+            $typeTiers = $request->type_de_tiers ?? 'Client';
+            $compteGeneral = ($typeTiers === 'Fournisseur') ? '401100' : '411100';
+
             PlanTiers::create([
                 'numero_de_tiers' => $request->numero_tiers,
                 'intitule' => strtoupper($request->intitule),
-                'type_de_tiers' => $request->type_de_tiers ?? 'Client',
+                'type_de_tiers' => $typeTiers,
+                'compte_general' => $compteGeneral,
                 'user_id' => $user->id,
                 'company_id' => $user->company_id,
             ]);
