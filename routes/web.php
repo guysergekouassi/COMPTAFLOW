@@ -455,6 +455,7 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
         Route::post('/import/quick-account', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickAccountCreate'])->name('import.quick_account');
         Route::post('/import/quick-tier', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickTierCreate'])->name('import.quick_tier');
         Route::post('/import/quick-journal', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickJournalCreate'])->name('import.quick_journal');
+        Route::get('/import/suggest-number', [App\Http\Controllers\Admin\AdminConfigController::class, 'suggestNextNumber'])->name('import.suggest_number');
         Route::post('/import/update-row/{id}/{index}', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateRow'])->name('import.update_row');
         Route::delete('/import/delete-row/{id}/{index}', [App\Http\Controllers\Admin\AdminConfigController::class, 'deleteRow'])->name('import.delete_row');
         Route::post('/import/add-row/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'addRow'])->name('import.add_row');

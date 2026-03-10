@@ -192,10 +192,10 @@
             errors.forEach(err => { dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>'; });
             dataHtml += '</ul></div>';
         } else {
-            dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><div class="text-xs font-bold text-emerald-700">Cette ligne est prÃªte pour l\'importation.</div></div>';
+            dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l'importation.</div></div>';
         }
         dataHtml += '</div>';
-        Swal.fire({ title: 'DÃ©tails de la ligne', html: dataHtml, icon: (errors && errors.length > 0) ? 'warning' : 'info', confirmButtonText: 'Fermer', customClass: { confirmButton: 'btn btn-primary rounded-xl px-12 py-3' }, buttonsStyling: false });
+        Swal.fire({ title: 'Détails de la ligne', html: dataHtml, icon: (errors && errors.length > 0) ? 'warning' : 'info', confirmButtonText: 'Fermer', customClass: { confirmButton: 'btn btn-primary rounded-xl px-12 py-3' }, buttonsStyling: false });
     }
     function addStagingRow(btn) {
         const importId = btn.dataset.importId;
@@ -222,14 +222,14 @@
             
             // Logique de pré-remplissage
             let value = "";
-            if (prefillData[fieldKey]) {
+            if (prefillData && prefillData[colIndex] !== undefined) {
                 // Sauf les montants
                 if (!['debit', 'credit', 'montant'].includes(fieldKey.toLowerCase())) {
-                    value = prefillData[fieldKey];
+                    value = prefillData[colIndex];
                 }
             }
 
-            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-add-input" data-field="${fieldKey}" data-col="${colIndex}" value="${value.replace(/"/g, '&quot;')}"></div>`;
+            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-add-input" data-field="${fieldKey}" data-col="${colIndex}" value="${value ? value.replace(/"/g, '&quot;') : ''}"></div>`;
         });
         html += '</div>';
         Swal.fire({
@@ -353,7 +353,7 @@
                                                     </div>
                                                     <h6 class="font-bold mb-0">DÃ©sÃ©quilibre ({{ number_format($balance, 0, ',', ' ') }})</h6>
                                                 </div>
-                                                <p class="text-xs text-slate-500 mb-3">Le total dÃ©bit ne correspond pas au total crÃ©dit.</p>
+                                                <p class="text-xs text-slate-500 mb-3">Le total débit ne correspond pas au total crédit.</p>
                                                 <div class="alert alert-danger py-2 px-3 text-[10px] mb-0 border-0">
                                                     VÃ©rifiez les montants ou les lignes manquantes.
                                                 </div>
@@ -402,7 +402,7 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
-                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs dÃ©tectÃ©es</div>
+                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
                                 </div>
                             </div>
@@ -412,7 +412,7 @@
                                         <div class="text-xs font-bold text-slate-400 uppercase mb-2">Tout afficher</div>
                                         <div class="d-flex gap-4">
                                             <div class="text-xs d-flex align-items-center gap-2">
-                                                <span class="status-indicator bg-emerald-500"></span> PrÃªt Ã  l'import
+                                                <span class="status-indicator bg-emerald-500"></span> Prêt à l'import
                                             </div>
                                             <div class="text-xs d-flex align-items-center gap-2">
                                                 <span class="status-indicator bg-rose-500"></span> Erreur bloquante
@@ -425,7 +425,7 @@
                                     <div class="bg-white p-4 rounded-2xl border border-slate-100 d-flex align-items-center" style="width: 300px;">
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numÃ©ro / libellÃ©..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
+                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
                                         </div>
                                     </div>
                                 </div>
@@ -460,11 +460,11 @@
                                                 </th>
                                                 <th style="width: 50px;">STATUT</th>
                                                 @if($import->type == 'initial')
-                                                    <th>NUMÃ‰RO DE COMPTE</th>
-                                                    <th>INTITULÃ‰ DU COMPTE</th>
+                                                    <th>NUMÉRO DE COMPTE</th>
+                                                    <th>INTITULÉ DU COMPTE</th>
                                                 @elseif($import->type == 'journals')
                                                     <th>CODE JOURNAL</th>
-                                                    <th>INTITULÃ‰ DU JOURNAL</th>
+                                                    <th>INTITULÉ DU JOURNAL</th>
                                                     <th>TYPE</th>
                                                     <th>COMPTE</th>
                                                     <th>ANALYTIQUE</th>
@@ -472,19 +472,19 @@
                                                 @elseif($import->type == 'tiers')
                                                     <th>NÂ° TIERS / IDENTIFIANT</th>
                                                     <th>NOM / RAISON SOCIALE</th>
-                                                    <th>CATÃ‰GORIE</th>
-                                                    <th>COMPTE GÃ‰NÃ‰RAL</th>
+                                                    <th>CATÉGORIE</th>
+                                                    <th>COMPTE GÉNÉRAL</th>
                                                 @else
-                                                    <th>NÂ° SAISIE</th>
-                                                    <th>Ã‰QUILIBRE</th>
+                                                    <th>N° SAISIE</th>
+                                                    <th>ÉQUILIBRE</th>
                                                     <th>DATE</th>
                                                     <th>JOURNAL</th>
-                                                    <th>RÃ‰FÃ‰RENCE</th>
+                                                    <th>RÉFÉRENCE</th>
                                                     <th>COMPTE</th>
                                                     <th>TIERS</th>
-                                                    <th>LIBELLÃ‰</th>
-                                                    <th class="text-end">DÃ‰BIT</th>
-                                                <th class="text-end">CRÃ‰DIT</th>
+                                                    <th>LIBELLÉ</th>
+                                                    <th class="text-end">DÉBIT</th>
+                                                <th class="text-end">CRÉDIT</th>
                                                 @endif
                                                 <th class="text-center">ACTIONS</th>
                                             </tr>
@@ -703,7 +703,7 @@
         function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
-                text: "Cette action retirera dÃ©finitivement la ligne de l'importation en cours.",
+                text: "Cette action retirera définitivement la ligne de l'importation en cours.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Oui, supprimer',
@@ -803,7 +803,7 @@
 
             let html = '<div class="text-start">';
             
-            // On crÃ©e un champ pour chaque colonne mappÃ©e
+            // On crée un champ pour chaque colonne mappée
             Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
                 if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
                 
@@ -902,7 +902,7 @@
 
             if (errors && errors.length > 0) {
                 dataHtml += '<div class="p-4 rounded-2xl bg-rose-50 border border-rose-100">';
-                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies dÃ©tectÃ©es</h6>';
+                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies détectées</h6>';
                 dataHtml += '<ul class="ps-4 mb-0">';
                 errors.forEach(err => {
                     dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>';
@@ -911,12 +911,12 @@
             } else {
                 dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 d-flex align-items-center gap-3">';
                 dataHtml += '<div class="bg-emerald-500 text-white p-2 rounded-full"><i class="fa-solid fa-check"></i></div>';
-                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prÃªte pour l\'importation.</div></div>';
+                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l'importation.</div></div>';
             }
             dataHtml += '</div>';
 
             Swal.fire({
-                title: 'DÃ©tails de la ligne',
+                title: 'Détails de la ligne',
                 html: dataHtml,
                 icon: (errors && errors.length > 0) ? 'warning' : 'info',
                 confirmButtonText: 'Fermer',
@@ -927,23 +927,47 @@
             });
         }
 
-        function quickCreateAccount(numero, libelle) {
+        async function quickCreateAccount(numero, libelle) {
+            Swal.showLoading();
+            let suggestion = numero;
+            try {
+                const res = await fetch(`{{ route('admin.import.suggest_number') }}?type=account&original=${encodeURIComponent(numero)}`);
+                const data = await res.json();
+                if (data.success) suggestion = data.suggestion;
+            } catch(e) {}
+            
             Swal.fire({
-                title: 'Création du compte',
-                text: `Voulez-vous créer le compte ${numero} - ${libelle} ?`,
-                icon: 'question',
+                title: 'Création rapide du Compte',
+                html: `
+                    <div class="mb-3 text-start">
+                        <label class="form-label text-xs font-bold text-slate-500">Numéro de compte suggéré</label>
+                        <input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}">
+                        <div class="text-muted text-[10px] mt-1">Numéro original lu : <strong>${numero}</strong></div>
+                    </div>
+                    <div class="mb-3 text-start">
+                        <label class="form-label text-xs font-bold text-slate-500">Intitulé</label>
+                        <input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}">
+                    </div>
+                `,
+                icon: 'info',
                 showCancelButton: true,
-                confirmButtonText: 'Oui, créer',
+                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer',
                 cancelButtonText: 'Annuler',
                 customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-                buttonsStyling: false
+                buttonsStyling: false,
+                preConfirm: () => {
+                    return {
+                        numero: document.getElementById('swal-qc-numero').value,
+                        libelle: document.getElementById('swal-qc-libelle').value
+                    }
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.showLoading();
                     fetch("{{ route('admin.import.quick_account') }}", {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                        body: JSON.stringify({ numero_compte: numero, intitule: libelle, type_de_compte: 'Bilan' })
+                        body: JSON.stringify({ numero_compte: result.value.numero, intitule: result.value.libelle, type_de_compte: 'Bilan' })
                     }).then(response => response.json()).then(data => {
                         if (data.success) {
                             Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
@@ -955,23 +979,47 @@
             });
         }
 
-        function quickCreateTier(numero, libelle) {
+        async function quickCreateTier(numero, libelle) {
+            Swal.showLoading();
+            let suggestion = numero;
+            try {
+                const res = await fetch(`{{ route('admin.import.suggest_number') }}?type=tier&original=${encodeURIComponent(numero)}`);
+                const data = await res.json();
+                if (data.success) suggestion = data.suggestion;
+            } catch(e) {}
+
             Swal.fire({
-                title: 'Création du tiers',
-                text: `Voulez-vous créer le tiers ${numero} - ${libelle} ?`,
-                icon: 'question',
+                title: 'Création rapide du Tiers',
+                html: `
+                    <div class="mb-3 text-start">
+                        <label class="form-label text-xs font-bold text-slate-500">Numéro de tiers suggéré</label>
+                        <input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}">
+                        <div class="text-muted text-[10px] mt-1">Numéro original lu : <strong>${numero}</strong></div>
+                    </div>
+                    <div class="mb-3 text-start">
+                        <label class="form-label text-xs font-bold text-slate-500">Intitulé</label>
+                        <input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}">
+                    </div>
+                `,
+                icon: 'info',
                 showCancelButton: true,
-                confirmButtonText: 'Oui, créer',
+                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer',
                 cancelButtonText: 'Annuler',
                 customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-                buttonsStyling: false
+                buttonsStyling: false,
+                preConfirm: () => {
+                    return {
+                        numero: document.getElementById('swal-qc-numero').value,
+                        libelle: document.getElementById('swal-qc-libelle').value
+                    }
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.showLoading();
                     fetch("{{ route('admin.import.quick_tier') }}", {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                        body: JSON.stringify({ numero_tiers: numero, intitule: libelle, type_de_tiers: 'Client' })
+                        body: JSON.stringify({ numero_tiers: result.value.numero, intitule: result.value.libelle, type_de_tiers: 'Client' })
                     }).then(response => response.json()).then(data => {
                         if (data.success) {
                             Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
@@ -983,23 +1031,47 @@
             });
         }
 
-        function quickCreateJournal(code, libelle) {
+        async function quickCreateJournal(code, libelle) {
+            Swal.showLoading();
+            let suggestion = code;
+            try {
+                const res = await fetch(`{{ route('admin.import.suggest_number') }}?type=journal&original=${encodeURIComponent(code)}`);
+                const data = await res.json();
+                if (data.success) suggestion = data.suggestion;
+            } catch(e) {}
+
             Swal.fire({
-                title: 'Création du journal',
-                text: `Voulez-vous créer le journal ${code} - ${libelle} ?`,
-                icon: 'question',
+                title: 'Création rapide du Journal',
+                html: `
+                    <div class="mb-3 text-start">
+                        <label class="form-label text-xs font-bold text-slate-500">Code Journal suggéré</label>
+                        <input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}">
+                        <div class="text-muted text-[10px] mt-1">Code original lu : <strong>${code}</strong></div>
+                    </div>
+                    <div class="mb-3 text-start">
+                        <label class="form-label text-xs font-bold text-slate-500">Intitulé</label>
+                        <input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}">
+                    </div>
+                `,
+                icon: 'info',
                 showCancelButton: true,
-                confirmButtonText: 'Oui, créer',
+                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer',
                 cancelButtonText: 'Annuler',
                 customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-                buttonsStyling: false
+                buttonsStyling: false,
+                preConfirm: () => {
+                    return {
+                        numero: document.getElementById('swal-qc-numero').value,
+                        libelle: document.getElementById('swal-qc-libelle').value
+                    }
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.showLoading();
                     fetch("{{ route('admin.import.quick_journal') }}", {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                        body: JSON.stringify({ code_journal: code, intitule: libelle, type_journal: 'Opérations diverses' })
+                        body: JSON.stringify({ code_journal: result.value.numero, intitule: result.value.libelle, type_journal: 'Opérations diverses' })
                     }).then(response => response.json()).then(data => {
                         if (data.success) {
                             Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
@@ -1098,7 +1170,7 @@
             const errorCheckboxes = document.querySelectorAll('.staging-row[data-status="error"] .row-checkbox');
             
             if (errorCheckboxes.length === 0) {
-                Swal.fire('Info', 'Aucune ligne en erreur Ã  supprimer.', 'info');
+                Swal.fire('Info', 'Aucune ligne en erreur à supprimer.', 'info');
                 return;
             }
 
@@ -1148,7 +1220,7 @@
             .then(data => {
                 if (data.success) {
                     Swal.fire({
-                        title: 'SupprimÃ© !',
+                        title: 'Supprimé !',
                         text: data.message,
                         icon: 'success',
                         timer: 1500,
@@ -1162,14 +1234,14 @@
             })
             .catch(error => {
                 console.error("Bulk Delete Error:", error);
-                Swal.fire('Erreur', 'Une erreur est survenue lors de la suppression groupÃ©e.', 'error');
+                Swal.fire('Erreur', 'Une erreur est survenue lors de la suppression groupée.', 'error');
             });
         }
 
         function exportErrorsToCSV() {
             const errorRows = document.querySelectorAll('.table-staging tbody tr.row-error, .table-staging tbody tr[data-status="error"]');
             if (errorRows.length === 0) {
-                Swal.fire('Info', 'Aucune erreur Ã  exporter.', 'info');
+                Swal.fire('Info', 'Aucune erreur à exporter.', 'info');
                 return;
             }
 
@@ -1233,6 +1305,39 @@
 
             return `${day}/${month}/${year}`;
         }
+
+        // --- Logique pour restreindre à 1 seule checkbox pour "Ajouter une ligne" ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            const addBtn = document.getElementById('addStagingRowBtn');
+            
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+                    
+                    if (checkedCount > 1) {
+                        // Si plus d'une case est cochée, on désactive le bouton ajouter
+                        if (addBtn) addBtn.disabled = true;
+                    } else {
+                        // Si 0 ou 1 case est cochée, on réactive
+                        if (addBtn) addBtn.disabled = false;
+                    }
+                });
+            });
+            
+            // On gère aussi le toggle All
+            const masterCb = document.getElementById('masterCheckbox');
+            if(masterCb) {
+                masterCb.addEventListener('change', function() {
+                    setTimeout(() => {
+                        const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+                        if(addBtn) {
+                            addBtn.disabled = checkedCount > 1;
+                        }
+                    }, 50);
+                });
+            }
+        });
     </script>
 </body>
 </html>

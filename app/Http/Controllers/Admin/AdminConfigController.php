@@ -3719,6 +3719,57 @@ class AdminConfigController extends Controller
     /**
      * Tunnel d'Importation - Création rapide de compte à la volée
      */
+    public function suggestNextNumber(Request $request) {
+        $type = $request->get('type');
+        $original = $request->get('original');
+        $user = Auth::user();
+        $companyId = $user->company_id;
+
+        $suggestion = $original;
+
+        try {
+            if ($type === 'account') {
+                // Essayer d'extraire la racine (ex: 411)
+                $prefix = substr(preg_replace('/[^0-9]/', '', $original), 0, 3);
+                if (empty($prefix)) $prefix = '411'; // Par défaut client
+                
+                $maxAccount = PlanComptable::where('company_id', $companyId)
+                    ->where('numero_de_compte', 'LIKE', $prefix . '%')
+                    ->max('numero_de_compte');
+                    
+                if ($maxAccount) {
+                    $suggestion = str_pad((int)$maxAccount + 1, strlen($maxAccount), '0', STR_PAD_LEFT);
+                } else {
+                    $targetLength = $user->company->account_digits ?? 8;
+                    $suggestion = str_pad($prefix . '1', $targetLength, '0', STR_PAD_RIGHT);
+                }
+            } elseif ($type === 'tier') {
+                $maxTier = PlanTiers::where('company_id', $companyId)->max('numero_de_tiers');
+                if ($maxTier && preg_match('/^([^\d]*)(\d+)$/', $maxTier, $matches)) {
+                    $suggestion = $matches[1] . str_pad((int)$matches[2] + 1, strlen($matches[2]), '0', STR_PAD_LEFT);
+                } elseif ($maxTier) {
+                    // S'il n'y a pas de pad reconnu
+                    $suggestion = $maxTier . '1';
+                } else {
+                    $suggestion = 'T001';
+                }
+            } elseif ($type === 'journal') {
+                $maxJournal = CodeJournal::where('company_id', $companyId)->max('code_journal');
+                if ($maxJournal && preg_match('/^([^\d]*)(\d+)$/', $maxJournal, $matches)) {
+                    $suggestion = $matches[1] . str_pad((int)$matches[2] + 1, strlen($matches[2]), '0', STR_PAD_LEFT);
+                } else {
+                    $suggestion = 'J01';
+                }
+            }
+            return response()->json(['success' => true, 'suggestion' => $suggestion]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'suggestion' => $original]);
+        }
+    }
+
+    /**
+     * Tunnel d'Importation - Création rapide de compte à la volée
+     */
     public function quickAccountCreate(Request $request)
     {
         $request->validate([
