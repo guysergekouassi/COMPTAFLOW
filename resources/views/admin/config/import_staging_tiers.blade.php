@@ -115,7 +115,7 @@
                                         <i class="fa-solid fa-circle-check text-success fs-4"></i>
                                     </div>
                                     <div>
-                                        <h6 class="alert-heading font-black mb-1">SuccÃ¨s !</h6>
+                                        <h6 class="alert-heading font-black mb-1">Succès !</h6>
                                         <p class="mb-0 text-sm font-medium">{{ session('success') }}</p>
                                     </div>
                                 </div>
@@ -133,13 +133,13 @@
                                     
                                     <div class="row g-4">
                                         @php
-                                            $missingAccountErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'GÃ©nÃ©rale absente'))->count();
+                                            $missingAccountErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Générale absente'))->count();
                                             $missingPrefixErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'compte collectif'))->count();
-                                            $missingIdErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'NumÃ©ro de tiers manquant'))->count();
+                                            $missingIdErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Numéro de tiers manquant'))->count();
                                             $otherErrors = collect($rowsWithStatus)->filter(fn($r) => !empty($r['errors']) && 
-                                                !str_contains(implode(' ', $r['errors']), 'GÃ©nÃ©rale absente') && 
+                                                !str_contains(implode(' ', $r['errors']), 'Générale absente') && 
                                                 !str_contains(implode(' ', $r['errors']), 'compte collectif') && 
-                                                !str_contains(implode(' ', $r['errors']), 'NumÃ©ro de tiers manquant'))->count();
+                                                !str_contains(implode(' ', $r['errors']), 'Numéro de tiers manquant'))->count();
                                         @endphp
 
                                         @if($missingAccountErrors > 0 || $missingPrefixErrors > 0)
@@ -149,7 +149,7 @@
                                                     <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
                                                         <i class="fa-solid fa-book"></i>
                                                     </div>
-                                                    <h6 class="font-bold mb-0">Comptes GÃ©nÃ©raux Manquants ({{ $missingAccountErrors + $missingPrefixErrors }})</h6>
+                                                    <h6 class="font-bold mb-0">Comptes Généraux Manquants ({{ $missingAccountErrors + $missingPrefixErrors }})</h6>
                                                 </div>
                                                 <div class="mb-3">
                                                     <span class="text-[10px] fw-black text-rose-500 uppercase tracking-widest">RAISON</span>
@@ -161,7 +161,7 @@
                                                         $missingAccountNumbers = collect($rowsWithStatus)
                                                             ->flatMap(function($r) {
                                                                 return collect($r['errors'])
-                                                                    ->filter(fn($e) => str_contains($e, "n'existe pas. Veuillez le crÃ©er au prÃ©alable."))
+                                                                    ->filter(fn($e) => str_contains($e, "n'existe pas. Veuillez le créer au préalable."))
                                                                     ->map(function($e) {
                                                                         preg_match('/compte collectif ([0-9]+) n\'existe pas/', $e, $matches);
                                                                         return $matches[1] ?? null;
@@ -178,15 +178,15 @@
                                                                         data-accnum="{{ trim($accNum) }}"
                                                                         data-acclen="{{ $accountDigits ?? 8 }}"
                                                                         onclick="quickCreateGeneralAccount(this.dataset.accnum, parseInt(this.dataset.acclen) || 8)"
-                                                                        title="Cliquer pour crÃ©er ce compte">
+                                                                        title="Cliquer pour créer ce compte">
                                                                     <i class="fa-solid fa-plus me-1"></i> {{ trim($accNum) }}
                                                                 </button>
                                                             @endforeach
                                                         </div>
-                                                        <p class="text-xs text-slate-500 mt-2 mb-0 italic">Cliquez sur un compte rouge pour le crÃ©er. Les lignes seront mises Ã  jour automatiquement.</p>
+                                                        <p class="text-xs text-slate-500 mt-2 mb-0 italic">Cliquez sur un compte rouge pour le créer. Les lignes seront mises à jour automatiquement.</p>
                                                     @else
                                                         <div class="alert alert-emerald py-2 px-3 text-[10px] mb-0 border-0 bg-emerald-50 text-emerald-700">
-                                                            Les correspondances seront automatiquement Ã©tablies lors de l'importation.
+                                                            Les correspondances seront automatiquement établies lors de l'importation.
                                                         </div>
                                                     @endif
                                                 </div>
@@ -205,12 +205,12 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <span class="text-[10px] fw-black text-rose-500 uppercase tracking-widest">RAISON</span>
-                                                    <p class="text-xs text-slate-500 mb-0">NumÃ©ro ne commenÃ§ant pas par '4' ou manquant.</p>
+                                                    <p class="text-xs text-slate-500 mb-0">Numéro ne commençant pas par '4' ou manquant.</p>
                                                 </div>
                                                 <div>
                                                     <span class="text-[10px] fw-black text-emerald-500 uppercase tracking-widest">SOLUTION</span>
                                                     <div class="alert alert-warning py-2 px-3 text-[10px] mb-0 border-0">
-                                                        Modifiez la ligne pour fournir un numÃ©ro commenÃ§ant par 4 (Ex: 411CLIENT).
+                                                        Modifiez la ligne pour fournir un numéro commençant par 4 (Ex: 411CLIENT).
                                                     </div>
                                                 </div>
                                             </div>
@@ -233,9 +233,9 @@
                                                             ->flatMap(fn($r) => $r['errors'])
                                                             ->unique()
                                                             ->filter(fn($e) => 
-                                                                !str_contains($e, 'GÃ©nÃ©rale absente') && 
+                                                                !str_contains($e, 'Générale absente') && 
                                                                 !str_contains($e, 'collectif') && 
-                                                                !str_contains($e, 'NumÃ©ro de tiers manquant')
+                                                                !str_contains($e, 'Numéro de tiers manquant')
                                                             )
                                                             ->take(3);
                                                     @endphp
@@ -248,7 +248,7 @@
                                                     @endforeach
 
                                                     @if($uniqueOtherErrors->isEmpty())
-                                                        <p class="text-xs text-slate-500 mb-0">Erreur non classifiÃ©e. Voir lignes.</p>
+                                                        <p class="text-xs text-slate-500 mb-0">Erreur non classifiée. Voir lignes.</p>
                                                     @endif
                                                 </div>
                                             </div>
@@ -266,7 +266,7 @@
                                         <i class="fa-solid fa-check-double fa-xl"></i>
                                     </div>
                                     <div>
-                                        <h5 class="font-black text-emerald-900 mb-0">Tiers PrÃªts pour l'Importation !</h5>
+                                        <h5 class="font-black text-emerald-900 mb-0">Tiers Prêts pour l'Importation !</h5>
                                         <p class="text-emerald-700 text-sm mb-0">Tous les comptes tiers sont valides.</p>
                                     </div>
                                 </div>
@@ -283,7 +283,7 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
-                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs dÃ©tectÃ©es</div>
+                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
                                 </div>
                             </div>
@@ -293,7 +293,7 @@
                                         <div class="text-xs font-bold text-slate-400 uppercase mb-2">Tout afficher</div>
                                         <div class="d-flex gap-4">
                                             <div class="text-xs d-flex align-items-center gap-2">
-                                                <span class="status-indicator bg-emerald-500"></span> PrÃªt Ã  l'import
+                                                <span class="status-indicator bg-emerald-500"></span> Prêt à l'import
                                             </div>
                                             <div class="text-xs d-flex align-items-center gap-2">
                                                 <span class="status-indicator bg-rose-500"></span> Erreur bloquante
@@ -312,7 +312,7 @@
                                         </button>
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2 flex-grow-1">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numÃ©ro / libellÃ©..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
+                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
                                         </div>
                                     </div>
                                 </div>
@@ -341,28 +341,28 @@
                                                 </th>
                                                 <th style="width: 50px;">STATUT</th>
                                                 @if($import->type == 'initial')
-                                                    <th>NUMÃ‰RO DE COMPTE</th>
-                                                    <th>INTITULÃ‰ DU COMPTE</th>
+                                                    <th>NUMÉRO DE COMPTE</th>
+                                                    <th>INTITULÉ DU COMPTE</th>
                                                 @elseif($import->type == 'journals')
                                                     <th>CODE JOURNAL</th>
-                                                    <th>INTITULÃ‰ DU JOURNAL</th>
+                                                    <th>INTITULÉ DU JOURNAL</th>
                                                     <th>TYPE</th>
                                                     <th>COMPTE</th>
                                                     <th>ANALYTIQUE</th>
                                                     <th>RAPPROCHEMENT</th>
                                                 @elseif($import->type == 'tiers')
-                                                    <th>NÂ° TIERS / IDENTIFIANT</th>
-                                                    <th>NOM / INTITULÃ‰</th>
-                                                    <th>CATÃ‰GORIE</th>
-                                                    <th>COMPTE GÃ‰NÃ‰RAL</th>
+                                                    <th>N° TIERS / IDENTIFIANT</th>
+                                                    <th>NOM / INTITULÉ</th>
+                                                    <th>CATÉGORIE</th>
+                                                    <th>COMPTE GÉNÉRAL</th>
                                                 @else
                                                     <th>DATE</th>
                                                     <th>JOURNAL</th>
-                                                    <th>RÃ‰FÃ‰RENCE</th>
+                                                    <th>RÉFÉRENCE</th>
                                                     <th>COMPTE</th>
-                                                    <th>LIBELLÃ‰</th>
-                                                    <th class="text-end">DÃ‰BIT</th>
-                                                    <th class="text-end">CRÃ‰DIT</th>
+                                                    <th>LIBELLÉ</th>
+                                                    <th class="text-end">DÉBIT</th>
+                                                    <th class="text-end">CRÉDIT</th>
                                                 @endif
                                                 <th class="text-center">ACTIONS</th>
                                             </tr>
@@ -384,18 +384,18 @@
                                                      
                                                      <td class="@if($row['status'] == 'error' && empty($row['data']['numero_de_tiers'])) cell-error @endif search-target">
                                                          <div class="d-flex flex-column">
-                                                              @if(!empty($row['data']['numero_de_tiers']) && $row['data']['numero_de_tiers'] !== 'NON GÃ‰NÃ‰RÃ‰')
+                                                              @if(!empty($row['data']['numero_de_tiers']) && $row['data']['numero_de_tiers'] !== 'NON GÉNÉRÉ')
                                                                    <div class="d-flex align-items-center gap-2">
                                                                        <span class="text-primary font-black">
                                                                            <i class="fa-solid fa-magic me-1"></i> {{ $row['data']['numero_de_tiers'] }}
                                                                        </span>
                                                                        @if($row['data']['is_virtual'] ?? false)
-                                                                           <i class="fa-solid fa-triangle-exclamation text-warning text-xs" title="NumÃ©ro virtuel : Compte collectif manquant"></i>
+                                                                           <i class="fa-solid fa-triangle-exclamation text-warning text-xs" title="Numéro virtuel : Compte collectif manquant"></i>
                                                                        @endif
                                                                    </div>
                                                               @else
                                                                     <span class="text-rose-500 font-bold text-xs italic">
-                                                                        <i class="fa-solid fa-circle-xmark me-1"></i> NON GÃ‰NÃ‰RÃ‰
+                                                                        <i class="fa-solid fa-circle-xmark me-1"></i> NON GÉNÉRÉ
                                                                     </span>
                                                               @endif
 
@@ -414,7 +414,7 @@
                                                             <span class="badge bg-label-primary rounded-pill">
                                                                 {{ $row['data']['type_de_tiers'] ?? 'Client' }}
                                                             </span>
-                                                            <span class="text-[9px] text-slate-400 mt-1 italic text-center">Auto-dÃ©tectÃ©</span>
+                                                            <span class="text-[9px] text-slate-400 mt-1 italic text-center">Auto-détecté</span>
                                                          </div>
                                                      </td>
                                                      <td class="font-mono text-xs @if(($row['data']['is_virtual'] ?? false) || !empty($row['data']['suggested_account'])) text-danger @endif">
@@ -438,7 +438,7 @@
                                                                         data-compte="{{ $row["data"]["compte"] ?? '' }}"
                                                                         data-libelle="{{ $row["data"]["libelle"] ?? '' }}"
                                                                         onclick="quickCreateAccount(this)"
-                                                                        title="CrÃ©er ce compte Ã  la volÃ©e">
+                                                                        title="Créer ce compte à la volée">
                                                                     <i class="fa-solid fa-plus-circle"></i>
                                                                 </button>
                                                             @endif
@@ -455,7 +455,7 @@
                                                                     data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-errors="{{ json_encode($row['errors']) }}"
                                                                     onclick="showRowDetails(this)"
-                                                                    title="Voir les dÃ©tails">
+                                                                    title="Voir les détails">
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
@@ -482,7 +482,7 @@
                                 </a>
                             </div>
                             <div class="d-flex gap-3">
-                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les donnÃ©es temporaires seront supprimÃ©es.')">
+                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les données temporaires seront supprimées.')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-label-danger rounded-xl px-6 py-3 border-0">
@@ -506,7 +506,7 @@
                                                     <pre>{{ json_encode($import->mapping, JSON_PRETTY_PRINT) }}</pre>
                                                 </div>
                                                 <div class="col-md-4 border-end border-slate-800">
-                                                    <div class="text-emerald-400 mb-2">LIGNE 1 TRAITÃ‰E:</div>
+                                                    <div class="text-emerald-400 mb-2">LIGNE 1 TRAITÉE:</div>
                                                     <pre>{{ json_encode($rowsWithStatus[0]['data'] ?? [], JSON_PRETTY_PRINT) }}</pre>
                                                 </div>
                                                 <div class="col-md-4">
@@ -582,7 +582,7 @@
         function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
-                text: "Cette action retirera dÃ©finitivement la ligne de l'importation en cours.",
+                text: "Cette action retirera définitivement la ligne de l'importation en cours.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Oui, supprimer',
@@ -685,7 +685,7 @@
 
                 let html = '<div class="text-start">';
                 
-                // On crÃ©e un champ pour chaque colonne mappÃ©e
+                // On crée un champ pour chaque colonne mappée
                 Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
                     if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
                     
@@ -742,7 +742,7 @@
                                 return JSON.parse(text);
                             } catch (e) {
                                 console.error("Staging Edit - Invalid JSON response:", text);
-                                throw new Error(`RÃ©ponse serveur invalide (${response.status}).`);
+                                throw new Error(`Réponse serveur invalide (${response.status}).`);
                             }
                         })
                         .then(data => {
@@ -750,12 +750,12 @@
                             if (data.success) {
                                 window.location.reload();
                             } else {
-                                Swal.fire('Erreur', data.message || 'Erreur lors de la mise Ã  jour.', 'error');
+                                Swal.fire('Erreur', data.message || 'Erreur lors de la mise à jour.', 'error');
                             }
                         })
                         .catch(err => {
                             console.error("Staging Edit - Fetch error:", err);
-                            Swal.fire('Erreur', 'DÃ©tail : ' + err.message, 'error');
+                            Swal.fire('Erreur', 'Détail : ' + err.message, 'error');
                         });
                     }
                 });
@@ -786,7 +786,7 @@
 
             if (errors && errors.length > 0) {
                 dataHtml += '<div class="p-4 rounded-2xl bg-rose-50 border border-rose-100">';
-                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies dÃ©tectÃ©es</h6>';
+                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies détectées</h6>';
                 dataHtml += '<ul class="ps-4 mb-0">';
                 errors.forEach(err => {
                     dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>';
@@ -795,12 +795,12 @@
             } else {
                 dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 d-flex align-items-center gap-3">';
                 dataHtml += '<div class="bg-emerald-500 text-white p-2 rounded-full"><i class="fa-solid fa-check"></i></div>';
-                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prÃªte pour l\'importation.</div></div>';
+                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l\'importation.</div></div>';
             }
             dataHtml += '</div>';
 
             Swal.fire({
-                title: 'DÃ©tails de la ligne',
+                title: 'Détails de la ligne',
                 html: dataHtml,
                 icon: (errors && errors.length > 0) ? 'warning' : 'info',
                 confirmButtonText: 'Fermer',
@@ -816,11 +816,11 @@
             const libelle = btn.dataset.libelle;
             
             Swal.fire({
-                title: 'CrÃ©ation du compte',
-                text: `Voulez-vous crÃ©er le compte ${numero} - ${libelle} ?`,
+                title: 'Création du compte',
+                text: `Voulez-vous créer le compte ${numero} - ${libelle} ?`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Oui, crÃ©er',
+                confirmButtonText: 'Oui, créer',
                 cancelButtonText: 'Annuler',
                 customClass: {
                     confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
@@ -845,7 +845,7 @@
                     .then(data => {
                         if (data.success) {
                             Swal.fire({
-                                title: 'SuccÃ¨s',
+                                title: 'Succès',
                                 text: data.message,
                                 icon: 'success',
                                 timer: 1500,
@@ -858,7 +858,7 @@
                         }
                     })
                     .catch(error => {
-                        Swal.fire('Erreur', 'Une erreur est survenue lors de la crÃ©ation.', 'error');
+                        Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error');
                     });
                 }
             });
@@ -874,22 +874,22 @@
             }
 
             Swal.fire({
-                title: 'CrÃ©er le compte collectif',
+                title: 'Créer le compte collectif',
                 html: `
                     <div class="text-start">
-                        <p class="text-sm text-slate-500 mb-3">Le systÃ¨me propose ce numÃ©ro de compte basÃ© sur vos paramÃ¨tres (${requiredLength} caractÃ¨res max).</p>
+                        <p class="text-sm text-slate-500 mb-3">Le système propose ce numéro de compte basé sur vos paramètres (${requiredLength} caractères max).</p>
                         <div class="mb-3">
-                            <label class="form-label text-xs font-bold text-slate-500">NumÃ©ro de Compte</label>
+                            <label class="form-label text-xs font-bold text-slate-500">Numéro de Compte</label>
                             <input type="text" id="swal-new-acc-num" class="form-control" value="${proposedNumero}" maxlength="${requiredLength}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-xs font-bold text-slate-500">IntitulÃ© du Compte</label>
+                            <label class="form-label text-xs font-bold text-slate-500">Intitulé du Compte</label>
                             <input type="text" id="swal-new-acc-name" class="form-control" placeholder="Ex: FOURNISSEURS COLLECTIF" value="COMPTE COLLECTIF ${baseNumero}">
                         </div>
                     </div>
                 `,
                 showCancelButton: true,
-                confirmButtonText: 'CrÃ©er',
+                confirmButtonText: 'Créer',
                 cancelButtonText: 'Annuler',
                 customClass: {
                     confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
@@ -904,7 +904,7 @@
                         return false;
                     }
                     if (num.length !== requiredLength && requiredLength > 0) {
-                        Swal.showValidationMessage(`Le numÃ©ro doit faire exactement ${requiredLength} caractÃ¨res`);
+                        Swal.showValidationMessage(`Le numéro doit faire exactement ${requiredLength} caractères`);
                         return false;
                     }
                     return { numero: num, intitule: name };
@@ -928,8 +928,8 @@
                     .then(data => {
                         if (data.success) {
                             Swal.fire({
-                                title: 'SuccÃ¨s',
-                                text: 'CrÃ©ation rÃ©ussie. Actualisation en cours...',
+                                title: 'Succès',
+                                text: 'Création réussie. Actualisation en cours...',
                                 icon: 'success',
                                 timer: 1500,
                                 showConfirmButton: false
@@ -942,7 +942,7 @@
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        Swal.fire('Erreur', 'Une erreur est survenue lors de la crÃ©ation.', 'error');
+                        Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error');
                     });
                 }
             });
@@ -973,7 +973,7 @@
                 }
             }).then(result => {
                 if (result.isConfirmed && result.value.success) {
-                    Swal.fire('SupprimÃ© !', result.value.message, 'success').then(() => { window.location.reload(); });
+                    Swal.fire('Supprimé !', result.value.message, 'success').then(() => { window.location.reload(); });
                 }
             });
         }

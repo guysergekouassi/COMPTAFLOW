@@ -115,7 +115,7 @@
                                         <i class="fa-solid fa-circle-check text-success fs-4"></i>
                                     </div>
                                     <div>
-                                        <h6 class="alert-heading font-black mb-1">SuccÃ¨s !</h6>
+                                         <h6 class="alert-heading font-black mb-1">Succès !</h6>
                                         <p class="mb-0 text-sm font-medium">{{ session('success') }}</p>
                                     </div>
                                 </div>
@@ -124,8 +124,8 @@
                         @endif
 
                         @php
-                            $existingAccountsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'dÃ©jÃ  prÃ©sent') || str_contains(implode(' ', $r['errors']), 'existe dÃ©jÃ '))->count();
-                            $existingJournalsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'dÃ©jÃ  existant') || str_contains(implode(' ', $r['errors']), 'existe dÃ©jÃ ') || str_contains(implode(' ', $r['errors']), 'Doublon'))->count();
+                            $existingAccountsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'déjà présent') || str_contains(implode(' ', $r['errors']), 'existe déjà'))->count();
+                            $existingJournalsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'déjà existant') || str_contains(implode(' ', $r['errors']), 'existe déjà') || str_contains(implode(' ', $r['errors']), 'Doublon'))->count();
                             $lengthErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'ne respecte pas la configuration') || str_contains(implode(' ', $r['errors']), 'invalide') || str_contains(implode(' ', $r['errors']), 'Max') || str_contains(implode(' ', $r['errors']), 'Erreur de formatage'))->count();
                             $formatErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Longueur incorrecte') || str_contains(implode(' ', $r['errors']), 'inconnu'))->count();
                             $missingTresoErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Compte Inconnu : Le compte'))->count();
@@ -136,11 +136,11 @@
                                 !str_contains(implode(' ', $r['errors']), 'Longueur') && 
                                 !str_contains(implode(' ', $r['errors']), 'invalide') && 
                                 !str_contains(implode(' ', $r['errors']), 'Max') && 
-                                !str_contains(implode(' ', $r['errors']), 'inconnu') && 
-                                !str_contains(implode(' ', $r['errors']), 'Erreur de formatage') && 
-                                !str_contains(implode(' ', $r['errors']), 'Compte Inconnu') && 
-                                !str_contains(implode(' ', $r['errors']), 'dÃ©jÃ ') && 
-                                !str_contains(implode(' ', $r['errors']), 'Doublon'))->count();
+                                 !str_contains(implode(' ', $r['errors']), 'inconnu') && 
+                                 !str_contains(implode(' ', $r['errors']), 'Erreur de formatage') && 
+                                 !str_contains(implode(' ', $r['errors']), 'Compte Inconnu') && 
+                                 !str_contains(implode(' ', $r['errors']), 'déjà') && 
+                                 !str_contains(implode(' ', $r['errors']), 'Doublon'))->count();
                         @endphp
 
                         @if(isset($ignoredEmptyLines) && $ignoredEmptyLines > 0)
@@ -149,10 +149,10 @@
                                     <div class="bg-warning/10 p-2 rounded-lg me-3">
                                         <i class="fa-solid fa-info-circle text-warning fs-4"></i>
                                     </div>
-                                    <div>
-                                        <h6 class="alert-heading font-black mb-1">Information sur le fichier</h6>
-                                        <p class="mb-0 text-sm font-medium">{{ $ignoredEmptyLines }} ligne(s) ont Ã©tÃ© ignorÃ©e(s) car elles Ã©taient totalement vides ou en dehors de la zone des donnÃ©es.</p>
-                                    </div>
+                                     <div>
+                                         <h6 class="alert-heading font-black mb-1">Information sur le fichier</h6>
+                                         <p class="mb-0 text-sm font-medium">{{ $ignoredEmptyLines }} ligne(s) ont été ignorée(s) car elles étaient totalement vides ou en dehors de la zone des données.</p>
+                                     </div>
                                 </div>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
@@ -168,23 +168,23 @@
                                     
                                     <div class="row g-4">
                                         @if($lengthErrors > 0)
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-red-50 rounded-xl border border-red-100">
-                                            <div class="text-xs font-bold text-red-600 uppercase mb-1">Nb de caractÃ¨res invalide (max 4)</div>
-                                                <div class="h5 font-black text-red-700 mb-0">{{ $lengthErrors }} <span class="text-xs font-normal">lignes dÃ©passant la limite</span></div>
-                                            </div>
-                                        </div>
+                                         <div class="col-md-3">
+                                             <div class="p-3 bg-red-50 rounded-xl border border-red-100">
+                                             <div class="text-xs font-bold text-red-600 uppercase mb-1">Nb de caractères invalide (max 4)</div>
+                                                 <div class="h5 font-black text-red-700 mb-0">{{ $lengthErrors }} <span class="text-xs font-normal">lignes dépassant la limite</span></div>
+                                             </div>
+                                         </div>
                                         @endif
                                         @if($existingAccountsErrors > 0 || $existingJournalsErrors > 0)
                                         <div class="col-md-4">
                                             <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm h-100">
                                                 <div class="d-flex align-items-center gap-3 mb-2">
-                                                    <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
-                                                        <i class="fa-solid fa-copy"></i>
-                                                    </div>
-                                                    <h6 class="font-bold mb-0">Doublons ({{ $existingAccountsErrors + $existingJournalsErrors }})</h6>
-                                                </div>
-                                                <p class="text-xs text-slate-500 mb-3">Ces Ã©lÃ©ments existent dÃ©jÃ  dans votre base de donnÃ©es.</p>
+                                                     <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
+                                                         <i class="fa-solid fa-copy"></i>
+                                                     </div>
+                                                     <h6 class="font-bold mb-0">Doublons ({{ $existingAccountsErrors + $existingJournalsErrors }})</h6>
+                                                 </div>
+                                                 <p class="text-xs text-slate-500 mb-3">Ces éléments existent déjà dans votre base de données.</p>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="badge bg-label-primary text-start py-2 px-3 fw-normal whitespace-normal">
                                                         <i class="fa-solid fa-pen me-1"></i> Modifiez les codes ou comptes.
@@ -201,15 +201,15 @@
                                         <div class="col-md-4">
                                             <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm h-100">
                                                 <div class="d-flex align-items-center gap-3 mb-2">
-                                                    <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
-                                                        <i class="fa-solid fa-building-columns"></i>
-                                                    </div>
-                                                    <h6 class="font-bold mb-0">Comptes TrÃ©so. Inconnus ({{ $missingTresoErrors }})</h6>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <span class="text-[10px] fw-black text-rose-500 uppercase tracking-widest">RAISON</span>
-                                                    <p class="text-xs text-slate-500 mb-0">Comptes de trÃ©sorerie non existants dans le plan.</p>
-                                                </div>
+                                                     <div class="bg-rose-100 text-rose-600 p-2 rounded-lg">
+                                                         <i class="fa-solid fa-building-columns"></i>
+                                                     </div>
+                                                     <h6 class="font-bold mb-0">Comptes Tréso. Inconnus ({{ $missingTresoErrors }})</h6>
+                                                 </div>
+                                                 <div class="mb-3">
+                                                     <span class="text-[10px] fw-black text-rose-500 uppercase tracking-widest">RAISON</span>
+                                                     <p class="text-xs text-slate-500 mb-0">Comptes de trésorerie non existants dans le plan.</p>
+                                                 </div>
                                                 <div>
                                                     <span class="text-[10px] fw-black text-emerald-500 uppercase tracking-widest">ACTION REQUISE</span>
                                                     @php
@@ -228,17 +228,17 @@
                                                     @endphp
                                                     @if($missingTresoNumbers->count() > 0)
                                                         <div class="d-flex flex-wrap gap-2 mt-2">
-                                                            @foreach($missingTresoNumbers as $accNum)
-                                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" 
-                                                                        data-compte="{{ trim($accNum) }}"
-                                                                        data-libelle="Nouveau Compte TrÃ©sorerie"
-                                                                        onclick="quickCreateAccount(this)"
-                                                                        title="Cliquer pour crÃ©er ce compte">
-                                                                    <i class="fa-solid fa-plus me-1"></i> {{ trim($accNum) }}
-                                                                </button>
-                                                            @endforeach
-                                                        </div>
-                                                        <p class="text-xs text-slate-500 mt-2 mb-0 italic">Cliquez sur un compte rouge pour le crÃ©er. Les journaux seront mis Ã  jour.</p>
+                                                             @foreach($missingTresoNumbers as $accNum)
+                                                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" 
+                                                                         data-compte="{{ trim($accNum) }}"
+                                                                         data-libelle="Nouveau Compte Trésorerie"
+                                                                         onclick="quickCreateAccount(this)"
+                                                                         title="Cliquer pour créer ce compte">
+                                                                     <i class="fa-solid fa-plus me-1"></i> {{ trim($accNum) }}
+                                                                 </button>
+                                                             @endforeach
+                                                         </div>
+                                                         <p class="text-xs text-slate-500 mt-2 mb-0 italic">Cliquez sur un compte rouge pour le créer. Les journaux seront mis à jour.</p>
                                                     @endif
                                                 </div>
                                             </div>
@@ -249,17 +249,17 @@
                                         <div class="col-md-4">
                                             <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm h-100">
                                                 <div class="d-flex align-items-center gap-3 mb-2">
-                                                    <div class="bg-orange-100 text-orange-600 p-2 rounded-lg">
-                                                        <i class="fa-solid fa-ruler-horizontal"></i>
-                                                    </div>
-                                                    <h6 class="font-bold mb-0">Format Incorrect ({{ $formatErrors }})</h6>
-                                                </div>
-                                                <p class="text-xs text-slate-500 mb-3">ProblÃ¨mes de longueur ou codes inconnus dÃ©tectÃ©s.</p>
-                                                <div class="d-flex flex-column gap-2">
-                                                    <span class="badge bg-label-warning text-start py-2 px-3 fw-normal whitespace-normal text-dark">
-                                                        <i class="fa-solid fa-wrench me-1"></i> VÃ©rifiez la configuration (chiffres, racines).
-                                                    </span>
-                                                </div>
+                                                     <div class="bg-orange-100 text-orange-600 p-2 rounded-lg">
+                                                         <i class="fa-solid fa-ruler-horizontal"></i>
+                                                     </div>
+                                                     <h6 class="font-bold mb-0">Format Incorrect ({{ $formatErrors }})</h6>
+                                                 </div>
+                                                 <p class="text-xs text-slate-500 mb-3">Problèmes de longueur ou codes inconnus détectés.</p>
+                                                 <div class="d-flex flex-column gap-2">
+                                                     <span class="badge bg-label-warning text-start py-2 px-3 fw-normal whitespace-normal text-dark">
+                                                         <i class="fa-solid fa-wrench me-1"></i> Vérifiez la configuration (chiffres, racines).
+                                                     </span>
+                                                 </div>
                                             </div>
                                         </div>
                                         @endif
@@ -268,15 +268,15 @@
                                         <div class="col-md-4">
                                             <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm h-100">
                                                 <div class="d-flex align-items-center gap-3 mb-2">
-                                                    <div class="bg-slate-100 text-slate-600 p-2 rounded-lg">
-                                                        <i class="fa-solid fa-circle-exclamation"></i>
-                                                    </div>
-                                                    <h6 class="font-bold mb-0">Champs Manquants ({{ $missingErrors }})</h6>
-                                                </div>
-                                                <p class="text-xs text-slate-500 mb-3">Certaines colonnes obligatoires ne sont pas renseignÃ©es.</p>
-                                                <div class="alert alert-secondary py-2 px-3 text-[10px] mb-0 border-0">
-                                                    ComplÃ©tez les donnÃ©es via le bouton modifier <i class="fa-solid fa-pen"></i>.
-                                                </div>
+                                                     <div class="bg-slate-100 text-slate-600 p-2 rounded-lg">
+                                                         <i class="fa-solid fa-circle-exclamation"></i>
+                                                     </div>
+                                                     <h6 class="font-bold mb-0">Champs Manquants ({{ $missingErrors }})</h6>
+                                                 </div>
+                                                 <p class="text-xs text-slate-500 mb-3">Certaines colonnes obligatoires ne sont pas renseignées.</p>
+                                                 <div class="alert alert-secondary py-2 px-3 text-[10px] mb-0 border-0">
+                                                     Complétez les données via le bouton modifier <i class="fa-solid fa-pen"></i>.
+                                                 </div>
                                             </div>
                                         </div>
                                         @endif
@@ -301,10 +301,10 @@
                                                                 !str_contains($e, 'Configuration') &&
                                                                 !str_contains($e, 'Longueur') && 
                                                                 !str_contains($e, 'invalide') &&
-                                                                !str_contains($e, 'Max') &&
-                                                                !str_contains($e, 'inconnu') &&
-                                                                !str_contains($e, 'dÃ©jÃ ') &&
-                                                                !str_contains($e, 'Doublon')
+                                                                 !str_contains($e, 'Max') &&
+                                                                 !str_contains($e, 'inconnu') &&
+                                                                 !str_contains($e, 'déjà') &&
+                                                                 !str_contains($e, 'Doublon')
                                                             )
                                                             ->take(3);
                                                     @endphp
@@ -316,9 +316,9 @@
                                                         </div>
                                                     @endforeach
 
-                                                    @if($uniqueOtherErrors->isEmpty())
-                                                        <p class="text-xs text-slate-500 mb-0">Erreur non classifiÃ©e. Voir lignes.</p>
-                                                    @endif
+                                                     @if($uniqueOtherErrors->isEmpty())
+                                                         <p class="text-xs text-slate-500 mb-0">Erreur non classifiée. Voir lignes.</p>
+                                                     @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -334,10 +334,10 @@
                                     <div class="bg-emerald-500 text-white p-3 rounded-full pulse">
                                         <i class="fa-solid fa-check-double fa-xl"></i>
                                     </div>
-                                    <div>
-                                        <h5 class="font-black text-emerald-900 mb-0">FÃ©licitations ! Aucune erreur dÃ©tectÃ©e.</h5>
-                                        <p class="text-emerald-700 text-sm mb-0">Toutes les lignes sont conformes aux rÃ¨gles mÃ©tiers. Vous pouvez lancer la migration finale en toute sÃ©curitÃ©.</p>
-                                    </div>
+                                     <div>
+                                         <h5 class="font-black text-emerald-900 mb-0">Félicitations ! Aucune erreur détectée.</h5>
+                                         <p class="text-emerald-700 text-sm mb-0">Toutes les lignes sont conformes aux règles métiers. Vous pouvez lancer la migration finale en toute sécurité.</p>
+                                     </div>
                                 </div>
                             </div>
                         </div>
@@ -351,19 +351,19 @@
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
-                                    <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs dÃ©tectÃ©es</div>
-                                    <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
-                                </div>
+                                 <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
+                                     <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
+                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
+                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="d-flex gap-3 h-100">
                                     <div class="bg-white p-4 rounded-2xl border {{ $statusFilter == 'all' ? 'border-primary active' : 'border-slate-100' }} cursor-pointer card-filter flex-grow-1" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'all', 'page' => 1]) }}'">
                                         <div class="text-xs font-bold text-slate-400 uppercase mb-2">Tout afficher</div>
-                                        <div class="d-flex gap-4">
-                                            <div class="text-xs d-flex align-items-center gap-2">
-                                                <span class="status-indicator bg-emerald-500"></span> PrÃªt Ã  l'import
-                                            </div>
+                                         <div class="d-flex gap-4">
+                                             <div class="text-xs d-flex align-items-center gap-2">
+                                                 <span class="status-indicator bg-emerald-500"></span> Prêt à l'import
+                                             </div>
                                             <div class="text-xs d-flex align-items-center gap-2">
                                                 <span class="status-indicator bg-rose-500"></span> Erreur bloquante
                                             </div>
@@ -379,10 +379,10 @@
                                                 onclick="addStagingRow(this)">
                                             <i class="fa-solid fa-plus-circle me-1"></i> Ajouter une ligne
                                         </button>
-                                        <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2 flex-grow-1">
-                                            <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numÃ©ro / libellÃ©..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
-                                        </div>
+                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2 flex-grow-1">
+                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
+                                             <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
+                                         </div>
                                     </div>
                                 </div>
                             </div>
@@ -409,30 +409,30 @@
                                                     <input type="checkbox" id="masterCheckbox" class="form-check-input" onclick="toggleAllCheckboxes(this)">
                                                 </th>
                                                 <th style="width: 50px;">STATUT</th>
-                                                @if($import->type == 'initial')
-                                                    <th>NUMÃ‰RO DE COMPTE</th>
-                                                    <th>INTITULÃ‰ DU COMPTE</th>
-                                                @elseif($import->type == 'journals')
-                                                    <th>CODE JOURNAL</th>
-                                                    <th>INTITULÃ‰ DU JOURNAL</th>
-                                                    <th>TYPE</th>
-                                                    <th>COMPTE</th>
-                                                    <th>ANALYTIQUE</th>
-                                                    <th>RAPPROCHEMENT</th>
-                                                @elseif($import->type == 'tiers')
-                                                    <th>NÂ° TIERS / IDENTIFIANT</th>
-                                                    <th>NOM / INTITULÃ‰</th>
-                                                    <th>CATÃ‰GORIE</th>
-                                                    <th>COMPTE GÃ‰NÃ‰RAL</th>
-                                                @else
-                                                    <th>DATE</th>
-                                                    <th>JOURNAL</th>
-                                                    <th>RÃ‰FÃ‰RENCE</th>
-                                                    <th>COMPTE</th>
-                                                    <th>LIBELLÃ‰</th>
-                                                    <th class="text-end">DÃ‰BIT</th>
-                                                    <th class="text-end">CRÃ‰DIT</th>
-                                                @endif
+                                                 @if($import->type == 'initial')
+                                                     <th>NUMÉRO DE COMPTE</th>
+                                                     <th>INTITULÉ DU COMPTE</th>
+                                                 @elseif($import->type == 'journals')
+                                                     <th>CODE JOURNAL</th>
+                                                     <th>INTITULÉ DU JOURNAL</th>
+                                                     <th>TYPE</th>
+                                                     <th>COMPTE</th>
+                                                     <th>ANALYTIQUE</th>
+                                                     <th>RAPPROCHEMENT</th>
+                                                 @elseif($import->type == 'tiers')
+                                                     <th>N° TIERS / IDENTIFIANT</th>
+                                                     <th>NOM / INTITULÉ</th>
+                                                     <th>CATÉGORIE</th>
+                                                     <th>COMPTE GÉNÉRAL</th>
+                                                 @else
+                                                     <th>DATE</th>
+                                                     <th>JOURNAL</th>
+                                                     <th>RÉFÉRENCE</th>
+                                                     <th>COMPTE</th>
+                                                     <th>LIBELLÉ</th>
+                                                     <th class="text-end">DÉBIT</th>
+                                                     <th class="text-end">CRÉDIT</th>
+                                                 @endif
                                                 <th class="text-center">ACTIONS</th>
                                             </tr>
                                         </thead>
@@ -473,7 +473,7 @@
                                                                 {{ $row['data']['type'] ?? 'Achats' }}
                                                             </span>
                                                         </td>
-                                                        <td class="@if($row['status'] == 'error' && (str_contains(implode(' ', $row['errors']), 'trÃ©sorerie') || str_contains(implode(' ', $row['errors']), 'Compte Inconnu'))) cell-error @endif">
+                                                         <td class="@if($row['status'] == 'error' && (str_contains(implode(' ', $row['errors']), 'trésorerie') || str_contains(implode(' ', $row['errors']), 'Compte Inconnu'))) cell-error @endif">
                                                             <div class="d-flex flex-column">
                                                                 <span class="fw-bold">{{ $row['data']['compte_de_tresorerie'] ?? '-' }}</span>
                                                                 @if(!empty($row['data']['numero_original_compte']))
@@ -495,9 +495,9 @@
                                                                 <span class="text-primary font-black"><i class="fa-solid fa-magic me-1"></i> {{ $row['data']['auto_num'] }}</span>
                                                             @elseif(!empty($row['data']['numero_de_tiers']))
                                                                 {{ $row['data']['numero_de_tiers'] }}
-                                                            @else
-                                                                <span class="badge bg-label-warning italic text-[10px]">Sera auto-gÃ©nÃ©rÃ©</span>
-                                                            @endif
+                                                             @else
+                                                                 <span class="badge bg-label-warning italic text-[10px]">Sera auto-généré</span>
+                                                             @endif
                                                         </td>
                                                         <td class="fw-bold search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
                                                         <td>
@@ -521,25 +521,25 @@
 
                                                     <td class="text-center">
                                                         <div class="d-flex justify-content-center">
-                                                            @if(!in_array($import->type, ['initial', 'journals']) && $row['status'] == 'error' && str_contains(implode(' ', $row['errors']), 'Compte'))
-                                                                <button class="btn btn-icon btn-sm btn-label-success rounded-pill me-1" 
-                                                                        data-compte="{{ $row["data"]["compte"] ?? '' }}"
-                                                                        data-libelle="{{ $row["data"]["libelle"] ?? '' }}"
-                                                                        onclick="quickCreateAccount(this)"
-                                                                        title="CrÃ©er ce compte Ã  la volÃ©e">
-                                                                    <i class="fa-solid fa-plus-circle"></i>
-                                                                </button>
-                                                            @endif
-                                                            @if($import->type == 'journals' && $row['status'] == 'error' && str_contains(implode(' ', $row['errors']), 'Compte Inconnu'))
-                                                                @php 
-                                                                    $compteToCreate = $row["data"]["numero_original_compte"] ?? '';
-                                                                @endphp
-                                                                @if($compteToCreate)
-                                                                <button class="btn btn-icon btn-sm btn-label-success rounded-pill me-1" 
-                                                                        data-compte="{{ $compteToCreate }}"
-                                                                        data-libelle="TrÃ©sorerie {{ $row['data']['intitule'] ?? 'Nouveau' }}"
-                                                                        onclick="quickCreateAccount(this)"
-                                                                        title="CrÃ©er ce compte de trÃ©sorerie Ã  la volÃ©e">
+                                                             @if(!in_array($import->type, ['initial', 'journals']) && $row['status'] == 'error' && str_contains(implode(' ', $row['errors']), 'Compte'))
+                                                                 <button class="btn btn-icon btn-sm btn-label-success rounded-pill me-1" 
+                                                                         data-compte="{{ $row["data"]["compte"] ?? '' }}"
+                                                                         data-libelle="{{ $row["data"]["libelle"] ?? '' }}"
+                                                                         onclick="quickCreateAccount(this)"
+                                                                         title="Créer ce compte à la volée">
+                                                                     <i class="fa-solid fa-plus-circle"></i>
+                                                                 </button>
+                                                             @endif
+                                                             @if($import->type == 'journals' && $row['status'] == 'error' && str_contains(implode(' ', $row['errors']), 'Compte Inconnu'))
+                                                                 @php 
+                                                                     $compteToCreate = $row["data"]["numero_original_compte"] ?? '';
+                                                                 @endphp
+                                                                 @if($compteToCreate)
+                                                                 <button class="btn btn-icon btn-sm btn-label-success rounded-pill me-1" 
+                                                                         data-compte="{{ $compteToCreate }}"
+                                                                         data-libelle="Trésorerie {{ $row['data']['intitule'] ?? 'Nouveau' }}"
+                                                                         onclick="quickCreateAccount(this)"
+                                                                         title="Créer ce compte de trésorerie à la volée">
                                                                     <i class="fa-solid fa-plus-circle"></i>
                                                                 </button>
                                                                 @endif
@@ -561,11 +561,11 @@
                                                                     title="Modifier cette ligne">
                                                                 <i class="fa-solid fa-pen"></i>
                                                             </button>
-                                                            <button class="btn btn-icon btn-sm btn-label-info rounded-pill" 
-                                                                    data-row-data="{{ json_encode($row['data']) }}"
-                                                                    data-errors="{{ json_encode($row['errors']) }}"
-                                                                    onclick="showRowDetails(this)"
-                                                                    title="Voir les dÃ©tails">
+                                                             <button class="btn btn-icon btn-sm btn-label-info rounded-pill" 
+                                                                     data-row-data="{{ json_encode($row['data']) }}"
+                                                                     data-errors="{{ json_encode($row['errors']) }}"
+                                                                     onclick="showRowDetails(this)"
+                                                                     title="Voir les détails">
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
@@ -592,7 +592,7 @@
                                 </a>
                             </div>
                             <div class="d-flex gap-3">
-                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les donnÃ©es temporaires seront supprimÃ©es.')">
+                                 <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les données temporaires seront supprimées.')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-label-danger rounded-xl px-6 py-3 border-0">
@@ -625,7 +625,7 @@
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            if (['TrÃ©sorerie', 'Tresorerie', 'Banque', 'Caisse'].includes(type)) {
+            if (['Trésorerie', 'Tresorerie', 'Banque', 'Caisse'].includes(type)) {
                 container.classList.remove('d-none');
             } else {
                 container.classList.add('d-none');
@@ -666,7 +666,7 @@
 
             const searchText = document.getElementById('stagingSearch').value.toLowerCase();
             
-            // On utilise une boucle simple (plus rapide que querySelectorAll en temps rÃ©el)
+            // On utilise une boucle simple (plus rapide que querySelectorAll en temps réel)
             for (let i = 0; i < searchCache.length; i++) {
                 const item = searchCache[i];
                 
@@ -705,7 +705,7 @@
         function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
                 title: 'Supprimer cette ligne ?',
-                text: "Cette action retirera dÃ©finitivement la ligne de l'importation en cours.",
+                text: "Cette action retirera définitivement la ligne de l'importation en cours.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Oui, supprimer',
@@ -796,7 +796,7 @@
             });
         }
 
-        // Liste des comptes de classe 5 dÃ©jÃ  dÃ©finie plus haut
+        // Liste des comptes de classe 5 déjà définie plus haut
 
         function editStagingRow(btn) {
             console.log("Edit Journal - Button clicked", btn);
@@ -809,7 +809,7 @@
 
                 console.log("Edit Journal - Data parsed", { importId, rowIndex, rowData, mapping, overrideIndexes });
 
-                // RÃ©cupÃ©ration des donnÃ©es actuelles depuis rowData
+                // Récupération des données actuelles depuis rowData
                 let currentIntitule = rowData['intitule'] || "";
 
                 const codeOrigCol = overrideIndexes.codeOrig;
@@ -818,15 +818,15 @@
                 const typeCol = overrideIndexes.type;
                 let currentType = rowData['type'] || "";
                 
-                if (currentType === 'TrÃ©sorerie') currentType = 'Tresorerie';
+                if (currentType === 'Trésorerie') currentType = 'Tresorerie';
 
                 let currentPoste = rowData['poste'] || rowData['compte_general'] || "";
                 let currentCompte = rowData['compte_de_tresorerie'] || rowData['compte'] || "";
                 let currentAnalytique = rowData['traitement_analytique'] || "non";
                 let currentRapprochement = rowData['rapprochement_sur'] || "";
 
-                // GÃ©nÃ©ration des options de comptes
-                let optionsCompteTreso = '<option value="">-- SÃ©lectionner un compte --</option>';
+                // Génération des options de comptes
+                let optionsCompteTreso = '<option value="">-- Sélectionner un compte --</option>';
                 plansComptablesJS.forEach(plan => {
                     const isSelected = plan.numero_de_compte === currentCompte ? 'selected' : '';
                     optionsCompteTreso += `<option value="${plan.numero_de_compte}" ${isSelected}>${plan.numero_de_compte} - ${(plan.intitule || '').replace(/"/g, "'")}</option>`;
@@ -846,13 +846,13 @@
                             <select class="form-select swal-edit-input" data-col="${typeCol}" onchange="toggleTresorerieFields(this.value, 'swal')">
                                 <option value="Achats" ${currentType === 'Achats' ? 'selected' : ''}>Achats</option>
                                 <option value="Ventes" ${currentType === 'Ventes' ? 'selected' : ''}>Ventes</option>
-                                <option value="Tresorerie" ${['Tresorerie', 'TrÃ©sorerie', 'Banque', 'Caisse'].includes(currentType) ? 'selected' : ''}>TrÃ©sorerie</option>
-                                <option value="OpÃ©rations Diverses" ${currentType === 'OpÃ©rations Diverses' ? 'selected' : ''}>OpÃ©rations Diverses</option>
+                                <option value="Tresorerie" ${['Tresorerie', 'Trésorerie', 'Banque', 'Caisse'].includes(currentType) ? 'selected' : ''}>Trésorerie</option>
+                                <option value="Opérations Diverses" ${currentType === 'Opérations Diverses' ? 'selected' : ''}>Opérations Diverses</option>
                                 <option value="Standard" ${currentType === 'Standard' ? 'selected' : ''}>Standard</option>
                             </select>
                         </div>
                         <div class="col-12 mb-3">
-                            <label class="form-label font-black text-slate-700">IntitulÃ©</label>
+                            <label class="form-label font-black text-slate-700">Intitulé</label>
                             <input type="text" class="form-control swal-edit-input" data-col="${mapping['intitule'] !== 'AUTO' ? mapping['intitule'] : ''}" value="${esc(currentIntitule)}">
                         </div>
                         <div class="col-12 mb-3">
@@ -863,7 +863,7 @@
                             </select>
                         </div>
 
-                        <div id="tresorerie_fields_swal" class="col-12 mt-2 ${['Tresorerie', 'TrÃ©sorerie', 'Banque', 'Caisse'].includes(currentType) ? '' : 'd-none'}">
+                        <div id="tresorerie_fields_swal" class="col-12 mt-2 ${['Tresorerie', 'Trésorerie', 'Banque', 'Caisse'].includes(currentType) ? '' : 'd-none'}">
                             <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                 <div class="mb-3">
                                     <label class="form-label font-black">Compte (Classe 5)</label>
@@ -872,7 +872,7 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label font-black">Type de TrÃ©sorerie</label>
+                                    <label class="form-label font-black">Type de Trésorerie</label>
                                     <div class="d-flex gap-4">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="swal_poste" id="treso_caisse_swal" value="Caisse" ${currentPoste === 'Caisse' ? 'checked' : ''} onchange="syncPosteToInput('Caisse')">
@@ -889,7 +889,7 @@
                         </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label font-black text-slate-700">Autre (Optionnel)</label>
-                                    <input type="text" id="treso_autre_swal" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellÃ©..." value="${esc(!['Banque', 'Caisse'].includes(currentPoste) ? currentPoste : '')}" oninput="syncPosteToInput(this.value)">
+                                    <input type="text" id="treso_autre_swal" class="form-control border-slate-200 py-3 rounded-xl" placeholder="Saisir un autre libellé..." value="${esc(!['Banque', 'Caisse'].includes(currentPoste) ? currentPoste : '')}" oninput="syncPosteToInput(this.value)">
                                 </div>
                                 <div>
                                     <label class="form-label font-black">Rapprochement</label>
@@ -923,7 +923,7 @@
                     hidden.value = val;
 
                     if (val === 'Banque' || val === 'Caisse') {
-                        // SÃ©lection via Radio
+                        // Sélection via Radio
                         autre.value = '';
                         caisse.disabled = false;
                         banque.disabled = false;
@@ -936,13 +936,13 @@
                             caisse.disabled = true;
                             banque.disabled = true;
                             
-                            // GÃ©nÃ©ration automatique du code (3 premiÃ¨res lettres majuscules)
+                            // Génération automatique du code (3 premières lettres majuscules)
                             if (codeInput) {
                                 let clean = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
                                 codeInput.value = clean.substring(0, 3);
                             }
                         } else {
-                            // Si on vide le champ Autre, on rÃ©active les radios
+                            // Si on vide le champ Autre, on réactive les radios
                             caisse.disabled = false;
                             banque.disabled = false;
                         }
@@ -984,13 +984,13 @@
                         })
                         .then(async response => {
                             const text = await response.text();
-                            try { return JSON.parse(text); } catch (e) { throw new Error(`RÃ©ponse serveur invalide.`); }
+                            try { return JSON.parse(text); } catch (e) { throw new Error(`Réponse serveur invalide.`); }
                         })
                         .then(data => {
                             if (data.success) window.location.reload();
-                            else Swal.fire('Erreur', data.message || 'Erreur lors de la mise Ã  jour.', 'error');
+                            else Swal.fire('Erreur', data.message || 'Erreur lors de la mise à jour.', 'error');
                         })
-                        .catch(err => Swal.fire('Erreur', 'DÃ©tail : ' + err.message, 'error'));
+                        .catch(err => Swal.fire('Erreur', 'Détail : ' + err.message, 'error'));
                     }
                 });
             } catch (err) {
@@ -1020,7 +1020,7 @@
 
             if (errors && errors.length > 0) {
                 dataHtml += '<div class="p-4 rounded-2xl bg-rose-50 border border-rose-100">';
-                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies dÃ©tectÃ©es</h6>';
+                dataHtml += '<h6 class="font-black text-[10px] uppercase text-rose-600 mb-3 tracking-widest">Anomalies détectées</h6>';
                 dataHtml += '<ul class="ps-4 mb-0">';
                 errors.forEach(err => {
                     dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>';
@@ -1029,12 +1029,12 @@
             } else {
                 dataHtml += '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 d-flex align-items-center gap-3">';
                 dataHtml += '<div class="bg-emerald-500 text-white p-2 rounded-full"><i class="fa-solid fa-check"></i></div>';
-                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prÃªte pour l\'importation.</div></div>';
+                dataHtml += '<div class="text-xs font-bold text-emerald-700">Cette ligne est prête pour l\'importation.</div></div>';
             }
             dataHtml += '</div>';
 
             Swal.fire({
-                title: 'DÃ©tails de la ligne',
+                title: 'Détails de la ligne',
                 html: dataHtml,
                 icon: (errors && errors.length > 0) ? 'warning' : 'info',
                 confirmButtonText: 'Fermer',
@@ -1050,11 +1050,11 @@
             const libelle = btn.dataset.libelle;
             
             Swal.fire({
-                title: 'CrÃ©ation rapide de compte',
-                text: `Voulez-vous crÃ©er le compte ${numero} - ${libelle} ?`,
+                title: 'Création rapide de compte',
+                text: `Voulez-vous créer le compte ${numero} - ${libelle} ?`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Oui, crÃ©er',
+                confirmButtonText: 'Oui, créer',
                 cancelButtonText: 'Annuler',
                 customClass: {
                     confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
@@ -1079,7 +1079,7 @@
                     .then(data => {
                         if (data.success) {
                             Swal.fire({
-                                title: 'SuccÃ¨s',
+                                title: 'Succès',
                                 text: data.message,
                                 icon: 'success',
                                 timer: 1500,
@@ -1092,7 +1092,7 @@
                         }
                     })
                     .catch(error => {
-                        Swal.fire('Erreur', 'Une erreur est survenue lors de la crÃ©ation.', 'error');
+                        Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error');
                     });
                 }
             });
@@ -1122,10 +1122,11 @@
                 }
             }).then(result => {
                 if (result.isConfirmed && result.value.success) {
-                    Swal.fire('SupprimÃ© !', result.value.message, 'success').then(() => { window.location.reload(); });
+                    Swal.fire('Supprimé !', result.value.message, 'success').then(() => { window.location.reload(); });
                 }
             });
         }
+
     </script>
 </body>
 </html>

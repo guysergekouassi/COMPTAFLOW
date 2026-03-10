@@ -137,7 +137,7 @@
             }
         }).then(result => {
             if (result.isConfirmed && result.value.success) {
-                Swal.fire('SupprimÃ© !', result.value.message, 'success').then(() => { window.location.reload(); });
+                Swal.fire('Supprimé !', result.value.message, 'success').then(() => { window.location.reload(); });
             }
         });
     }
@@ -301,7 +301,7 @@
                                         <i class="fa-solid fa-circle-check text-success fs-4"></i>
                                     </div>
                                     <div>
-                                        <h6 class="alert-heading font-black mb-1">SuccÃ¨s !</h6>
+                                        <h6 class="alert-heading font-black mb-1">Succès !</h6>
                                         <p class="mb-0 text-sm font-medium">{{ session('success') }}</p>
                                     </div>
                                 </div>
@@ -451,7 +451,7 @@
                                                     <th>ANALYTIQUE</th>
                                                     <th>RAPPROCHEMENT</th>
                                                 @elseif($import->type == 'tiers')
-                                                    <th>NÂ° TIERS / IDENTIFIANT</th>
+                                                    <th>N° TIERS / IDENTIFIANT</th>
                                                     <th>NOM / RAISON SOCIALE</th>
                                                     <th>CATÉGORIE</th>
                                                     <th>COMPTE GÉNÉRAL</th>
@@ -514,7 +514,7 @@
                                                              @elseif(!empty($row['data']['numero_de_tiers']))
                                                                  {{ $row['data']['numero_de_tiers'] }}
                                                              @else
-                                                                 <span class="badge bg-label-warning italic text-[10px]">Sera auto-gÃ©nÃ©rÃ©</span>
+                                                                 <span class="badge bg-label-warning italic text-[10px]">Sera auto-généré</span>
                                                              @endif
                                                          </td>
                                                          <td class="fw-bold search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
@@ -575,7 +575,7 @@
                                                                         data-compte="{{ $row["data"]["compte"] ?? '' }}"
                                                                         data-libelle="{{ $row["data"]["libelle"] ?? '' }}"
                                                                         onclick="quickCreateAccount(this)"
-                                                                        title="CrÃ©er ce compte Ã  la volÃ©e">
+                                                                        title="Créer ce compte à la volée">
                                                                     <i class="fa-solid fa-plus-circle"></i>
                                                                 </button>
                                                             @endif
@@ -592,7 +592,7 @@
                                                                     data-row-data="{{ json_encode($row['data']) }}"
                                                                     data-errors="{{ json_encode($row['errors']) }}"
                                                                     onclick="showRowDetails(this)"
-                                                                    title="Voir les dÃ©tails">
+                                                                    title="Voir les détails">
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
@@ -620,7 +620,7 @@
                                 <div class="d-flex gap-2">
                                     @if($currentPage > 1)
                                         <a href="{{ request()->fullUrlWithQuery(['page' => $currentPage - 1]) }}" class="btn btn-sm btn-outline-secondary rounded-xl px-4">
-                                            <i class="fa-solid fa-chevron-left me-1"></i> PrÃ©c.
+                                            <i class="fa-solid fa-chevron-left me-1"></i> Préc.
                                         </a>
                                     @endif
                                     @for($p = max(1, $currentPage - 2); $p <= min($totalPages, $currentPage + 2); $p++)
@@ -645,7 +645,7 @@
                                 </a>
                             </div>
                             <div class="d-flex gap-3">
-                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les donnÃ©es temporaires seront supprimÃ©es.')">
+                                <form action="{{ route('admin.import.cancel', $import->id) }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment annuler cette importation ? Toutes les données temporaires seront supprimées.')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-label-danger rounded-xl px-6 py-3 border-0">
@@ -678,8 +678,8 @@
             });
         }
 
-        // Les fonctions filterTable() et exportErrorsToCSV() ont Ã©tÃ© remplacÃ©es par une logique cÃ´tÃ© serveur
-        // pour gÃ©rer les gros volumes de donnÃ©es (33k+ lignes).
+        // Les fonctions filterTable() et exportErrorsToCSV() ont été remplacées par une logique côté serveur
+        // pour gérer les gros volumes de données (33k+ lignes).
         
         function deleteStagingRow(importId, rowIndex) {
             Swal.fire({
@@ -843,7 +843,7 @@
                             return JSON.parse(text);
                         } catch (e) {
                             console.error("Staging Edit - Invalid JSON response:", text);
-                            throw new Error(`RÃ©ponse serveur invalide (${response.status}).`);
+                            throw new Error(`Réponse serveur invalide (${response.status}).`);
                         }
                     })
                     .then(data => {
@@ -851,12 +851,12 @@
                         if (data.success) {
                             window.location.reload();
                         } else {
-                            Swal.fire('Erreur', data.message || 'Erreur lors de la mise Ã  jour.', 'error');
+                            Swal.fire('Erreur', data.message || 'Erreur lors de la mise à jour.', 'error');
                         }
                     })
                     .catch(err => {
                         console.error("Staging Edit - Fetch error:", err);
-                        Swal.fire('Erreur', 'DÃ©tail : ' + err.message, 'error');
+                        Swal.fire('Erreur', 'Détail : ' + err.message, 'error');
                     });
                 }
             });
@@ -941,9 +941,9 @@
                     cell.setAttribute('data-original', originalValue);
                 }
 
-                // PrioritÃ© 1 : DÃ©tection DDMMYY (exactement 6 chiffres)
+                // Priorité 1 : Détection DDMMYY (exactement 6 chiffres)
                 // Ex: 010126 = 01/01/2026, 050126 = 05/01/2026
-                // Ce cas DOIT Ãªtre traitÃ© avant la dÃ©tection des serials Excel
+                // Ce cas DOIT être traité avant la détection des serials Excel
                 // car des valeurs comme 050126 tombent dans la plage des serials Excel (30000-60000)
                 if (/^\d{6}$/.test(originalValue)) {
                     const day   = originalValue.substring(0, 2);
@@ -951,7 +951,7 @@
                     const yr2   = parseInt(originalValue.substring(4, 6), 10);
                     // Pivot 70 : 00-69 => 2000-2069, 70-99 => 1970-1999
                     const year  = yr2 < 70 ? 2000 + yr2 : 1900 + yr2;
-                    // VÃ©rification basique que c'est une date valide (mois entre 01-12, jour entre 01-31)
+                    // Vérification basique que c'est une date valide (mois entre 01-12, jour entre 01-31)
                     const dayN = parseInt(day, 10);
                     const monN = parseInt(month, 10);
                     if (monN >= 1 && monN <= 12 && dayN >= 1 && dayN <= 31) {
@@ -960,8 +960,8 @@
                     }
                 }
 
-                // PrioritÃ© 2 : Serial Excel (plage 30000-60000, typiquement 1982-2064)
-                // On exclut les 6 chiffres dÃ©jÃ  traitÃ©s ci-dessus
+                // Priorité 2 : Serial Excel (plage 30000-60000, typiquement 1982-2064)
+                // On exclut les 6 chiffres déjà traités ci-dessus
                 if (isNumeric(originalValue) && originalValue.length !== 6) {
                     const num = parseFloat(originalValue);
                     if (num >= 30000 && num <= 60000) {
@@ -983,7 +983,7 @@
             return !isNaN(parseFloat(n)) && isFinite(n);
         }
 
-        // --- GESTION DE LA SUPPRESSION GROUPÃ‰E ---
+        // --- GESTION DE LA SUPPRESSION GROUPÉE ---
 
         function toggleAllCheckboxes(master) {
             const visibleRows = Array.from(document.querySelectorAll('.staging-row')).filter(row => row.style.display !== 'none');
@@ -994,7 +994,7 @@
         }
 
         function selectAndBulkDeleteErrors() {
-            // 1. SÃ©lectionner toutes les lignes en erreur (mÃªme cachÃ©es par filtre, mais le bouton est explicite)
+            // 1. Sélectionner toutes les lignes en erreur (même cachées par filtre, mais le bouton est explicite)
             const errorCheckboxes = document.querySelectorAll('.staging-row[data-status="error"] .row-checkbox');
             
             if (errorCheckboxes.length === 0) {
