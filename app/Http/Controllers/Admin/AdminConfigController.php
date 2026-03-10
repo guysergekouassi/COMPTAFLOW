@@ -3807,6 +3807,80 @@ class AdminConfigController extends Controller
     }
 
     /**
+     * Tunnel d'Importation - Création rapide de Tiers
+     */
+    public function quickTierCreate(Request $request)
+    {
+        $request->validate([
+            'numero_tiers' => 'required|string',
+            'intitule' => 'required|string',
+            'type_de_tiers' => 'nullable|string'
+        ]);
+
+        try {
+            $user = Auth::user();
+            
+            $exists = PlanTiers::where('company_id', $user->company_id)
+                ->where('numero_de_tiers', $request->numero_tiers)
+                ->exists();
+
+            if ($exists) {
+                return response()->json(['success' => false, 'message' => 'Ce tiers existe déjà.']);
+            }
+
+            PlanTiers::create([
+                'numero_de_tiers' => $request->numero_tiers,
+                'intitule' => strtoupper($request->intitule),
+                'type_de_tiers' => $request->type_de_tiers ?? 'Client',
+                'user_id' => $user->id,
+                'company_id' => $user->company_id,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Tiers créé avec succès.']);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Tunnel d'Importation - Création rapide de Journal
+     */
+    public function quickJournalCreate(Request $request)
+    {
+        $request->validate([
+            'code_journal' => 'required|string',
+            'intitule' => 'required|string',
+            'type_journal' => 'nullable|string'
+        ]);
+
+        try {
+            $user = Auth::user();
+            
+            $exists = CodeJournal::where('company_id', $user->company_id)
+                ->where('code_journal', $request->code_journal)
+                ->exists();
+
+            if ($exists) {
+                return response()->json(['success' => false, 'message' => 'Ce journal existe déjà.']);
+            }
+
+            CodeJournal::create([
+                'code_journal' => strtoupper($request->code_journal),
+                'intitule' => strtoupper($request->intitule),
+                'type' => $request->type_journal ?? 'Opérations diverses',
+                'user_id' => $user->id,
+                'company_id' => $user->company_id,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Journal créé avec succès.']);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Tunnel d'Importation - Annulation de l'import (Suppression du Staging)
      */
     public function cancelImport($id)

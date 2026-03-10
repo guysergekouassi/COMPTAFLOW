@@ -222,10 +222,10 @@
             
             // Logique de pré-remplissage
             let value = "";
-            if (prefillData && prefillData[colIndex] !== undefined) {
+            if (prefillData && prefillData[fieldKey] !== undefined) {
                 // Sauf les montants
                 if (!['debit', 'credit', 'montant'].includes(fieldKey.toLowerCase())) {
-                    value = prefillData[colIndex];
+                    value = prefillData[fieldKey];
                 }
             }
 
