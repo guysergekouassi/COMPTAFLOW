@@ -2866,7 +2866,7 @@ class AdminConfigController extends Controller
             'errorCount', 'validCount', 'importTitle',
             'user', 'plansComptables', 'accountDigits',
             'currentPage', 'totalPages', 'totalRows', 'perPage',
-            'statusFilter', 'searchFilter'
+            'statusFilter', 'searchFilter', 'mapping'
         ));
     }
 
