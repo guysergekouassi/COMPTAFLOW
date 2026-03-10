@@ -256,6 +256,100 @@
             }
         });
     }
+
+    // === CRÉATION RAPIDE D'ENTITÉS MANQUANTES ===
+    // Ces fonctions doivent être ici (premier bloc) car elles sont appelées
+    // depuis des boutons onclick dans les alertes HTML en haut de page.
+
+    async function quickCreateAccount(numero, libelle) {
+        Swal.showLoading();
+        let suggestion = numero;
+        try {
+            const res = await fetch(`/admin/import/suggest-number?type=account&original=${encodeURIComponent(numero)}`);
+            const data = await res.json();
+            if (data.success) suggestion = data.suggestion;
+        } catch(e) {}
+        Swal.fire({
+            title: 'Création rapide du Compte',
+            html: `<div class="mb-3 text-start"><label class="form-label text-xs font-bold text-slate-500">Numéro de compte suggéré</label><input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}"><div class="text-muted text-xs mt-1">Original lu : <strong>${numero}</strong></div></div><div class="mb-3 text-start"><label class="form-label text-xs font-bold text-slate-500">Intitulé</label><input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}"></div>`,
+            icon: 'info', showCancelButton: true,
+            confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer', cancelButtonText: 'Annuler',
+            customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
+            buttonsStyling: false,
+            preConfirm: () => ({ numero: document.getElementById('swal-qc-numero').value, libelle: document.getElementById('swal-qc-libelle').value })
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.showLoading();
+                fetch('/admin/import/quick-account', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                    body: JSON.stringify({ numero_compte: result.value.numero, intitule: result.value.libelle, type_de_compte: 'Bilan' })
+                }).then(r => r.json()).then(data => {
+                    if (data.success) { Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => window.location.reload()); }
+                    else { Swal.fire('Erreur', data.message, 'error'); }
+                }).catch(() => Swal.fire('Erreur', 'Une erreur est survenue.', 'error'));
+            }
+        });
+    }
+
+    async function quickCreateTier(numero, libelle) {
+        Swal.showLoading();
+        let suggestion = numero;
+        try {
+            const res = await fetch(`/admin/import/suggest-number?type=tier&original=${encodeURIComponent(numero)}`);
+            const data = await res.json();
+            if (data.success) suggestion = data.suggestion;
+        } catch(e) {}
+        Swal.fire({
+            title: 'Création rapide du Tiers',
+            html: `<div class="mb-3 text-start"><label class="form-label text-xs font-bold text-slate-500">Numéro de tiers suggéré</label><input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}"><div class="text-muted text-xs mt-1">Original lu : <strong>${numero}</strong></div></div><div class="mb-3 text-start"><label class="form-label text-xs font-bold text-slate-500">Intitulé</label><input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}"></div>`,
+            icon: 'info', showCancelButton: true,
+            confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer', cancelButtonText: 'Annuler',
+            customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
+            buttonsStyling: false,
+            preConfirm: () => ({ numero: document.getElementById('swal-qc-numero').value, libelle: document.getElementById('swal-qc-libelle').value })
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.showLoading();
+                fetch('/admin/import/quick-tier', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                    body: JSON.stringify({ numero_tiers: result.value.numero, intitule: result.value.libelle, type_de_tiers: 'Client' })
+                }).then(r => r.json()).then(data => {
+                    if (data.success) { Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => window.location.reload()); }
+                    else { Swal.fire('Erreur', data.message, 'error'); }
+                }).catch(() => Swal.fire('Erreur', 'Une erreur est survenue.', 'error'));
+            }
+        });
+    }
+
+    async function quickCreateJournal(code, libelle) {
+        Swal.showLoading();
+        let suggestion = code;
+        try {
+            const res = await fetch(`/admin/import/suggest-number?type=journal&original=${encodeURIComponent(code)}`);
+            const data = await res.json();
+            if (data.success) suggestion = data.suggestion;
+        } catch(e) {}
+        Swal.fire({
+            title: 'Création rapide du Journal',
+            html: `<div class="mb-3 text-start"><label class="form-label text-xs font-bold text-slate-500">Code Journal suggéré</label><input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}"><div class="text-muted text-xs mt-1">Code original lu : <strong>${code}</strong></div></div><div class="mb-3 text-start"><label class="form-label text-xs font-bold text-slate-500">Intitulé</label><input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}"></div>`,
+            icon: 'info', showCancelButton: true,
+            confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer', cancelButtonText: 'Annuler',
+            customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
+            buttonsStyling: false,
+            preConfirm: () => ({ numero: document.getElementById('swal-qc-numero').value, libelle: document.getElementById('swal-qc-libelle').value })
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.showLoading();
+                fetch('/admin/import/quick-journal', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                    body: JSON.stringify({ code_journal: result.value.numero, intitule: result.value.libelle, type_journal: 'Opérations diverses' })
+                }).then(r => r.json()).then(data => {
+                    if (data.success) { Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => window.location.reload()); }
+                    else { Swal.fire('Erreur', data.message, 'error'); }
+                }).catch(() => Swal.fire('Erreur', 'Une erreur est survenue.', 'error'));
+            }
+        });
+    }
 </script>
 
 <body>
@@ -926,162 +1020,9 @@
                 buttonsStyling: false
             });
         }
-
-        async function quickCreateAccount(numero, libelle) {
-            Swal.showLoading();
-            let suggestion = numero;
-            try {
-                const res = await fetch(`{{ route('admin.import.suggest_number') }}?type=account&original=${encodeURIComponent(numero)}`);
-                const data = await res.json();
-                if (data.success) suggestion = data.suggestion;
-            } catch(e) {}
-            
-            Swal.fire({
-                title: 'Création rapide du Compte',
-                html: `
-                    <div class="mb-3 text-start">
-                        <label class="form-label text-xs font-bold text-slate-500">Numéro de compte suggéré</label>
-                        <input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}">
-                        <div class="text-muted text-[10px] mt-1">Numéro original lu : <strong>${numero}</strong></div>
-                    </div>
-                    <div class="mb-3 text-start">
-                        <label class="form-label text-xs font-bold text-slate-500">Intitulé</label>
-                        <input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}">
-                    </div>
-                `,
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer',
-                cancelButtonText: 'Annuler',
-                customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-                buttonsStyling: false,
-                preConfirm: () => {
-                    return {
-                        numero: document.getElementById('swal-qc-numero').value,
-                        libelle: document.getElementById('swal-qc-libelle').value
-                    }
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.showLoading();
-                    fetch("{{ route('admin.import.quick_account') }}", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                        body: JSON.stringify({ numero_compte: result.value.numero, intitule: result.value.libelle, type_de_compte: 'Bilan' })
-                    }).then(response => response.json()).then(data => {
-                        if (data.success) {
-                            Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
-                        } else {
-                            Swal.fire('Erreur', data.message, 'error');
-                        }
-                    }).catch(error => { Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error'); });
-                }
-            });
-        }
-
-        async function quickCreateTier(numero, libelle) {
-            Swal.showLoading();
-            let suggestion = numero;
-            try {
-                const res = await fetch(`{{ route('admin.import.suggest_number') }}?type=tier&original=${encodeURIComponent(numero)}`);
-                const data = await res.json();
-                if (data.success) suggestion = data.suggestion;
-            } catch(e) {}
-
-            Swal.fire({
-                title: 'Création rapide du Tiers',
-                html: `
-                    <div class="mb-3 text-start">
-                        <label class="form-label text-xs font-bold text-slate-500">Numéro de tiers suggéré</label>
-                        <input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}">
-                        <div class="text-muted text-[10px] mt-1">Numéro original lu : <strong>${numero}</strong></div>
-                    </div>
-                    <div class="mb-3 text-start">
-                        <label class="form-label text-xs font-bold text-slate-500">Intitulé</label>
-                        <input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}">
-                    </div>
-                `,
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer',
-                cancelButtonText: 'Annuler',
-                customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-                buttonsStyling: false,
-                preConfirm: () => {
-                    return {
-                        numero: document.getElementById('swal-qc-numero').value,
-                        libelle: document.getElementById('swal-qc-libelle').value
-                    }
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.showLoading();
-                    fetch("{{ route('admin.import.quick_tier') }}", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                        body: JSON.stringify({ numero_tiers: result.value.numero, intitule: result.value.libelle, type_de_tiers: 'Client' })
-                    }).then(response => response.json()).then(data => {
-                        if (data.success) {
-                            Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
-                        } else {
-                            Swal.fire('Erreur', data.message, 'error');
-                        }
-                    }).catch(error => { Swal.fire('Erreur', 'Une erreur est survenue.', 'error'); });
-                }
-            });
-        }
-
-        async function quickCreateJournal(code, libelle) {
-            Swal.showLoading();
-            let suggestion = code;
-            try {
-                const res = await fetch(`{{ route('admin.import.suggest_number') }}?type=journal&original=${encodeURIComponent(code)}`);
-                const data = await res.json();
-                if (data.success) suggestion = data.suggestion;
-            } catch(e) {}
-
-            Swal.fire({
-                title: 'Création rapide du Journal',
-                html: `
-                    <div class="mb-3 text-start">
-                        <label class="form-label text-xs font-bold text-slate-500">Code Journal suggéré</label>
-                        <input type="text" id="swal-qc-numero" class="form-control font-bold text-primary" value="${suggestion}">
-                        <div class="text-muted text-[10px] mt-1">Code original lu : <strong>${code}</strong></div>
-                    </div>
-                    <div class="mb-3 text-start">
-                        <label class="form-label text-xs font-bold text-slate-500">Intitulé</label>
-                        <input type="text" id="swal-qc-libelle" class="form-control" value="${libelle}">
-                    </div>
-                `,
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Créer',
-                cancelButtonText: 'Annuler',
-                customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-                buttonsStyling: false,
-                preConfirm: () => {
-                    return {
-                        numero: document.getElementById('swal-qc-numero').value,
-                        libelle: document.getElementById('swal-qc-libelle').value
-                    }
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.showLoading();
-                    fetch("{{ route('admin.import.quick_journal') }}", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                        body: JSON.stringify({ code_journal: result.value.numero, intitule: result.value.libelle, type_journal: 'Opérations diverses' })
-                    }).then(response => response.json()).then(data => {
-                        if (data.success) {
-                            Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { window.location.reload(); });
-                        } else {
-                            Swal.fire('Erreur', data.message, 'error');
-                        }
-                    }).catch(error => { Swal.fire('Erreur', 'Une erreur est survenue.', 'error'); });
-                }
-            });
-        }
+        // Les fonctions quickCreateAccount, quickCreateTier, quickCreateJournal
+        // sont définies dans le premier bloc <script> (avant le body) pour garantir
+        // leur disponibilité dès le rendu HTML.
 
         // Date conversion functions
         let datesConverted = false;
