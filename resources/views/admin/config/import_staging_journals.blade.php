@@ -717,7 +717,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/config/import-staging/delete-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'

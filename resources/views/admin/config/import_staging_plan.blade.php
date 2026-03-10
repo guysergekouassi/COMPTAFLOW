@@ -526,7 +526,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/config/import-staging/delete-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -607,7 +607,7 @@
 
         function editStagingRow(btn) {
             const importId = btn.dataset.importId;
-            const rowIndex = btn.dataset.rowIndices || btn.dataset.rowIndex;
+            const rowIndex = btn.dataset.rowIndex;
             // recordId variable removed
             const rowData = JSON.parse(btn.dataset.rowData);
             const mapping = JSON.parse(btn.dataset.mapping);

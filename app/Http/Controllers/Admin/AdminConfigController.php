@@ -4065,9 +4065,11 @@ class AdminConfigController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ligne non trouvée.'], 404);
             }
 
-            // Supprimer la ligne (on utilise unset ou array_splice ?)
-            // array_splice est mieux pour réindexer numériquement
-            array_splice($data, $index, 1);
+            // Supprimer la ligne par sa clé exacte
+            unset($data[$index]);
+            
+            // Réindexer pour éviter les trous dans le JSON (optionnel mais propre pour des tableaux 0-indexed)
+            $data = array_values($data);
             
             $import->update(['raw_data' => $data]);
 

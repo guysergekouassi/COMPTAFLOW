@@ -141,121 +141,8 @@
             }
         });
     }
-    function editStagingRow(btn) {
-        const importId = btn.dataset.importId;
-        const rowIndex = btn.dataset.rowIndices || btn.dataset.rowIndex;
-        const rowData = JSON.parse(btn.dataset.rowData);
-        const mapping = JSON.parse(btn.dataset.mapping);
-        let html = '<div class="text-start">';
-        Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
-            if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === '' || colIndex === 'AUTO') return;
-            let label = fieldKey.replace(/_/g, ' ').toUpperCase();
-            let val = rowData[fieldKey] || '';
-            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-edit-input" data-field="${fieldKey}" data-col="${colIndex}" value="${val}" oninput="syncSameColInputs(this)"></div>`;
-        });
-        html += '</div>';
-        Swal.fire({
-            title: 'Modifier la ligne', html: html,
-            showCancelButton: true, confirmButtonText: 'Enregistrer', cancelButtonText: 'Annuler',
-            customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-            buttonsStyling: false,
-            preConfirm: () => {
-                let values = {};
-                document.querySelectorAll('.swal-edit-input').forEach(input => { values[input.dataset.col] = input.value; values[input.dataset.field] = input.value; });
-                return values.length === 0 ? null : values;
-            }
-        }).then((result) => {
-            if (result.isConfirmed && result.value) {
-                Swal.showLoading();
-                fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '' },
-                    body: JSON.stringify({ values: result.value })
-                }).then(r => r.json()).then(data => {
-                    if (data.success) { window.location.reload(); } else { Swal.fire('Erreur', data.message || 'Erreur lors de la mise Ã  jour.', 'error'); }
-                }).catch(err => { Swal.fire('Erreur', err.message, 'error'); });
-            }
-        });
-    }
-    function showRowDetails(btn) {
-        const data = JSON.parse(btn.dataset.rowData);
-        const errors = JSON.parse(btn.dataset.errors);
-        let dataHtml = '<div class="text-start"><div class="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100">';
-        Object.entries(data).forEach(([key, val]) => {
-            if (val !== null && !key.toLowerCase().includes('header') && !['debit_val','credit_val','auto_num'].includes(key)) {
-                dataHtml += `<div class="d-flex justify-content-between border-bottom py-2"><span class="text-xs font-bold text-slate-500">${key.replace(/_/g,' ').toUpperCase()}</span><span class="text-xs fw-black text-slate-800">${val}</span></div>`;
-            }
-        });
-        dataHtml += '</div>';
-        if (errors && errors.length > 0) {
-            dataHtml += '<div class="p-4 rounded-2xl bg-rose-50 border border-rose-100"><ul class="ps-4 mb-0">';
-            errors.forEach(err => { dataHtml += '<li class="text-rose-700 text-xs font-bold mb-1">' + err + '</li>'; });
-            dataHtml += '</ul></div>';
-        } else {
-            dataHtml += "<div class=\"p-4 rounded-2xl bg-emerald-50 border border-emerald-100\"><div class=\"text-xs font-bold text-emerald-700\">Cette ligne est prête pour l'importation.</div></div>";
-        }
-        dataHtml += '</div>';
-        Swal.fire({ title: 'Détails de la ligne', html: dataHtml, icon: (errors && errors.length > 0) ? 'warning' : 'info', confirmButtonText: 'Fermer', customClass: { confirmButton: 'btn btn-primary rounded-xl px-12 py-3' }, buttonsStyling: false });
-    }
-    function addStagingRow(btn) {
-        const importId = btn.dataset.importId;
-        const mapping = JSON.parse(btn.dataset.mapping);
-        
-        let prefillData = {};
-        const checkedBox = document.querySelector('.row-checkbox:checked');
-        if (checkedBox) {
-            const tr = checkedBox.closest('tr');
-            if (tr) {
-                const infoBtn = tr.querySelector('[data-row-data]');
-                if (infoBtn) {
-                    try {
-                        prefillData = JSON.parse(infoBtn.getAttribute('data-row-data'));
-                    } catch(e) {}
-                }
-            }
-        }
-
-        let html = '<div class="text-start">';
-        Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
-            if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
-            let label = fieldKey.replace(/_/g, ' ').toUpperCase();
-            
-            // Logique de pré-remplissage
-            let value = "";
-            if (prefillData && prefillData[fieldKey] !== undefined && prefillData[fieldKey] !== null) {
-                // Sauf les montants
-                if (!['debit', 'credit', 'montant'].includes(fieldKey.toLowerCase())) {
-                    value = prefillData[fieldKey].toString();
-                }
-            }
-
-            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-add-input" data-field="${fieldKey}" data-col="${colIndex}" value="${value.replace(/"/g, '&quot;')}"></div>`;
-        });
-        html += '</div>';
-        Swal.fire({
-            title: 'Ajouter une ligne', html: html,
-            showCancelButton: true, confirmButtonText: 'Ajouter', cancelButtonText: 'Annuler',
-            customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
-            buttonsStyling: false,
-            preConfirm: () => {
-                let values = {};
-                document.querySelectorAll('.swal-add-input').forEach(input => { values[input.dataset.col] = input.value; });
-                return values;
-            }
-        }).then((result) => {
-            if (result.isConfirmed && result.value) {
-                Swal.showLoading();
-                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-                fetch(`/admin/import/add-row/${importId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfMeta ? csrfMeta.content : '' },
-                    body: JSON.stringify({ values: result.value })
-                }).then(r => r.json()).then(data => {
-                    if (data.success) { window.location.reload(); } else { Swal.fire('Erreur', data.message, 'error'); }
-                });
-            }
-        });
-    }
+    // Fonctions de staging (editStagingRow, showRowDetails, addStagingRow) supprimées d'ici
+    // car elles sont définies de manière plus complète à la fin du fichier.
 
     // === CRÉATION RAPIDE D'ENTITÉS MANQUANTES ===
     // Ces fonctions doivent être ici (premier bloc) car elles sont appelées
@@ -809,7 +696,7 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/config/import-staging/delete-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -890,7 +777,7 @@
 
         function editStagingRow(btn) {
             const importId = btn.dataset.importId;
-            const rowIndex = btn.dataset.rowIndices || btn.dataset.rowIndex;
+            const rowIndex = btn.dataset.rowIndex;
             // recordId variable removed
             const rowData = JSON.parse(btn.dataset.rowData);
             const mapping = JSON.parse(btn.dataset.mapping);
