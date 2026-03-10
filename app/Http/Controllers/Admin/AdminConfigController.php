@@ -3750,36 +3750,38 @@ class AdminConfigController extends Controller
             $import = ImportStaging::findOrFail($id);
             $data = $import->raw_data;
             
-            if (!isset($data[(int)$index]) && !isset($data[(string)$index])) {
-                Log::warning("STAGING UPDATE: Index $index not found in raw_data", ['data_keys' => array_keys($data)]);
+            // L'index passé ici est l'index original dans le tableau $data
+            if (!isset($data[$index])) {
+                Log::warning("STAGING UPDATE: Index $index not found in raw_data");
                 return response()->json(['success' => false, 'message' => "Ligne non trouvée (Index: $index)."], 404);
             }
 
-            $targetIndex = isset($data[(int)$index]) ? (int)$index : (string)$index;
             $newValues = $request->input('values');
             
             Log::info("STAGING UPDATE: Data received", [
-                'target_index' => $targetIndex,
+                'target_index' => $index,
                 'provided_values' => $newValues,
-                'current_row' => $data[$targetIndex] ?? 'MISSING'
+                'current_row' => $data[$index] ?? 'MISSING'
             ]);
 
             foreach ($newValues as $colIndex => $value) {
-                $data[$targetIndex][(string)$colIndex] = $value;
-                // Si c'est un tableau numérique, PHP gère la conversion
+                // On met à jour la colonne si l'index est numérique (données brutes)
+                if (is_numeric($colIndex)) {
+                    $data[$index][(int)$colIndex] = $value;
+                }
             }
 
-            // Forcer l'assignation et la sauvegarde
+            // Sauvegarde des données mises à jour
             $import->raw_data = $data;
             $import->save();
 
             Log::info("STAGING UPDATE: SUCCESS", [
-                'saved_row' => $import->raw_data[$targetIndex] ?? 'ERROR'
+                'saved_row' => $import->raw_data[$index] ?? 'ERROR'
             ]);
 
             return response()->json(['success' => true, 'message' => 'Ligne mise à jour avec succès.']);
         } catch (\Exception $e) {
-            Log::error("STAGING UPDATE FAILED: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error("STAGING UPDATE FAILED: " . $e->getMessage());
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -3797,12 +3799,53 @@ class AdminConfigController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ligne non trouvée.'], 404);
             }
 
-            // Supprimer la ligne et réindexer
+            // Supprimer la ligne (on utilise unset ou array_splice ?)
+            // array_splice est mieux pour réindexer numériquement
             array_splice($data, $index, 1);
             
             $import->update(['raw_data' => $data]);
 
             return response()->json(['success' => true, 'message' => 'Ligne supprimée de l\'import.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Ajout d'une nouvelle ligne au staging
+     */
+    public function addRow(Request $request, $id)
+    {
+        try {
+            $import = ImportStaging::findOrFail($id);
+            $data = $import->raw_data;
+            
+            $newValues = $request->input('values', []);
+            
+            // On s'assure que les clés sont numériques (correspondance colonnes brutes)
+            $row = [];
+            
+            // On calcule l'index max du mapping pour initialiser une ligne vide cohérente
+            $maxIdx = 0;
+            foreach($import->mapping as $idx) {
+                if(is_numeric($idx)) $maxIdx = max($maxIdx, (int)$idx);
+            }
+            
+            // Initialiser la ligne avec des nulls
+            $row = array_fill(0, $maxIdx + 1, null);
+            
+            // Remplir avec les valeurs reçues
+            foreach($newValues as $colIdx => $val) {
+                if (is_numeric($colIdx)) {
+                    $row[(int)$colIdx] = $val;
+                }
+            }
+            
+            $data[] = $row;
+            
+            $import->update(['raw_data' => $data]);
+            
+            return response()->json(['success' => true, 'message' => 'Ligne ajoutée avec succès.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
@@ -4354,6 +4397,7 @@ class AdminConfigController extends Controller
 
         return response()->download($tempPath)->deleteFileAfterSend(true);
     }
+
 
     /**
      * Suppression de TOUTES les erreurs du staging

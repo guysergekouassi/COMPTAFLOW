@@ -304,6 +304,12 @@
                                         </div>
                                     </div>
                                     <div class="bg-white p-4 rounded-2xl border border-slate-100 d-flex align-items-center gap-2" style="width: 450px;">
+                                        <button type="button" id="addStagingRowBtn" class="btn btn-sm btn-primary py-2 px-3 rounded-xl" 
+                                                data-import-id="{{ $import->id }}"
+                                                data-mapping="{{ json_encode($mapping) }}"
+                                                onclick="addStagingRow(this)">
+                                            <i class="fa-solid fa-plus-circle me-1"></i> Ajouter une ligne
+                                        </button>
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2 flex-grow-1">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
                                             <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
@@ -453,7 +459,7 @@
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
-                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['record_id'] ?? $row['index'] }})"
+                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['index'] }})"
                                                                     title="Supprimer cette ligne de l'import">
                                                                 <i class="fa-solid fa-trash"></i>
                                                             </button>
@@ -588,11 +594,72 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/config/import-staging/delete-row/${importId}/${rowIndex}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            Swal.fire('Erreur', data.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function addStagingRow(btn) {
+            const importId = btn.dataset.importId;
+            const mapping = JSON.parse(btn.dataset.mapping);
+
+            let html = '<div class="text-start">';
+            Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
+                if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
+                
+                let label = fieldKey.replace(/_/g, ' ').toUpperCase();
+                html += `<div class="mb-3">
+                            <label class="form-label text-xs font-bold text-slate-500">${label}</label>
+                            <input type="text" class="form-control swal-add-input" 
+                                   data-field="${fieldKey}" 
+                                   data-col="${colIndex}" 
+                                   value="">
+                         </div>`;
+            });
+            html += '</div>';
+
+            Swal.fire({
+                title: 'Ajouter une ligne',
+                html: html,
+                showCancelButton: true,
+                confirmButtonText: 'Ajouter',
+                cancelButtonText: 'Annuler',
+                customClass: {
+                    confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
+                    cancelButton: 'btn btn-label-secondary rounded-xl px-4'
+                },
+                buttonsStyling: false,
+                preConfirm: () => {
+                    let values = {};
+                    let inputs = document.querySelectorAll('.swal-add-input');
+                    inputs.forEach(input => {
+                        values[input.dataset.col] = input.value;
+                    });
+                    return values;
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    Swal.showLoading();
+                    fetch(`/admin/config/import-staging/add-row/${importId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ values: result.value })
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -660,7 +727,7 @@
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
                         Swal.showLoading();
-                        fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
+                        fetch(`/admin/config/import-staging/update-row/${importId}/${rowIndex}`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

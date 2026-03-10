@@ -288,8 +288,11 @@
                         </div>
 
                         <div class="mb-4 d-flex justify-content-center gap-2">
-                            <button type="button" id="toggleDatesBtn" class="btn btn-sm btn-outline-primary" onclick="toggleDateDisplay()">
-                                <i class="fa-solid fa-calendar me-1"></i> Afficher les dates
+                            <button type="button" id="addStagingRowBtn" class="btn btn-sm btn-primary" 
+                                    data-import-id="{{ $import->id }}"
+                                    data-mapping="{{ json_encode($mapping) }}"
+                                    onclick="addStagingRow(this)">
+                                <i class="fa-solid fa-plus-circle me-1"></i> Ajouter une ligne
                             </button>
                             @if($errorCount > 0)
                             <button type="button" id="bulkDeleteErrorsBtn" class="btn btn-sm btn-outline-danger" onclick="selectAndBulkDeleteErrors()">
@@ -467,7 +470,7 @@
                                                                 <i class="fa-solid fa-eye"></i>
                                                             </button>
                                                             <button class="btn btn-icon btn-sm btn-label-danger rounded-pill ms-1" 
-                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['record_id'] ?? $rowIndex }})"
+                                                                    onclick="deleteStagingRow({{ $import->id }}, {{ $row['index'] }})"
                                                                     title="Supprimer cette ligne de l'import">
                                                                 <i class="fa-solid fa-trash"></i>
                                                             </button>
@@ -569,11 +572,72 @@
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/config/import-staging/delete-row/${importId}/${rowIndex}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            Swal.fire('Erreur', data.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function addStagingRow(btn) {
+            const importId = btn.dataset.importId;
+            const mapping = JSON.parse(btn.dataset.mapping);
+
+            let html = '<div class="text-start">';
+            Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
+                if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
+                
+                let label = fieldKey.replace(/_/g, ' ').toUpperCase();
+                html += `<div class="mb-3">
+                            <label class="form-label text-xs font-bold text-slate-500">${label}</label>
+                            <input type="text" class="form-control swal-add-input" 
+                                   data-field="${fieldKey}" 
+                                   data-col="${colIndex}" 
+                                   value="">
+                         </div>`;
+            });
+            html += '</div>';
+
+            Swal.fire({
+                title: 'Ajouter une ligne',
+                html: html,
+                showCancelButton: true,
+                confirmButtonText: 'Ajouter',
+                cancelButtonText: 'Annuler',
+                customClass: {
+                    confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
+                    cancelButton: 'btn btn-label-secondary rounded-xl px-4'
+                },
+                buttonsStyling: false,
+                preConfirm: () => {
+                    let values = {};
+                    let inputs = document.querySelectorAll('.swal-add-input');
+                    inputs.forEach(input => {
+                        values[input.dataset.col] = input.value;
+                    });
+                    return values;
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    Swal.showLoading();
+                    fetch(`/admin/config/import-staging/add-row/${importId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ values: result.value })
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -640,7 +704,7 @@
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     Swal.showLoading();
-                    fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
+                    fetch(`/admin/config/import-staging/update-row/${importId}/${rowIndex}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
