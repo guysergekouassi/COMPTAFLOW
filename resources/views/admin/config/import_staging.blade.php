@@ -141,6 +141,40 @@
             }
         });
     }
+    function addStagingRow(btn) {
+        const importId = btn.dataset.importId;
+        const mapping = JSON.parse(btn.dataset.mapping);
+        let html = '<div class="text-start">';
+        Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
+            if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
+            let label = fieldKey.replace(/_/g, ' ').toUpperCase();
+            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-add-input" data-field="${fieldKey}" data-col="${colIndex}" value=""></div>`;
+        });
+        html += '</div>';
+        Swal.fire({
+            title: 'Ajouter une ligne', html: html,
+            showCancelButton: true, confirmButtonText: 'Ajouter', cancelButtonText: 'Annuler',
+            customClass: { confirmButton: 'btn btn-primary rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
+            buttonsStyling: false,
+            preConfirm: () => {
+                let values = {};
+                document.querySelectorAll('.swal-add-input').forEach(input => { values[input.dataset.col] = input.value; });
+                return values;
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                Swal.showLoading();
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                fetch(`/admin/config/import-staging/add-row/${importId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfMeta ? csrfMeta.content : '' },
+                    body: JSON.stringify({ values: result.value })
+                }).then(r => r.json()).then(data => {
+                    if (data.success) { window.location.reload(); } else { Swal.fire('Erreur', data.message, 'error'); }
+                });
+            }
+        });
+    }
 </script>
 
 <body>
