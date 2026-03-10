@@ -3799,6 +3799,36 @@ class AdminConfigController extends Controller
                 'adding_strategy' => 'manuel'
             ]);
 
+            // Mettre à jour les lignes de l'import si un import_id et un original sont fournis
+            if ($request->filled('import_id') && $request->filled('original_numero')) {
+                $importId = $request->import_id;
+                $original = $request->original_numero;
+                $nouveau = $request->numero_compte;
+
+                if ($original !== $nouveau) {
+                    $import = ImportStaging::find($importId);
+                    if ($import) {
+                        $data = $import->raw_data;
+                        $mapping = $import->mapping;
+                        // On trouve la colonne "compte"
+                        $colCompte = $mapping['compte'] ?? null;
+                        if ($colCompte !== null) {
+                            $updated = false;
+                            foreach ($data as $index => &$row) {
+                                if (isset($row[$colCompte]) && trim($row[$colCompte]) === $original) {
+                                    $row[$colCompte] = $nouveau;
+                                    $updated = true;
+                                }
+                            }
+                            if ($updated) {
+                                $import->raw_data = $data;
+                                $import->save();
+                            }
+                        }
+                    }
+                }
+            }
+
             return response()->json(['success' => true, 'message' => 'Compte créé avec succès.']);
 
         } catch (\Exception $e) {
@@ -3840,6 +3870,36 @@ class AdminConfigController extends Controller
                 'company_id' => $user->company_id,
             ]);
 
+            // Mettre à jour les lignes de l'import si un import_id et un original sont fournis
+            if ($request->filled('import_id') && $request->filled('original_numero')) {
+                $importId = $request->import_id;
+                $original = $request->original_numero;
+                $nouveau = $request->numero_tiers;
+
+                if ($original !== $nouveau) {
+                    $import = ImportStaging::find($importId);
+                    if ($import) {
+                        $data = $import->raw_data;
+                        $mapping = $import->mapping;
+                        // On trouve la colonne "tiers"
+                        $colTiers = $mapping['tiers'] ?? null;
+                        if ($colTiers !== null) {
+                            $updated = false;
+                            foreach ($data as $index => &$row) {
+                                if (isset($row[$colTiers]) && trim($row[$colTiers]) === $original) {
+                                    $row[$colTiers] = $nouveau;
+                                    $updated = true;
+                                }
+                            }
+                            if ($updated) {
+                                $import->raw_data = $data;
+                                $import->save();
+                            }
+                        }
+                    }
+                }
+            }
+
             return response()->json(['success' => true, 'message' => 'Tiers créé avec succès.']);
 
         } catch (\Exception $e) {
@@ -3876,6 +3936,36 @@ class AdminConfigController extends Controller
                 'user_id' => $user->id,
                 'company_id' => $user->company_id,
             ]);
+
+            // Mettre à jour les lignes de l'import si un import_id et un original sont fournis
+            if ($request->filled('import_id') && $request->filled('original_numero')) {
+                $importId = $request->import_id;
+                $original = $request->original_numero;
+                $nouveau = strtoupper($request->code_journal);
+
+                if ($original !== $nouveau) {
+                    $import = ImportStaging::find($importId);
+                    if ($import) {
+                        $data = $import->raw_data;
+                        $mapping = $import->mapping;
+                        // On trouve la colonne "journal"
+                        $colJournal = $mapping['journal'] ?? null;
+                        if ($colJournal !== null) {
+                            $updated = false;
+                            foreach ($data as $index => &$row) {
+                                if (isset($row[$colJournal]) && trim($row[$colJournal]) === $original) {
+                                    $row[$colJournal] = $nouveau;
+                                    $updated = true;
+                                }
+                            }
+                            if ($updated) {
+                                $import->raw_data = $data;
+                                $import->save();
+                            }
+                        }
+                    }
+                }
+            }
 
             return response()->json(['success' => true, 'message' => 'Journal créé avec succès.']);
 

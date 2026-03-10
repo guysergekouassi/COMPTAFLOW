@@ -222,14 +222,14 @@
             
             // Logique de pré-remplissage
             let value = "";
-            if (prefillData && prefillData[fieldKey] !== undefined) {
+            if (prefillData && prefillData[fieldKey] !== undefined && prefillData[fieldKey] !== null) {
                 // Sauf les montants
                 if (!['debit', 'credit', 'montant'].includes(fieldKey.toLowerCase())) {
-                    value = prefillData[fieldKey];
+                    value = prefillData[fieldKey].toString();
                 }
             }
 
-            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-add-input" data-field="${fieldKey}" data-col="${colIndex}" value="${value ? value.replace(/"/g, '&quot;') : ''}"></div>`;
+            html += `<div class="mb-3"><label class="form-label text-xs font-bold text-slate-500">${label}</label><input type="text" class="form-control swal-add-input" data-field="${fieldKey}" data-col="${colIndex}" value="${value.replace(/"/g, '&quot;')}"></div>`;
         });
         html += '</div>';
         Swal.fire({
@@ -261,7 +261,7 @@
     // Ces fonctions doivent être ici (premier bloc) car elles sont appelées
     // depuis des boutons onclick dans les alertes HTML en haut de page.
 
-    async function quickCreateAccount(numero, libelle) {
+    async function quickCreateAccount(numero, libelle, importId = null) {
         Swal.showLoading();
         let suggestion = numero;
         try {
@@ -282,7 +282,7 @@
                 Swal.showLoading();
                 fetch('/admin/import/quick-account', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
-                    body: JSON.stringify({ numero_compte: result.value.numero, intitule: result.value.libelle, type_de_compte: 'Bilan' })
+                    body: JSON.stringify({ numero_compte: result.value.numero, intitule: result.value.libelle, type_de_compte: 'Bilan', import_id: importId, original_numero: numero })
                 }).then(r => r.json()).then(data => {
                     if (data.success) { Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => window.location.reload()); }
                     else { Swal.fire('Erreur', data.message, 'error'); }
@@ -291,7 +291,7 @@
         });
     }
 
-    async function quickCreateTier(numero, libelle) {
+    async function quickCreateTier(numero, libelle, importId = null) {
         Swal.showLoading();
         let suggestion = numero;
         try {
@@ -312,7 +312,7 @@
                 Swal.showLoading();
                 fetch('/admin/import/quick-tier', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
-                    body: JSON.stringify({ numero_tiers: result.value.numero, intitule: result.value.libelle, type_de_tiers: 'Client' })
+                    body: JSON.stringify({ numero_tiers: result.value.numero, intitule: result.value.libelle, type_de_tiers: 'Client', import_id: importId, original_numero: numero })
                 }).then(r => r.json()).then(data => {
                     if (data.success) { Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => window.location.reload()); }
                     else { Swal.fire('Erreur', data.message, 'error'); }
@@ -321,7 +321,7 @@
         });
     }
 
-    async function quickCreateJournal(code, libelle) {
+    async function quickCreateJournal(code, libelle, importId = null) {
         Swal.showLoading();
         let suggestion = code;
         try {
@@ -342,7 +342,7 @@
                 Swal.showLoading();
                 fetch('/admin/import/quick-journal', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
-                    body: JSON.stringify({ code_journal: result.value.numero, intitule: result.value.libelle, type_journal: 'Opérations diverses' })
+                    body: JSON.stringify({ code_journal: result.value.numero, intitule: result.value.libelle, type_journal: 'Opérations diverses', import_id: importId, original_numero: code })
                 }).then(r => r.json()).then(data => {
                     if (data.success) { Swal.fire({ title: 'Succès', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => window.location.reload()); }
                     else { Swal.fire('Erreur', data.message, 'error'); }
@@ -387,19 +387,19 @@
                                 
                                 <div class="d-flex flex-wrap gap-2">
                                     @foreach($missingJournals ?? [] as $code => $intitule)
-                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateJournal('{{ $code }}', '{{ addslashes($intitule) }}')" title="Créer automatiquement le journal {{ $code }}">
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateJournal('{{ $code }}', '{{ addslashes($intitule) }}', {{ $import->id }})" title="Créer automatiquement le journal {{ $code }}">
                                             <i class="fa-solid fa-book me-1"></i> Créer Journal : {{ $code }}
                                         </button>
                                     @endforeach
 
                                     @foreach($missingAccounts ?? [] as $num => $intitule)
-                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateAccount('{{ $num }}', '{{ addslashes($intitule) }}')" title="Créer automatiquement le compte {{ $num }}">
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateAccount('{{ $num }}', '{{ addslashes($intitule) }}', {{ $import->id }})" title="Créer automatiquement le compte {{ $num }}">
                                             <i class="fa-solid fa-hashtag me-1"></i> Créer Compte : {{ $num }}
                                         </button>
                                     @endforeach
 
                                     @foreach($missingTiers ?? [] as $num => $intitule)
-                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateTier('{{ $num }}', '{{ addslashes($intitule) }}')" title="Créer automatiquement le tiers {{ $num }}">
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="quickCreateTier('{{ $num }}', '{{ addslashes($intitule) }}', {{ $import->id }})" title="Créer automatiquement le tiers {{ $num }}">
                                             <i class="fa-solid fa-user-tag me-1"></i> Créer Tiers : {{ $num }}
                                         </button>
                                     @endforeach
