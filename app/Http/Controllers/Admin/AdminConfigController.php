@@ -3082,7 +3082,7 @@ class AdminConfigController extends Controller
                     if ($existingMatchId) {
                         // Si le numéro existe toujours (cas rare de collision après séquence), on met à jour
                         PlanComptable::where('id', $existingMatchId)->update([
-                            'intitule' => strtoupper($rowMapped['intitule'] ?? 'COMPTE SANS NOM'),
+                            'intitule' => ($rowMapped['intitule'] ?? 'COMPTE SANS NOM'),
                             'numero_original' => $numeroOriginalPlan,
                             'user_id' => $user->id
                         ]);
@@ -3476,7 +3476,7 @@ class AdminConfigController extends Controller
                     if ($existingJournal) {
                         // UPDATE existant
                         $existingJournal->update([
-                            'intitule' => strtoupper($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
+                            'intitule' => trim($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
                             'type' => $type,
                             'compte_de_tresorerie' => $compteId,
                             'compte_de_contrepartie' => $compteNumStr,
@@ -3491,7 +3491,7 @@ class AdminConfigController extends Controller
                         // CREATE nouveau
                         $newJournal = CodeJournal::create([
                             'code_journal' => strtoupper($rowCode),
-                            'intitule' => strtoupper($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
+                            'intitule' => trim($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
                             'type' => $type,
                             'compte_de_tresorerie' => $compteId,
                             'compte_de_contrepartie' => $compteNumStr,
@@ -3511,7 +3511,7 @@ class AdminConfigController extends Controller
                         \App\Models\tresoreries\Tresoreries::updateOrCreate(
                             ['company_id' => $user->company_id, 'code_journal' => strtoupper($rowCode)],
                             [
-                                'intitule' => strtoupper($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
+                                'intitule' => trim($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
                                 'compte_de_contrepartie' => $compteId, // Lien vers plan_comptables.id
                                 'poste_tresorerie' => $posteTreso,
                                 'user_id' => $user->id
