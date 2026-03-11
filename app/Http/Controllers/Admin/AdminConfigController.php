@@ -3312,7 +3312,7 @@ class AdminConfigController extends Controller
                     $rapprochementOverrideIndex = $maxMappingIndex + 5;
                     $codeJournalOverrideIndex = $maxMappingIndex + 6;
 
-                    $rowRaw = $row['data'];
+                    $rowRaw = $rowOrig; // $rowOrig est le tableau brut de la ligne CSV (foreach $data as $index => $rowOrig)
 
                     // RÉCUPÉRATION DES VALEURS AVEC PRIORITÉ AUX SURCHARGES
                     $manualCodeOrig = $rowRaw[$codeJournalOverrideIndex] ?? null;
