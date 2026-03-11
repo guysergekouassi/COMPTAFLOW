@@ -3322,6 +3322,16 @@ class AdminConfigController extends Controller
                     $manualCodeOrig = $rowRaw[$codeJournalOverrideIndex] ?? null;
                     $rowCodeRaw = !empty($manualCodeOrig) ? trim($manualCodeOrig) : trim($rowMapped['code_journal'] ?? '');
 
+                    if (empty($rowCodeRaw) || (isset($mapping['code_journal']) && $mapping['code_journal'] === 'AUTO')) {
+                        foreach ($rowRaw as $val) {
+                            $val = trim((string)$val ?? '');
+                            if (preg_match('/^[A-Z0-9]{2,5}$/i', $val)) {
+                                $rowCodeRaw = $val;
+                                break;
+                            }
+                        }
+                    }
+
                     $rowCode = $this->standardizeJournalCode($rowCodeRaw, $journalDigits);
                     $numeroOriginalJournal = (!empty($rowCodeRaw) && $rowCodeRaw !== 'AUTO') ? $rowCodeRaw : null;
                     if (empty($rowCode) && !($mapping['code_journal'] === 'AUTO')) {

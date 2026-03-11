@@ -718,7 +718,7 @@
 
                 let currentIntitule = rowData['intitule'] || "";
                 const codeOrigCol = overrideIndexes.codeOrig;
-                let currentCodeOrig = rowData['code_original_journal'] || rowData['code_journal'] || "";
+                let currentCodeOrig = rowData['numero_original'] || rowData['code_journal'] || "";
                 
                 const typeCol = overrideIndexes.type;
                 let currentType = rowData['type'] || "";
