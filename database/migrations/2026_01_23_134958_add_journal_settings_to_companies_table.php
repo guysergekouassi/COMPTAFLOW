@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->integer('journal_code_digits')->nullable()->default(3);
+            $table->integer('journal_code_digits')->nullable()->default(4);
             $table->enum('journal_code_type', ['alphabetical', 'alphanumeric', 'numeric'])->default('alphabetical');
         });
     }

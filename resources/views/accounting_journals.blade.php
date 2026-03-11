@@ -506,7 +506,7 @@
                         <div class="row g-3">
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Code Journal *</label>
-                                <input type="text" id="update_code_journal" name="code_journal" class="input-field-premium uppercase-input" maxlength="4" required>
+                                <input type="text" id="update_code_journal" name="code_journal" class="input-field-premium uppercase-input" maxlength="{{ auth()->user()->company->journal_code_digits ?? 4 }}" required>
                             </div>
                             <div class="col-md-6 text-start">
                                 <label class="input-label-premium">Type *</label>
@@ -811,7 +811,7 @@
                         })
                         .catch(err => {
                             console.error('Erreur génération code:', err);
-                            const digits = {{ auth()->user()->company->journal_code_digits ?? 3 }};
+                            const digits = {{ auth()->user()->company->journal_code_digits ?? 4 }};
                             let finalCode = prefix.padEnd(digits, '0');
                             codeInput.value = finalCode.substring(0, digits);
                         });
@@ -967,7 +967,7 @@
             /** 4. Input Formatting **/
             const enforceUpperAlpha = (selector) => {
                 $(selector).on('input', function() {
-                    this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
+                    this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, {{ auth()->user()->company->journal_code_digits ?? 4 }});
                 });
             };
             enforceUpperAlpha('#code_journal_input');

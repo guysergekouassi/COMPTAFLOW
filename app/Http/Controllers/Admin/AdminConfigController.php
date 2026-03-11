@@ -2122,10 +2122,10 @@ class AdminConfigController extends Controller
                         
                         $rowCode = $tempCode;
                         
-                        // Validation stricte finale (après tous les traitements)
-                        if (strlen($rowCode) !== $journalDigits) {
-                            $errors[] = "Erreur de formatage : Le code '" . $rowCode . "' ne respecte pas la configuration ($journalDigits caractères exigés).";
-                            // On garde le code erroné pour qu'il soit affiché au user dans la case (en rouge)
+                        // Validation souple finale : on accepte les codes entre 2 et $journalDigits+2 caractères
+                        // (ex: un code de 3 lettres avec journalDigits=4 est valide car il peut exister dans la BD)
+                        if (strlen($rowCode) > $journalDigits + 2) {
+                            $errors[] = "Erreur de formatage : Le code '" . $rowCode . "' est trop long (Max $journalDigits caractères)."; 
                         }
 
                         $batchJournalMap[$upperOrig] = $rowCode; 
@@ -4488,14 +4488,28 @@ class AdminConfigController extends Controller
         if (preg_match('/^([A-Z]+)(\d+)$/i', $code, $matches)) {
             $prefix = $matches[1];
             $number = $matches[2];
+            $totalLen = strlen($prefix) + strlen($number);
+            if ($totalLen >= $digits) {
+                // Le code est déjà à la bonne longueur ou trop long : on tronque si nécessaire
+                if ($totalLen > $digits) {
+                    $maxPrefixLen = max(1, $digits - strlen($number));
+                    $prefix = substr($prefix, 0, $maxPrefixLen);
+                }
+                return $prefix . $number;
+            }
             $availableSpace = max(1, $digits - strlen($prefix));
-            
             // On complète avec des zéros à GAUCHE du numéro
             return $prefix . str_pad($number, $availableSpace, '0', STR_PAD_LEFT);
         }
 
-        // Cas Purement Alphabétique (ex: BQ, CAIS)
-        // On ne rajoute plus de zéros à droite (BQ00) pour permettre BQ01 via la séquence
+        // Cas Purement Alphabétique (ex: BQ, CAIS, VEN)
+        // Si le code est plus court que $digits, on complète avec "01" ou "001" etc.
+        if (strlen($code) < $digits) {
+            $numPart = str_pad('1', $digits - strlen($code), '0', STR_PAD_LEFT);
+            return $code . $numPart;
+        }
+
+        // Code trop long : on tronque
         if (strlen($code) > $digits) {
             return substr($code, 0, $digits);
         }
