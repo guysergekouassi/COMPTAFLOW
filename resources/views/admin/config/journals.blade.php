@@ -595,7 +595,7 @@
             if (caisse && caisse.checked) prefix = 'CAI';
             else if (banque && banque.checked) prefix = 'BQ';
             else if (autre && autre.value.trim() !== '') {
-                prefix = autre.value.trim().substring(0, 3).toUpperCase();
+                prefix = autre.value.trim().replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
             }
         }
         

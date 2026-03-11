@@ -826,18 +826,18 @@
                     const autre = document.getElementById('treso_autre_swal');
                     const codeInput = document.getElementById('swal_code_journal');
                     if (hidden) hidden.value = val;
+
+                    let prefix = '';
                     if (val === 'Banque' || val === 'Caisse') {
                         if (autre) autre.value = '';
                         if (caisse) caisse.disabled = false;
                         if (banque) banque.disabled = false;
-                        if (codeInput) codeInput.value = (val === 'Banque') ? 'BQ' : 'CAI';
+                        prefix = (val === 'Banque') ? 'BQ' : 'CAI';
                     } else {
                         if (val && val.trim() !== '') {
                             if (caisse) { caisse.checked = false; caisse.disabled = true; }
                             if (banque) { banque.checked = false; banque.disabled = true; }
-                            if (codeInput) {
-                                let clean = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                                codeInput.value = clean.substring(0, journalDigits);
+                                codeInput.value = clean.substring(0, 3); 
                             }
                         } else {
                             if (caisse) caisse.disabled = false;

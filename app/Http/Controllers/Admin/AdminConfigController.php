@@ -2013,13 +2013,15 @@ class AdminConfigController extends Controller
                             } elseif ($row['poste_tresorerie'] === 'Banque') {
                                 $prefix = 'BQ';
                             } else {
-                                // "Autre" : On déduit du code original d'abord, puis de l'intitulé
-                                if (!empty($origAlpha)) {
+                                // "Autre" : On déduit du libellé (Intitulé) pour créer un code propre (ex: WAVE -> WAV)
+                                $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($row['intitule'] ?? 'TRZ'));
+                                
+                                if (!empty($intituleNorm) && !Str::contains($intituleNorm, 'TRZ')) {
+                                    $prefix = substr($intituleNorm, 0, 3);
+                                } elseif (!empty($origAlpha)) {
                                     $prefix = substr($origAlpha, 0, $journalDigits - 1);
                                 } else {
-                                    $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($row['intitule'] ?? 'TRZ'));
-                                    $prefix = substr($intituleNorm, 0, $journalDigits - 1);
-                                    if (empty($prefix)) $prefix = substr('TRZ', 0, $journalDigits - 1);
+                                    $prefix = substr('TRZ', 0, max(1, $journalDigits - 2));
                                 }
                             }
                         } else {
@@ -3392,12 +3394,15 @@ class AdminConfigController extends Controller
                             } elseif ($posteDetecte === 'Banque') {
                                 $prefix = 'BQ';
                             } else {
-                                if (!empty($origAlpha)) {
+                                // "Autre" : On déduit du libellé (Intitulé) pour créer un code propre (ex: WAVE -> WAV)
+                                $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($rowMapped['intitule'] ?? 'TRZ'));
+                                
+                                if (!empty($intituleNorm) && !Str::contains($intituleNorm, 'TRZ')) {
+                                    $prefix = substr($intituleNorm, 0, 3);
+                                } elseif (!empty($origAlpha)) {
                                     $prefix = substr($origAlpha, 0, $journalDigits - 1);
                                 } else {
-                                    $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($rowMapped['intitule'] ?? 'TRZ'));
-                                    $prefix = substr($intituleNorm, 0, $journalDigits - 1);
-                                    if (empty($prefix)) $prefix = substr('TRZ', 0, $journalDigits - 1);
+                                    $prefix = substr('TRZ', 0, max(1, $journalDigits - 2));
                                 }
                             }
                         } else {
