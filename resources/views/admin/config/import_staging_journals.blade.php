@@ -1,4 +1,4 @@
-﻿@include('components.head')
+@include('components.head')
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap');
@@ -184,7 +184,7 @@
                                                      </div>
                                                      <h6 class="font-bold mb-0">Doublons ({{ $existingAccountsErrors + $existingJournalsErrors }})</h6>
                                                  </div>
-                                                 <p class="text-xs text-slate-500 mb-3">Ces éléments existent déjà dans votre base de données.</p>
+                                                 <p class="text-xs text-slate-500 mb-3">Ces éléments existent déjà dans la base de données ou sont en double dans le fichier importé.</p>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="badge bg-label-primary text-start py-2 px-3 fw-normal whitespace-normal">
                                                         <i class="fa-solid fa-pen me-1"></i> Modifiez les codes ou comptes.

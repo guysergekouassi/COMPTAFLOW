@@ -2082,7 +2082,7 @@ class AdminConfigController extends Controller
                     // En import de Journaux, un doublon de code = ERREUR (Chaque ligne = un journal unique)
                     if (isset($batchJournalMap[$upperOrig])) {
                         $rowCode = $batchJournalMap[$upperOrig];
-                        $errors[] = "Doublon dans le fichier : Le code d'origine '$upperOrig' est défini plusieurs fois.";
+                        // Pas d'erreur, on accepte le doublon et on attribue le même code généré
                     } else {
                         $baseCode = $rowCode;
                         $counter = 1;
