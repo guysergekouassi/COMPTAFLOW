@@ -1936,6 +1936,7 @@ class AdminConfigController extends Controller
                         if (str_starts_with($rowCompteTreso, '5')) {
                             $detectedType = 'Trésorerie';
                             // Détection automatique du poste de trésorerie
+                            $searchStrPoste = strtoupper(($manualCodeOrig ?? '') . ' ' . ($row['intitule'] ?? ''));
                             if (Str::contains($searchStrPoste, ['CAI', 'CASH', 'CAISSE'])) {
                                 $row['poste_tresorerie'] = 'Caisse';
                             } elseif (Str::contains($searchStrPoste, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'BANQUE'])) {
