@@ -2006,11 +2006,11 @@ class AdminConfigController extends Controller
                             } else {
                                 // "Autre" : On déduit du code original d'abord, puis de l'intitulé
                                 if (!empty($origAlpha)) {
-                                    $prefix = substr($origAlpha, 0, 3);
+                                    $prefix = substr($origAlpha, 0, $journalDigits - 1);
                                 } else {
                                     $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($row['intitule'] ?? 'TRZ'));
-                                    $prefix = substr($intituleNorm, 0, 3);
-                                    if (empty($prefix)) $prefix = 'TRZ';
+                                    $prefix = substr($intituleNorm, 0, $journalDigits - 1);
+                                    if (empty($prefix)) $prefix = substr('TRZ', 0, $journalDigits - 1);
                                 }
                             }
                         } else {
@@ -3297,7 +3297,27 @@ class AdminConfigController extends Controller
                 } elseif ($import->type == 'journals') {
                     // --- IMPORT JOURNAUX ---
                     $msg_type = "journaux";
-                    $rowCodeRaw = trim($rowMapped['code_journal'] ?? '');
+
+                    // CALCUL DES INDEX DE SURCHARGE (overrides) - IDENTIQUE À importStaging
+                    $maxMappingIndex = 0;
+                    foreach ($mapping as $mIdx) {
+                        if (is_numeric($mIdx)) {
+                            $maxMappingIndex = max($maxMappingIndex, (int)$mIdx);
+                        }
+                    }
+                    $typeOverrideIndex = $maxMappingIndex + 1;
+                    $posteTresoOverrideIndex = $maxMappingIndex + 2;
+                    $compteTresoOverrideIndex = $maxMappingIndex + 3;
+                    $analytiqueOverrideIndex = $maxMappingIndex + 4;
+                    $rapprochementOverrideIndex = $maxMappingIndex + 5;
+                    $codeJournalOverrideIndex = $maxMappingIndex + 6;
+
+                    $rowRaw = $row['data'];
+
+                    // RÉCUPÉRATION DES VALEURS AVEC PRIORITÉ AUX SURCHARGES
+                    $manualCodeOrig = $rowRaw[$codeJournalOverrideIndex] ?? null;
+                    $rowCodeRaw = !empty($manualCodeOrig) ? trim($manualCodeOrig) : trim($rowMapped['code_journal'] ?? '');
+
                     $rowCode = $this->standardizeJournalCode($rowCodeRaw, $journalDigits);
                     $numeroOriginalJournal = (!empty($rowCodeRaw) && $rowCodeRaw !== 'AUTO') ? $rowCodeRaw : null;
                     if (empty($rowCode) && !($mapping['code_journal'] === 'AUTO')) {
@@ -3310,7 +3330,9 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    $type = $rowMapped['type'] ?? null;
+                    $manualType = $rowRaw[$typeOverrideIndex] ?? null;
+                    $type = !empty($manualType) ? $manualType : ($rowMapped['type'] ?? null);
+
                     if (empty($type)) {
                         $searchStr = strtoupper($rowCode . ' ' . ($rowMapped['intitule'] ?? ''));
                         $type = 'Opérations Diverses';
@@ -3320,27 +3342,30 @@ class AdminConfigController extends Controller
                         elseif (Str::contains($searchStr, ['CAI', 'CASH', 'CAS'])) $type = 'Caisse';
                     }
 
-                    // --- FORCE SQUENTIEL: On ignore le code original (sauf comme prefixe de repli) ---
+                    // --- FORCE SÉQUENTIEL: On ignore le code original (sauf comme préfixe de repli) ---
                     $prefix = 'JRN';
                     $typeLower = mb_strtolower($type ?? '');
                     $origAlpha = preg_replace('/[^A-Z]/', '', strtoupper($numeroOriginalJournal ?? ''));
 
-                    // Deduction du préfixe comme dans l'importStaging
+                    // Déduction du préfixe comme dans l'importStaging
                     if (str_contains($typeLower, 'achat')) $prefix = 'ACH';
                     elseif (str_contains($typeLower, 'vente')) $prefix = 'VEN';
                     elseif (str_contains($typeLower, 'trésorerie') || str_contains($typeLower, 'banque') || str_contains($typeLower, 'caisse')) {
-                        if (isset($rowMapped['poste_tresorerie'])) {
-                            if ($rowMapped['poste_tresorerie'] === 'Caisse') {
+                        $manualPoste = $rowRaw[$posteTresoOverrideIndex] ?? null;
+                        $posteDetecte = !empty($manualPoste) ? $manualPoste : ($rowMapped['poste_tresorerie'] ?? null);
+
+                        if ($posteDetecte) {
+                            if ($posteDetecte === 'Caisse') {
                                 $prefix = 'CAI';
-                            } elseif ($rowMapped['poste_tresorerie'] === 'Banque') {
+                            } elseif ($posteDetecte === 'Banque') {
                                 $prefix = 'BQ';
                             } else {
                                 if (!empty($origAlpha)) {
-                                    $prefix = substr($origAlpha, 0, 3);
+                                    $prefix = substr($origAlpha, 0, $journalDigits - 1);
                                 } else {
                                     $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($rowMapped['intitule'] ?? 'TRZ'));
-                                    $prefix = substr($intituleNorm, 0, 3);
-                                    if (empty($prefix)) $prefix = 'TRZ';
+                                    $prefix = substr($intituleNorm, 0, $journalDigits - 1);
+                                    if (empty($prefix)) $prefix = substr('TRZ', 0, $journalDigits - 1);
                                 }
                             }
                         } else {
@@ -3355,44 +3380,58 @@ class AdminConfigController extends Controller
                         }
                     }
 
-                    // Génération du code incrémenté
-                    if (!isset($localMaxJournals[$prefix])) {
-                        $lastCode = CodeJournal::where('company_id', $user->company_id)
-                            ->where('code_journal', 'LIKE', $prefix . '%')
-                            ->orderBy('code_journal', 'desc')
-                            ->value('code_journal');
+                    // Génération du code incrémenté : SI PAS DE CODE SURCHARGÉ MANUELLEMENT
+                    if (empty($manualCodeOrig)) {
+                        if (!isset($localMaxJournals[$prefix])) {
+                            $lastCode = CodeJournal::where('company_id', $user->company_id)
+                                ->where('code_journal', 'LIKE', $prefix . '%')
+                                ->orderBy('code_journal', 'desc')
+                                ->value('code_journal');
 
-                        if ($lastCode && preg_match('/(\d+)$/', $lastCode, $matches)) {
-                            $nextNum = (int)$matches[1] + 1;
+                            if ($lastCode && preg_match('/(\d+)$/', $lastCode, $matches)) {
+                                $nextNum = (int)$matches[1] + 1;
+                            } else {
+                                $nextNum = 1;
+                            }
                         } else {
-                            $nextNum = 1;
+                            $lastCode = $localMaxJournals[$prefix];
+                            if (preg_match('/(\d+)$/', $lastCode, $matches)) {
+                                $nextNum = (int)$matches[1] + 1;
+                            } else {
+                                $nextNum = 1;
+                            }
                         }
-                    } else {
-                        $lastCode = $localMaxJournals[$prefix];
-                        if (preg_match('/(\d+)$/', $lastCode, $matches)) {
-                            $nextNum = (int)$matches[1] + 1;
+                        
+                        $numStr = (string)$nextNum;
+                        $numLen = strlen($numStr);
+                            
+                        if ($numLen >= $journalDigits) {
+                            $rowCode = substr($numStr, -$journalDigits);
                         } else {
-                            $nextNum = 1;
+                            $maxPrefixLen = $journalDigits - $numLen;
+                            $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                            $rowCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
                         }
                     }
                     
-                    $numStr = (string)$nextNum;
-                    $numLen = strlen($numStr);
-                        
-                    if ($numLen >= $journalDigits) {
-                        $rowCode = substr($numStr, -$journalDigits);
-                    } else {
-                        $maxPrefixLen = $journalDigits - $numLen;
-                        $actualPrefix = substr($prefix, 0, $maxPrefixLen);
-                        $rowCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
-                    }
                     $localMaxJournals[$prefix] = $rowCode;
 
-                    $compteNum = $this->standardizeAccountNumber(trim($rowMapped['compte_de_tresorerie'] ?? ''), $accountDigits);
+                    $manualCompte = $rowRaw[$compteTresoOverrideIndex] ?? null;
+                    $compteNumStr = !empty($manualCompte) ? $manualCompte : ($rowMapped['compte_de_tresorerie'] ?? '');
+                    $compteNum = $this->standardizeAccountNumber(trim($compteNumStr), $accountDigits);
                     $compteId = $planComptableIds[$compteNum] ?? null;
 
-                    // VALIDATION COMPTE TRESORERIE POUR BANQUE/CAISSE
-                    if (in_array($type, ['Banque', 'Caisse']) && !$compteId) {
+                    $manualAnalytique = $rowRaw[$analytiqueOverrideIndex] ?? null;
+                    $analytique = !empty($manualAnalytique) ? $manualAnalytique : ($rowMapped['traitement_analytique'] ?? 'non');
+
+                    $manualRapprochement = $rowRaw[$rapprochementOverrideIndex] ?? null;
+                    $rapprochement = !empty($manualRapprochement) ? $manualRapprochement : ($rowMapped['rapprochement_sur'] ?? null);
+
+                    $manualPoste = $rowRaw[$posteTresoOverrideIndex] ?? null;
+                    $posteTreso = !empty($manualPoste) ? $manualPoste : ($rowMapped['poste_tresorerie'] ?? null);
+
+                    // VALIDATION COMPTE TRESORERIE POUR BANQUE/CAISSE - PRIORITÉ AUSSI SI TYPE TRÉSORERIE DÉTECTÉ
+                    if (in_array($type, ['Banque', 'Caisse', 'Trésorerie', 'Tresorerie']) && !$compteId) {
                         $errors[] = "Ligne " . ($index + 1) . " : Un compte de trésorerie (Classe 5) est obligatoire pour un journal de type '$type'.";
                         continue;
                     }
@@ -3411,10 +3450,11 @@ class AdminConfigController extends Controller
                             'intitule' => strtoupper($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
                             'type' => $type,
                             'compte_de_tresorerie' => $compteId,
+                            'compte_de_contrepartie' => $compteNumStr,
                             'numero_original' => $numeroOriginalJournal ?? $existingJournal->numero_original,
-                            'poste_tresorerie' => $rowMapped['poste_tresorerie'] ?? null,
-                            'traitement_analytique' => (strtolower($rowMapped['traitement_analytique'] ?? '') === 'oui'),
-                            'rapprochement_sur' => $rowMapped['rapprochement_sur'] ?? null,
+                            'poste_tresorerie' => $posteTreso,
+                            'traitement_analytique' => (strtolower($analytique) === 'oui' || $analytique === 1),
+                            'rapprochement_sur' => $rapprochement,
                             'user_id' => $user->id
                         ]);
                         $duplicateCount++;
@@ -3425,15 +3465,29 @@ class AdminConfigController extends Controller
                             'intitule' => strtoupper($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
                             'type' => $type,
                             'compte_de_tresorerie' => $compteId,
+                            'compte_de_contrepartie' => $compteNumStr,
                             'numero_original' => $numeroOriginalJournal,
-                            'poste_tresorerie' => $rowMapped['poste_tresorerie'] ?? null,
-                            'traitement_analytique' => (strtolower($rowMapped['traitement_analytique'] ?? '') === 'oui'),
-                            'rapprochement_sur' => $rowMapped['rapprochement_sur'] ?? null,
+                            'poste_tresorerie' => $posteTreso,
+                            'traitement_analytique' => (strtolower($analytique) === 'oui' || $analytique === 1),
+                            'rapprochement_sur' => $rapprochement,
                             'user_id' => $user->id,
                             'company_id' => $user->company_id
                         ]);
                         $existingJournals[strtoupper($rowCode)] = $newJournal->id; 
                         $importedCount++;
+                    }
+
+                    // SYNCHRONISATION TABLE TRESORERIES
+                    if (in_array($type, ['Trésorerie', 'Tresorerie', 'Banque', 'Caisse'])) {
+                        \App\Models\tresoreries\Tresoreries::updateOrCreate(
+                            ['company_id' => $user->company_id, 'code_journal' => strtoupper($rowCode)],
+                            [
+                                'intitule' => strtoupper($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
+                                'compte_de_contrepartie' => $compteId, // Lien vers plan_comptables.id
+                                'poste_tresorerie' => $posteTreso,
+                                'user_id' => $user->id
+                            ]
+                        );
                     }
 
                 } elseif ($import->type == 'courant') {

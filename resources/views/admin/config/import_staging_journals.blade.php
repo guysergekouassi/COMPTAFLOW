@@ -230,9 +230,7 @@
                                                         <div class="d-flex flex-wrap gap-2 mt-2">
                                                              @foreach($missingTresoNumbers as $accNum)
                                                                  <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" 
-                                                                         data-compte="{{ trim($accNum) }}"
-                                                                         data-libelle="Nouveau Compte Trésorerie"
-                                                                         onclick="quickCreateAccount(this)"
+                                                                         onclick="quickCreateGeneralAccount('{{ trim($accNum) }}', {{ $accountDigits }})"
                                                                          title="Cliquer pour créer ce compte">
                                                                      <i class="fa-solid fa-plus me-1"></i> {{ trim($accNum) }}
                                                                  </button>
@@ -616,9 +614,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
+    <script>
         let currentFilter = 'all';
         const plansComptablesJS = @json($plansComptables);
+        const journalDigits = {{ $journalDigits ?? 4 }};
 
         function toggleTresorerieFields(type, context = 'form') {
             const containerId = context === 'swal' ? 'tresorerie_fields_swal' : 'tresorerie_fields';
@@ -634,6 +633,7 @@
 
         function syncSameColInputs(input) {
             const col = input.dataset.col;
+            if (!col) return;
             const value = input.value;
             document.querySelectorAll(`.swal-edit-input[data-col="${col}"]`).forEach(other => {
                 if (other !== input) other.value = value;
@@ -641,7 +641,6 @@
         }
 
         let searchCache = null;
-
         function buildSearchCache() {
             if (searchCache) return;
             searchCache = [];
@@ -661,38 +660,19 @@
 
         function filterTable(type, event) {
             if (type) currentFilter = type;
-            
             buildSearchCache();
-
             const searchText = document.getElementById('stagingSearch').value.toLowerCase();
-            
-            // On utilise une boucle simple (plus rapide que querySelectorAll en temps réel)
             for (let i = 0; i < searchCache.length; i++) {
                 const item = searchCache[i];
-                
-                let textMatch = true;
-                if (searchText) {
-                    textMatch = item.text.includes(searchText);
-                }
-
+                let textMatch = !searchText || item.text.includes(searchText);
                 let statusMatch = true;
-                if (currentFilter === 'valid') {
-                    statusMatch = item.isValid;
-                } else if (currentFilter === 'error') {
-                    statusMatch = item.isError;
-                }
-
+                if (currentFilter === 'valid') statusMatch = item.isValid;
+                else if (currentFilter === 'error') statusMatch = item.isError;
                 item.element.style.display = (textMatch && statusMatch) ? '' : 'none';
             }
-
-            // Update active state of cards
             if (type) {
                 document.querySelectorAll('.card-filter').forEach(card => card.classList.remove('active', 'border-primary', 'border-2', 'shadow-sm'));
-                if (event && event.currentTarget) {
-                    event.currentTarget.classList.add('active', 'border-primary', 'border-2', 'shadow-sm');
-                } else if (event instanceof HTMLElement) {
-                    event.classList.add('active', 'border-primary', 'border-2', 'shadow-sm');
-                }
+                if (event && event.currentTarget) event.currentTarget.classList.add('active', 'border-primary', 'border-2', 'shadow-sm');
             }
         }
 
@@ -710,96 +690,25 @@
                 showCancelButton: true,
                 confirmButtonText: 'Oui, supprimer',
                 cancelButtonText: 'Annuler',
-                customClass: {
-                    confirmButton: 'btn btn-danger rounded-xl px-4 me-2',
-                    cancelButton: 'btn btn-label-secondary rounded-xl px-4'
-                },
+                customClass: { confirmButton: 'btn btn-danger rounded-xl px-4 me-2', cancelButton: 'btn btn-label-secondary rounded-xl px-4' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(`/admin/import/delete-row/${importId}/${rowIndex}`, {
                         method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                     })
-                    .then(response => response.json())
+                    .then(r => r.json())
                     .then(data => {
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            Swal.fire('Erreur', data.message, 'error');
-                        }
+                        if (data.success) window.location.reload();
+                        else Swal.fire('Erreur', data.message, 'error');
                     });
                 }
             });
         }
-
-        function addStagingRow(btn) {
-            const importId = btn.dataset.importId;
-            const mapping = JSON.parse(btn.dataset.mapping);
-
-            let html = '<div class="text-start">';
-            Object.entries(mapping).forEach(([fieldKey, colIndex]) => {
-                if (fieldKey.toLowerCase().includes('header') || colIndex === null || colIndex === "" || colIndex === "AUTO") return;
-                
-                let label = fieldKey.replace(/_/g, ' ').toUpperCase();
-                html += `<div class="mb-3">
-                            <label class="form-label text-xs font-bold text-slate-500">${label}</label>
-                            <input type="text" class="form-control swal-add-input" 
-                                   data-field="${fieldKey}" 
-                                   data-col="${colIndex}" 
-                                   value="">
-                         </div>`;
-            });
-            html += '</div>';
-
-            Swal.fire({
-                title: 'Ajouter une ligne',
-                html: html,
-                showCancelButton: true,
-                confirmButtonText: 'Ajouter',
-                cancelButtonText: 'Annuler',
-                customClass: {
-                    confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
-                    cancelButton: 'btn btn-label-secondary rounded-xl px-4'
-                },
-                buttonsStyling: false,
-                preConfirm: () => {
-                    let values = {};
-                    let inputs = document.querySelectorAll('.swal-add-input');
-                    inputs.forEach(input => {
-                        values[input.dataset.col] = input.value;
-                    });
-                    return values;
-                }
-            }).then((result) => {
-                if (result.isConfirmed && result.value) {
-                    Swal.showLoading();
-                    fetch(`/admin/import/add-row/${importId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({ values: result.value })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            Swal.fire('Erreur', data.message, 'error');
-                        }
-                    });
-                }
-            });
-        }
-
-        // Liste des comptes de classe 5 déjà définie plus haut
 
         function editStagingRow(btn) {
-            console.log("Edit Journal - Button clicked", btn);
+            console.log("Edit Journal - Multi-fix applied");
             try {
                 const importId = btn.dataset.importId;
                 const rowIndex = btn.dataset.rowIndex;
@@ -807,25 +716,26 @@
                 const mapping = JSON.parse(btn.dataset.mapping);
                 const overrideIndexes = JSON.parse(btn.dataset.overrides || '{}');
 
-                console.log("Edit Journal - Data parsed", { importId, rowIndex, rowData, mapping, overrideIndexes });
-
-                // Récupération des données actuelles depuis rowData
                 let currentIntitule = rowData['intitule'] || "";
-
                 const codeOrigCol = overrideIndexes.codeOrig;
                 let currentCodeOrig = rowData['code_original_journal'] || rowData['code_journal'] || "";
-
+                
                 const typeCol = overrideIndexes.type;
                 let currentType = rowData['type'] || "";
-                
                 if (currentType === 'Trésorerie') currentType = 'Tresorerie';
 
-                let currentPoste = rowData['poste'] || rowData['compte_general'] || "";
-                let currentCompte = rowData['compte_de_tresorerie'] || rowData['compte'] || "";
+                const posteCol = overrideIndexes.poste;
+                let currentPoste = rowData['poste'] || rowData['poste_tresorerie'] || "";
+                
+                const compteCol = overrideIndexes.compte;
+                let currentCompte = rowData['compte_de_tresorerie'] || "";
+
+                const analytiqueCol = overrideIndexes.analytique;
                 let currentAnalytique = rowData['traitement_analytique'] || "non";
+
+                const rapprochementCol = overrideIndexes.rapprochement;
                 let currentRapprochement = rowData['rapprochement_sur'] || "";
 
-                // Génération des options de comptes
                 let optionsCompteTreso = '<option value="">-- Sélectionner un compte --</option>';
                 plansComptablesJS.forEach(plan => {
                     const isSelected = plan.numero_de_compte === currentCompte ? 'selected' : '';
@@ -857,7 +767,7 @@
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label font-black text-slate-700">Traitement Analytique</label>
-                            <select class="form-select swal-edit-input" data-col="${overrideIndexes.analytique || mapping['traitement_analytique']}">
+                            <select class="form-select swal-edit-input" data-col="${analytiqueCol}">
                                 <option value="non" ${String(currentAnalytique).toLowerCase() === 'non' ? 'selected' : ''}>Non</option>
                                 <option value="oui" ${String(currentAnalytique).toLowerCase() === 'oui' ? 'selected' : ''}>Oui</option>
                             </select>
@@ -866,8 +776,13 @@
                         <div id="tresorerie_fields_swal" class="col-12 mt-2 ${['Tresorerie', 'Trésorerie', 'Banque', 'Caisse'].includes(currentType) ? '' : 'd-none'}">
                             <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                 <div class="mb-3">
-                                    <label class="form-label font-black">Compte (Classe 5)</label>
-                                    <select class="form-select swal-edit-input" data-col="${overrideIndexes.compte}">
+                                    <label class="form-label font-black d-flex justify-content-between">
+                                        <span>Compte (Classe 5)</span>
+                                        <button type="button" class="btn btn-xs btn-label-primary p-1 px-2 rounded-lg" onclick="quickCreateGeneralAccount('', {{ $accountDigits }})">
+                                            <i class="fa-solid fa-plus me-1"></i> Créer
+                                        </button>
+                                    </label>
+                                    <select class="form-select swal-edit-input" data-col="${compteCol}">
                                         ${optionsCompteTreso}
                                     </select>
                                 </div>
@@ -885,8 +800,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12 mb-3">
-                                    <label class="form-label font-black text-slate-700">Rapprochement</label>
-                                    <input type="text" class="form-control swal-edit-input d-none" id="swal_poste_hidden" data-col="${overrideIndexes.poste || ''}" value="${esc(currentPoste)}">
+                                    <input type="text" class="form-control swal-edit-input d-none" id="swal_poste_hidden" data-col="${posteCol}" value="${esc(currentPoste)}">
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label font-black text-slate-700">Autre (Optionnel)</label>
@@ -894,7 +808,7 @@
                                 </div>
                                 <div>
                                     <label class="form-label font-black">Rapprochement</label>
-                                    <select class="form-select swal-edit-input" data-col="${overrideIndexes.rapprochement || mapping['rapprochement_sur']}">
+                                    <select class="form-select swal-edit-input" data-col="${rapprochementCol}">
                                         <option value="">-- Aucun --</option>
                                         <option value="Manuel" ${currentRapprochement === 'Manuel' ? 'selected' : ''}>Manuel</option>
                                         <option value="Automatique" ${currentRapprochement === 'Automatique' ? 'selected' : ''}>Automatique</option>
@@ -905,47 +819,29 @@
                     </div>
                 </div>`;
 
-                // Fonctions utilitaires
-                window.toggleTresorerieFields = function(val, prefix) {
-                    const fields = document.getElementById(`tresorerie_fields_` + prefix);
-                    if (fields) {
-                        if (val === 'Tresorerie' || val === 'Banque' || val === 'Caisse') fields.classList.remove('d-none');
-                        else fields.classList.add('d-none');
-                    }
-                };
-
                 window.syncPosteToInput = function(val) {
                     const hidden = document.getElementById('swal_poste_hidden');
                     const caisse = document.getElementById('treso_caisse_swal');
                     const banque = document.getElementById('treso_banque_swal');
                     const autre = document.getElementById('treso_autre_swal');
                     const codeInput = document.getElementById('swal_code_journal');
-
-                    hidden.value = val;
-
+                    if (hidden) hidden.value = val;
                     if (val === 'Banque' || val === 'Caisse') {
-                        // Sélection via Radio
-                        autre.value = '';
-                        caisse.disabled = false;
-                        banque.disabled = false;
+                        if (autre) autre.value = '';
+                        if (caisse) caisse.disabled = false;
+                        if (banque) banque.disabled = false;
                         if (codeInput) codeInput.value = (val === 'Banque') ? 'BQ' : 'CAI';
                     } else {
-                        // Saisie via Autre
                         if (val && val.trim() !== '') {
-                            caisse.checked = false;
-                            banque.checked = false;
-                            caisse.disabled = true;
-                            banque.disabled = true;
-                            
-                            // Génération automatique du code (3 premières lettres majuscules)
+                            if (caisse) { caisse.checked = false; caisse.disabled = true; }
+                            if (banque) { banque.checked = false; banque.disabled = true; }
                             if (codeInput) {
                                 let clean = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                                codeInput.value = clean.substring(0, 3);
+                                codeInput.value = clean.substring(0, journalDigits);
                             }
                         } else {
-                            // Si on vide le champ Autre, on réactive les radios
-                            caisse.disabled = false;
-                            banque.disabled = false;
+                            if (caisse) caisse.disabled = false;
+                            if (banque) banque.disabled = false;
                         }
                     }
                 };
@@ -968,7 +864,7 @@
                         let values = {};
                         document.querySelectorAll('.swal-edit-input').forEach(input => {
                             const col = input.dataset.col;
-                            if (col && col !== "null") values[col] = input.value;
+                            if (col && col !== "null" && col !== "undefined") values[col] = input.value;
                         });
                         return values;
                     }
@@ -977,21 +873,15 @@
                         Swal.showLoading();
                         fetch(`/admin/import/update-row/${importId}/${rowIndex}`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                             body: JSON.stringify({ values: result.value })
                         })
-                        .then(async response => {
-                            const text = await response.text();
-                            try { return JSON.parse(text); } catch (e) { throw new Error(`Réponse serveur invalide.`); }
-                        })
+                        .then(r => r.json())
                         .then(data => {
                             if (data.success) window.location.reload();
                             else Swal.fire('Erreur', data.message || 'Erreur lors de la mise à jour.', 'error');
                         })
-                        .catch(err => Swal.fire('Erreur', 'Détail : ' + err.message, 'error'));
+                        .catch(err => Swal.fire('Erreur', 'Erreur réseau : ' + err.message, 'error'));
                     }
                 });
             } catch (err) {
@@ -1046,24 +936,54 @@
             });
         }
 
-        function quickCreateAccount(btn) {
-            const numero = btn.dataset.compte;
-            const libelle = btn.dataset.libelle;
-            
+        function quickCreateGeneralAccount(baseNumero, requiredLength) {
+            // Propose a padded number if shorter than required
+            let proposedNumero = baseNumero.toString();
+            if (proposedNumero.length < requiredLength) {
+                proposedNumero = proposedNumero.padEnd(requiredLength, '0');
+            } else if (proposedNumero.length > requiredLength) {
+                proposedNumero = proposedNumero.substring(0, requiredLength);
+            }
+
             Swal.fire({
-                title: 'Création rapide de compte',
-                text: `Voulez-vous créer le compte ${numero} - ${libelle} ?`,
-                icon: 'question',
+                title: 'Créer le compte de trésorerie',
+                html: `
+                    <div class="text-start">
+                        <p class="text-sm text-slate-500 mb-3 text-center">Le système propose ce numéro de compte basé sur vos paramètres (${requiredLength} chiffres).</p>
+                        <div class="mb-3">
+                            <label class="form-label text-xs font-bold text-slate-500">Numéro de Compte</label>
+                            <input type="text" id="swal-new-acc-num" class="form-control" value="${proposedNumero}" maxlength="${requiredLength}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-xs font-bold text-slate-500">Intitulé du Compte</label>
+                            <input type="text" id="swal-new-acc-name" class="form-control" placeholder="E.g. BANQUE BOA" value="COMPTE TRÉSORERIE ${baseNumero}">
+                        </div>
+                    </div>
+                `,
                 showCancelButton: true,
-                confirmButtonText: 'Oui, créer',
+                confirmButtonText: 'Créer',
                 cancelButtonText: 'Annuler',
                 customClass: {
                     confirmButton: 'btn btn-primary rounded-xl px-4 me-2',
                     cancelButton: 'btn btn-label-secondary rounded-xl px-4'
                 },
-                buttonsStyling: false
+                buttonsStyling: false,
+                preConfirm: () => {
+                    const num = document.getElementById('swal-new-acc-num').value.trim();
+                    const name = document.getElementById('swal-new-acc-name').value.trim();
+                    if (!num || !name) {
+                        Swal.showValidationMessage('Veuillez remplir tous les champs');
+                        return false;
+                    }
+                    if (num.length !== requiredLength && requiredLength > 0) {
+                        Swal.showValidationMessage(`Le numéro doit faire exactement ${requiredLength} chiffres`);
+                        return false;
+                    }
+                    return { numero: num, intitule: name };
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.showLoading();
                     fetch("{{ route('admin.import.quick_account') }}", {
                         method: 'POST',
                         headers: {
@@ -1071,8 +991,8 @@
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
                         body: JSON.stringify({
-                            numero_compte: numero,
-                            intitule: libelle,
+                            numero_compte: result.value.numero,
+                            intitule: result.value.intitule,
                             type_de_compte: 'Bilan'
                         })
                     })
@@ -1093,6 +1013,7 @@
                         }
                     })
                     .catch(error => {
+                        console.error('Error:', error);
                         Swal.fire('Erreur', 'Une erreur est survenue lors de la création.', 'error');
                     });
                 }

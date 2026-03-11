@@ -141,7 +141,7 @@ public function index(Request $request)
 
     public function store(Request $request)
     {
-        $digits = auth()->user()->company->journal_code_digits ?? 3;
+        $digits = auth()->user()->company->journal_code_digits ?? 4;
         
         $request->validate([
             'code_journal' => ['required', 'string', 'max:'.$digits, 'regex:/^[A-Z0-9]{1,'.$digits.'}$/'],
@@ -231,7 +231,7 @@ public function index(Request $request)
 
     public function update(Request $request, $id)
     {
-        $digits = auth()->user()->company->journal_code_digits ?? 3;
+        $digits = auth()->user()->company->journal_code_digits ?? 4;
 
         $validated = $request->validate([
             'code_journal' => ['required', 'string', 'max:'.$digits, 'regex:/^[A-Z0-9]{1,'.$digits.'}$/'],
