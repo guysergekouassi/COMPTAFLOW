@@ -837,12 +837,27 @@
                         if (val && val.trim() !== '') {
                             if (caisse) { caisse.checked = false; caisse.disabled = true; }
                             if (banque) { banque.checked = false; banque.disabled = true; }
-                                codeInput.value = clean.substring(0, 3); 
+                            
+                            // "Autre" : On déduit du libellé
+                            let clean = val.toUpperCase().replace(/[^A-Z]/g, '');
+                            if (clean.length > 0) {
+                                prefix = clean.substring(0, 3);
                             }
                         } else {
                             if (caisse) caisse.disabled = false;
                             if (banque) banque.disabled = false;
                         }
+                    }
+
+                    if (prefix && codeInput) {
+                        // On fetch le prochain code pour ce préfixe
+                        fetch(`/admin/config/get-next-journal-code?prefix=${prefix}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    codeInput.value = data.code;
+                                }
+                            });
                     }
                 };
 

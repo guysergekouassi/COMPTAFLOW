@@ -1907,9 +1907,16 @@ class AdminConfigController extends Controller
                 // On garde la valeur originale non modifiée pour affichage de la source "Original: WVE1"
                 $rawOriginalCode = $rowCode;
                 
-                // On applique la longueur configurée si le code n'est pas vide
+                // On standardise le code SEULEMENT s'il n'est pas issu d'une saisie manuelle
+                // ou si on veut forcer la cohérence à 4-5 chars par défaut.
+                // MAIS l'utilisateur a dit : "seul les codes générer doivent respecter la configuration"
                 if (!empty($rowCode)) {
-                    $rowCode = $this->standardizeJournalCode($rowCode, $journalDigits);
+                    if (empty($manualCodeOrig)) {
+                        $rowCode = $this->standardizeJournalCode($rowCode, $journalDigits);
+                    } else {
+                        $rowCode = strtoupper(trim($rowCode));
+                        if (strlen($rowCode) > 10) $rowCode = substr($rowCode, 0, 10);
+                    }
                     $row['code_journal'] = $rowCode;
                 }
 
@@ -1929,11 +1936,13 @@ class AdminConfigController extends Controller
                         if (str_starts_with($rowCompteTreso, '5')) {
                             $detectedType = 'Trésorerie';
                             // Détection automatique du poste de trésorerie
-                            $searchStrPoste = strtoupper($rowCode . ' ' . ($row['intitule'] ?? ''));
                             if (Str::contains($searchStrPoste, ['CAI', 'CASH', 'CAISSE'])) {
                                 $row['poste_tresorerie'] = 'Caisse';
-                            } else {
+                            } elseif (Str::contains($searchStrPoste, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'BANQUE'])) {
                                 $row['poste_tresorerie'] = 'Banque';
+                            } else {
+                                // Par défaut pour les mobiles money ou autres si pas de marqueur banque/caisse
+                                $row['poste_tresorerie'] = 'Autre';
                             }
                         }
                     }
@@ -1998,7 +2007,7 @@ class AdminConfigController extends Controller
                 // --- GÉNÉRATION SÉQUENTIELLE DU CODE JOURNAL ---
                 // FORCÉE: On génère toujours automatiquement selon le type (comme pour les tiers)
                 if (!empty($manualCodeOrig)) {
-                     $row['code_journal'] = $manualCodeOrig;
+                     $row['code_journal'] = $rowCode;
                 } else {
                     $prefix = 'JRN';
                     $typeLower = mb_strtolower($row['type'] ?? '');
@@ -2088,12 +2097,12 @@ class AdminConfigController extends Controller
                 // --- DÉDUPLICATION ET UNICITÉ DES CODES JOURNAUX (BATCH CONSISTENCY) ---
                 if (!empty($rowCode)) {
                     // On se base sur le numéro original pour la détection de doublons dans le lot
-                    $upperOrig = strtoupper($row['numero_original'] ?? $rowCode);
+                    // IMPORTANT: L'utilisateur veut que ceux qui ont le même numéro original aient le même code généré
+                    $upperOrig = strtoupper(trim($row['numero_original'] ?? $rowCode));
                     
-                    // En import de Journaux, un doublon de code = ERREUR (Chaque ligne = un journal unique)
                     if (isset($batchJournalMap[$upperOrig])) {
                         $rowCode = $batchJournalMap[$upperOrig];
-                        // Pas d'erreur, on accepte le doublon et on attribue le même code généré
+                        $row['code_journal'] = $rowCode;
                     } else {
                         $baseCode = $rowCode;
                         $counter = 1;
@@ -2976,6 +2985,7 @@ class AdminConfigController extends Controller
             $ecrMapping = []; 
             $localMaxTiers = [];
             $localMaxJournals = [];
+            $batchJournalMap = [];
             $journalDigits = $user->company->journal_code_digits ?? 4;
             $localMaxAccounts = [];
             $batchAccounts = [];
@@ -3382,11 +3392,23 @@ class AdminConfigController extends Controller
                     $origAlpha = preg_replace('/[^A-Z]/', '', strtoupper($numeroOriginalJournal ?? ''));
 
                     // Déduction du préfixe comme dans l'importStaging
-                    if (str_contains($typeLower, 'achat')) $prefix = 'ACH';
-                    elseif (str_contains($typeLower, 'vente')) $prefix = 'VEN';
-                    elseif (str_contains($typeLower, 'trésorerie') || str_contains($typeLower, 'banque') || str_contains($typeLower, 'caisse')) {
-                        $manualPoste = $rowRaw[$posteTresoOverrideIndex] ?? null;
-                        $posteDetecte = !empty($manualPoste) ? $manualPoste : ($rowMapped['poste_tresorerie'] ?? null);
+                    if (str_contains($typeLower, 'achat')) {
+                        $prefix = 'ACH';
+                    } elseif (str_contains($typeLower, 'vente')) {
+                        $prefix = 'VEN';
+                    } elseif (str_contains($typeLower, 'trésorerie') || str_contains($typeLower, 'banque') || str_contains($typeLower, 'caisse')) {
+                        if (!empty($manualPoste)) {
+                            $posteDetecte = $manualPoste;
+                        } else {
+                            $searchStrPoste = strtoupper(($manualCodeOrig ?? '') . ' ' . ($rowMapped['intitule'] ?? ''));
+                            if (Str::contains($searchStrPoste, ['CAI', 'CASH', 'CAISSE'])) {
+                                $posteDetecte = 'Caisse';
+                            } elseif (Str::contains($searchStrPoste, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'BANQUE'])) {
+                                $posteDetecte = 'Banque';
+                            } else {
+                                $posteDetecte = 'Autre';
+                            }
+                        }
 
                         if ($posteDetecte) {
                             if ($posteDetecte === 'Caisse') {
@@ -3408,8 +3430,7 @@ class AdminConfigController extends Controller
                         } else {
                             $prefix = 'BQ';
                         }
-                    }
-                    elseif (str_contains($typeLower, 'opération') || str_contains($typeLower, 'diverse') || str_contains($typeLower, 'standard')) {
+                    } elseif (str_contains($typeLower, 'opération') || str_contains($typeLower, 'diverse') || str_contains($typeLower, 'standard')) {
                         if (in_array(strtoupper($origAlpha), ['RAN', 'OD'])) {
                             $prefix = strtoupper($origAlpha);
                         } else {
@@ -3417,41 +3438,58 @@ class AdminConfigController extends Controller
                         }
                     }
 
-                    // Génération du code incrémenté : SI PAS DE CODE SURCHARGÉ MANUELLEMENT
+                    // Définition de manualCodeOrig pour commitImport (depuis rowRaw)
+                    $manualCodeOrig = $rowRaw[$codeJournalOverrideIndex] ?? null;
+
                     if (empty($manualCodeOrig)) {
-                        if (!isset($localMaxJournals[$prefix])) {
-                            $lastCode = CodeJournal::where('company_id', $user->company_id)
-                                ->where('code_journal', 'LIKE', $prefix . '%')
-                                ->orderBy('code_journal', 'desc')
-                                ->value('code_journal');
+                        // REGROUPEMENT PAR CODE ORIGINAL (COHÉRENCE BATCH)
+                        $upperOrig = strtoupper(trim($rowMapped['code_original'] ?? $rowMapped['intitule'] ?? ''));
+                        
+                        if (isset($batchJournalMap[$upperOrig])) {
+                            $rowCode = $batchJournalMap[$upperOrig];
+                        } else {
+                            // On cherche le prochain numéro pour ce préfixe précis
+                            if (isset($localMaxJournals[$prefix])) {
+                                $lastCode = $localMaxJournals[$prefix];
+                            } else {
+                                $lastCode = CodeJournal::where('company_id', $user->company_id)
+                                    ->where('code_journal', 'LIKE', $prefix . '%')
+                                    ->orderBy('code_journal', 'desc')
+                                    ->value('code_journal');
+                            }
 
                             if ($lastCode && preg_match('/(\d+)$/', $lastCode, $matches)) {
                                 $nextNum = (int)$matches[1] + 1;
                             } else {
                                 $nextNum = 1;
                             }
-                        } else {
-                            $lastCode = $localMaxJournals[$prefix];
-                            if (preg_match('/(\d+)$/', $lastCode, $matches)) {
-                                $nextNum = (int)$matches[1] + 1;
-                            } else {
-                                $nextNum = 1;
-                            }
-                        }
-                        
-                        $numStr = (string)$nextNum;
-                        $numLen = strlen($numStr);
                             
-                        if ($numLen >= $journalDigits) {
-                            $rowCode = substr($numStr, -$journalDigits);
-                        } else {
-                            $maxPrefixLen = $journalDigits - $numLen;
-                            $actualPrefix = substr($prefix, 0, $maxPrefixLen);
-                            $rowCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                            $numStr = (string)$nextNum;
+                            $numLen = strlen($numStr);
+                                
+                            // REGLA: SEUL LES CODES GÉNÉRÉS DOIVENT RESPECTER LA CONFIGURATION
+                            if ($numLen >= $journalDigits) {
+                                // Si le numéro seul dépasse ou égale la longueur, on garde le numéro (tronqué si vraiment trop long)
+                                $rowCode = substr($numStr, -$journalDigits);
+                            } else {
+                                // On garde le maximum du préfixe possible pour remplir journalDigits
+                                $maxPrefixLen = $journalDigits - $numLen;
+                                $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                                $rowCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                            }
+                            
+                            $localMaxJournals[$prefix] = $rowCode;
+                            $batchJournalMap[$upperOrig] = $rowCode;
+                        }
+                    } else {
+                        // Si surcharge manuelle, on l'utilise directement. 
+                        // On normalise (MAJUSCULE) mais on laisse la longueur telle que saisie par l'utilisateur
+                        // SAUF si c'est vraiment trop long pour la DB (sécurité 10 chars par exemple)
+                        $rowCode = strtoupper(trim($manualCodeOrig));
+                        if (strlen($rowCode) > 10) {
+                            $rowCode = substr($rowCode, 0, 10);
                         }
                     }
-                    
-                    $localMaxJournals[$prefix] = $rowCode;
 
                     $manualCompte = $rowRaw[$compteTresoOverrideIndex] ?? null;
                     $compteNumStr = !empty($manualCompte) ? $manualCompte : ($rowMapped['compte_de_tresorerie'] ?? '');
