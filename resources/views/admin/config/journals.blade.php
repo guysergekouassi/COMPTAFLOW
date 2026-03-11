@@ -411,7 +411,6 @@
                                     </select>
                                 </div>
                                 <input type="hidden" name="compte_de_contrepartie" id="edit_compte_contrepartie" value="">
-                            </div>
                         </div>
                     </div>
                     <div class="modal-footer bg-slate-50 p-6 border-0">
