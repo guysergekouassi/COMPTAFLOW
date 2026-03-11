@@ -1028,7 +1028,7 @@ class AdminConfigController extends Controller
 
             $journal->update([
                 'code_journal' => $code,
-                'intitule' => mb_strtoupper($request->intitule),
+                'intitule' => trim($request->intitule),
                 'type' => $request->type,
                 'compte_de_tresorerie' => $compteId,
                 'compte_de_contrepartie' => $request->compte_de_contrepartie,
@@ -1769,7 +1769,10 @@ class AdminConfigController extends Controller
                 if ($fKey === '_header_index' || $cId === null || $cId === "" || $cId === "AUTO") continue;
                 
                 $val = null;
-                if (is_string($cId) && str_starts_with($cId, 'FIXED:')) {
+                if (array_key_exists($fKey, $rowRaw)) {
+                    // Priorité 1: Si une valeur a été surchargée manuellement via Edit Staging
+                    $val = $rowRaw[$fKey];
+                } elseif (is_string($cId) && str_starts_with($cId, 'FIXED:')) {
                     $val = substr($cId, 6);
                 } else {
                     $idx = (int)$cId;
@@ -4114,9 +4117,13 @@ class AdminConfigController extends Controller
             ]);
 
             foreach ($newValues as $colIndex => $value) {
-                // On met à jour la colonne si l'index est numérique (données brutes)
+                // On met à jour la colonne si l'index est numérique (données brutes Excel)
                 if (is_numeric($colIndex)) {
                     $data[$index][(int)$colIndex] = $value;
+                } else {
+                    // On garde la valeur sous sa clé textuelle (ex: "intitule", "numero_de_compte")
+                    // pour forcer la surcharge (override) lors du re-processing du Staging
+                    $data[$index][$colIndex] = $value;
                 }
             }
 
