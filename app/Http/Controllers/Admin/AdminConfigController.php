@@ -1901,6 +1901,9 @@ class AdminConfigController extends Controller
                 $detectedType = null;
                 
                 // --- STANDARTISATION DU CODE JOURNAL ---
+                // On garde la valeur originale non modifiée pour affichage de la source "Original: WVE1"
+                $rawOriginalCode = $rowCode;
+                
                 // On applique la longueur configurée si le code n'est pas vide
                 if (!empty($rowCode)) {
                     $rowCode = $this->standardizeJournalCode($rowCode, $journalDigits);
@@ -1976,7 +1979,8 @@ class AdminConfigController extends Controller
                 }
                 
                 // Stockage du numéro original (si pas surchargé manuellement, c'est la détection ou le mappé)
-                $row['numero_original'] = $rowCode;
+                // On utilise la valeur brute AVANT standardisation
+                $row['numero_original'] = $rawOriginalCode;
                 
                 // On injecte tous les index dans data pour que le JS puisse les utiliser
                 $row['type_override_index'] = $typeOverrideIndex;
