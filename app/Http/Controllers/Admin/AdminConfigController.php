@@ -1953,12 +1953,14 @@ class AdminConfigController extends Controller
                         $searchStr = strtoupper($rowCode . ' ' . ($row['intitule'] ?? ''));
                         if (Str::contains($searchStr, ['ACH', 'FOURN', 'FRN'])) $detectedType = 'Achats';
                         elseif (Str::contains($searchStr, ['VEN', 'CLT', 'CLI'])) $detectedType = 'Ventes';
-                        elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'CAI', 'CASH', 'BANQUE', 'CAISSE'])) {
+                        elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'CAI', 'CASH', 'BANQUE', 'CAISSE', 'WAVE', 'DJAMO', 'MTN', 'MOOV', 'ORANGE', 'OM', 'MOMO'])) {
                             $detectedType = 'Trésorerie';
                             if (Str::contains($searchStr, ['CAI', 'CASH', 'CAISSE'])) {
                                 $row['poste_tresorerie'] = 'Caisse';
-                            } else {
+                            } elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'BANQUE'])) {
                                 $row['poste_tresorerie'] = 'Banque';
+                            } else {
+                                $row['poste_tresorerie'] = 'Autre';
                             }
                         }
                         elseif (Str::contains($searchStr, ['OD', 'DIV', 'VAR'])) $detectedType = 'Standard';
@@ -3347,13 +3349,26 @@ class AdminConfigController extends Controller
                     $manualType = $rowRaw[$typeOverrideIndex] ?? null;
                     $type = !empty($manualType) ? $manualType : ($rowMapped['type'] ?? null);
 
-                    if (empty($type)) {
+                    $manualCompte = $rowRaw[$compteTresoOverrideIndex] ?? null;
+                    $compteNumStr = !empty($manualCompte) ? $manualCompte : ($rowMapped['compte_de_tresorerie'] ?? '');
+
+                    $detectedType = null;
+                    if (empty($type) || ($mapping['type'] ?? 'AUTO') === 'AUTO') {
                         $searchStr = strtoupper($rowCode . ' ' . ($rowMapped['intitule'] ?? ''));
-                        $type = 'Opérations Diverses';
-                        if (Str::contains($searchStr, ['ACH', 'FOURN', 'FRN'])) $type = 'Achats';
-                        elseif (Str::contains($searchStr, ['VEN', 'CLT', 'CLI'])) $type = 'Ventes';
-                        elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING'])) $type = 'Banque';
-                        elseif (Str::contains($searchStr, ['CAI', 'CASH', 'CAS'])) $type = 'Caisse';
+                        
+                        $rowCompteTreso = $this->standardizeAccountNumber(trim($compteNumStr), $accountDigits);
+                        if (!empty($rowCompteTreso) && str_starts_with($rowCompteTreso, '5')) {
+                            $detectedType = 'Trésorerie';
+                        }
+
+                        if (!$detectedType) {
+                            if (Str::contains($searchStr, ['ACH', 'FOURN', 'FRN'])) $detectedType = 'Achats';
+                            elseif (Str::contains($searchStr, ['VEN', 'CLT', 'CLI'])) $detectedType = 'Ventes';
+                            elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'CAI', 'CASH', 'CAS', 'BANQUE', 'CAISSE', 'WAVE', 'DJAMO', 'MTN', 'MOOV', 'ORANGE', 'OM', 'MOMO'])) {
+                                $detectedType = 'Trésorerie';
+                            }
+                        }
+                        $type = $detectedType ?? 'Opérations Diverses';
                     }
 
                     // --- FORCE SÉQUENTIEL: On ignore le code original (sauf comme préfixe de repli) ---

@@ -504,6 +504,43 @@
         if(autreEdit) autreEdit.addEventListener('input', () => handleOtherInput('edit'));
     });
 
+    // --- LOGIQUE D'ÉDITION ---
+    function editJournal(id, code, intitule, type, compteDisplay, poste, compteContre, analytique, rapprochement) {
+        document.getElementById('editJournalForm').action = `/admin/config/update-journal/${id}`;
+        document.getElementById('edit_code_journal').value = code;
+        document.getElementById('edit_intitule_journal').value = intitule;
+        
+        let typeVal = type;
+        if (['Banque', 'Caisse', 'Trésorerie', 'Tresorerie'].includes(typeVal)) typeVal = 'Tresorerie';
+        document.getElementById('edit_type_journal').value = typeVal;
+        
+        document.getElementById('edit_traitement_analytique').value = analytique;
+        
+        let compteVal = compteContre || compteDisplay || '';
+        document.getElementById('edit_compte_tresorerie').value = compteVal;
+        
+        if (poste === 'Caisse') {
+            document.getElementById('edit_treso_caisse').checked = true;
+            document.getElementById('edit_treso_banque').checked = false;
+            document.getElementById('edit_treso_autre').value = '';
+        } else if (poste === 'Banque') {
+            document.getElementById('edit_treso_banque').checked = true;
+            document.getElementById('edit_treso_caisse').checked = false;
+            document.getElementById('edit_treso_autre').value = '';
+        } else {
+            document.getElementById('edit_treso_caisse').checked = false;
+            document.getElementById('edit_treso_banque').checked = false;
+            document.getElementById('edit_treso_autre').value = poste || '';
+        }
+        
+        document.getElementById('edit_rapprochement_sur').value = rapprochement || '';
+        
+        toggleTresorerieFields(typeVal, 'edit');
+        handleTresoChange('edit'); // if custom other input
+        
+        new bootstrap.Modal(document.getElementById('modalEditJournal')).show();
+    }
+
     // --- LOGIQUE DE GRISAGE (FIXED) ---
     function handleTresoChange(mode) {
         const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
