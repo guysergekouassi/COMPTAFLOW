@@ -1075,10 +1075,12 @@ class AdminConfigController extends Controller
             $extension = strtolower($file->getClientOriginalExtension());
             $type = $request->type;
             
-            file_put_contents(base_path('debug_import.txt'), "[" . date('H:i:s') . "] FILE: " . $file->getClientOriginalName() . " EXT: $extension TYPE: $type\n", FILE_APPEND);
+            $targetCompanyId = session('current_company_id', $user->company_id);
+            
+            file_put_contents(base_path('debug_import.txt'), "[" . date('H:i:s') . "] FILE: " . $file->getClientOriginalName() . " EXT: $extension TYPE: $type TARGET_CO: $targetCompanyId\n", FILE_APPEND);
             
             ImportStaging::where('user_id', $user->id)
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $targetCompanyId)
                 ->where('type', $request->type)
                 ->whereIn('status', ['upload', 'staging'])
                 ->delete();
@@ -1251,7 +1253,7 @@ class AdminConfigController extends Controller
             // AUTO-ADAPTATION : On autorise TOUT, c'est le Mapping qui fera le tri.
             // On ne bloque plus par validation rigide.
             $import = ImportStaging::create([
-                'company_id' => $user->company_id,
+                'company_id' => session('current_company_id', $user->company_id),
                 'user_id' => $user->id,
                 'exercice_id' => ($request->type === 'courant') ? $request->exercice : null,
                 'source' => $request->source,
@@ -1639,9 +1641,12 @@ class AdminConfigController extends Controller
     {
         $import = ImportStaging::findOrFail($id);
         $user = Auth::user();
-        $accountDigits = $user->company->account_digits ?? 8;
-        $tierDigits = $user->company->tier_digits ?? 8;
-        $journalDigits = $user->company->journal_code_digits ?? 4;
+        $targetCompanyId = $import->company_id ?: session('current_company_id', $user->company_id);
+        
+        $targetCompany = Company::find($targetCompanyId);
+        $accountDigits = $targetCompany->account_digits ?? 8;
+        $tierDigits = $targetCompany->tier_digits ?? 8;
+        $journalDigits = $targetCompany->journal_code_digits ?? 4;
         
         $mapping = $import->mapping;
         
@@ -1662,26 +1667,26 @@ class AdminConfigController extends Controller
         
         $ignoredEmptyLines = count($rawRows) - count($data);
 
-        $existingAccounts = PlanComptable::where('company_id', $user->company_id)
+        $existingAccounts = PlanComptable::where('company_id', $targetCompanyId)
             ->pluck('numero_de_compte')
             ->toArray();
             
-        $accountDetails = PlanComptable::where('company_id', $user->company_id)
+        $accountDetails = PlanComptable::where('company_id', $targetCompanyId)
             ->select('id', 'numero_de_compte', 'intitule')
             ->get()
             ->keyBy('numero_de_compte');
 
-        $existingJournals = CodeJournal::where('company_id', $user->company_id)
+        $existingJournals = CodeJournal::where('company_id', $targetCompanyId)
             ->pluck('code_journal')
             ->toArray();
             
-        $existingTiers = PlanTiers::where('company_id', $user->company_id)
+        $existingTiers = PlanTiers::where('company_id', $targetCompanyId)
             ->pluck('numero_de_tiers')
             ->toArray();
 
         // --- DICTIONNAIRES DE CORRESPONDANCE (AUTO-LOOKUP) ---
         $accountMapping = [];
-        PlanComptable::where('company_id', $user->company_id)
+        PlanComptable::where('company_id', $targetCompanyId)
             ->whereNotNull('numero_original')
             ->where('numero_original', '!=', '')
             ->select('numero_de_compte', 'numero_original')
@@ -1692,7 +1697,7 @@ class AdminConfigController extends Controller
             });
             
         $journalMapping = [];
-        CodeJournal::where('company_id', $user->company_id)
+        CodeJournal::where('company_id', $targetCompanyId)
             ->whereNotNull('numero_original')
             ->where('numero_original', '!=', '')
             ->select('code_journal', 'numero_original')
@@ -2909,7 +2914,9 @@ class AdminConfigController extends Controller
     {
         $import = ImportStaging::findOrFail($id);
         $user = Auth::user();
+        $targetCompanyId = $import->company_id ?: session('current_company_id', $user->company_id);
         
+        $targetCompany = Company::find($targetCompanyId);
         $mapping = $import->mapping;
         
         $headerIndex = $mapping['_header_index'] ?? 0;
@@ -2927,7 +2934,7 @@ class AdminConfigController extends Controller
         });
 
         $exercice = ExerciceComptable::find($import->exercice_id);
-        $accountDigits = $user->company->account_digits ?? 8;
+        $accountDigits = $targetCompany->account_digits ?? 8;
         $journalLimit = 10;
         
         $groupBalances = []; // Pour l'équilibre des écritures
@@ -2951,30 +2958,30 @@ class AdminConfigController extends Controller
 
         DB::beginTransaction();
         try {
-            $planComptableIds = PlanComptable::where('company_id', $user->company_id)->pluck('id', 'numero_de_compte')->toArray();
+            $planComptableIds = PlanComptable::where('company_id', $targetCompanyId)->pluck('id', 'numero_de_compte')->toArray();
             $planComptableIds = array_change_key_case($planComptableIds, CASE_UPPER);
             $existingAccounts = array_keys($planComptableIds);
 
-            $planComptableOriginalIds = PlanComptable::where('company_id', $user->company_id)
+            $planComptableOriginalIds = PlanComptable::where('company_id', $targetCompanyId)
                 ->whereNotNull('numero_original')
                 ->where('numero_original', '!=', '')
                 ->pluck('id', 'numero_original')->toArray();
             $planComptableOriginalIds = array_change_key_case($planComptableOriginalIds, CASE_UPPER);
 
-            $planTiersIds = PlanTiers::where('company_id', $user->company_id)->pluck('id', 'numero_de_tiers')->toArray();
+            $planTiersIds = PlanTiers::where('company_id', $targetCompanyId)->pluck('id', 'numero_de_tiers')->toArray();
             $planTiersIds = array_change_key_case($planTiersIds, CASE_UPPER);
 
-            $planTiersOriginalIds = PlanTiers::where('company_id', $user->company_id)
+            $planTiersOriginalIds = PlanTiers::where('company_id', $targetCompanyId)
                 ->whereNotNull('numero_original')
                 ->where('numero_original', '!=', '')
                 ->pluck('id', 'numero_original')->toArray();
             $planTiersOriginalIds = array_change_key_case($planTiersOriginalIds, CASE_UPPER);
 
-            $existingJournalsCount = CodeJournal::where('company_id', $user->company_id)->count();
-            $existingJournals = CodeJournal::where('company_id', $user->company_id)->pluck('id', 'code_journal')->toArray();
+            $existingJournalsCount = CodeJournal::where('company_id', $targetCompanyId)->count();
+            $existingJournals = CodeJournal::where('company_id', $targetCompanyId)->pluck('id', 'code_journal')->toArray();
             $existingJournals = array_change_key_case($existingJournals, CASE_UPPER);
 
-            $existingJournalsOriginal = CodeJournal::where('company_id', $user->company_id)
+            $existingJournalsOriginal = CodeJournal::where('company_id', $targetCompanyId)
                 ->whereNotNull('numero_original')
                 ->where('numero_original', '!=', '')
                 ->pluck('id', 'numero_original')->toArray();
@@ -2987,7 +2994,7 @@ class AdminConfigController extends Controller
             $localMaxTiers = [];
             $localMaxJournals = [];
             $batchJournalMap = [];
-            $journalDigits = $user->company->journal_code_digits ?? 4;
+            $journalDigits = $targetCompany->journal_code_digits ?? 4;
             $localMaxAccounts = [];
             $batchAccounts = [];
 
@@ -3012,16 +3019,24 @@ class AdminConfigController extends Controller
             $isTypeMapped = !empty($mapping['type_ecriture']);
 
             foreach ($data as $index => $rowOrig) {
-                // ANALYSE DATA SELON MAPPING (support FIXED values)
-                $rowMapped = [];
-                foreach($mapping as $field => $colIndex) {
-                    if ($field === '_header_index') continue;
-                    if (is_string($colIndex) && str_starts_with($colIndex, 'FIXED:')) {
-                        $rowMapped[$field] = substr($colIndex, 6);
-                    } else {
-                        $rowMapped[$field] = $rowOrig[$colIndex] ?? null;
-                    }
-                }
+                 // ANALYSE DATA SELON MAPPING (support FIXED values et MANUAL OVERRIDES)
+                 $rowMapped = [];
+                 foreach($mapping as $field => $colIndex) {
+                     if ($field === '_header_index') continue;
+                     
+                     // 1. Priorité aux surcharges manuelles (clés textuelles dans $rowOrig)
+                     if (isset($rowOrig[$field]) && $rowOrig[$field] !== null && $rowOrig[$field] !== "") {
+                         $rowMapped[$field] = $rowOrig[$field];
+                     } 
+                     // 2. Valeurs FIXES
+                     elseif (is_string($colIndex) && str_starts_with($colIndex, 'FIXED:')) {
+                         $rowMapped[$field] = substr($colIndex, 6);
+                     } 
+                     // 3. Données brutes de la colonne mappée
+                     else {
+                         $rowMapped[$field] = $rowOrig[$colIndex] ?? null;
+                     }
+                 }
 
                 // CAPTURE DU NUMÉRO ORIGINAL AVANT TRANSFORMATION
                 // Pour Plan Comptable
@@ -3076,7 +3091,7 @@ class AdminConfigController extends Controller
                     if (in_array($rowCompte, $existingAccounts) || isset($batchAccounts[$rowCompte])) {
                         $racine = substr($rowCompte, 0, 3);
                         if (!isset($localMaxAccounts[$racine])) {
-                            $maxInDb = PlanComptable::where('company_id', $user->company_id)
+                            $maxInDb = PlanComptable::where('company_id', $targetCompanyId)
                                 ->where('numero_de_compte', 'LIKE', $racine . '%')
                                 ->whereRaw('LENGTH(numero_de_compte) = ?', [$accountDigits])
                                 ->max('numero_de_compte');
@@ -3115,7 +3130,7 @@ class AdminConfigController extends Controller
                             'type_de_compte' => $type,
                             'classe' => $classe,
                             'user_id' => $user->id,
-                            'company_id' => $user->company_id,
+                            'company_id' => $targetCompanyId,
                             'adding_strategy' => 'imported'
                         ]);
                         $planComptableIds[$rowCompte] = $newAcc->id;
@@ -3230,7 +3245,7 @@ class AdminConfigController extends Controller
                     $prefix = $generationPrefix ?? substr($rowCompteNum, 0, 2);
 
                     // Génération du numéro séquentiel
-                    $tierIdType = $user->company->tier_id_type ?? 'numeric';
+                    $tierIdType = $targetCompany->tier_id_type ?? 'numeric';
                     $base = $prefix;
                     
                     if ($tierIdType === 'alphanumeric' && !empty($rowIntitule)) {
@@ -3258,7 +3273,7 @@ class AdminConfigController extends Controller
                         $sequencePart = substr($lastId, $baseLen);
                         if (is_numeric($sequencePart)) {
                             $nextSeq = (int)$sequencePart + 1;
-                            $availableSpace = max(0, (int)($user->company->tier_digits ?? 8) - $baseLen);
+                            $availableSpace = max(0, (int)($targetCompany->tier_digits ?? 8) - $baseLen);
                             $newId = $base . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
                             $numeroGenere = $newId;
                             $localMaxTiers[$base] = $newId;
@@ -3274,7 +3289,7 @@ class AdminConfigController extends Controller
                     // IMPORTANT : On ne matche pas si le numéro original est vide pour éviter les collisions (doublons)
                     $existingTier = null;
                     if (!empty($numeroOriginalTiers)) {
-                        $existingTier = PlanTiers::where('company_id', $user->company_id)
+                        $existingTier = PlanTiers::where('company_id', $targetCompanyId)
                             ->where(function($q) use ($numeroOriginalTiers, $importedNum) {
                                 $q->where('numero_original', $numeroOriginalTiers);
                                 if (!empty($importedNum)) $q->orWhere('numero_original', $importedNum);
@@ -3311,7 +3326,7 @@ class AdminConfigController extends Controller
                             'compte_general' => $compteCollectifId,
                             'numero_original' => $numeroOriginalTiers,
                             'user_id' => $user->id,
-                            'company_id' => $user->company_id
+                            'company_id' => $targetCompanyId
                         ]);
                         $importedCount++;
                     }
@@ -3453,7 +3468,7 @@ class AdminConfigController extends Controller
                             if (isset($localMaxJournals[$prefix])) {
                                 $lastCode = $localMaxJournals[$prefix];
                             } else {
-                                $lastCode = CodeJournal::where('company_id', $user->company_id)
+                                $lastCode = CodeJournal::where('company_id', $targetCompanyId)
                                     ->where('code_journal', 'LIKE', $prefix . '%')
                                     ->orderBy('code_journal', 'desc')
                                     ->value('code_journal');
@@ -3512,7 +3527,7 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    $existingJournal = CodeJournal::where('company_id', $user->company_id)
+                    $existingJournal = CodeJournal::where('company_id', $targetCompanyId)
                         ->where(function($q) use ($rowCode) {
                             $q->where('code_journal', strtoupper($rowCode))
                               ->orWhere('numero_original', $rowCode)
@@ -3551,7 +3566,7 @@ class AdminConfigController extends Controller
                             'traitement_analytique' => (strtolower($analytique) === 'oui' || $analytique === 1),
                             'rapprochement_sur' => $rapprochement,
                             'user_id' => $user->id,
-                            'company_id' => $user->company_id
+                            'company_id' => $targetCompanyId
                         ]);
                         $existingJournals[strtoupper($rowCode)] = $newJournal->id;
                         if ($numeroOriginalJournal) {
@@ -3563,7 +3578,7 @@ class AdminConfigController extends Controller
                     // SYNCHRONISATION TABLE TRESORERIES
                     if (in_array($type, ['Trésorerie', 'Tresorerie', 'Banque', 'Caisse'])) {
                         \App\Models\tresoreries\Tresoreries::updateOrCreate(
-                            ['company_id' => $user->company_id, 'code_journal' => strtoupper($rowCode)],
+                            ['company_id' => $targetCompanyId, 'code_journal' => strtoupper($rowCode)],
                             [
                                 'intitule' => trim($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
                                 'compte_de_contrepartie' => $compteId, // Lien vers plan_comptables.id
@@ -3766,7 +3781,7 @@ class AdminConfigController extends Controller
                     // LOGIQUE MASTER NUMBERING : Groupement par n_saisie d'origine ou référence
                     $origNSaisie = $rowMapped['n_saisie'] ?? $rowMapped['reference'] ?? 'IMPORT';
                     if (!isset($ecrMapping[$origNSaisie])) {
-                        $ecrMapping[$origNSaisie] = $this->generateGlobalSaisieNumber($user->company_id);
+                        $ecrMapping[$origNSaisie] = $this->generateGlobalSaisieNumber($targetCompanyId);
                     }
                     $globalNSaisie = $ecrMapping[$origNSaisie];
 
@@ -3791,7 +3806,7 @@ class AdminConfigController extends Controller
                             'mois' => $date->month,
                             'exercices_comptables_id' => $import->exercice_id ?? session('current_exercice_id'),
                             'code_journals_id' => $journalId,
-                            'company_id' => $user->company_id,
+                            'company_id' => $targetCompanyId,
                         ], [
                             'user_id' => $user->id
                         ]);
@@ -3812,7 +3827,7 @@ class AdminConfigController extends Controller
                         'debit' => $debit,
                         'credit' => $credit,
                         'exercices_comptables_id' => $import->exercice_id ?? session('current_exercice_id'),
-                        'company_id' => $user->company_id,
+                        'company_id' => $targetCompanyId,
                         'user_id' => $user->id,
                         'statut' => 'approved'
                     ]);
