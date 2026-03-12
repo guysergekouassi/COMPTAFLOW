@@ -4,6 +4,7 @@
 *.txt
 *.html
 *.py
+*.docx
 
 
 # --- Tests ---

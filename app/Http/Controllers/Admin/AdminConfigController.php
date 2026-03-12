@@ -3533,6 +3533,10 @@ class AdminConfigController extends Controller
                             'rapprochement_sur' => $rapprochement,
                             'user_id' => $user->id
                         ]);
+                        $existingJournals[strtoupper($existingJournal->code_journal)] = $existingJournal->id;
+                        if ($existingJournal->numero_original) {
+                            $existingJournalsOriginal[strtoupper($existingJournal->numero_original)] = $existingJournal->id;
+                        }
                         $duplicateCount++;
                     } else {
                         // CREATE nouveau
@@ -3549,7 +3553,10 @@ class AdminConfigController extends Controller
                             'user_id' => $user->id,
                             'company_id' => $user->company_id
                         ]);
-                        $existingJournals[strtoupper($rowCode)] = $newJournal->id; 
+                        $existingJournals[strtoupper($rowCode)] = $newJournal->id;
+                        if ($numeroOriginalJournal) {
+                            $existingJournalsOriginal[strtoupper($numeroOriginalJournal)] = $newJournal->id;
+                        }
                         $importedCount++;
                     }
 
@@ -3644,8 +3651,8 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    $compteId = $planComptableIds[$rowCompte] ?? $planComptableOriginalIds[$rowCompte] ?? null;
-                    $journalId = $existingJournals[strtoupper($rowJournal)] ?? $existingJournalsOriginal[strtoupper($rowJournal)] ?? null;
+                    $compteId = $planComptableIds[$rowCompte] ?? $planComptableOriginalIds[strtoupper(trim($rowMapped['compte'] ?? ''))] ?? null;
+                    $journalId = $existingJournals[strtoupper($rowJournal)] ?? $existingJournalsOriginal[strtoupper($rowJournalRaw)] ?? null;
 
                     if (!$compteId) {
                         $errors[] = "Ligne " . ($index + 1) . " : Le compte '$rowCompte' n'existe pas dans le plan.";
