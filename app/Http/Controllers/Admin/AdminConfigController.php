@@ -1708,7 +1708,7 @@ class AdminConfigController extends Controller
             });
 
         $tierMapping = [];
-        PlanTiers::where('company_id', $user->company_id)
+        PlanTiers::where('company_id', $targetCompanyId)
             ->whereNotNull('numero_original')
             ->where('numero_original', '!=', '')
             ->select('numero_de_tiers', 'numero_original')
@@ -1836,22 +1836,22 @@ class AdminConfigController extends Controller
                     }
                 }
 
-                // GESTION DES DOUBLONS ET COLLISIONS PAR NUMÉROTATION SÉQUENTIELLE
+                // GESTION DES DOUBLONS ET COLLISIONS
                 if (!empty($rowCompte) && empty($errors)) {
-                    if (in_array($rowCompte, $existingAccounts) || isset($batchAccounts[$rowCompte])) {
+                    $isDuplicateInDb = in_array($rowCompte, $existingAccounts);
+                    $isDuplicateInBatch = isset($batchAccounts[$rowCompte]);
+
+                    if ($isDuplicateInBatch) {
+                        // Si doublon dans le lot actuel, on génère un nouveau numéro pour éviter la collision interne
                         $racine = substr($rowCompte, 0, 3);
-                        
                         if (!isset($localMaxAccounts[$racine])) {
-                            // Chercher le plus grand numéro existant pour cette racine
-                            $maxInDb = \App\Models\PlanComptable::where('company_id', $user->company_id)
+                            $maxInDb = \App\Models\PlanComptable::where('company_id', $targetCompanyId)
                                 ->where('numero_de_compte', 'LIKE', $racine . '%')
                                 ->whereRaw('LENGTH(numero_de_compte) = ?', [$accountDigits])
                                 ->max('numero_de_compte');
-                            
                             $localMaxAccounts[$racine] = $maxInDb ?: ($racine . str_pad('0', ($accountDigits - 3), '0', STR_PAD_LEFT));
                         }
                         
-                        // Incrémenter la séquence
                         $lastId = $localMaxAccounts[$racine];
                         $sequencePart = substr($lastId, 3);
                         $nextSeq = (int)$sequencePart + 1;
@@ -1861,6 +1861,11 @@ class AdminConfigController extends Controller
                         $row['suggested_account'] = $newId;
                         $rowCompte = $newId;
                         $localMaxAccounts[$racine] = $newId;
+                    } elseif ($isDuplicateInDb) {
+                        // Si existe déjà en base, on garde le numéro mais on signale qu'il existe déjà
+                        // L'importation pourra choisir de l'ignorer ou de mettre à jour l'intitulé
+                        $row['is_duplicate'] = true;
+                        $row['info'] = "Ce compte existe déjà dans le plan comptable.";
                     }
                     
                     $batchAccounts[$rowCompte] = $originalRawValue;
@@ -2102,60 +2107,49 @@ class AdminConfigController extends Controller
 
                 // --- DÉDUPLICATION ET UNICITÉ DES CODES JOURNAUX (BATCH CONSISTENCY) ---
                 if (!empty($rowCode)) {
-                    // On se base sur le numéro original pour la détection de doublons dans le lot
-                    // IMPORTANT: L'utilisateur veut que ceux qui ont le même numéro original aient le même code généré
                     $upperOrig = strtoupper(trim($row['numero_original'] ?? $rowCode));
                     
                     if (isset($batchJournalMap[$upperOrig])) {
                         $rowCode = $batchJournalMap[$upperOrig];
                         $row['code_journal'] = $rowCode;
                     } else {
-                        $baseCode = $rowCode;
-                        $counter = 1;
+                        // On vérifie si le code existe déjà en base pour CETTE société
+                        $isDuplicateInDb = in_array(strtoupper($rowCode), array_map('strtoupper', $existingJournals));
                         
-                        // Si le code est purement alphabétique, et trop court -> on le force avec '1' (ex: BQ -> BQ01)
-                        if (preg_match('/^[A-Z]+$/i', $baseCode) && strlen($baseCode) < $journalDigits) {
-                            $prefix = strtoupper($baseCode);
-                            $availableSpace = max(1, $journalDigits - strlen($prefix));
-                            $tempCode = $prefix . str_pad($counter, $availableSpace, '0', STR_PAD_LEFT);
+                        if ($isDuplicateInDb) {
+                            $row['is_duplicate'] = true;
+                            $row['info'] = "Ce code journal existe déjà.";
+                            // On garde le code journal tel quel
+                            $batchJournalMap[$upperOrig] = $rowCode;
                         } else {
-                            $tempCode = $this->standardizeJournalCode($baseCode, $journalDigits);
-                        }
-
-                        // On boucle tant que le code existe déjà
-                        while (in_array(strtoupper($tempCode), array_map('strtoupper', $existingJournals)) || isset($localMaxJournals[strtoupper($tempCode)])) {
-                            $counter++;
+                            // Si pas doublon en DB, on vérifie si collision avec un autre du lot (localMaxJournals)
+                            $tempCode = $rowCode;
+                            $counter = 1;
                             
-                            $numStr = (string)$counter;
-                            $numLen = strlen($numStr);
-                            
-                            if (preg_match('/^([A-Z]+)/i', $baseCode, $matches)) {
-                                $prefix = strtoupper($matches[1]);
-                            } else {
-                                $prefix = 'JRN';
+                            while (isset($localMaxJournals[strtoupper($tempCode)])) {
+                                $counter++;
+                                $numStr = (string)$counter;
+                                $numLen = strlen($numStr);
+                                if (preg_match('/^([A-Z]+)/i', $rowCode, $matches)) {
+                                    $prefix = strtoupper($matches[1]);
+                                } else {
+                                    $prefix = 'JRN';
+                                }
+                                
+                                if ($numLen >= $journalDigits) {
+                                    $tempCode = substr($numStr, -$journalDigits);
+                                } else {
+                                    $maxPrefixLen = $journalDigits - $numLen;
+                                    $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                                    $tempCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                                }
+                                if ($counter > 500) break;
                             }
                             
-                            if ($numLen >= $journalDigits) {
-                                $tempCode = substr($numStr, -$journalDigits);
-                            } else {
-                                $maxPrefixLen = $journalDigits - $numLen;
-                                $actualPrefix = substr($prefix, 0, $maxPrefixLen);
-                                $tempCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
-                            }
-
-                            if ($counter > 500) break; // Sécurité
+                            $rowCode = $tempCode;
+                            $batchJournalMap[$upperOrig] = $rowCode;
+                            $localMaxJournals[strtoupper($rowCode)] = $rowCode;
                         }
-                        
-                        $rowCode = $tempCode;
-                        
-                        // Validation souple finale : on accepte les codes entre 2 et $journalDigits+2 caractères
-                        // (ex: un code de 3 lettres avec journalDigits=4 est valide car il peut exister dans la BD)
-                        if (strlen($rowCode) > $journalDigits + 2) {
-                            $errors[] = "Erreur de formatage : Le code '" . $rowCode . "' est trop long (Max $journalDigits caractères)."; 
-                        }
-
-                        $batchJournalMap[$upperOrig] = $rowCode; 
-                        $localMaxJournals[strtoupper($rowCode)] = $rowCode;
                     }
                     
                     $row['code_journal'] = $rowCode;
@@ -2384,9 +2378,16 @@ class AdminConfigController extends Controller
                     $row['numero_de_tiers'] = 'NON GÉNÉRÉ';
                     $errors[] = "Impossible de déduire le type de tiers (Fournisseur/Client) pour la génération. Veuillez vérifier le compte collectif ou l'intitulé.";
                 } else {
-                    // --- COHÉRENCE DU LOT (BATCH CONSISTENCY) ---
+                    // --- COHÉRENCE DU LOT ET BASE DE DONNÉES ---
                     $upperOrigNum = strtoupper($importedNum);
-                    if (!empty($importedNum) && isset($batchTierMap[$upperOrigNum])) {
+                    $existsInDb = !empty($importedNum) && in_array($upperOrigNum, array_map('strtoupper', $existingTiers));
+
+                    if ($existsInDb) {
+                        $row['numero_de_tiers'] = $importedNum;
+                        $row['is_duplicate'] = true;
+                        $row['info'] = "Ce tiers existe déjà.";
+                        $batchTierMap[$upperOrigNum] = $importedNum;
+                    } elseif (!empty($importedNum) && isset($batchTierMap[$upperOrigNum])) {
                         $row['numero_de_tiers'] = $batchTierMap[$upperOrigNum];
                     } else {
                         $row['numero_de_tiers'] = null; // Reset pour éviter de garder l'ancien si la génération échoue
@@ -2567,6 +2568,10 @@ class AdminConfigController extends Controller
                         $row['code_original_journal'] = $rowJournal; 
                         $row['journal'] = $journalMapping[$rowJournalUpper];
                         $rowJournal = $row['journal'];
+                    } elseif (in_array($rowJournalUpper, array_map('strtoupper', $existingJournals))) {
+                        // Déjà un code journal valide
+                        $row['journal'] = $rowJournalUpper;
+                        $rowJournal = $rowJournalUpper;
                     }
                 }
 
@@ -2594,11 +2599,13 @@ class AdminConfigController extends Controller
                         $row['numero_original_tiers'] = $rowTiers;
                         $row['tiers'] = $tierMapping[$rowTiersUpper];
                         $rowTiers = $row['tiers'];
+                    } elseif (in_array($rowTiersUpper, array_map('strtoupper', $existingTiers))) {
+                        // Déjà un code standardisé correct
+                        $row['tiers'] = $rowTiersUpper;
+                        $rowTiers = $rowTiersUpper;
                     } else {
-                        if (!in_array($rowTiersUpper, array_map('strtoupper', $existingTiers))) {
-                            $errors[] = "Tiers inconnu : $rowTiers";
-                            $missingTiers[$rowTiersUpper] = $row['intitule'] ?? 'Tiers ' . $rowTiersUpper;
-                        }
+                        $errors[] = "Tiers inconnu : $rowTiers";
+                        $missingTiers[$rowTiersUpper] = $row['intitule'] ?? 'Tiers ' . $rowTiersUpper;
                     }
                 }
 
@@ -2953,6 +2960,7 @@ class AdminConfigController extends Controller
         ];
         
         $importedCount = 0;
+        $skippedCount = 0;
         $duplicateCount = 0;
         $errors = [];
 
@@ -3813,6 +3821,24 @@ class AdminConfigController extends Controller
                         $journalSaisiId = $js->id;
                     }
 
+                    // DÉTECTION DE DOUBLONS NON-BLOQUANTS (Multi-Exercice supporté par la date)
+                    $duplicate = EcritureComptable::where([
+                        'date' => $date->format('Y-m-d'),
+                        'code_journal_id' => $journalId,
+                        'plan_comptable_id' => $compteId,
+                        'plan_tiers_id' => $tiersId,
+                        'debit' => $debit,
+                        'credit' => $credit,
+                        'company_id' => $targetCompanyId,
+                    ])->where('reference_piece', 'like', strtoupper($rowMapped['reference'] ?? 'IMPORT'))
+                      ->where('description_operation', 'like', strtoupper($rowMapped['libelle'] ?? 'IMPORTATION EXTERNE'))
+                      ->first();
+
+                    if ($duplicate) {
+                        $skippedCount++;
+                        continue;
+                    }
+
                     EcritureComptable::create([
                         'date' => $date,
                         'n_saisie' => $globalNSaisie, // MASTER
@@ -3855,11 +3881,12 @@ class AdminConfigController extends Controller
 
             $import->update([
                 'status' => 'committed',
-                'error_log' => "Importation réussie : $importedCount $msg_type créés."
+                'error_log' => "Importation réussie : $importedCount $msg_type créés." . ($skippedCount > 0 ? " ($skippedCount doublons ignorés)" : "")
             ]);
             
             // Finalize Stats
             $report['processed_g'] = $importedCount;
+            $report['skipped_g'] = $skippedCount;
             // Total debit/credit already tracked via groupBalances if needed, but easier to sum here if we tracked it row by row
             // Let's compute totals from groupBalances for simplicity
             $report['total_debit'] = array_sum(array_column($groupBalances, 'debit'));
