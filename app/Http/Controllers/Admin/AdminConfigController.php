@@ -4130,6 +4130,9 @@ class AdminConfigController extends Controller
                 'code_journal' => strtoupper($request->code_journal),
                 'intitule' => strtoupper($request->intitule),
                 'type' => $request->type_journal ?? 'Opérations diverses',
+                'traitement_analytique' => 0,
+                'poste_tresorerie' => 'Autre',
+                'rapprochement_sur' => 'Manuel',
                 'user_id' => $user->id,
                 'company_id' => $user->company_id,
             ]);
