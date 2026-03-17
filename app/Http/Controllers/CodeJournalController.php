@@ -16,9 +16,10 @@ class CodeJournalController extends Controller
 public function index(Request $request)
 {
     $user = Auth::user();
+    $companyId = session('current_company_id', $user->company_id);
 
-    // La requête est maintenant automatiquement filtrée par TenantScope (Session current_company_id ou User company_id)
-    $query = CodeJournal::orderByDesc('created_at');
+    // La requête est maintenant filtrée manuellement pour supporter le switch SuperAdmin
+    $query = CodeJournal::where('company_id', $companyId)->orderByDesc('created_at');
 
     // FILTRAGE PAR TYPE (depuis les cartes KPI)
     if ($request->has('type') && $request->type !== 'all') {
@@ -93,17 +94,17 @@ public function index(Request $request)
 
     // 5. Calculs statistiques pour les cartes (requêtes séparées pour éviter les conflits de pagination)
     $stats = [
-        'total' => CodeJournal::where('company_id', $this->getCurrentCompanyId())->count(),
-        'tresorerie' => CodeJournal::where('company_id', $this->getCurrentCompanyId())->where('type', 'Tresorerie')->count(),
-        'achatsVentes' => CodeJournal::where('company_id', $this->getCurrentCompanyId())->whereIn('type', ['Achats', 'Ventes'])->count(),
+        'total' => CodeJournal::where('company_id', $companyId)->count(),
+        'tresorerie' => CodeJournal::where('company_id', $companyId)->where('type', 'Tresorerie')->count(),
+        'achatsVentes' => CodeJournal::where('company_id', $companyId)->whereIn('type', ['Achats', 'Ventes'])->count(),
     ];
 
     // 6. Regrouper les journaux par type pour affichage dynamique des cartes
-    $journauxParType = CodeJournal::where('company_id', $this->getCurrentCompanyId())
+    $journauxParType = CodeJournal::where('company_id', $companyId)
         ->get()
         ->groupBy('type')
         ->map(fn($group) => $group->count());
-    $allJournauxForStats = CodeJournal::get();
+    $allJournauxForStats = CodeJournal::where('company_id', $companyId)->get();
     $totalJournauxCompany = $allJournauxForStats->count();
 
     $userCreatedJournaux = CodeJournal::where('user_id', $user->id)
@@ -116,14 +117,14 @@ public function index(Request $request)
 
     // Récupérer les comptes commençant par 5 (comptes de trésorerie)
     $comptesCinq = PlanComptable::where('numero_de_compte', 'like', '5%')
-        ->where('company_id', $this->getCurrentCompanyId())
+        ->where('company_id', $companyId)
         ->get();
 
     // 7. Récupérer les postes de trésorerie distincts (uniquement les postes créés)
     $postesTresorerieData = \App\Models\tresoreries\Tresoreries::distinct()
         ->whereNotNull('poste_tresorerie')
         ->where('poste_tresorerie', '!=', '')
-        ->where('company_id', $this->getCurrentCompanyId())
+        ->where('company_id', $companyId)
         ->pluck('categorie', 'poste_tresorerie');
 
     // 8. On passe les variables à la vue
@@ -248,7 +249,9 @@ public function index(Request $request)
         ]);
 
         try {
-            $journal = CodeJournal::findOrFail($id);
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $journal = CodeJournal::where('company_id', $companyId)->findOrFail($id);
             
             // Unicité
             $exists = CodeJournal::where('company_id', $journal->company_id)
@@ -339,7 +342,9 @@ public function index(Request $request)
     public function getCompteTreso($id)
     {
         try {
-            $journal = CodeJournal::find($id);
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $journal = CodeJournal::where('company_id', $companyId)->find($id);
             if (!$journal) {
                 return response()->json(['success' => false, 'message' => 'Journal non trouvé'], 404);
             }
@@ -363,11 +368,12 @@ public function index(Request $request)
         try {
             $prefix = strtoupper($request->prefix);
             $user = Auth::user();
-            $company = $user->company;
+            $companyId = session('current_company_id', $user->company_id);
+            $company = \App\Models\Company::findOrFail($companyId);
             $digits = $company->journal_code_digits ?? 4;
 
             // Chercher les codes existants qui commencent par le préfixe pour CETTE entreprise
-            $codes = CodeJournal::where('company_id', $company->id)
+            $codes = CodeJournal::where('company_id', $companyId)
                 ->where('code_journal', 'LIKE', $prefix . '%')
                 ->pluck('code_journal')
                 ->toArray();

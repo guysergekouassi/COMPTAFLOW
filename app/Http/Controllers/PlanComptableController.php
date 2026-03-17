@@ -130,7 +130,11 @@ class PlanComptableController extends Controller
     public function verifierNumeroCompte(Request $request)
     {
         try {
-            $existe = PlanComptable::where('numero_de_compte', $request->numero_de_compte)->exists();
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $existe = PlanComptable::where('company_id', $companyId)
+                ->where('numero_de_compte', $request->numero_de_compte)
+                ->exists();
 
             return response()->json([
                 'exists' => $existe,
@@ -218,9 +222,10 @@ class PlanComptableController extends Controller
                     return redirect()->back()->with('error', 'Format du fichier JSON invalide.');
                 }
 
+                $companyId = session('current_company_id', $user->company_id);
                 foreach ($data as $numero => $intitule) {
                     $existe = PlanComptable::where('numero_de_compte', $numero)
-                        ->where('company_id', $user->company_id)
+                        ->where('company_id', $companyId)
                         ->exists();
 
                     if (!$existe) {
@@ -230,7 +235,7 @@ class PlanComptableController extends Controller
                             'classe' => $this->determinerClasse($numero),
                             'adding_strategy' => 'auto',
                             'user_id' => $user->id,
-                            'company_id' => $user->company_id,
+                            'company_id' => $companyId,
                         ]);
                     }
                 }
@@ -261,7 +266,9 @@ class PlanComptableController extends Controller
                 'traitement_analytique' => 'nullable|in:oui,non',
             ]);
 
-            $plan = PlanComptable::findOrFail($id);
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $plan = PlanComptable::where('company_id', $companyId)->findOrFail($id);
 
             $numero = $request->input('numero_de_compte');
             if (strlen($numero) < 8) {
@@ -289,7 +296,9 @@ class PlanComptableController extends Controller
     {
         // dd($id);
         try {
-            $plan = PlanComptable::findOrFail($id);
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $plan = PlanComptable::where('company_id', $companyId)->findOrFail($id);
 
             $utilise = EcritureComptable::where('plan_comptable_id', $id)->exists();
 

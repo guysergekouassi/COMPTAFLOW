@@ -87,8 +87,8 @@ class AdminConfigController extends Controller
     public function planComptable()
     {
         $user = Auth::user();
-        $mainCompany = Company::findOrFail($user->company_id);
-        $plansComptables = PlanComptable::where('company_id', $user->company_id)
+        $mainCompany = Company::findOrFail(session('current_company_id', $user->company_id));
+        $plansComptables = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('numero_de_compte')
             ->get();
         
@@ -103,15 +103,15 @@ class AdminConfigController extends Controller
     public function planTiers()
     {
         $user = Auth::user();
-        $planTiers = PlanTiers::where('company_id', $user->company_id)
+        $planTiers = PlanTiers::where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('numero_de_tiers')
             ->get();
         
-        $plansComptables = PlanComptable::where('company_id', $user->company_id)
+        $plansComptables = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('numero_de_compte')
             ->get();
 
-        $mainCompany = Company::findOrFail($user->company_id);
+        $mainCompany = Company::findOrFail(session('current_company_id', $user->company_id));
         
         return view('admin.config.plan_tiers', compact('planTiers', 'plansComptables', 'mainCompany'));
     }
@@ -122,14 +122,14 @@ class AdminConfigController extends Controller
     public function journals()
     {
         $user = Auth::user();
-        $mainCompany = Company::findOrFail($user->company_id);
+        $mainCompany = Company::findOrFail(session('current_company_id', $user->company_id));
         $journals = CodeJournal::with('account')
-            ->where('company_id', $user->company_id)
+            ->where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('code_journal')
             ->get();
         
         // On récupère aussi le plan comptable pour les comptes de trésorerie
-        $plansComptables = PlanComptable::where('company_id', $user->company_id)
+        $plansComptables = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('numero_de_compte')
             ->get();
 
@@ -151,7 +151,7 @@ class AdminConfigController extends Controller
     {
         $user = Auth::user();
         
-        $importedCount = EcritureComptable::where('company_id', $user->company_id)
+        $importedCount = EcritureComptable::where('company_id', session('current_company_id', $user->company_id))
             ->where('statut', 'imported')
             ->count();
 
@@ -161,7 +161,7 @@ class AdminConfigController extends Controller
         }
 
         // Passage au statut approved pour toutes les écritures importées de la compagnie
-        EcritureComptable::where('company_id', $user->company_id)
+        EcritureComptable::where('company_id', session('current_company_id', $user->company_id))
             ->where('statut', 'imported')
             ->update(['statut' => 'approved']);
 
@@ -238,7 +238,7 @@ class AdminConfigController extends Controller
                 $classe = (int)substr($prefix, 0, 1);
                 $type = in_array($classe, [1, 2, 3, 4, 5, 9]) ? 'Bilan' : 'Compte de résultat';
 
-                $exists = PlanComptable::where('company_id', $user->company_id)
+                $exists = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
                     ->where('numero_de_compte', $numero)
                     ->exists();
 
@@ -249,7 +249,7 @@ class AdminConfigController extends Controller
                         'type_de_compte' => $type,
                         'classe' => $classe,
                         'user_id' => $user->id,
-                        'company_id' => $user->company_id,
+                        'company_id' => session('current_company_id', $user->company_id),
                         'adding_strategy' => 'auto'
                     ]);
                     $count++;
@@ -310,12 +310,12 @@ class AdminConfigController extends Controller
                 // Génération de base pour la classe
                 $numeroBase = str_pad($classPrefix, $digits, '0', STR_PAD_RIGHT);
                 
-                if (!PlanComptable::where('company_id', $user->company_id)->where('numero_de_compte', $numeroBase)->exists()) {
+                if (!PlanComptable::where('company_id', session('current_company_id', $user->company_id))->where('numero_de_compte', $numeroBase)->exists()) {
                     PlanComptable::create([
                         'numero_de_compte' => $numeroBase,
                         'intitule' => "CLASSE $classPrefix - $intitule",
                         'user_id' => $user->id,
-                        'company_id' => $user->company_id,
+                        'company_id' => session('current_company_id', $user->company_id),
                         'adding_strategy' => 'auto'
                     ]);
                     $count++;
@@ -327,12 +327,12 @@ class AdminConfigController extends Controller
                     for ($i = $request->seq_start; $i <= $request->seq_end; $i++) {
                         $numero = str_pad($prefix . $i, $digits, '0', STR_PAD_RIGHT);
                         
-                        if (strlen($numero) <= $digits && !PlanComptable::where('company_id', $user->company_id)->where('numero_de_compte', $numero)->exists()) {
+                        if (strlen($numero) <= $digits && !PlanComptable::where('company_id', session('current_company_id', $user->company_id))->where('numero_de_compte', $numero)->exists()) {
                             PlanComptable::create([
                                 'numero_de_compte' => $numero,
                                 'intitule' => "Compte $numero (Généré)",
                                 'user_id' => $user->id,
-                                'company_id' => $user->company_id,
+                                'company_id' => session('current_company_id', $user->company_id),
                                 'adding_strategy' => 'auto'
                             ]);
                             $count++;
@@ -357,7 +357,7 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            PlanComptable::where('company_id', $user->company_id)->delete();
+            PlanComptable::where('company_id', session('current_company_id', $user->company_id))->delete();
             return redirect()->back()->with('success', 'Plan comptable réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
@@ -371,7 +371,7 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            PlanTiers::where('company_id', $user->company_id)->delete();
+            PlanTiers::where('company_id', session('current_company_id', $user->company_id))->delete();
             return redirect()->back()->with('success', 'Plan tiers réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
@@ -385,7 +385,7 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            CodeJournal::where('company_id', $user->company_id)->delete();
+            CodeJournal::where('company_id', session('current_company_id', $user->company_id))->delete();
             return redirect()->back()->with('success', 'Modèle de journaux réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
@@ -403,7 +403,7 @@ class AdminConfigController extends Controller
         ]);
 
         $user = Auth::user();
-        $company = Company::findOrFail($user->company_id);
+        $company = Company::findOrFail(session('current_company_id', $user->company_id));
         $digits = $company->account_digits ?? 8;
 
         // Validation stricte de la longueur
@@ -413,7 +413,7 @@ class AdminConfigController extends Controller
 
         $numero = $request->numero_de_compte;
 
-        $exists = PlanComptable::where('company_id', $user->company_id)
+        $exists = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
             ->where('numero_de_compte', $numero)
             ->exists();
 
@@ -425,7 +425,7 @@ class AdminConfigController extends Controller
             'numero_de_compte' => $numero,
             'intitule' => $request->intitule,
             'user_id' => $user->id,
-            'company_id' => $user->company_id,
+            'company_id' => session('current_company_id', $user->company_id),
             'adding_strategy' => 'manuel'
         ]);
 
@@ -502,7 +502,7 @@ class AdminConfigController extends Controller
             DB::beginTransaction();
             $count = 0;
             foreach ($templates as $tpl) {
-                $exists = CodeJournal::where('company_id', $user->company_id)
+                $exists = CodeJournal::where('company_id', session('current_company_id', $user->company_id))
                     ->where('code_journal', $tpl['code'])
                     ->exists();
 
@@ -512,7 +512,7 @@ class AdminConfigController extends Controller
                         'intitule' => $tpl['intitule'],
                         'type' => $tpl['type'],
                         'user_id' => $user->id,
-                        'company_id' => $user->company_id,
+                        'company_id' => session('current_company_id', $user->company_id),
                     ]);
                     $count++;
                 }
@@ -533,7 +533,7 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            $company = Company::findOrFail($user->company_id);
+            $company = Company::findOrFail(session('current_company_id', $user->company_id));
             $digits = (int)($company->tier_digits ?? 8);
             
             $prefix = $request->input('prefix'); // Préfixe de catégorie (ex: 40, 41)
@@ -582,7 +582,7 @@ class AdminConfigController extends Controller
             ]);
         }
 
-        $existingTiers = PlanTiers::where('company_id', $user->company_id)
+        $existingTiers = PlanTiers::where('company_id', session('current_company_id', $user->company_id))
             ->where('numero_de_tiers', 'like', $base . '%')
             ->get();
 
@@ -632,7 +632,7 @@ class AdminConfigController extends Controller
         ]);
 
         $user = Auth::user();
-        $company = Company::findOrFail($user->company_id);
+        $company = Company::findOrFail(session('current_company_id', $user->company_id));
         $digits = $company->tier_digits ?? 8;
 
         $num = strtoupper($request->numero_de_tiers);
@@ -650,7 +650,7 @@ class AdminConfigController extends Controller
              }
         }
 
-        $exists = PlanTiers::where('company_id', $user->company_id)
+        $exists = PlanTiers::where('company_id', session('current_company_id', $user->company_id))
             ->where('numero_de_tiers', $num)
             ->exists();
 
@@ -664,7 +664,7 @@ class AdminConfigController extends Controller
             'type_de_tiers' => $request->type_de_tiers,
             'compte_general' => $request->compte_general,
             'user_id' => $user->id,
-            'company_id' => $user->company_id,
+            'company_id' => session('current_company_id', $user->company_id),
         ]);
 
         return redirect()->route('admin.config.plan_tiers')->with('success', 'Tiers ajouté au modèle avec succès.');
@@ -704,7 +704,7 @@ class AdminConfigController extends Controller
             return redirect()->back()->with('error', "Le code journal doit être uniquement alphabétique.");
         }
 
-        $exists = CodeJournal::where('company_id', $user->company_id)
+        $exists = CodeJournal::where('company_id', session('current_company_id', $user->company_id))
             ->where('code_journal', $code)
             ->exists();
 
@@ -714,7 +714,7 @@ class AdminConfigController extends Controller
 
         $compteId = null;
         if ($request->compte_de_tresorerie) {
-            $compteId = PlanComptable::where('company_id', $user->company_id)
+            $compteId = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
                 ->where('numero_de_compte', $request->compte_de_tresorerie)
                 ->value('id');
         }
@@ -731,7 +731,7 @@ class AdminConfigController extends Controller
             'traitement_analytique' => ($request->traitement_analytique === 'oui'),
             'rapprochement_sur' => $request->rapprochement_sur,
             'user_id' => $user->id,
-            'company_id' => $user->company_id,
+            'company_id' => session('current_company_id', $user->company_id),
         ]);
 
         return redirect()->back()->with('success', 'Journal ajouté au modèle avec succès.');
@@ -925,7 +925,7 @@ class AdminConfigController extends Controller
 
         try {
             $user = Auth::user();
-            $company = Company::findOrFail($user->company_id);
+            $company = Company::findOrFail(session('current_company_id', $user->company_id));
             $digits = $company->account_digits ?? 8;
 
             if (strlen($request->numero_de_compte) != $digits) {

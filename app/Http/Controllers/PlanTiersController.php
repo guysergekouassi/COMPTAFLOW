@@ -259,7 +259,9 @@ class PlanTiersController extends Controller
                 'compte_general' => 'required|exists:plan_comptables,id'
             ]);
 
-            $tiers = PlanTiers::findOrFail($id);
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $tiers = PlanTiers::where('company_id', $companyId)->findOrFail($id);
             $tiers->numero_de_tiers = $request->numero_de_tiers;
             $tiers->intitule = $request->intitule;
             $tiers->type_de_tiers = $request->type_de_tiers;
@@ -312,7 +314,9 @@ class PlanTiersController extends Controller
     public function destroy($id)
     {
         try {
-            $tiers = PlanTiers::findOrFail($id);
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $tiers = PlanTiers::where('company_id', $companyId)->findOrFail($id);
 
             $utilise = \App\Models\EcritureComptable::where('plan_tiers_id', $id)->exists();
 
