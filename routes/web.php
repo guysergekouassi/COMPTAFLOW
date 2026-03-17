@@ -205,11 +205,13 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE
     Route::get('/accounting_entry_real', [EcritureComptableController::class, 'index'])->name('accounting_entry_real');
     Route::get('/ecriture/{id}', [EcritureComptableController::class, 'show'])->name('ecriture.show');
+    Route::get('/ecritures/hub', [EcritureComptableController::class, 'journalHub'])->name('ecriture.hub');
     Route::get('/accounting_entry_list', [EcritureComptableController::class, 'list'])->name('accounting_entry_list');
     Route::get('/ecritures/rejetees', [EcritureComptableController::class, 'rejectedList'])->name('ecriture.rejected');
     Route::post('/ecritures/update-approval', [EcritureComptableController::class, 'updateFromApproval'])->name('ecriture.update_approval');
     Route::get('/ecritures/check-reference', [EcritureComptableController::class, 'checkReference'])->name('ecriture.check_reference');
     Route::delete('/ecritures/saisie/{n_saisie}', [EcritureComptableController::class, 'deleteBySaisie'])->name('ecriture.delete_saisie');
+    Route::delete('/ecritures/delete-all', [EcritureComptableController::class, 'deleteAll'])->name('ecriture.delete_all');
 
     // Brouillons
     Route::get('/brouillons', [App\Http\Controllers\BrouillonController::class, 'index'])->name('brouillons.index');

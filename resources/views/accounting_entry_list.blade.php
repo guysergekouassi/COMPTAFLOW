@@ -330,7 +330,50 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-4">
+                                <!-- Total Débit -->
+                                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                                    <div class="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center text-red-600">
+                                        <i class="bx bx-arrow-to-right text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0">Total Débit</p>
+                                        <h3 class="text-xl font-black text-slate-800 mb-0">{{ number_format($totalDebit ?? 0, 2, ',', ' ') }} <span class="text-xs">FCFA</span></h3>
+                                    </div>
+                                </div>
+                                <!-- Total Crédit -->
+                                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                                    <div class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
+                                        <i class="bx bx-arrow-from-right text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0">Total Crédit</p>
+                                        <h3 class="text-xl font-black text-slate-800 mb-0">{{ number_format($totalCredit ?? 0, 2, ',', ' ') }} <span class="text-xs">FCFA</span></h3>
+                                    </div>
+                                </div>
+                                <!-- Balance / Équilibre -->
+                                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                                    @php
+                                        $isBalanced = abs($balance ?? 0) < 0.01;
+                                        $balanceColor = $isBalanced ? 'blue' : 'orange';
+                                        $balanceIcon = $isBalanced ? 'bx-check-double' : 'bx-git-commit';
+                                    @endphp
+                                    <div class="w-12 h-12 rounded-2xl bg-{{ $balanceColor }}-50 flex items-center justify-center text-{{ $balanceColor }}-600">
+                                        <i class="bx {{ $balanceIcon }} text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0">Solde / Équilibre</p>
+                                        <h3 class="text-xl font-black text-slate-800 mb-0 {{ !$isBalanced ? 'text-orange-600' : '' }}">
+                                            {{ number_format($balance ?? 0, 2, ',', ' ') }} <span class="text-xs">FCFA</span>
+                                        </h3>
+                                        @if($isBalanced)
+                                            <span class="text-[9px] font-bold text-green-600 uppercase tracking-tighter">Écritures équilibrées</span>
+                                        @else
+                                            <span class="text-[9px] font-bold text-red-500 uppercase tracking-tighter">Écart de {{ number_format(abs($balance ?? 0), 2, ',', ' ') }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
                             <style>
                                 #tableEcritures,
                                 #tableEcritures * {
@@ -347,25 +390,21 @@
                                 }
                             </style>
                             
-                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 w-full gap-4">
-                                <div class="px-6 py-4 flex items-center gap-6 w-full md:w-auto">
-                                </div>
-    
-                                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                                    </div>
-                            </div>
-
                             <div class="flex justify-between items-center mb-8 w-full gap-4">
-                                <div class="flex items-center">
+                                <div class="flex items-center gap-3">
                                     <button type="button" id="toggleFilterBtn" onclick="window.toggleAdvancedFilter()"
-                                        class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm">
+                                        class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm transition-all hover:bg-slate-50 shadow-sm">
                                         <i class="fas fa-filter text-blue-600"></i>
-                                        Filtrer
+                                        Filtres SAGE
                                     </button>
+                                    @if($totalEntries > 0)
+                                        <button type="button" onclick="window.confirmDeleteAll()"
+                                            class="btn-action flex items-center gap-2 px-6 py-3 bg-red-50 border border-red-100 rounded-2xl text-red-600 font-bold text-sm transition-all hover:bg-red-100 shadow-sm">
+                                            <i class="bx bx-trash text-lg"></i>
+                                            Tout Supprimer
+                                        </button>
+                                    @endif
                                 </div>
-
-                                <div class="flex flex-wrap items-center justify-end gap-3">
-                                    </div>
                             </div>
 
                             <div id="advancedFilterPanel" style="display: none;" class="mb-8 transition-all duration-300">
@@ -391,14 +430,31 @@
                                         </div>
 
                                         <div class="relative w-full">
-                                            <input type="text" id="filterCodeJournal" placeholder="Code journal" 
-                                                class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm"
-                                                value="{{ $data['code_journal'] ?? '' }}">
-                                            <i class="fas fa-book absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                            <select id="filterJournal" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm font-semibold text-slate-700">
+                                                <option value="">Tous les journaux</option>
+                                                @foreach($code_journaux as $j)
+                                                    <option value="{{ $j->id }}" {{ (isset($data['journal_id']) && $data['journal_id'] == $j->id) ? 'selected' : '' }}>
+                                                        [{{ $j->code_journal }}] {{ $j->intitule_journal }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <i class="fas fa-book-open absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        </div>
+
+                                        <div class="relative w-full">
+                                            <select id="filterTiers" class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm font-semibold text-slate-700">
+                                                <option value="">Tous les tiers</option>
+                                                @foreach($plansTiers as $t)
+                                                    <option value="{{ $t->id }}" {{ (isset($data['plan_tiers_id']) && $data['plan_tiers_id'] == $t->id) ? 'selected' : '' }}>
+                                                        {{ $t->numero_de_tiers }} - {{ $t->intitule }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <i class="fas fa-user-tag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                         </div>
 
                                         <div class="relative w-full md:col-span-3">
-                                            <input type="text" id="filterGlobalSearch" placeholder="Recherche globale (N° compte, tiers, description...)" 
+                                            <input type="text" id="filterGlobalSearch" placeholder="Recherche par libellé, compte général..." 
                                                 class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm"
                                                 value="{{ $data['recherche'] ?? '' }}">
                                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -1172,18 +1228,20 @@
     function filterEcritures() {
         const numeroSaisie = document.getElementById('filterNumeroSaisie').value;
         const mois = document.getElementById('filterMois').value;
-        const codeJournal = document.getElementById('filterCodeJournal').value;
+        const journalId = document.getElementById('filterJournal').value;
+        const planTiersId = document.getElementById('filterTiers').value;
         const recherche = document.getElementById('filterGlobalSearch').value;
         const etatPoste = document.getElementById('filterEtatPoste').value;
-
-        const params = new URLSearchParams();
-        if (numeroSaisie) params.append('numero_saisie', numeroSaisie);
-        if (mois) params.append('mois', mois);
-        if (codeJournal) params.append('code_journal', codeJournal);
-        if (recherche) params.append('recherche', recherche);
-        if (etatPoste && etatPoste !== '') params.append('etat_poste', etatPoste);
-
-        window.location.href = window.location.pathname + '?' + params.toString();
+        
+        let url = new URL(window.location.href);
+        url.searchParams.set('numero_saisie', numeroSaisie);
+        url.searchParams.set('mois', mois);
+        url.searchParams.set('journal_id', journalId);
+        url.searchParams.set('plan_tiers_id', planTiersId);
+        url.searchParams.set('recherche', recherche);
+        url.searchParams.set('etat_poste', etatPoste);
+        
+        window.location.href = url.toString();
     }
 
     window.setEtatPoste = function(value) {
@@ -1213,19 +1271,52 @@
     window.resetAdvancedFilters = function() {
         const numeroSaisie = document.getElementById('filterNumeroSaisie');
         const mois = document.getElementById('filterMois');
-        const codeJournal = document.getElementById('filterCodeJournal');
+        const journalId = document.getElementById('filterJournal');
+        const planTiersId = document.getElementById('filterTiers');
         const recherche = document.getElementById('filterGlobalSearch');
         const etatPoste = document.getElementById('filterEtatPoste');
         
         if (numeroSaisie) numeroSaisie.value = '';
         if (mois) mois.value = '';
-        if (codeJournal) codeJournal.value = '';
+        if (journalId) journalId.value = '';
+        if (planTiersId) planTiersId.value = '';
         if (recherche) recherche.value = '';
         if (etatPoste) {
             etatPoste.value = '';
             setEtatPoste('');
         }
         filterEcritures();
+    };
+
+    window.confirmDeleteAll = function() {
+        Swal.fire({
+            title: 'SUPPRESSION TOTALE',
+            text: "Êtes-vous absolument sûr ? Cette action supprimera TOUTES les écritures de l'exercice en cours. Cette action est irréversible !",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'OUI, TOUT SUPPRIMER',
+            cancelButtonText: 'ANNULER'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('{{ route("ecriture.delete_all") }}', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Supprimé !', data.message, 'success').then(() => window.location.reload());
+                    } else {
+                        Swal.fire('Erreur', data.message, 'error');
+                    }
+                });
+            }
+        });
     };
 
     function initSearchSelect(inputId, dropdownId, hiddenInputId) {

@@ -34,6 +34,48 @@
                     <span class="badge bg-label-info">Journal : {{ $primaryEcriture->codeJournal ? $primaryEcriture->codeJournal->code_journal : '-' }}</span>
                 </div>
                 <div class="card-body">
+                    @php
+                        $totalDebit = $ecritures->sum('debit');
+                        $totalCredit = $ecritures->sum('credit');
+                        $balance = $totalDebit - $totalCredit;
+                        $isBalanced = abs($balance) < 0.01;
+                    @endphp
+
+                    <div class="row g-4 mb-5">
+                        <div class="col-sm-6 col-md-4">
+                            <div class="d-flex align-items-center bg-light-danger border rounded p-3">
+                                <div class="avatar flex-shrink-0 me-3">
+                                    <span class="avatar-initial rounded bg-label-danger"><i class="bx bx-arrow-to-right"></i></span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-danger">Total Débit</h6>
+                                    <h4 class="mb-0 fw-bold">{{ number_format($totalDebit, 2, ',', ' ') }} <small>FCFA</small></h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <div class="d-flex align-items-center bg-light-success border rounded p-3">
+                                <div class="avatar flex-shrink-0 me-3">
+                                    <span class="avatar-initial rounded bg-label-success"><i class="bx bx-arrow-from-right"></i></span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-success">Total Crédit</h6>
+                                    <h4 class="mb-0 fw-bold">{{ number_format($totalCredit, 2, ',', ' ') }} <small>FCFA</small></h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-12 col-md-4">
+                            <div class="d-flex align-items-center bg-light-{{ $isBalanced ? 'primary' : 'warning' }} border rounded p-3">
+                                <div class="avatar flex-shrink-0 me-3">
+                                    <span class="avatar-initial rounded bg-label-{{ $isBalanced ? 'primary' : 'warning' }}"><i class="bx {{ $isBalanced ? 'bx-check-double' : 'bx-git-commit' }}"></i></span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-{{ $isBalanced ? 'primary' : 'warning' }}">Solde / Équilibre</h6>
+                                    <h4 class="mb-0 fw-bold">{{ number_format($balance, 2, ',', ' ') }} <small>FCFA</small></h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row mb-4">
                         <div class="col-md-4">
                             <p class="mb-1"><small class="text-muted">DATE DE L'OPÉRATION</small></p>

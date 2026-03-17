@@ -793,6 +793,24 @@ class EcritureComptableController extends Controller
             }
         }
 
+        // NOUVEAUX FILTRES SAGE
+        if (!empty($data['journal_id'])) {
+            $baseQuery->where('code_journal_id', $data['journal_id']);
+        }
+        if (!empty($data['plan_tiers_id'])) {
+            $baseQuery->where('plan_tiers_id', $data['plan_tiers_id']);
+        }
+
+        // CALCUL DES TOTAUX (sur toute la sélection filtrée)
+        $totals = (clone $baseQuery)->select(
+            DB::raw('SUM(debit) as total_debit'),
+            DB::raw('SUM(credit) as total_credit')
+        )->first();
+
+        $totalDebit = $totals->total_debit ?? 0;
+        $totalCredit = $totals->total_credit ?? 0;
+        $balance = $totalDebit - $totalCredit;
+
         $paginatedSaisies = (clone $baseQuery)
             ->select('n_saisie', DB::raw('MAX(created_at) as latest_created_at'))
             ->groupBy('n_saisie')
@@ -809,16 +827,87 @@ class EcritureComptableController extends Controller
             
         $code_journaux = CodeJournal::where('company_id', $activeCompanyId)->get();
         $treasury_categories = \App\Models\TreasuryCategory::where('company_id', $activeCompanyId)->get();
+        $plansTiers = PlanTiers::where('company_id', $activeCompanyId)->orderBy('numero_de_tiers')->get();
 
         return view('accounting_entry_list', [
             'ecritures' => $ecritures,
             'exerciceActif' => $exerciceActif,
             'code_journaux' => $code_journaux,
+            'plansTiers' => $plansTiers,
             'treasury_categories' => $treasury_categories,
             'pagination' => $paginatedSaisies,
             'totalEntries' => $paginatedSaisies->total(),
+            'totalDebit' => $totalDebit,
+            'totalCredit' => $totalCredit,
+            'balance' => $balance,
             'data' => $data,
             'exercices' => $exerciceActif ? collect([$exerciceActif]) : \App\Models\ExerciceComptable::where('company_id', $activeCompanyId)->get()
+        ]);
+    }
+
+    public function deleteAll(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $activeCompanyId = session('current_company_id', $user->company_id);
+            $exerciceId = session('current_exercice_id');
+
+            if (!$exerciceId) {
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first();
+                $exerciceId = $exerciceActif ? $exerciceActif->id : null;
+            }
+
+            if (!$exerciceId) {
+                return response()->json(['success' => false, 'message' => "Aucun exercice sélectionné."], 400);
+            }
+
+            $deleted = EcritureComptable::where('company_id', $activeCompanyId)
+                ->where('exercices_comptables_id', $exerciceId)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "$deleted écritures ont été supprimées totalement."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => "Erreur : " . $e->getMessage()], 500);
+        }
+    }
+
+    public function journalHub()
+    {
+        $user = Auth::user();
+        $activeCompanyId = session('current_company_id', $user->company_id);
+        $exerciceId = session('current_exercice_id');
+
+        if (!$exerciceId) {
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first();
+            $exerciceId = $exerciceActif ? $exerciceActif->id : null;
+        }
+
+        $exerciceActif = ExerciceComptable::find($exerciceId);
+
+        $journals = CodeJournal::where('company_id', $activeCompanyId)->get();
+
+        // Get counts for the current exercice
+        $counts = EcritureComptable::where('company_id', $activeCompanyId)
+            ->where('exercices_comptables_id', $exerciceId)
+            ->select('code_journal_id', DB::raw('count(distinct n_saisie) as total_entries'))
+            ->groupBy('code_journal_id')
+            ->get()
+            ->pluck('total_entries', 'code_journal_id');
+
+        $groupedJournals = [
+            'Achats' => $journals->filter(fn($j) => in_array(strtoupper($j->type), ['ACHATS', 'ACHAT'])),
+            'Ventes' => $journals->filter(fn($j) => in_array(strtoupper($j->type), ['VENTES', 'VENTE'])),
+            'Trésorerie' => $journals->filter(fn($j) => in_array(strtoupper($j->type), ['TRESORERIE', 'BANQUE', 'CAISSE'])),
+            'OD' => $journals->filter(fn($j) => in_array(strtoupper($j->type), ['OPÉRATIONS DIVERSES', 'OD', 'STANDARD'])),
+        ];
+
+        return view('ecriture_journal_hub', [
+            'groupedJournals' => $groupedJournals,
+            'exerciceActif' => $exerciceActif,
+            'counts' => $counts
         ]);
     }
 
