@@ -36,9 +36,10 @@ class EcritureComptableController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $activeCompanyId = session('current_company_id', $user->company_id);
         $data = $request->all();
 
-        $exercicesCount = ExerciceComptable::count();
+        $exercicesCount = ExerciceComptable::where('company_id', $activeCompanyId)->count();
         if ($exercicesCount == 0) {
             return redirect()->route('exercice_comptable')->with('info', 'Veuillez créer un exercice comptable.');
         }
@@ -47,12 +48,12 @@ class EcritureComptableController extends Controller
         $data['mois'] = $data['mois'] ?? date('n');
 
         if (empty($data['id_exercice'])) {
-            $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
                 ->where('is_active', 1)
                 ->first();
 
             if (!$exerciceActif) {
-                $exerciceActif = ExerciceComptable::where('company_id', $user->company_id)
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
                     ->where('cloturer', 0)
                     ->orderBy('date_debut', 'desc')
                     ->first();
@@ -65,16 +66,16 @@ class EcritureComptableController extends Controller
         }
 
         // LISTER UNIQUEMENT L'EXERCICE ACTIF (ou tous si aucun actif n'est défini pour permettre la sélection)
-        $exercicesVisibles = ExerciceComptable::where('company_id', $user->company_id);
-        if (ExerciceComptable::where('company_id', $user->company_id)->where('is_active', 1)->exists()) {
+        $exercicesVisibles = ExerciceComptable::where('company_id', $activeCompanyId);
+        if (ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->exists()) {
             $exercicesVisibles->where('is_active', 1);
         }
         $exercicesVisibles = $exercicesVisibles->get();
 
-        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule', 'numero_original')->orderBy('numero_de_compte')->get();
-        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general', 'numero_original')->with('compte')->get();
-        $comptesTresorerie = CompteTresorerie::with('category')->orderBy('name')->get();
-        $categories = TreasuryCategory::where('company_id', $user->company_id)
+        $plansComptables = PlanComptable::where('company_id', $activeCompanyId)->select('id', 'numero_de_compte', 'intitule', 'numero_original')->orderBy('numero_de_compte')->get();
+        $plansTiers = PlanTiers::where('company_id', $activeCompanyId)->select('id', 'numero_de_tiers', 'intitule', 'compte_general', 'numero_original')->with('compte')->get();
+        $comptesTresorerie = CompteTresorerie::where('company_id', $activeCompanyId)->with('category')->orderBy('name')->get();
+        $categories = TreasuryCategory::where('company_id', $activeCompanyId)
             ->whereIn('name', [
             'I. Flux de trésorerie des activités opérationnelles',
             'II. Flux de trésorerie des activités d\'investissement',
@@ -86,7 +87,7 @@ class EcritureComptableController extends Controller
         // Générer le numéro utilisateur au format CPT-XX_000000000001
         $initials = $user->initiales;
         $prefix = "CPT-" . $initials . "_";
-        $lastUserSaisie = EcritureComptable::where('company_id', $user->company_id)
+        $lastUserSaisie = EcritureComptable::where('company_id', $activeCompanyId)
             ->where('n_saisie_user', 'like', $prefix . '%')
             ->max('id');
 
@@ -95,9 +96,7 @@ class EcritureComptableController extends Controller
         // On va utiliser une approche simple pour l'init :
         $nextSaisieNumber = $prefix . str_pad($nextSequence, 12, '0', STR_PAD_LEFT);
 
-        $activeCompanyId = session('current_company_id', $user->company_id);
-
-        $query = EcritureComptable::where('company_id', $user->company_id);
+        $query = EcritureComptable::where('company_id', $activeCompanyId);
 
         // Filtrer par exercice si présent
         if (!empty($data['id_exercice'])) {

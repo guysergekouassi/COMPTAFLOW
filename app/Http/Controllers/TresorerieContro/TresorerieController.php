@@ -24,40 +24,26 @@ class TresorerieController extends Controller
     private function getBaseTreasuryData()
     {
         $user = Auth::user();
+        $currentCompanyId = $this->getCurrentCompanyId();
 
         // 1. DÉTERMINATION DES IDs DE COMPAGNIE À VISUALISER
-        $companyIdsToView = collect(); // Initialisation en Collection
+        $companyIdsToView = collect();
 
         if ($user->role === 'admin') {
-            // CORRECTION: Assurer que le résultat est une Collection, même si le trait retourne un tableau
-            $managedIds = $this->getManagedCompanyIds();
-            $companyIdsToView = collect($managedIds);
-
+            // Pour l'admin, on peut vouloir voir la sienne + sous-sociétés dans certains cas,
+            // mais pour le journal de trésorerie, on veut souvent la société ACTUELLE.
+            // Cependant, le trait getManagedCompanyIds() renvoie tout.
+            // Si on veut rester sur la société switchée :
+            $companyIdsToView = collect([$currentCompanyId]);
         } elseif ($user->role === 'super_admin') {
-            $activeId = session('active_company_id');
-            if ($activeId) {
-                // S'assurer que c'est une Collection
-                $companyIdsToView = collect([$activeId]);
-            }
+            $companyIdsToView = collect([$currentCompanyId]);
         } else {
-            // S'assurer que c'est une Collection
             $companyIdsToView = collect([$user->company_id]);
         }
 
-        // Si la liste des IDs est vide (maintenant nous savons que c'est une Collection)
-        if ($companyIdsToView->isEmpty()) {
-             $tresoreries = collect();
-             $companyIdForPlanComptable = null;
-        } else {
-            // 2. BASE DE LA REQUÊTE : Filtrer par la ou les compagnies actives/liées
-            // Utiliser toArray() est plus sûr pour whereIn, bien que non strictement nécessaire.
-            $query = Tresoreries::whereIn('company_id', $companyIdsToView->toArray());
-
-            // Nous prenons l'ID de la compagnie actuelle pour les requêtes PlanComptable
-            $companyIdForPlanComptable = $user->company_id;
-
-            $tresoreries = $query->get();
-        }
+        // 2. BASE DE LA REQUÊTE : Filtrer par la compagnie active
+        $tresoreries = Tresoreries::whereIn('company_id', $companyIdsToView->toArray())->get();
+        $companyIdForPlanComptable = $currentCompanyId;
 
         // Récupération des comptes de classe 5
         if (is_null($companyIdForPlanComptable)) {
@@ -99,10 +85,9 @@ public function index()
 
 public function generateCashFlowPlan(Request $request)
 {
-    $user = Auth::user();
-    $companyId = ($user->role === 'super_admin') ? session('active_company_id') : $user->company_id;
+    $currentCompanyId = $this->getCurrentCompanyId();
 
-    if (is_null($companyId)) {
+    if (is_null($currentCompanyId)) {
         return back()->with('error', 'Veuillez sélectionner une compagnie active.');
     }
 
@@ -129,15 +114,14 @@ public function generateCashFlowPlan(Request $request)
 
     public function create()
     {
-        $user = Auth::user();
-        $companyId = ($user->role === 'super_admin') ? session('active_company_id') : $user->company_id;
+        $currentCompanyId = $this->getCurrentCompanyId();
 
         // S'assurer que le companyId est valide avant de requêter le plan comptable
-        if (is_null($companyId)) {
+        if (is_null($currentCompanyId)) {
              $comptesCinq = collect();
         } else {
              // CORRECTION : Ajouter le filtre pour les comptes de classe 5
-            $comptesCinq = PlanComptable::where('company_id', $companyId)
+            $comptesCinq = PlanComptable::where('company_id', $currentCompanyId)
                 ->where('numero_de_compte', 'like', '5%')
                 ->orderBy('numero_de_compte')
                 ->get();
@@ -162,18 +146,16 @@ public function generateCashFlowPlan(Request $request)
         ]);
 
         $user = Auth::user();
+        $currentCompanyId = $this->getCurrentCompanyId();
 
-        // Déterminer le company_id à utiliser pour l'enregistrement
-        $companyId = ($user->role === 'super_admin') ? session('active_company_id') : $user->company_id;
-
-        if (is_null($companyId)) {
+        if (is_null($currentCompanyId)) {
             // Gérer l'erreur si le Super Admin n'a pas sélectionné de compagnie active
             return back()->with('error', 'Veuillez sélectionner une compagnie active avant de créer un journal.');
         }
 
         // Ajout automatique de user_id et company_id
         $validatedData['user_id'] = $user->id;
-        $validatedData['company_id'] = $companyId;
+        $validatedData['company_id'] = $currentCompanyId;
 
         // Création de la trésorerie
         Tresoreries::create($validatedData);
@@ -192,14 +174,13 @@ public function generateCashFlowPlan(Request $request)
     public function edit($id)
     {
         $tresorerie = Tresoreries::findOrFail($id);
-        $user = Auth::user();
-        $companyId = ($user->role === 'super_admin') ? session('active_company_id') : $user->company_id;
+        $currentCompanyId = $this->getCurrentCompanyId();
 
-        if (is_null($companyId)) {
+        if (is_null($currentCompanyId)) {
              $comptesClasse5 = collect();
         } else {
              // Ajouter le filtre pour les comptes de classe 5
-            $comptesClasse5 = PlanComptable::where('company_id', $companyId)
+            $comptesClasse5 = PlanComptable::where('company_id', $currentCompanyId)
                 ->where('numero_de_compte', 'like', '5%')
                 ->orderBy('numero_de_compte')
                 ->get();
@@ -252,21 +233,21 @@ public function generateCashFlowPlan(Request $request)
         ];
 
         $user = Auth::user();
-        $companyId = ($user->role === 'super_admin') ? session('active_company_id') : $user->company_id;
+        $currentCompanyId = $this->getCurrentCompanyId();
 
-        if (is_null($companyId)) {
+        if (is_null($currentCompanyId)) {
              return back()->with('error', 'Veuillez sélectionner une compagnie active pour charger les journaux par défaut.');
         }
 
         foreach ($defaultJournals as $journalData) {
             // Vérifier si un journal avec le même code existe déjà pour cette compagnie.
-            $exists = Tresoreries::where('company_id', $companyId)
+            $exists = Tresoreries::where('company_id', $currentCompanyId)
                                  ->where('code_journal', $journalData['code_journal'])
                                  ->exists();
 
             if (!$exists) {
                 Tresoreries::create([
-                    'company_id' => $companyId,
+                    'company_id' => $currentCompanyId,
                     'user_id' => $user->id, // Il est bon d'associer la création à l'utilisateur
                     'code_journal' => $journalData['code_journal'],
                     'intitule' => $journalData['intitule'],
@@ -299,16 +280,14 @@ public function generateCashFlowPlan(Request $request)
 
 public function exportCashFlowCsv(Request $request)
 {
-    // 1. Récupérer la logique de calcul des données (similaire à generateCashFlowPlan)
-    $user = Auth::user();
-    $companyId = ($user->role === 'super_admin') ? session('active_company_id') : $user->company_id;
+    $currentCompanyId = $this->getCurrentCompanyId();
 
-    if (is_null($companyId)) {
+    if (is_null($currentCompanyId)) {
         return back()->with('error', 'Veuillez sélectionner une compagnie active avant d\'exporter.');
     }
 
 
-    list($cashFlowData, $totals) = $this->getCashFlowCalculation($companyId, $request);
+    list($cashFlowData, $totals) = $this->getCashFlowCalculation($currentCompanyId, $request);
 
 
     $headers = [
@@ -474,14 +453,13 @@ public function previewCashFlowPdf(Request $request)
     ini_set('max_execution_time', 300);
     ini_set('memory_limit', '512M');
 
-    $user = Auth::user();
-    $companyId = ($user->role === 'super_admin') ? session('active_company_id') : $user->company_id;
+    $currentCompanyId = $this->getCurrentCompanyId();
 
-    if (is_null($companyId)) {
+    if (is_null($currentCompanyId)) {
         return response('Veuillez sélectionner une compagnie active.', 400);
     }
 
-    list($cashFlowData, $totals) = $this->getCashFlowCalculation($companyId, $request);
+    list($cashFlowData, $totals) = $this->getCashFlowCalculation($currentCompanyId, $request);
 
     $startDate = $request->input('start_date');
     $endDate = $request->input('end_date');
@@ -527,10 +505,9 @@ public function generatePdf(Request $request)
     ini_set('max_execution_time', 300);
     ini_set('memory_limit', '512M');
 
-    $user = Auth::user();
-    $companyId = ($user->role === 'super_admin') ? session('active_company_id') : $user->company_id;
+    $currentCompanyId = $this->getCurrentCompanyId();
 
-    if (is_null($companyId)) {
+    if (is_null($currentCompanyId)) {
         // Retourne à la page précédente avec une erreur si pas de compagnie
         return back()->with('error', 'Veuillez sélectionner une compagnie active.');
     }
@@ -538,13 +515,13 @@ public function generatePdf(Request $request)
     try {
         // 1. Récupérer les données de calcul via la méthode utilitaire
         // Elle utilise la Request pour les dates
-        list($cashFlowData, $totals) = $this->getCashFlowCalculation($companyId, $request);
+        list($cashFlowData, $totals) = $this->getCashFlowCalculation($currentCompanyId, $request);
 
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         
         // Récupérer le nom de la compagnie
-        $company = \App\Models\Company::find($companyId);
+        $company = \App\Models\Company::find($currentCompanyId);
         $companyName = $company ? $company->name : 'Compagnie inconnue';
 
         // 2. Charger la vue Blade avec les données

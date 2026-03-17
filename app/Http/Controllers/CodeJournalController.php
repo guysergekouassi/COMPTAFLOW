@@ -323,9 +323,13 @@ public function index(Request $request)
     public function destroy($id)
     {
         try {
-            $journal = CodeJournal::findOrFail($id);
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $journal = CodeJournal::where('company_id', $companyId)->findOrFail($id);
 
-            $utilise = \App\Models\EcritureComptable::where('code_journal_id', $id)->exists();
+            $utilise = \App\Models\EcritureComptable::where('company_id', $companyId)
+                ->where('code_journal_id', $id)
+                ->exists();
 
             if ($utilise) {
                 return redirect()->back()->with('error', 'Impossible de supprimer ce journal car il contient des écritures. Veuillez supprimer toutes les écritures associées avant de tenter la suppression.');
