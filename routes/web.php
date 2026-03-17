@@ -86,6 +86,10 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     Route::get('/dashboard', function () {
         $user = auth()->user();
         if ($user->isSuperAdmin()) {
+            // Si le SuperAdmin a basculé sur une entreprise, le laisser sur le dashboard admin
+            if (session('switched_company_id')) {
+                return redirect()->route('admin.dashboard');
+            }
             return redirect()->route('superadmin.dashboard');
         } elseif ($user->isAdmin()) {
             return redirect()->route('admin.dashboard');

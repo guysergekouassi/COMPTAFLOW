@@ -294,7 +294,11 @@
 
 
 <!-- Nouveau Sidebar Design -->
-@if (auth()->check() && auth()->user()->isSuperAdmin())
+@php
+    $isSwitched = session('switched_company_id') || session('is_super_admin_bypassing');
+@endphp
+
+@if (auth()->check() && auth()->user()->isSuperAdmin() && !$isSwitched)
     @include('components.superadmin_sidebar')
 @else
 <div class="sidebar-new">
@@ -310,7 +314,11 @@
                         {{ $currentCompany->company_name }}
                     </div>
                     <div class="role-badge-sidebar">
-                        {{ auth()->user()->role === 'comptable' ? 'Comptable' : (auth()->user()->role === 'super_admin' ? 'Super Admin' : auth()->user()->role) }}
+                        @if($isSwitched && auth()->user()->isSuperAdmin())
+                            Administrateur
+                        @else
+                            {{ auth()->user()->role === 'comptable' ? 'Comptable' : (auth()->user()->role === 'super_admin' ? 'Super Admin' : auth()->user()->role) }}
+                        @endif
                     </div>
                 @else
                     <div class="role-badge-sidebar mt-1">Super Admin</div>
@@ -668,7 +676,7 @@
             </div>
             @endif
 
-        @if ($isComptaAccountActive && !auth()->user()->isSuperAdmin())
+        @if ($isComptaAccountActive && (!auth()->user()->isSuperAdmin() || $isSwitched))
             {{-- MODE COMPTABILITÉ ACTIVE --}}
 
             {{-- Paramétrage --}}
@@ -761,7 +769,7 @@
                     <span>Brouillons</span>
                 </a>
                 @endif
-                @if(auth()->user()->hasPermission('exercice_comptable') && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+                @if(auth()->user()->hasPermission('exercice_comptable') && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin() || $isSwitched))
                 <a href="{{ route('exercice_comptable') }}" class="menu-link-new {{ request()->routeIs('exercice_comptable') ? 'active' : '' }}">
                     <i class="fa-solid fa-calendar-check"></i>
                     <span>Exercice comptable</span>
@@ -954,8 +962,8 @@
                     {{ auth()->user()->initiales }}
                 </div>
                 <div class="user-info-sidebar">
-                    <span class="user-name-sidebar">{{ auth()->user()->name }}</span>
-                    <span class="user-role-sidebar">{{ auth()->user()->role }}</span>
+                    <span class="user-name-sidebar">@if($isSwitched && auth()->user()->isSuperAdmin()) Administrateur @else {{ auth()->user()->name }} @endif</span>
+                    <span class="user-role-sidebar">@if($isSwitched && auth()->user()->isSuperAdmin()) Administrateur @else {{ auth()->user()->role }} @endif</span>
                 </div>
             </a>
             <a href="#" class="logout-btn-sidebar" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">

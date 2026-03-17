@@ -56,6 +56,21 @@ class SuperAdminSwitchController extends Controller
             return redirect()->route('admin.dashboard')
                 ->with('success', "Vous êtes maintenant connecté à l'entreprise : {$company->company_name}");
         }
+
+        // Cas particulier : Aucun admin mais l'utilisateur est SuperAdmin
+        $currentUser = Auth::user();
+        if ($currentUser && ($currentUser->role === 'super_admin' || Session::has('original_super_admin_id'))) {
+            // S'assurer que l'ID original est stocké
+            if (!Session::has('original_super_admin_id')) {
+                Session::put('original_super_admin_id', $currentUser->id);
+            }
+            
+            Session::put('switched_company_id', $companyId);
+            Session::put('current_company_id', $companyId);
+            Session::put('is_super_admin_bypassing', true);
+
+            return redirect()->route('admin.dashboard');
+        }
         
         return redirect()->route('superadmin.switch')
             ->with('error', "Aucun administrateur trouvé pour cette entreprise");

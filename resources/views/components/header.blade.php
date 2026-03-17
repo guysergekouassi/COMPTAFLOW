@@ -441,10 +441,14 @@
         <div class="d-flex align-items-center">
             <span class="switch-mode-badge">Mode Switch Actif</span>
             <span class="text-white d-flex align-items-center gap-2">
-                Connecté en tant que : <strong>{{ auth()->user()->name }}</strong>
+                @if($isSuperAdminSwitch && auth()->user()->isSuperAdmin())
+                    Accès Entreprise
+                @else
+                    Connecté en tant que : <strong>{{ auth()->user()->name }}</strong>
+                @endif
                 
                 <span class="mx-2 opacity-50">|</span>
-                <span class="fw-bold">{{ strtoupper(auth()->user()->role === 'comptable' ? 'Comptable' : (auth()->user()->role === 'super_admin' ? 'Super Admin' : auth()->user()->role)) }}</span>
+                <span class="fw-bold">{{ strtoupper(($isSuperAdminSwitch && auth()->user()->isSuperAdmin()) ? 'Administrateur' : (auth()->user()->role === 'comptable' ? 'Comptable' : (auth()->user()->role === 'super_admin' ? 'Super Admin' : auth()->user()->role))) }}</span>
 
                 @php 
                     $switchedId = session('current_company_id') ?? session('switched_company_id');
@@ -496,8 +500,8 @@
         </a>
 
         <div class="user-init-circle-wrapper" onclick="toggleUserMenu(event)">
-            <div class="user-init-circle" title="{{ auth()->user()->name }}">
-                {{ auth()->user()->initiales }}
+            <div class="user-init-circle" title="{{ ($isSuperAdminSwitch && auth()->user()->isSuperAdmin()) ? 'Administrateur' : auth()->user()->name }}">
+                {{ ($isSuperAdminSwitch && auth()->user()->isSuperAdmin()) ? 'AD' : auth()->user()->initiales }}
             </div>
             <span class="online-indicator"></span>
             
