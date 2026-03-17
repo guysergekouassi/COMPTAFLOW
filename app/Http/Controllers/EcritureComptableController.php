@@ -432,7 +432,7 @@ class EcritureComptableController extends Controller
             }
 
             // Déterminer le statut initial
-            $hasApprovalPower = $user->hasPermission('admin.approvals');
+            $hasApprovalPower = $user->isAdmin() || $user->hasPermission('admin.approvals');
             $status = $hasApprovalPower ? 'approved' : 'pending';
 
             $date = \Carbon\Carbon::parse($data['date']);
@@ -566,7 +566,7 @@ class EcritureComptableController extends Controller
             // mais on peut le rendre bloquant si nécessaire.
 
             // Gestion du filtrage auto
-            $hasApprovalPower = $user->hasPermission('admin.approvals');
+            $hasApprovalPower = $user->isAdmin() || $user->hasPermission('admin.approvals');
             $status = $hasApprovalPower ? 'approved' : 'pending';
 
             // Gestion du fichier justificatif
@@ -751,7 +751,7 @@ class EcritureComptableController extends Controller
         }
         
         // Logique de filtrage par rôle/permission
-        if (!$user->hasPermission('admin.approvals')) {
+        if (!$user->isAdmin() && !$user->hasPermission('admin.approvals')) {
             // Un collaborateur ne voit que ses propres écritures (tous statuts)
             $baseQuery->where('user_id', $user->id);
         } else {
@@ -935,7 +935,7 @@ class EcritureComptableController extends Controller
             $query->where('exercices_comptables_id', $exerciceActif->id);
         }
 
-        if (!$user->hasPermission('admin.approvals')) {
+        if (!$user->isAdmin() && !$user->hasPermission('admin.approvals')) {
             $query->where('user_id', $user->id);
         }
 
@@ -946,7 +946,7 @@ class EcritureComptableController extends Controller
     public function updateFromApproval(Request $request)
     {
         $user = Auth::user();
-        if (!$user->hasPermission('admin.approvals')) {
+        if (!$user->isAdmin() && !$user->hasPermission('admin.approvals')) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 

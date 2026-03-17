@@ -38,6 +38,7 @@ class DashboardController extends Controller
                 'name' => $user->name,
                 'last_name' => $user->last_name,
             ],
+            'company' => \App\Models\Company::find($companyId),
             'stats' => []
         ];
 
@@ -88,6 +89,11 @@ class DashboardController extends Controller
             'clients_count' => PlanTiers::where('company_id', $companyId)->where('type_de_tiers', 'client')->count(),
             'suppliers_count' => PlanTiers::where('company_id', $companyId)->where('type_de_tiers', 'fournisseur')->count(),
             'revenue_chart' => $this->getRevenueChartData($companyId, $exerciceId),
+            'recent_entries' => EcritureComptable::where('company_id', $companyId)
+                ->when($exerciceId, fn($q) => $q->where('exercices_comptables_id', $exerciceId))
+                ->latest('date')
+                ->limit(5)
+                ->get(['id', 'description_operation', 'date', 'debit', 'credit', 'statut']),
         ];
     }
 
