@@ -7,6 +7,7 @@ use App\Models\PlanComptable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 
 class PlanTiersController extends Controller
@@ -325,5 +326,61 @@ class PlanTiersController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la suppression du plan tiers : ' . $e->getMessage());
         }
+    }
+
+    public function hub()
+    {
+        $user = Auth::user();
+        if (!$user) return redirect()->route('login');
+
+        $activeCompanyId = session('current_company_id', $user->company_id);
+        $exerciceId = session('current_exercice_id');
+
+        if (!$exerciceId) {
+            $exerciceActif = \App\Models\ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first();
+            $exerciceId = $exerciceActif ? $exerciceActif->id : null;
+        }
+
+        $exerciceActif = \App\Models\ExerciceComptable::find($exerciceId);
+
+        // Récupérer les tiers avec leurs catégories
+        $tiers = PlanTiers::where('company_id', $activeCompanyId)->get();
+
+        // Calculer le nombre d'écritures par tiers pour l'exercice en cours
+        $counts = \App\Models\EcritureComptable::where('company_id', $activeCompanyId)
+            ->where('exercices_comptables_id', $exerciceId)
+            ->whereNotNull('plan_tiers_id')
+            ->select('plan_tiers_id', DB::raw('count(distinct n_saisie) as total_entries'))
+            ->groupBy('plan_tiers_id')
+            ->get()
+            ->pluck('total_entries', 'plan_tiers_id');
+
+        // Groupement dynamique par préfixe de compte (Priorité)
+        $groupedTiers = $tiers->groupBy(function ($item) {
+            $num = $item->numero_de_tiers;
+            $prefix2 = substr($num, 0, 2);
+            
+            $cats = [
+                '40' => 'FOURNISSEURS',
+                '41' => 'CLIENTS',
+                '42' => 'PERSONNEL',
+                '43' => 'ORGANISMES SOCIAUX',
+                '44' => 'ÉTAT & IMPÔTS',
+                '45' => 'ASSOCIÉS',
+                '46' => 'DÉBITEURS & CRÉDITEURS DIVERS',
+                '47' => 'COMPTES TRANSITOIRES',
+                '48' => 'DETTES SUR IMMO',
+                '49' => 'DÉPRÉCIATION'
+            ];
+            
+            if (isset($cats[$prefix2])) return $cats[$prefix2];
+            
+            // Si pas de préfixe reconnu, on utilise le type_de_tiers s'il existe
+            if (!empty($item->type_de_tiers)) return strtoupper($item->type_de_tiers);
+            
+            return 'DIVERS';
+        });
+
+        return view('plan_tiers_hub', compact('groupedTiers', 'exerciceActif', 'counts'));
     }
 }

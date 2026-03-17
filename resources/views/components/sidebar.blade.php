@@ -730,6 +730,16 @@
                     <span>Centre de Scan</span>
                 </a>
                 @if(auth()->user()->hasPermission('accounting_entry_list'))
+                <a href="{{ route('ecriture.hub') }}" class="menu-link-new {{ request()->routeIs('ecriture.hub') ? 'active' : '' }}">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Hub des Journaux</span>
+                </a>
+                @if(auth()->user()->hasPermission('plan_tiers'))
+                <a href="{{ route('plan_tiers.hub') }}" class="menu-link-new {{ request()->routeIs('plan_tiers.hub') ? 'active' : '' }}">
+                    <i class="fa-solid fa-address-book"></i>
+                    <span>Hub des Tiers</span>
+                </a>
+                @endif
                 <a href="{{ route('accounting_entry_list') }}" class="menu-link-new {{ request()->routeIs('accounting_entry_list') ? 'active' : '' }}">
                     <i class="fa-solid fa-list-check"></i>
                     <span>Liste des écritures</span>

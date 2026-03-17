@@ -309,6 +309,31 @@
                                 <p class="text-slate-500 font-medium max-w-xl mx-auto">
                                     Consultez, saisissez et gérez vos écritures comptables avec précision.
                                 </p>
+
+                                @if(isset($selectedJournal))
+                                    <div class="mt-4 inline-flex items-center gap-4 px-6 py-3 bg-white border-2 border-primary rounded-3xl shadow-xl animate-bounce-subtle">
+                                        <div class="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg">
+                                            <i class="bx bx-book-open text-2xl"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-[10px] font-black uppercase tracking-widest text-primary mb-0">Journal en cours</p>
+                                            <h2 class="text-xl font-black text-slate-800 mb-0">{{ $selectedJournal->code_journal }} - {{ $selectedJournal->intitule }}</h2>
+                                        </div>
+                                        <a href="{{ route('accounting_entry_list') }}" class="ms-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all" title="Quitter le contexte">
+                                            <i class="bx bx-x text-xl"></i>
+                                        </a>
+                                    </div>
+
+                                    <style>
+                                        @keyframes bounce-subtle {
+                                            0%, 100% { transform: translateY(0); }
+                                            50% { transform: translateY(-5px); }
+                                        }
+                                        .animate-bounce-subtle {
+                                            animation: bounce-subtle 3s ease-in-out infinite;
+                                        }
+                                    </style>
+                                @endif
                                 <div class="mt-5 inline-flex items-center gap-3 px-5 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-blue-700 shadow-sm transition-all hover:shadow-md">
                                     <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-md shrink-0">
                                         <i class='bx bx-calendar text-xl'></i>
@@ -395,7 +420,7 @@
                                     <button type="button" id="toggleFilterBtn" onclick="window.toggleAdvancedFilter()"
                                         class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm transition-all hover:bg-slate-50 shadow-sm">
                                         <i class="fas fa-filter text-blue-600"></i>
-                                        Filtres SAGE
+                                        Filtres
                                     </button>
                                     @if($totalEntries > 0)
                                         <button type="button" onclick="window.confirmDeleteAll()"

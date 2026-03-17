@@ -194,6 +194,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::get('/plan_tiers/{racine}', [PlanTiersController::class, 'getDernierNumero'])->name('getDernierNumero');
     Route::post('/plan_tiers', [PlanTiersController::class, 'store'])->name('plan_tiers.store');
     Route::put('/plan_tiers/{id}', [PlanTiersController::class, 'update'])->name('plan_tiers.update');
+    Route::get('/tiers/hub', [PlanTiersController::class, 'hub'])->name('plan_tiers.hub');
     Route::delete('/plan_tiers/{id}', [PlanTiersController::class, 'destroy'])->name('plan_tiers.destroy');
 
     // *****************ROUTE GESTION DES CODE JOURNAL

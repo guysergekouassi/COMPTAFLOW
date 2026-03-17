@@ -33,39 +33,114 @@
         border-radius: 50%;
     }
 
+    .scrolling-container {
+        display: flex;
+        overflow-x: auto;
+        gap: 1.5rem;
+        padding: 1rem 0.5rem 2rem 0.5rem;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f8fafc;
+    }
+
+    .scrolling-container::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .scrolling-container::-webkit-scrollbar-track {
+        background: #f8fafc;
+    }
+
+    .scrolling-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
     .category-section {
-        margin-bottom: 4rem;
+        margin-bottom: 2rem;
+        background: white;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .category-header {
+        padding: 1.5rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: background 0.2s;
+        border-bottom: 1px solid #f1f5f9;
+        user-select: none;
+    }
+
+    .category-header:hover {
+        background: #f8fafc;
     }
 
     .category-title {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: #64748b;
-        margin-bottom: 1.5rem;
+        letter-spacing: 0.1em;
+        color: #1e293b;
+        margin-bottom: 0;
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.75rem;
+        flex-grow: 1;
     }
 
-    .category-title::after {
-        content: '';
-        flex-grow: 1;
-        height: 1px;
-        background: #e2e8f0;
+    .category-link {
+        color: var(--cat-color);
+        text-decoration: none;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        background: var(--cat-bg);
+        transition: all 0.2s;
+    }
+
+    .category-link:hover {
+        filter: brightness(0.95);
+        transform: translateX(3px);
     }
 
     .journal-card {
         background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        padding: 1.5rem;
+        border: 1px solid #f1f5f9;
+        border-radius: 20px;
+        padding: 1.25rem;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         text-decoration: none !important;
         display: block;
         position: relative;
         overflow: hidden;
+        min-width: 250px;
+        max-width: 280px;
+        flex: 0 0 auto;
+    }
+
+    .category-content {
+        max-height: 500px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .category-content.collapsed {
+        max-height: 0;
+        overflow: hidden;
+    }
+
+    .chevron-icon {
+        transition: transform 0.3s;
+        color: #94a3b8;
+    }
+
+    .collapsed .chevron-icon {
+        transform: rotate(-90deg);
     }
 
     .journal-card:hover {
@@ -152,7 +227,7 @@
         <div class="layout-container">
             @include('components.sidebar')
             <div class="layout-page">
-                @include('components.header', ['page_title' => 'Tableau de bord <span class="text-blue-600">Journaux</span>'])
+                @include('components.header', ['page_title' => 'Hub des <span class="text-blue-600">Journaux</span>'])
 
                 <div class="content-wrapper">
                     <div class="container-xxl flex-grow-1 container-p-y">
@@ -183,31 +258,55 @@
                         </div>
 
                         @foreach($groupedJournals as $category => $journals)
-                            @if($journals->isNotEmpty())
-                                @php
-                                    $catClass = match($category) {
-                                        'Achats' => 'cat-achats',
-                                        'Ventes' => 'cat-ventes',
-                                        'Trésorerie' => 'cat-tresorerie',
-                                        'OD' => 'cat-od',
-                                        default => ''
-                                    };
-                                    $catIcon = match($category) {
-                                        'Achats' => 'bx-shopping-bag',
-                                        'Ventes' => 'bx-cart',
-                                        'Trésorerie' => 'bx-credit-card',
-                                        'OD' => 'bx-spreadsheet',
-                                        default => 'bx-book'
-                                    };
-                                @endphp
+                            @php
+                                $normalizedCategory = strtoupper($category);
+                                
+                                // Mapping des couleurs
+                                $catClass = 'cat-od';
+                                $journalType = 'OD';
+
+                                if (str_contains($normalizedCategory, 'ACHAT')) {
+                                    $catClass = 'cat-achats';
+                                    $journalType = 'Achats';
+                                } elseif (str_contains($normalizedCategory, 'VENTE')) {
+                                    $catClass = 'cat-ventes';
+                                    $journalType = 'Ventes';
+                                } elseif (str_contains($normalizedCategory, 'TRES') || str_contains($normalizedCategory, 'BANQUE') || str_contains($normalizedCategory, 'CAISSE')) {
+                                    $catClass = 'cat-tresorerie';
+                                    if (str_contains($normalizedCategory, 'BANQUE')) $journalType = 'Banque';
+                                    elseif (str_contains($normalizedCategory, 'CAISSE')) $journalType = 'Caisse';
+                                    else $journalType = 'Trésorerie';
+                                }
+                                
+                                // Mapping des icônes
+                                $catIcon = 'bx-spreadsheet';
+                                if (str_contains($normalizedCategory, 'ACHAT')) $catIcon = 'bx-shopping-bag';
+                                elseif (str_contains($normalizedCategory, 'VENTE')) $catIcon = 'bx-cart';
+                                elseif (str_contains($normalizedCategory, 'BANQUE')) $catIcon = 'bx-landmark';
+                                elseif (str_contains($normalizedCategory, 'CAISSE')) $catIcon = 'bx-money';
+                                elseif (str_contains($normalizedCategory, 'TRES')) $catIcon = 'bx-credit-card';
+                                elseif (str_contains($normalizedCategory, 'RAN') || str_contains($normalizedCategory, 'NOUVEAU')) $catIcon = 'bx-history';
+                            @endphp
+                            
+                            @if(count($journals) > 0)
                                 <div class="category-section {{ $catClass }}">
-                                    <h2 class="category-title">
-                                        <i class="bx {{ $catIcon }} fs-4"></i>
-                                        {{ $category }}
-                                    </h2>
-                                    <div class="row g-6">
-                                        @foreach($journals as $journal)
-                                            <div class="col-md-4 col-lg-3">
+                                    <div class="category-header" onclick="toggleCategory(this.parentElement)">
+                                        <h2 class="category-title">
+                                            <i class="bx {{ $catIcon }} fs-4" style="color: var(--cat-color)"></i>
+                                            {{ $category }}
+                                            <span class="badge bg-slate-100 text-slate-500 rounded-pill ms-2" style="font-size: 0.65rem">{{ count($journals) }}</span>
+                                        </h2>
+                                        <div class="d-flex align-items-center gap-4">
+                                            <a href="{{ route('accounting_entry_list', ['journal_type' => $journalType]) }}" class="category-link" onclick="event.stopPropagation()">
+                                                Voir toutes les écritures <i class="bx bx-right-arrow-alt ms-1"></i>
+                                            </a>
+                                            <i class="bx bx-chevron-down fs-4 chevron-icon"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="category-content">
+                                        <div class="scrolling-container">
+                                            @foreach($journals as $journal)
                                                 <a href="{{ route('accounting_entry_list', ['journal_id' => $journal->id]) }}" class="journal-card">
                                                     <div class="card-accent"></div>
                                                     <div class="journal-icon journal-icon-bg">
@@ -220,13 +319,14 @@
                                                     <div class="journal-stats">
                                                         <span class="stat-badge">
                                                             <i class="bx bx-list-ol me-1"></i>
-                                                            {{ $counts[$journal->id] ?? 0 }} Écritures
+                                                            @php $journalId = $journal->id; @endphp
+                                                            {{ $counts[$journalId] ?? 0 }} Écritures
                                                         </span>
                                                         <i class="bx bx-chevron-right ms-auto text-slate-300"></i>
                                                     </div>
                                                 </a>
-                                            </div>
-                                        @endforeach
+                                            @endforeach
+                                        </div>
                                     </div>
                                 </div>
                             @endif
@@ -238,5 +338,12 @@
             </div>
         </div>
     </div>
+    <script>
+        function toggleCategory(section) {
+            const content = section.querySelector('.category-content');
+            section.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+        }
+    </script>
 </body>
 </html>
