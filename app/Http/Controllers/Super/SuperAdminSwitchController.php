@@ -107,6 +107,7 @@ class SuperAdminSwitchController extends Controller
             Session::forget('switched_user_id');
             Session::forget('original_super_admin_id');
             Session::forget('current_company_id');
+            Session::forget('is_super_admin_bypassing');
             
             // Reconnecter le Super Admin
             Auth::loginUsingId($originalAdminId);

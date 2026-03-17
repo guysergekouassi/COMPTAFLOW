@@ -12,9 +12,15 @@ class CompanyAccessController extends Controller
     public function accessCompany($companyId)
     {
 
-        $company = Company::where('id', $companyId)
-                          ->where('user_id', Auth::id())
-                          ->firstOrFail();
+        $query = Company::where('id', $companyId);
+        
+        $user = Auth::user();
+        // Le superadmin ou un utilisateur en mode bypass peut accéder à n'importe quelle entreprise
+        if ($user->role !== 'superadmin' && !session('is_super_admin_bypassing')) {
+            $query->where('user_id', $user->id);
+        }
+
+        $company = $query->firstOrFail();
 
         $selectedCompany = Company::find($companyId);
 
