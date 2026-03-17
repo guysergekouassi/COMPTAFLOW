@@ -725,6 +725,10 @@
                     <span>Nouvelle saisie</span>
                 </a>
                 @endif
+                <a href="{{ route('ecriture.bulk-scan') }}" class="menu-link-new {{ request()->routeIs('ecriture.bulk-scan') ? 'active' : '' }}">
+                    <i class="fa-solid fa-copy"></i>
+                    <span>Centre de Scan</span>
+                </a>
                 @if(auth()->user()->hasPermission('accounting_entry_list'))
                 <a href="{{ route('accounting_entry_list') }}" class="menu-link-new {{ request()->routeIs('accounting_entry_list') ? 'active' : '' }}">
                     <i class="fa-solid fa-list-check"></i>

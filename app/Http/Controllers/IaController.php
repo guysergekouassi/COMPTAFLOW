@@ -78,19 +78,33 @@ class IaController extends Controller
             }
             */
 
-            // --- CONFIGURATION ---
+            // --- CONFIGURATION : Liste de modèles à essayer dans l'ordre ---
             $api_key = env('GEMINI_API_KEY');
             if (!$api_key) {
                 return response()->json(['error' => 'Clé API Gemini manquante dans le fichier .env'], 500);
             }
-            $model = "gemini-2.5-flash";
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$api_key}";
 
-            // 1. Préparation de l'image (Compression automatique pour stabilité)
+            // On essaie les modèles dans l'ordre jusqu'à en trouver un qui marche
+            $modelsToTry = [
+                'gemini-2.0-flash',
+                'gemini-2.0-flash-exp',
+                'gemini-1.5-pro',
+                'gemini-1.5-pro-latest',
+                'gemini-pro-vision',
+            ];
+
+            // 1. Préparation de l'image / PDF
             $raw_image_data = file_get_contents($image->getPathname());
-            $compressed_image = $this->compressImage($image->getPathname());
-            $image_data = base64_encode($compressed_image);
-            $mime_type = "image/jpeg"; // On force le JPEG après compression pour Gemini
+            $extension = strtolower($image->getClientOriginalExtension());
+            
+            if ($extension === 'pdf') {
+                $image_data = base64_encode($raw_image_data);
+                $mime_type = "application/pdf";
+            } else {
+                $compressed_image = $this->compressImage($image->getPathname());
+                $image_data = base64_encode($compressed_image);
+                $mime_type = "image/jpeg";
+            }
 
             // 2. Récupération du contexte métier
             $planComptableContext = $this->buildPlanComptableContext($companyId);
@@ -121,11 +135,29 @@ class IaController extends Controller
                 ]
             ];
 
-            \Illuminate\Support\Facades\Log::debug("Gemini Request URL: " . $url);
-            \Illuminate\Support\Facades\Log::debug("Gemini Request Payload: " . json_encode($payload));
+            // 5. Essai des modèles en cascade
+            $result = null;
+            $lastError = null;
+            foreach ($modelsToTry as $model) {
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$api_key}";
+                \Illuminate\Support\Facades\Log::info("Essai modèle Gemini: {$model}");
+                $result = $this->callGeminiApi($url, $payload, $api_key);
+                
+                // Si c'est un 404 (modèle non trouvé), on essaie le suivant
+                if (isset($result['error']) && isset($result['http_code']) && $result['http_code'] === 404) {
+                    $lastError = $result;
+                    \Illuminate\Support\Facades\Log::warning("Modèle {$model} non disponible (404), essai suivant...");
+                    continue;
+                }
+                
+                // Succès ou autre erreur → on arrête
+                break;
+            }
 
-            // 5. Appel API avec retry exponentiel anti-429
-            $result = $this->callGeminiApi($url, $payload, $api_key);
+            // Si tous les modèles ont échoué avec 404
+            if ($result === null || (isset($result['error']) && isset($result['http_code']) && $result['http_code'] === 404)) {
+                $result = ['error' => 'Aucun modèle Gemini disponible pour cette clé API. Vérifiez que votre clé est active sur https://aistudio.google.com/app/apikey', 'http_code' => 404];
+            }
 
             if (isset($result['error'])) {
                 // Log de l'erreur avec JSON brut si disponible
@@ -274,60 +306,70 @@ class IaController extends Controller
         return "ASSOCIATIONS APPRISES (priorité haute) :\n{$lines}";
     }
 
-    /**
-     * Construit le prompt complet pour Gemini.
-     */
     private function buildPrompt(string $planComptable, string $tiers, string $mappings, string $companyName): string
     {
         $mappingsSection = $mappings ? "\n\n{$mappings}" : '';
 
         return <<<PROMPT
-Tu es un expert-comptable SYSCOHADA Côte d'Ivoire. Analyse cette pièce comptable.
+Tu es un Expert-Comptable SYSCOHADA senior, spécialisé dans la lecture et la comptabilisation de documents financiers en Afrique de l'Ouest. Tu es doté d'une capacité de déchiffrement exceptionnelle.
 
 {$planComptable}
 
 {$tiers}{$mappingsSection}
 
-RÈGLES D'EXTRACTION STRICTE (LITÉRALE) :
-1. RÈGLE 1 LIGNE = 1 OBJET JSON : Tu dois créer un objet séparé dans le tableau "ecriture" pour CHAQUE ligne visible dans le tableau de la facture. INTERDICTION FORMELLE de regrouper plusieurs prestations sur une même ligne.
-2. FIDÉLITÉ DES LIBELLÉS (COPIER-COLLER) : Recopie le texte EXACT et COMPLET de la colonne "Désignation" pour chaque ligne. 
-   - INTERDICTION de résumer ou de changer un mot.
-   - INTERDICTION d'ajouter la date, le numéro de pièce ou le nom du client dans le libellé de la ligne.
-3. LECTURE LITÉRALE DES MONTANTS : Recopie les montants EXACTEMENT comme ils sont écrits dans les colonnes. NE FAIS AUCUN CALCUL.
-4. INTERDICTIONS FORMELLES :
-   - INTERDIT de calculer la TVA ou le Hors-Taxe par déduction (ne divise jamais par 1.18). Si la TVA n'est pas écrite explicitement sur sa ligne, le montant TVA est 0.
-   - INTERDIT d'utiliser des décimales (virgules) si elles ne sont pas imprimées. Utilise des nombres entiers ronds.
-   - INTERDIT d'inventer des lignes de type "Remise" ou "Ajustement".
-5. COMPTES : 
-   - DÉBIT (Charges) : Utilise obligatoirement un compte de Classe 6.
-   - CRÉDIT (Tiers) : Identifie le rôle :
-     * Si l'entreprise "{$companyName}" est le DESTINATAIRE (reçoit la facture), utilise un compte de type FOURNISSEUR (commençant par '401').
-     * Si l'entreprise "{$companyName}" est l'ÉMETTEUR (fournit le service), utilise un compte de type CLIENT (commençant par '411').
-6. TIERS (IDENTIFICATION) : 
-   - Recherche le nom du tiers (fournisseur ou client) sur la facture. 
-   - Si tu le trouves dans la liste fournie ci-dessus, utilise son compte exact.
-   - S'IL N'EST PAS DANS LA LISTE : Utilise son NOM RÉEL lu sur la facture comme "intitule" dans l'objet JSON de la ligne de compte tiers (ex: "AMA VAISSELLE ET DÉCORATION").
-7. TOTAL : Le montant au CRÉDIT du fournisseur (ou débit du client) dans le JSON doit être EXACTEMENT le total TTC écrit sur la facture (ex: 90000).
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ PRINCIPE FONDAMENTAL — LIRE IMPÉRATIVEMENT AVANT TOUT :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-FORMAT EXIGÉ : Réponds avec UNIQUEMENT le bloc JSON.
+DANS LE CONTEXTE DE CETTE APPLICATION, LES UTILISATEURS N'UPLOADENT QUE DES DOCUMENTS COMPTABLES.
+Par conséquent, TON BIAIS PAR DÉFAUT EST : "est_facture": true.
+
+Tu dois retourner "est_facture": false UNIQUEMENT dans l'un de ces 2 cas STRICTS et ÉVIDENTS :
+  1. Le document est une photo de paysage, d'une personne, d'un animal, ou d'un objet personnel sans aucun lien avec le commerce/la comptabilité.
+  2. Le fichier est entièrement corrompu ou totalement vierge/noir (0% de contenu visible).
+
+TOUT LE RESTE EST UNE FACTURE. En particulier :
+  ✅ Un PDF (même partiellement non lisible) → TOUJOURS "est_facture": true (les PDFs envoyés ici sont toujours des documents professionnels).
+  ✅ Une image floue ou sombre avec des chiffres visibles → "est_facture": true.
+  ✅ Un reçu, ticket de caisse, bon de livraison, note d'honoraires, relevé bancaire, bordereau → "est_facture": true.
+  ✅ Un document avec un logo d'entreprise, un montant, ou un nom de commerce → "est_facture": true.
+  ✅ Un document que tu ne peux lire qu'à 30% → fais de ton mieux et retourne "est_facture": true.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RÈGLES D'EXTRACTION :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Si tu peux lire un montant mais pas la date → mets la date d'aujourd'hui (format AAAA-MM-JJ).
+- Si tu peux lire la date mais pas le tiers → mets "Fournisseur inconnu".
+- Si tu vois un montant TTC sans HT → calcule le HT en déduisant 18% de TVA (standard Côte d'Ivoire).
+- NEVER use "null" for montant_ttc — si tu ne vois aucun montant, mets 0.
+- 1 LIGNE = 1 OBJET dans le tableau "ecriture". Ne regroupe JAMAIS plusieurs articles sur une ligne.
+- COMPTES : Charges = Classe 6 (Débit) | Fournisseurs = 401xxx (Crédit) | Clients = 411xxx (Débit).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FORMAT DE RÉPONSE (JSON STRICT, PAS DE MARKDOWN) :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "type_document": "Facture|Reçu|Note de frais|Autre",
-  "tiers": "Nom exact du fournisseur ou client",
+  "est_facture": true,
+  "statut_lecture": "lisible|partiel|illisible",
+  "type_rejet": "none",
+  "explication_rejet": "Facture acceptée. [Brève note sur la qualité si nécessaire]",
+  "type_document": "Facture|Reçu|Note de frais|Bon de livraison|Relevé|Autre",
+  "tiers": "Nom du fournisseur ou client",
   "date": "AAAA-MM-JJ",
-  "reference": "Numéro de pièce",
+  "reference": "Numéro de pièce ou vide",
   "montant_ht": 0,
   "montant_tva": 0,
   "montant_ttc": 0,
   "devise": "XOF",
   "ecriture": [
-    {"compte": "601000", "intitule": "Libellé comptable", "debit": 10000, "credit": 0},
-    {"compte": "445100", "intitule": "TVA déductible 18%", "debit": 1800, "credit": 0},
-    {"compte": "401000", "intitule": "Fournisseurs", "debit": 0, "credit": 11800}
+    {"compte": "601000", "intitule": "Libellé de la ligne", "debit": 10000, "credit": 0, "apply_tva": true},
+    {"compte": "401000", "intitule": "Nom du fournisseur", "debit": 0, "credit": 10000}
   ],
-  "analyse": "Explication brève du choix des comptes"
+  "analyse": "Description de ce que tu as lu et de tes déductions"
 }
 PROMPT;
     }
+
 
     /**
      * Appelle l'API Gemini avec retry exponentiel.
@@ -432,7 +474,7 @@ PROMPT;
             break;
         }
 
-        return ['error' => "Erreur API ({$http_code})", 'details' => json_decode($response, true) ?? ['raw' => $response]];
+        return ['error' => "Erreur API ({$http_code})", 'http_code' => $http_code, 'details' => json_decode($response, true) ?? ['raw' => $response]];
     }
 
     /**

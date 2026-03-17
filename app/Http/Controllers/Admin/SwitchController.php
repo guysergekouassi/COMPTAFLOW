@@ -14,9 +14,10 @@ class SwitchController extends Controller
     {
         $user = Auth::user();
         
-        // Récupérer les entreprises gérées par l'admin (Principale + Sous-comptes)
+        // Récupérer les entreprises gérées par l'admin (Principale + Sous-comptes + Créées par lui)
         $managedCompanies = Company::where('id', $user->company_id)
             ->orWhere('parent_company_id', $user->company_id)
+            ->orWhere('user_id', $user->id)
             ->get();
 
         // Récupérer les utilisateurs associés à ces entreprises (comptables, etc.)

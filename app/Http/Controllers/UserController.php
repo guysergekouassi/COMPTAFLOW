@@ -425,6 +425,7 @@ User::create($validated);
 
         $allowedCompanyIds = Company::where('id', $admin->company_id)
                                     ->orWhere('parent_company_id', $admin->company_id)
+                                    ->orWhere('user_id', $admin->id)
                                     ->pluck('id')
                                     ->toArray();
 

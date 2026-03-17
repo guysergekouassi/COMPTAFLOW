@@ -226,6 +226,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::delete('/ecriture-delete-by-saisie/{n_saisie?}', [EcritureComptableController::class, 'deleteBySaisie'])->name('ecriture.delete-by-saisie');
     Route::post('/ecriture', [EcritureComptableController::class, 'store'])->name('ecriture.store');
     Route::get('/ecriture-scan', [EcritureComptableController::class, 'scanIndex'])->name('ecriture.scan');
+    Route::get('/bulk-scan', [EcritureComptableController::class, 'bulkScanIndex'])->name('ecriture.bulk-scan');
     // Route::post('/ecriture/store/multiple', [EcritureComptableController::class, 'storeMultiple'])->name('ecriture.store.multiple');
    Route::post('/ecritures-comptables/store', [EcritureComptableController::class, 'storeMultiple'])
      ->name('ecritures-comptables.store-multiple');
@@ -734,9 +735,6 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
 
     Route::get('/advanced-settings', [SuperAdminSetupController::class, 'index'])->name('settings');
 
-    // Route pour la création de sous-compagnies par l'Admin
-    Route::post('/admin/companies/store', [CompanyController::class, 'adminStoreCompany'])->name('admin.store_sub_company');
-    Route::get('/switch-company/{company_id}', [UserController::class, 'switchCompany'])->name('switch_company');
 });
 
 

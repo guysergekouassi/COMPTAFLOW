@@ -71,6 +71,11 @@
                                                 value="{{ $company->company_name ?? 'N/A' }}" disabled>
                                         </div>
                                         <div class="col-md-6">
+                                            <label class="form-label">Administrateur Principal</label>
+                                            <input type="text" class="form-control"
+                                                value="{{ $company->admin->name ?? 'N/A' }} {{ $company->admin->last_name ?? '' }}" disabled>
+                                        </div>
+                                        <div class="col-md-6">
                                             <label class="form-label">Forme Juridique</label>
                                             <input type="text" class="form-control"
                                                 value="{{ $company->juridique_form ?? 'N/A' }}" disabled>

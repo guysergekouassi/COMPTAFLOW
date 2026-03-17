@@ -185,6 +185,55 @@ class EcritureComptableController extends Controller
         return view('accounting.scan', compact('plansComptables', 'plansTiers', 'data', 'nextSaisieNumber', 'comptesTresorerie'));
     }
 
+    public function bulkScanIndex(Request $request)
+    {
+        $user = Auth::user();
+        $activeCompanyId = session('current_company_id', $user->company_id);
+
+        $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')
+            ->where('company_id', $activeCompanyId)
+            ->orderBy('numero_de_compte')
+            ->get();
+            
+        $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')
+            ->where('company_id', $activeCompanyId)
+            ->with('compte')
+            ->get();
+            
+        $codeJournaux = CodeJournal::where('company_id', $activeCompanyId)->get();
+        
+        $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$exerciceActif) {
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
+
+        $comptesTresorerie = CompteTresorerie::with('category')->orderBy('name')->get();
+        
+        $initials = $user->initiales;
+        $prefix = "CPT-" . $initials . "_";
+        $nextSequence = EcritureComptable::where('company_id', $activeCompanyId)
+            ->where('n_saisie_user', 'like', $prefix . '%')
+            ->distinct('n_saisie_user')
+            ->count('n_saisie_user') + 1;
+            
+        $nextSaisieNumber = $prefix . str_pad($nextSequence, 12, '0', STR_PAD_LEFT);
+
+        return view('accounting.bulk_scan', compact(
+            'plansComptables', 
+            'plansTiers', 
+            'codeJournaux', 
+            'exerciceActif', 
+            'comptesTresorerie',
+            'nextSaisieNumber'
+        ));
+    }
+
     private function determineFluxClasse($numeroCompte) {
         $classe = substr($numeroCompte, 0, 1);
         if (in_array($classe, ['6', '7'])) return 'Operationnelles';
@@ -832,7 +881,8 @@ class EcritureComptableController extends Controller
         return 'ECR_' . str_pad($nextNumber, 12, '0', STR_PAD_LEFT);
     }
 
-    public function getCompteParJournal(){
+    public function getCompteParJournal(Request $request){
+        $journalId = $request->query('journal_id');
         // On cherche le compte de trésorerie lié au journal
         $journal = CodeJournal::with('compteTresorerie')->find($journalId);
 

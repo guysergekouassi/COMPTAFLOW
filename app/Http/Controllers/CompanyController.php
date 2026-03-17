@@ -242,14 +242,11 @@ class CompanyController extends Controller
     {
         $user = Auth::user();
 
-        $mainCompanies = Company::where('user_id', $user->id)
-                                ->whereNull('parent_company_id') // On s'assure que c'est bien une principale
-                                ->get();
-
-        $subCompanies = Company::where('parent_company_id', $user->company_id)->get();
-
-
-        $managedCompanies = $mainCompanies->merge($subCompanies)->unique('id');
+        $managedCompanies = Company::where('user_id', $user->id)
+                                ->orWhere('parent_company_id', $user->company_id)
+                                ->orWhere('id', $user->company_id)
+                                ->get()
+                                ->unique('id');
 
         // Ajouter la compagnie principale de l'utilisateur (celle qui définit son contexte)
         // Cela couvre le cas où l'utilisateur n'est pas le créateur (user_id), mais est assigné à une compagnie (company_id).
