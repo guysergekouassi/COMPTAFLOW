@@ -1,4 +1,4 @@
-﻿@include('components.head')
+@include('components.head')
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap');
@@ -407,7 +407,7 @@
                                                          </div>
                                                      </td>
                                                      <td class="fw-bold search-target">
-                                                         {{ $row['data']['intitule'] ?? 'Sans nom' }}
+                                                         @if(!empty($row['data']['is_duplicate'])) <span class="badge bg-label-warning text-[8px] px-1 py-0">DOUBLON</span> @endif {{ $row['data']['intitule'] ?? 'Sans nom' }} @if(!empty($row['data']['is_duplicate']) && !empty($row['data']['existing_label'])) <div class="text-[9px] text-orange-500 font-medium italic mt-1">Existant: {{ $row['data']['existing_label'] }}</div> @endif
                                                      </td>
                                                      <td>
                                                          <div class="d-flex flex-column">

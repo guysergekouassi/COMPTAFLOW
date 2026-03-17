@@ -457,7 +457,12 @@
                                                     @elseif($import->type == 'journals')
                                                         <td class="@if($row['status'] == 'error' && (str_contains(implode(' ', $row['errors']), 'Code') || str_contains(implode(' ', $row['errors']), 'long'))) cell-error @endif search-target">
                                                             <div class="d-flex flex-column">
-                                                                <span class="fw-black">{{ $row['data']['code_journal'] ?? '-' }}</span>
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                    <span class="fw-black">{{ $row['data']['code_journal'] ?? '-' }}</span>
+                                                                    @if(!empty($row['data']['is_duplicate']))
+                                                                        <span class="badge bg-label-warning text-[8px] px-1 py-0" title="Ce journal existe déjà et sera ignoré">DOUBLON</span>
+                                                                    @endif
+                                                                </div>
                                                                  @if(!empty($row['data']['numero_original']))
                                                                      <div class="text-[9px] text-slate-400 font-medium italic mt-1 d-flex align-items-center gap-1">
                                                                          <i class="fa-solid fa-file-import text-[8px]"></i> Original: {{ $row['data']['numero_original'] }}
@@ -465,7 +470,16 @@
                                                                  @endif
                                                             </div>
                                                         </td>
-                                                        <td class="search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
+                                                        <td class="search-target">
+                                                            <div class="d-flex flex-column">
+                                                                <span>{{ $row['data']['intitule'] ?? '-' }}</span>
+                                                                @if(!empty($row['data']['is_duplicate']) && !empty($row['data']['existing_label']))
+                                                                    <div class="text-[9px] text-orange-500 font-medium italic mt-1">
+                                                                        <i class="fa-solid fa-database text-[8px]"></i> Existant: {{ $row['data']['existing_label'] }}
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                        </td>
                                                         <td>
                                                             <span class="badge bg-label-info">
                                                                 {{ $row['data']['type'] ?? 'Achats' }}

@@ -5,6 +5,9 @@
 *.html
 *.py
 *.docx
+/public/balances/*.csv
+*.csv
+
 
 
 # --- Tests ---

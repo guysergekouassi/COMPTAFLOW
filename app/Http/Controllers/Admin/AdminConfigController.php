@@ -1676,13 +1676,19 @@ class AdminConfigController extends Controller
             ->get()
             ->keyBy('numero_de_compte');
 
-        $existingJournals = CodeJournal::where('company_id', $targetCompanyId)
-            ->pluck('code_journal')
-            ->toArray();
+        $journalDetails = CodeJournal::where('company_id', $targetCompanyId)
+            ->select('id', 'code_journal', 'intitule')
+            ->get()
+            ->keyBy(fn($item) => strtoupper($item->code_journal));
             
-        $existingTiers = PlanTiers::where('company_id', $targetCompanyId)
-            ->pluck('numero_de_tiers')
-            ->toArray();
+        $existingJournals = $journalDetails->keys()->toArray();
+
+        $tierDetails = PlanTiers::where('company_id', $targetCompanyId)
+            ->select('id', 'numero_de_tiers', 'intitule')
+            ->get()
+            ->keyBy(fn($item) => strtoupper($item->numero_de_tiers));
+            
+        $existingTiers = $tierDetails->keys()->toArray();
 
         // --- DICTIONNAIRES DE CORRESPONDANCE (AUTO-LOOKUP) ---
         $accountMapping = [];
@@ -1864,8 +1870,10 @@ class AdminConfigController extends Controller
                     } elseif ($isDuplicateInDb) {
                         // Si existe déjà en base, on garde le numéro mais on signale qu'il existe déjà
                         // L'importation pourra choisir de l'ignorer ou de mettre à jour l'intitulé
+                        $existing = $accountDetails->get($rowCompte);
                         $row['is_duplicate'] = true;
-                        $row['info'] = "Ce compte existe déjà dans le plan comptable.";
+                        $row['existing_label'] = $existing ? $existing->intitule : null;
+                        $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
                     }
                     
                     $batchAccounts[$rowCompte] = $originalRawValue;
@@ -2117,8 +2125,10 @@ class AdminConfigController extends Controller
                         $isDuplicateInDb = in_array(strtoupper($rowCode), array_map('strtoupper', $existingJournals));
                         
                         if ($isDuplicateInDb) {
+                            $existing = $journalDetails->get(strtoupper($rowCode));
                             $row['is_duplicate'] = true;
-                            $row['info'] = "Ce code journal existe déjà.";
+                            $row['existing_label'] = $existing ? $existing->intitule : null;
+                            $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
                             // On garde le code journal tel quel
                             $batchJournalMap[$upperOrig] = $rowCode;
                         } else {
@@ -2383,9 +2393,11 @@ class AdminConfigController extends Controller
                     $existsInDb = !empty($importedNum) && in_array($upperOrigNum, array_map('strtoupper', $existingTiers));
 
                     if ($existsInDb) {
+                        $existing = $tierDetails->get(strtoupper($importedNum));
                         $row['numero_de_tiers'] = $importedNum;
                         $row['is_duplicate'] = true;
-                        $row['info'] = "Ce tiers existe déjà.";
+                        $row['existing_label'] = $existing ? $existing->intitule : null;
+                        $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
                         $batchTierMap[$upperOrigNum] = $importedNum;
                     } elseif (!empty($importedNum) && isset($batchTierMap[$upperOrigNum])) {
                         $row['numero_de_tiers'] = $batchTierMap[$upperOrigNum];
@@ -3119,12 +3131,7 @@ class AdminConfigController extends Controller
                     $existingMatchId = $planComptableIds[$rowCompte] ?? null;
 
                     if ($existingMatchId) {
-                        // Si le numéro existe toujours (cas rare de collision après séquence), on met à jour
-                        PlanComptable::where('id', $existingMatchId)->update([
-                            'intitule' => ($rowMapped['intitule'] ?? 'COMPTE SANS NOM'),
-                            'numero_original' => $numeroOriginalPlan,
-                            'user_id' => $user->id
-                        ]);
+                        // Ignorer les doublons conformément à la demande de l'utilisateur
                         $duplicateCount++;
                     } else {
                         // CREATE nouveau
@@ -3308,22 +3315,7 @@ class AdminConfigController extends Controller
                     }
 
                     if ($existingTier) {
-                        // UPDATE existant : On met à jour l'intitulé et le numéro original
-                        // Mais on ne change le numero_de_tiers que s'il n'était pas encore au format généré
-                        $updateData = [
-                            'intitule' => strtoupper($rowMapped['intitule'] ?? 'TIERS SANS NOM'),
-                            'type_de_tiers' => ucfirst(strtolower($rowMapped['type_de_tiers'] ?? 'Autre')),
-                            'compte_general' => $compteCollectifId,
-                            'numero_original' => $numeroOriginalTiers ?: $existingTier->numero_original,
-                            'user_id' => $user->id
-                        ];
-                        
-                        // Si le numéro actuel ressemble à un numéro "original" (pas conforme à la config), on le remplace
-                        if ($existingTier->numero_de_tiers && strlen($existingTier->numero_de_tiers) < 4) {
-                             $updateData['numero_de_tiers'] = strtoupper($finalNum);
-                        }
-
-                        $existingTier->update($updateData);
+                        // Ignorer les doublons conformément à la demande de l'utilisateur
                         $duplicateCount++;
                     } else {
                         // CREATE nouveau
@@ -3544,22 +3536,7 @@ class AdminConfigController extends Controller
                         ->first();
 
                     if ($existingJournal) {
-                        // UPDATE existant
-                        $existingJournal->update([
-                            'intitule' => trim($rowMapped['intitule'] ?? 'JOURNAL SANS NOM'),
-                            'type' => $type,
-                            'compte_de_tresorerie' => $compteId,
-                            'compte_de_contrepartie' => $compteNumStr,
-                            'numero_original' => $numeroOriginalJournal ?? $existingJournal->numero_original,
-                            'poste_tresorerie' => $posteTreso,
-                            'traitement_analytique' => (strtolower($analytique) === 'oui' || $analytique === 1),
-                            'rapprochement_sur' => $rapprochement,
-                            'user_id' => $user->id
-                        ]);
-                        $existingJournals[strtoupper($existingJournal->code_journal)] = $existingJournal->id;
-                        if ($existingJournal->numero_original) {
-                            $existingJournalsOriginal[strtoupper($existingJournal->numero_original)] = $existingJournal->id;
-                        }
+                        // Ignorer les doublons conformément à la demande de l'utilisateur
                         $duplicateCount++;
                     } else {
                         // CREATE nouveau
