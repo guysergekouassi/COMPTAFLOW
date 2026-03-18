@@ -275,16 +275,22 @@
                         @endif
 
                         <div class="row mb-6">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="bg-emerald-50 p-4 rounded-2xl border {{ $statusFilter == 'valid' ? 'border-emerald-500 active' : 'border-emerald-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'valid', 'page' => 1]) }}'">
                                     <div class="text-xs font-bold text-emerald-600 uppercase mb-1">Lignes Valides</div>
                                     <div class="h4 font-black text-emerald-700 mb-0">{{ $validCount }}</div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
                                     <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="bg-warning/10 p-4 rounded-2xl border border-warning/20 shadow-sm cursor-default">
+                                    <div class="text-xs font-bold text-warning uppercase mb-1">Doublons détectés</div>
+                                    <div class="h4 font-black text-warning mb-0">{{ $duplicateCount }}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">

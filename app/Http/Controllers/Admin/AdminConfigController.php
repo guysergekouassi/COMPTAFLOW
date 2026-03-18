@@ -1746,6 +1746,7 @@ class AdminConfigController extends Controller
         $batchAccounts = []; // [ 'numero_standard' => 'numero_original' ]
         $errorCount = 0;
         $validCount = 0;
+        $duplicateCount = 0;
         
         $missingAccounts = [];
         $missingJournals = [];
@@ -1874,6 +1875,7 @@ class AdminConfigController extends Controller
                         $row['is_duplicate'] = true;
                         $row['existing_label'] = $existing ? $existing->intitule : null;
                         $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
+                        $duplicateCount++;
                     }
                     
                     $batchAccounts[$rowCompte] = $originalRawValue;
@@ -2129,6 +2131,7 @@ class AdminConfigController extends Controller
                             $row['is_duplicate'] = true;
                             $row['existing_label'] = $existing ? $existing->intitule : null;
                             $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
+                            $duplicateCount++;
                             // On garde le code journal tel quel
                             $batchJournalMap[$upperOrig] = $rowCode;
                         } else {
@@ -2398,6 +2401,7 @@ class AdminConfigController extends Controller
                         $row['is_duplicate'] = true;
                         $row['existing_label'] = $existing ? $existing->intitule : null;
                         $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
+                        $duplicateCount++;
                         $batchTierMap[$upperOrigNum] = $importedNum;
                     } elseif (!empty($importedNum) && isset($batchTierMap[$upperOrigNum])) {
                         $row['numero_de_tiers'] = $batchTierMap[$upperOrigNum];
@@ -2911,6 +2915,7 @@ class AdminConfigController extends Controller
                 'rowsWithStatus' => $rowsWithStatus,
                 'errorCount' => $errorCount,
                 'validCount' => $validCount,
+                'duplicateCount' => $duplicateCount,
                 'user' => $user,
                 'accountDigits' => $accountDigits
             ];
@@ -2918,7 +2923,7 @@ class AdminConfigController extends Controller
 
         return view($viewName, compact(
             'import', 'rowsWithStatus', 'rowsWithStatusPaged',
-            'errorCount', 'validCount', 'importTitle',
+            'errorCount', 'validCount', 'duplicateCount', 'importTitle',
             'user', 'plansComptables', 'accountDigits',
             'currentPage', 'totalPages', 'totalRows', 'perPage',
             'statusFilter', 'searchFilter', 'mapping',
@@ -3107,8 +3112,18 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    // GESTION DES DOUBLONS ET COLLISIONS PAR NUMÉROTATION SÉQUENTIELLE (COMMIT)
-                    if (in_array($rowCompte, $existingAccounts) || isset($batchAccounts[$rowCompte])) {
+                    // RECHERCHE D'EXISTANT (DOUBLON)
+                    // On vérifie d'abord si le numéro original ou le numéro standard existe déjà
+                    $existingMatchId = $planComptableIds[$rowCompte] ?? $planComptableOriginalIds[strtoupper($numeroOriginalPlan)] ?? null;
+
+                    if ($existingMatchId) {
+                        // Ignorer les doublons conformément à la demande de l'utilisateur
+                        $duplicateCount++;
+                        continue;
+                    }
+
+                    // GESTION DES COLLISIONS PAR NUMÉROTATION SÉQUENTIELLE (Seulement si nouveau)
+                    if (isset($batchAccounts[$rowCompte])) {
                         $racine = substr($rowCompte, 0, 3);
                         if (!isset($localMaxAccounts[$racine])) {
                             $maxInDb = PlanComptable::where('company_id', $targetCompanyId)
@@ -3131,9 +3146,9 @@ class AdminConfigController extends Controller
                     $existingMatchId = $planComptableIds[$rowCompte] ?? null;
 
                     if ($existingMatchId) {
-                        // Ignorer les doublons conformément à la demande de l'utilisateur
                         $duplicateCount++;
-                    } else {
+                        continue;
+                    }
                         // CREATE nouveau
                         $classe = substr($rowCompte, 0, 1);
                         $type = in_array((int)$classe, [1, 2, 3, 4, 5, 9]) ? 'Bilan' : 'Compte de résultat';
@@ -3150,9 +3165,7 @@ class AdminConfigController extends Controller
                         ]);
                         $planComptableIds[$rowCompte] = $newAcc->id;
                         $importedCount++;
-                    }
-
-                } elseif ($import->type == 'tiers') {
+                    } elseif ($import->type == 'tiers') {
                     // --- IMPORT TIERS ---
                     $msg_type = "tiers";
                     $rowCompteNum = $this->standardizeAccountNumber(trim($rowMapped['compte_general'] ?? ''), $accountDigits);
@@ -3858,12 +3871,13 @@ class AdminConfigController extends Controller
 
             $import->update([
                 'status' => 'committed',
-                'error_log' => "Importation réussie : $importedCount $msg_type créés." . ($skippedCount > 0 ? " ($skippedCount doublons ignorés)" : "")
+                'error_log' => "Importation réussie : $importedCount $msg_type créés." . ($duplicateCount > 0 ? " ($duplicateCount doublons ignorés)" : "")
             ]);
             
             // Finalize Stats
             $report['processed_g'] = $importedCount;
-            $report['skipped_g'] = $skippedCount;
+            $report['skipped_g'] = $duplicateCount;
+            $report['deduplicated'] = $duplicateCount;
             // Total debit/credit already tracked via groupBalances if needed, but easier to sum here if we tracked it row by row
             // Let's compute totals from groupBalances for simplicity
             $report['total_debit'] = array_sum(array_column($groupBalances, 'debit'));
