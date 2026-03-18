@@ -288,7 +288,7 @@
                                 </div>
                             </div>
                             <div class="col-md-2">
-                                <div class="bg-warning/10 p-4 rounded-2xl border border-warning/20 shadow-sm cursor-default">
+                                <div class="bg-warning/10 p-4 rounded-2xl border {{ $statusFilter == 'duplicate' ? 'border-warning active' : 'border-warning/20' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'duplicate', 'page' => 1]) }}'">
                                     <div class="text-xs font-bold text-warning uppercase mb-1">Doublons détectés</div>
                                     <div class="h4 font-black text-warning mb-0">{{ $duplicateCount }}</div>
                                 </div>
@@ -379,12 +379,12 @@
                                             @endphp
 
                                             @foreach($rowsWithStatusPaged as $rowIndex => $row)
-                                                 <tr class="staging-row {{ $row['status'] == 'valid' ? 'row-valid' : ($row['status'] == 'ignored' ? 'row-warning' : 'row-error') }}" data-status="{{ $row['status'] }}">
+                                                 <tr class="staging-row {{ $row['status'] == 'valid' ? 'row-valid' : ($row['status'] == 'duplicate' ? 'row-warning' : 'row-error') }}" data-status="{{ $row['status'] }}">
                                                      <td class="text-center">
                                                          <input type="checkbox" class="row-checkbox form-check-input" data-row-index="{{ $row['index'] ?? $rowIndex }}">
                                                      </td>
                                                      <td class="text-center">
-                                                         <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : 'bg-rose-500' }}" 
+                                                         <span class="status-indicator {{ $row['status'] == 'valid' ? 'bg-emerald-500' : ($row['status'] == 'duplicate' ? 'bg-warning' : 'bg-rose-500') }}" 
                                                                title="{{ implode(', ', $row['errors']) }}"></span>
                                                      </td>
                                                      

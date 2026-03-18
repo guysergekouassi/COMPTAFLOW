@@ -2804,11 +2804,12 @@ class AdminConfigController extends Controller
                 return is_string($e) ? trim($e) !== '' : !empty($e);
             }));
 
-            $status = (count($errors) > 0) ? 'error' : 'valid';
+            $status = (count($errors) > 0) ? 'error' : (($row['is_duplicate'] ?? false) ? 'duplicate' : 'valid');
             if ($status === 'error' && count($errors) === 0) {
                 $errors = ["Erreur de validation inconnue"]; 
             }
-            if ($status == 'error') $errorCount++; else $validCount++;
+            if ($status == 'error') $errorCount++; 
+            elseif ($status == 'valid') $validCount++;
 
             $rowsWithStatus[] = [
                 'index' => $index,
@@ -3391,6 +3392,7 @@ class AdminConfigController extends Controller
                     if ($existingTier) {
                         // Ignorer les doublons conformément à la demande de l'utilisateur
                         $duplicateCount++;
+                        continue;
                     } else {
                         // CREATE nouveau
                         PlanTiers::create([
@@ -3602,16 +3604,19 @@ class AdminConfigController extends Controller
                     }
 
                     $existingJournal = CodeJournal::where('company_id', $targetCompanyId)
-                        ->where(function($q) use ($rowCode) {
-                            $q->where('code_journal', strtoupper($rowCode))
-                              ->orWhere('numero_original', $rowCode)
-                              ->orWhere('numero_original', strtoupper($rowCode));
+                        ->where(function($q) use ($rowCode, $numeroOriginalJournal) {
+                            $q->where('code_journal', strtoupper($rowCode));
+                            if (!empty($numeroOriginalJournal)) {
+                                $q->orWhere('numero_original', $numeroOriginalJournal)
+                                  ->orWhere('numero_original', strtoupper($numeroOriginalJournal));
+                            }
                         })
                         ->first();
 
                     if ($existingJournal) {
                         // Ignorer les doublons conformément à la demande de l'utilisateur
                         $duplicateCount++;
+                        continue;
                     } else {
                         // CREATE nouveau
                         $newJournal = CodeJournal::create([
