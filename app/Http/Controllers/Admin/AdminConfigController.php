@@ -1599,7 +1599,49 @@ class AdminConfigController extends Controller
         elseif ($import->type == 'journals') $viewName = 'admin.config.import_mapper_journals';
 
         $user = Auth::user();
-        return view($viewName, compact('import', 'headers', 'fields', 'importTitle', 'user'));
+        
+        // --- CALCUL DES DOUBLONS POTENTIELS (POUR AFFICHAGE MAPPAGE) ---
+        $potentialDuplicates = 0;
+        $targetCompanyId = $import->company_id ?: session('current_company_id', $user->company_id);
+
+        if ($import->type == 'tiers') {
+            $tiersField = $fields['numero_de_tiers'] ?? null;
+            if ($tiersField && $tiersField['suggested_col'] !== null) {
+                $colIdx = $tiersField['suggested_col'];
+                $existingTiers = PlanTiers::where('company_id', $targetCompanyId)->pluck('numero_de_tiers')->toArray();
+                $existingOriginals = PlanTiers::where('company_id', $targetCompanyId)->whereNotNull('numero_original')->pluck('numero_original')->toArray();
+                $allExisting = array_flip(array_unique(array_merge(
+                    array_map('strtoupper', $existingTiers),
+                    array_map('strtoupper', $existingOriginals)
+                )));
+
+                foreach ($import->raw_data as $i => $row) {
+                    if ($i <= $headerIndex) continue;
+                    $val = strtoupper(trim($row[$colIdx] ?? ''));
+                    if (!empty($val) && isset($allExisting[$val])) $potentialDuplicates++;
+                }
+            }
+        } elseif ($import->type == 'journals') {
+            $codeField = $fields['code'] ?? null;
+            if ($codeField && $codeField['suggested_col'] !== null) {
+                $colIdx = $codeField['suggested_col'];
+                $existingCodes = CodeJournal::where('company_id', $targetCompanyId)->pluck('code')->toArray();
+                $existingOriginals = CodeJournal::where('company_id', $targetCompanyId)->whereNotNull('numero_original')->pluck('numero_original')->toArray();
+                
+                $allExisting = array_flip(array_unique(array_merge(
+                    array_map('strtoupper', $existingCodes),
+                    array_map('strtoupper', $existingOriginals)
+                )));
+
+                foreach ($import->raw_data as $i => $row) {
+                    if ($i <= $headerIndex) continue;
+                    $val = strtoupper(trim($row[$colIdx] ?? ''));
+                    if (!empty($val) && isset($allExisting[$val])) $potentialDuplicates++;
+                }
+            }
+        }
+
+        return view($viewName, compact('import', 'headers', 'fields', 'importTitle', 'user', 'potentialDuplicates'));
     }
 
     /**
@@ -1677,11 +1719,17 @@ class AdminConfigController extends Controller
             ->keyBy('numero_de_compte');
 
         $journalDetails = CodeJournal::where('company_id', $targetCompanyId)
-            ->select('id', 'code_journal', 'intitule')
+            ->select('id', 'code_journal', 'intitule', 'numero_original')
             ->get()
             ->keyBy(fn($item) => strtoupper($item->code_journal));
             
-        $existingJournals = $journalDetails->keys()->toArray();
+        $existingJournalsArr = $journalDetails->keys()->toArray();
+        $journalMapping = [];
+        foreach($journalDetails as $j) {
+            if ($j->numero_original) {
+                $journalMapping[strtoupper(trim($j->numero_original))] = trim($j->code_journal);
+            }
+        }
 
         $tierDetails = PlanTiers::where('company_id', $targetCompanyId)
             ->select('id', 'numero_de_tiers', 'intitule')
@@ -2123,11 +2171,11 @@ class AdminConfigController extends Controller
                         $rowCode = $batchJournalMap[$upperOrig];
                         $row['code_journal'] = $rowCode;
                     } else {
-                        // On vérifie si le code existe déjà en base pour CETTE société
-                        $isDuplicateInDb = in_array(strtoupper($rowCode), array_map('strtoupper', $existingJournals));
+                        // On vérifie si le code existe déjà en base pour CETTE société (par code OU numéro original)
+                        $isDuplicateInDb = in_array(strtoupper($rowCode), $existingJournalsArr) || isset($journalMapping[$upperOrig]);
                         
                         if ($isDuplicateInDb) {
-                            $existing = $journalDetails->get(strtoupper($rowCode));
+                            $existing = $journalDetails->get(strtoupper($rowCode)) ?? $journalDetails->first(fn($j) => strtoupper($j->numero_original) === $upperOrig);
                             $row['is_duplicate'] = true;
                             $row['existing_label'] = $existing ? $existing->intitule : null;
                             $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
@@ -2393,14 +2441,25 @@ class AdminConfigController extends Controller
                 } else {
                     // --- COHÉRENCE DU LOT ET BASE DE DONNÉES ---
                     $upperOrigNum = strtoupper($importedNum);
-                    $existsInDb = !empty($importedNum) && in_array($upperOrigNum, array_map('strtoupper', $existingTiers));
+                    // Check against both numero_de_tiers AND numero_original in DB
+                    $existsInDb = !empty($importedNum) && (in_array($upperOrigNum, $existingTiers) || isset($tierMapping[$upperOrigNum]));
 
                     if ($existsInDb) {
-                        $existing = $tierDetails->get(strtoupper($importedNum));
+                        $existing = $tierDetails->get($upperOrigNum) ?? null;
+                        if (!$existing) {
+                            // Search via numero_original
+                            $existingByOrig = PlanTiers::where('company_id', $targetCompanyId)
+                                                      ->where('numero_original', $importedNum)
+                                                      ->first();
+                            $existingLabel = $existingByOrig ? $existingByOrig->intitule : 'Inconnu';
+                        } else {
+                            $existingLabel = $existing->intitule;
+                        }
+
                         $row['numero_de_tiers'] = $importedNum;
                         $row['is_duplicate'] = true;
-                        $row['existing_label'] = $existing ? $existing->intitule : null;
-                        $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
+                        $row['existing_label'] = $existingLabel;
+                        $row['info'] = "Existe déjà (Nom: " . $existingLabel . "). Il sera ignoré.";
                         $duplicateCount++;
                         $batchTierMap[$upperOrigNum] = $importedNum;
                     } elseif (!empty($importedNum) && isset($batchTierMap[$upperOrigNum])) {
@@ -3068,6 +3127,8 @@ class AdminConfigController extends Controller
                 $numeroOriginalPlan = trim($rowMapped['numero_de_compte'] ?? '');
                 // Pour Tiers
                 $numeroOriginalTiers = trim($rowMapped['numero_de_tiers'] ?? '');
+                // Pour Journals
+                $numeroOriginalJournal = trim($rowMapped['code'] ?? '');
                 
                 // Fallback : Si le numéro original est vide ou AUTO, on essaie de le trouver dans les colonnes brutes (souvent col 0 ou 1)
                 if ((empty($numeroOriginalTiers) || $numeroOriginalTiers === 'AUTO') && $import->type == 'tiers') {

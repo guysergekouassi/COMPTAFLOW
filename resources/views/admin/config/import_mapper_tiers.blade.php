@@ -96,6 +96,23 @@
 
                         <div class="row">
                             <div class="col-lg-8">
+                                @if(isset($potentialDuplicates) && $potentialDuplicates > 0)
+                                    <div class="bg-warning/10 border border-warning/20 rounded-[20px] p-6 mb-6">
+                                        <div class="d-flex gap-4 align-items-center">
+                                            <div class="w-12 h-12 rounded-xl bg-warning/20 d-flex align-items-center justify-content-center flex-shrink-0">
+                                                <i class="fa-solid fa-copy text-warning fs-4"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="text-orange-900 font-bold mb-1">{{ $potentialDuplicates }} Doublons Potentiels Détectés</h5>
+                                                <p class="text-orange-700 mb-0 opacity-80 text-sm leading-relaxed">
+                                                    Selon la colonne <strong>N° TIERS</strong> suggérée, nous avons détecté des tiers déjà présents dans votre base de données. 
+                                                    Ces doublons seront automatiquement filtrés lors de l'étape suivante.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <div class="bg-blue-50 border border-blue-100 rounded-[20px] p-6 mb-6">
                                     <div class="d-flex gap-4">
                                         <div class="w-12 h-12 rounded-xl bg-blue-100 d-flex align-items-center justify-content-center flex-shrink-0">
