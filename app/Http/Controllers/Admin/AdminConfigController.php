@@ -4164,7 +4164,7 @@ class AdminConfigController extends Controller
                 if ($original !== $nouveau) {
                     $import = ImportStaging::find($importId);
                     if ($import) {
-                        $data = json_decode($import->raw_data, true);
+                        $data = $import->raw_data;
                         if (is_array($data)) {
                             $updated = false;
                             foreach ($data as &$row) {
@@ -4178,7 +4178,7 @@ class AdminConfigController extends Controller
                                 }
                             }
                             if ($updated) {
-                                $import->raw_data = json_encode($data);
+                                $import->raw_data = $data;
                                 $import->save();
                             }
                         }
