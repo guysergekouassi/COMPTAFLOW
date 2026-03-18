@@ -1896,8 +1896,20 @@ class AdminConfigController extends Controller
                     $isDuplicateInDb = in_array($rowCompte, $existingAccounts) || isset($accountMapping[strtoupper($originalRawValue)]);
                     $isDuplicateInBatch = isset($batchAccounts[$rowCompte]);
 
-                    if ($isDuplicateInBatch) {
-                        // Si doublon dans le lot actuel, on génère un nouveau numéro pour éviter la collision interne
+                    if ($isDuplicateInDb) {
+                        // Si existe déjà en base, on le marque d'abord comme doublon (priorité sur la renumérotation du lot)
+                        $existing = $accountDetails->get($rowCompte);
+                        if (!$existing && isset($accountMapping[strtoupper($originalRawValue)])) {
+                            $mappedAcc = $accountMapping[strtoupper($originalRawValue)];
+                            $existing = $accountDetails->get($mappedAcc);
+                        }
+
+                        $row['is_duplicate'] = true;
+                        $row['existing_label'] = $existing ? $existing->intitule : null;
+                        $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
+                        $duplicateCount++;
+                    } elseif ($isDuplicateInBatch) {
+                        // Si doublon SEULEMENT dans le lot actuel, on génère un nouveau numéro
                         $racine = substr($rowCompte, 0, 3);
                         if (!isset($localMaxAccounts[$racine])) {
                             $maxInDb = \App\Models\PlanComptable::where('company_id', $targetCompanyId)
@@ -1916,20 +1928,6 @@ class AdminConfigController extends Controller
                         $row['suggested_account'] = $newId;
                         $rowCompte = $newId;
                         $localMaxAccounts[$racine] = $newId;
-                    } elseif ($isDuplicateInDb) {
-                        // Si existe déjà en base, on garde le numéro mais on signale qu'il existe déjà
-                        // L'importation pourra choisir de l'ignorer ou de mettre à jour l'intitulé
-                        $existing = $accountDetails->get($rowCompte);
-                        if (!$existing && isset($accountMapping[strtoupper($originalRawValue)])) {
-                            // Si pas trouvé par compte mais trouvé par numero_original, on cherche l'objet via le compte mappé
-                            $mappedAcc = $accountMapping[strtoupper($originalRawValue)];
-                            $existing = $accountDetails->get($mappedAcc);
-                        }
-
-                        $row['is_duplicate'] = true;
-                        $row['existing_label'] = $existing ? $existing->intitule : null;
-                        $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
-                        $duplicateCount++;
                     }
                     
                     $batchAccounts[$rowCompte] = $originalRawValue;
@@ -2168,59 +2166,56 @@ class AdminConfigController extends Controller
                     $rowCode = $row['code_journal'];
                 }
 
-
                 // --- DÉDUPLICATION ET UNICITÉ DES CODES JOURNAUX (BATCH CONSISTENCY) ---
                 if (!empty($rowCode)) {
                     $upperOrig = strtoupper(trim($row['numero_original'] ?? $rowCode));
                     
-                    if (isset($batchJournalMap[$upperOrig])) {
+                    // On vérifie d'abord si le code existe déjà en base pour CETTE société (par code OU numéro original)
+                    $isDuplicateInDb = in_array(strtoupper($rowCode), $existingJournalsArr) || isset($journalMapping[$upperOrig]);
+
+                    if ($isDuplicateInDb) {
+                        $existing = $journalDetails->get(strtoupper($rowCode)) ?? $journalDetails->first(fn($j) => strtoupper($j->numero_original) === $upperOrig);
+                        $row['is_duplicate'] = true;
+                        $row['existing_label'] = $existing ? $existing->intitule : null;
+                        $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
+                        $duplicateCount++;
+                        // On garde le code journal tel quel pour le mapping du lot
+                        $batchJournalMap[$upperOrig] = $rowCode;
+                    } elseif (isset($batchJournalMap[$upperOrig])) {
+                        // Si déjà vu dans ce lot (mais pas en DB), on reprend le même code généré
                         $rowCode = $batchJournalMap[$upperOrig];
                         $row['code_journal'] = $rowCode;
                     } else {
-                        // On vérifie si le code existe déjà en base pour CETTE société (par code OU numéro original)
-                        $isDuplicateInDb = in_array(strtoupper($rowCode), $existingJournalsArr) || isset($journalMapping[$upperOrig]);
+                        // Si pas doublon en DB, on vérifie si collision avec un autre du lot (localMaxJournals)
+                        $tempCode = $rowCode;
+                        $counter = 1;
                         
-                        if ($isDuplicateInDb) {
-                            $existing = $journalDetails->get(strtoupper($rowCode)) ?? $journalDetails->first(fn($j) => strtoupper($j->numero_original) === $upperOrig);
-                            $row['is_duplicate'] = true;
-                            $row['existing_label'] = $existing ? $existing->intitule : null;
-                            $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
-                            $duplicateCount++;
-                            // On garde le code journal tel quel
-                            $batchJournalMap[$upperOrig] = $rowCode;
-                        } else {
-                            // Si pas doublon en DB, on vérifie si collision avec un autre du lot (localMaxJournals)
-                            $tempCode = $rowCode;
-                            $counter = 1;
-                            
-                            while (isset($localMaxJournals[strtoupper($tempCode)])) {
-                                $counter++;
-                                $numStr = (string)$counter;
-                                $numLen = strlen($numStr);
-                                if (preg_match('/^([A-Z]+)/i', $rowCode, $matches)) {
-                                    $prefix = strtoupper($matches[1]);
-                                } else {
-                                    $prefix = 'JRN';
-                                }
-                                
-                                if ($numLen >= $journalDigits) {
-                                    $tempCode = substr($numStr, -$journalDigits);
-                                } else {
-                                    $maxPrefixLen = $journalDigits - $numLen;
-                                    $actualPrefix = substr($prefix, 0, $maxPrefixLen);
-                                    $tempCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
-                                }
-                                if ($counter > 500) break;
+                        while (isset($localMaxJournals[strtoupper($tempCode)])) {
+                            $counter++;
+                            $numStr = (string)$counter;
+                            $numLen = strlen($numStr);
+                            if (preg_match('/^([A-Z]+)/i', $rowCode, $matches)) {
+                                $prefix = strtoupper($matches[1]);
+                            } else {
+                                $prefix = 'JRN';
                             }
                             
-                            $rowCode = $tempCode;
-                            $batchJournalMap[$upperOrig] = $rowCode;
-                            $localMaxJournals[strtoupper($rowCode)] = $rowCode;
+                            if ($numLen >= $journalDigits) {
+                                $tempCode = substr($numStr, -$journalDigits);
+                            } else {
+                                $maxPrefixLen = $journalDigits - $numLen;
+                                $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                                $tempCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                            }
+                            if ($counter > 500) break;
                         }
+                        
+                        $rowCode = $tempCode;
+                        $batchJournalMap[$upperOrig] = $rowCode;
+                        $localMaxJournals[strtoupper($rowCode)] = $rowCode;
                     }
-                    
-                    $row['code_journal'] = $rowCode;
                 }
+
 
                 if (empty($row['code_journal'])) {
                     $errors[] = "Erreur système : Impossible de générer un code journal.";
