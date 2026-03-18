@@ -2628,7 +2628,7 @@ class AdminConfigController extends Controller
                     $rowsWithStatus[] = [
                         'index' => $index,
                         'data' => $row,
-                        'status' => 'ignored',
+                        'status' => 'duplicate',
                         'errors' => $errors,
                         'debit' => $row['debit_val'] ?? 0,
                         'credit' => $row['credit_val'] ?? 0
@@ -2643,7 +2643,7 @@ class AdminConfigController extends Controller
                         $row['code_original_journal'] = $rowJournal; 
                         $row['journal'] = $journalMapping[$rowJournalUpper];
                         $rowJournal = $row['journal'];
-                    } elseif (in_array($rowJournalUpper, array_map('strtoupper', $existingJournals))) {
+                    } elseif (in_array($rowJournalUpper, array_map('strtoupper', $existingJournalsArr))) {
                         // Déjà un code journal valide
                         $row['journal'] = $rowJournalUpper;
                         $rowJournal = $rowJournalUpper;
