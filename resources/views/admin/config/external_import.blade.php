@@ -298,7 +298,7 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label font-bold text-slate-600">Exercice cible</label>
                                                         <select name="exercice" class="form-select border-slate-200 py-3 rounded-xl font-bold">
-                                                            @foreach(\App\Models\ExerciceComptable::where('company_id', auth()->user()->company_id)->where('cloturer', 0)->get() as $ex)
+                                                            @foreach(\App\Models\ExerciceComptable::where('company_id', session('current_company_id', auth()->user()->company_id))->where('cloturer', 0)->get() as $ex)
                                                                 <option value="{{ $ex->id }}">{{ $ex->intitule }} (En cours)</option>
                                                             @endforeach
                                                         </select>

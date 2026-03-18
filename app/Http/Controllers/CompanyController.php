@@ -203,7 +203,7 @@ class CompanyController extends Controller
                 'email_adresse' => $request->email_adresse,
                 'identification_TVA' => $request->identification_TVA,
                 // Le lien clé ! La compagnie B' est rattachée à la compagnie B de l'Admin Manager
-                'parent_company_id' => $user->company_id,
+                'parent_company_id' => session('current_company_id', $user->company_id),
                 'user_id' => $user->id, // REQUIRED BY DB SCHEMA
             ]);
 

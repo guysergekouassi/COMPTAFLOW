@@ -67,7 +67,7 @@ class AdminConfigController extends Controller
         ]);
 
         $user = Auth::user();
-        $company = Company::findOrFail($user->company_id);
+        $company = Company::findOrFail(session('current_company_id', $user->company_id));
         
         $company->update([
             'accounting_system' => $request->accounting_system,
@@ -676,7 +676,7 @@ class AdminConfigController extends Controller
     public function storeJournal(Request $request)
     {
         $user = Auth::user();
-        $company = Company::findOrFail($user->company_id);
+        $company = Company::findOrFail(session('current_company_id', $user->company_id));
             $digits = $company->journal_code_digits ?? 4;
         $codeType = $company->journal_code_type ?? 'alphabetical';
 
@@ -875,7 +875,7 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            $account = PlanComptable::where('company_id', $user->company_id)->findOrFail($id);
+            $account = PlanComptable::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
             $account->delete();
             return redirect()->back()->with('success', 'Compte supprimé du modèle avec succès.');
         } catch (\Exception $e) {
@@ -890,7 +890,7 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            $tier = PlanTiers::where('company_id', $user->company_id)->findOrFail($id);
+            $tier = PlanTiers::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
             $tier->delete();
             return redirect()->back()->with('success', 'Tiers supprimé du modèle avec succès.');
         } catch (\Exception $e) {
@@ -905,7 +905,7 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            $journal = CodeJournal::where('company_id', $user->company_id)->findOrFail($id);
+            $journal = CodeJournal::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
             $journal->delete();
             return redirect()->back()->with('success', 'Journal supprimé du modèle avec succès.');
         } catch (\Exception $e) {
@@ -932,7 +932,7 @@ class AdminConfigController extends Controller
                 return redirect()->back()->with('error', "Le numéro de compte doit comporter exactement $digits chiffres.");
             }
 
-            $account = PlanComptable::where('company_id', $user->company_id)->findOrFail($id);
+            $account = PlanComptable::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
             $account->update([
                 'numero_de_compte' => $request->numero_de_compte,
                 'intitule' => mb_strtoupper($request->intitule),
@@ -956,7 +956,7 @@ class AdminConfigController extends Controller
 
         try {
             $user = Auth::user();
-            $tier = PlanTiers::where('company_id', $user->company_id)->findOrFail($id);
+            $tier = PlanTiers::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
             $tier->update([
                 'numero_de_tiers' => $request->numero_de_tiers,
                 'intitule' => mb_strtoupper($request->intitule),
@@ -975,7 +975,7 @@ class AdminConfigController extends Controller
     public function updateJournal(Request $request, $id)
     {
         $user = Auth::user();
-        $company = Company::findOrFail($user->company_id);
+        $company = Company::findOrFail(session('current_company_id', $user->company_id));
         $digits = $company->journal_code_digits ?? 4;
         $codeType = $company->journal_code_type ?? 'alphabetical';
 
@@ -1005,7 +1005,7 @@ class AdminConfigController extends Controller
         }
 
         // Unicité
-        $exists = CodeJournal::where('company_id', $user->company_id)
+        $exists = CodeJournal::where('company_id', session('current_company_id', $user->company_id))
             ->where('code_journal', $code)
             ->where('id', '!=', $id)
             ->exists();
@@ -1015,13 +1015,13 @@ class AdminConfigController extends Controller
         }
 
         try {
-            $journal = CodeJournal::where('company_id', $user->company_id)->findOrFail($id);
+            $journal = CodeJournal::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
             
             $posteTresorerie = $request->poste_tresorerie_autre ?: $request->poste_tresorerie;
 
             $compteId = null;
             if ($request->compte_de_tresorerie) {
-                $compteId = PlanComptable::where('company_id', $user->company_id)
+                $compteId = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
                     ->where('numero_de_compte', $request->compte_de_tresorerie)
                     ->value('id');
             }
@@ -1048,7 +1048,7 @@ class AdminConfigController extends Controller
     public function importHub()
     {
         $user = Auth::user();
-        $imports = ImportStaging::where('company_id', $user->company_id)
+        $imports = ImportStaging::where('company_id', session('current_company_id', $user->company_id))
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -3894,7 +3894,7 @@ class AdminConfigController extends Controller
         $type = $request->get('type');
         $original = $request->get('original');
         $user = Auth::user();
-        $companyId = $user->company_id;
+        $companyId = session('current_company_id', $user->company_id);
 
         $suggestion = $original;
 
@@ -3952,7 +3952,7 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             
-            $exists = PlanComptable::where('company_id', $user->company_id)
+            $exists = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
                 ->where('numero_de_compte', $request->numero_compte)
                 ->exists();
 
@@ -3966,7 +3966,7 @@ class AdminConfigController extends Controller
                 'type_de_compte' => $request->type_de_compte ?? 'Bilan',
                 'classe' => substr($request->numero_compte, 0, 1),
                 'user_id' => $user->id,
-                'company_id' => $user->company_id,
+                'company_id' => session('current_company_id', $user->company_id),
                 'adding_strategy' => 'manuel'
             ]);
 
@@ -4021,7 +4021,7 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             
-            $exists = PlanTiers::where('company_id', $user->company_id)
+            $exists = PlanTiers::where('company_id', session('current_company_id', $user->company_id))
                 ->where('numero_de_tiers', $request->numero_tiers)
                 ->exists();
 
@@ -4040,7 +4040,7 @@ class AdminConfigController extends Controller
                 'compte_general' => $compteGeneral,
                 'numero_original' => $request->original_numero ?? null,
                 'user_id' => $user->id,
-                'company_id' => $user->company_id,
+                'company_id' => session('current_company_id', $user->company_id),
             ]);
 
             // Mettre à jour les lignes de l'import si un import_id et un original sont fournis
@@ -4095,7 +4095,7 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             
-            $exists = CodeJournal::where('company_id', $user->company_id)
+            $exists = CodeJournal::where('company_id', session('current_company_id', $user->company_id))
                 ->where('code_journal', $request->code_journal)
                 ->exists();
 
@@ -4111,7 +4111,7 @@ class AdminConfigController extends Controller
                 'poste_tresorerie' => 'Autre',
                 'rapprochement_sur' => 'Manuel',
                 'user_id' => $user->id,
-                'company_id' => $user->company_id,
+                'company_id' => session('current_company_id', $user->company_id),
             ]);
 
             // Mettre à jour les lignes de l'import si un import_id et un original sont fournis
@@ -4339,7 +4339,7 @@ class AdminConfigController extends Controller
 
         switch ($type) {
             case 'plan_comptable':
-                $data = PlanComptable::where('company_id', $user->company_id)->orderBy('numero_de_compte')->get();
+                $data = PlanComptable::where('company_id', session('current_company_id', $user->company_id))->orderBy('numero_de_compte')->get();
                 $headers = ['Compte', 'Intitule', 'Type', 'Classe'];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
@@ -4349,7 +4349,7 @@ class AdminConfigController extends Controller
                 break;
 
             case 'plan_tiers':
-                $data = PlanTiers::with('compte')->where('company_id', $user->company_id)->orderBy('numero_de_tiers')->get();
+                $data = PlanTiers::with('compte')->where('company_id', session('current_company_id', $user->company_id))->orderBy('numero_de_tiers')->get();
                 $headers = ['Numero Tiers', 'Intitule', 'Type', 'Compte Collectif'];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
@@ -4359,7 +4359,7 @@ class AdminConfigController extends Controller
                 break;
 
             case 'journals':
-                $data = CodeJournal::where('company_id', $user->company_id)->orderBy('code_journal')->get();
+                $data = CodeJournal::where('company_id', session('current_company_id', $user->company_id))->orderBy('code_journal')->get();
                 $headers = ['Code', 'Intitule', 'Type'];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
@@ -4370,7 +4370,7 @@ class AdminConfigController extends Controller
 
             case 'ecritures':
                 $query = EcritureComptable::with(['planComptable', 'planTiers', 'codeJournal'])
-                    ->where('company_id', $user->company_id);
+                    ->where('company_id', session('current_company_id', $user->company_id));
                 
                 if ($request->input('status') == 'validated') {
                     $query->where('statut', 'approved');
@@ -4511,7 +4511,7 @@ class AdminConfigController extends Controller
             return response()->json(['success' => false, 'message' => 'Aucune colonne de compte à uniformiser trouvée.']);
         }
 
-        $existingAccounts = PlanComptable::where('company_id', $user->company_id)
+        $existingAccounts = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
             ->pluck('numero_de_compte')
             ->toArray();
 
@@ -4534,7 +4534,7 @@ class AdminConfigController extends Controller
                 if (!in_array($val, $existingAccounts)) {
                     for ($len = strlen($val) - 1; $len >= 2; $len--) {
                         $search = substr($val, 0, $len);
-                        $match = PlanComptable::where('company_id', $user->company_id)
+                        $match = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
                             ->where('numero_de_compte', 'LIKE', $search . '%')
                             ->orderBy('numero_de_compte')
                             ->first();
