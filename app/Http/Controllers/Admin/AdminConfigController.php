@@ -1893,7 +1893,7 @@ class AdminConfigController extends Controller
 
                 // GESTION DES DOUBLONS ET COLLISIONS
                 if (!empty($rowCompte) && empty($errors)) {
-                    $isDuplicateInDb = in_array($rowCompte, $existingAccounts);
+                    $isDuplicateInDb = in_array($rowCompte, $existingAccounts) || isset($accountMapping[strtoupper($originalRawValue)]);
                     $isDuplicateInBatch = isset($batchAccounts[$rowCompte]);
 
                     if ($isDuplicateInBatch) {
@@ -1920,6 +1920,12 @@ class AdminConfigController extends Controller
                         // Si existe déjà en base, on garde le numéro mais on signale qu'il existe déjà
                         // L'importation pourra choisir de l'ignorer ou de mettre à jour l'intitulé
                         $existing = $accountDetails->get($rowCompte);
+                        if (!$existing && isset($accountMapping[strtoupper($originalRawValue)])) {
+                            // Si pas trouvé par compte mais trouvé par numero_original, on cherche l'objet via le compte mappé
+                            $mappedAcc = $accountMapping[strtoupper($originalRawValue)];
+                            $existing = $accountDetails->get($mappedAcc);
+                        }
+
                         $row['is_duplicate'] = true;
                         $row['existing_label'] = $existing ? $existing->intitule : null;
                         $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
@@ -2798,6 +2804,37 @@ class AdminConfigController extends Controller
                 
                 $row['debit_val'] = $rowDebit;
                 $row['credit_val'] = $rowCredit;
+
+                // --- DÉTECTION DE DOUBLON EN BASE DE DONNÉES (ÉCRITURES) ---
+                if (empty($errors) && $isValidDate && $parsedDate) {
+                    $compteObj = $accountDetails->get($rowCompte);
+                    $journalObj = $journalDetails->get(strtoupper($rowJournal));
+                    $tiersObj = !empty($rowTiers) ? $tierDetails->get(strtoupper($rowTiers)) : null;
+
+                    $compteId = $compteObj ? $compteObj->id : null;
+                    $journalId = $journalObj ? $journalObj->id : null;
+                    $tiersId = $tiersObj ? $tiersObj->id : null;
+
+                    if ($compteId && $journalId) {
+                         $isDuplicate = \App\Models\EcritureComptable::where([
+                            'date' => $parsedDate->format('Y-m-d'),
+                            'code_journal_id' => $journalId,
+                            'plan_comptable_id' => $compteId,
+                            'plan_tiers_id' => $tiersId,
+                            'debit' => $rowDebit,
+                            'credit' => $rowCredit,
+                            'company_id' => $targetCompanyId,
+                        ])->where('reference_piece', 'like', strtoupper($row['reference'] ?? 'IMPORT'))
+                          ->where('description_operation', 'like', strtoupper($row['libelle'] ?? 'IMPORTATION EXTERNE'))
+                          ->exists();
+                          
+                         if ($isDuplicate) {
+                             $row['is_duplicate'] = true;
+                             $row['info'] = "Existe déjà en base de données.";
+                             $duplicateCount++;
+                         }
+                    }
+                }
             }
 
             $errors = array_values(array_filter($errors, function ($e) {
@@ -3942,8 +3979,8 @@ class AdminConfigController extends Controller
             
             // Finalize Stats
             $report['processed_g'] = $importedCount;
-            $report['skipped_g'] = $duplicateCount;
-            $report['deduplicated'] = $duplicateCount;
+            $report['skipped_g'] = $skippedCount;
+            $report['deduplicated'] = $duplicateCount + $skippedCount;
             // Total debit/credit already tracked via groupBalances if needed, but easier to sum here if we tracked it row by row
             // Let's compute totals from groupBalances for simplicity
             $report['total_debit'] = array_sum(array_column($groupBalances, 'debit'));
