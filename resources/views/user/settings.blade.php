@@ -109,7 +109,13 @@
                                                 </div>
                                                 <div>
                                                     <h4 class="fw-black m-0 text-slate-800">Votre Identité</h4>
-                                                    <p class="text-slate-500 m-0">Gérez vos informations personnelles et professionnelles.</p>
+                                                    <p class="text-slate-500 m-0">
+                                                        @if(session('is_super_admin_bypassing'))
+                                                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-eye me-2"></i>Mode Consultation (Admin)</span>
+                                                        @else
+                                                            Gérez vos informations personnelles et professionnelles.
+                                                        @endif
+                                                    </p>
                                                 </div>
                                             </div>
 
@@ -131,9 +137,15 @@
                                                         <div class="form-text text-slate-400 mt-2">Cette adresse est utilisée pour l'envoi de vos rapports et alertes système.</div>
                                                     </div>
                                                     <div class="col-12 mt-5">
-                                                        <button type="submit" class="btn btn-premium-blue">
-                                                            Enregistrer les modifications
-                                                        </button>
+                                                        @if(session('is_super_admin_bypassing'))
+                                                            <button type="button" class="btn btn-secondary" disabled>
+                                                                Modification désactivée en mode switch
+                                                            </button>
+                                                        @else
+                                                            <button type="submit" class="btn btn-premium-blue">
+                                                                Enregistrer les modifications
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </form>
@@ -149,7 +161,13 @@
                                                 </div>
                                                 <div>
                                                     <h4 class="fw-black m-0 text-slate-800"> Protection du compte</h4>
-                                                    <p class="text-slate-500 m-0">Sécurisez vos accès à la plateforme ComptaFlow.</p>
+                                                    <p class="text-slate-500 m-0">
+                                                        @if(session('is_super_admin_bypassing'))
+                                                            <span class="badge bg-warning text-dark">Lecture seule</span>
+                                                        @else
+                                                            Sécurisez vos accès à la plateforme ComptaFlow.
+                                                        @endif
+                                                    </p>
                                                 </div>
                                             </div>
 
@@ -170,9 +188,15 @@
                                                         <input type="password" name="password_confirmation" class="form-control" required>
                                                     </div>
                                                     <div class="col-12 mt-5">
-                                                        <button type="submit" class="btn btn-premium-blue" style="background:#4f46e5 !important;">
-                                                            Mettre à jour la sécurité
-                                                        </button>
+                                                        @if(session('is_super_admin_bypassing'))
+                                                            <button type="button" class="btn btn-secondary" disabled>
+                                                                Sécurité non modifiable en mode switch
+                                                            </button>
+                                                        @else
+                                                            <button type="submit" class="btn btn-premium-blue" style="background:#4f46e5 !important;">
+                                                                Mettre à jour la sécurité
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </form>

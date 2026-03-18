@@ -103,7 +103,7 @@
                                                 <h2 class="fw-black mb-1 text-slate-800">{{ $user->name }} {{ $user->last_name }}</h2>
                                                 <div class="d-flex align-items-center gap-3">
                                                     <span class="badge bg-blue-50 text-blue-600 px-3 py-2 rounded-pill font-bold">
-                                                        <i class="fa-solid fa-shield-halved me-2"></i>{{ ucfirst($user->role) }}
+                                                        <i class="fa-solid fa-shield-halved me-2"></i>{{ session('is_super_admin_bypassing') ? 'Administrateur' : ucfirst($user->role) }}
                                                     </span>
                                                     <span class="text-slate-500"><i class="fa-solid fa-envelope me-2"></i>{{ $user->email_adresse }}</span>
                                                 </div>

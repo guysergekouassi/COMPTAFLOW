@@ -603,6 +603,19 @@ public function impersonate(User $user)
     {
         $user = Auth::user();
         $company = $user->company;
+
+        // --- NOUVELLE LOGIQUE : Masquage SuperAdmin en bypass mode ---
+        if (session('is_super_admin_bypassing') && session('current_company_id')) {
+            $switchedCompany = Company::find(session('current_company_id'));
+            if ($switchedCompany) {
+                $company = $switchedCompany;
+                // On cherche "celui qui l'a créé" (user_id de la compagnie)
+                $owner = User::find($company->user_id);
+                if ($owner) {
+                    $user = $owner;
+                }
+            }
+        }
         
         // Calcul des statistiques réelles
         $totalEntries = \App\Models\EcritureComptable::where('user_id', $user->id)->count();
@@ -640,12 +653,27 @@ public function impersonate(User $user)
     public function settings()
     {
         $user = Auth::user();
+
+        // --- Masquage SuperAdmin en bypass mode ---
+        if (session('is_super_admin_bypassing') && session('current_company_id')) {
+            $company = Company::find(session('current_company_id'));
+            if ($company && $company->user_id) {
+                $owner = User::find($company->user_id);
+                if ($owner) {
+                    $user = $owner;
+                }
+            }
+        }
+
         $habilitations = $user->habilitations ?? [];
         return view('user.settings', compact('user', 'habilitations'));
     }
 
     public function updateAccount(Request $request)
     {
+        if (session('is_super_admin_bypassing')) {
+            return back()->with('error', 'Modification interdite en mode consultation.');
+        }
         $user = Auth::user();
         
         $validated = $request->validate([
@@ -661,6 +689,9 @@ public function impersonate(User $user)
 
     public function updatePassword(Request $request)
     {
+        if (session('is_super_admin_bypassing')) {
+            return back()->with('error', 'Modification interdite en mode consultation.');
+        }
         $user = Auth::user();
 
         $validated = $request->validate([
@@ -677,6 +708,9 @@ public function impersonate(User $user)
 
     public function updateAvatar(Request $request)
     {
+        if (session('is_super_admin_bypassing')) {
+            return back()->with('error', 'Modification interdite en mode consultation.');
+        }
         $request->validate([
             'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
