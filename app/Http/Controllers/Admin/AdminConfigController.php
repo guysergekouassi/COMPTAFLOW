@@ -2698,7 +2698,7 @@ class AdminConfigController extends Controller
 
                 if (empty($rowJournal)) {
                     $errors[] = "Journal manquant";
-                } elseif (!in_array(strtoupper($rowJournal), array_map('strtoupper', $existingJournals))) {
+                } elseif (!in_array(strtoupper($rowJournal), array_map('strtoupper', $existingJournalsArr))) {
                     $errors[] = "Journal inconnu : $rowJournal";
                     $missingJournals[$rowJournal] = $row['intitule'] ?? 'Journal ' . $rowJournal;
                 }
@@ -2826,7 +2826,7 @@ class AdminConfigController extends Controller
             $nSaisieMapped = isset($mapping['n_saisie']) && $mapping['n_saisie'] !== null && $mapping['n_saisie'] !== '' && $mapping['n_saisie'] !== 'AUTO';
             $balances = [];
             foreach ($rowsWithStatus as &$r) {
-                if ($r['status'] === 'ignored') {
+                if ($r['status'] === 'duplicate') {
                     continue;
                 }
 
@@ -2874,7 +2874,7 @@ class AdminConfigController extends Controller
 
             // Attacher le résumé (y compris après marquage des erreurs)
             foreach ($rowsWithStatus as &$r) {
-                if ($r['status'] === 'ignored') {
+                if ($r['status'] === 'duplicate') {
                     continue;
                 }
 
@@ -2895,8 +2895,8 @@ class AdminConfigController extends Controller
                 $r['group_diff'] = $groupSummary[$ref]['diff'] ?? null;
             }
 
-            $totalDebit = array_sum(array_map(fn($r) => ($r['status'] ?? null) === 'ignored' ? 0 : (float)($r['debit'] ?? 0), $rowsWithStatus));
-            $totalCredit = array_sum(array_map(fn($r) => ($r['status'] ?? null) === 'ignored' ? 0 : (float)($r['credit'] ?? 0), $rowsWithStatus));
+            $totalDebit = array_sum(array_map(fn($r) => ($r['status'] ?? null) === 'duplicate' ? 0 : (float)($r['debit'] ?? 0), $rowsWithStatus));
+            $totalCredit = array_sum(array_map(fn($r) => ($r['status'] ?? null) === 'duplicate' ? 0 : (float)($r['credit'] ?? 0), $rowsWithStatus));
             
             if (abs($totalDebit - $totalCredit) > 0.01) {
                 $diff = round($totalDebit - $totalCredit, 2);
