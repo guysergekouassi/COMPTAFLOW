@@ -109,7 +109,11 @@
                     <tr>
                         <td style="border: none; text-align: left; width: 20%;">
                             @if(file_exists(public_path('logo_armoiries.png')))
-                                <img src="{{ public_path('logo_armoiries.png') }}" style="height: 60px;">
+                                @php
+                                    $logoData = base64_encode(file_get_contents(public_path('logo_armoiries.png')));
+                                    $logoSrc = 'data:image/png;base64,' . $logoData;
+                                @endphp
+                                <img src="{{ $logoSrc }}" style="height: 60px;">
                             @endif
                         </td>
                         <td style="border: none; text-align: center; width: 60%;">

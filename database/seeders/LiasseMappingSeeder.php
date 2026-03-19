@@ -32,7 +32,7 @@ class LiasseMappingSeeder extends Seeder
             $accountRange = null;
 
             // Mapping standard SYSCOHADA (Préfixes de comptes)
-            if ($data[1] === 'ACTIF') {
+            if ($data[1] === 'BILAN_ACTIF') {
                 $accountRange = match($shortCode) {
                     'AE' => '201,202', // Frais de dév
                     'AF' => '21',      // Brevets
@@ -51,14 +51,18 @@ class LiasseMappingSeeder extends Seeder
                     'BS' => '52,53,57', // Trésorerie
                     default => null
                 };
-            } elseif ($data[1] === 'PASSIF') {
+            } elseif ($data[1] === 'BILAN_PASSIF') {
                 $accountRange = match($shortCode) {
                     'CA' => '10',      // Capital
-                    'CH' => '12',      // Report à nouveau
+                    'CF' => '11',      // Réserves
+                    'CG' => '12',      // Report à nouveau
+                    'CH' => '12',      // Report à nouveau (selon DGI)
                     'CJ' => '13',      // Résultat net (avant calcul)
                     'DA' => '16',      // Emprunts
                     'DK' => '42,43,44', // Dettes soc/fisc
                     'DM' => '40,419',  // Fournisseurs / Dettes divers
+                    'FB' => '40',      // Fournisseurs exploitation
+                    'HA' => '52,56',   // Banques crédits passif
                     default => null
                 };
             } elseif ($data[1] === 'RESULTAT') {

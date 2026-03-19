@@ -4,13 +4,21 @@
         $amort = $data[$fieldBase . '_amort'] ?? 0;
         $net = $data[$fieldBase . '_net'] ?? 0;
         $netN1 = $data[$fieldBase . '_net_N1'] ?? 0;
-        $isExport = $GLOBALS['isExport'] ?? ($viewData['isExport'] ?? false);
+        $details = $data[$fieldBase . '_details'] ?? [];
+        $isExport = isset($GLOBALS['isExport']) ? $GLOBALS['isExport'] : (isset($viewData['isExport']) ? $viewData['isExport'] : false);
         
         $rowClass = $isTotal ? 'row-total' : '';
+        $hasDetails = count($details) > 0 && !$isTotal;
         
         echo "<tr class='{$rowClass}'>";
         echo "<td class='col-code'>{$ref}</td>";
-        echo "<td>" . ($isTotal ? "<strong>{$label}</strong>" : $label) . "</td>";
+        
+        echo "<td>";
+        if ($hasDetails && !$isExport) {
+            echo "<button class='btn btn-sm btn-light py-0 px-2 text-primary border-0 me-2 shadow-none toggle-btn' type='button' data-bs-toggle='collapse' data-bs-target='#detail_{$fieldBase}'>";
+            echo "<i class='bx bx-chevron-right'></i></button>";
+        }
+        echo ($isTotal ? "<strong>{$label}</strong>" : $label) . "</td>";
         
         $noteVal = $data['note_'.$fieldBase] ?? $noteCode;
         if ($isExport) {
@@ -19,15 +27,39 @@
             echo "<td class='col-val'>" . ($amort != 0 ? number_format($amort, 0, ',', ' ') : '-') . "</td>";
         } else {
             echo "<td class='text-center'><input type='text' class='liasse-input text-center p-1' name='note_{$fieldBase}' value='{$noteVal}'></td>";
-            echo "<td class='col-val'><input type='number' step='0.01' class='liasse-input' name='{$fieldBase}_brut' value='{$brut}'></td>";
-            echo "<td class='col-val'><input type='number' step='0.01' class='liasse-input' name='{$fieldBase}_amort' value='{$amort}'></td>";
+            if ($isTotal) {
+                echo "<td class='col-val'></td><td class='col-val'></td>";
+            } else {
+                echo "<td class='col-val'><input type='number' step='0.01' class='liasse-input' name='{$fieldBase}_brut' value='{$brut}'></td>";
+                echo "<td class='col-val'><input type='number' step='0.01' class='liasse-input' name='{$fieldBase}_amort' value='{$amort}'></td>";
+            }
         }
         
-        echo "<td class='col-val text-primary fw-800'>" . number_format($net, 0, ',', ' ') . "</td>";
-        echo "<td class='col-val text-secondary'>" . number_format($netN1, 0, ',', ' ') . "</td>";
+        echo "<td class='col-val text-primary fw-800'>" . ($net != 0 ? number_format($net, 0, ',', ' ') : '-') . "</td>";
+        echo "<td class='col-val text-secondary'>" . ($netN1 != 0 ? number_format($netN1, 0, ',', ' ') : '-') . "</td>";
         echo "</tr>";
+
+        if ($hasDetails && !$isExport) {
+            echo "<tr class='collapse' id='detail_{$fieldBase}'><td colspan='7' class='p-0'>";
+            echo "<div class='bg-slate-50 border-bottom p-3 shadow-inner' style='box-shadow: inset 0 2px 4px rgba(0,0,0,0.02)'>";
+            echo "<table class='table table-sm table-borderless mb-0' style='font-size: 0.8rem; background: transparent;'>";
+            foreach($details as $d) {
+                echo "<tr><td style='width:60px'></td>";
+                echo "<td class='text-slate-600' style='width:40%'><strong>{$d['numero']}</strong> - {$d['intitule']}</td>";
+                echo "<td class='text-end font-mono text-slate-800 fw-bold'>" . number_format($d['solde'], 0, ',', ' ') . "</td>";
+                echo "<td colspan='4'></td></tr>";
+            }
+            echo "</table></div></td></tr>";
+        }
     }
 @endphp
+
+<script>
+    // Ajout d'une petite animation de rotation pour les icônes chevron
+    $('.toggle-btn').on('click', function() {
+        $(this).find('i').toggleClass('bx-chevron-right bx-chevron-down');
+    });
+</script>
 
 <div class="premium-card">
     <div class="table-responsive">

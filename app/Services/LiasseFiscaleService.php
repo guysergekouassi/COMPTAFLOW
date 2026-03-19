@@ -26,45 +26,133 @@ class LiasseFiscaleService
      */
     public function getSummaryData($exerciceId, $companyId)
     {
-        // Utilisation du moteur de calcul pour les codes de synthèse
-        // BZ = Total Actif, GZ = Total Passif, XS = Résultat Net (Fiche SIG)
-        $actif = $this->calculateValueForRange('1,2,3,4,5', $exerciceId, $companyId); // Très large pour test
+        $balances = $this->getAccountBalances($exerciceId, $companyId);
+        $totalActif = $this->calculateValueForRangeFast('2,3,4,5', $balances)['net'];
+        $totalPassif = $this->calculateValueForRangeFast('1,4,5', $balances)['net'];
+        $produits = $this->calculateValueForRangeFast('7', $balances)['net'];
+        $charges = $this->calculateValueForRangeFast('6', $balances)['net'];
         
-        // Pour être plus précis on devrait prendre les totaux officiels
-        $totalActif = $this->calculateValueForRange('2,3,4,5', $exerciceId, $companyId)['net'];
-        $totalPassif = $this->calculateValueForRange('1,4,5', $exerciceId, $companyId)['net']; // Simplifié
-        
-        // Résultat Net (Produits - Charges)
-        $produits = $this->calculateValueForRange('7', $exerciceId, $companyId)['net'];
-        $charges = $this->calculateValueForRange('6', $exerciceId, $companyId)['net'];
-        $resultat = $produits - $charges;
-
         return [
             'total_actif' => $totalActif,
             'total_passif' => $totalPassif,
-            'resultat_net' => $resultat,
+            'resultat_net' => $produits - $charges,
         ];
     }
 
-    /**
-     * Récupère les données pour une page spécifique de la liasse (N et N-1).
-     */
+    public function getAccountBalances($exerciceId, $companyId)
+    {
+        return DB::table('ecriture_comptables')
+            ->join('plan_comptables', 'ecriture_comptables.plan_comptable_id', '=', 'plan_comptables.id')
+            ->where('ecriture_comptables.exercices_comptables_id', $exerciceId)
+            ->where('ecriture_comptables.company_id', $companyId)
+            ->selectRaw('plan_comptables.numero_de_compte, plan_comptables.intitule, SUM(debit) as total_debit, SUM(credit) as total_credit')
+            ->groupBy('plan_comptables.id', 'plan_comptables.numero_de_compte', 'plan_comptables.intitule')
+            ->get();
+    }
+
+    public function calculateValueForRangeFast($range, $balances)
+    {
+        $prefixes = explode(',', $range);
+        $totalDebit = 0;
+        $totalCredit = 0;
+        $amort = 0;
+        $details = [];
+
+        foreach ($balances as $b) {
+            $n = trim($b->numero_de_compte);
+            $d = $b->total_debit;
+            $c = $b->total_credit;
+            
+            $matchPrefix = false;
+            foreach ($prefixes as $p) {
+                $p = trim($p);
+                if ($p !== '' && str_starts_with($n, $p)) {
+                    $matchPrefix = true;
+                    break;
+                }
+            }
+
+            if ($matchPrefix) {
+                $totalDebit += $d;
+                $totalCredit += $c;
+                // Détails : compte de passif = Crédit-Débit, compte d'actif = Débit-Crédit
+                $firstDigit = substr(trim($range), 0, 1);
+                $solde = in_array($firstDigit, ['1', '4', '7']) ? ($c - $d) : ($d - $c);
+                if (abs($solde) > 0.01) {
+                    $details[] = [
+                        'numero' => $n,
+                        'intitule' => $b->intitule,
+                        'solde' => $solde
+                    ];
+                }
+            }
+        }
+        
+        $firstDigit = substr(trim($range), 0, 1);
+        if (in_array($firstDigit, ['1', '4', '7'])) {
+            $brut = $totalCredit - $totalDebit;
+        } else {
+            $brut = $totalDebit - $totalCredit;
+        }
+
+        if ($firstDigit === '2') {
+            foreach ($balances as $b) {
+                $n = trim($b->numero_de_compte);
+                foreach ($prefixes as $p) {
+                    $cleanPrefix = trim($p);
+                    if (strlen($cleanPrefix) >= 1) {
+                        $p28 = '28' . substr($cleanPrefix, 1);
+                        $p29 = '29' . substr($cleanPrefix, 1);
+                        if (str_starts_with($n, $p28) || str_starts_with($n, $p29)) {
+                            // Amortissements : Crédit - Débit
+                            $amortMontant = $b->total_credit - $b->total_debit;
+                            $amort += $amortMontant;
+                            if (abs($amortMontant) > 0.01) {
+                                $details[] = [
+                                    'numero' => $n,
+                                    'intitule' => $b->intitule,
+                                    'solde' => -$amortMontant // Négatif car soustrait de l'Actif dans le détail
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        usort($details, function($a, $b) { return strcmp($a['numero'], $b['numero']); });
+
+        return [
+            'brut' => $brut,
+            'amort' => $amort,
+            'net' => $brut - $amort,
+            'details' => $details
+        ];
+    }
+
     public function getPageData($exerciceId, $pageCode)
     {
+        if ($pageCode === 'BALANCE') {
+            $companyId = ExerciceComptable::find($exerciceId)->company_id ?? 1;
+            return $this->reportingService->getBalanceData($exerciceId, $companyId);
+        }
+        
+        if ($pageCode === 'GRAND_LIVRE') {
+            $companyId = ExerciceComptable::find($exerciceId)->company_id ?? 1;
+            return $this->reportingService->getLedgerData($exerciceId, $companyId);
+        }
+
         $exercice = ExerciceComptable::find($exerciceId);
         if (!$exercice) return [];
 
         $companyId = $exercice->company_id;
 
-        // 1. Récupérer l'exercice N-1
         $prevExercice = ExerciceComptable::where('company_id', $companyId)
             ->where('date_fin', '<', $exercice->date_debut)
             ->orderBy('date_fin', 'desc')
             ->first();
 
-        // 2. Récupérer les mappings pour cette page
         $mappings = LiasseMapping::where('code_tableau', $pageCode)->get();
-        
         if ($mappings->isEmpty()) {
             if ($pageCode === 'FICHE_R1') {
                 return [
@@ -76,6 +164,9 @@ class LiasseFiscaleService
             return [];
         }
 
+        $balancesN = $this->getAccountBalances($exerciceId, $companyId);
+        $balancesN1 = $prevExercice ? $this->getAccountBalances($prevExercice->id, $companyId) : [];
+
         $result = [];
 
         foreach ($mappings as $mapping) {
@@ -85,25 +176,31 @@ class LiasseFiscaleService
             if (!$shortCode) continue;
 
             if ($mapping->account_range) {
-                // Valeurs N
-                $valuesN = $this->calculateValueForRange($mapping->account_range, $exerciceId, $companyId);
-                
-                // Valeurs N-1
-                $valuesN1 = $prevExercice ? $this->calculateValueForRange($mapping->account_range, $prevExercice->id, $companyId) : ['net' => 0];
+                $valuesN = $this->calculateValueForRangeFast($mapping->account_range, $balancesN);
+                $valuesN1 = $prevExercice ? $this->calculateValueForRangeFast($mapping->account_range, $balancesN1) : ['net' => 0, 'details' => []];
 
                 if ($pageCode === 'BILAN_ACTIF') {
                     $result[$shortCode . '_brut'] = $valuesN['brut'];
                     $result[$shortCode . '_amort'] = $valuesN['amort'];
                     $result[$shortCode . '_net'] = $valuesN['net'];
+                    $result[$shortCode . '_details'] = $valuesN['details'];
                     $result[$shortCode . '_net_N1'] = $valuesN1['net'];
                 } else {
                     $result[$shortCode] = $valuesN['net'];
+                    $result[$shortCode . '_details'] = $valuesN['details'];
                     $result[$shortCode . '_N1'] = $valuesN1['net'];
                 }
             }
         }
 
-        // 3. Récupérer les données manuelles
+        // Pour TFT et Résultat, si on veut utiliser reportingService au lieu de mapping
+        if ($pageCode === 'TFT') {
+            $result['detailed_tft'] = $this->reportingService->getTFTData($exerciceId, $companyId, null, true);
+        }
+        if ($pageCode === 'RESULTAT') {
+            $result['detailed_sig'] = $this->reportingService->getSIGData($exerciceId, $companyId, null, true);
+        }
+
         $manualData = LiasseData::where('exercice_id', $exerciceId)
             ->where('company_id', $companyId)
             ->where('page_code', $pageCode)
@@ -111,66 +208,6 @@ class LiasseFiscaleService
             ->toArray();
 
         return array_merge($result, $manualData);
-    }
-
-    /**
-     * Moteur de calcul par plage de comptes.
-     */
-    public function calculateValueForRange($range, $exerciceId, $companyId)
-    {
-        $prefixes = explode(',', $range);
-        
-        $query = EcritureComptable::where('company_id', $companyId)
-            ->where('exercices_comptables_id', $exerciceId)
-            ->whereHas('planComptable', function($q) use ($prefixes) {
-                $q->where(function($sq) use ($prefixes) {
-                    foreach ($prefixes as $prefix) {
-                        $sq->orWhere('numero_de_compte', 'like', trim($prefix) . '%');
-                    }
-                });
-            });
-
-        $data = $query->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
-        
-        $totalDebit = $data->total_debit ?? 0;
-        $totalCredit = $data->total_credit ?? 0;
-        
-        // Convention SYSCOHADA :
-        // Actif / Charges : Solde Débiteur (D - C)
-        // Passif / Produits : Solde Créditeur (C - D)
-        
-        $firstDigit = substr(trim($range), 0, 1);
-        if (in_array($firstDigit, ['1', '4', '7'])) { // Passif (1, 4-crédit) et Produits (7)
-            $brut = $totalCredit - $totalDebit;
-        } else {
-            $brut = $totalDebit - $totalCredit;
-        }
-
-        $amort = 0;
-        // Calcul des amortissements (28) et dépréciations (29) pour les immobilisations (2)
-        if ($firstDigit === '2') {
-             $amortQuery = EcritureComptable::where('company_id', $companyId)
-                ->where('exercices_comptables_id', $exerciceId)
-                ->whereHas('planComptable', function($q) use ($prefixes) {
-                    $q->where(function($sq) use ($prefixes) {
-                        foreach ($prefixes as $prefix) {
-                            $cleanPrefix = trim($prefix);
-                            if (strlen($cleanPrefix) >= 1) {
-                                $sq->orWhere('numero_de_compte', 'like', '28' . substr($cleanPrefix, 1) . '%');
-                                $sq->orWhere('numero_de_compte', 'like', '29' . substr($cleanPrefix, 1) . '%');
-                            }
-                        }
-                    });
-                });
-             $amortData = $amortQuery->selectRaw('SUM(credit) - SUM(debit) as total_amort')->first();
-             $amort = $amortData->total_amort ?? 0;
-        }
-
-        return [
-            'brut' => $brut,
-            'amort' => $amort,
-            'net' => $brut - $amort
-        ];
     }
 
     /**

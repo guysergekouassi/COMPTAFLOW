@@ -263,8 +263,12 @@
                         <div class="toolbar-premium">
                             <div class="d-flex align-items-center">
                                 @if(file_exists(public_path('logo_armoiries.png')))
+                                    @php
+                                        $logoData = base64_encode(file_get_contents(public_path('logo_armoiries.png')));
+                                        $logoSrc = 'data:image/png;base64,' . $logoData;
+                                    @endphp
                                     <div class="me-3 p-2 bg-white rounded-3 shadow-sm" style="border: 1px solid #e2e8f0;">
-                                        <img src="{{ asset('logo_armoiries.png') }}" alt="Logo DGI" style="height: 45px;">
+                                        <img src="{{ $logoSrc }}" alt="Logo DGI" style="height: 45px;">
                                     </div>
                                 @endif
                                 <div>
