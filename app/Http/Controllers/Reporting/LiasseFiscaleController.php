@@ -79,7 +79,32 @@ class LiasseFiscaleController extends Controller
         $pageInfo = $this->pages[$page] ?? null;
         if (!$pageInfo) return response()->json(['error' => 'Page non trouvée'], 404);
 
+        $user = Auth::user();
+        if (!$user) return response()->json(['error' => 'Non authentifié'], 401);
+
+        $companyId = session('current_company_id');
+        if (!$companyId) {
+            $companyId = $user->company_id;
+        }
+
         $exerciceId = session('exercice_actif_id', session('current_exercice_id'));
+        if (!$exerciceId) {
+            $activeExercice = ExerciceComptable::where('company_id', $companyId)
+                ->where('is_active', true)
+                ->first();
+            if (!$activeExercice) {
+                // S'il n'y a pas d'actif, on prend le plus récent
+                $activeExercice = ExerciceComptable::where('company_id', $companyId)
+                    ->orderBy('date_debut', 'desc')
+                    ->first();
+            }
+            $exerciceId = $activeExercice ? $activeExercice->id : null;
+        }
+
+        if (!$exerciceId) {
+            return response()->json(['error' => 'Aucun exercice trouvé'], 404);
+        }
+
         $data = $service->getPageData($exerciceId, $pageInfo['code']);
 
         $viewName = 'reporting.liasse.pages.' . strtolower($pageInfo['code']);
@@ -94,7 +119,6 @@ class LiasseFiscaleController extends Controller
             $html = view($viewName, compact('data'))->render();
         }
 
-        $companyId = session('current_company_id');
         $summary = $service->getSummaryData($exerciceId, $companyId);
 
         return response()->json([
@@ -108,8 +132,16 @@ class LiasseFiscaleController extends Controller
     public function storeManualData(Request $request, \App\Services\LiasseFiscaleService $service)
     {
         $user = Auth::user();
-        $companyId = session('current_company_id', $user->company_id);
+        if (!$user) return response()->json(['error' => 'Non authentifié'], 401);
+
+        $companyId = session('current_company_id');
+        if (!$companyId) $companyId = $user->company_id;
+
         $exerciceId = session('exercice_actif_id', session('current_exercice_id'));
+        if (!$exerciceId) {
+            $activeExercice = ExerciceComptable::where('company_id', $companyId)->where('is_active', true)->first();
+            $exerciceId = $activeExercice ? $activeExercice->id : null;
+        }
         $pageCode = $request->input('page_code');
         $data = $request->input('data');
 
@@ -121,8 +153,16 @@ class LiasseFiscaleController extends Controller
     public function export(Request $request, $format, \App\Services\LiasseFiscaleService $service)
     {
         $user = Auth::user();
-        $companyId = session('current_company_id', $user->company_id);
+        if (!$user) return response()->json(['error' => 'Non authentifié'], 401);
+
+        $companyId = session('current_company_id');
+        if (!$companyId) $companyId = $user->company_id;
+
         $exerciceId = session('exercice_actif_id', session('current_exercice_id'));
+        if (!$exerciceId) {
+            $activeExercice = ExerciceComptable::where('company_id', $companyId)->where('is_active', true)->first();
+            $exerciceId = $activeExercice ? $activeExercice->id : null;
+        }
         $pageParam = $request->query('page');
         $pageCode = $pageParam;
 

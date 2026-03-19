@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('libelle_colonne')->nullable();
             $table->string('code_champ_dgi', 100)->unique();
             $table->string('cellule_excel', 20)->nullable();
+            $table->string('account_range')->nullable(); // Ex: "201,202" ou "21"
             $table->integer('pos_ligne')->nullable();
             $table->integer('pos_col')->nullable();
             $table->timestamps();

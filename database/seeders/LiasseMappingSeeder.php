@@ -26,6 +26,61 @@ class LiasseMappingSeeder extends Seeder
         while (($data = fgetcsv($handle, 0, ';')) !== false) {
             if (count($data) < 12) continue;
 
+            $codeChamp = $data[8];
+            $parts = explode('_', $codeChamp);
+            $shortCode = $parts[count($parts)-2] ?? null;
+            $accountRange = null;
+
+            // Mapping standard SYSCOHADA (Préfixes de comptes)
+            if ($data[1] === 'ACTIF') {
+                $accountRange = match($shortCode) {
+                    'AE' => '201,202', // Frais de dév
+                    'AF' => '21',      // Brevets
+                    'AG' => '22',      // Fonds comm
+                    'AH' => '20,23,24', // Autres incorp
+                    'AJ' => '211',     // Terrains
+                    'AK' => '231,232', // Bâtiments
+                    'AL' => '233,243', // Aménagements
+                    'AM' => '241,242', // Matériel
+                    'AN' => '245',     // Transport
+                    'AP' => '238,248,258', // Avances immo
+                    'AR' => '26',      // Titres part
+                    'AS' => '27',      // Autres immo fin
+                    'BB' => '3',       // Stocks
+                    'BG' => '409,41',  // Créances
+                    'BS' => '52,53,57', // Trésorerie
+                    default => null
+                };
+            } elseif ($data[1] === 'PASSIF') {
+                $accountRange = match($shortCode) {
+                    'CA' => '10',      // Capital
+                    'CH' => '12',      // Report à nouveau
+                    'CJ' => '13',      // Résultat net (avant calcul)
+                    'DA' => '16',      // Emprunts
+                    'DK' => '42,43,44', // Dettes soc/fisc
+                    'DM' => '40,419',  // Fournisseurs / Dettes divers
+                    default => null
+                };
+            } elseif ($data[1] === 'RESULTAT') {
+                $accountRange = match($shortCode) {
+                    'TC' => '70',      // CA
+                    'RE' => '60,61,62', // Achats
+                    'RI' => '63,64',   // Impôts / Salaires
+                    default => null
+                };
+            } elseif ($data[1] === 'TFT') {
+                $accountRange = match($shortCode) {
+                    'ZA' => '5',       // Capacité d'autofinancement (Sera affiné)
+                    'ZB' => '4',       // Variation BFR
+                    'ZD' => '2',       // Investissements
+                    'ZG' => '10',      // Capital
+                    'ZH' => '16',      // Emprunts
+                    'ZL' => '5',       // Trésorerie initiale
+                    'ZM' => '5',       // Trésorerie finale
+                    default => null
+                };
+            }
+
             $rows[] = [
                 'type' => $data[0],
                 'code_tableau' => $data[1],
@@ -35,8 +90,9 @@ class LiasseMappingSeeder extends Seeder
                 'code_ligne_dgi' => $data[5],
                 'libelle_ligne' => $data[6],
                 'libelle_colonne' => $data[7],
-                'code_champ_dgi' => $data[8],
+                'code_champ_dgi' => $codeChamp,
                 'cellule_excel' => $data[9],
+                'account_range' => $accountRange,
                 'pos_ligne' => is_numeric($data[10]) ? (int)$data[10] : null,
                 'pos_col' => is_numeric($data[11]) ? (int)$data[11] : null,
                 'created_at' => now(),
