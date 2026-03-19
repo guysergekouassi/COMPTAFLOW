@@ -32,7 +32,10 @@ class LiasseMappingSeeder extends Seeder
             $accountRange = null;
 
             // Mapping standard SYSCOHADA (Préfixes de comptes)
-            if ($data[1] === 'BILAN_ACTIF') {
+            $codeTableauDb = $data[1]; // Par défaut
+
+            if ($data[1] === 'ACTIF' || $data[1] === 'BILAN_ACTIF') {
+                $codeTableauDb = 'BILAN_ACTIF';
                 $accountRange = match($shortCode) {
                     'AE' => '201,202', // Frais de dév
                     'AF' => '21',      // Brevets
@@ -51,7 +54,8 @@ class LiasseMappingSeeder extends Seeder
                     'BS' => '52,53,57', // Trésorerie
                     default => null
                 };
-            } elseif ($data[1] === 'BILAN_PASSIF') {
+            } elseif ($data[1] === 'PASSIF' || $data[1] === 'BILAN_PASSIF') {
+                $codeTableauDb = 'BILAN_PASSIF';
                 $accountRange = match($shortCode) {
                     'CA' => '10',      // Capital
                     'CF' => '11',      // Réserves
@@ -87,7 +91,7 @@ class LiasseMappingSeeder extends Seeder
 
             $rows[] = [
                 'type' => $data[0],
-                'code_tableau' => $data[1],
+                'code_tableau' => $codeTableauDb,
                 'titre_tableau' => $data[2],
                 'type_tableau' => $data[3],
                 'onglet_excel' => $data[4],
