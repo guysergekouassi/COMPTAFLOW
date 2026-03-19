@@ -96,7 +96,7 @@ class AccountingReportingService
     {
         $query = EcritureComptable::where('exercices_comptables_id', $exerciceId)
             ->where('company_id', $companyId)
-            ->with(['planComptable' => function($q) {
+            ->with(['codeJournal', 'planComptable' => function($q) {
                 // Optimisation: ne charger que le numéro et l'intitulé
                 $q->select('id', 'numero_de_compte', 'intitule');
             }]);

@@ -41,5 +41,29 @@
                 @endforelse
             </tbody>
         </table>
+        
+        @if(count($data) > 0)
+        @php
+            $totalDebit = collect($data)->sum('debit');
+            $totalCredit = collect($data)->sum('credit');
+            $totalSoldeDeb = collect($data)->sum('solde_debiteur');
+            $totalSoldeCred = collect($data)->sum('solde_crediteur');
+        @endphp
+        <div class="bg-slate-100 border-t border-slate-200 py-3 px-6">
+            <div class="row font-bold text-slate-800 text-sm">
+                <div class="col-md-6 text-end pe-4 uppercase tracking-wider text-xs text-slate-500">
+                    TOTAUX GENERAUX
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-3 text-end px-2">{{ number_format($totalDebit, 0, ',', ' ') }}</div>
+                        <div class="col-3 text-end px-2">{{ number_format($totalCredit, 0, ',', ' ') }}</div>
+                        <div class="col-3 text-end px-2">{{ number_format($totalSoldeDeb, 0, ',', ' ') }}</div>
+                        <div class="col-3 text-end px-2">{{ number_format($totalSoldeCred, 0, ',', ' ') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>

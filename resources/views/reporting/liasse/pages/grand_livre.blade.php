@@ -24,10 +24,10 @@
                             {{ \Carbon\Carbon::parse($op->date)->format('d/m/Y') }}
                         </td>
                         <td class="py-2 text-xs text-slate-500 font-mono">
-                            {{ $op->codeJournal->code ?? '-' }}
+                            {{ $op->codeJournal->code_journal ?? '-' }}
                         </td>
                         <td class="py-2 text-xs text-slate-700">
-                            {{ $op->libelle }}
+                            {{ $op->description_operation }}
                         </td>
                         <td class="py-2 text-xs text-slate-600 text-end">
                             {{ number_format($op->debit, 0, ',', ' ') }}
@@ -38,6 +38,25 @@
                     </tr>
                     @endforeach
                 </tbody>
+                <tfoot class="bg-slate-50 border-t border-slate-100">
+                    @php
+                        $totDebit = $compteGroup['operations']->sum('debit');
+                        $totCredit = $compteGroup['operations']->sum('credit');
+                        $solde = $totDebit - $totCredit;
+                    @endphp
+                    <tr>
+                        <td colspan="3" class="ps-6 py-2 text-xs font-bold text-slate-600 text-end uppercase">Totaux Mouvements</td>
+                        <td class="py-2 text-xs font-bold text-slate-800 text-end">{{ number_format($totDebit, 0, ',', ' ') }}</td>
+                        <td class="pe-6 py-2 text-xs font-bold text-slate-800 text-end">{{ number_format($totCredit, 0, ',', ' ') }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="ps-6 py-2 text-xs font-bold text-slate-600 text-end uppercase">Solde du Compte</td>
+                        <td colspan="2" class="pe-6 py-2 text-sm font-bold text-end {{ $solde > 0 ? 'text-blue-600' : ($solde < 0 ? 'text-red-500' : 'text-slate-500') }}">
+                            {{ number_format(abs($solde), 0, ',', ' ') }} 
+                            <span class="text-[10px] text-slate-400 ms-1">{{ $solde > 0 ? '(Débiteur)' : ($solde < 0 ? '(Créditeur)' : '') }}</span>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>

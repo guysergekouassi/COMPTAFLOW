@@ -13,7 +13,7 @@
         
         echo "<td>";
         if ($hasDetails && !$isExport) {
-            echo "<button class='btn btn-sm btn-light py-0 px-2 text-primary border-0 me-2 shadow-none toggle-btn' type='button' data-bs-toggle='collapse' data-bs-target='#detail_{$fieldBase}'>";
+            echo "<button class='btn btn-sm btn-light py-0 px-2 text-primary border-0 me-2 shadow-none toggle-btn' type='button' data-target-row='detail_{$fieldBase}'>";
             echo "<i class='bx bx-chevron-right'></i></button>";
         }
         echo ($isTotal ? "<strong>{$label}</strong>" : $label) . "</td>";
@@ -35,14 +35,14 @@
         echo "</tr>";
 
         if ($hasDetails && !$isExport) {
-            echo "<tr class='collapse' id='detail_{$fieldBase}'><td colspan='5' class='p-0'>";
+            echo "<tr id='detail_{$fieldBase}' style='display: none;'><td colspan='7' class='p-0 border-0'>";
             echo "<div class='bg-slate-50 border-bottom p-3 shadow-inner' style='box-shadow: inset 0 2px 4px rgba(0,0,0,0.02)'>";
             echo "<table class='table table-sm table-borderless mb-0' style='font-size: 0.8rem; background: transparent;'>";
             foreach($details as $d) {
                 echo "<tr><td style='width:60px'></td>";
                 echo "<td class='text-slate-600' style='width:40%'><strong>{$d['numero']}</strong> - {$d['intitule']}</td>";
                 echo "<td class='text-end font-mono text-slate-800 fw-bold'>" . number_format($d['solde'], 0, ',', ' ') . "</td>";
-                echo "<td colspan='2'></td></tr>";
+                echo "<td colspan='4'></td></tr>";
             }
             echo "</table></div></td></tr>";
         }
@@ -50,13 +50,16 @@
 @endphp
 
 <script>
+    // Ajout d'une petite animation de rotation pour les icônes chevron
     $('.toggle-btn').off('click').on('click', function() {
         $(this).find('i').toggleClass('bx-chevron-right bx-chevron-down');
+        var target = $(this).attr('data-target-row');
+        $('#' + target).toggle();
     });
 </script>
 
 <div class="premium-card">
-    <div class="table-responsive">
+    <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
         <table class="liasse-table">
             <thead>
                 <tr>

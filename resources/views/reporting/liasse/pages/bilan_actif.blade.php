@@ -15,7 +15,7 @@
         
         echo "<td>";
         if ($hasDetails && !$isExport) {
-            echo "<button class='btn btn-sm btn-light py-0 px-2 text-primary border-0 me-2 shadow-none toggle-btn' type='button' data-bs-toggle='collapse' data-bs-target='#detail_{$fieldBase}'>";
+            echo "<button class='btn btn-sm btn-light py-0 px-2 text-primary border-0 me-2 shadow-none toggle-btn' type='button' data-target-row='detail_{$fieldBase}'>";
             echo "<i class='bx bx-chevron-right'></i></button>";
         }
         echo ($isTotal ? "<strong>{$label}</strong>" : $label) . "</td>";
@@ -40,7 +40,7 @@
         echo "</tr>";
 
         if ($hasDetails && !$isExport) {
-            echo "<tr class='collapse' id='detail_{$fieldBase}'><td colspan='7' class='p-0'>";
+            echo "<tr id='detail_{$fieldBase}' style='display: none;'><td colspan='7' class='p-0 border-0'>";
             echo "<div class='bg-slate-50 border-bottom p-3 shadow-inner' style='box-shadow: inset 0 2px 4px rgba(0,0,0,0.02)'>";
             echo "<table class='table table-sm table-borderless mb-0' style='font-size: 0.8rem; background: transparent;'>";
             foreach($details as $d) {
@@ -55,14 +55,16 @@
 @endphp
 
 <script>
-    // Ajout d'une petite animation de rotation pour les icônes chevron
-    $('.toggle-btn').on('click', function() {
+    // Ajout d'une petite animation de rotation pour les icônes chevron et affichage jQuery
+    $('.toggle-btn').off('click').on('click', function() {
         $(this).find('i').toggleClass('bx-chevron-right bx-chevron-down');
+        var target = $(this).attr('data-target-row');
+        $('#' + target).toggle();
     });
 </script>
 
 <div class="premium-card">
-    <div class="table-responsive">
+    <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
         <table class="liasse-table">
             <thead>
                 <tr>

@@ -35,7 +35,8 @@
         echo "</tr>";
 
         if ($hasDetails && !$isExport) {
-            echo "<tr class='collapse' id='detail_{$fieldBase}'><td colspan='5' class='p-0'>";
+            echo "<tr id='row_detail_{$fieldBase}'><td colspan='5' class='p-0 border-0'>";
+            echo "<div class='collapse' id='detail_{$fieldBase}'>";
             echo "<div class='bg-slate-50 border-bottom p-3 shadow-inner' style='box-shadow: inset 0 2px 4px rgba(0,0,0,0.02)'>";
             echo "<table class='table table-sm table-borderless mb-0' style='font-size: 0.8rem; background: transparent;'>";
             foreach($details as $d) {
@@ -44,7 +45,7 @@
                 echo "<td class='text-end font-mono text-slate-800 fw-bold'>" . number_format($d['solde'], 0, ',', ' ') . "</td>";
                 echo "<td colspan='2'></td></tr>";
             }
-            echo "</table></div></td></tr>";
+            echo "</table></div></div></td></tr>";
         }
     }
 @endphp
