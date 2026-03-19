@@ -105,9 +105,24 @@
     @foreach($pages as $index => $page)
         <div class="@if(!$loop->last) page-break @endif">
             <div class="header">
-                <div class="company-name">{{ $company->name ?? 'ENTREPRISE' }}</div>
-                <div class="report-title">{{ $page['title'] }}</div>
-                <div class="exercice-info">Exercice : {{ $exercice->libelle }} ({{ date('Y', strtotime($exercice->date_debut)) }})</div>
+                <table style="border: none; margin-bottom: 0;">
+                    <tr>
+                        <td style="border: none; text-align: left; width: 20%;">
+                            @if(file_exists(public_path('logo_armoiries.png')))
+                                <img src="{{ public_path('logo_armoiries.png') }}" style="height: 60px;">
+                            @endif
+                        </td>
+                        <td style="border: none; text-align: center; width: 60%;">
+                            <div class="company-name">{{ $company->company_name ?? 'ENTREPRISE' }}</div>
+                            <div class="report-title">{{ $page['title'] }}</div>
+                            <div class="exercice-info">Exercice : {{ $exercice->libelle ?? $exercice->intitule }} ({{ date('Y', strtotime($exercice->date_debut)) }})</div>
+                        </td>
+                        <td style="border: none; text-align: right; width: 20%;">
+                            <div style="font-size: 8px; font-weight: bold;">RÉPUBLIQUE DE CÔTE D'IVOIRE</div>
+                            <div style="font-size: 7px;">Direction Générale des Impôts</div>
+                        </td>
+                    </tr>
+                </table>
             </div>
 
             {!! $page['html'] !!}

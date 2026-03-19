@@ -21,9 +21,9 @@ class LiasseFiscaleService
         $sig = $this->reportingService->getSIGData($exerciceId, $companyId);
 
         return [
-            'total_actif' => $bilan['total_net'] ?? 0,
-            'total_passif' => $bilan['passif']['total_n'] ?? 0,
-            'resultat_net' => $sig['résultat_net']['n'] ?? 0,
+            'total_actif' => $bilan['actif']['total_net'] ?? 0,
+            'total_passif' => $bilan['passif']['total'] ?? 0,
+            'resultat_net' => $sig['resultat_net'] ?? 0,
         ];
     }
 
