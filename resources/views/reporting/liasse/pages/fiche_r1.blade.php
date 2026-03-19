@@ -1,5 +1,6 @@
 @php
-    $company = auth()->user()->company;
+    $companyId = session('current_company_id') ?: auth()->user()->company_id;
+    $company = \App\Models\Company::find($companyId);
 @endphp
 
 <div class="premium-card p-4">

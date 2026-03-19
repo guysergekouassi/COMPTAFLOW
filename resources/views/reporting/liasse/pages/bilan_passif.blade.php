@@ -59,7 +59,7 @@
 </script>
 
 <div class="premium-card">
-    <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+    <div class="table-responsive">
         <table class="liasse-table">
             <thead>
                 <tr>

@@ -88,10 +88,28 @@
 
     .canvas-body {
         flex: 1;
-        overflow: auto;
+        overflow-y: scroll; /* Force l'apparition de l'ascenseur */
         padding: 2rem;
         position: relative;
         background: #fff;
+        scrollbar-gutter: stable; /* Évite que le contenu s'étale quand l'ascenseur apparait */
+    }
+
+    /* Style Premium pour le scrollbar */
+    .canvas-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    .canvas-body::-webkit-scrollbar-track {
+        background: #f8fafc;
+        border-radius: 10px;
+    }
+    .canvas-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+        border: 2px solid #f8fafc;
+    }
+    .canvas-body::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
     }
 
     /* Modern Tabs (Excel Style) */
@@ -263,7 +281,7 @@
                         <div class="toolbar-premium">
                             <div class="d-flex align-items-center">
                                 <div class="me-3 p-2 bg-white rounded-3 shadow-sm" style="border: 1px solid #e2e8f0;">
-                                    <img src="/logo_armoiries.png" alt="Armoiries" style="height: 60px; object-fit: contain;">
+                                    <img src="{{ asset('logo_armoiries.png') }}" alt="Armoiries" style="height: 60px; object-fit: contain;">
                                 </div>
                                 <div>
                                     <h4 class="fw-900 mb-0 text-dark">Liasse Fiscale <span class="text-gradient">e-SINTAX</span></h4>
