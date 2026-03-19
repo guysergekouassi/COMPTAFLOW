@@ -6,7 +6,7 @@
                 <span class="text-blue-700 font-mono">{{ $compteGroup['compte']->numero_de_compte }}</span> - {{ $compteGroup['compte']->intitule }}
             </h6>
         </div>
-        <div class="table-responsive">
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
             <table class="table table-sm align-middle mb-0">
                 <thead class="bg-white">
                     <tr>

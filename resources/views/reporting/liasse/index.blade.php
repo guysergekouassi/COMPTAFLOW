@@ -262,15 +262,9 @@
                         {{-- Toolbar --}}
                         <div class="toolbar-premium">
                             <div class="d-flex align-items-center">
-                                @if(file_exists(public_path('logo_armoiries.png')))
-                                    @php
-                                        $logoData = base64_encode(file_get_contents(public_path('logo_armoiries.png')));
-                                        $logoSrc = 'data:image/png;base64,' . $logoData;
-                                    @endphp
-                                    <div class="me-3 p-2 bg-white rounded-3 shadow-sm" style="border: 1px solid #e2e8f0;">
-                                        <img src="{{ $logoSrc }}" alt="Logo DGI" style="height: 45px;">
-                                    </div>
-                                @endif
+                                <div class="me-3 p-2 bg-white rounded-3 shadow-sm" style="border: 1px solid #e2e8f0;">
+                                    <img src="/logo_armoiries.png" alt="Armoiries" style="height: 60px; object-fit: contain;">
+                                </div>
                                 <div>
                                     <h4 class="fw-900 mb-0 text-dark">Liasse Fiscale <span class="text-gradient">e-SINTAX</span></h4>
                                     <p class="text-muted small mb-0 font-weight-600">Exercice : <span class="badge bg-label-primary">{{ $exercice->intitule }}</span> &nbsp;•&nbsp; <strong>SYSCOHADA Révisé</strong></p>

@@ -5,7 +5,7 @@
             <p class="text-xs text-slate-500 mb-0">Données calculées pour l'exercice en cours</p>
         </div>
     </div>
-    <div class="table-responsive">
+    <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
         <table class="table table-hover align-middle mb-0">
             <thead class="bg-slate-50">
                 <tr>
