@@ -5,17 +5,26 @@
         $diff = $prix - $vnc;
         $plus = $diff > 0 ? $diff : 0;
         $moins = $diff < 0 ? abs($diff) : 0;
+        $isExport = $GLOBALS['isExport'] ?? ($viewData['isExport'] ?? false);
         
         echo "<tr>";
         echo "<td class='col-label'>{$label}</td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N3_{$code}_PRIX' value='{$prix}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N3_{$code}_VNC' value='{$vnc}'></td>";
-        echo "<td class='col-val bg-light-green fw-bold text-success text-end px-3' id='plus_{$code}'>" . ($plus > 0 ? number_format($plus, 0, ',', ' ') : '-') . "</td>";
-        echo "<td class='col-val bg-light-red fw-bold text-danger text-end px-3' id='moins_{$code}'>" . ($moins > 0 ? number_format($moins, 0, ',', ' ') : '-') . "</td>";
+        
+        if ($isExport) {
+            echo "<td class='text-right'>" . ($prix != 0 ? number_format($prix, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($vnc != 0 ? number_format($vnc, 0, ',', ' ') : '-') . "</td>";
+        } else {
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N3_{$code}_PRIX' value='{$prix}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N3_{$code}_VNC' value='{$vnc}'></td>";
+        }
+        
+        echo "<td class='col-val bg-light-green fw-bold text-success text-right px-3' id='plus_{$code}'>" . ($plus > 0 ? number_format($plus, 0, ',', ' ') : '-') . "</td>";
+        echo "<td class='col-val bg-light-red fw-bold text-danger text-right px-3' id='moins_{$code}'>" . ($moins > 0 ? number_format($moins, 0, ',', ' ') : '-') . "</td>";
         echo "</tr>";
     }
 @endphp
 
+@unless($isExport ?? false)
 <style>
     .liasse-table-wrapper { background: white; padding: 2rem; border-radius: 8px; }
     .liasse-table { width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; }
@@ -25,20 +34,23 @@
     .bg-light-red { background: #fef2f2; }
     .col-label { width: 40%; }
 </style>
+@endunless
 
-<div class="liasse-table-wrapper shadow-sm">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="{{ ($isExport ?? false) ? '' : 'liasse-table-wrapper shadow-sm' }}">
+    <div class="d-flex justify-content-between align-items-center mb-4 {{ ($isExport ?? false) ? 'no-export' : '' }}">
         <div>
             <h3 class="fw-900 text-dark mb-0">NOTE 3 : PLUS-VALUES ET MOINS-VALUES DE CESSION</h3>
             <div class="text-muted small mt-1">Détail des cessions d'immobilisations</div>
         </div>
+        @unless($isExport ?? false)
         <button class="btn btn-warning btn-sm rounded-pill px-4 shadow-sm text-white" onclick="savePageData()">
             <i class="bx bxs-save me-1"></i> Sauvegarder
         </button>
+        @endunless
     </div>
 
     <div class="table-responsive">
-        <table class="liasse-table">
+        <table class="{{ ($isExport ?? false) ? '' : 'liasse-table' }}">
             <thead>
                 <tr>
                     <th>NATURE DES IMMOBILISATIONS</th>
@@ -61,11 +73,14 @@
         </table>
     </div>
 
+    @unless($isExport ?? false)
     <div class="mt-4 p-3 bg-light rounded italic small text-muted border-start border-4 border-warning">
         Note : Les plus-values et moins-values sont calculées automatiquement par différence entre le prix de cession et la valeur nette comptable (VNC).
     </div>
+    @endunless
 </div>
 
+@unless($isExport ?? false)
 <script>
     $('.liasse-input').on('input', function() {
         const row = $(this).closest('tr');
@@ -77,3 +92,4 @@
         row.find('[id^="moins_"]').text(diff < 0 ? new Intl.NumberFormat('fr-FR').format(Math.abs(diff)) : '-');
     });
 </script>
+@endunless

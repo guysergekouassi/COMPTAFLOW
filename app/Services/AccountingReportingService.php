@@ -31,6 +31,64 @@ class AccountingReportingService
         return $months;
     }
 
+    public function getBalanceData($exerciceId, $companyId, $month = null)
+    {
+        $ecritures = $this->getFilteredEcritures($exerciceId, $companyId, $month);
+        
+        $grouped = $ecritures->groupBy('plan_comptable_id');
+        
+        $balance = [];
+        foreach ($grouped as $compteId => $operations) {
+            $compte = $operations->first()->planComptable;
+            if (!$compte) continue;
+            
+            $totalDebit = $operations->sum('debit');
+            $totalCredit = $operations->sum('credit');
+            
+            $solde = $totalDebit - $totalCredit;
+            
+            $balance[] = [
+                'compte' => $compte,
+                'numero' => $compte->numero_de_compte,
+                'intitule' => $compte->intitule,
+                'debit' => $totalDebit,
+                'credit' => $totalCredit,
+                'solde_debiteur' => $solde > 0 ? $solde : 0,
+                'solde_crediteur' => $solde < 0 ? abs($solde) : 0,
+            ];
+        }
+        
+        usort($balance, function($a, $b) {
+            return strcmp($a['numero'], $b['numero']);
+        });
+        
+        return $balance;
+    }
+
+    public function getLedgerData($exerciceId, $companyId, $month = null)
+    {
+        $ecritures = $this->getFilteredEcritures($exerciceId, $companyId, $month);
+        
+        $grouped = $ecritures->sortBy('date')->groupBy('plan_comptable_id');
+        
+        $ledger = [];
+        foreach ($grouped as $compteId => $operations) {
+            $compte = $operations->first()->planComptable;
+            if (!$compte) continue;
+            
+            $ledger[] = [
+                'compte' => $compte,
+                'operations' => $operations
+            ];
+        }
+        
+        usort($ledger, function($a, $b) {
+            return strcmp($a['compte']->numero_de_compte, $b['compte']->numero_de_compte);
+        });
+        
+        return $ledger;
+    }
+
     /**
      * Récupère les écritures filtrées par exercice et mois optionnel.
      */

@@ -1,0 +1,5228 @@
+{
+  "meta": {
+    "description": "Schéma XML EDI e-impôts.ci — Liasse SYSCOHADA Système Normal",
+    "version": "1.1 (Juillet 2020)",
+    "source": "Bilan_2024_CONCEPT_IMAGE.xlsm",
+    "type_liasse": "NO",
+    "portail": "e-impots.ci (DGI Côte d'Ivoire)"
+  },
+  "xml_root": "EDI",
+  "xml_structure": {
+    "informations": {
+      "description": "Identification de la déclaration",
+      "champs": {
+        "type": {
+          "valeur_fixe": "NO",
+          "description": "Type de liasse : NO = Système Normal"
+        },
+        "ncc": {
+          "source": "Présentation_Entité",
+          "description": "N° Compte Contribuable"
+        },
+        "exercice": {
+          "source": "Présentation_Entité",
+          "description": "Année fiscale (ex: 2024)"
+        }
+      }
+    },
+    "champsTableauxFixes": {
+      "description": "Tableaux à nombre de lignes fixe. Un nœud <champTableauFixe> par cellule.",
+      "noeud": "champTableauFixe",
+      "sous_noeuds": [
+        "code",
+        "valeur"
+      ],
+      "pattern_code": "{type}_{codeTableau}_{codeLigne}_{numColonne}",
+      "exemple": {
+        "code": "NO_FR1_ZA1_1",
+        "valeur": "01/01/2024"
+      }
+    },
+    "champsTableauxVariables": {
+      "description": "Tableaux à nombre de lignes variable. Un nœud par cellule NON VIDE.",
+      "noeud": "champTableauVariable",
+      "sous_noeuds": [
+        "colonne",
+        "ligne",
+        "valeur"
+      ],
+      "note": "Les cellules vides ne sont PAS incluses",
+      "exemple": {
+        "colonne": "NO_FR2B_1",
+        "ligne": "1",
+        "valeur": "IMPRESSION SUR TOUT TYPES DE SUPPORT"
+      }
+    }
+  },
+  "regles_formatage": {
+    "dates": "Format dd/mm/yyyy — préfixe apostrophe pour forcer texte",
+    "chaines_avec_zero": "Préfixe apostrophe si commence par 0",
+    "nombres": "Arrondis à 4 décimales maximum",
+    "cellules_vides": "Non incluses pour tableaux variables — incluses avec valeur vide pour fixes si mappées",
+    "nom_fichier": "NO-{exercice}-{NCC}-{ddmmyyyy}-{hhmmss}.xml",
+    "dossier_sortie": "/Documents (poste utilisateur)"
+  },
+  "tableaux": [
+    {
+      "code": "FR1",
+      "titre": "Fiche R1",
+      "type": "Fixe",
+      "onglet": "FICHE R1",
+      "premiere_cellule": "C8",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "FR2A",
+      "titre": "Fiche R2 - Divers",
+      "type": "Fixe",
+      "onglet": "FICHE R2",
+      "premiere_cellule": "Q9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "FR2B",
+      "titre": "Fiche R2 - Détail de l'activité de l'entité",
+      "type": "Variable",
+      "onglet": "FICHE R2",
+      "premiere_cellule": "A28",
+      "derniere_cellule": "AH39"
+    },
+    {
+      "code": "FR2C",
+      "titre": "Fiche R2 - Unité de mesure de l'activité",
+      "type": "Fixe",
+      "onglet": "FICHE R2",
+      "premiere_cellule": "Y25",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "FR2D",
+      "titre": "Fiche R2 - Total de l'activité de l'entité",
+      "type": "Fixe",
+      "onglet": "FICHE R2",
+      "premiere_cellule": "Y40",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "FR3A",
+      "titre": "Fiche R3 - Dirigeants",
+      "type": "Variable",
+      "onglet": "FICHE R3",
+      "premiere_cellule": "A11",
+      "derniere_cellule": "H21"
+    },
+    {
+      "code": "FR3B",
+      "titre": "Fiche R3 - Membres du conseil d'administration",
+      "type": "Variable",
+      "onglet": "FICHE R3",
+      "premiere_cellule": "A27",
+      "derniere_cellule": "G37"
+    },
+    {
+      "code": "ACTIF",
+      "titre": "Bilan - Actif",
+      "type": "Fixe",
+      "onglet": "ACTIF",
+      "premiere_cellule": "F11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "PASSIF",
+      "titre": "Bilan - Passif",
+      "type": "Fixe",
+      "onglet": "PASSIF",
+      "premiere_cellule": "H11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "RESULTAT",
+      "titre": "Résultat",
+      "type": "Fixe",
+      "onglet": "RESULTAT",
+      "premiere_cellule": "I11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "TFT",
+      "titre": "Tableau de flux de trésorerie",
+      "type": "Fixe",
+      "onglet": "TFT",
+      "premiere_cellule": "I10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE1A",
+      "titre": "Dettes garanties par des sûretés réelles",
+      "type": "Fixe",
+      "onglet": "NOTE 1",
+      "premiere_cellule": "F10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE1B",
+      "titre": "Engagements financiers",
+      "type": "Fixe",
+      "onglet": "NOTE 1",
+      "premiere_cellule": "G34",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE2",
+      "titre": "Informations obligatoires",
+      "type": "Fixe",
+      "onglet": "NOTE 2",
+      "premiere_cellule": "A9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE3A",
+      "titre": "Immobilisations (brutes)",
+      "type": "Fixe",
+      "onglet": "NOTE 3A",
+      "premiere_cellule": "D11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE3B",
+      "titre": "Biens pris en location acquisition",
+      "type": "Fixe",
+      "onglet": "NOTE 3B",
+      "premiere_cellule": "E11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE3C",
+      "titre": "Immobilisations (amortissements)",
+      "type": "Fixe",
+      "onglet": "NOTE 3C",
+      "premiere_cellule": "D11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE3CBIS",
+      "titre": "Immobilisations (dépréciations)",
+      "type": "Fixe",
+      "onglet": "NOTE 3C BIS",
+      "premiere_cellule": "D11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE3D",
+      "titre": "Immobilisations (plus-values et moins-values de cession)",
+      "type": "Fixe",
+      "onglet": "NOTE 3D",
+      "premiere_cellule": "D10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE3E1",
+      "titre": "Informations sur les réévaluations effectuées par l'entité",
+      "type": "Fixe",
+      "onglet": "NOTE 3E",
+      "premiere_cellule": "A9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE3E2",
+      "titre": "Montant de l'écart incorporé au capital",
+      "type": "Fixe",
+      "onglet": "NOTE 3E",
+      "premiere_cellule": "H23",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE3E3",
+      "titre": "Détail des éléments réévalués par postes du bilan",
+      "type": "Variable",
+      "onglet": "NOTE 3E",
+      "premiere_cellule": "A11",
+      "derniere_cellule": "I17"
+    },
+    {
+      "code": "NOTE3E4",
+      "titre": "Total des éléments réévalués par postes du bilan",
+      "type": "Fixe",
+      "onglet": "NOTE 3E",
+      "premiere_cellule": "F18",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE4A",
+      "titre": "Immobilisations financières",
+      "type": "Fixe",
+      "onglet": "NOTE 4",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE4B",
+      "titre": "Liste des filiales et participations",
+      "type": "Variable",
+      "onglet": "NOTE 4",
+      "premiere_cellule": "A25",
+      "derniere_cellule": "K35"
+    },
+    {
+      "code": "NOTE5A",
+      "titre": "Actif circulant HAO",
+      "type": "Fixe",
+      "onglet": "NOTE 5",
+      "premiere_cellule": "E10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE5B",
+      "titre": "Dettes circulantes HAO",
+      "type": "Fixe",
+      "onglet": "NOTE 5",
+      "premiere_cellule": "E22",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE6",
+      "titre": "Stocks et en cours",
+      "type": "Fixe",
+      "onglet": "NOTE 6",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE7",
+      "titre": "Clients",
+      "type": "Fixe",
+      "onglet": "NOTE 7",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE8",
+      "titre": "Autres créances",
+      "type": "Fixe",
+      "onglet": "NOTE 8",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE8A1",
+      "titre": "Tableau d'étalement des charges immobilisées",
+      "type": "Fixe",
+      "onglet": "NOTE 8A",
+      "premiere_cellule": "E10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE8A2",
+      "titre": "Détail des frais d'établissement pour l'exercice N",
+      "type": "Variable",
+      "onglet": "NOTE 8A",
+      "premiere_cellule": "E13",
+      "derniere_cellule": "F42"
+    },
+    {
+      "code": "NOTE8A3",
+      "titre": "Détail des charges à répartir sur plusieurs exercices pour l'exercice N",
+      "type": "Variable",
+      "onglet": "NOTE 8A",
+      "premiere_cellule": "G13",
+      "derniere_cellule": "H42"
+    },
+    {
+      "code": "NOTE8A4",
+      "titre": "Détail des primes de remboursement des obligations pour l'exercice N",
+      "type": "Fixe",
+      "onglet": "NOTE 8A",
+      "premiere_cellule": "J13",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE8B",
+      "titre": "Tableau d'étalement des provisions pour charges à répartir",
+      "type": "Fixe",
+      "onglet": "NOTE 8B",
+      "premiere_cellule": "E10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE8C",
+      "titre": "Tableau d'étalement des provisions pour engagements de retraite",
+      "type": "Fixe",
+      "onglet": "NOTE 8C",
+      "premiere_cellule": "E10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE9",
+      "titre": "Titres de placement",
+      "type": "Fixe",
+      "onglet": "NOTE 9",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE10",
+      "titre": "Valeurs à encaisser",
+      "type": "Fixe",
+      "onglet": "NOTE 10",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE11",
+      "titre": "Disponibilités",
+      "type": "Fixe",
+      "onglet": "NOTE 11",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE12A1",
+      "titre": "Ecarts de conversion actif",
+      "type": "Variable",
+      "onglet": "NOTE 12",
+      "premiere_cellule": "A11",
+      "derniere_cellule": "I21"
+    },
+    {
+      "code": "NOTE12A2",
+      "titre": "Ecarts de conversion passif",
+      "type": "Variable",
+      "onglet": "NOTE 12",
+      "premiere_cellule": "A23",
+      "derniere_cellule": "I33"
+    },
+    {
+      "code": "NOTE12B1",
+      "titre": "Transferts de charges d'exploitation",
+      "type": "Variable",
+      "onglet": "NOTE 12",
+      "premiere_cellule": "A38",
+      "derniere_cellule": "I48"
+    },
+    {
+      "code": "NOTE12B2",
+      "titre": "Transferts de charges financières",
+      "type": "Variable",
+      "onglet": "NOTE 12",
+      "premiere_cellule": "A50",
+      "derniere_cellule": "I60"
+    },
+    {
+      "code": "NOTE13A",
+      "titre": "Valeur nominale des actions ou parts",
+      "type": "Fixe",
+      "onglet": "NOTE 13",
+      "premiere_cellule": "L8",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE13B",
+      "titre": "Détail du capital",
+      "type": "Variable",
+      "onglet": "NOTE 13",
+      "premiere_cellule": "A10",
+      "derniere_cellule": "L21"
+    },
+    {
+      "code": "NOTE13C",
+      "titre": "Total du capital",
+      "type": "Fixe",
+      "onglet": "NOTE 13",
+      "premiere_cellule": "K22",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE14",
+      "titre": "Primes et réserves",
+      "type": "Fixe",
+      "onglet": "NOTE 14",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE15A",
+      "titre": "Subventions d'investissement et provisions réglementées",
+      "type": "Fixe",
+      "onglet": "NOTE 15A",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE15B",
+      "titre": "Autres fonds propres",
+      "type": "Fixe",
+      "onglet": "NOTE 15B",
+      "premiere_cellule": "G9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE16A",
+      "titre": "Dettes financières et ressources assimilées",
+      "type": "Fixe",
+      "onglet": "NOTE 16A",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE16B1",
+      "titre": "Hypothèses actuarielles",
+      "type": "Fixe",
+      "onglet": "NOTE 16B",
+      "premiere_cellule": "H10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE16B2",
+      "titre": "Variation de la valeur de l'engagement de retraite",
+      "type": "Fixe",
+      "onglet": "NOTE 16B",
+      "premiere_cellule": "H21",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE16B3",
+      "titre": "Analyse de sensibilité des hypothèses actuarielles",
+      "type": "Fixe",
+      "onglet": "NOTE 16B",
+      "premiere_cellule": "F34",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE16BBIS1",
+      "titre": "Actif/passif net comptabilisé au titre des régimes financés",
+      "type": "Fixe",
+      "onglet": "NOTE 16B BIS",
+      "premiere_cellule": "H10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE16BBIS2",
+      "titre": "Valeur actuelle des actifs du régime",
+      "type": "Fixe",
+      "onglet": "NOTE 16B BIS",
+      "premiere_cellule": "F19",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE16C1",
+      "titre": "Actifs et passifs éventuels",
+      "type": "Fixe",
+      "onglet": "NOTE 16C",
+      "premiere_cellule": "G9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE16C2",
+      "titre": "Détail des actifs éventuels",
+      "type": "Variable",
+      "onglet": "NOTE 16C",
+      "premiere_cellule": "A11",
+      "derniere_cellule": "H21"
+    },
+    {
+      "code": "NOTE16C3",
+      "titre": "Détail des passifs éventuels",
+      "type": "Variable",
+      "onglet": "NOTE 16C",
+      "premiere_cellule": "A24",
+      "derniere_cellule": "H34"
+    },
+    {
+      "code": "NOTE17",
+      "titre": "Fournisseurs d'exploitation",
+      "type": "Fixe",
+      "onglet": "NOTE 17",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE18",
+      "titre": "Dettes fiscales et sociales",
+      "type": "Fixe",
+      "onglet": "NOTE 18",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE19",
+      "titre": "Autres dettes et provisions pour risques et charges à court terme",
+      "type": "Fixe",
+      "onglet": "NOTE 19",
+      "premiere_cellule": "E9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE20",
+      "titre": "Banques, crédit d'escompte et de trésorerie",
+      "type": "Fixe",
+      "onglet": "NOTE 20",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE21A",
+      "titre": "Chiffres d'affaires et autres produits",
+      "type": "Fixe",
+      "onglet": "NOTE 21",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE21B",
+      "titre": "Détail des produits accessoires par nature d'activité économique",
+      "type": "Variable",
+      "onglet": "NOTE 21",
+      "premiere_cellule": "A28",
+      "derniere_cellule": "H36"
+    },
+    {
+      "code": "NOTE22",
+      "titre": "Achats",
+      "type": "Fixe",
+      "onglet": "NOTE 22",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE23",
+      "titre": "Transports",
+      "type": "Fixe",
+      "onglet": "NOTE 23",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE24",
+      "titre": "Services extérieurs",
+      "type": "Fixe",
+      "onglet": "NOTE 24",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE25",
+      "titre": "Impôts et taxes",
+      "type": "Fixe",
+      "onglet": "NOTE 25",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE26",
+      "titre": "Autres charges",
+      "type": "Fixe",
+      "onglet": "NOTE 26",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE27A",
+      "titre": "Charges de personnel",
+      "type": "Fixe",
+      "onglet": "NOTE 27A",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE27B1",
+      "titre": "Effectifs",
+      "type": "Fixe",
+      "onglet": "NOTE 27B",
+      "premiere_cellule": "E12",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE27B2",
+      "titre": "Masse salariale",
+      "type": "Fixe",
+      "onglet": "NOTE 27B",
+      "premiere_cellule": "L12",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE27B3",
+      "titre": "Facturation à l'entité du personnel extérieur",
+      "type": "Fixe",
+      "onglet": "NOTE 27B",
+      "premiere_cellule": "L22",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE27B4",
+      "titre": "Frais de personnel",
+      "type": "Fixe",
+      "onglet": "NOTE 27B",
+      "premiere_cellule": "R22",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE28",
+      "titre": "Dotations et charges pour provisions et dépréciations",
+      "type": "Fixe",
+      "onglet": "NOTE 28",
+      "premiere_cellule": "E11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE29",
+      "titre": "Charges et revenus financiers",
+      "type": "Fixe",
+      "onglet": "NOTE 29",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE30A",
+      "titre": "Autres charges et produits HAO",
+      "type": "Fixe",
+      "onglet": "NOTE 30",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE30B",
+      "titre": "Détail des charges HAO constatées",
+      "type": "Variable",
+      "onglet": "NOTE 30",
+      "premiere_cellule": "A10",
+      "derniere_cellule": "H16"
+    },
+    {
+      "code": "NOTE30C",
+      "titre": "Détail des produits HAO constatés",
+      "type": "Variable",
+      "onglet": "NOTE 30",
+      "premiere_cellule": "A26",
+      "derniere_cellule": "H32"
+    },
+    {
+      "code": "NOTE31",
+      "titre": "Répartition du résultat des 5 derniers exercices",
+      "type": "Fixe",
+      "onglet": "NOTE 31",
+      "premiere_cellule": "G10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE32",
+      "titre": "Détail de la production de l'exercice",
+      "type": "Variable",
+      "onglet": "NOTE 32",
+      "premiere_cellule": "A11",
+      "derniere_cellule": "P42"
+    },
+    {
+      "code": "NOTE32BIS",
+      "titre": "Total de la production de l'exercice",
+      "type": "Fixe",
+      "onglet": "NOTE 32",
+      "premiere_cellule": "E43",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE33",
+      "titre": "Détail des achats destinés à la production",
+      "type": "Variable",
+      "onglet": "NOTE 33",
+      "premiere_cellule": "A12",
+      "derniere_cellule": "L43"
+    },
+    {
+      "code": "NOTE33BIS",
+      "titre": "Total des achats destinés à la production",
+      "type": "Fixe",
+      "onglet": "NOTE 33",
+      "premiere_cellule": "F44",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE34",
+      "titre": "Fiche de synthèse des principaux indicateurs financiers",
+      "type": "Fixe",
+      "onglet": "NOTE 34",
+      "premiere_cellule": "F9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE35",
+      "titre": "Liste des informations sociales, environnementales et sociétales",
+      "type": "Fixe",
+      "onglet": "NOTE 35",
+      "premiere_cellule": "A15",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE37",
+      "titre": "Détermination de l'impôt sur le résulat",
+      "type": "Fixe",
+      "onglet": "NOTE 37",
+      "premiere_cellule": "D9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE38A",
+      "titre": "Événements postérieurs à la clôture de l'exercice - Partie 1",
+      "type": "Fixe",
+      "onglet": "NOTE 38",
+      "premiere_cellule": "C8",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE38B",
+      "titre": "Événements postérieurs à la clôture de l'exercice - Partie 2",
+      "type": "Fixe",
+      "onglet": "NOTE 38",
+      "premiere_cellule": "A16",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "NOTE39",
+      "titre": "Changements de méthodes comptables, d'estimations et corrections d'erreurs",
+      "type": "Fixe",
+      "onglet": "NOTE 39",
+      "premiere_cellule": "A28",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "CHARGES",
+      "titre": "Détail des charges",
+      "type": "Fixe",
+      "onglet": "COMP-CHARGES",
+      "premiere_cellule": "G11",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "TVA",
+      "titre": "État TVA",
+      "type": "Fixe",
+      "onglet": "COMP-TVA",
+      "premiere_cellule": "G10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "TVA2",
+      "titre": "État TVA supportée non déductible",
+      "type": "Fixe",
+      "onglet": "COMP-TVA (2)",
+      "premiere_cellule": "G10",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL1A1",
+      "titre": "Complément état annexe",
+      "type": "Fixe",
+      "onglet": "SUPPL1",
+      "premiere_cellule": "D18",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL1A2",
+      "titre": "Détail des biens acquis d'occasion",
+      "type": "Variable",
+      "onglet": "SUPPL1",
+      "premiere_cellule": "A23",
+      "derniere_cellule": "F65"
+    },
+    {
+      "code": "SUPPL1B",
+      "titre": "Complément NOTE 32 - Détail",
+      "type": "Variable",
+      "onglet": "SUPPL1",
+      "premiere_cellule": "I13",
+      "derniere_cellule": "N64"
+    },
+    {
+      "code": "SUPPL1BBIS",
+      "titre": "Complément NOTE 32 - Total",
+      "type": "Fixe",
+      "onglet": "SUPPL1",
+      "premiere_cellule": "K65",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL1C",
+      "titre": "Complément NOTE 27 B",
+      "type": "Fixe",
+      "onglet": "SUPPL1",
+      "premiere_cellule": "B70",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL1D",
+      "titre": "Complément NOTE 33",
+      "type": "Fixe",
+      "onglet": "SUPPL1",
+      "premiere_cellule": "M68",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL2",
+      "titre": "Détail de la répartition du résultat fiscal des sociétés de personnes",
+      "type": "Variable",
+      "onglet": "SUPPL2",
+      "premiere_cellule": "A9",
+      "derniere_cellule": "J24"
+    },
+    {
+      "code": "SUPPL2BIS",
+      "titre": "Total de la répartition du résultat fiscal des sociétés de personnes",
+      "type": "Fixe",
+      "onglet": "SUPPL2",
+      "premiere_cellule": "G25",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL3",
+      "titre": "Complément d'informations sur les entités individuelles",
+      "type": "Fixe",
+      "onglet": "SUPPL3",
+      "premiere_cellule": "I9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL4",
+      "titre": "Tableau des amortissements et inventaire des immobilisations",
+      "type": "Variable",
+      "onglet": "SUPPL4",
+      "premiere_cellule": "A10",
+      "derniere_cellule": "N95"
+    },
+    {
+      "code": "SUPPL4BIS",
+      "titre": "Total des amortissements et inventaire des immobilisations",
+      "type": "Fixe",
+      "onglet": "SUPPL4",
+      "premiere_cellule": "G96",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL5",
+      "titre": "Détail des frais accessoires sur achats",
+      "type": "Fixe",
+      "onglet": "SUPPL5",
+      "premiere_cellule": "D9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL6",
+      "titre": "Détail des avantages en nature et en espèces imposés alloués au personnel",
+      "type": "Fixe",
+      "onglet": "SUPPL6",
+      "premiere_cellule": "G9",
+      "derniere_cellule": ""
+    },
+    {
+      "code": "SUPPL7A",
+      "titre": "Créances échues de l'exercice",
+      "type": "Variable",
+      "onglet": "SUPPL7",
+      "premiere_cellule": "A9",
+      "derniere_cellule": "I19"
+    },
+    {
+      "code": "SUPPL7B",
+      "titre": "Dettes échues de l'exercice",
+      "type": "Variable",
+      "onglet": "SUPPL7",
+      "premiere_cellule": "A21",
+      "derniere_cellule": "I31"
+    },
+    {
+      "code": "COMMENT",
+      "titre": "Commentaires",
+      "type": "Fixe",
+      "onglet": "COMMENTAIRE",
+      "premiere_cellule": "A7",
+      "derniere_cellule": ""
+    }
+  ],
+  "champs_fixes": [
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZA",
+      "libelle_ligne": "DATE DE DEBUT DE L'EXERCICE COMPTABLE",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZA1_1",
+      "pos_ligne": "1",
+      "pos_col": "12",
+      "cellule_excel": "N8"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZA",
+      "libelle_ligne": "DATE DE FIN DE L'EXERCICE COMPTABLE",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZA2_1",
+      "pos_ligne": "1",
+      "pos_col": "17",
+      "cellule_excel": "S8"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZB",
+      "libelle_ligne": "DATE D'ARRETE EFFECTIF DES COMPTES",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZB_1",
+      "pos_ligne": "3",
+      "pos_col": "6",
+      "cellule_excel": "H10"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZC",
+      "libelle_ligne": "EXERCICE PRECEDENT CLOS LE",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZC_1",
+      "pos_ligne": "5",
+      "pos_col": "6",
+      "cellule_excel": "H12"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZD",
+      "libelle_ligne": "DUREE EXERCICE PRECEDENT EN MOIS",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZD_1",
+      "pos_ligne": "5",
+      "pos_col": "19",
+      "cellule_excel": "U12"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZE",
+      "libelle_ligne": "Greffe",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZE1_1",
+      "pos_ligne": "7",
+      "pos_col": "1",
+      "cellule_excel": "C14"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZE",
+      "libelle_ligne": "N°Registre du Commerce",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZE2_1",
+      "pos_ligne": "7",
+      "pos_col": "2",
+      "cellule_excel": "D14"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZF",
+      "libelle_ligne": "N° Répertoire des entités",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZF_1",
+      "pos_ligne": "7",
+      "pos_col": "9",
+      "cellule_excel": "K14"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZG",
+      "libelle_ligne": "N° de caisse sociale",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZG_1",
+      "pos_ligne": "10",
+      "pos_col": "1",
+      "cellule_excel": "C17"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZH",
+      "libelle_ligne": "N° Code Importateur",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZH_1",
+      "pos_ligne": "10",
+      "pos_col": "4",
+      "cellule_excel": "F17"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZI",
+      "libelle_ligne": "Code activité principale",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZI_1",
+      "pos_ligne": "10",
+      "pos_col": "15",
+      "cellule_excel": "Q17"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZK",
+      "libelle_ligne": "Adresse e-mail",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZK1_1",
+      "pos_ligne": "16",
+      "pos_col": "3",
+      "cellule_excel": "E23"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZK",
+      "libelle_ligne": "Code",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZK2_1",
+      "pos_ligne": "16",
+      "pos_col": "9",
+      "cellule_excel": "K23"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZK",
+      "libelle_ligne": "Boîte Postale",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZK3_1",
+      "pos_ligne": "16",
+      "pos_col": "12",
+      "cellule_excel": "N23"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZK",
+      "libelle_ligne": "Ville",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZK4_1",
+      "pos_ligne": "16",
+      "pos_col": "15",
+      "cellule_excel": "Q23"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZL",
+      "libelle_ligne": "Adresse géographique complète (Immeuble, rue, quartier, ville, pays)",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZL_1",
+      "pos_ligne": "19",
+      "pos_col": "1",
+      "cellule_excel": "C26"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZN",
+      "libelle_ligne": "% Capacité production utile",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZN_1",
+      "pos_ligne": "22",
+      "pos_col": "14",
+      "cellule_excel": "P29"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZO",
+      "libelle_ligne": "Nom",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZO1_1",
+      "pos_ligne": "25",
+      "pos_col": "1",
+      "cellule_excel": "C32"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZO",
+      "libelle_ligne": "Adresse",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZO2_1",
+      "pos_ligne": "25",
+      "pos_col": "3",
+      "cellule_excel": "E32"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZO",
+      "libelle_ligne": "Téléphone",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZO3_1",
+      "pos_ligne": "25",
+      "pos_col": "7",
+      "cellule_excel": "I32"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZO",
+      "libelle_ligne": "E-mail",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZO4_1",
+      "pos_ligne": "25",
+      "pos_col": "9",
+      "cellule_excel": "K32"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZO",
+      "libelle_ligne": "Qualité",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZO5_1",
+      "pos_ligne": "25",
+      "pos_col": "17",
+      "cellule_excel": "S32"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZP",
+      "libelle_ligne": "Nom",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZP1_1",
+      "pos_ligne": "28",
+      "pos_col": "1",
+      "cellule_excel": "C35"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZP",
+      "libelle_ligne": "Adresse",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZP2_1",
+      "pos_ligne": "28",
+      "pos_col": "3",
+      "cellule_excel": "E35"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZP",
+      "libelle_ligne": "Téléphone",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZP3_1",
+      "pos_ligne": "28",
+      "pos_col": "9",
+      "cellule_excel": "K35"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZP",
+      "libelle_ligne": "E-mail",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZP4_1",
+      "pos_ligne": "28",
+      "pos_col": "13",
+      "cellule_excel": "O35"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZS",
+      "libelle_ligne": "Etats financiers approuvés par l'Assemblée Générale",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZS_1",
+      "pos_ligne": "40",
+      "pos_col": "15",
+      "cellule_excel": "Q47"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZT",
+      "libelle_ligne": "Nom du signataire des états financiers",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZT_1",
+      "pos_ligne": "43",
+      "pos_col": "1",
+      "cellule_excel": "C50"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZU",
+      "libelle_ligne": "Qualité du signataire des états financiers",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZU_1",
+      "pos_ligne": "46",
+      "pos_col": "1",
+      "cellule_excel": "C53"
+    },
+    {
+      "code_tableau": "FR1",
+      "code_ligne": "ZV",
+      "libelle_ligne": "Date de signature",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR1_ZV_1",
+      "pos_ligne": "49",
+      "pos_col": "1",
+      "cellule_excel": "C56"
+    },
+    {
+      "code_tableau": "FR2A",
+      "code_ligne": "ZX",
+      "libelle_ligne": "Forme juridique :",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR2A_ZX_1",
+      "pos_ligne": "1",
+      "pos_col": "1",
+      "cellule_excel": "Q9"
+    },
+    {
+      "code_tableau": "FR2A",
+      "code_ligne": "ZY",
+      "libelle_ligne": "Régime fiscal :",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR2A_ZY_1",
+      "pos_ligne": "3",
+      "pos_col": "1",
+      "cellule_excel": "Q11"
+    },
+    {
+      "code_tableau": "FR2A",
+      "code_ligne": "ZZ1",
+      "libelle_ligne": "Pays du siège social :",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR2A_ZZ1_1",
+      "pos_ligne": "5",
+      "pos_col": "1",
+      "cellule_excel": "Q13"
+    },
+    {
+      "code_tableau": "FR2A",
+      "code_ligne": "ZZ2",
+      "libelle_ligne": "Nombre d'établissements dans le pays :",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR2A_ZZ2_1",
+      "pos_ligne": "7",
+      "pos_col": "1",
+      "cellule_excel": "Q15"
+    },
+    {
+      "code_tableau": "FR2A",
+      "code_ligne": "ZZ3",
+      "libelle_ligne": "Nombre d'établissements hors du pays pour lesquels une comptabilité distincte est tenue :",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR2A_ZZ3_1",
+      "pos_ligne": "9",
+      "pos_col": "1",
+      "cellule_excel": "Q17"
+    },
+    {
+      "code_tableau": "FR2A",
+      "code_ligne": "ZZ4",
+      "libelle_ligne": "Première année d'exercice dans le pays :",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR2A_ZZ4_1",
+      "pos_ligne": "12",
+      "pos_col": "1",
+      "cellule_excel": "Q20"
+    },
+    {
+      "code_tableau": "FR2A",
+      "code_ligne": "",
+      "libelle_ligne": "Contrôle de l'entité",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR2A_1_1",
+      "pos_ligne": "3",
+      "pos_col": "7",
+      "cellule_excel": "W11"
+    },
+    {
+      "code_tableau": "FR2C",
+      "code_ligne": "",
+      "libelle_ligne": "Unité de mesure de l'activité",
+      "libelle_colonne": "Valeurs",
+      "code_champ": "NO_FR2C_1_1",
+      "pos_ligne": "1",
+      "pos_col": "1",
+      "cellule_excel": "Y25"
+    },
+    {
+      "code_tableau": "FR2D",
+      "code_ligne": "",
+      "libelle_ligne": "Total de l'activité de l'entité",
+      "libelle_colonne": "Chiffre d'affaires HT ou Valeur ajoutée (VA)",
+      "code_champ": "NO_FR2D_1_1",
+      "pos_ligne": "1",
+      "pos_col": "1",
+      "cellule_excel": "Y30"
+    },
+    {
+      "code_tableau": "FR2D",
+      "code_ligne": "",
+      "libelle_ligne": "Total de l'activité de l'entité",
+      "libelle_colonne": "% activité dans le CA HT ou la VA",
+      "code_champ": "NO_FR2D_1_2",
+      "pos_ligne": "1",
+      "pos_col": "10",
+      "cellule_excel": "AH30"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AD",
+      "libelle_ligne": "IMMOBILISATIONS INCORPORELLES",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AD_1",
+      "pos_ligne": "1",
+      "pos_col": "1",
+      "cellule_excel": "F11"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AD",
+      "libelle_ligne": "IMMOBILISATIONS INCORPORELLES",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AD_2",
+      "pos_ligne": "1",
+      "pos_col": "2",
+      "cellule_excel": "G11"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AD",
+      "libelle_ligne": "IMMOBILISATIONS INCORPORELLES",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AD_3",
+      "pos_ligne": "1",
+      "pos_col": "3",
+      "cellule_excel": "H11"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AD",
+      "libelle_ligne": "IMMOBILISATIONS INCORPORELLES",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AD_4",
+      "pos_ligne": "1",
+      "pos_col": "4",
+      "cellule_excel": "I11"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AE",
+      "libelle_ligne": "Frais de développement et de prospection",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AE_1",
+      "pos_ligne": "2",
+      "pos_col": "1",
+      "cellule_excel": "F12"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AE",
+      "libelle_ligne": "Frais de développement et de prospection",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AE_2",
+      "pos_ligne": "2",
+      "pos_col": "2",
+      "cellule_excel": "G12"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AE",
+      "libelle_ligne": "Frais de développement et de prospection",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AE_3",
+      "pos_ligne": "2",
+      "pos_col": "3",
+      "cellule_excel": "H12"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AE",
+      "libelle_ligne": "Frais de développement et de prospection",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AE_4",
+      "pos_ligne": "2",
+      "pos_col": "4",
+      "cellule_excel": "I12"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AF",
+      "libelle_ligne": "Brevets, licences, logiciels, et droits similaires",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AF_1",
+      "pos_ligne": "3",
+      "pos_col": "1",
+      "cellule_excel": "F13"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AF",
+      "libelle_ligne": "Brevets, licences, logiciels, et droits similaires",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AF_2",
+      "pos_ligne": "3",
+      "pos_col": "2",
+      "cellule_excel": "G13"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AF",
+      "libelle_ligne": "Brevets, licences, logiciels, et droits similaires",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AF_3",
+      "pos_ligne": "3",
+      "pos_col": "3",
+      "cellule_excel": "H13"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AF",
+      "libelle_ligne": "Brevets, licences, logiciels, et droits similaires",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AF_4",
+      "pos_ligne": "3",
+      "pos_col": "4",
+      "cellule_excel": "I13"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AG",
+      "libelle_ligne": "Fonds commercial et droit au bail",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AG_1",
+      "pos_ligne": "4",
+      "pos_col": "1",
+      "cellule_excel": "F14"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AG",
+      "libelle_ligne": "Fonds commercial et droit au bail",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AG_2",
+      "pos_ligne": "4",
+      "pos_col": "2",
+      "cellule_excel": "G14"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AG",
+      "libelle_ligne": "Fonds commercial et droit au bail",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AG_3",
+      "pos_ligne": "4",
+      "pos_col": "3",
+      "cellule_excel": "H14"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AG",
+      "libelle_ligne": "Fonds commercial et droit au bail",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AG_4",
+      "pos_ligne": "4",
+      "pos_col": "4",
+      "cellule_excel": "I14"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AH",
+      "libelle_ligne": "Autres immobilisations incorporelles",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AH_1",
+      "pos_ligne": "5",
+      "pos_col": "1",
+      "cellule_excel": "F15"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AH",
+      "libelle_ligne": "Autres immobilisations incorporelles",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AH_2",
+      "pos_ligne": "5",
+      "pos_col": "2",
+      "cellule_excel": "G15"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AH",
+      "libelle_ligne": "Autres immobilisations incorporelles",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AH_3",
+      "pos_ligne": "5",
+      "pos_col": "3",
+      "cellule_excel": "H15"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AH",
+      "libelle_ligne": "Autres immobilisations incorporelles",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AH_4",
+      "pos_ligne": "5",
+      "pos_col": "4",
+      "cellule_excel": "I15"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AI",
+      "libelle_ligne": "IMMOBILISATIONS CORPORELLES",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AI_1",
+      "pos_ligne": "6",
+      "pos_col": "1",
+      "cellule_excel": "F16"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AI",
+      "libelle_ligne": "IMMOBILISATIONS CORPORELLES",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AI_2",
+      "pos_ligne": "6",
+      "pos_col": "2",
+      "cellule_excel": "G16"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AI",
+      "libelle_ligne": "IMMOBILISATIONS CORPORELLES",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AI_3",
+      "pos_ligne": "6",
+      "pos_col": "3",
+      "cellule_excel": "H16"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AI",
+      "libelle_ligne": "IMMOBILISATIONS CORPORELLES",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AI_4",
+      "pos_ligne": "6",
+      "pos_col": "4",
+      "cellule_excel": "I16"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AJ",
+      "libelle_ligne": "Terrains",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AJ_1",
+      "pos_ligne": "7",
+      "pos_col": "1",
+      "cellule_excel": "F17"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AJ",
+      "libelle_ligne": "Terrains",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AJ_2",
+      "pos_ligne": "7",
+      "pos_col": "2",
+      "cellule_excel": "G17"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AJ",
+      "libelle_ligne": "Terrains",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AJ_3",
+      "pos_ligne": "7",
+      "pos_col": "3",
+      "cellule_excel": "H17"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AJ",
+      "libelle_ligne": "Terrains",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AJ_4",
+      "pos_ligne": "7",
+      "pos_col": "4",
+      "cellule_excel": "I17"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "",
+      "libelle_ligne": "- dont Placement Net",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_1_3",
+      "pos_ligne": "7",
+      "pos_col": "-2",
+      "cellule_excel": "C17"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "",
+      "libelle_ligne": "- dont Placement Net",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_1_4",
+      "pos_ligne": "7",
+      "pos_col": "-1",
+      "cellule_excel": "D17"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AK",
+      "libelle_ligne": "Bâtiments",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AK_1",
+      "pos_ligne": "8",
+      "pos_col": "1",
+      "cellule_excel": "F18"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AK",
+      "libelle_ligne": "Bâtiments",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AK_2",
+      "pos_ligne": "8",
+      "pos_col": "2",
+      "cellule_excel": "G18"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AK",
+      "libelle_ligne": "Bâtiments",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AK_3",
+      "pos_ligne": "8",
+      "pos_col": "3",
+      "cellule_excel": "H18"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AK",
+      "libelle_ligne": "Bâtiments",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AK_4",
+      "pos_ligne": "8",
+      "pos_col": "4",
+      "cellule_excel": "I18"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "",
+      "libelle_ligne": "- dont Placement Net",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_2_3",
+      "pos_ligne": "8",
+      "pos_col": "-2",
+      "cellule_excel": "C18"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "",
+      "libelle_ligne": "- dont Placement Net",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_2_4",
+      "pos_ligne": "8",
+      "pos_col": "-1",
+      "cellule_excel": "D18"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AL",
+      "libelle_ligne": "Aménagements, agencements et installations",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AL_1",
+      "pos_ligne": "9",
+      "pos_col": "1",
+      "cellule_excel": "F19"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AL",
+      "libelle_ligne": "Aménagements, agencements et installations",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AL_2",
+      "pos_ligne": "9",
+      "pos_col": "2",
+      "cellule_excel": "G19"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AL",
+      "libelle_ligne": "Aménagements, agencements et installations",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AL_3",
+      "pos_ligne": "9",
+      "pos_col": "3",
+      "cellule_excel": "H19"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AL",
+      "libelle_ligne": "Aménagements, agencements et installations",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AL_4",
+      "pos_ligne": "9",
+      "pos_col": "4",
+      "cellule_excel": "I19"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AM",
+      "libelle_ligne": "Matériel, mobilier et actifs biologiques",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AM_1",
+      "pos_ligne": "10",
+      "pos_col": "1",
+      "cellule_excel": "F20"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AM",
+      "libelle_ligne": "Matériel, mobilier et actifs biologiques",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AM_2",
+      "pos_ligne": "10",
+      "pos_col": "2",
+      "cellule_excel": "G20"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AM",
+      "libelle_ligne": "Matériel, mobilier et actifs biologiques",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AM_3",
+      "pos_ligne": "10",
+      "pos_col": "3",
+      "cellule_excel": "H20"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AM",
+      "libelle_ligne": "Matériel, mobilier et actifs biologiques",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AM_4",
+      "pos_ligne": "10",
+      "pos_col": "4",
+      "cellule_excel": "I20"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AN",
+      "libelle_ligne": "Matériel de transport",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AN_1",
+      "pos_ligne": "11",
+      "pos_col": "1",
+      "cellule_excel": "F21"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AN",
+      "libelle_ligne": "Matériel de transport",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AN_2",
+      "pos_ligne": "11",
+      "pos_col": "2",
+      "cellule_excel": "G21"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AN",
+      "libelle_ligne": "Matériel de transport",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AN_3",
+      "pos_ligne": "11",
+      "pos_col": "3",
+      "cellule_excel": "H21"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AN",
+      "libelle_ligne": "Matériel de transport",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AN_4",
+      "pos_ligne": "11",
+      "pos_col": "4",
+      "cellule_excel": "I21"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AP",
+      "libelle_ligne": "Avances et acomptes versés sur immobilisations",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AP_1",
+      "pos_ligne": "12",
+      "pos_col": "1",
+      "cellule_excel": "F22"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AP",
+      "libelle_ligne": "Avances et acomptes versés sur immobilisations",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AP_2",
+      "pos_ligne": "12",
+      "pos_col": "2",
+      "cellule_excel": "G22"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AP",
+      "libelle_ligne": "Avances et acomptes versés sur immobilisations",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AP_3",
+      "pos_ligne": "12",
+      "pos_col": "3",
+      "cellule_excel": "H22"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AP",
+      "libelle_ligne": "Avances et acomptes versés sur immobilisations",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AP_4",
+      "pos_ligne": "12",
+      "pos_col": "4",
+      "cellule_excel": "I22"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AQ",
+      "libelle_ligne": "IMMOBILISATIONS FINANCIERES",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AQ_1",
+      "pos_ligne": "13",
+      "pos_col": "1",
+      "cellule_excel": "F23"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AQ",
+      "libelle_ligne": "IMMOBILISATIONS FINANCIERES",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AQ_2",
+      "pos_ligne": "13",
+      "pos_col": "2",
+      "cellule_excel": "G23"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AQ",
+      "libelle_ligne": "IMMOBILISATIONS FINANCIERES",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AQ_3",
+      "pos_ligne": "13",
+      "pos_col": "3",
+      "cellule_excel": "H23"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AQ",
+      "libelle_ligne": "IMMOBILISATIONS FINANCIERES",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AQ_4",
+      "pos_ligne": "13",
+      "pos_col": "4",
+      "cellule_excel": "I23"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AR",
+      "libelle_ligne": "Titres de participation",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AR_1",
+      "pos_ligne": "14",
+      "pos_col": "1",
+      "cellule_excel": "F24"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AR",
+      "libelle_ligne": "Titres de participation",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AR_2",
+      "pos_ligne": "14",
+      "pos_col": "2",
+      "cellule_excel": "G24"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AR",
+      "libelle_ligne": "Titres de participation",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AR_3",
+      "pos_ligne": "14",
+      "pos_col": "3",
+      "cellule_excel": "H24"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AR",
+      "libelle_ligne": "Titres de participation",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AR_4",
+      "pos_ligne": "14",
+      "pos_col": "4",
+      "cellule_excel": "I24"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AS",
+      "libelle_ligne": "Autres immobilisations financières",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AS_1",
+      "pos_ligne": "15",
+      "pos_col": "1",
+      "cellule_excel": "F25"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AS",
+      "libelle_ligne": "Autres immobilisations financières",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AS_2",
+      "pos_ligne": "15",
+      "pos_col": "2",
+      "cellule_excel": "G25"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AS",
+      "libelle_ligne": "Autres immobilisations financières",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AS_3",
+      "pos_ligne": "15",
+      "pos_col": "3",
+      "cellule_excel": "H25"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AS",
+      "libelle_ligne": "Autres immobilisations financières",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AS_4",
+      "pos_ligne": "15",
+      "pos_col": "4",
+      "cellule_excel": "I25"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AZ",
+      "libelle_ligne": "TOTAL ACTIF IMMOBILISE",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_AZ_1",
+      "pos_ligne": "16",
+      "pos_col": "1",
+      "cellule_excel": "F26"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AZ",
+      "libelle_ligne": "TOTAL ACTIF IMMOBILISE",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_AZ_2",
+      "pos_ligne": "16",
+      "pos_col": "2",
+      "cellule_excel": "G26"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AZ",
+      "libelle_ligne": "TOTAL ACTIF IMMOBILISE",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_AZ_3",
+      "pos_ligne": "16",
+      "pos_col": "3",
+      "cellule_excel": "H26"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "AZ",
+      "libelle_ligne": "TOTAL ACTIF IMMOBILISE",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_AZ_4",
+      "pos_ligne": "16",
+      "pos_col": "4",
+      "cellule_excel": "I26"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BA",
+      "libelle_ligne": "ACTIF CIRCULANT HAO",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BA_1",
+      "pos_ligne": "17",
+      "pos_col": "1",
+      "cellule_excel": "F27"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BA",
+      "libelle_ligne": "ACTIF CIRCULANT HAO",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BA_2",
+      "pos_ligne": "17",
+      "pos_col": "2",
+      "cellule_excel": "G27"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BA",
+      "libelle_ligne": "ACTIF CIRCULANT HAO",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BA_3",
+      "pos_ligne": "17",
+      "pos_col": "3",
+      "cellule_excel": "H27"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BA",
+      "libelle_ligne": "ACTIF CIRCULANT HAO",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BA_4",
+      "pos_ligne": "17",
+      "pos_col": "4",
+      "cellule_excel": "I27"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BB",
+      "libelle_ligne": "STOCKS ET ENCOURS",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BB_1",
+      "pos_ligne": "18",
+      "pos_col": "1",
+      "cellule_excel": "F28"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BB",
+      "libelle_ligne": "STOCKS ET ENCOURS",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BB_2",
+      "pos_ligne": "18",
+      "pos_col": "2",
+      "cellule_excel": "G28"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BB",
+      "libelle_ligne": "STOCKS ET ENCOURS",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BB_3",
+      "pos_ligne": "18",
+      "pos_col": "3",
+      "cellule_excel": "H28"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BB",
+      "libelle_ligne": "STOCKS ET ENCOURS",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BB_4",
+      "pos_ligne": "18",
+      "pos_col": "4",
+      "cellule_excel": "I28"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BG",
+      "libelle_ligne": "CREANCES ET EMPLOIS ASSIMILES",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BG_1",
+      "pos_ligne": "19",
+      "pos_col": "1",
+      "cellule_excel": "F29"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BG",
+      "libelle_ligne": "CREANCES ET EMPLOIS ASSIMILES",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BG_2",
+      "pos_ligne": "19",
+      "pos_col": "2",
+      "cellule_excel": "G29"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BG",
+      "libelle_ligne": "CREANCES ET EMPLOIS ASSIMILES",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BG_3",
+      "pos_ligne": "19",
+      "pos_col": "3",
+      "cellule_excel": "H29"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BG",
+      "libelle_ligne": "CREANCES ET EMPLOIS ASSIMILES",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BG_4",
+      "pos_ligne": "19",
+      "pos_col": "4",
+      "cellule_excel": "I29"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BH",
+      "libelle_ligne": "Fournisseurs avances versées",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BH_1",
+      "pos_ligne": "20",
+      "pos_col": "1",
+      "cellule_excel": "F30"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BH",
+      "libelle_ligne": "Fournisseurs avances versées",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BH_2",
+      "pos_ligne": "20",
+      "pos_col": "2",
+      "cellule_excel": "G30"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BH",
+      "libelle_ligne": "Fournisseurs avances versées",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BH_3",
+      "pos_ligne": "20",
+      "pos_col": "3",
+      "cellule_excel": "H30"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BH",
+      "libelle_ligne": "Fournisseurs avances versées",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BH_4",
+      "pos_ligne": "20",
+      "pos_col": "4",
+      "cellule_excel": "I30"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BI",
+      "libelle_ligne": "Clients",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BI_1",
+      "pos_ligne": "21",
+      "pos_col": "1",
+      "cellule_excel": "F31"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BI",
+      "libelle_ligne": "Clients",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BI_2",
+      "pos_ligne": "21",
+      "pos_col": "2",
+      "cellule_excel": "G31"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BI",
+      "libelle_ligne": "Clients",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BI_3",
+      "pos_ligne": "21",
+      "pos_col": "3",
+      "cellule_excel": "H31"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BI",
+      "libelle_ligne": "Clients",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BI_4",
+      "pos_ligne": "21",
+      "pos_col": "4",
+      "cellule_excel": "I31"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BJ",
+      "libelle_ligne": "Autres créances",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BJ_1",
+      "pos_ligne": "22",
+      "pos_col": "1",
+      "cellule_excel": "F32"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BJ",
+      "libelle_ligne": "Autres créances",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BJ_2",
+      "pos_ligne": "22",
+      "pos_col": "2",
+      "cellule_excel": "G32"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BJ",
+      "libelle_ligne": "Autres créances",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BJ_3",
+      "pos_ligne": "22",
+      "pos_col": "3",
+      "cellule_excel": "H32"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BJ",
+      "libelle_ligne": "Autres créances",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BJ_4",
+      "pos_ligne": "22",
+      "pos_col": "4",
+      "cellule_excel": "I32"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BK",
+      "libelle_ligne": "TOTAL ACTIF CIRCULANT",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BK_1",
+      "pos_ligne": "23",
+      "pos_col": "1",
+      "cellule_excel": "F33"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BK",
+      "libelle_ligne": "TOTAL ACTIF CIRCULANT",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BK_2",
+      "pos_ligne": "23",
+      "pos_col": "2",
+      "cellule_excel": "G33"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BK",
+      "libelle_ligne": "TOTAL ACTIF CIRCULANT",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BK_3",
+      "pos_ligne": "23",
+      "pos_col": "3",
+      "cellule_excel": "H33"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BK",
+      "libelle_ligne": "TOTAL ACTIF CIRCULANT",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BK_4",
+      "pos_ligne": "23",
+      "pos_col": "4",
+      "cellule_excel": "I33"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BQ",
+      "libelle_ligne": "Titres de placement",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BQ_1",
+      "pos_ligne": "24",
+      "pos_col": "1",
+      "cellule_excel": "F34"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BQ",
+      "libelle_ligne": "Titres de placement",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BQ_2",
+      "pos_ligne": "24",
+      "pos_col": "2",
+      "cellule_excel": "G34"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BQ",
+      "libelle_ligne": "Titres de placement",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BQ_3",
+      "pos_ligne": "24",
+      "pos_col": "3",
+      "cellule_excel": "H34"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BQ",
+      "libelle_ligne": "Titres de placement",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BQ_4",
+      "pos_ligne": "24",
+      "pos_col": "4",
+      "cellule_excel": "I34"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BR",
+      "libelle_ligne": "Valeurs à encaisser",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BR_1",
+      "pos_ligne": "25",
+      "pos_col": "1",
+      "cellule_excel": "F35"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BR",
+      "libelle_ligne": "Valeurs à encaisser",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BR_2",
+      "pos_ligne": "25",
+      "pos_col": "2",
+      "cellule_excel": "G35"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BR",
+      "libelle_ligne": "Valeurs à encaisser",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BR_3",
+      "pos_ligne": "25",
+      "pos_col": "3",
+      "cellule_excel": "H35"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BR",
+      "libelle_ligne": "Valeurs à encaisser",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BR_4",
+      "pos_ligne": "25",
+      "pos_col": "4",
+      "cellule_excel": "I35"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BS",
+      "libelle_ligne": "Banques, chèques postaux, caisse et assimilés",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BS_1",
+      "pos_ligne": "26",
+      "pos_col": "1",
+      "cellule_excel": "F36"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BS",
+      "libelle_ligne": "Banques, chèques postaux, caisse et assimilés",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BS_2",
+      "pos_ligne": "26",
+      "pos_col": "2",
+      "cellule_excel": "G36"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BS",
+      "libelle_ligne": "Banques, chèques postaux, caisse et assimilés",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BS_3",
+      "pos_ligne": "26",
+      "pos_col": "3",
+      "cellule_excel": "H36"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BS",
+      "libelle_ligne": "Banques, chèques postaux, caisse et assimilés",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BS_4",
+      "pos_ligne": "26",
+      "pos_col": "4",
+      "cellule_excel": "I36"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BT",
+      "libelle_ligne": "TOTAL TRESORERIE-ACTIF",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BT_1",
+      "pos_ligne": "27",
+      "pos_col": "1",
+      "cellule_excel": "F37"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BT",
+      "libelle_ligne": "TOTAL TRESORERIE-ACTIF",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BT_2",
+      "pos_ligne": "27",
+      "pos_col": "2",
+      "cellule_excel": "G37"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BT",
+      "libelle_ligne": "TOTAL TRESORERIE-ACTIF",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BT_3",
+      "pos_ligne": "27",
+      "pos_col": "3",
+      "cellule_excel": "H37"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BT",
+      "libelle_ligne": "TOTAL TRESORERIE-ACTIF",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BT_4",
+      "pos_ligne": "27",
+      "pos_col": "4",
+      "cellule_excel": "I37"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BU",
+      "libelle_ligne": "Ecart de conversion-Actif",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BU_1",
+      "pos_ligne": "28",
+      "pos_col": "1",
+      "cellule_excel": "F38"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BU",
+      "libelle_ligne": "Ecart de conversion-Actif",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BU_2",
+      "pos_ligne": "28",
+      "pos_col": "2",
+      "cellule_excel": "G38"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BU",
+      "libelle_ligne": "Ecart de conversion-Actif",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BU_3",
+      "pos_ligne": "28",
+      "pos_col": "3",
+      "cellule_excel": "H38"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BU",
+      "libelle_ligne": "Ecart de conversion-Actif",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BU_4",
+      "pos_ligne": "28",
+      "pos_col": "4",
+      "cellule_excel": "I38"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BZ",
+      "libelle_ligne": "TOTAL GENERAL",
+      "libelle_colonne": "BRUT",
+      "code_champ": "NO_ACTIF_BZ_1",
+      "pos_ligne": "29",
+      "pos_col": "1",
+      "cellule_excel": "F39"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BZ",
+      "libelle_ligne": "TOTAL GENERAL",
+      "libelle_colonne": "AMORT et DEPREC.",
+      "code_champ": "NO_ACTIF_BZ_2",
+      "pos_ligne": "29",
+      "pos_col": "2",
+      "cellule_excel": "G39"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BZ",
+      "libelle_ligne": "TOTAL GENERAL",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_ACTIF_BZ_3",
+      "pos_ligne": "29",
+      "pos_col": "3",
+      "cellule_excel": "H39"
+    },
+    {
+      "code_tableau": "ACTIF",
+      "code_ligne": "BZ",
+      "libelle_ligne": "TOTAL GENERAL",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_ACTIF_BZ_4",
+      "pos_ligne": "29",
+      "pos_col": "4",
+      "cellule_excel": "I39"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CA",
+      "libelle_ligne": "Capital",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CA_1",
+      "pos_ligne": "1",
+      "pos_col": "1",
+      "cellule_excel": "H11"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CA",
+      "libelle_ligne": "Capital",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CA_2",
+      "pos_ligne": "1",
+      "pos_col": "2",
+      "cellule_excel": "I11"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CB",
+      "libelle_ligne": "Apporteurs capital non appelé (-)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CB_1",
+      "pos_ligne": "2",
+      "pos_col": "1",
+      "cellule_excel": "H12"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CB",
+      "libelle_ligne": "Apporteurs capital non appelé (-)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CB_2",
+      "pos_ligne": "2",
+      "pos_col": "2",
+      "cellule_excel": "I12"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CD",
+      "libelle_ligne": "Primes liées au capital social",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CD_1",
+      "pos_ligne": "3",
+      "pos_col": "1",
+      "cellule_excel": "H13"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CD",
+      "libelle_ligne": "Primes liées au capital social",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CD_2",
+      "pos_ligne": "3",
+      "pos_col": "2",
+      "cellule_excel": "I13"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CE",
+      "libelle_ligne": "Ecarts de réévaluation",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CE_1",
+      "pos_ligne": "4",
+      "pos_col": "1",
+      "cellule_excel": "H14"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CE",
+      "libelle_ligne": "Ecarts de réévaluation",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CE_2",
+      "pos_ligne": "4",
+      "pos_col": "2",
+      "cellule_excel": "I14"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CF",
+      "libelle_ligne": "Réserves indisponibles",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CF_1",
+      "pos_ligne": "5",
+      "pos_col": "1",
+      "cellule_excel": "H15"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CF",
+      "libelle_ligne": "Réserves indisponibles",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CF_2",
+      "pos_ligne": "5",
+      "pos_col": "2",
+      "cellule_excel": "I15"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CG",
+      "libelle_ligne": "Réserves libres",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CG_1",
+      "pos_ligne": "6",
+      "pos_col": "1",
+      "cellule_excel": "H16"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CG",
+      "libelle_ligne": "Réserves libres",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CG_2",
+      "pos_ligne": "6",
+      "pos_col": "2",
+      "cellule_excel": "I16"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CH",
+      "libelle_ligne": "Report à nouveau (+ ou -)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CH_1",
+      "pos_ligne": "7",
+      "pos_col": "1",
+      "cellule_excel": "H17"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CH",
+      "libelle_ligne": "Report à nouveau (+ ou -)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CH_2",
+      "pos_ligne": "7",
+      "pos_col": "2",
+      "cellule_excel": "I17"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CJ",
+      "libelle_ligne": "Résultat net de l'exercice (bénéfice + ou perte -)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CJ_1",
+      "pos_ligne": "8",
+      "pos_col": "1",
+      "cellule_excel": "H18"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CJ",
+      "libelle_ligne": "Résultat net de l'exercice (bénéfice + ou perte -)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CJ_2",
+      "pos_ligne": "8",
+      "pos_col": "2",
+      "cellule_excel": "I18"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CL",
+      "libelle_ligne": "Subventions  d'investissement",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CL_1",
+      "pos_ligne": "9",
+      "pos_col": "1",
+      "cellule_excel": "H19"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CL",
+      "libelle_ligne": "Subventions  d'investissement",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CL_2",
+      "pos_ligne": "9",
+      "pos_col": "2",
+      "cellule_excel": "I19"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CM",
+      "libelle_ligne": "Provisions  réglementées",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CM_1",
+      "pos_ligne": "10",
+      "pos_col": "1",
+      "cellule_excel": "H20"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CM",
+      "libelle_ligne": "Provisions  réglementées",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CM_2",
+      "pos_ligne": "10",
+      "pos_col": "2",
+      "cellule_excel": "I20"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CP",
+      "libelle_ligne": "TOTAL  CAPITAUX PROPRES ET  RESSOURCES ASSIMILEES",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_CP_1",
+      "pos_ligne": "11",
+      "pos_col": "1",
+      "cellule_excel": "H21"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "CP",
+      "libelle_ligne": "TOTAL  CAPITAUX PROPRES ET  RESSOURCES ASSIMILEES",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_CP_2",
+      "pos_ligne": "11",
+      "pos_col": "2",
+      "cellule_excel": "I21"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DA",
+      "libelle_ligne": "Emprunts et dettes financières diverses",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DA_1",
+      "pos_ligne": "12",
+      "pos_col": "1",
+      "cellule_excel": "H22"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DA",
+      "libelle_ligne": "Emprunts et dettes financières diverses",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DA_2",
+      "pos_ligne": "12",
+      "pos_col": "2",
+      "cellule_excel": "I22"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DB",
+      "libelle_ligne": "Dettes de location acquisition",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DB_1",
+      "pos_ligne": "13",
+      "pos_col": "1",
+      "cellule_excel": "H23"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DB",
+      "libelle_ligne": "Dettes de location acquisition",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DB_2",
+      "pos_ligne": "13",
+      "pos_col": "2",
+      "cellule_excel": "I23"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DC",
+      "libelle_ligne": "Provisions pour risques et charges",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DC_1",
+      "pos_ligne": "14",
+      "pos_col": "1",
+      "cellule_excel": "H24"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DC",
+      "libelle_ligne": "Provisions pour risques et charges",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DC_2",
+      "pos_ligne": "14",
+      "pos_col": "2",
+      "cellule_excel": "I24"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DD",
+      "libelle_ligne": "TOTAL  DETTES FINANCIERES ET  RESSOURCES ASSIMILEES",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DD_1",
+      "pos_ligne": "15",
+      "pos_col": "1",
+      "cellule_excel": "H25"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DD",
+      "libelle_ligne": "TOTAL  DETTES FINANCIERES ET  RESSOURCES ASSIMILEES",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DD_2",
+      "pos_ligne": "15",
+      "pos_col": "2",
+      "cellule_excel": "I25"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DF",
+      "libelle_ligne": "TOTAL  RESSOURCES STABLES",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DF_1",
+      "pos_ligne": "16",
+      "pos_col": "1",
+      "cellule_excel": "H26"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DF",
+      "libelle_ligne": "TOTAL  RESSOURCES STABLES",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DF_2",
+      "pos_ligne": "16",
+      "pos_col": "2",
+      "cellule_excel": "I26"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DH",
+      "libelle_ligne": "Dettes circulantes HAO",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DH_1",
+      "pos_ligne": "17",
+      "pos_col": "1",
+      "cellule_excel": "H27"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DH",
+      "libelle_ligne": "Dettes circulantes HAO",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DH_2",
+      "pos_ligne": "17",
+      "pos_col": "2",
+      "cellule_excel": "I27"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DI",
+      "libelle_ligne": "Clients, avances reçues",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DI_1",
+      "pos_ligne": "18",
+      "pos_col": "1",
+      "cellule_excel": "H28"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DI",
+      "libelle_ligne": "Clients, avances reçues",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DI_2",
+      "pos_ligne": "18",
+      "pos_col": "2",
+      "cellule_excel": "I28"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DJ",
+      "libelle_ligne": "Fournisseurs d'exploitation",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DJ_1",
+      "pos_ligne": "19",
+      "pos_col": "1",
+      "cellule_excel": "H29"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DJ",
+      "libelle_ligne": "Fournisseurs d'exploitation",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DJ_2",
+      "pos_ligne": "19",
+      "pos_col": "2",
+      "cellule_excel": "I29"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DK",
+      "libelle_ligne": "Dettes fiscales et sociales",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DK_1",
+      "pos_ligne": "20",
+      "pos_col": "1",
+      "cellule_excel": "H30"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DK",
+      "libelle_ligne": "Dettes fiscales et sociales",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DK_2",
+      "pos_ligne": "20",
+      "pos_col": "2",
+      "cellule_excel": "I30"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DM",
+      "libelle_ligne": "Autres dettes",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DM_1",
+      "pos_ligne": "21",
+      "pos_col": "1",
+      "cellule_excel": "H31"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DM",
+      "libelle_ligne": "Autres dettes",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DM_2",
+      "pos_ligne": "21",
+      "pos_col": "2",
+      "cellule_excel": "I31"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DN",
+      "libelle_ligne": "Provisions pour risques à court terme",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DN_1",
+      "pos_ligne": "22",
+      "pos_col": "1",
+      "cellule_excel": "H32"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DN",
+      "libelle_ligne": "Provisions pour risques à court terme",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DN_2",
+      "pos_ligne": "22",
+      "pos_col": "2",
+      "cellule_excel": "I32"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DP",
+      "libelle_ligne": "TOTAL  PASSIF CIRCULANT",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DP_1",
+      "pos_ligne": "23",
+      "pos_col": "1",
+      "cellule_excel": "H33"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DP",
+      "libelle_ligne": "TOTAL  PASSIF CIRCULANT",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DP_2",
+      "pos_ligne": "23",
+      "pos_col": "2",
+      "cellule_excel": "I33"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DQ",
+      "libelle_ligne": "Banques,  crédits d'escompte",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DQ_1",
+      "pos_ligne": "25",
+      "pos_col": "1",
+      "cellule_excel": "H35"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DQ",
+      "libelle_ligne": "Banques,  crédits d'escompte",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DQ_2",
+      "pos_ligne": "25",
+      "pos_col": "2",
+      "cellule_excel": "I35"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DR",
+      "libelle_ligne": "Banques, établissements financiers et crédits de trésorerie",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DR_1",
+      "pos_ligne": "26",
+      "pos_col": "1",
+      "cellule_excel": "H36"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DR",
+      "libelle_ligne": "Banques, établissements financiers et crédits de trésorerie",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DR_2",
+      "pos_ligne": "26",
+      "pos_col": "2",
+      "cellule_excel": "I36"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DT",
+      "libelle_ligne": "TOTAL   TRESORERIE-PASSIF",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DT_1",
+      "pos_ligne": "27",
+      "pos_col": "1",
+      "cellule_excel": "H37"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DT",
+      "libelle_ligne": "TOTAL   TRESORERIE-PASSIF",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DT_2",
+      "pos_ligne": "27",
+      "pos_col": "2",
+      "cellule_excel": "I37"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DV",
+      "libelle_ligne": "Ecart de conversion-Passif",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DV_1",
+      "pos_ligne": "28",
+      "pos_col": "1",
+      "cellule_excel": "H38"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DV",
+      "libelle_ligne": "Ecart de conversion-Passif",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DV_2",
+      "pos_ligne": "28",
+      "pos_col": "2",
+      "cellule_excel": "I38"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DZ",
+      "libelle_ligne": "TOTAL GENERAL",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_PASSIF_DZ_1",
+      "pos_ligne": "29",
+      "pos_col": "1",
+      "cellule_excel": "H39"
+    },
+    {
+      "code_tableau": "PASSIF",
+      "code_ligne": "DZ",
+      "libelle_ligne": "TOTAL GENERAL",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_PASSIF_DZ_2",
+      "pos_ligne": "29",
+      "pos_col": "2",
+      "cellule_excel": "I39"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TA",
+      "libelle_ligne": "Ventes de marchandises",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TA_1",
+      "pos_ligne": "1",
+      "pos_col": "1",
+      "cellule_excel": "I11"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TA",
+      "libelle_ligne": "Ventes de marchandises",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TA_2",
+      "pos_ligne": "1",
+      "pos_col": "2",
+      "cellule_excel": "J11"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RA",
+      "libelle_ligne": "Achats de marchandises",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RA_1",
+      "pos_ligne": "2",
+      "pos_col": "1",
+      "cellule_excel": "I12"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RA",
+      "libelle_ligne": "Achats de marchandises",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RA_2",
+      "pos_ligne": "2",
+      "pos_col": "2",
+      "cellule_excel": "J12"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RB",
+      "libelle_ligne": "Variation de stocks de marchandises",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RB_1",
+      "pos_ligne": "3",
+      "pos_col": "1",
+      "cellule_excel": "I13"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RB",
+      "libelle_ligne": "Variation de stocks de marchandises",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RB_2",
+      "pos_ligne": "3",
+      "pos_col": "2",
+      "cellule_excel": "J13"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XA",
+      "libelle_ligne": "MARGE  COMMERCIALE  (Somme TA à RB)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XA_1",
+      "pos_ligne": "4",
+      "pos_col": "1",
+      "cellule_excel": "I14"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XA",
+      "libelle_ligne": "MARGE  COMMERCIALE  (Somme TA à RB)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XA_2",
+      "pos_ligne": "4",
+      "pos_col": "2",
+      "cellule_excel": "J14"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TB",
+      "libelle_ligne": "Ventes de produits fabriqués",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TB_1",
+      "pos_ligne": "5",
+      "pos_col": "1",
+      "cellule_excel": "I15"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TB",
+      "libelle_ligne": "Ventes de produits fabriqués",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TB_2",
+      "pos_ligne": "5",
+      "pos_col": "2",
+      "cellule_excel": "J15"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TC",
+      "libelle_ligne": "Travaux, services vendus",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TC_1",
+      "pos_ligne": "6",
+      "pos_col": "1",
+      "cellule_excel": "I16"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TC",
+      "libelle_ligne": "Travaux, services vendus",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TC_2",
+      "pos_ligne": "6",
+      "pos_col": "2",
+      "cellule_excel": "J16"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TD",
+      "libelle_ligne": "Produits accessoires",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TD_1",
+      "pos_ligne": "7",
+      "pos_col": "1",
+      "cellule_excel": "I17"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TD",
+      "libelle_ligne": "Produits accessoires",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TD_2",
+      "pos_ligne": "7",
+      "pos_col": "2",
+      "cellule_excel": "J17"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XB",
+      "libelle_ligne": "CHIFFRE D'AFFAIRES (TA + TB + TC + TD)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XB_1",
+      "pos_ligne": "8",
+      "pos_col": "1",
+      "cellule_excel": "I18"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XB",
+      "libelle_ligne": "CHIFFRE D'AFFAIRES (TA + TB + TC + TD)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XB_2",
+      "pos_ligne": "8",
+      "pos_col": "2",
+      "cellule_excel": "J18"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TE",
+      "libelle_ligne": "Production stockée (ou déstockage)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TE_1",
+      "pos_ligne": "9",
+      "pos_col": "1",
+      "cellule_excel": "I19"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TE",
+      "libelle_ligne": "Production stockée (ou déstockage)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TE_2",
+      "pos_ligne": "9",
+      "pos_col": "2",
+      "cellule_excel": "J19"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TF",
+      "libelle_ligne": "Production immobilisée",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TF_1",
+      "pos_ligne": "10",
+      "pos_col": "1",
+      "cellule_excel": "I20"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TF",
+      "libelle_ligne": "Production immobilisée",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TF_2",
+      "pos_ligne": "10",
+      "pos_col": "2",
+      "cellule_excel": "J20"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TG",
+      "libelle_ligne": "Subventions d'exploitation",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TG_1",
+      "pos_ligne": "11",
+      "pos_col": "1",
+      "cellule_excel": "I21"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TG",
+      "libelle_ligne": "Subventions d'exploitation",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TG_2",
+      "pos_ligne": "11",
+      "pos_col": "2",
+      "cellule_excel": "J21"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TH",
+      "libelle_ligne": "Autres produits",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TH_1",
+      "pos_ligne": "12",
+      "pos_col": "1",
+      "cellule_excel": "I22"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TH",
+      "libelle_ligne": "Autres produits",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TH_2",
+      "pos_ligne": "12",
+      "pos_col": "2",
+      "cellule_excel": "J22"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TI",
+      "libelle_ligne": "Transferts de charges d'exploitation",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TI_1",
+      "pos_ligne": "13",
+      "pos_col": "1",
+      "cellule_excel": "I23"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TI",
+      "libelle_ligne": "Transferts de charges d'exploitation",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TI_2",
+      "pos_ligne": "13",
+      "pos_col": "2",
+      "cellule_excel": "J23"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RC",
+      "libelle_ligne": "Achats de matières premières et fournitures liées",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RC_1",
+      "pos_ligne": "14",
+      "pos_col": "1",
+      "cellule_excel": "I24"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RC",
+      "libelle_ligne": "Achats de matières premières et fournitures liées",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RC_2",
+      "pos_ligne": "14",
+      "pos_col": "2",
+      "cellule_excel": "J24"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RD",
+      "libelle_ligne": "Variation de stocks de matières premières et fournitures liées",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RD_1",
+      "pos_ligne": "15",
+      "pos_col": "1",
+      "cellule_excel": "I25"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RD",
+      "libelle_ligne": "Variation de stocks de matières premières et fournitures liées",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RD_2",
+      "pos_ligne": "15",
+      "pos_col": "2",
+      "cellule_excel": "J25"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RE",
+      "libelle_ligne": "Autres achats",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RE_1",
+      "pos_ligne": "16",
+      "pos_col": "1",
+      "cellule_excel": "I26"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RE",
+      "libelle_ligne": "Autres achats",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RE_2",
+      "pos_ligne": "16",
+      "pos_col": "2",
+      "cellule_excel": "J26"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RF",
+      "libelle_ligne": "Variation de stocks d'autres approvisionnements",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RF_1",
+      "pos_ligne": "17",
+      "pos_col": "1",
+      "cellule_excel": "I27"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RF",
+      "libelle_ligne": "Variation de stocks d'autres approvisionnements",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RF_2",
+      "pos_ligne": "17",
+      "pos_col": "2",
+      "cellule_excel": "J27"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RG",
+      "libelle_ligne": "Transports",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RG_1",
+      "pos_ligne": "18",
+      "pos_col": "1",
+      "cellule_excel": "I28"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RG",
+      "libelle_ligne": "Transports",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RG_2",
+      "pos_ligne": "18",
+      "pos_col": "2",
+      "cellule_excel": "J28"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RH",
+      "libelle_ligne": "Services extérieurs",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RH_1",
+      "pos_ligne": "19",
+      "pos_col": "1",
+      "cellule_excel": "I29"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RH",
+      "libelle_ligne": "Services extérieurs",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RH_2",
+      "pos_ligne": "19",
+      "pos_col": "2",
+      "cellule_excel": "J29"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RI",
+      "libelle_ligne": "Impôts et taxes",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RI_1",
+      "pos_ligne": "20",
+      "pos_col": "1",
+      "cellule_excel": "I30"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RI",
+      "libelle_ligne": "Impôts et taxes",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RI_2",
+      "pos_ligne": "20",
+      "pos_col": "2",
+      "cellule_excel": "J30"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RJ",
+      "libelle_ligne": "Autres charges",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RJ_1",
+      "pos_ligne": "21",
+      "pos_col": "1",
+      "cellule_excel": "I31"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RJ",
+      "libelle_ligne": "Autres charges",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RJ_2",
+      "pos_ligne": "21",
+      "pos_col": "2",
+      "cellule_excel": "J31"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XC",
+      "libelle_ligne": "VALEUR AJOUTEE (XB + RA + RB) + (Somme TE à RJ)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XC_1",
+      "pos_ligne": "22",
+      "pos_col": "1",
+      "cellule_excel": "I32"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XC",
+      "libelle_ligne": "VALEUR AJOUTEE (XB + RA + RB) + (Somme TE à RJ)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XC_2",
+      "pos_ligne": "22",
+      "pos_col": "2",
+      "cellule_excel": "J32"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RK",
+      "libelle_ligne": "Charges de personnel",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RK_1",
+      "pos_ligne": "23",
+      "pos_col": "1",
+      "cellule_excel": "I33"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RK",
+      "libelle_ligne": "Charges de personnel",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RK_2",
+      "pos_ligne": "23",
+      "pos_col": "2",
+      "cellule_excel": "J33"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XD",
+      "libelle_ligne": "EXCEDENT BRUT D'EXPLOITATION (XC+RK)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XD_1",
+      "pos_ligne": "24",
+      "pos_col": "1",
+      "cellule_excel": "I34"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XD",
+      "libelle_ligne": "EXCEDENT BRUT D'EXPLOITATION (XC+RK)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XD_2",
+      "pos_ligne": "24",
+      "pos_col": "2",
+      "cellule_excel": "J34"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TJ",
+      "libelle_ligne": "Reprises d'amortissements, provisions et dépréciations",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TJ_1",
+      "pos_ligne": "25",
+      "pos_col": "1",
+      "cellule_excel": "I35"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TJ",
+      "libelle_ligne": "Reprises d'amortissements, provisions et dépréciations",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TJ_2",
+      "pos_ligne": "25",
+      "pos_col": "2",
+      "cellule_excel": "J35"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RL",
+      "libelle_ligne": "Dotations aux amortissements, aux provisions et dépréciations",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RL_1",
+      "pos_ligne": "26",
+      "pos_col": "1",
+      "cellule_excel": "I36"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RL",
+      "libelle_ligne": "Dotations aux amortissements, aux provisions et dépréciations",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RL_2",
+      "pos_ligne": "26",
+      "pos_col": "2",
+      "cellule_excel": "J36"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XE",
+      "libelle_ligne": "RESULTAT D'EXPLOITATION (XD + TJ + RL)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XE_1",
+      "pos_ligne": "27",
+      "pos_col": "1",
+      "cellule_excel": "I37"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XE",
+      "libelle_ligne": "RESULTAT D'EXPLOITATION (XD + TJ + RL)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XE_2",
+      "pos_ligne": "27",
+      "pos_col": "2",
+      "cellule_excel": "J37"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TK",
+      "libelle_ligne": "Revenus financiers et assimilés",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TK_1",
+      "pos_ligne": "28",
+      "pos_col": "1",
+      "cellule_excel": "I38"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TK",
+      "libelle_ligne": "Revenus financiers et assimilés",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TK_2",
+      "pos_ligne": "28",
+      "pos_col": "2",
+      "cellule_excel": "J38"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TL",
+      "libelle_ligne": "Reprises de provisions  et dépréciations financières",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TL_1",
+      "pos_ligne": "29",
+      "pos_col": "1",
+      "cellule_excel": "I39"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TL",
+      "libelle_ligne": "Reprises de provisions  et dépréciations financières",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TL_2",
+      "pos_ligne": "29",
+      "pos_col": "2",
+      "cellule_excel": "J39"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TM",
+      "libelle_ligne": "Transferts de charges financières",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TM_1",
+      "pos_ligne": "30",
+      "pos_col": "1",
+      "cellule_excel": "I40"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TM",
+      "libelle_ligne": "Transferts de charges financières",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TM_2",
+      "pos_ligne": "30",
+      "pos_col": "2",
+      "cellule_excel": "J40"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RM",
+      "libelle_ligne": "Frais financiers et charges assimilées",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RM_1",
+      "pos_ligne": "31",
+      "pos_col": "1",
+      "cellule_excel": "I41"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RM",
+      "libelle_ligne": "Frais financiers et charges assimilées",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RM_2",
+      "pos_ligne": "31",
+      "pos_col": "2",
+      "cellule_excel": "J41"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RN",
+      "libelle_ligne": "Dotations aux provisions et aux dépréciations financières",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RN_1",
+      "pos_ligne": "32",
+      "pos_col": "1",
+      "cellule_excel": "I42"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RN",
+      "libelle_ligne": "Dotations aux provisions et aux dépréciations financières",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RN_2",
+      "pos_ligne": "32",
+      "pos_col": "2",
+      "cellule_excel": "J42"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XF",
+      "libelle_ligne": "RESULTAT  FINANCIER  (Somme TK à RN)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XF_1",
+      "pos_ligne": "33",
+      "pos_col": "1",
+      "cellule_excel": "I43"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XF",
+      "libelle_ligne": "RESULTAT  FINANCIER  (Somme TK à RN)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XF_2",
+      "pos_ligne": "33",
+      "pos_col": "2",
+      "cellule_excel": "J43"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XG",
+      "libelle_ligne": "RESULTAT  DES ACTIVITES ORDINAIRES (XE+XF)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XG_1",
+      "pos_ligne": "34",
+      "pos_col": "1",
+      "cellule_excel": "I44"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XG",
+      "libelle_ligne": "RESULTAT  DES ACTIVITES ORDINAIRES (XE+XF)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XG_2",
+      "pos_ligne": "34",
+      "pos_col": "2",
+      "cellule_excel": "J44"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TN",
+      "libelle_ligne": "Produits des cessions d'immobilisations",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TN_1",
+      "pos_ligne": "35",
+      "pos_col": "1",
+      "cellule_excel": "I45"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TN",
+      "libelle_ligne": "Produits des cessions d'immobilisations",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TN_2",
+      "pos_ligne": "35",
+      "pos_col": "2",
+      "cellule_excel": "J45"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TO",
+      "libelle_ligne": "Autres Produits HAO",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_TO_1",
+      "pos_ligne": "36",
+      "pos_col": "1",
+      "cellule_excel": "I46"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "TO",
+      "libelle_ligne": "Autres Produits HAO",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_TO_2",
+      "pos_ligne": "36",
+      "pos_col": "2",
+      "cellule_excel": "J46"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RO",
+      "libelle_ligne": "Valeurs comptables des cessions d'immobilisations",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RO_1",
+      "pos_ligne": "37",
+      "pos_col": "1",
+      "cellule_excel": "I47"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RO",
+      "libelle_ligne": "Valeurs comptables des cessions d'immobilisations",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RO_2",
+      "pos_ligne": "37",
+      "pos_col": "2",
+      "cellule_excel": "J47"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RP",
+      "libelle_ligne": "Autres Charges HAO",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RP_1",
+      "pos_ligne": "38",
+      "pos_col": "1",
+      "cellule_excel": "I48"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RP",
+      "libelle_ligne": "Autres Charges HAO",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RP_2",
+      "pos_ligne": "38",
+      "pos_col": "2",
+      "cellule_excel": "J48"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XH",
+      "libelle_ligne": "RESULTAT HORS ACTIVITES ORDINAIRES (Somme TN à RP)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XH_1",
+      "pos_ligne": "39",
+      "pos_col": "1",
+      "cellule_excel": "I49"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XH",
+      "libelle_ligne": "RESULTAT HORS ACTIVITES ORDINAIRES (Somme TN à RP)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XH_2",
+      "pos_ligne": "39",
+      "pos_col": "2",
+      "cellule_excel": "J49"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RQ",
+      "libelle_ligne": "Participation des travailleurs",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RQ_1",
+      "pos_ligne": "40",
+      "pos_col": "1",
+      "cellule_excel": "I50"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RQ",
+      "libelle_ligne": "Participation des travailleurs",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RQ_2",
+      "pos_ligne": "40",
+      "pos_col": "2",
+      "cellule_excel": "J50"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RS",
+      "libelle_ligne": "Impôts sur le résultat",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_RS_1",
+      "pos_ligne": "41",
+      "pos_col": "1",
+      "cellule_excel": "I51"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "RS",
+      "libelle_ligne": "Impôts sur le résultat",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_RS_2",
+      "pos_ligne": "41",
+      "pos_col": "2",
+      "cellule_excel": "J51"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XI",
+      "libelle_ligne": "RESULTAT NET (XG+XH+RQ+RS)",
+      "libelle_colonne": "NET",
+      "code_champ": "NO_RESULTAT_XI_1",
+      "pos_ligne": "42",
+      "pos_col": "1",
+      "cellule_excel": "I52"
+    },
+    {
+      "code_tableau": "RESULTAT",
+      "code_ligne": "XI",
+      "libelle_ligne": "RESULTAT NET (XG+XH+RQ+RS)",
+      "libelle_colonne": "NET (N-1)",
+      "code_champ": "NO_RESULTAT_XI_2",
+      "pos_ligne": "42",
+      "pos_col": "2",
+      "cellule_excel": "J52"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "ZA",
+      "libelle_ligne": "Trésorerie nette au 1er janvier (Trésorerie actif N-1 - Trésorerie passif N-1)",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_ZA_1",
+      "pos_ligne": "1",
+      "pos_col": "1",
+      "cellule_excel": "I10"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "ZA",
+      "libelle_ligne": "Trésorerie nette au 1er janvier (Trésorerie actif N-1 - Trésorerie passif N-1)",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_ZA_2",
+      "pos_ligne": "1",
+      "pos_col": "2",
+      "cellule_excel": "J10"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FA",
+      "libelle_ligne": "Capacité d'Autofinancement Globale (CAFG)",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FA_1",
+      "pos_ligne": "3",
+      "pos_col": "1",
+      "cellule_excel": "I12"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FA",
+      "libelle_ligne": "Capacité d'Autofinancement Globale (CAFG)",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FA_2",
+      "pos_ligne": "3",
+      "pos_col": "2",
+      "cellule_excel": "J12"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FB",
+      "libelle_ligne": "- Variation d'actif circulant HAO (1)",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FB_1",
+      "pos_ligne": "4",
+      "pos_col": "1",
+      "cellule_excel": "I13"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FB",
+      "libelle_ligne": "- Variation d'actif circulant HAO (1)",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FB_2",
+      "pos_ligne": "4",
+      "pos_col": "2",
+      "cellule_excel": "J13"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FC",
+      "libelle_ligne": "- Variation des stocks",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FC_1",
+      "pos_ligne": "5",
+      "pos_col": "1",
+      "cellule_excel": "I14"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FC",
+      "libelle_ligne": "- Variation des stocks",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FC_2",
+      "pos_ligne": "5",
+      "pos_col": "2",
+      "cellule_excel": "J14"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FD",
+      "libelle_ligne": "- Variation des créances",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FD_1",
+      "pos_ligne": "6",
+      "pos_col": "1",
+      "cellule_excel": "I15"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FD",
+      "libelle_ligne": "- Variation des créances",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FD_2",
+      "pos_ligne": "6",
+      "pos_col": "2",
+      "cellule_excel": "J15"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FE",
+      "libelle_ligne": "+ Variation du passif circulant (1)",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FE_1",
+      "pos_ligne": "7",
+      "pos_col": "1",
+      "cellule_excel": "I16"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FE",
+      "libelle_ligne": "+ Variation du passif circulant (1)",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FE_2",
+      "pos_ligne": "7",
+      "pos_col": "2",
+      "cellule_excel": "J16"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "",
+      "libelle_ligne": "Variation du BF lié aux activités opérationnelles FB+FC+FD+FE :",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_2_1",
+      "pos_ligne": "8",
+      "pos_col": "1",
+      "cellule_excel": "I17"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "",
+      "libelle_ligne": "Variation du BF lié aux activités opérationnelles FB+FC+FD+FE :",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_2_2",
+      "pos_ligne": "8",
+      "pos_col": "2",
+      "cellule_excel": "J17"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "ZB",
+      "libelle_ligne": "Flux de trésorerie provenant des activités opérationnelles  (Somme FA à FE)",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_ZB_1",
+      "pos_ligne": "10",
+      "pos_col": "1",
+      "cellule_excel": "I19"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "ZB",
+      "libelle_ligne": "Flux de trésorerie provenant des activités opérationnelles  (Somme FA à FE)",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_ZB_2",
+      "pos_ligne": "10",
+      "pos_col": "2",
+      "cellule_excel": "J19"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FF",
+      "libelle_ligne": "- Décaissements liés aux acquisitions d'immobilisations incorporelles",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FF_1",
+      "pos_ligne": "12",
+      "pos_col": "1",
+      "cellule_excel": "I21"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FF",
+      "libelle_ligne": "- Décaissements liés aux acquisitions d'immobilisations incorporelles",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FF_2",
+      "pos_ligne": "12",
+      "pos_col": "2",
+      "cellule_excel": "J21"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FG",
+      "libelle_ligne": "- Décaissements liés aux acquisitions d'immobilisations corporelles",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FG_1",
+      "pos_ligne": "13",
+      "pos_col": "1",
+      "cellule_excel": "I22"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FG",
+      "libelle_ligne": "- Décaissements liés aux acquisitions d'immobilisations corporelles",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FG_2",
+      "pos_ligne": "13",
+      "pos_col": "2",
+      "cellule_excel": "J22"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FH",
+      "libelle_ligne": "- Décaissements liés aux acquisitions d'immobilisations financières",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FH_1",
+      "pos_ligne": "14",
+      "pos_col": "1",
+      "cellule_excel": "I23"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FH",
+      "libelle_ligne": "- Décaissements liés aux acquisitions d'immobilisations financières",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FH_2",
+      "pos_ligne": "14",
+      "pos_col": "2",
+      "cellule_excel": "J23"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FI",
+      "libelle_ligne": "+ Encaissements liés aux cessions d'immobilisations incorporelles et corporelles",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FI_1",
+      "pos_ligne": "15",
+      "pos_col": "1",
+      "cellule_excel": "I24"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FI",
+      "libelle_ligne": "+ Encaissements liés aux cessions d'immobilisations incorporelles et corporelles",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FI_2",
+      "pos_ligne": "15",
+      "pos_col": "2",
+      "cellule_excel": "J24"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FJ",
+      "libelle_ligne": "+ Encaissements liés aux cessions d'immobilisations financières",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FJ_1",
+      "pos_ligne": "16",
+      "pos_col": "1",
+      "cellule_excel": "I25"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FJ",
+      "libelle_ligne": "+ Encaissements liés aux cessions d'immobilisations financières",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FJ_2",
+      "pos_ligne": "16",
+      "pos_col": "2",
+      "cellule_excel": "J25"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "ZC",
+      "libelle_ligne": "Flux de trésorerie provenant des activités d'investissement (Somme FF à FJ)",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_ZC_1",
+      "pos_ligne": "17",
+      "pos_col": "1",
+      "cellule_excel": "I26"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "ZC",
+      "libelle_ligne": "Flux de trésorerie provenant des activités d'investissement (Somme FF à FJ)",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_ZC_2",
+      "pos_ligne": "17",
+      "pos_col": "2",
+      "cellule_excel": "J26"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FK",
+      "libelle_ligne": "+ Augmentations de capital par apports nouveaux",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FK_1",
+      "pos_ligne": "19",
+      "pos_col": "1",
+      "cellule_excel": "I28"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FK",
+      "libelle_ligne": "+ Augmentations de capital par apports nouveaux",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FK_2",
+      "pos_ligne": "19",
+      "pos_col": "2",
+      "cellule_excel": "J28"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FL",
+      "libelle_ligne": "+ Subventions d'investissement reçues",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FL_1",
+      "pos_ligne": "20",
+      "pos_col": "1",
+      "cellule_excel": "I29"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FL",
+      "libelle_ligne": "+ Subventions d'investissement reçues",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FL_2",
+      "pos_ligne": "20",
+      "pos_col": "2",
+      "cellule_excel": "J29"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FM",
+      "libelle_ligne": "- Prélèvements sur le capital",
+      "libelle_colonne": "EXERCICE N",
+      "code_champ": "NO_TFT_FM_1",
+      "pos_ligne": "21",
+      "pos_col": "1",
+      "cellule_excel": "I30"
+    },
+    {
+      "code_tableau": "TFT",
+      "code_ligne": "FM",
+      "libelle_ligne": "- Prélèvements sur le capital",
+      "libelle_colonne": "EXERCICE N-1",
+      "code_champ": "NO_TFT_FM_2",
+      "pos_ligne": "21",
+      "pos_col": "2",
+      "cellule_excel": "J30"
+    }
+  ],
+  "champs_variables": [
+    {
+      "code_tableau": "FR2B",
+      "libelle_colonne": "Désignation de l'activité",
+      "code_colonne": "NO_FR2B_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A28"
+    },
+    {
+      "code_tableau": "FR2B",
+      "libelle_colonne": "Code nomenclature d'activité",
+      "code_colonne": "NO_FR2B_2",
+      "pos_colonne": "16",
+      "premiere_cellule": "P28"
+    },
+    {
+      "code_tableau": "FR2B",
+      "libelle_colonne": "Chiffre d'affaires HT (CA HT) ou Valeur ajoutée (VA)",
+      "code_colonne": "NO_FR2B_3",
+      "pos_colonne": "25",
+      "premiere_cellule": "Y28"
+    },
+    {
+      "code_tableau": "FR2B",
+      "libelle_colonne": "% activité dans le CA HT ou la VA",
+      "code_colonne": "NO_FR2B_4",
+      "pos_colonne": "34",
+      "premiere_cellule": "AH28"
+    },
+    {
+      "code_tableau": "FR3A",
+      "libelle_colonne": "Nom et Prénoms",
+      "code_colonne": "NO_FR3A_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A11"
+    },
+    {
+      "code_tableau": "FR3A",
+      "libelle_colonne": "Nationalité",
+      "code_colonne": "NO_FR3A_2",
+      "pos_colonne": "3",
+      "premiere_cellule": "C11"
+    },
+    {
+      "code_tableau": "FR3A",
+      "libelle_colonne": "Autres nationalités (2)",
+      "code_colonne": "NO_FR3A_3",
+      "pos_colonne": "4",
+      "premiere_cellule": "D11"
+    },
+    {
+      "code_tableau": "FR3A",
+      "libelle_colonne": "Qualité (1)",
+      "code_colonne": "NO_FR3A_4",
+      "pos_colonne": "5",
+      "premiere_cellule": "E11"
+    },
+    {
+      "code_tableau": "FR3A",
+      "libelle_colonne": "N° d'identification fiscale",
+      "code_colonne": "NO_FR3A_5",
+      "pos_colonne": "6",
+      "premiere_cellule": "F11"
+    },
+    {
+      "code_tableau": "FR3A",
+      "libelle_colonne": "Adresse (BP, ville, pays, adresse géographique et adresse email)",
+      "code_colonne": "NO_FR3A_6",
+      "pos_colonne": "8",
+      "premiere_cellule": "H11"
+    },
+    {
+      "code_tableau": "FR3B",
+      "libelle_colonne": "Nom et Prénoms",
+      "code_colonne": "NO_FR3B_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A17"
+    },
+    {
+      "code_tableau": "FR3B",
+      "libelle_colonne": "Structure représentée",
+      "code_colonne": "NO_FR3B_2",
+      "pos_colonne": "3",
+      "premiere_cellule": "C17"
+    },
+    {
+      "code_tableau": "FR3B",
+      "libelle_colonne": "Qualité",
+      "code_colonne": "NO_FR3B_3",
+      "pos_colonne": "5",
+      "premiere_cellule": "E17"
+    },
+    {
+      "code_tableau": "FR3B",
+      "libelle_colonne": "Adresse (BP, ville, pays, adresse géographique et adresse email)",
+      "code_colonne": "NO_FR3B_4",
+      "pos_colonne": "7",
+      "premiere_cellule": "G17"
+    },
+    {
+      "code_tableau": "NOTE3E3",
+      "libelle_colonne": "Eléments réévalués par postes du bilan",
+      "code_colonne": "NO_NOTE3E3_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A11"
+    },
+    {
+      "code_tableau": "NOTE3E3",
+      "libelle_colonne": "Montants en coûts historiques",
+      "code_colonne": "NO_NOTE3E3_2",
+      "pos_colonne": "6",
+      "premiere_cellule": "F11"
+    },
+    {
+      "code_tableau": "NOTE3E3",
+      "libelle_colonne": "Montant réévalués",
+      "code_colonne": "NO_NOTE3E3_3",
+      "pos_colonne": "7",
+      "premiere_cellule": "G11"
+    },
+    {
+      "code_tableau": "NOTE3E3",
+      "libelle_colonne": "Ecarts de réévaluation",
+      "code_colonne": "NO_NOTE3E3_4",
+      "pos_colonne": "8",
+      "premiere_cellule": "H11"
+    },
+    {
+      "code_tableau": "NOTE3E3",
+      "libelle_colonne": "Amortissements supplémentaires",
+      "code_colonne": "NO_NOTE3E3_5",
+      "pos_colonne": "9",
+      "premiere_cellule": "I11"
+    },
+    {
+      "code_tableau": "NOTE4B",
+      "libelle_colonne": "Dénomination sociale",
+      "code_colonne": "NO_NOTE4B_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A25"
+    },
+    {
+      "code_tableau": "NOTE4B",
+      "libelle_colonne": "Localisation (ville / pays)",
+      "code_colonne": "NO_NOTE4B_2",
+      "pos_colonne": "5",
+      "premiere_cellule": "E25"
+    },
+    {
+      "code_tableau": "NOTE4B",
+      "libelle_colonne": "Valeur d'acquisition",
+      "code_colonne": "NO_NOTE4B_3",
+      "pos_colonne": "6",
+      "premiere_cellule": "F25"
+    },
+    {
+      "code_tableau": "NOTE4B",
+      "libelle_colonne": "% Détenu",
+      "code_colonne": "NO_NOTE4B_4",
+      "pos_colonne": "7",
+      "premiere_cellule": "G25"
+    },
+    {
+      "code_tableau": "NOTE4B",
+      "libelle_colonne": "Montant des capitaux propres filiale",
+      "code_colonne": "NO_NOTE4B_5",
+      "pos_colonne": "8",
+      "premiere_cellule": "H25"
+    },
+    {
+      "code_tableau": "NOTE4B",
+      "libelle_colonne": "Résultat dernier exercice filiale (1)",
+      "code_colonne": "NO_NOTE4B_6",
+      "pos_colonne": "9",
+      "premiere_cellule": "I25"
+    },
+    {
+      "code_tableau": "NOTE4B",
+      "libelle_colonne": "Année du dernier exercice filiale",
+      "code_colonne": "NO_NOTE4B_7",
+      "pos_colonne": "10",
+      "premiere_cellule": "J25"
+    },
+    {
+      "code_tableau": "NOTE4B",
+      "libelle_colonne": "Part de bénéfice reçue de la filiale (2)",
+      "code_colonne": "NO_NOTE4B_8",
+      "pos_colonne": "11",
+      "premiere_cellule": "K25"
+    },
+    {
+      "code_tableau": "NOTE8A2",
+      "libelle_colonne": "Comptes",
+      "code_colonne": "NO_NOTE8A2_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "E13"
+    },
+    {
+      "code_tableau": "NOTE8A2",
+      "libelle_colonne": "Montants",
+      "code_colonne": "NO_NOTE8A2_2",
+      "pos_colonne": "2",
+      "premiere_cellule": "F13"
+    },
+    {
+      "code_tableau": "NOTE8A3",
+      "libelle_colonne": "Comptes",
+      "code_colonne": "NO_NOTE8A3_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "G13"
+    },
+    {
+      "code_tableau": "NOTE8A3",
+      "libelle_colonne": "Montants",
+      "code_colonne": "NO_NOTE8A3_2",
+      "pos_colonne": "2",
+      "premiere_cellule": "H13"
+    },
+    {
+      "code_tableau": "NOTE12A1",
+      "libelle_colonne": "Ecarts de conversion actif",
+      "code_colonne": "NO_NOTE12A1_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A11"
+    },
+    {
+      "code_tableau": "NOTE12A1",
+      "libelle_colonne": "Devises",
+      "code_colonne": "NO_NOTE12A1_2",
+      "pos_colonne": "5",
+      "premiere_cellule": "E11"
+    },
+    {
+      "code_tableau": "NOTE12A1",
+      "libelle_colonne": "Montant en devises",
+      "code_colonne": "NO_NOTE12A1_3",
+      "pos_colonne": "6",
+      "premiere_cellule": "F11"
+    },
+    {
+      "code_tableau": "NOTE12A1",
+      "libelle_colonne": "Cours UML Année acquisition",
+      "code_colonne": "NO_NOTE12A1_4",
+      "pos_colonne": "7",
+      "premiere_cellule": "G11"
+    },
+    {
+      "code_tableau": "NOTE12A1",
+      "libelle_colonne": "Cours UML 31/12",
+      "code_colonne": "NO_NOTE12A1_5",
+      "pos_colonne": "8",
+      "premiere_cellule": "H11"
+    },
+    {
+      "code_tableau": "NOTE12A1",
+      "libelle_colonne": "Variation en valeur",
+      "code_colonne": "NO_NOTE12A1_6",
+      "pos_colonne": "9",
+      "premiere_cellule": "I11"
+    },
+    {
+      "code_tableau": "NOTE12A2",
+      "libelle_colonne": "Ecart de conversion passif",
+      "code_colonne": "NO_NOTE12A2_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A13"
+    },
+    {
+      "code_tableau": "NOTE12A2",
+      "libelle_colonne": "Devises",
+      "code_colonne": "NO_NOTE12A2_2",
+      "pos_colonne": "5",
+      "premiere_cellule": "E13"
+    },
+    {
+      "code_tableau": "NOTE12A2",
+      "libelle_colonne": "Montant en devises",
+      "code_colonne": "NO_NOTE12A2_3",
+      "pos_colonne": "6",
+      "premiere_cellule": "F13"
+    },
+    {
+      "code_tableau": "NOTE12A2",
+      "libelle_colonne": "Cours UML Année acquisition",
+      "code_colonne": "NO_NOTE12A2_4",
+      "pos_colonne": "7",
+      "premiere_cellule": "G13"
+    },
+    {
+      "code_tableau": "NOTE12A2",
+      "libelle_colonne": "Cours UML 31/12",
+      "code_colonne": "NO_NOTE12A2_5",
+      "pos_colonne": "8",
+      "premiere_cellule": "H13"
+    },
+    {
+      "code_tableau": "NOTE12A2",
+      "libelle_colonne": "Variation en valeur",
+      "code_colonne": "NO_NOTE12A2_6",
+      "pos_colonne": "9",
+      "premiere_cellule": "I13"
+    },
+    {
+      "code_tableau": "NOTE12B1",
+      "libelle_colonne": "Transferts de charges d'exploitation",
+      "code_colonne": "NO_NOTE12B1_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A18"
+    },
+    {
+      "code_tableau": "NOTE12B1",
+      "libelle_colonne": "Année N",
+      "code_colonne": "NO_NOTE12B1_2",
+      "pos_colonne": "7",
+      "premiere_cellule": "G18"
+    },
+    {
+      "code_tableau": "NOTE12B1",
+      "libelle_colonne": "Année N-1",
+      "code_colonne": "NO_NOTE12B1_3",
+      "pos_colonne": "8",
+      "premiere_cellule": "H18"
+    },
+    {
+      "code_tableau": "NOTE12B1",
+      "libelle_colonne": "Variation (%)",
+      "code_colonne": "NO_NOTE12B1_4",
+      "pos_colonne": "9",
+      "premiere_cellule": "I18"
+    },
+    {
+      "code_tableau": "NOTE12B2",
+      "libelle_colonne": "Transferts de charges financières",
+      "code_colonne": "NO_NOTE12B2_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A20"
+    },
+    {
+      "code_tableau": "NOTE12B2",
+      "libelle_colonne": "Année N",
+      "code_colonne": "NO_NOTE12B2_2",
+      "pos_colonne": "7",
+      "premiere_cellule": "G20"
+    },
+    {
+      "code_tableau": "NOTE12B2",
+      "libelle_colonne": "Année N-1",
+      "code_colonne": "NO_NOTE12B2_3",
+      "pos_colonne": "8",
+      "premiere_cellule": "H20"
+    },
+    {
+      "code_tableau": "NOTE12B2",
+      "libelle_colonne": "Variation (%)",
+      "code_colonne": "NO_NOTE12B2_4",
+      "pos_colonne": "9",
+      "premiere_cellule": "I20"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "Nom et prénoms ou raison sociale",
+      "code_colonne": "NO_NOTE13B_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A10"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "N° de compte contribuable",
+      "code_colonne": "NO_NOTE13B_2",
+      "pos_colonne": "5",
+      "premiere_cellule": "E10"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "Nationalité",
+      "code_colonne": "NO_NOTE13B_3",
+      "pos_colonne": "6",
+      "premiere_cellule": "F10"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "Autres nationalités à préciser",
+      "code_colonne": "NO_NOTE13B_4",
+      "pos_colonne": "7",
+      "premiere_cellule": "G10"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "Pays de résidence",
+      "code_colonne": "NO_NOTE13B_5",
+      "pos_colonne": "8",
+      "premiere_cellule": "H10"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "Nature des actions ou parts",
+      "code_colonne": "NO_NOTE13B_6",
+      "pos_colonne": "9",
+      "premiere_cellule": "I10"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "Nombre",
+      "code_colonne": "NO_NOTE13B_7",
+      "pos_colonne": "10",
+      "premiere_cellule": "J10"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "Montant total",
+      "code_colonne": "NO_NOTE13B_8",
+      "pos_colonne": "11",
+      "premiere_cellule": "K10"
+    },
+    {
+      "code_tableau": "NOTE13B",
+      "libelle_colonne": "Cessions ou remboursements en cours d'exercice",
+      "code_colonne": "NO_NOTE13B_9",
+      "pos_colonne": "12",
+      "premiere_cellule": "L10"
+    },
+    {
+      "code_tableau": "NOTE16C2",
+      "libelle_colonne": "Actif éventuel (litiges)",
+      "code_colonne": "NO_NOTE16C2_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A11"
+    },
+    {
+      "code_tableau": "NOTE16C2",
+      "libelle_colonne": "Année N",
+      "code_colonne": "NO_NOTE16C2_2",
+      "pos_colonne": "7",
+      "premiere_cellule": "G11"
+    },
+    {
+      "code_tableau": "NOTE16C2",
+      "libelle_colonne": "Année N-1",
+      "code_colonne": "NO_NOTE16C2_3",
+      "pos_colonne": "8",
+      "premiere_cellule": "H11"
+    },
+    {
+      "code_tableau": "NOTE16C3",
+      "libelle_colonne": "Passif éventuel (litiges)",
+      "code_colonne": "NO_NOTE16C3_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A14"
+    },
+    {
+      "code_tableau": "NOTE16C3",
+      "libelle_colonne": "Année N",
+      "code_colonne": "NO_NOTE16C3_2",
+      "pos_colonne": "7",
+      "premiere_cellule": "G14"
+    },
+    {
+      "code_tableau": "NOTE16C3",
+      "libelle_colonne": "Année N-1",
+      "code_colonne": "NO_NOTE16C3_3",
+      "pos_colonne": "8",
+      "premiere_cellule": "H14"
+    },
+    {
+      "code_tableau": "NOTE21B",
+      "libelle_colonne": "Produits accessoires",
+      "code_colonne": "NO_NOTE21B_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A28"
+    },
+    {
+      "code_tableau": "NOTE21B",
+      "libelle_colonne": "Année N",
+      "code_colonne": "NO_NOTE21B_2",
+      "pos_colonne": "6",
+      "premiere_cellule": "F28"
+    },
+    {
+      "code_tableau": "NOTE21B",
+      "libelle_colonne": "Année N-1",
+      "code_colonne": "NO_NOTE21B_3",
+      "pos_colonne": "7",
+      "premiere_cellule": "G28"
+    },
+    {
+      "code_tableau": "NOTE21B",
+      "libelle_colonne": "Variation (%)",
+      "code_colonne": "NO_NOTE21B_4",
+      "pos_colonne": "8",
+      "premiere_cellule": "H28"
+    },
+    {
+      "code_tableau": "NOTE30B",
+      "libelle_colonne": "Détail des charges HAO constatées (compte 831)",
+      "code_colonne": "NO_NOTE30B_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A10"
+    },
+    {
+      "code_tableau": "NOTE30B",
+      "libelle_colonne": "Année N",
+      "code_colonne": "NO_NOTE30B_2",
+      "pos_colonne": "6",
+      "premiere_cellule": "F10"
+    },
+    {
+      "code_tableau": "NOTE30B",
+      "libelle_colonne": "Année N-1",
+      "code_colonne": "NO_NOTE30B_3",
+      "pos_colonne": "7",
+      "premiere_cellule": "G10"
+    },
+    {
+      "code_tableau": "NOTE30B",
+      "libelle_colonne": "Variation (%)",
+      "code_colonne": "NO_NOTE30B_4",
+      "pos_colonne": "8",
+      "premiere_cellule": "H10"
+    },
+    {
+      "code_tableau": "NOTE30C",
+      "libelle_colonne": "Détail des produits HAO constatés (compte 841)",
+      "code_colonne": "NO_NOTE30C_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A20"
+    },
+    {
+      "code_tableau": "NOTE30C",
+      "libelle_colonne": "Année N",
+      "code_colonne": "NO_NOTE30C_2",
+      "pos_colonne": "6",
+      "premiere_cellule": "F20"
+    },
+    {
+      "code_tableau": "NOTE30C",
+      "libelle_colonne": "Année N-1",
+      "code_colonne": "NO_NOTE30C_3",
+      "pos_colonne": "7",
+      "premiere_cellule": "G20"
+    },
+    {
+      "code_tableau": "NOTE30C",
+      "libelle_colonne": "Variation (%)",
+      "code_colonne": "NO_NOTE30C_4",
+      "pos_colonne": "8",
+      "premiere_cellule": "H20"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Désignation du produit",
+      "code_colonne": "NO_NOTE32_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Unité de qté",
+      "code_colonne": "NO_NOTE32_2",
+      "pos_colonne": "4",
+      "premiere_cellule": "D11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Qté - Prod. vendue dans le pays",
+      "code_colonne": "NO_NOTE32_3",
+      "pos_colonne": "5",
+      "premiere_cellule": "E11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Val. - Prod. vendue dans le pays",
+      "code_colonne": "NO_NOTE32_4",
+      "pos_colonne": "6",
+      "premiere_cellule": "F11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Qté - Prod. vendue dans autres pays OHADA",
+      "code_colonne": "NO_NOTE32_5",
+      "pos_colonne": "7",
+      "premiere_cellule": "G11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Val. - Prod. vendue dans autres pays OHADA",
+      "code_colonne": "NO_NOTE32_6",
+      "pos_colonne": "8",
+      "premiere_cellule": "H11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Qté - Prod. vendue hors OHADA",
+      "code_colonne": "NO_NOTE32_7",
+      "pos_colonne": "9",
+      "premiere_cellule": "I11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Val. - Prod. vendue hors OHADA",
+      "code_colonne": "NO_NOTE32_8",
+      "pos_colonne": "10",
+      "premiere_cellule": "J11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Qté - Prod. Immobilisée",
+      "code_colonne": "NO_NOTE32_9",
+      "pos_colonne": "11",
+      "premiere_cellule": "K11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Val. - Prod. Immobilisée",
+      "code_colonne": "NO_NOTE32_10",
+      "pos_colonne": "12",
+      "premiere_cellule": "L11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Qté - Stock ouverture de l'exercice",
+      "code_colonne": "NO_NOTE32_11",
+      "pos_colonne": "13",
+      "premiere_cellule": "M11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Val. - Stock ouverture de l'exercice",
+      "code_colonne": "NO_NOTE32_12",
+      "pos_colonne": "14",
+      "premiere_cellule": "N11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Qté - Stock clôture de l'exercice",
+      "code_colonne": "NO_NOTE32_13",
+      "pos_colonne": "15",
+      "premiere_cellule": "O11"
+    },
+    {
+      "code_tableau": "NOTE32",
+      "libelle_colonne": "Val. - Stock clôture de l'exercice",
+      "code_colonne": "NO_NOTE32_14",
+      "pos_colonne": "16",
+      "premiere_cellule": "P11"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Désignation des matières et produits",
+      "code_colonne": "NO_NOTE33_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A12"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Unité de qté",
+      "code_colonne": "NO_NOTE33_2",
+      "pos_colonne": "5",
+      "premiere_cellule": "E12"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Qté - Produits de l'Etat",
+      "code_colonne": "NO_NOTE33_3",
+      "pos_colonne": "6",
+      "premiere_cellule": "F12"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Val. - Produits de l'Etat",
+      "code_colonne": "NO_NOTE33_4",
+      "pos_colonne": "7",
+      "premiere_cellule": "G12"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Qté - Produits importés achétés dans l'Etat",
+      "code_colonne": "NO_NOTE33_5",
+      "pos_colonne": "8",
+      "premiere_cellule": "H12"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Val. - Produits importés achétés dans l'Etat",
+      "code_colonne": "NO_NOTE33_6",
+      "pos_colonne": "9",
+      "premiere_cellule": "I12"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Qté - Produits importés achétés hors de l'Etat",
+      "code_colonne": "NO_NOTE33_7",
+      "pos_colonne": "10",
+      "premiere_cellule": "J12"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Val. - Produits importés achétés hors de l'Etat",
+      "code_colonne": "NO_NOTE33_8",
+      "pos_colonne": "11",
+      "premiere_cellule": "K12"
+    },
+    {
+      "code_tableau": "NOTE33",
+      "libelle_colonne": "Variation des stocks (valeur)",
+      "code_colonne": "NO_NOTE33_9",
+      "pos_colonne": "12",
+      "premiere_cellule": "L12"
+    },
+    {
+      "code_tableau": "SUPPL1A2",
+      "libelle_colonne": "I - C1 - BIENS ACQUIS D'OCCASION",
+      "code_colonne": "NO_SUPPL1A2_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A23"
+    },
+    {
+      "code_tableau": "SUPPL1A2",
+      "libelle_colonne": "Montant autres Etats de l'UEMOA",
+      "code_colonne": "NO_SUPPL1A2_2",
+      "pos_colonne": "4",
+      "premiere_cellule": "D23"
+    },
+    {
+      "code_tableau": "SUPPL1A2",
+      "libelle_colonne": "Montant autres Etats de la Région hors de l'UEMOA",
+      "code_colonne": "NO_SUPPL1A2_3",
+      "pos_colonne": "6",
+      "premiere_cellule": "F23"
+    },
+    {
+      "code_tableau": "SUPPL1B",
+      "libelle_colonne": "DESIGNATION DU PRODUIT",
+      "code_colonne": "NO_SUPPL1B_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "I13"
+    },
+    {
+      "code_tableau": "SUPPL1B",
+      "libelle_colonne": "UNITE DE QUANTITE CHOISIE",
+      "code_colonne": "NO_SUPPL1B_2",
+      "pos_colonne": "2",
+      "premiere_cellule": "J13"
+    },
+    {
+      "code_tableau": "SUPPL1B",
+      "libelle_colonne": "Qté - PROD. VENDUE DANS LES AUTRES ETATS DE L'UEMOA",
+      "code_colonne": "NO_SUPPL1B_3",
+      "pos_colonne": "3",
+      "premiere_cellule": "K13"
+    },
+    {
+      "code_tableau": "SUPPL1B",
+      "libelle_colonne": "Val. - PROD. VENDUE DANS LES AUTRES ETATS DE L'UEMOA",
+      "code_colonne": "NO_SUPPL1B_4",
+      "pos_colonne": "4",
+      "premiere_cellule": "L13"
+    },
+    {
+      "code_tableau": "SUPPL1B",
+      "libelle_colonne": "Qté - PROD. VENDUE DANS LES AUTRES ETATS DE LA REGION HORS UEMOA",
+      "code_colonne": "NO_SUPPL1B_5",
+      "pos_colonne": "5",
+      "premiere_cellule": "M13"
+    },
+    {
+      "code_tableau": "SUPPL1B",
+      "libelle_colonne": "Val. - PROD. VENDUE DANS LES AUTRES ETATS DE LA REGION HORS UEMOA",
+      "code_colonne": "NO_SUPPL1B_6",
+      "pos_colonne": "6",
+      "premiere_cellule": "N13"
+    },
+    {
+      "code_tableau": "SUPPL2",
+      "libelle_colonne": "Nom et Prénoms des Associés",
+      "code_colonne": "NO_SUPPL2_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A9"
+    },
+    {
+      "code_tableau": "SUPPL2",
+      "libelle_colonne": "Adresse du Domicile Fiscal",
+      "code_colonne": "NO_SUPPL2_2",
+      "pos_colonne": "3",
+      "premiere_cellule": "C9"
+    },
+    {
+      "code_tableau": "SUPPL2",
+      "libelle_colonne": "N° de Compte Contribuable",
+      "code_colonne": "NO_SUPPL2_3",
+      "pos_colonne": "6",
+      "premiere_cellule": "F9"
+    },
+    {
+      "code_tableau": "SUPPL2",
+      "libelle_colonne": "Part des résultats",
+      "code_colonne": "NO_SUPPL2_4",
+      "pos_colonne": "7",
+      "premiere_cellule": "G9"
+    },
+    {
+      "code_tableau": "SUPPL2",
+      "libelle_colonne": "Rémunération, avantages en nature et part de l'IMF",
+      "code_colonne": "NO_SUPPL2_5",
+      "pos_colonne": "8",
+      "premiere_cellule": "H9"
+    },
+    {
+      "code_tableau": "SUPPL2",
+      "libelle_colonne": "Total imposable au nom de chaque associé",
+      "code_colonne": "NO_SUPPL2_6",
+      "pos_colonne": "9",
+      "premiere_cellule": "I9"
+    },
+    {
+      "code_tableau": "SUPPL2",
+      "libelle_colonne": "Référence",
+      "code_colonne": "NO_SUPPL2_7",
+      "pos_colonne": "10",
+      "premiere_cellule": "J9"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "N° DE COMPTE",
+      "code_colonne": "NO_SUPPL4_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "DESIGNATION DES IMMO.",
+      "code_colonne": "NO_SUPPL4_2",
+      "pos_colonne": "2",
+      "premiere_cellule": "B10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "TAUX AMORT. (%)",
+      "code_colonne": "NO_SUPPL4_3",
+      "pos_colonne": "5",
+      "premiere_cellule": "E10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "DATE MISE SERVICE",
+      "code_colonne": "NO_SUPPL4_4",
+      "pos_colonne": "6",
+      "premiere_cellule": "F10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "VALEUR D'ACQUISITION",
+      "code_colonne": "NO_SUPPL4_5",
+      "pos_colonne": "7",
+      "premiere_cellule": "G10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "AMORT. ANTERIEURS",
+      "code_colonne": "NO_SUPPL4_6",
+      "pos_colonne": "8",
+      "premiere_cellule": "H10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "AMORT. DE L'EXERCICE",
+      "code_colonne": "NO_SUPPL4_7",
+      "pos_colonne": "9",
+      "premiere_cellule": "I10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "TOTAL DES AMORT.",
+      "code_colonne": "NO_SUPPL4_8",
+      "pos_colonne": "10",
+      "premiere_cellule": "J10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "VALEUR RESIDUELLE",
+      "code_colonne": "NO_SUPPL4_9",
+      "pos_colonne": "11",
+      "premiere_cellule": "K10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "PRIX CESSION",
+      "code_colonne": "NO_SUPPL4_10",
+      "pos_colonne": "12",
+      "premiere_cellule": "L10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "PLUES-VALUE",
+      "code_colonne": "NO_SUPPL4_11",
+      "pos_colonne": "13",
+      "premiere_cellule": "M10"
+    },
+    {
+      "code_tableau": "SUPPL4",
+      "libelle_colonne": "MOINS-VALUES",
+      "code_colonne": "NO_SUPPL4_12",
+      "pos_colonne": "14",
+      "premiere_cellule": "N10"
+    },
+    {
+      "code_tableau": "SUPPL7A",
+      "libelle_colonne": "CREANCES ECHUES DE L'EXERCICE",
+      "code_colonne": "NO_SUPPL7A_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A9"
+    },
+    {
+      "code_tableau": "SUPPL7A",
+      "libelle_colonne": "PRINCIPAL",
+      "code_colonne": "NO_SUPPL7A_2",
+      "pos_colonne": "8",
+      "premiere_cellule": "H9"
+    },
+    {
+      "code_tableau": "SUPPL7A",
+      "libelle_colonne": "INTERETS",
+      "code_colonne": "NO_SUPPL7A_3",
+      "pos_colonne": "9",
+      "premiere_cellule": "I9"
+    },
+    {
+      "code_tableau": "SUPPL7B",
+      "libelle_colonne": "DETTES ECHUES DE L'EXERCICE",
+      "code_colonne": "NO_SUPPL7B_1",
+      "pos_colonne": "1",
+      "premiere_cellule": "A11"
+    },
+    {
+      "code_tableau": "SUPPL7B",
+      "libelle_colonne": "PRINCIPAL",
+      "code_colonne": "NO_SUPPL7B_2",
+      "pos_colonne": "8",
+      "premiere_cellule": "H11"
+    },
+    {
+      "code_tableau": "SUPPL7B",
+      "libelle_colonne": "INTERETS",
+      "code_colonne": "NO_SUPPL7B_3",
+      "pos_colonne": "9",
+      "premiere_cellule": "I11"
+    }
+  ]
+}

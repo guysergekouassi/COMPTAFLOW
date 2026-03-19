@@ -6,20 +6,32 @@
         $ces = $data["N1_{$fieldBase}_CES"] ?? 0;
         $dim = $data["N1_{$fieldBase}_DIM"] ?? 0;
         $fin = $deb + $acq + $aug - $ces - $dim;
+        $isExport = $GLOBALS['isExport'] ?? ($viewData['isExport'] ?? false);
         
         echo "<tr>";
         echo "<td class='text-center fw-bold text-secondary'>{$ref}</td>";
         echo "<td class='col-label'>{$label}</td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_DEB' value='{$deb}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_ACQ' value='{$acq}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_AUG' value='{$aug}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_CES' value='{$ces}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_DIM' value='{$dim}'></td>";
-        echo "<td class='col-val bg-light-blue fw-bold px-3 text-end' id='total_{$fieldBase}'>" . number_format($fin, 0, ',', ' ') . "</td>";
+        
+        if ($isExport) {
+            echo "<td class='text-right'>" . ($deb != 0 ? number_format($deb, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($acq != 0 ? number_format($acq, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($aug != 0 ? number_format($aug, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($ces != 0 ? number_format($ces, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($dim != 0 ? number_format($dim, 0, ',', ' ') : '-') . "</td>";
+        } else {
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_DEB' value='{$deb}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_ACQ' value='{$acq}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_AUG' value='{$aug}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_CES' value='{$ces}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N1_{$fieldBase}_DIM' value='{$dim}'></td>";
+        }
+        
+        echo "<td class='col-val bg-light-blue fw-bold px-3 text-right' id='total_{$fieldBase}'>" . number_format($fin, 0, ',', ' ') . "</td>";
         echo "</tr>";
     }
 @endphp
 
+@unless($isExport ?? false)
 <style>
     .liasse-table-wrapper { background: white; padding: 2rem; border-radius: 8px; }
     .liasse-table { width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; }
@@ -30,20 +42,23 @@
     .col-label { width: 30%; }
     .col-val { width: 10%; }
 </style>
+@endunless
 
-<div class="liasse-table-wrapper shadow-sm">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="{{ ($isExport ?? false) ? '' : 'liasse-table-wrapper shadow-sm' }}">
+    <div class="d-flex justify-content-between align-items-center mb-4 {{ ($isExport ?? false) ? 'no-export' : '' }}">
         <div>
             <h3 class="fw-900 text-dark mb-0">NOTE 1 : IMMOBILISATIONS BRUTES</h3>
             <div class="text-muted small mt-1">Tableau des mouvements de l'exercice</div>
         </div>
+        @unless($isExport ?? false)
         <button class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm" onclick="savePageData()">
             <i class="bx bxs-save me-1"></i> Sauvegarder la Note
         </button>
+        @endunless
     </div>
 
     <div class="table-responsive">
-        <table class="liasse-table">
+        <table class="{{ ($isExport ?? false) ? '' : 'liasse-table' }}">
             <thead>
                 <tr>
                     <th rowspan="2" style="width: 50px;">REF</th>
@@ -61,7 +76,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr class="row-section">
+                <tr class="{{ ($isExport ?? false) ? 'bg-section' : 'row-section' }}">
                     <td class="text-center">A</td>
                     <td colspan="7">IMMOBILISATIONS INCORPORELLES</td>
                 </tr>
@@ -71,7 +86,7 @@
                     renderNote1Row('AG', 'Fonds commercial et droit au bail', 'AG', $data);
                 @endphp
 
-                <tr class="row-section">
+                <tr class="{{ ($isExport ?? false) ? 'bg-section' : 'row-section' }}">
                     <td class="text-center">B</td>
                     <td colspan="7">IMMOBILISATIONS CORPORELLES</td>
                 </tr>
@@ -85,11 +100,14 @@
         </table>
     </div>
 
+    @unless($isExport ?? false)
     <div class="mt-4 p-3 bg-light rounded italic small text-muted border-start border-4 border-dark">
         <strong>⚠️ Note :</strong> Les colonnes "Montant Brut Début" et "Augmentations" doivent être saisies manuellement si elles ne sont pas reprises automatiquement de l'année précédente.
     </div>
+    @endunless
 </div>
 
+@unless($isExport ?? false)
 <script>
     $('.liasse-input').on('input', function() {
         const row = $(this).closest('tr');
@@ -103,3 +121,4 @@
         row.find('[id^="total_"]').text(new Intl.NumberFormat('fr-FR').format(total));
     });
 </script>
+@endunless

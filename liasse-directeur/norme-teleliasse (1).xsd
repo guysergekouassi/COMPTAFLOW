@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="EDI">
+		<xs:annotation>
+			<xs:documentation>Norme EDI téléLiasse</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="informations">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="type" type="xs:string"/>
+							<xs:element name="ncc" type="xs:string"/>
+							<xs:element name="exercice" type="xs:string"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="champsTableauxFixes" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="champTableauFixe" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="code" type="xs:string"/>
+										<xs:element name="valeur" type="xs:string"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="champsTableauxVariables" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="champTableauVariable" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="colonne" type="xs:string"/>
+										<xs:element name="ligne" type="xs:string"/>
+										<xs:element name="valeur" type="xs:string"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

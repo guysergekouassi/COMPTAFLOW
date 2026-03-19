@@ -6,20 +6,32 @@
         $ces = $data["N2_{$fieldBase}_CES"] ?? 0;
         $dim = $data["N2_{$fieldBase}_DIM"] ?? 0;
         $fin = $deb + $dot + $aug - $ces - $dim;
+        $isExport = $GLOBALS['isExport'] ?? ($viewData['isExport'] ?? false);
         
         echo "<tr>";
         echo "<td class='text-center fw-bold text-secondary'>{$ref}</td>";
         echo "<td class='col-label'>{$label}</td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_DEB' value='{$deb}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_DOT' value='{$dot}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_AUG' value='{$aug}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_CES' value='{$ces}'></td>";
-        echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_DIM' value='{$dim}'></td>";
-        echo "<td class='col-val bg-light-orange fw-bold px-3 text-end' id='total_n2_{$fieldBase}'>" . number_format($fin, 0, ',', ' ') . "</td>";
+        
+        if ($isExport) {
+            echo "<td class='text-right'>" . ($deb != 0 ? number_format($deb, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($dot != 0 ? number_format($dot, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($aug != 0 ? number_format($aug, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($ces != 0 ? number_format($ces, 0, ',', ' ') : '-') . "</td>";
+            echo "<td class='text-right'>" . ($dim != 0 ? number_format($dim, 0, ',', ' ') : '-') . "</td>";
+        } else {
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_DEB' value='{$deb}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_DOT' value='{$dot}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_AUG' value='{$aug}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_CES' value='{$ces}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='form-control form-control-sm text-end border-0 bg-transparent liasse-input' name='N2_{$fieldBase}_DIM' value='{$dim}'></td>";
+        }
+        
+        echo "<td class='col-val bg-light-orange fw-bold px-3 text-right' id='total_n2_{$fieldBase}'>" . number_format($fin, 0, ',', ' ') . "</td>";
         echo "</tr>";
     }
 @endphp
 
+@unless($isExport ?? false)
 <style>
     .liasse-table-wrapper { background: white; padding: 2rem; border-radius: 8px; }
     .liasse-table { width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; }
@@ -30,20 +42,23 @@
     .col-label { width: 30%; }
     .col-val { width: 10%; }
 </style>
+@endunless
 
-<div class="liasse-table-wrapper shadow-sm">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="{{ ($isExport ?? false) ? '' : 'liasse-table-wrapper shadow-sm' }}">
+    <div class="d-flex justify-content-between align-items-center mb-4 {{ ($isExport ?? false) ? 'no-export' : '' }}">
         <div>
             <h3 class="fw-900 text-dark mb-0">NOTE 2 : AMORTISSEMENTS</h3>
             <div class="text-muted small mt-1">Évolution des amortissements de l'exercice</div>
         </div>
+        @unless($isExport ?? false)
         <button class="btn btn-info btn-sm rounded-pill px-4 shadow-sm text-white" onclick="savePageData()">
             <i class="bx bxs-save me-1"></i> Sauvegarder la Note
         </button>
+        @endunless
     </div>
 
     <div class="table-responsive">
-        <table class="liasse-table">
+        <table class="{{ ($isExport ?? false) ? '' : 'liasse-table' }}">
             <thead>
                 <tr>
                     <th rowspan="2" style="width: 50px;">REF</th>
@@ -61,7 +76,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr class="row-section">
+                <tr class="{{ ($isExport ?? false) ? 'bg-section' : 'row-section' }}">
                     <td class="text-center">-</td>
                     <td colspan="7">IMMOBILISATIONS INCORPORELLES</td>
                 </tr>
@@ -70,7 +85,7 @@
                     renderNote2Row('AF', 'Brevets, licences, logiciels, etc.', 'AF', $data);
                 @endphp
 
-                <tr class="row-section">
+                <tr class="{{ ($isExport ?? false) ? 'bg-section' : 'row-section' }}">
                     <td class="text-center">-</td>
                     <td colspan="7">IMMOBILISATIONS CORPORELLES</td>
                 </tr>
@@ -84,11 +99,14 @@
         </table>
     </div>
 
+    @unless($isExport ?? false)
     <div class="mt-4 p-3 bg-light rounded italic small text-muted border-start border-4 border-info">
         <strong>⚠️ Note :</strong> Les dotations de l'exercice doivent correspondre aux charges d'amortissement enregistrées au compte de résultat.
     </div>
+    @endunless
 </div>
 
+@unless($isExport ?? false)
 <script>
     $('.liasse-input').on('input', function() {
         const row = $(this).closest('tr');
@@ -102,3 +120,4 @@
         row.find('[id^="total_n2_"]').text(new Intl.NumberFormat('fr-FR').format(total));
     });
 </script>
+@endunless

@@ -202,11 +202,11 @@
                 @if(isset($detailed) && $detailed)
                     @foreach($activity['encaissements']['categories'] as $category)
                     <tr class="detail-row">
-                        <td class="label-col" style="padding-left: 20px;">{{ $category['label'] }}</td>
+                        <td class="label-col" style="padding-left: 20px;">{{ data_get($category, 'label') }}</td>
                         @foreach($data['months'] as $i => $m)
-                            <td>{{ number_format($category['data'][$i] ?? 0, 0, ',', ' ') }}</td>
+                            <td>{{ number_format(data_get($category, "data.$i", 0), 0, ',', ' ') }}</td>
                         @endforeach
-                        <td>{{ number_format(array_sum($category['data']), 0, ',', ' ') }}</td>
+                        <td>{{ number_format(array_sum((array)data_get($category, 'data', [])), 0, ',', ' ') }}</td>
                     </tr>
                     @endforeach
                 @endif
@@ -231,11 +231,11 @@
                 @if(isset($detailed) && $detailed)
                     @foreach($activity['decaissements']['categories'] as $category)
                     <tr class="detail-row">
-                        <td class="label-col" style="padding-left: 20px;">{{ $category['label'] }}</td>
+                        <td class="label-col" style="padding-left: 20px;">{{ data_get($category, 'label') }}</td>
                         @foreach($data['months'] as $i => $m)
-                            <td>{{ number_format($category['data'][$i] ?? 0, 0, ',', ' ') }}</td>
+                            <td>{{ number_format(data_get($category, "data.$i", 0), 0, ',', ' ') }}</td>
                         @endforeach
-                        <td>{{ number_format(array_sum($category['data']), 0, ',', ' ') }}</td>
+                        <td>{{ number_format(array_sum((array)data_get($category, 'data', [])), 0, ',', ' ') }}</td>
                     </tr>
                     @endforeach
                 @endif

@@ -2,81 +2,74 @@
     function renderResultatRow($ref, $label, $noteCode, $fieldBase, $data, $isTotal = false) {
         $valN = $data[$fieldBase] ?? 0;
         $valN1 = $data[$fieldBase . '_N1'] ?? 0;
+        $isExport = $GLOBALS['isExport'] ?? ($viewData['isExport'] ?? false);
         
         $rowClass = $isTotal ? 'row-total' : '';
-        $inputClass = "form-control form-control-sm text-end border-0 bg-transparent fw-bold";
         
         echo "<tr class='{$rowClass}'>";
-        echo "<td class='text-center fw-bold text-secondary'>{$ref}</td>";
-        echo "<td class='col-label'>" . ($isTotal ? "<strong>{$label}</strong>" : $label) . "</td>";
+        echo "<td class='col-code'>{$ref}</td>";
+        echo "<td>" . ($isTotal ? "<strong>{$label}</strong>" : $label) . "</td>";
+        
         $noteVal = $data['note_'.$fieldBase] ?? $noteCode;
-        echo "<td class='text-center'><input type='text' class='form-control form-control-sm text-center border-0 bg-transparent' name='note_{$fieldBase}' value='{$noteVal}'></td>";
-        echo "<td class='col-val bg-light-green'><input type='number' step='0.01' class='{$inputClass} liasse-input' name='{$fieldBase}' value='{$valN}'></td>";
-        echo "<td class='col-val px-3'>" . number_format($valN1, 0, ',', ' ') . "</td>";
+        if ($isExport) {
+            echo "<td class='text-center'>{$noteVal}</td>";
+            echo "<td class='col-val'>" . ($valN != 0 ? number_format($valN, 0, ',', ' ') : '-') . "</td>";
+        } else {
+            echo "<td class='text-center'><input type='text' class='liasse-input text-center p-1' name='note_{$fieldBase}' value='{$noteVal}'></td>";
+            echo "<td class='col-val'><input type='number' step='0.01' class='liasse-input text-success fw-800' name='{$fieldBase}' value='{$valN}'></td>";
+        }
+        
+        echo "<td class='col-val text-secondary'>" . number_format($valN1, 0, ',', ' ') . "</td>";
         echo "</tr>";
     }
 @endphp
 
-<style>
-    .liasse-table-wrapper { background: white; padding: 2rem; border-radius: 8px; }
-    .liasse-table { width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; table-layout: fixed; }
-    .liasse-table th { background: #1e293b; color: white; border: 1px solid #334155; padding: 12px 8px; font-size: 0.7rem; text-transform: uppercase; font-weight: 800; }
-    .liasse-table td { border: 1px solid #e2e8f0; padding: 4px 8px; font-size: 0.8rem; }
-    .row-section { background: #f1f5f9; font-weight: 800; color: #1e293b; }
-    .row-total { background: #fdf2f8; font-weight: 700; }
-    .bg-light-green { background: #f0fdf4; }
-    .col-label { width: 45%; }
-    .col-val { width: 15%; text-align: right; }
-    .liasse-input:focus { background: white !important; border: 1px solid #10b981 !important; outline: none; }
-</style>
-
-<div class="liasse-table-wrapper shadow-sm">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-900 text-dark mb-0">COMPTE DE RESULTAT</h3>
-            <div class="text-muted small mt-1">Désignation de l'entreprise : <span class="fw-bold text-success">{{ Auth::user()->company->name }}</span></div>
-        </div>
-        <div class="badge bg-label-success p-2">RÉSULTAT SINTAX</div>
-    </div>
-
+<div class="premium-card">
     <div class="table-responsive">
         <table class="liasse-table">
             <thead>
                 <tr>
-                    <th style="width: 50px;">REF</th>
-                    <th>LIBELLES</th>
-                    <th style="width: 60px;">NOTE</th>
+                    <th rowspan="2" class="col-code">REF</th>
+                    <th rowspan="2">LIBELLES</th>
+                    <th rowspan="2" style="width: 70px;" class="text-center">NOTE</th>
                     <th class="text-center">EXERCICE AU 31/12/ N</th>
                     <th class="text-center">EXERCICE AU 31/12/ N-1</th>
                 </tr>
+                <tr>
+                    <th class="text-center">NET</th>
+                    <th class="text-center">NET</th>
+                </tr>
             </thead>
             <tbody>
-                {{-- ACTIVITES ORDINAIRES --}}
                 <tr class="row-section">
-                    <td class="text-center"></td>
+                    <td class="col-code"></td>
                     <td colspan="4">ACTIVITES ORDINAIRES</td>
                 </tr>
                 @php
                     renderResultatRow('XA', 'Ventes de marchandises', '21', 'XA', $data);
                     renderResultatRow('XB', 'Achats de marchandises', '22', 'XB', $data);
                     renderResultatRow('XC', 'MARGE COMMERCIALE (A - B)', '', 'XC', $data, true);
-                    
-                    renderResultatRow('XH', 'CHIFFRE D\'AFFAIRES (XA + XB + XC + XD)', '', 'XF', $data, true);
-                    
-                    renderResultatRow('XK', 'VALEUR AJOUTÉE (CA - ACHATS)', '', 'XK', $data, true);
-                    renderResultatRow('XO', 'EXCÉDENT BRUT D\'EXPLOITATION (EBE)', '', 'XO', $data, true);
-                    renderResultatRow('XR', 'RÉSULTAT D\'EXPLOITATION', '', 'XR', $data, true);
-                    
-                    renderResultatRow('XW', 'RÉSULTAT FINANCIER', '', 'XW', $data, true);
-                    renderResultatRow('XA', 'RÉSULTAT DES ACTIVITÉS ORDINAIRES', '', 'XA_TOTAL', $data, true);
-                    
-                    renderResultatRow('XG', 'RÉSULTAT NET', '', 'XG_TOTAL', $data, true);
+                    renderResultatRow('XD', 'Production valorisée', '21', 'XD', $data);
+                    renderResultatRow('XE', 'Consommation de l\'exercice', '22', 'XE', $data);
+                    renderResultatRow('XF', 'VALEUR AJOUTÉE (C + D - E)', '', 'XF', $data, true);
+                    renderResultatRow('XG', 'Subventions d\'exploitation', '21', 'XG', $data);
+                    renderResultatRow('XH', 'Charges de personnel', '24', 'XH', $data);
+                    renderResultatRow('XI', 'EXCÉDENT BRUT D\'EXPLOITATION (F + G - H)', '', 'XI', $data, true);
+                    renderResultatRow('XJ', 'Reprise d\'amortissements et provisions', '4', 'XJ', $data);
+                    renderResultatRow('XK', 'Dotations aux amortissements et provisions', '2', 'XK', $data);
+                    renderResultatRow('XL', 'RÉSULTAT D\'EXPLOITATION (I + J - K)', '', 'XL', $data, true);
+                    renderResultatRow('XM', 'Revenus financiers et assimilés', '26', 'XM', $data);
+                    renderResultatRow('XN', 'Frais financiers et charges assimilées', '26', 'XN', $data);
+                    renderResultatRow('XO', 'RÉSULTAT FINANCIER (M - N)', '', 'XO', $data, true);
+                    renderResultatRow('XP', 'RÉSULTAT DES ACTIVITÉS ORDINAIRES (L + O)', '', 'XP', $data, true);
+                    renderResultatRow('XQ', 'Produits Hors Activités Ordinaires (HAO)', '27', 'XQ', $data);
+                    renderResultatRow('XR', 'Charges Hors Activités Ordinaires (HAO)', '27', 'XR', $data);
+                    renderResultatRow('XS', 'RÉSULTAT H.A.O. (Q - R)', '', 'XS', $data, true);
+                    renderResultatRow('XT', 'Participation des travailleurs', '30', 'XT', $data);
+                    renderResultatRow('XU', 'Impôts sur le résultat', '28', 'XU', $data);
+                    renderResultatRow('XV', 'RÉSULTAT NET (P + S - T - U)', '', 'XV', $data, true);
                 @endphp
             </tbody>
         </table>
-    </div>
-
-    <div class="mt-4 p-3 bg-light rounded italic small text-muted border-start border-4 border-success">
-        Note : Ce tableau est une synthèse des Soldes Intermédiaires de Gestion (SIG).
     </div>
 </div>
