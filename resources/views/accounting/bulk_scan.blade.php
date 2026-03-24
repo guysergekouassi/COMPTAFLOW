@@ -29,6 +29,13 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .queue-item:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+        transform: translateX(4px);
     }
     .queue-item.processing {
         border-left: 4px solid #3b82f6;
@@ -39,6 +46,7 @@
     }
     .queue-item.error {
         border-left: 4px solid #ef4444;
+        background: #fffafa;
     }
     .status-badge {
         font-size: 0.7rem;
@@ -52,6 +60,23 @@
         height: calc(1.5em + .5rem + 2px) !important;
         display: flex !important;
         align-items: center !important;
+    }
+    .results-scroll-container {
+        max-height: 85vh;
+        overflow-y: auto;
+        padding: 15px;
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+    }
+    .results-scroll-container::-webkit-scrollbar { width: 6px; }
+    .results-scroll-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .sticky-summary {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid #eef0f2;
     }
 </style>
 
@@ -103,12 +128,12 @@
                                     </div>
                                     <div class="card-body">
                                         <!-- Dropzone -->
-                                        <div id="dropZone" class="border-2 border-dashed rounded-3 p-4 text-center mb-3 bg-light" style="cursor: pointer; transition: all 0.3s;">
-                                            <input type="file" id="fileInput" multiple accept="image/*,application/pdf" class="d-none">
+                                        <label id="dropZone" for="fileInput" class="border-2 border-dashed rounded-3 p-4 text-center mb-3 bg-light d-block" style="cursor: pointer; transition: all 0.3s; position: relative;">
+                                            <input type="file" id="fileInput" multiple accept="image/*,application/pdf" style="opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; z-index: 10;">
                                             <i class="bx bx-cloud-upload fs-1 text-primary mb-2"></i>
                                             <p class="mb-1 fw-bold">Cliquez ou glissez les fichiers</p>
                                             <p class="text-muted small">Images (JPG, PNG) ou PDF (100 max)</p>
-                                        </div>
+                                        </label>
 
                                         <!-- Queue Progress -->
                                         <div id="queueContainer" class="d-none">
@@ -145,6 +170,29 @@
 
                             <!-- Main Area: Document Cards -->
                             <div class="col-lg-9">
+                                <!-- Sticky Summary Bar -->
+                                <div id="summaryBar" class="sticky-summary p-3 mb-3 rounded-3 shadow-sm d-none">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex gap-4">
+                                            <div class="text-center">
+                                                <div class="text-muted small mb-1">Total</div>
+                                                <div class="h5 mb-0 fw-bold" id="statTotal">0</div>
+                                            </div>
+                                            <div class="text-center">
+                                                <div class="text-success small mb-1">Succès</div>
+                                                <div class="h5 mb-0 fw-bold text-success" id="statSuccess">0</div>
+                                            </div>
+                                            <div class="text-center">
+                                                <div class="text-danger small mb-1">Rejetés</div>
+                                                <div class="h5 mb-0 fw-bold text-danger" id="statError">0</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-muted small">
+                                            <i class="bx bx-info-circle me-1"></i> Cliquez sur un rejet dans la file pour voir le détail
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div id="emptyState" class="text-center py-5 bg-white rounded-3 shadow-sm border border-dashed">
                                     <div class="mb-4">
                                         <i class="bx bx-file-blank fs-1 text-muted opacity-25" style="font-size: 5rem !important;"></i>
@@ -153,8 +201,10 @@
                                     <p class="text-muted">Commencez par ajouter des fichiers dans la zone d'importation à gauche.</p>
                                 </div>
 
-                                <div id="documentsContainer" class="d-flex flex-column gap-4 pb-5">
-                                    <!-- Document Cards will be appended here -->
+                                <div id="resultsWrapper" class="results-scroll-container d-none">
+                                    <div id="documentsContainer" class="d-flex flex-column gap-4 pb-5">
+                                        <!-- Document Cards will be appended here -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -175,28 +225,45 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
-        const GEN_ACCOUNTS = @json($plansComptables);
-        const TIERS_LIST = @json($plansTiers);
-        const JOURNALS = @json($codeJournaux);
-        const EXERCICE_ACTIF = @json($exerciceActif);
-        const TREASURY_POST_LIST = @json($comptesTresorerie);
-        const SAVE_ROUTE = "{{ route('api.ecriture.storeMultiple') }}";
-        const INITIAL_NS = "{{ $nextSaisieNumber }}";
+        console.log("Bulk Scan Script: Initializing...");
+        let GEN_ACCOUNTS = [];
+        let TIERS_LIST = [];
+        let JOURNALS = [];
+        let EXERCICE_ACTIF = null;
+        let TREASURY_POST_LIST = [];
+        let SAVE_ROUTE = "";
+        let INITIAL_NS = "";
+
+        try {
+            GEN_ACCOUNTS = @json($plansComptables);
+            TIERS_LIST = @json($plansTiers);
+            JOURNALS = @json($codeJournaux);
+            EXERCICE_ACTIF = @json($exerciceActif);
+            TREASURY_POST_LIST = @json($comptesTresorerie);
+            SAVE_ROUTE = "{{ route('ecritures-comptables.store-multiple') }}";
+            INITIAL_NS = "{{ $nextSaisieNumber }}";
+        } catch (e) {
+            console.error("Bulk Scan Script: Error parsing Blade variables", e);
+        }
 
         let filesQueue = [];
         let processedDocs = [];
-
-        // Group Treasury Posts by Category
         const TREASURY_POSTS_GROUPED = {};
-        TREASURY_POST_LIST.forEach(p => {
-            const catName = p.category ? p.category.name : 'Autres';
-            if (!TREASURY_POSTS_GROUPED[catName]) TREASURY_POSTS_GROUPED[catName] = [];
-            TREASURY_POSTS_GROUPED[catName].push(p);
-        });
+
+        function initTreasuryGrouping() {
+            if (!Array.isArray(TREASURY_POST_LIST)) return;
+            TREASURY_POST_LIST.forEach(p => {
+                const catName = p.category ? p.category.name : 'Autres';
+                if (!TREASURY_POSTS_GROUPED[catName]) TREASURY_POSTS_GROUPED[catName] = [];
+                TREASURY_POSTS_GROUPED[catName].push(p);
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("Bulk Scan Script: DOM Loaded.");
+            initTreasuryGrouping();
+
             const dropZone = document.getElementById('dropZone');
             const fileInput = document.getElementById('fileInput');
             const queueContainer = document.getElementById('queueContainer');
@@ -205,70 +272,111 @@
             const emptyState = document.getElementById('emptyState');
             const btnStartProcessing = document.getElementById('btnStartProcessing');
             const btnSaveGroup = document.getElementById('btnSaveGroup');
-            const btnSaveSelected = document.getElementById('btnSaveSelected');
-            const btnSaveAllDocs = document.getElementById('btnSaveAllDocs');
-            const btnSaveOnlySelected = document.getElementById('btnSaveOnlySelected');
 
-            // Handle Dropzone
-            dropZone.onclick = () => fileInput.click();
-            dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('bg-primary', 'bg-opacity-10'); };
-            dropZone.ondragleave = () => dropZone.classList.remove('bg-primary', 'bg-opacity-10');
-            dropZone.ondrop = e => {
-                e.preventDefault();
-                dropZone.classList.remove('bg-primary', 'bg-opacity-10');
-                handleFiles(e.dataTransfer.files);
+            if (!fileInput) {
+                console.error("Bulk Scan Script: fileInput not found!");
+                return;
+            }
+
+            // Handle Dropzone Events
+            if (dropZone) {
+                dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('bg-primary', 'bg-opacity-10'); };
+                dropZone.ondragleave = () => dropZone.classList.remove('bg-primary', 'bg-opacity-10');
+                dropZone.ondrop = e => {
+                    e.preventDefault();
+                    dropZone.classList.remove('bg-primary', 'bg-opacity-10');
+                    window.handleFiles(e.dataTransfer.files);
+                };
+            }
+
+            fileInput.onchange = e => {
+                console.log("Bulk Scan Script: File input changed.");
+                window.handleFiles(e.target.files);
             };
-            fileInput.onchange = e => handleFiles(e.target.files);
 
-            function handleFiles(files) {
+            window.handleFiles = function(files) {
+                console.log("Bulk Scan Script: Handling files...", files.length);
                 const newFiles = Array.from(files);
                 if (newFiles.length === 0) return;
 
-                newFiles.forEach(file => {
+                const startIdx = processedDocs.length + filesQueue.filter(i => i.status !== 'success').length + 1;
+                newFiles.forEach((file, i) => {
                     const id = 'doc_' + Math.random().toString(36).substr(2, 9);
-                    filesQueue.push({ id, file, status: 'pending' });
-                    addQueueItem(id, file.name);
+                    const item = { id, file, status: 'pending', data: null };
+                    filesQueue.push(item);
+                    window.addQueueItem(id, file.name);
+                    window.createDocumentPlaceholder(item, startIdx + i);
                 });
 
-                queueContainer.classList.remove('d-none');
-                updateQueueCount();
-            }
-
-            function addQueueItem(id, name) {
-                const div = document.createElement('div');
-                div.className = 'queue-item';
-                div.id = 'queue_' + id;
-                div.innerHTML = `
-                    <div class="flex-shrink-0"><i class="bx bxs-file-blank fs-4 text-secondary"></i></div>
-                    <div class="flex-grow-1 min-width-0">
-                        <div class="text-truncate small fw-bold">${name}</div>
-                        <div class="status-text text-muted" style="font-size: 0.65rem;">En attente</div>
-                    </div>
-                    <div class="status-icon"><i class="bx bx-time text-muted"></i></div>
-                `;
-                queueList.appendChild(div);
-            }
-
-            function updateQueueCount() {
-                document.getElementById('queueCount').innerText = filesQueue.length;
-            }
-
-            btnStartProcessing.onclick = async () => {
-                btnStartProcessing.disabled = true;
-                btnStartProcessing.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>En cours...';
-
-                for (let i = 0; i < filesQueue.length; i++) {
-                    if (filesQueue[i].status === 'pending') {
-                        await processDocument(filesQueue[i]);
-                    }
-                }
-
-                btnStartProcessing.classList.add('d-none');
-                btnSaveGroup.classList.remove('d-none');
+                if (queueContainer) queueContainer.classList.remove('d-none');
+                const rw = document.getElementById('resultsWrapper');
+                if (rw) rw.classList.remove('d-none');
+                if (emptyState) emptyState.classList.add('d-none');
+                window.updateQueueCount();
             };
 
-            async function processDocument(item) {
+            window.addQueueItem = function(id, name) {
+                const div = document.createElement('div');
+                div.className = 'queue-item cursor-pointer';
+                div.id = 'queue_' + id;
+                div.onclick = () => {
+                    const card = document.getElementById('card_' + id);
+                    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                };
+                div.innerHTML = `
+                    <div class="flex-shrink-0 status-icon"><i class="bx bxs-file-blank fs-4 text-secondary"></i></div>
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="text-truncate small fw-bold">${name}</div>
+                        <div class="status-wrapper min-width-0">
+                            <div class="status-text text-muted" style="font-size: 0.65rem;">En attente</div>
+                        </div>
+                    </div>
+                `;
+                if (queueList) queueList.appendChild(div);
+            };
+
+            window.updateQueueCount = function() {
+                const countEl = document.getElementById('queueCount');
+                if (countEl) countEl.innerText = filesQueue.length;
+            };
+
+            if (btnStartProcessing) {
+                btnStartProcessing.onclick = async () => {
+                    btnStartProcessing.disabled = true;
+                    btnStartProcessing.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>En cours...';
+
+                    const sb = document.getElementById('summaryBar');
+                    if (sb) sb.classList.remove('d-none');
+                    const st = document.getElementById('statTotal');
+                    if (st) st.innerText = filesQueue.length;
+
+                    const CONCURRENCY_LIMIT = 2;
+                    const pendingItems = filesQueue.filter(item => item.status === 'pending');
+                    
+                    let index = 0;
+                    const workers = [];
+
+                    const runWorker = async () => {
+                        while (index < pendingItems.length) {
+                            const item = pendingItems[index++];
+                            await window.processDocument(item);
+                        }
+                    };
+
+                    for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, pendingItems.length); i++) {
+                        workers.push(runWorker());
+                    }
+
+                    await Promise.all(workers);
+
+                    btnStartProcessing.classList.add('d-none');
+                    if (btnSaveGroup) btnSaveGroup.classList.remove('d-none');
+                };
+            }
+
+            window.processDocument = async function(item) {
                 const queueEl = document.getElementById('queue_' + item.id);
+                if (!queueEl) return;
                 queueEl.classList.add('processing');
                 queueEl.querySelector('.status-text').innerText = 'Traitement IA...';
                 queueEl.querySelector('.status-icon').innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span>';
@@ -279,59 +387,95 @@
                     
                     const response = await fetch("{{ route('ia.traiter') }}", {
                         method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
                         body: formData
                     });
 
+                    if (!response.ok) throw new Error("Erreur serveur: " + response.status);
+
                     const data = await response.json();
-                    
-                    if (response.ok) {
-                        item.status = 'completed';
-                        item.data = data;
-                        
-                        if (data.est_facture === false) {
-                            queueEl.classList.replace('processing', 'error');
-                            const label = data.type_rejet === 'illisible' ? 'Illisible' : 'Non Comptable';
-                            queueEl.querySelector('.status-text').innerText = label;
-                            queueEl.querySelector('.status-icon').innerHTML = `<i class="bx bxs-x-circle ${data.type_rejet === 'illisible' ? 'text-danger' : 'text-warning'} fs-4"></i>`;
-                        } else {
-                            queueEl.classList.replace('processing', 'completed');
-                            queueEl.querySelector('.status-text').innerText = 'Terminé';
-                            queueEl.querySelector('.status-icon').innerHTML = '<i class="bx bxs-check-circle text-success fs-4"></i>';
-                        }
-                        
-                        renderDocumentCard(item, processedDocs.length + 1);
+                    if (data.success) {
+                        item.data = data.data;
+                        item.status = 'success';
+                        queueEl.classList.replace('processing', 'success');
+                        queueEl.querySelector('.status-text').innerText = 'Réussi';
+                        queueEl.querySelector('.status-icon').innerHTML = '<i class="bx bxs-check-circle text-success fs-4"></i>';
+                        window.updateStats(true);
+                        window.updateDocumentCard(item);
                     } else {
                         throw new Error(data.error || 'Réponse invalide de l\'IA');
                     }
                 } catch (error) {
-                    console.error(error);
+                    console.error("Process Error:", error);
                     item.status = 'error';
                     queueEl.classList.replace('processing', 'error');
                     queueEl.querySelector('.status-text').innerText = 'Échec';
                     queueEl.querySelector('.status-icon').innerHTML = '<i class="bx bxs-error-circle text-danger fs-4"></i>';
+                    window.updateStats(false);
+                    window.updateDocumentCard(item);
                 }
-            }
+            };
 
-            function renderDocumentCard(item, docIndex) {
-                emptyState.classList.add('d-none');
-                const data = item.data;
+            window.updateStats = function(isSuccess) {
+                if (isSuccess) {
+                    const el = document.getElementById('statSuccess');
+                    if (el) el.innerText = parseInt(el.innerText || '0') + 1;
+                } else {
+                    const el = document.getElementById('statError');
+                    if (el) el.innerText = parseInt(el.innerText || '0') + 1;
+                }
+            };
+
+            window.createDocumentPlaceholder = function(item, docIndex) {
                 const docId = item.id;
-                
                 const card = document.createElement('div');
-                card.className = 'card border-0 shadow-sm document-card mb-4';
+                card.className = 'card border-0 shadow-sm document-card mb-4 opacity-75';
                 card.id = 'card_' + docId;
                 
+                card.innerHTML = `
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-secondary text-white border fw-bold">${docIndex}</span>
+                            <h6 class="mb-0 fw-bold text-muted small">${item.file.name}</h6>
+                            <span class="badge bg-info text-white px-2 placeholder-glow"><span class="placeholder col-6"></span> Analyse en cours...</span>
+                        </div>
+                    </div>
+                    <div class="card-body py-5 text-center text-muted">
+                        <div class="spinner-border text-primary mb-2" role="status"></div>
+                        <p class="mb-0 small">L'IA analyse le document, veuillez patienter...</p>
+                    </div>
+                `;
+                if (documentsContainer) documentsContainer.appendChild(card);
+            };
+
+            window.updateDocumentCard = function(item) {
+                const card = document.getElementById('card_' + item.id);
+                if (!card) return;
+                
+                const data = item.data || {};
+                const docId = item.id;
                 const previewUrl = URL.createObjectURL(item.file);
+                card.classList.remove('opacity-75');
+                
+                if (item.status === 'error') {
+                    card.innerHTML = `
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                             <div class="d-flex align-items-center gap-3">
+                                <h6 class="mb-0 fw-bold text-muted small">${item.file.name}</h6>
+                                <span class="badge bg-danger text-white px-2">ÉCHEC DU TRAITEMENT</span>
+                            </div>
+                            <button class="btn btn-sm btn-light text-danger" onclick="window.removeDocument('${docId}')"><i class="bx bx-trash"></i></button>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-danger mb-0 small">
+                                <strong>ERREUR :</strong> Le serveur n'a pas pu traiter ce document. Vérifiez le format ou réessayez.
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
 
-                const groupedPosts = {};
-                TREASURY_POST_LIST.forEach(p => {
-                    const catName = p.category ? p.category.name : 'Autres';
-                    if (!groupedPosts[catName]) groupedPosts[catName] = [];
-                    groupedPosts[catName].push(p);
-                });
-
-                // Auto-detect best journal
+                // Detect best journal
                 let guessedJournalId = '';
                 const lines = data.ecriture || data.lignes || [];
                 const hasAchat = lines.some(l => l.compte && l.compte.toString().startsWith('6'));
@@ -340,55 +484,56 @@
 
                 if (hasAchat) guessedJournalId = JOURNALS.find(j => j.code_journal.includes('ACH') || j.intitule.toLowerCase().includes('achat'))?.id || '';
                 else if (hasVente) guessedJournalId = JOURNALS.find(j => j.code_journal.includes('VT') || j.intitule.toLowerCase().includes('vente'))?.id || '';
-                else if (hasBank) guessedJournalId = JOURNALS.find(j => j.code_journal.includes('BQ') || j.intitule.toLowerCase().includes('banque') || j.intitule.toLowerCase().includes('trésor'))?.id || '';
+                else if (hasBank) guessedJournalId = JOURNALS.find(j => j.code_journal.includes('BQ') || j.intitule.toLowerCase().includes('banque'))?.id || '';
 
                 const journalOptions = JOURNALS.map(j => `<option value="${j.id}" ${j.id == guessedJournalId ? 'selected' : ''}>${j.code_journal} - ${j.intitule}</option>`).join('');
-
                 const vats = GEN_ACCOUNTS.filter(a => a.numero_de_compte.startsWith('445'));
                 const vatOptions = vats.map(a => `<option value="${a.id}">${a.numero_de_compte} - ${a.intitule}</option>`).join('');
+
+                const docIndex = Array.from(documentsContainer.children).indexOf(card) + 1;
 
                 card.innerHTML = `
                     <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
                         <div class="d-flex align-items-center gap-3">
                             <input type="checkbox" class="form-check-input doc-selector" value="${docId}" ${data.est_facture !== false ? 'checked' : ''}>
-                            <span class="badge bg-light text-dark border fw-bold">${processedDocs.length + 1}</span>
+                            <span class="badge bg-light text-dark border fw-bold">${docIndex}</span>
                             <h6 class="mb-0 fw-bold text-muted small">${item.file.name}</h6>
                             ${data.est_facture === false ? `
-                                <span class="badge ${data.type_rejet === 'illisible' ? 'bg-danger' : 'bg-warning'} text-white px-2">
-                                    ${data.type_rejet === 'illisible' ? 'DOCUMENT ILLISIBLE' : 'DOCUMENT NON COMPTABLE'}
-                                </span>
+                                <span class="badge bg-warning text-white px-2">DOCUMENT REJETÉ</span>
                             ` : ''}
                         </div>
                         <div class="d-flex gap-2 align-items-center">
                             <span class="balance-status text-danger small fw-bold"><i class="bx bx-error-circle me-1"></i>Déséquilibré</span>
+                            <button class="btn btn-sm btn-success ms-3 btn-save-single" onclick="window.saveSingleDocument('${docId}')" ${data.est_facture === false ? 'disabled' : ''}>
+                                <i class="bx bx-save me-1"></i>Enregistrer
+                            </button>
                             <div class="vr mx-2"></div>
-                            <button class="btn btn-sm btn-light text-danger" onclick="removeDocument('${docId}')"><i class="bx bx-trash"></i></button>
+                            <button class="btn btn-sm btn-light text-danger" onclick="window.removeDocument('${docId}')"><i class="bx bx-trash"></i></button>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-auto">
-                                <img src="${item.file.type.includes('pdf') ? 'https://cdn-icons-png.flaticon.com/512/337/337946.png' : previewUrl}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;" onclick="window.open('${previewUrl}')">
+                                <img src="${item.file.type.includes('pdf') ? 'https://cdn-icons-png.flaticon.com/512/337/337946.png' : previewUrl}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" onclick="window.open('${previewUrl}')">
                             </div>
                             <div class="col-md">
                                 ${data.est_facture === false ? `
-                                    <div class="alert alert-warning py-2 mb-3">
-                                        <div class="d-flex align-items-center">
-                                            <i class="bx bx-error-warning fs-4 me-2"></i>
-                                            <div>
-                                                <strong>Document ignoré par l'IA :</strong> ${data.explication_rejet || 'Ce document ne semble pas être une facture traitée.'}
-                                            </div>
+                                    <div class="alert alert-soft-danger border d-flex align-items-center py-2 mb-3">
+                                        <i class="bx bx-error-circle fs-4 me-3"></i>
+                                        <div>
+                                            <h6 class="mb-0 small fw-bold">Analyse : Non-comptabilisable</h6>
+                                            <p class="mb-0 extra-small">${data.explication_rejet || 'Ce document n\'a pas été identifié comme une facture valide.'}</p>
                                         </div>
                                     </div>
                                 ` : ''}
                                 <div class="row g-2 mb-3 align-items-end ${data.est_facture === false ? 'opacity-50' : ''}">
                                     <div class="col-md-3">
-                                        <label class="small text-muted mb-1">Journal <a href="javascript:void(0);" onclick="createQuickJournal('${docId}')"><i class="bx bx-plus-circle"></i></a></label>
-                                        <select class="form-select form-select-sm select2 doc-journal" data-doc-id="${docId}">${journalOptions}</select>
+                                        <label class="small text-muted mb-1">Journal <a href="javascript:void(0);" onclick="window.createQuickJournal('${docId}')"><i class="bx bx-plus-circle"></i></a></label>
+                                        <select class="form-select form-select-sm select2 doc-journal">${journalOptions}</select>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="small text-muted mb-1">Date</label>
-                                        <input type="date" class="form-control form-control-sm doc-date" value="${formatDateForInput(data.date)}">
+                                        <input type="date" class="form-control form-control-sm doc-date" value="${window.formatDateForInput(data.date)}">
                                     </div>
                                     <div class="col-md-3">
                                         <label class="small text-muted mb-1">Référence / Pièce</label>
@@ -396,71 +541,68 @@
                                     </div>
                                     <div class="col-md-4 text-end">
                                         <div class="d-inline-block p-2 bg-light border rounded small fw-bold text-muted">
-                                            N° Saisie: <span class="text-primary">${calculateNextNS(docIndex)}</span>
-                                            <i class="bx bx-refresh ms-2 cursor-pointer" onclick="window.location.reload()" title="Actualiser la séquence"></i>
+                                            N° Saisie: <span class="text-primary">${window.calculateNextNS(docIndex)}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="d-flex align-items-center gap-2 mb-2 p-2 bg-light rounded shadow-sm">
-                                    <span class="small fw-bold text-uppercase"><i class="bx bx-list-check me-1"></i>Écritures générées</span>
+                                <div class="d-flex align-items-center gap-2 mb-2 p-2 bg-light rounded border">
+                                    <span class="extra-small fw-bold text-uppercase"><i class="bx bx-bolt-circle me-1"></i>Outils Rapides</span>
                                     <div class="ms-auto d-flex align-items-center gap-2">
-                                        <input type="number" class="form-control form-control-sm vat-amount-input" placeholder="Montant TVA" style="width: 120px;">
-                                        <select class="form-select form-select-sm vat-account-select" style="width: 180px;">
-                                            <option value="">Sélectionner...</option>
+                                        <input type="number" class="form-control form-control-sm vat-amount-input" placeholder="Montant TVA" style="width: 110px;">
+                                        <select class="form-select form-select-sm vat-account-select" style="width: 160px;">
+                                            <option value="">Compte TVA...</option>
                                             ${vatOptions}
                                         </select>
-                                        <button class="btn btn-sm btn-primary py-1 px-3 fw-bold" onclick="applyCustomVAT('${docId}')">APPLIQUER</button>
-                                        <button class="btn btn-sm btn-indigo text-white py-1 px-3 fw-bold" onclick="apply18VAT('${docId}')">+ APPLIQUER TVA 18%</button>
+                                        <button class="btn btn-sm btn-primary px-3 py-1" onclick="window.applyCustomVAT('${docId}')">APPLIQUER</button>
+                                        <button class="btn btn-sm btn-dark px-3 py-1" onclick="window.apply18VAT('${docId}')">TVA 18%</button>
                                     </div>
                                 </div>
 
                                 <div class="table-responsive">
-                                    <table class="table table-sm table-bordered align-middle mb-2" id="table_${docId}">
-                                        <thead class="bg-light text-uppercase" style="font-size: 10px;">
+                                    <table class="table table-sm table-bordered align-middle mb-2">
+                                        <thead class="bg-light extra-small text-uppercase">
                                             <tr>
-                                                <th style="width: 25%">Compte Général <a href="javascript:void(0);" onclick="createQuickAccount('${docId}')"><i class="bx bx-plus-circle"></i></a></th>
+                                                <th style="width: 25%">Compte <a href="javascript:void(0);" onclick="window.createQuickAccount('${docId}')"><i class="bx bx-plus-circle"></i></a></th>
                                                 <th style="width: 5%" class="text-center">TVA</th>
-                                                <th style="width: 15%">Compte Tiers <a href="javascript:void(0);" onclick="createQuickTier('${docId}')"><i class="bx bx-plus-circle"></i></a></th>
-                                                <th style="width: 20%">Libellé / Détails</th>
+                                                <th style="width: 15%">Tiers <a href="javascript:void(0);" onclick="window.createQuickTier('${docId}')"><i class="bx bx-plus-circle"></i></a></th>
+                                                <th style="width: 20%">Libellé</th>
                                                 <th style="width: 10%">Débit</th>
                                                 <th style="width: 10%">Crédit</th>
-                                                <th style="width: 10%">Poste Trésorerie</th>
-                                                <th style="width: 5%">Actions</th>
+                                                <th style="width: 10%">Tréso</th>
+                                                <th style="width: 5%"></th>
                                             </tr>
                                         </thead>
                                         <tbody class="doc-entries-body"></tbody>
                                         <tfoot>
-                                            <tr class="bg-light fw-bold">
-                                                <td colspan="4" class="text-end small">TOTAUX :</td>
-                                                <td class="text-end total-debit small">0</td>
-                                                <td class="text-end total-credit small">0</td>
+                                            <tr class="bg-light fw-bold extra-small">
+                                                <td colspan="4" class="text-end">TOTAUX :</td>
+                                                <td class="text-end total-debit">0</td>
+                                                <td class="text-end total-credit">0</td>
                                                 <td colspan="2"></td>
                                             </tr>
                                         </tfoot>
                                     </table>
-                                    <button class="btn btn-xs btn-outline-primary" onclick="addRow('${docId}')"><i class="bx bx-plus me-1"></i>Ajouter une ligne</button>
+                                    <button class="btn btn-xs btn-outline-primary" onclick="window.addRow('${docId}')"><i class="bx bx-plus me-1"></i>Nouvelle ligne</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
                 
-                documentsContainer.appendChild(card);
                 processedDocs.push(item);
-
                 const tbody = card.querySelector('.doc-entries-body');
                 const ecritures = data.ecriture || data.lignes || [];
-                ecritures.forEach(l => renderEntryRow(tbody, docId, l, data));
+                ecritures.forEach(l => window.renderEntryRow(tbody, docId, l, data));
 
                 $(card).find('.select2').select2({ theme: 'bootstrap4', width: '100%' });
-                $(card).find('input, select').on('change input', () => updateDocBalance(docId));
-                updateDocBalance(docId);
-            }
+                $(card).find('input, select').on('change input', () => window.updateDocBalance(docId));
+                window.updateDocBalance(docId);
+            };
 
-            function renderEntryRow(tbody, docId, lineData, docData) {
+            window.renderEntryRow = function(tbody, docId, lineData, docData) {
                 const tr = document.createElement('tr');
-                const matchedAccId = findBestAccount(lineData.compte, lineData.type) || lineData.compte_id || '';
+                const matchedAccId = window.findBestAccount(lineData.compte, lineData.type) || lineData.compte_id || '';
                 const identifiedTierName = (docData.tiers || docData.fournisseur || "").toUpperCase().trim();
                 let matchedTierId = '';
 
@@ -485,11 +627,11 @@
 
                 tr.innerHTML = `
                     <td>
-                        <select class="form-select form-select-sm select2 row-acc" onchange="toggleTresorerie(this)">
+                        <select class="form-select form-select-sm select2 row-acc" onchange="window.toggleTresorerie(this)">
                             <option value="">Choisir...</option>
                             ${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}
                         </select>
-                        ${!matchedAccId && lineData.compte ? `<div class="text-danger extra-small mt-1"><i class="bx bx-error-circle"></i> ${lineData.compte} absent. <a href="javascript:void(0);" onclick="createQuickAccount('${docId}', '${lineData.compte}')">Créer?</a></div>` : ''}
+                        ${!matchedAccId && lineData.compte ? `<div class="text-danger extra-small mt-1"><i class="bx bx-error-circle"></i> ${lineData.compte} absent. <a href="javascript:void(0);" onclick="window.createQuickAccount('${docId}', '${lineData.compte}')">Créer?</a></div>` : ''}
                     </td>
                     <td class="text-center">
                         <input type="checkbox" class="form-check-input row-has-tva" ${lineData.apply_tva ? 'checked' : ''} title="Appliquer TVA">
@@ -511,14 +653,14 @@
                     </td>
                     <td class="text-center">
                         <div class="d-flex gap-1 justify-content-center">
-                            <button class="btn btn-xs btn-light-primary" onclick="openVentilation('${docId}', this)" title="Ventilation"><i class="bx bx-pie-chart-alt"></i></button>
-                            <button class="btn btn-xs btn-light-danger" onclick="this.closest('tr').remove(); updateDocBalance('${docId}')"><i class="bx bx-trash"></i></button>
+                            <button class="btn btn-xs btn-light-primary" onclick="window.ouvrirVentilationCompte(this)" title="Ventilation"><i class="bx bx-pie-chart-alt"></i></button>
+                            <button class="btn btn-xs btn-light-danger" onclick="this.closest('tr').remove(); window.updateDocBalance('${docId}')"><i class="bx bx-trash"></i></button>
                         </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
                 $(tr).find('.select2').select2({ theme: 'bootstrap4', width: '100%' });
-            }
+            };
 
             window.toggleTresorerie = (select) => {
                 const accId = select.value;
@@ -538,7 +680,6 @@
                 const tbody = card.querySelector('.doc-entries-body');
                 const rows = Array.from(tbody.querySelectorAll('tr'));
                 
-                // Find rows that have VAT checkbox checked OR apply to all rows that carry an amount
                 rows.forEach(tr => {
                     if (tr.querySelector('.row-has-tva').checked) {
                         const debit = parseFloat(tr.querySelector('.row-debit').value) || 0;
@@ -547,7 +688,7 @@
                         if (amount > 0) {
                             const vatAmount = Math.round(amount * 0.18);
                             const vatAcc = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('4451'));
-                            renderEntryRow(tbody, docId, {
+                            window.renderEntryRow(tbody, docId, {
                                 compte_id: vatAcc ? vatAcc.id : '',
                                 libelle: 'TVA 18%',
                                 debit: debit > 0 ? vatAmount : 0,
@@ -556,7 +697,7 @@
                         }
                     }
                 });
-                updateDocBalance(docId);
+                window.updateDocBalance(docId);
             };
 
             window.applyCustomVAT = (docId) => {
@@ -570,19 +711,19 @@
                 }
 
                 const tbody = card.querySelector('.doc-entries-body');
-                const lastRowWithAmount = Array.from(tbody.querySelectorAll('tr')).reverse().find(tr => {
+                const lastRowWithAmount = Array.from(tbody.querySelectorAll('tr')).findLast(tr => {
                     return (parseFloat(tr.querySelector('.row-debit').value) || parseFloat(tr.querySelector('.row-credit').value)) > 0;
                 });
 
                 const type = (lastRowWithAmount && parseFloat(lastRowWithAmount.querySelector('.row-debit').value) > 0) ? 'DEBIT' : 'CREDIT';
 
-                renderEntryRow(tbody, docId, {
+                window.renderEntryRow(tbody, docId, {
                     compte_id: vatAccId,
                     libelle: 'TVA Appliquée',
                     debit: type === 'DEBIT' ? vatAmount : 0,
                     credit: type === 'CREDIT' ? vatAmount : 0
                 }, {});
-                updateDocBalance(docId);
+                window.updateDocBalance(docId);
             };
 
             window.createQuickJournal = (docId) => {
@@ -604,12 +745,7 @@
                         const code = document.getElementById('swal-journal-code').value;
                         const name = document.getElementById('swal-journal-name').value;
                         if (!code || !name) { Swal.showValidationMessage('Veuillez remplir tous les champs'); return false; }
-                        return {
-                            code_journal: code,
-                            intitule: name,
-                            type: document.getElementById('swal-journal-type').value,
-                            traitement_analytique: 'non'
-                        }
+                        return { code_journal: code, intitule: name, type: document.getElementById('swal-journal-type').value, traitement_analytique: 'non' }
                     }
                 }).then(async result => {
                     if (result.isConfirmed) {
@@ -622,7 +758,7 @@
                             const json = await res.json();
                             if (json.success) {
                                 JOURNALS.push(json.journal);
-                                updateAllJournalSelects(json.journal);
+                                window.updateAllJournalSelects(json.journal);
                                 Swal.fire('Succès', 'Journal créé et appliqué.', 'success');
                             } else {
                                 Swal.fire('Erreur', json.message, 'error');
@@ -639,11 +775,11 @@
                 });
             };
 
-            window.createQuickAccount = (docId) => {
+            window.createQuickAccount = (docId, presetNum = '') => {
                 Swal.fire({
                     title: 'Créer un Compte Général',
                     html: `
-                        <input id="swal-acc-num" class="swal2-input" placeholder="Numéro de compte">
+                        <input id="swal-acc-num" class="swal2-input" placeholder="Numéro de compte" value="${presetNum}">
                         <input id="swal-acc-name" class="swal2-input" placeholder="Intitulé du compte">
                     `,
                     showCancelButton: true,
@@ -666,7 +802,7 @@
                             if (json.success) {
                                 const newAcc = { id: json.id, numero_de_compte: json.numero_de_compte, intitule: json.intitule };
                                 GEN_ACCOUNTS.push(newAcc);
-                                updateAllAccountSelects(newAcc);
+                                window.updateAllAccountSelects(newAcc);
                                 Swal.fire('Succès', 'Compte créé.', 'success');
                             } else {
                                 Swal.fire('Erreur', json.error || 'Erreur inconnue', 'error');
@@ -684,19 +820,18 @@
             };
 
             window.createQuickTier = (docId) => {
-                // We use the existing modal partial logic
-                const modal = new bootstrap.Modal(document.getElementById('createTiersModal'));
-                window.currentTierSelect = null; // Mark it as global update
+                const modalEl = document.getElementById('createTiersModal');
+                if (!modalEl) return;
+                const modal = new bootstrap.Modal(modalEl);
+                window.currentTierSelect = null;
                 modal.show();
             };
 
-            // Override createTiersSimple to handle global updates in bulk scan
-            const originalCreateTiers = window.createTiersSimple;
             window.createTiersSimple = (e) => {
-                e.preventDefault();
+                if (e) e.preventDefault();
                 const btn = document.getElementById('btnCreateTiers');
                 const form = document.getElementById('createTiersForm');
-                if (!form.checkValidity()) { form.reportValidity(); return; }
+                if (!form || !form.checkValidity()) { if (form) form.reportValidity(); return; }
                 
                 const data = { 
                     type_de_tiers: document.getElementById('type_tiers').value, 
@@ -705,28 +840,30 @@
                     numero_de_tiers: document.getElementById('numero_tiers').value 
                 };
                 
-                btn.disabled = true; btn.innerText = "Création...";
+                if (btn) { btn.disabled = true; btn.innerText = "Création..."; }
                 fetch('{{ route("plan_tiers.store") }}', { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }, 
                     body: JSON.stringify(data) 
                 }).then(r => r.json()).then(res => {
                     if (res.success) {
-                        const newTier = { id: res.id, numero_de_tiers: res.numero_de_tiers, intitule: res.intitule };
+                        const newTier = { id: res.id, numero_de_tiers: res.numero_de_tiers, intitule: res.intitule, compte_collectif_num: res.compte_collectif_num };
                         TIERS_LIST.push(newTier);
                         document.querySelectorAll('.row-tier').forEach(sel => {
-                            const newOption = new Option(`${res.numero_de_tiers} - ${res.intitule}`, res.id);
+                            const newOption = new Option(`[${res.compte_collectif_num}] ${res.intitule}`, res.id);
                             $(sel).append(newOption);
                         });
-                        bootstrap.Modal.getInstance(document.getElementById('createTiersModal')).hide();
+                        const m = bootstrap.Modal.getInstance(document.getElementById('createTiersModal'));
+                        if (m) m.hide();
                         form.reset();
-                        Swal.fire('Succès', 'Tiers créé et ajouté aux listes.', 'success');
+                        Swal.fire('Succès', 'Tiers créé.', 'success');
                     } else alert("Erreur: " + res.error);
-                }).finally(() => { btn.disabled = false; btn.innerText = "Enregistrer le Tiers"; });
+                }).finally(() => { if (btn) { btn.disabled = false; btn.innerText = "Enregistrer le Tiers"; } });
             };
 
             window.updateDocBalance = (docId) => {
                 const card = document.getElementById('card_' + docId);
+                if (!card) return;
                 const rows = card.querySelectorAll('.doc-entries-body tr');
                 let d = 0, c = 0;
                 rows.forEach(tr => {
@@ -734,8 +871,8 @@
                     c += parseFloat(tr.querySelector('.row-credit').value) || 0;
                 });
                 
-                card.querySelector('.total-debit').innerText = d.toLocaleString();
-                card.querySelector('.total-credit').innerText = c.toLocaleString();
+                card.querySelector('.total-debit').innerText = Math.round(d).toLocaleString();
+                card.querySelector('.total-credit').innerText = Math.round(c).toLocaleString();
                 
                 const balanced = Math.abs(d - c) < 1 && d > 0;
                 const statusEl = card.querySelector('.balance-status');
@@ -759,103 +896,87 @@
             window.removeDocument = (docId) => {
                 const card = document.getElementById('card_' + docId);
                 if (card) card.remove();
-                const queue = document.getElementById('queue_' + docId);
+                const queue = document.getElementById('queue_' + id);
                 if (queue) queue.remove();
                 processedDocs = processedDocs.filter(d => d.id !== docId);
-                if (processedDocs.length === 0) emptyState.classList.remove('d-none');
+                filesQueue = filesQueue.filter(d => d.id !== docId);
+                if (processedDocs.length === 0 && filesQueue.length === 0) {
+                    if (emptyState) emptyState.classList.remove('d-none');
+                }
+                window.updateQueueCount();
             };
 
             window.addRow = (docId) => {
                 const tbody = document.querySelector(`#card_${docId} .doc-entries-body`);
-                renderEntryRow(tbody, docId, {compte:'', intitule:'', debit:0, credit:0}, {});
-                updateDocBalance(docId);
+                window.renderEntryRow(tbody, docId, {compte:'', intitule:'', debit:0, credit:0}, {});
+                window.updateDocBalance(docId);
             };
 
-            window.ouvrirVentilation = (btn) => {
-                const tr = btn.closest('tr');
-                window.currentRowForVentilation = tr;
-                const debit = parseFloat(tr.querySelector('.row-debit').value) || 0;
-                const credit = parseFloat(tr.querySelector('.row-credit').value) || 0;
-                const montant = Math.abs(debit - credit);
-                document.getElementById('montant_a_ventiler_display').innerText = montant.toLocaleString();
-                const tbody = document.querySelector('#tableVentilation tbody');
-                tbody.innerHTML = '';
-                const existingData = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : [];
-                if (existingData.length > 0) {
-                    existingData.forEach(v => window.ajouterLigneVentilation(v.section_id, v.pourcentage, v.montant));
-                } else {
-                    window.ajouterLigneVentilation();
-                }
-                const modal = new bootstrap.Modal(document.getElementById('modalVentilationAnalytique'));
-                modal.show();
-                window.mettreAJourMontantsVentilation();
+            window.ouvrirVentilationCompte = (btn) => {
+                 const tr = btn.closest('tr');
+                 window.currentRowForVentilation = tr;
+                 const debit = parseFloat(tr.querySelector('.row-debit').value) || 0;
+                 const credit = parseFloat(tr.querySelector('.row-credit').value) || 0;
+                 const montant = Math.abs(debit - credit);
+                 
+                 const display = document.getElementById('montant_a_ventiler_display');
+                 if (display) display.innerText = montant.toLocaleString();
+                 const tbody = document.querySelector('#tableVentilation tbody');
+                 if (tbody) tbody.innerHTML = '';
+                 
+                 const existingData = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : [];
+                 if (existingData.length > 0) {
+                     existingData.forEach(v => window.ajouterLigneVentilation(v.section_id, v.pourcentage, v.montant));
+                 } else {
+                     window.ajouterLigneVentilation();
+                 }
+                 
+                 const modalEl = document.getElementById('modalVentilationAnalytique');
+                 if (modalEl) new bootstrap.Modal(modalEl).show();
+                 if (window.mettreAJourMontantsVentilation) window.mettreAJourMontantsVentilation();
             };
-
-            btnSaveSelected.onclick = () => btnSaveOnlySelected.click();
-            btnSaveAllDocs.onclick = () => window.saveDocuments('all');
-            btnSaveOnlySelected.onclick = () => window.saveDocuments('selected');
 
             window.saveDocuments = async (mode) => {
                 const docsToSave = [];
-                const selectors = mode === 'all' 
-                    ? document.querySelectorAll('.doc-selector') 
-                    : document.querySelectorAll('.doc-selector:checked');
+                const selectors = mode === 'all' ? document.querySelectorAll('.doc-selector') : document.querySelectorAll('.doc-selector:checked');
 
                 selectors.forEach(checkbox => {
                     const docId = checkbox.value;
-                    const item = processedDocs.find(d => d.id === docId);
+                    const item = filesQueue.find(d => d.id === docId);
                     const card = document.getElementById('card_' + docId);
                     if (!card) return;
                     
-                    const rows = Array.from(card.querySelectorAll('.doc-entries-body tr'));
                     const journalId = card.querySelector('.doc-journal').value;
                     const dDate = card.querySelector('.doc-date').value;
                     const dRef = card.querySelector('.doc-ref').value;
-                    
-                    if (!journalId) {
-                        card.classList.add('border-danger');
-                        return;
-                    }
-
-                    const ecritures = [];
                     const dNSaisie = card.querySelector('.text-primary').innerText;
 
+                    if (!journalId) return;
+
+                    const ecritures = [];
                     card.querySelectorAll('.doc-entries-body tr').forEach(tr => {
                         const accId = tr.querySelector('.row-acc').value;
                         if (!accId) return;
-
                         const debit = parseFloat(tr.querySelector('.row-debit').value) || 0;
                         const credit = parseFloat(tr.querySelector('.row-credit').value) || 0;
                         const vnts = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : null;
 
                         ecritures.push({
-                            date: dDate,
-                            n_saisie: dNSaisie,
-                            description_operation: tr.querySelector('.row-lib').value,
-                            reference_piece: dRef,
-                            plan_comptable_id: accId,
-                            plan_tiers_id: tr.querySelector('.row-tier').value || null,
-                            debit, credit,
-                            code_journal_id: journalId,
-                            exercices_comptables_id: EXERCICE_ACTIF.id,
+                            date: dDate, n_saisie: dNSaisie, description_operation: tr.querySelector('.row-lib').value,
+                            reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: tr.querySelector('.row-tier').value || null,
+                            debit, credit, code_journal_id: journalId, exercices_comptables_id: EXERCICE_ACTIF.id,
                             poste_tresorerie_id: tr.querySelector('.row-poste-treso')?.value || null,
-                            ventilations: vnts,
-                            plan_analytique: vnts ? 1 : 0
+                            ventilations: vnts, plan_analytique: vnts ? 1 : 0
                         });
                     });
                     
-                    if (ecritures.length > 0) {
-                        docsToSave.push({ id: docId, ecritures, file: item.file });
-                    }
+                    if (ecritures.length > 0) docsToSave.push({ id: docId, ecritures, file: item.file });
                 });
 
-                if (docsToSave.length === 0) {
-                    Swal.fire('Attention', 'Aucun document valide sélectionné.', 'warning');
-                    return;
-                }
+                if (docsToSave.length === 0) { Swal.fire('Attention', 'Aucun document valide sélectionné.', 'warning'); return; }
 
-                btnSaveSelected.disabled = true;
-                btnSaveSelected.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>...';
+                const btn = document.getElementById('btnSaveOnlySelected');
+                if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>...'; }
 
                 let successCount = 0;
                 for (const doc of docsToSave) {
@@ -863,46 +984,90 @@
                         const formData = new FormData();
                         formData.append('piece_justificatif', doc.file);
                         formData.append('ecritures', JSON.stringify(doc.ecritures));
-                        
-                        const res = await fetch(SAVE_ROUTE, {
-                            method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                            body: formData
-                        });
-                        
+                        const res = await fetch(SAVE_ROUTE, { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }, body: formData });
                         const json = await res.json();
-                        if (json.success) {
-                            successCount++;
-                            removeDocument(doc.id);
-                        }
+                        if (json.success) { successCount++; window.removeDocument(doc.id); }
                     } catch (e) { console.error(e); }
                 }
 
                 Swal.fire('Succès', `${successCount} documents enregistrés.`, 'success');
-                btnSaveSelected.disabled = false;
-                btnSaveSelected.innerHTML = '<i class="bx bx-save me-1"></i> Enregistrer';
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bx bx-save me-1"></i> Enregistrer'; }
             };
 
-            function formatDateForInput(dateStr) {
+            window.saveSingleDocument = async (docId) => {
+                const card = document.getElementById('card_' + docId);
+                const item = filesQueue.find(d => d.id === docId);
+                if (!card || !item) return;
+
+                const journalId = card.querySelector('.doc-journal').value;
+                if (!journalId) { Swal.fire('Journal Manquant', 'Sélectionnez un journal.', 'warning'); return; }
+
+                const dNSaisie = card.querySelector('.text-primary').innerText;
+                const dDate = card.querySelector('.doc-date').value;
+                const dRef = card.querySelector('.doc-ref').value;
+
+                const ecritures = [];
+                card.querySelectorAll('.doc-entries-body tr').forEach(tr => {
+                    const accId = tr.querySelector('.row-acc').value;
+                    if (!accId) return;
+                    const vnts = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : null;
+                    ecritures.push({
+                        date: dDate, n_saisie: dNSaisie, description_operation: tr.querySelector('.row-lib').value,
+                        reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: tr.querySelector('.row-tier').value || null,
+                        debit: parseFloat(tr.querySelector('.row-debit').value) || 0,
+                        credit: parseFloat(tr.querySelector('.row-credit').value) || 0,
+                        code_journal_id: journalId, exercices_comptables_id: EXERCICE_ACTIF.id,
+                        poste_tresorerie_id: tr.querySelector('.row-poste-treso')?.value || null,
+                        ventilations: vnts, plan_analytique: vnts ? 1 : 0
+                    });
+                });
+
+                const btn = card.querySelector('.btn-save-single');
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('piece_justificatif', item.file);
+                    formData.append('ecritures', JSON.stringify(ecritures));
+                    const res = await fetch(SAVE_ROUTE, { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }, body: formData });
+                    const json = await res.json();
+                    if (json.success) { 
+                        Swal.fire({ icon: 'success', title: 'Enregistré', timer: 1000, showConfirmButton: false });
+                        window.removeDocument(docId); 
+                    } else Swal.fire('Erreur', json.message || 'Erreur', 'error');
+                } catch (e) { Swal.fire('Erreur', 'Serveur injoignable', 'error'); }
+                finally { btn.disabled = false; btn.innerHTML = originalHtml; }
+            };
+
+            window.formatDateForInput = (dateStr) => {
                 if (!dateStr) return '';
                 if (dateStr.includes('/')) {
                     const parts = dateStr.split('/');
-                    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                 }
                 return dateStr;
-            }
+            };
 
-            function findBestAccount(code, type) {
+            window.findBestAccount = (code, type) => {
                 if (!code) return null;
                 const sCode = code.toString();
-                const match = GEN_ACCOUNTS.find(a => a.numero_de_compte === sCode);
+                let match = GEN_ACCOUNTS.find(a => a.numero_de_compte === sCode);
                 if (match) return match.id;
-                const prefix = sCode.substring(0, 4);
-                const pMatch = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith(prefix));
-                return pMatch ? pMatch.id : null;
-            }
+                match = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith(sCode.substring(0, 4)));
+                return match ? match.id : null;
+            };
 
-            document.getElementById('btnReset').onclick = () => window.location.reload();
+            const btnReset = document.getElementById('btnReset');
+            if (btnReset) btnReset.onclick = () => window.location.reload();
+            
+            const btnSaveAllDocs = document.getElementById('btnSaveAllDocs');
+            if (btnSaveAllDocs) btnSaveAllDocs.onclick = () => window.saveDocuments('all');
+            
+            const btnSaveOnlySelected = document.getElementById('btnSaveOnlySelected');
+            if (btnSaveOnlySelected) btnSaveOnlySelected.onclick = () => window.saveDocuments('selected');
+            
+            window.updateQueueCount();
         });
     </script>
 </body>

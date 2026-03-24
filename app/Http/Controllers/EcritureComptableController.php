@@ -9,6 +9,10 @@ use App\Models\EcritureComptable;
 use App\Models\ExerciceComptable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use App\Models\AxeAnalytique;
+use App\Models\SectionAnalytique;
+use App\Models\VentilationAnalytique;
+use App\Services\TaxValidationService;
 use App\Models\PlanComptable;
 use Carbon\Carbon;
 use App\Models\CodeJournal;
@@ -18,10 +22,6 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Approval;
 use App\Models\TreasuryCategory;
 use App\Traits\HandlesTreasuryPosts;
-use App\Models\AxeAnalytique;
-use App\Models\SectionAnalytique;
-use App\Models\VentilationAnalytique;
-use App\Services\TaxValidationService;
 
 class EcritureComptableController extends Controller
 {
@@ -215,6 +215,7 @@ class EcritureComptableController extends Controller
         }
 
         $comptesTresorerie = CompteTresorerie::with('category')->orderBy('name')->get();
+        $axes = AxeAnalytique::where('company_id', $activeCompanyId)->with('sections')->get();
 
         $initials = $user->initiales;
         $prefix = "CPT-" . $initials . "_";
@@ -231,7 +232,8 @@ class EcritureComptableController extends Controller
             'codeJournaux',
             'exerciceActif',
             'comptesTresorerie',
-            'nextSaisieNumber'
+            'nextSaisieNumber',
+            'axes'
         ));
     }
 
@@ -826,7 +828,7 @@ class EcritureComptableController extends Controller
             $baseQuery->where('code_journal_id', $data['journal_id']);
         }
         if (!empty($data['journal_type'])) {
-            $baseQuery->whereHas('codeJournal', function($q) use ($data) {
+            $baseQuery->whereHas('codeJournal', function ($q) use ($data) {
                 $q->where('type', $data['journal_type']);
             });
         }
@@ -834,7 +836,7 @@ class EcritureComptableController extends Controller
             $baseQuery->where('plan_tiers_id', $data['plan_tiers_id']);
         }
         if (!empty($data['tier_prefix'])) {
-            $baseQuery->whereHas('planTiers', function($q) use ($data) {
+            $baseQuery->whereHas('planTiers', function ($q) use ($data) {
                 $q->where('numero_de_tiers', 'like', $data['tier_prefix'] . '%');
             });
         }

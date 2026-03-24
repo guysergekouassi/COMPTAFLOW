@@ -284,8 +284,20 @@
                                     <img src="{{ asset('logo_armoiries.png') }}" alt="Armoiries" style="height: 60px; object-fit: contain;">
                                 </div>
                                 <div>
-                                    <h4 class="fw-900 mb-0 text-dark">Liasse Fiscale <span class="text-gradient">e-SINTAX</span></h4>
-                                    <p class="text-muted small mb-0 font-weight-600">Exercice : <span class="badge bg-label-primary">{{ $exercice->intitule }}</span> &nbsp;•&nbsp; <strong>SYSCOHADA Révisé</strong></p>
+                        <h4 class="fw-900 mb-0 text-dark">
+                                        @if($regime === 'smt')
+                                            Liasse Fiscale <span style="background:linear-gradient(135deg,#d97706,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">e-SINTAX</span> <span class="badge ms-1" style="font-size:0.65rem;background:#d97706;color:#fff;border-radius:8px;padding:3px 8px;">SMT</span>
+                                        @else
+                                            Liasse Fiscale <span class="text-gradient">e-SINTAX</span> <span class="badge bg-primary ms-1" style="font-size:0.65rem;border-radius:8px;">SN</span>
+                                        @endif
+                                    </h4>
+                                    <p class="text-muted small mb-0 font-weight-600">Exercice : <span class="badge bg-label-primary">{{ $exercice->intitule }}</span> &nbsp;•&nbsp;
+                                        @if($regime === 'smt')
+                                            <strong>Syst. Minimal de Trésorerie</strong> — CA ≤ 50M FCFA
+                                        @else
+                                            <strong>Système Normal SYSCOHADA</strong> — CA > 50M FCFA
+                                        @endif
+                                    </p>
                                 </div>
                                 <div class="summary-pills d-none d-lg-flex">
                                     <div class="summary-pill">
@@ -309,10 +321,10 @@
                                         <i class="bx bx-cloud-download me-2 fs-5"></i> Export Complet
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-2xl border-0 p-2" style="min-width: 260px; border-radius: 16px;">
-                                        <li><a class="dropdown-item py-3 rounded-3" href="{{ route('reporting.liasse.export', 'pdf') }}"><div class="d-flex align-items-center"><i class="bx bxs-file-pdf text-danger me-3 fs-3"></i><div><div class="fw-700">Document PDF</div><small class="text-muted">Prêt pour impression</small></div></div></a></li>
-                                        <li><a class="dropdown-item py-3 rounded-3" href="{{ route('reporting.liasse.export', 'excel') }}"><div class="d-flex align-items-center"><i class="bx bxs-spreadsheet text-success me-3 fs-3"></i><div><div class="fw-700">Fichier Excel</div><small class="text-muted">Analyse et retraitement</small></div></div></a></li>
+                                        <li><a class="dropdown-item py-3 rounded-3" href="{{ route('reporting.liasse.export', ['regime'=>$regime,'format'=>'pdf']) }}"><div class="d-flex align-items-center"><i class="bx bxs-file-pdf text-danger me-3 fs-3"></i><div><div class="fw-700">Document PDF</div><small class="text-muted">Prêt pour impression</small></div></div></a></li>
+                                        <li><a class="dropdown-item py-3 rounded-3" href="{{ route('reporting.liasse.export', ['regime'=>$regime,'format'=>'excel']) }}"><div class="d-flex align-items-center"><i class="bx bxs-spreadsheet text-success me-3 fs-3"></i><div><div class="fw-700">Fichier Excel</div><small class="text-muted">Analyse et retraitement</small></div></div></a></li>
                                         <li><hr class="dropdown-divider opacity-50"></li>
-                                        <li><a class="dropdown-item py-3 rounded-3" style="background: rgba(255, 171, 0, 0.1);" href="{{ route('reporting.liasse.export', 'xml') }}"><div class="d-flex align-items-center"><i class="bx bx-code-alt text-warning me-3 fs-3"></i><div><div class="fw-700 text-warning">Flux XML EDI</div><small class="text-muted">Télétransmission DGI</small></div></div></a></li>
+                                        <li><a class="dropdown-item py-3 rounded-3" style="background: rgba(255, 171, 0, 0.1);" href="{{ route('reporting.liasse.export', ['regime'=>$regime,'format'=>'xml']) }}"><div class="d-flex align-items-center"><i class="bx bx-code-alt text-warning me-3 fs-3"></i><div><div class="fw-700 text-warning">Flux XML EDI</div><small class="text-muted">Télétransmission DGI — type {{ $regime === 'smt' ? 'RNI' : 'NO' }}</small></div></div></a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -327,7 +339,7 @@
                                 <div class="d-flex gap-2">
                                     <button class="btn-export btn-pdf" onclick="exportPage('pdf')"><i class="bx bxs-file-pdf"></i> PDF</button>
                                     <button class="btn-export btn-excel" onclick="exportPage('excel')"><i class="bx bxs-spreadsheet"></i> Excel</button>
-                                    <button class="btn-export btn-xml" onclick="exportPage('xml')"><i class="bx bx-code-alt"></i> XML</button>
+                                    <button class="btn-export btn-xml" onclick="exportPage('xml')"><i class="bx bx-code-alt"></i> XML {{ $regime === 'smt' ? 'RNI' : 'NO' }}</button>
                                 </div>
                             </div>
 
@@ -371,9 +383,9 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    var liassePageRoute = "{{ route('reporting.liasse.page', ':page') }}";
+    var liassePageRoute = "{{ route('reporting.liasse.page', ['regime' => $regime, 'page' => ':page']) }}";
     var liasseSaveRoute = "{{ route('reporting.liasse.save') }}";
-    var liasseExportRoute = "{{ url('reporting/liasse/export') }}";
+    var liasseExportRoute = "{{ url('reporting/liasse/' . $regime . '/export') }}";
     var csrfToken = "{{ csrf_token() }}";
 
     function loadPage(pageNumber, element) {

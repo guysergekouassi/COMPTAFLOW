@@ -800,9 +800,9 @@
             const compressImage = file => new Promise(res => {
                 const reader = new FileReader(); reader.onload = e => {
                     const img = new Image(); img.src = e.target.result; img.onload = () => {
-                        const canvas = document.createElement('canvas'); const MAX = 1200; let w = img.width, h = img.height;
+                        const canvas = document.createElement('canvas'); const MAX = 800; let w = img.width, h = img.height;
                         if (w > MAX) { h *= MAX/w; w = MAX; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0,0, w, h);
-                        res(canvas.toDataURL('image/jpeg', 0.8));
+                        res(canvas.toDataURL('image/jpeg', 0.65));
                     };
                 }; reader.readAsDataURL(file);
             });

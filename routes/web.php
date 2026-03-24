@@ -594,10 +594,20 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
 
     // ***************** ROUTES LIASSE FISCALE *****************
     Route::group(['prefix' => 'reporting/liasse', 'as' => 'reporting.liasse.'], function () {
-        Route::get('/', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'index'])->name('index');
-        Route::get('/page/{page}', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'getPage'])->name('page');
+        // Redirect legacy root URL to SN
+        Route::get('/', function() { return redirect()->route('reporting.liasse.index', ['regime' => 'sn']); })->name('index');
+
+        // Routes paramétrées par régime : sn ou smt
+        Route::get('/{regime}', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'index'])
+            ->where('regime', 'sn|smt')
+            ->name('regime');
+        Route::get('/{regime}/page/{page}', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'getPage'])
+            ->where('regime', 'sn|smt')
+            ->name('page');
         Route::post('/save', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'storeManualData'])->name('save');
-        Route::get('/export/{format}', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'export'])->name('export');
+        Route::get('/{regime}/export/{format}', [App\Http\Controllers\Reporting\LiasseFiscaleController::class, 'export'])
+            ->where('regime', 'sn|smt')
+            ->name('export');
     });
 });
 

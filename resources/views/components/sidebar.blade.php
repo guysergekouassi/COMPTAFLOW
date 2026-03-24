@@ -904,9 +904,19 @@
             @if ($showDocumentComptable)
             <div class="menu-section">
                 <div class="menu-section-header">DOCUMENT COMPTABLE</div>
-                <a href="{{ route('reporting.liasse.index') }}" class="menu-link-new {{ request()->routeIs('reporting.liasse.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-file-invoice"></i>
-                    <span>Liasse Fiscale (DGI)</span>
+                {{-- Liasse Système Normal (SN) — CA > 50 M FCFA --}}
+                <a href="{{ route('reporting.liasse.regime', ['regime' => 'sn']) }}"
+                   class="menu-link-new {{ request()->is('reporting/liasse/sn*') ? 'active' : '' }}"
+                   title="Système Normal — Entreprises CA > 50M FCFA">
+                    <i class="fa-solid fa-file-invoice" style="{{ request()->is('reporting/liasse/sn*') ? '' : 'color:#2563eb' }}"></i>
+                    <span>Liasse Fiscale <span class="badge bg-primary ms-1" style="font-size:0.6rem;vertical-align:middle;">SN</span></span>
+                </a>
+                {{-- Liasse Système Minimal de Trésorerie (SMT) — CA ≤ 50 M FCFA --}}
+                <a href="{{ route('reporting.liasse.regime', ['regime' => 'smt']) }}"
+                   class="menu-link-new {{ request()->is('reporting/liasse/smt*') ? 'active' : '' }}"
+                   title="Système Minimal de Trésorerie — Entreprises CA ≤ 50M FCFA">
+                    <i class="fa-solid fa-file-lines" style="{{ request()->is('reporting/liasse/smt*') ? '' : 'color:#d97706' }}"></i>
+                    <span>Liasse Fiscale <span class="badge ms-1" style="font-size:0.6rem;vertical-align:middle;background:#d97706;color:#fff;">SMT</span></span>
                 </a>
             </div>
             @endif

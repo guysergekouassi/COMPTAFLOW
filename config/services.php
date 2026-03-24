@@ -35,8 +35,14 @@ return [
         ],
     ],
 
-    'gemini' => [
-    'key' => env('GEMINI_API_KEY'),
-],
+    'vertex_ai' => [
+        'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+        'project_number' => env('GOOGLE_CLOUD_PROJECT_NUMBER'),
+        'location' => env('VERTEX_AI_LOCATION'),
+        'model' => env('VERTEX_AI_MODEL'),
+        'api_version' => env('VERTEX_AI_API_VERSION', 'v1'),
+        'temperature' => env('VERTEX_AI_TEMPERATURE', 0.2),
+        'max_tokens' => env('VERTEX_AI_MAX_TOKENS', 4096),
+    ],
 
 ];

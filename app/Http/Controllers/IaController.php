@@ -13,9 +13,12 @@ use App\Models\Company;
 
 class IaController extends Controller
 {
+    private \App\Services\VertexAiService $vertexAiService;
+
     public function __construct()
     {
         $this->middleware('auth');
+        $this->vertexAiService = new \App\Services\VertexAiService();
     }
 
     public function dashboard(Request $request)
@@ -44,8 +47,7 @@ class IaController extends Controller
     }
 
     /**
-     * Traite une facture scannée via l'API Gemini.
-     * Injecte le Plan Comptable et les Tiers de l'entreprise dans le prompt.
+     * Traite une facture scannée via Vertex AI Gemini Vision.
      */
     public function traiterFacture(Request $request)
     {
@@ -61,37 +63,6 @@ class IaController extends Controller
             $image = $request->file('facture');
             $image_hash = md5_file($image->getPathname()) . '_' . $image->getSize();
             $cache_key = "ia_analysis_{$companyId}_{$image_hash}";
-
-            /* On commente ce bloc pour forcer un nouveau scan IA à chaque fois
-            if (Cache::has($cache_key)) {
-                $cachedData = Cache::get($cache_key);
-                if (is_array($cachedData)) {
-                    $cachedData['message'] = 'Résultat récupéré du cache';
-                    $cachedData['from_cache'] = true;
-                    return response()->json($cachedData);
-                }
-                return response()->json([
-                    'message' => 'Résultat récupéré du cache',
-                    'data' => $cachedData,
-                    'from_cache' => true,
-                ]);
-            }
-            */
-
-            // --- CONFIGURATION : Liste de modèles à essayer dans l'ordre ---
-            $api_key = env('GEMINI_API_KEY');
-            if (!$api_key) {
-                return response()->json(['error' => 'Clé API Gemini manquante dans le fichier .env'], 500);
-            }
-
-            // On essaie les modèles dans l'ordre jusqu'à en trouver un qui marche
-            $modelsToTry = [
-                'gemini-2.0-flash',
-                'gemini-2.0-flash-exp',
-                'gemini-1.5-pro',
-                'gemini-1.5-pro-latest',
-                'gemini-pro-vision',
-            ];
 
             // 1. Préparation de l'image / PDF
             $raw_image_data = file_get_contents($image->getPathname());
@@ -112,55 +83,15 @@ class IaController extends Controller
             $mappingsContext = $this->buildMappingsContext($companyId);
             $companyName = Company::find($companyId)->raison_sociale ?? 'Mon Entreprise';
 
-            // 3. Construction du prompt enrichi
+            // 3. Construction du prompt enrichi (Master Prompt preservé)
             $prompt = $this->buildPrompt($planComptableContext, $tiersContext, $mappingsContext, $companyName);
 
-            // 4. Payload pour Gemini
-            $payload = [
-                "contents" => [
-                    [
-                        "parts" => [
-                            ["text" => $prompt],
-                            [
-                                "inlineData" => [
-                                    "mimeType" => $mime_type,
-                                    "data" => $image_data
-                                ]
-                            ]
-                        ]
-                    ]
-                ],
-                "generationConfig" => [
-                    "temperature" => 0.1
-                ]
-            ];
-
-            // 5. Essai des modèles en cascade
-            $result = null;
-            $lastError = null;
-            foreach ($modelsToTry as $model) {
-                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$api_key}";
-                \Illuminate\Support\Facades\Log::info("Essai modèle Gemini: {$model}");
-                $result = $this->callGeminiApi($url, $payload, $api_key);
-                
-                // Si c'est un 404 (modèle non trouvé), on essaie le suivant
-                if (isset($result['error']) && isset($result['http_code']) && $result['http_code'] === 404) {
-                    $lastError = $result;
-                    \Illuminate\Support\Facades\Log::warning("Modèle {$model} non disponible (404), essai suivant...");
-                    continue;
-                }
-                
-                // Succès ou autre erreur → on arrête
-                break;
-            }
-
-            // Si tous les modèles ont échoué avec 404
-            if ($result === null || (isset($result['error']) && isset($result['http_code']) && $result['http_code'] === 404)) {
-                $result = ['error' => 'Aucun modèle Gemini disponible pour cette clé API. Vérifiez que votre clé est active sur https://aistudio.google.com/app/apikey', 'http_code' => 404];
-            }
+            // 4. Appel Vertex AI via le Service
+            $result = $this->vertexAiService->analyzeInvoice($image_data, $mime_type, $prompt);
 
             if (isset($result['error'])) {
-                // Log de l'erreur avec JSON brut si disponible
+                $rawResponse = $result['raw_response'] ?? null;
+                
                 IaLog::create([
                     'company_id' => $companyId,
                     'user_id' => $user->id,
@@ -168,12 +99,14 @@ class IaController extends Controller
                     'image_nom' => $image->getClientOriginalName(),
                     'status' => 'error',
                     'erreur_message' => $result['error'],
-                    'json_brut' => $result['raw'] ?? json_encode($result['details'] ?? null),
+                    'json_brut' => $rawResponse ? json_encode(['raw_response' => substr($rawResponse, 0, 5000)]) : json_encode($result['details'] ?? []),
                 ]);
+
                 return response()->json([
                     'error' => $result['error'],
                     'details' => $result['details'] ?? null,
-                    'debug_url' => str_replace($api_key, '***', $url)
+                    'http_code' => $result['http_code'] ?? null,
+                    'raw_response' => $rawResponse
                 ], 500);
             }
 
@@ -190,10 +123,12 @@ class IaController extends Controller
                 'status' => 'success',
             ]);
 
-            // Mise en cache pour 1 heure
             Cache::put($cache_key, $data, 3600);
 
-            return response()->json($data);
+            return response()->json([
+                'success' => true,
+                'data' => $data
+            ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['error' => 'Fichier invalide : ' . implode(', ', $e->errors()['facture'] ?? [])], 422);
@@ -202,9 +137,22 @@ class IaController extends Controller
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
             ], 500);
         }
+    }
+
+    /**
+     * Test de connectivité Vertex AI
+     */
+    public function testVertexAiConnection()
+    {
+        $test = \App\Services\VertexAiService::testConnection();
+        $config = \App\Services\VertexAiService::getConfig();
+
+        return response()->json([
+            'test' => $test,
+            'config' => $config
+        ]);
     }
 
     /**
@@ -257,7 +205,7 @@ class IaController extends Controller
             })
             ->whereRaw('LENGTH(numero_de_compte) >= 4')
             ->orderBy('numero_de_compte')
-            ->limit(1000) // On peut se permettre d'en envoyer plus
+            ->limit(300) // Réduit de 1000 à 300 pour la vitesse et éviter la troncature
             ->get(['numero_de_compte', 'intitule']);
 
         if ($comptes->isEmpty()) {
@@ -318,32 +266,41 @@ Tu es un Expert-Comptable SYSCOHADA senior, spécialisé dans la lecture et la c
 {$tiers}{$mappingsSection}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ PRINCIPE FONDAMENTAL — LIRE IMPÉRATIVEMENT AVANT TOUT :
+⚠️ PRINCIPE FONDAMENTAL — PRIORITÉ À L'EXTRACTION :
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-DANS LE CONTEXTE DE CETTE APPLICATION, LES UTILISATEURS N'UPLOADENT QUE DES DOCUMENTS COMPTABLES.
-Par conséquent, TON BIAIS PAR DÉFAUT EST : "est_facture": true.
+Ton objectif est de trouver UNE FACTURE (ou preuve de paiement) dans le document fourni.
 
-Tu dois retourner "est_facture": false UNIQUEMENT dans l'un de ces 2 cas STRICTS et ÉVIDENTS :
-  1. Le document est une photo de paysage, d'une personne, d'un animal, ou d'un objet personnel sans aucun lien avec le commerce/la comptabilité.
-  2. Le fichier est entièrement corrompu ou totalement vierge/noir (0% de contenu visible).
+1. **DOCUMENTS MIXTES (EX: BC + FACTURE)** :
+   - Si le PDF contient plusieurs pages ou plusieurs documents (ex: un Bon de Commande ET une Facture), **IGNORE** les documents non-comptables (BC, Devis) et **CONCENTRE-TOI** sur la Facture pour extraire les données.
+   - Ne rejette le document que s'il est **EXCLUSIVEMENT** un Bon de Commande ou un document sans aucune valeur comptable.
 
-TOUT LE RESTE EST UNE FACTURE. En particulier :
-  ✅ Un PDF (même partiellement non lisible) → TOUJOURS "est_facture": true (les PDFs envoyés ici sont toujours des documents professionnels).
-  ✅ Une image floue ou sombre avec des chiffres visibles → "est_facture": true.
-  ✅ Un reçu, ticket de caisse, bon de livraison, note d'honoraires, relevé bancaire, bordereau → "est_facture": true.
-  ✅ Un document avec un logo d'entreprise, un montant, ou un nom de commerce → "est_facture": true.
-  ✅ Un document que tu ne peux lire qu'à 30% → fais de ton mieux et retourne "est_facture": true.
+2. **ÉLÉMENTS ACCEPTÉS (FACTO/REÇU/FRAIS)** :
+   - Si tu vois le mot "Facture", "Invoice", "Reçu", "Total à payer", ou une structure de tableau avec montants. Action : "est_facture": true.
+   - Sois indulgent : si le document ressemble à une facture, TRAITE-LE.
+
+3. **ÉLÉMENTS REJETÉS (AVEC PARCOURS COMPLET)** :
+   - Uniquement si le document est **100%** un Bon de Commande (Purchase Order), une Invitation, ou une image sans texte.
+   - Action : Retourner "est_facture": false, "type_rejet": "non_comptable", "explication_rejet": "Document non-comptable détecté."
+
+3. **BON DE LIVRAISON / BORDEREAU** (ACCEPTÉS si montants présents) :
+   - Si montants présents -> "est_facture": true.
+   - Sinon (juste des quantités) -> "est_facture": false, "type_rejet": "non_comptable", "explication_rejet": "Ceci est un bon de livraison sans valeurs financières."
+
+4. **PHOTOS NON COMPTABLES** :
+   - Paysage, personne, objet sans lien commercial.
+   - Action : Retourner "est_facture": false, "type_rejet": "other".
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RÈGLES D'EXTRACTION :
+RÈGLES D'EXTRACTION STRICTES (OCR LITTÉRAL) :
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Si tu peux lire un montant mais pas la date → mets la date d'aujourd'hui (format AAAA-MM-JJ).
-- Si tu peux lire la date mais pas le tiers → mets "Fournisseur inconnu".
-- Si tu vois un montant TTC sans HT → calcule le HT en déduisant 18% de TVA (standard Côte d'Ivoire).
-- NEVER use "null" for montant_ttc — si tu ne vois aucun montant, mets 0.
+- **LIBELLÉ LITTÉRAL** : Utilise UNIQUEMENT le texte écrit sur la facture. N'invente rien. Ex: si la ligne dit "ACHAT SPLIT 2CV", le libellé DOIT être "ACHAT SPLIT 2CV".
+- **PAS D'INVENTION** : Si une date est absente, mets null. Si un numéro de facture est absent, mets "SANS REF".
+- **CHIFFRES EXACTS** : Ne fais pas d'arrondis. Les centimes doivent être préservés.
+- **REPRODUCTIBILITÉ** : Analyse chaque document avec un regard neuf car plusieurs factures peuvent se ressembler.
 - 1 LIGNE = 1 OBJET dans le tableau "ecriture". Ne regroupe JAMAIS plusieurs articles sur une ligne.
 - COMPTES : Charges = Classe 6 (Débit) | Fournisseurs = 401xxx (Crédit) | Clients = 411xxx (Débit).
+- **JSON STRICT** : Ta réponse doit être un objet JSON valide, sans texte avant ou après.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 FORMAT DE RÉPONSE (JSON STRICT, PAS DE MARKDOWN) :
@@ -480,40 +437,42 @@ PROMPT;
     /**
      * Compresse l'image si nécessaire pour éviter les timeouts API.
      */
-    private function compressImage(string $path, int $maxWidthPx = 1000, int $quality = 70): string
+    private function compressImage(string $path, int $maxWidthPx = 800, int $quality = 65): string
     {
-        $info = @getimagesize($path);
-        if (!$info) return file_get_contents($path);
+        if (!function_exists('imagecreatefromjpeg') || !function_exists('imagejpeg') || !function_exists('getimagesize')) {
+            return \file_get_contents($path);
+        }
+
+        $info = @\getimagesize($path);
+        if (!$info) return \file_get_contents($path);
 
         [$w, $h, $type] = $info;
         
-        // Si le mime type n'est pas supporté par imagecreatefrom..., on renvoie l'original
         try {
             $src = match ($type) {
-                IMAGETYPE_JPEG => imagecreatefromjpeg($path),
-                IMAGETYPE_PNG  => imagecreatefrompng($path),
+                IMAGETYPE_JPEG => \imagecreatefromjpeg($path),
+                IMAGETYPE_PNG  => \imagecreatefrompng($path),
                 default        => null,
             };
         } catch (\Throwable $e) {
-            return file_get_contents($path);
+            return \file_get_contents($path);
         }
         
-        if (!$src) return file_get_contents($path);
+        if (!$src) return \file_get_contents($path);
 
-        // Redimensionner si trop large
         if ($w > $maxWidthPx) {
             $ratio = $maxWidthPx / $w;
             $nw = $maxWidthPx; $nh = (int)($h * $ratio);
-            $dst = imagecreatetruecolor($nw, $nh);
-            imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
-            imagedestroy($src);
+            $dst = \imagecreatetruecolor($nw, $nh);
+            \imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+            \imagedestroy($src);
             $src = $dst;
         }
 
-        ob_start();
-        imagejpeg($src, null, $quality);
-        $data = ob_get_clean();
-        imagedestroy($src);
+        \ob_start();
+        \imagejpeg($src, null, $quality);
+        $data = \ob_get_clean();
+        \imagedestroy($src);
         
         return $data;
     }

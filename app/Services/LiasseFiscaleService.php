@@ -231,43 +231,49 @@ class LiasseFiscaleService
 
     /**
      * Génère le fichier XML au format e-SINTAX.
+     * @param string $regime 'sn' → type NO, 'smt' → type RNI
      */
-    public function generateXml($exerciceId, $companyId)
+    public function generateXml($exerciceId, $companyId, string $regime = 'sn')
     {
         $exercice = ExerciceComptable::find($exerciceId);
-        $company = \App\Models\Company::find($companyId);
+        $company  = \App\Models\Company::find($companyId);
         if (!$exercice || !$company) throw new \Exception("Données manquantes.");
 
-        $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><EDI/>');
+        $xmlType = $regime === 'smt' ? 'RNI' : 'NO';
+
+        $xml  = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><EDI/>');
         $info = $xml->addChild('informations');
-        $info->addChild('type', 'NO'); 
+        $info->addChild('type', $xmlType);
         $info->addChild('ncc', $company->ncc ?? '0000000X');
         $info->addChild('exercice', $exercice->date_debut->format('Y'));
-        
-        $fixesNode = $xml->addChild('champsTableauxFixes');
-        $varsNode = $xml->addChild('champsTableauxVariables');
 
-        $mappings = LiasseMapping::all();
+        $fixesNode = $xml->addChild('champsTableauxFixes');
+        $varsNode  = $xml->addChild('champsTableauxVariables');
+
+        $mappings     = LiasseMapping::all();
         $pageDataCache = [];
 
         foreach ($mappings as $mapping) {
             $pageCode = $mapping->code_tableau;
             if (!isset($pageDataCache[$pageCode])) {
-                $pageDataCache[$pageCode] = $this->getPageData($exerciceId, $pageCode);
+                $pageDataCache[$pageCode] = $regime === 'smt'
+                    ? $this->getSmtPageData($exerciceId, $pageCode)
+                    : $this->getPageData($exerciceId, $pageCode);
             }
-            
-            $data = $pageDataCache[$pageCode];
-            $fieldCode = $mapping->code_champ_dgi;
-            $parts = explode('_', $fieldCode);
-            $shortCode = $parts[count($parts)-2] ?? null;
-            $colNum = $parts[count($parts)-1] ?? '1';
 
+            $data      = $pageDataCache[$pageCode];
+            $fieldCode = $mapping->code_champ_dgi;
+            $parts     = explode('_', $fieldCode);
+            $shortCode = $parts[count($parts)-2] ?? null;
+            $colNum    = $parts[count($parts)-1] ?? '1';
+
+            $value = '';
             if ($shortCode) {
                 $suffix = "";
-                if (in_array($mapping->code_tableau, ['ACTIF', 'PASSIF', 'RESULTAT', 'TFT'])) {
-                    if ($colNum == '1') $suffix = ($mapping->code_tableau === 'ACTIF') ? '_brut' : '';
-                    if ($colNum == '2') $suffix = ($mapping->code_tableau === 'ACTIF') ? '_amort' : '_N1';
-                    if ($colNum == '3') $suffix = ($mapping->code_tableau === 'ACTIF') ? '_net' : '';
+                if (in_array($mapping->code_tableau, ['ACTIF', 'PASSIF', 'RESULTAT', 'TFT', 'BILAN_ACTIF', 'BILAN_PASSIF'])) {
+                    if ($colNum == '1') $suffix = ($mapping->code_tableau === 'BILAN_ACTIF') ? '_brut' : '';
+                    if ($colNum == '2') $suffix = ($mapping->code_tableau === 'BILAN_ACTIF') ? '_amort' : '_N1';
+                    if ($colNum == '3') $suffix = ($mapping->code_tableau === 'BILAN_ACTIF') ? '_net' : '';
                     if ($colNum == '4') $suffix = '_N1';
                 }
                 $value = $data[$shortCode . $suffix] ?? $data[$shortCode] ?? "";
@@ -289,9 +295,100 @@ class LiasseFiscaleService
 
         $dom = new \DOMDocument("1.0");
         $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = true;
+        $dom->formatOutput       = true;
         $dom->loadXML($xml->asXML());
         return $dom->saveXML();
+    }
+
+
+    /**
+     * Calcul des données pour les pages SMT (Système Minimal de Trésorerie).
+     * Comptabilité de trésorerie simplifiée (recettes/dépenses). Type XML : RNI
+     */
+    public function getSmtPageData(int $exerciceId, string $pageCode): array
+    {
+        $exercice = ExerciceComptable::find($exerciceId);
+        if (!$exercice) return [];
+        $companyId  = $exercice->company_id;
+        $balancesN  = $this->getAccountBalances($exerciceId, $companyId);
+        $prevExercice = ExerciceComptable::where('company_id', $companyId)
+            ->where('date_fin', '<', $exercice->date_debut)->orderBy('date_fin', 'desc')->first();
+        $balancesN1 = $prevExercice ? $this->getAccountBalances($prevExercice->id, $companyId) : collect();
+
+        $net   = fn($r) => $this->calculateValueForRangeFast($r, $balancesN)['net'];
+        $netN1 = fn($r) => $prevExercice ? $this->calculateValueForRangeFast($r, $balancesN1)['net'] : 0;
+
+        // Identification (R1/R2/R3)
+        if (in_array($pageCode, ['SMT_FICHE_R1','SMT_FICHE_R2','SMT_FICHE_R3'])) {
+            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            return array_merge(['ZA1'=>$exercice->date_debut->format('d/m/Y'),'ZA2'=>$exercice->date_fin->format('d/m/Y'),'ZA3'=>12], $manual);
+        }
+
+        // Bilan SMT
+        if ($pageCode === 'SMT_BILAN') {
+            $immoData    = $this->calculateValueForRangeFast('2', $balancesN);
+            $immoBrut    = $immoData['brut'];
+            $immoAmort   = $immoData['amort'];
+            $immoNet     = $immoBrut - $immoAmort;
+            $stocks      = $net('3');
+            $creances    = $net('409,41,42,43,44,45,46,47,48');
+            $treso_actif = $net('52,53,57');
+            $totalActif  = $immoNet + $stocks + $creances + $treso_actif;
+            $capital     = $net('10'); $reserves = $net('11'); $report = $net('12');
+            $resultat    = $net('7') - $net('6');
+            $capitauxPropres = $capital + $reserves + $report + $resultat;
+            $dettes_fin  = $net('16'); $dettes_exp = $net('40'); $dettes_fisc = $net('42,43,44');
+            $totalPassif = $capitauxPropres + $dettes_fin + $dettes_exp + $dettes_fisc;
+            $totalActifN1  = $netN1('2') + $netN1('3') + $netN1('41') + $netN1('52,53,57');
+            $totalPassifN1 = $netN1('10') + $netN1('11') + $netN1('12') + ($netN1('7') - $netN1('6')) + $netN1('16') + $netN1('40');
+            return compact('immoBrut','immoAmort','immoNet','stocks','creances','treso_actif','totalActif','capital','reserves','report','resultat','capitauxPropres','dettes_fin','dettes_exp','dettes_fisc','totalPassif','totalActifN1','totalPassifN1');
+        }
+
+        // Compte de Résultat SMT
+        if ($pageCode === 'SMT_RESULTAT') {
+            $total_produits = $net('7'); $total_charges = $net('6');
+            $resultat_exercice = $total_produits - $total_charges;
+            $total_produits_N1 = $netN1('7'); $total_charges_N1 = $netN1('6');
+            $resultat_exercice_N1 = $total_produits_N1 - $total_charges_N1;
+            $produits_ventes=$net('70'); $produits_autres=$net('71,72,73,74,75,76,77');
+            $achats_marchand=$net('601,602'); $achats_services=$net('61,62');
+            $charges_personnel=$net('64,65,66'); $impots_taxes=$net('63');
+            $dotations=$net('68,69'); $autres_charges=$net('67');
+            return compact('produits_ventes','produits_autres','total_produits','achats_marchand','achats_services','charges_personnel','impots_taxes','dotations','autres_charges','total_charges','resultat_exercice','total_produits_N1','total_charges_N1','resultat_exercice_N1');
+        }
+
+        // État de Trésorerie SMT
+        if ($pageCode === 'SMT_TRESO') {
+            $encaissements_clients = $net('7');
+            $decaissements_fourn   = $net('601,602,61,62');
+            $decaissements_pers    = $net('64,65,66');
+            $decaissements_impots  = $net('63');
+            $decaissements_autres  = $net('67,68,69');
+            $total_decaissements   = $decaissements_fourn + $decaissements_pers + $decaissements_impots + $decaissements_autres;
+            $tresorerie_debut      = $netN1('52,53,57');
+            $tresorerie_fin        = $net('52,53,57');
+            $variation_treso       = $tresorerie_fin - $tresorerie_debut;
+            return compact('encaissements_clients','decaissements_fourn','decaissements_pers','decaissements_impots','decaissements_autres','total_decaissements','tresorerie_debut','variation_treso','tresorerie_fin');
+        }
+
+        // Passage Résultat Fiscal SMT
+        if ($pageCode === 'SMT_FISCAL') {
+            $resultat_comptable = $net('7') - $net('6');
+            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            $reintegrations = $manual['reintegrations'] ?? 0;
+            $deductions     = $manual['deductions'] ?? 0;
+            $resultat_fiscal = $resultat_comptable + $reintegrations - $deductions;
+            return array_merge(compact('resultat_comptable','reintegrations','deductions','resultat_fiscal'), $manual);
+        }
+
+        // Notes simplifiées SMT
+        if ($pageCode === 'SMT_NOTES') {
+            $immoData = $this->calculateValueForRangeFast('2', $balancesN);
+            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            return array_merge(['immobilisations_brut'=>$immoData['brut'],'amortissements'=>$immoData['amort'],'dettes_total'=>$net('16')+$net('40')+$net('42,43,44'),'effectif'=>0], $manual);
+        }
+
+        return [];
     }
 
     private function formatXmlValue($value)
