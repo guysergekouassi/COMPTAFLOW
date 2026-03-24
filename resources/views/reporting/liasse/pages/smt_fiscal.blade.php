@@ -2,6 +2,7 @@
 @php
     $fmt = fn($v) => number_format(floatval($v ?? 0), 0, ',', ' ');
 @endphp
+@if(!isset($isExcel))
 <style>
     .smt-badge { background:#d97706;color:#fff;font-size:0.6rem;border-radius:6px;padding:2px 7px;font-weight:700;vertical-align:middle; }
     .fiscal-section { background:linear-gradient(90deg,#fffbeb,#fef3c7);color:#92400e;font-weight:800;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em; }
@@ -12,7 +13,9 @@
     .liasse-input { width:100%;border:1.5px solid #e2e8f0;padding:6px 10px;text-align:right;border-radius:8px;transition:all 0.2s;font-weight:700;background:#fafafa; }
     .liasse-input:focus { background:white;border-color:#2563eb;outline:none;box-shadow:0 0 0 4px rgba(37,99,235,0.1); }
 </style>
+@endif
 
+@if(!isset($isExcel))
 <div class="mb-3 d-flex align-items-center gap-2">
     <i class="fa-solid fa-calculator" style="color:#d97706;font-size:1.3rem;"></i>
     <div>
@@ -25,6 +28,7 @@
     <i class="fa-solid fa-circle-info me-2"></i>
     <strong>Note :</strong> Le résultat comptable est calculé automatiquement depuis la balance. Saisissez les réintégrations et déductions fiscales manuellement.
 </div>
+@endif
 
 <table class="liasse-table">
     <thead>
@@ -50,17 +54,23 @@
         <tr>
             <td class="ref-code">RI1</td>
             <td>Amendes, pénalités, majorations fiscales</td>
-            <td><input type="number" class="liasse-input" name="ri_amendes" value="{{ $data['ri_amendes'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"></td>
+            <td>
+                @if(isset($isExcel)) {{ $fmt($data['ri_amendes'] ?? 0) }} @else <input type="number" class="liasse-input" name="ri_amendes" value="{{ $data['ri_amendes'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"> @endif
+            </td>
         </tr>
         <tr>
             <td class="ref-code">RI2</td>
             <td>Charges personnelles des dirigeants non admises</td>
-            <td><input type="number" class="liasse-input" name="ri_dirigeants" value="{{ $data['ri_dirigeants'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"></td>
+            <td>
+                @if(isset($isExcel)) {{ $fmt($data['ri_dirigeants'] ?? 0) }} @else <input type="number" class="liasse-input" name="ri_dirigeants" value="{{ $data['ri_dirigeants'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"> @endif
+            </td>
         </tr>
         <tr>
             <td class="ref-code">RI3</td>
             <td>Autres charges non déductibles</td>
-            <td><input type="number" class="liasse-input" name="ri_autres" value="{{ $data['ri_autres'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"></td>
+            <td>
+                @if(isset($isExcel)) {{ $fmt($data['ri_autres'] ?? 0) }} @else <input type="number" class="liasse-input" name="ri_autres" value="{{ $data['ri_autres'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"> @endif
+            </td>
         </tr>
         <tr class="fiscal-total">
             <td class="ref-code">XI1</td>
@@ -73,12 +83,16 @@
         <tr>
             <td class="ref-code">DE1</td>
             <td>Produits exonérés d'IS</td>
-            <td><input type="number" class="liasse-input" name="de_exoneres" value="{{ $data['de_exoneres'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"></td>
+            <td>
+                @if(isset($isExcel)) {{ $fmt($data['de_exoneres'] ?? 0) }} @else <input type="number" class="liasse-input" name="de_exoneres" value="{{ $data['de_exoneres'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"> @endif
+            </td>
         </tr>
         <tr>
             <td class="ref-code">DE2</td>
             <td>Autres déductions fiscales</td>
-            <td><input type="number" class="liasse-input" name="de_autres" value="{{ $data['de_autres'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"></td>
+            <td>
+                @if(isset($isExcel)) {{ $fmt($data['de_autres'] ?? 0) }} @else <input type="number" class="liasse-input" name="de_autres" value="{{ $data['de_autres'] ?? 0 }}" placeholder="0" onchange="updateFiscal()"> @endif
+            </td>
         </tr>
         <tr class="fiscal-total">
             <td class="ref-code">XI2</td>
@@ -95,6 +109,7 @@
     </tbody>
 </table>
 
+@if(!isset($isExcel))
 <div class="mt-3 d-flex gap-2">
     <button class="btn btn-primary rounded-pill px-4" onclick="savePageData()">
         <i class="fa-solid fa-floppy-disk me-2"></i>Enregistrer les ajustements fiscaux
@@ -116,3 +131,4 @@ function updateFiscal() {
     document.getElementById('resultat-fiscal').textContent = fmtNum(fiscal);
 }
 </script>
+@endif

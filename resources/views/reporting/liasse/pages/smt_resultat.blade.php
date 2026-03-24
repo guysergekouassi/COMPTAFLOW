@@ -3,6 +3,7 @@
     $fmt = fn($v) => number_format(floatval($v ?? 0), 0, ',', ' ');
     $val = fn($k) => floatval($data[$k] ?? 0);
 @endphp
+@if(!isset($isExcel))
 <style>
     .smt-badge { background:#d97706;color:#fff;font-size:0.6rem;border-radius:6px;padding:2px 7px;font-weight:700;vertical-align:middle; }
     .smt-section-header { background:linear-gradient(90deg,#fffbeb,#fef3c7);color:#92400e;font-weight:800;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em; }
@@ -11,7 +12,9 @@
     .ref-code { font-size:0.68rem;color:#94a3b8;font-weight:700;width:80px;text-align:center;font-family:monospace; }
     .num-right { text-align:right;font-variant-numeric:tabular-nums;font-weight:700; }
 </style>
+@endif
 
+@if(!isset($isExcel))
 <div class="mb-3 d-flex align-items-center gap-2">
     <i class="fa-solid fa-file-invoice-dollar" style="color:#d97706;font-size:1.3rem;"></i>
     <div>
@@ -19,6 +22,7 @@
         <small class="text-muted">Système Minimal de Trésorerie — Codes DGI e-SINTAX</small>
     </div>
 </div>
+@endif
 
 <table class="liasse-table">
     <thead>
@@ -133,7 +137,7 @@
     $res    = $ca - $charge;
     $margin = $ca > 0 ? round($res / $ca * 100, 1) : 0;
     $absMargin = abs($margin);
-@endphp
+@endphp@if(!isset($isExcel))
 <div class="row g-3 mt-3">
     <div class="col-4">
         <div class="p-3 rounded-3 border text-center" style="background:#f0fdf4;">
@@ -157,3 +161,4 @@
         </div>
     </div>
 </div>
+@endif

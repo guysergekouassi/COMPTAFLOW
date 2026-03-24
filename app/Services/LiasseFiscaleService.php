@@ -21,9 +21,6 @@ class LiasseFiscaleService
         $this->reportingService = $reportingService;
     }
 
-    /**
-     * Résumé des indicateurs clés (Total Actif, Passif, Résultat).
-     */
     public function getSummaryData($exerciceId, $companyId)
     {
         $balances = $this->getAccountBalances($exerciceId, $companyId);
@@ -75,7 +72,6 @@ class LiasseFiscaleService
             if ($matchPrefix) {
                 $totalDebit += $d;
                 $totalCredit += $c;
-                // Détails : compte de passif = Crédit-Débit, compte d'actif = Débit-Crédit
                 $firstDigit = substr(trim($range), 0, 1);
                 $solde = in_array($firstDigit, ['1', '4', '7']) ? ($c - $d) : ($d - $c);
                 if (abs($solde) > 0.01) {
@@ -104,14 +100,13 @@ class LiasseFiscaleService
                         $p28 = '28' . substr($cleanPrefix, 1);
                         $p29 = '29' . substr($cleanPrefix, 1);
                         if (str_starts_with($n, $p28) || str_starts_with($n, $p29)) {
-                            // Amortissements : Crédit - Débit
                             $amortMontant = $b->total_credit - $b->total_debit;
                             $amort += $amortMontant;
                             if (abs($amortMontant) > 0.01) {
                                 $details[] = [
                                     'numero' => $n,
                                     'intitule' => $b->intitule,
-                                    'solde' => -$amortMontant // Négatif car soustrait de l'Actif dans le détail
+                                    'solde' => -$amortMontant
                                 ];
                             }
                         }
@@ -132,13 +127,21 @@ class LiasseFiscaleService
 
     public function getPageData($exerciceId, $pageCode)
     {
+        // Si c'est un code SMT ou si le régime est SMT (via détection de code)
+        if (str_starts_with($pageCode, 'SMT_') || in_array($pageCode, ['BILAN_ACTIF', 'BILAN_PASSIF', 'RESULTAT', 'TFT', 'CHARGES'])) {
+             // Pour la liasse SMT, on redirige vers getSmtPageData si c'est un code SMT explicite
+             // Mais attention, getPageData est aussi utilisé par le SN.
+        }
+
         if ($pageCode === 'BALANCE') {
-            $companyId = ExerciceComptable::find($exerciceId)->company_id ?? 1;
+            $exercice = ExerciceComptable::find($exerciceId);
+            $companyId = $exercice->company_id ?? 1;
             return $this->reportingService->getBalanceData($exerciceId, $companyId);
         }
         
         if ($pageCode === 'GRAND_LIVRE') {
-            $companyId = ExerciceComptable::find($exerciceId)->company_id ?? 1;
+            $exercice = ExerciceComptable::find($exerciceId);
+            $companyId = $exercice->company_id ?? 1;
             return $this->reportingService->getLedgerData($exerciceId, $companyId);
         }
 
@@ -146,6 +149,11 @@ class LiasseFiscaleService
         if (!$exercice) return [];
 
         $companyId = $exercice->company_id;
+        
+        // Redirection vers SMT si le code est préfixé SMT_
+        if (str_starts_with($pageCode, 'SMT_')) {
+            return $this->getSmtPageData($exerciceId, $pageCode);
+        }
 
         $prevExercice = ExerciceComptable::where('company_id', $companyId)
             ->where('date_fin', '<', $exercice->date_debut)
@@ -166,7 +174,6 @@ class LiasseFiscaleService
 
         $balancesN = $this->getAccountBalances($exerciceId, $companyId);
         $balancesN1 = $prevExercice ? $this->getAccountBalances($prevExercice->id, $companyId) : [];
-
         $result = [];
 
         foreach ($mappings as $mapping) {
@@ -193,7 +200,6 @@ class LiasseFiscaleService
             }
         }
 
-        // Pour TFT et Résultat, si on veut utiliser reportingService au lieu de mapping
         if ($pageCode === 'TFT') {
             $result['detailed_tft'] = $this->reportingService->getTFTData($exerciceId, $companyId, null, true);
         }
@@ -210,29 +216,251 @@ class LiasseFiscaleService
         return array_merge($result, $manualData);
     }
 
-    /**
-     * Enregistre les données manuelles.
-     */
-    public function saveManualData($exerciceId, $companyId, $pageCode, $data)
+    public function getSmtPageData(int $exerciceId, string $pageCode): array
     {
-        foreach ($data as $fieldCode => $value) {
-            LiasseData::updateOrCreate(
-                [
-                    'company_id' => $companyId,
-                    'exercice_id' => $exerciceId,
-                    'page_code' => $pageCode,
-                    'field_code' => $fieldCode,
-                ],
-                ['value' => $value]
-            );
+        $exercice = ExerciceComptable::find($exerciceId);
+        if (!$exercice) return [];
+        $companyId  = $exercice->company_id;
+        $balancesN  = $this->getAccountBalances($exerciceId, $companyId);
+        $prevExercice = ExerciceComptable::where('company_id', $companyId)
+            ->where('date_fin', '<', $exercice->date_debut)->orderBy('date_fin', 'desc')->first();
+        $balancesN1 = $prevExercice ? $this->getAccountBalances($prevExercice->id, $companyId) : collect();
+
+        $net   = fn($r) => $this->calculateValueForRangeFast($r, $balancesN)['net'];
+        $netN1 = fn($r) => $prevExercice ? $this->calculateValueForRangeFast($r, $balancesN1)['net'] : 0;
+
+        // Alias pour le mapping XML (compatibilité avec la table liasse_mappings)
+        $xmlAliases = [
+            'BILAN_ACTIF'  => 'SMT_ACTIF',
+            'BILAN_PASSIF' => 'SMT_PASSIF',
+            'RESULTAT'     => 'SMT_RESULTAT',
+            'CHARGES'      => 'SMT_RESULTAT',
+            'NOTE1A'       => 'SMT_NOTES',
+            'NOTE1B'       => 'SMT_NOTES',
+            'NOTE6'        => 'SMT_NOTES',
+            'FR1'          => 'SMT_FICHE_IDENT',
+            'FR2A'         => 'SMT_FICHE_IDENT',
+            'FR2B'         => 'SMT_FICHE_IDENT',
+            'FR2D'         => 'SMT_FICHE_IDENT',
+        ];
+        if (isset($xmlAliases[$pageCode])) {
+            $pageCode = $xmlAliases[$pageCode];
         }
-        return true;
+
+        // 1. SMT_FICHE_IDENT — Fusion R1 + R2 + R2D (Identification et Activités)
+        if ($pageCode === 'SMT_FICHE_IDENT') {
+            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            return array_merge([
+                'ZA1' => $exercice->date_debut->format('d/m/Y'),
+                'ZA2' => $exercice->date_fin->format('d/m/Y'),
+                'ZA3' => 12,
+                'ZB'  => $exercice->date_fin->format('d/m/Y'),
+                'ZC'  => $prevExercice ? $prevExercice->date_fin->format('d/m/Y') : '',
+                'CA'  => $net('70'),
+            ], $manual);
+        }
+
+        // 2. SMT_ACTIF — Bilan Actif (GB, GD, GF, GZ)
+        if ($pageCode === 'SMT_ACTIF') {
+            $immoData    = $this->calculateValueForRangeFast('2', $balancesN);
+            $immoBrut    = $immoData['brut'];
+            $immoAmort   = $immoData['amort'];
+            $immoNet     = $immoBrut - $immoAmort;
+            $stocks      = $net('3');
+            $creances    = $net('409,41,42,43,44,45,46,47,48');
+            $treso_actif = $net('52,53,57');
+            $totalActif  = $immoNet + $stocks + $creances + $treso_actif;
+            $totalActifN1 = $prevExercice ? ($netN1('2') + $netN1('3') + $netN1('41') + $netN1('52,53,57')) : 0;
+            return compact('immoBrut','immoAmort','immoNet','stocks','creances','treso_actif','totalActif','totalActifN1');
+        }
+
+        // 3. SMT_PASSIF — Bilan Passif (HA, HB, HD, HZ)
+        if ($pageCode === 'SMT_PASSIF') {
+            $capital     = $net('10');
+            $reserves    = $net('11');
+            $report      = $net('12');
+            $resultat    = $net('7') - $net('6');
+            $capitauxPropres = $capital + $reserves + $report + $resultat;
+            $dettes_fin  = $net('16');
+            $dettes_exp  = $net('40');
+            $dettes_fisc = $net('42,43,44');
+            $totalPassif = $capitauxPropres + $dettes_fin + $dettes_exp + $dettes_fisc;
+            $totalPassifN1 = $prevExercice ? ($netN1('10') + $netN1('11') + $netN1('12') + ($netN1('7')-$netN1('6')) + $netN1('16') + $netN1('40')) : 0;
+            return compact('capital','reserves','report','resultat','capitauxPropres','dettes_fin','dettes_exp','dettes_fisc','totalPassif','totalPassifN1');
+        }
+
+        // 4. SMT_RESULTAT — Compte de Résultat (KA→KZ)
+        if ($pageCode === 'SMT_RESULTAT') {
+            $total_produits  = $net('7');
+            $total_charges   = $net('6');
+            return [
+                'CA'              => $net('70'),
+                'total_produits'  => $total_produits,
+                'achats'          => $net('601,602,603'),
+                'services_ext'    => $net('61,62'),
+                'charges_pers'    => $net('64,65,66'),
+                'impots_taxes'    => $net('63'),
+                'autres_charges'  => $net('67,68,69'),
+                'total_charges'   => $total_charges,
+                'resultat_net'    => $total_produits - $total_charges,
+                'total_produits_N1' => $netN1('7'),
+                'total_charges_N1'  => $netN1('6'),
+            ];
+        }
+
+        // 5. SMT_TRESO_ENC — Trésorerie (Encaissements)
+        if ($pageCode === 'SMT_TRESO_ENC') {
+            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            return array_merge(['enc_ventes' => $net('70'), 'enc_divers' => $net('71,72,75,76')], $manual);
+        }
+
+        // 6. SMT_TRESO_DEC — Trésorerie (Décaissements)
+        if ($pageCode === 'SMT_TRESO_DEC') {
+            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            return array_merge([
+                'dec_achats' => $net('601,602'),
+                'dec_services' => $net('61,62'),
+                'dec_pers' => $net('64,65,66'),
+                'dec_impots' => $net('63'),
+            ], $manual);
+        }
+
+        // 7. SMT_NOTES — Notes Annexes Consolidées
+        if ($pageCode === 'SMT_NOTES') {
+            $immoData = $this->calculateValueForRangeFast('2', $balancesN);
+            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            return array_merge([
+                'immoBrut'     => $immoData['brut'],
+                'immoAmort'    => $immoData['amort'],
+                'charges_pers' => $net('64,65,66'),
+            ], $manual);
+        }
+
+        // 8. SMT_FISCAL — Passage au Résultat Fiscal
+        if ($pageCode === 'SMT_FISCAL') {
+            $resultat_comptable = $net('7') - $net('6');
+            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            return array_merge(compact('resultat_comptable'), $manual);
+        }
+
+        return [];
     }
 
-    /**
-     * Génère le fichier XML au format e-SINTAX.
-     * @param string $regime 'sn' → type NO, 'smt' → type MT
-     */
+    public function formatXmlValue($value)
+    {
+        if (is_numeric($value)) return (string)round((float)$value);
+        return (string)$value;
+    }
+
+    public function generatePdf($exerciceId, $companyId, $pageCode = null, $allPages = [])
+    {
+        $exercice = ExerciceComptable::find($exerciceId);
+        $company = \App\Models\Company::find($companyId);
+        View::share('isExport', true);
+        View::share('isPdf', true);
+
+        $pagesToRender = [];
+        if ($pageCode) {
+            $data = $this->getPageData($exerciceId, $pageCode);
+            $viewName = 'reporting.liasse.pages.' . strtolower($pageCode);
+            $html = View::exists($viewName) ? view($viewName, compact('data', 'company', 'exercice'))->render() : "Contenu indisponible.";
+            $pagesToRender[] = ['title' => $pageCode, 'html' => $html];
+        } else {
+            foreach($allPages as $p) {
+                if (in_array($p['code'], ['BALANCE', 'GRAND_LIVRE'])) continue;
+                $data = $this->getPageData($exerciceId, $p['code']);
+                $viewName = 'reporting.liasse.pages.' . strtolower($p['code']);
+                if (View::exists($viewName)) {
+                    $pagesToRender[] = ['title' => $p['title'], 'html' => view($viewName, compact('data', 'company', 'exercice'))->render()];
+                }
+            }
+        }
+
+        $pdf = Pdf::loadView('reporting.liasse.pdf_layout', [
+            'pages' => $pagesToRender,
+            'company' => $company,
+            'exercice' => $exercice,
+            'title' => count($pagesToRender) === 1 ? $pagesToRender[0]['title'] : "Liasse Fiscale Complète"
+        ]);
+        
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
+        return $pdf->output();
+    }
+
+    public function generateExcel($exerciceId, $companyId, $pageCode = null, $allPages = [])
+    {
+        $filename = ($pageCode ?: 'liasse_fiscale_complete') . "_" . date('Ymd') . ".xlsx";
+        $exercice = ExerciceComptable::find($exerciceId);
+        $company = \App\Models\Company::find($companyId);
+
+        // Export mono-feuille si un code de page est spécifié
+        if ($pageCode) {
+            $data = $this->getPageData($exerciceId, $pageCode);
+            $view = 'reporting.liasse.pages.' . strtolower($pageCode);
+            
+            return Excel::download(new class($data, $view, $company, $exercice) implements \Maatwebsite\Excel\Concerns\FromView {
+                private $data; private $view; private $company; private $exercice;
+                public function __construct($data, $view, $company, $exercice) { 
+                    $this->data = $data; $this->view = $view; 
+                    $this->company = $company; $this->exercice = $exercice;
+                }
+                public function view(): \Illuminate\Contracts\View\View { 
+                    try {
+                        $html = view($this->view, [
+                            'data' => $this->data, 
+                            'company' => $this->company, 
+                            'exercice' => $this->exercice, 
+                            'isExcel' => true
+                        ])->render();
+                        $clean = preg_replace('/>\s+</', '><', str_replace(["\r", "\n"], '', trim($html)));
+                        $safe = mb_convert_encoding($clean, 'HTML-ENTITIES', 'UTF-8');
+                        file_put_contents(storage_path('logs/excel_render.log'), "Mono Sheet: " . $this->view . " (Length: " . strlen($safe) . ")\n", FILE_APPEND);
+                        return view('reporting.liasse.utils.raw_html', ['html' => $safe]);
+                    } catch (\Throwable $e) {
+                        file_put_contents(storage_path('logs/excel_render.log'), "ERROR Mono " . $this->view . ": " . $e->getMessage() . "\n", FILE_APPEND);
+                        throw $e;
+                    }
+                }
+            }, $filename);
+        }
+
+        // Export complet multi-feuilles
+        return Excel::download(new class($allPages, $exercice, $company, $this) implements \Maatwebsite\Excel\Concerns\WithMultipleSheets {
+            private $pages; private $exercice; private $company; private $service;
+            public function __construct($pages, $exercice, $company, $service) { 
+                $this->pages = $pages; $this->exercice = $exercice; 
+                $this->company = $company; $this->service = $service;
+            }
+            public function sheets(): array {
+                $sheets = [];
+                foreach ($this->pages as $p) {
+                    if (in_array($p['code'], ['BALANCE', 'GRAND_LIVRE'])) continue;
+                    $sheets[] = new class($this->service->getPageData($this->exercice->id, $p['code']), 'reporting.liasse.pages.' . strtolower($p['code']), $p['title'], $this->company, $this->exercice) implements \Maatwebsite\Excel\Concerns\FromView, \Maatwebsite\Excel\Concerns\WithTitle {
+                        private $data; private $view; private $title; private $company; private $exercice;
+                        public function __construct($data, $view, $title, $company, $exercice) { 
+                            $this->data = $data; $this->view = $view; $this->title = $title;
+                            $this->company = $company; $this->exercice = $exercice;
+                        }
+                        public function view(): \Illuminate\Contracts\View\View { 
+                            try {
+                                $html = view($this->view, ['data' => $this->data, 'company' => $this->company, 'exercice' => $this->exercice, 'isExcel' => true])->render();
+                                $clean = preg_replace('/>\s+</', '><', str_replace(["\r", "\n"], '', trim($html)));
+                                $safe = mb_convert_encoding($clean, 'HTML-ENTITIES', 'UTF-8');
+                                file_put_contents(storage_path('logs/excel_render.log'), "Multi Sheet: " . $this->view . " (Length: " . strlen($safe) . ")\n", FILE_APPEND);
+                                return view('reporting.liasse.utils.raw_html', ['html' => $safe]);
+                            } catch (\Throwable $e) {
+                                file_put_contents(storage_path('logs/excel_render.log'), "ERROR Multi " . $this->view . ": " . $e->getMessage() . "\n", FILE_APPEND);
+                                throw $e;
+                            }
+                        }
+                        public function title(): string { return substr($this->title, 0, 31); }
+                    };
+                }
+                return $sheets;
+            }
+        }, $filename);
+    }
     public function generateXml($exerciceId, $companyId, string $regime = 'sn')
     {
         $exercice = ExerciceComptable::find($exerciceId);
@@ -250,13 +478,13 @@ class LiasseFiscaleService
         $fixesNode = $xml->addChild('champsTableauxFixes');
         $varsNode  = $xml->addChild('champsTableauxVariables');
 
-        $mappings     = LiasseMapping::all();
+        $mappings      = LiasseMapping::all();
         $pageDataCache = [];
 
         foreach ($mappings as $mapping) {
             $pageCode = $mapping->code_tableau;
             if (!isset($pageDataCache[$pageCode])) {
-                $pageDataCache[$pageCode] = $regime === 'smt'
+                $pageDataCache[$pageCode] = $regime === 'smt' 
                     ? $this->getSmtPageData($exerciceId, $pageCode)
                     : $this->getPageData($exerciceId, $pageCode);
             }
@@ -298,184 +526,5 @@ class LiasseFiscaleService
         $dom->formatOutput       = true;
         $dom->loadXML($xml->asXML());
         return $dom->saveXML();
-    }
-
-
-    /**
-     * Calcul des données pour les pages SMT (Système Minimal de Trésorerie).
-     * Comptabilité de trésorerie simplifiée (recettes/dépenses). Type XML : MT
-     */
-    public function getSmtPageData(int $exerciceId, string $pageCode): array
-    {
-        $exercice = ExerciceComptable::find($exerciceId);
-        if (!$exercice) return [];
-        $companyId  = $exercice->company_id;
-        $balancesN  = $this->getAccountBalances($exerciceId, $companyId);
-        $prevExercice = ExerciceComptable::where('company_id', $companyId)
-            ->where('date_fin', '<', $exercice->date_debut)->orderBy('date_fin', 'desc')->first();
-        $balancesN1 = $prevExercice ? $this->getAccountBalances($prevExercice->id, $companyId) : collect();
-
-        $net   = fn($r) => $this->calculateValueForRangeFast($r, $balancesN)['net'];
-        $netN1 = fn($r) => $prevExercice ? $this->calculateValueForRangeFast($r, $balancesN1)['net'] : 0;
-
-        // Identification (R1/R2/R3)
-        if (in_array($pageCode, ['SMT_FICHE_R1','SMT_FICHE_R2','SMT_FICHE_R3'])) {
-            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
-            return array_merge(['ZA1'=>$exercice->date_debut->format('d/m/Y'),'ZA2'=>$exercice->date_fin->format('d/m/Y'),'ZA3'=>12], $manual);
-        }
-
-        // Bilan SMT — codes réels DGI : MT_ACTIF_GB/GD/GF/GZ et MT_PASSIF_HA/HB/HD/HZ
-        if ($pageCode === 'SMT_BILAN') {
-            $immoData    = $this->calculateValueForRangeFast('2', $balancesN);
-            $immoBrut    = $immoData['brut'];
-            $immoAmort   = $immoData['amort'];
-            $immoNet     = $immoBrut - $immoAmort;  // GB (brut immobilisé)
-            $stocks      = $net('3');               // GD (stocks)
-            $creances    = $net('409,41,42,43,44,45,46,47,48'); // GF (créances)
-            $treso_actif = $net('52,53,57');        // trésorerie
-            // GZ = total général actif (colonnes 1=N, 2=N-1)
-            $totalActif  = $immoNet + $stocks + $creances + $treso_actif;
-            // PASSIF
-            $capital     = $net('10'); // HA = capital + réserves + report
-            $reserves    = $net('11');
-            $report      = $net('12');
-            $resultat    = $net('7') - $net('6'); // HB = résultat net
-            $capitauxPropres = $capital + $reserves + $report + $resultat;
-            $dettes_fin  = $net('16'); // HD = dettes
-            $dettes_exp  = $net('40');
-            $dettes_fisc = $net('42,43,44');
-            // HZ = total général passif
-            $totalPassif = $capitauxPropres + $dettes_fin + $dettes_exp + $dettes_fisc;
-            // N-1
-            $immoDataN1   = $prevExercice ? $this->calculateValueForRangeFast('2', $balancesN1) : ['brut'=>0,'amort'=>0,'net'=>0];
-            $totalActifN1  = ($immoDataN1['brut'] - $immoDataN1['amort']) + $netN1('3') + $netN1('41') + $netN1('52,53,57');
-            $totalPassifN1 = $netN1('10') + $netN1('11') + $netN1('12') + ($netN1('7') - $netN1('6')) + $netN1('16') + $netN1('40');
-            return compact('immoBrut','immoAmort','immoNet','stocks','creances','treso_actif','totalActif','capital','reserves','report','resultat','capitauxPropres','dettes_fin','dettes_exp','dettes_fisc','totalPassif','totalActifN1','totalPassifN1');
-        }
-
-        // Compte de Résultat SMT — codes réels DGI :
-        // KA=CA, KX=total produits, JA=achats, JB=services, JC=charges pers., JD=impôts
-        // JF=autres charges, JX=total charges, KZ=résultat net, KZC=résultat après IS
-        if ($pageCode === 'SMT_RESULTAT') {
-            $CA              = $net('70');            // KA
-            $autres_produits = $net('71,72,73,74,75,76,77');
-            $total_produits  = $net('7');             // KX
-            $achats          = $net('601,602,603');   // JA
-            $services_ext    = $net('61,62');         // JB (transports, loyers, etc.)
-            $charges_pers    = $net('64,65,66');      // JC
-            $impots_taxes    = $net('63');            // JD
-            $autres_charges  = $net('67,68,69');      // JF
-            $total_charges   = $net('6');             // JX
-            $resultat_net    = $total_produits - $total_charges; // KZ
-            $variation_stocks= $net('603,6031');      // VA (variation stocks)
-            $resultat_fiscal = $resultat_net;         // KZC (simplifié, avant ajustement manuel)
-            // N-1
-            $total_produits_N1    = $netN1('7');
-            $total_charges_N1     = $netN1('6');
-            $resultat_exercice_N1 = $total_produits_N1 - $total_charges_N1;
-            return compact(
-                'CA','autres_produits','total_produits',
-                'achats','services_ext','charges_pers','impots_taxes','autres_charges',
-                'total_charges','resultat_net','variation_stocks','resultat_fiscal',
-                'total_produits_N1','total_charges_N1','resultat_exercice_N1'
-            );
-        }
-
-        // État de Trésorerie SMT
-        if ($pageCode === 'SMT_TRESO') {
-            $encaissements_clients = $net('7');
-            $decaissements_fourn   = $net('601,602,61,62');
-            $decaissements_pers    = $net('64,65,66');
-            $decaissements_impots  = $net('63');
-            $decaissements_autres  = $net('67,68,69');
-            $total_decaissements   = $decaissements_fourn + $decaissements_pers + $decaissements_impots + $decaissements_autres;
-            $tresorerie_debut      = $netN1('52,53,57');
-            $tresorerie_fin        = $net('52,53,57');
-            $variation_treso       = $tresorerie_fin - $tresorerie_debut;
-            return compact('encaissements_clients','decaissements_fourn','decaissements_pers','decaissements_impots','decaissements_autres','total_decaissements','tresorerie_debut','variation_treso','tresorerie_fin');
-        }
-
-        // Passage Résultat Fiscal SMT
-        if ($pageCode === 'SMT_FISCAL') {
-            $resultat_comptable = $net('7') - $net('6');
-            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
-            $reintegrations = $manual['reintegrations'] ?? 0;
-            $deductions     = $manual['deductions'] ?? 0;
-            $resultat_fiscal = $resultat_comptable + $reintegrations - $deductions;
-            return array_merge(compact('resultat_comptable','reintegrations','deductions','resultat_fiscal'), $manual);
-        }
-
-        // Notes simplifiées SMT
-        if ($pageCode === 'SMT_NOTES') {
-            $immoData = $this->calculateValueForRangeFast('2', $balancesN);
-            $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
-            return array_merge(['immobilisations_brut'=>$immoData['brut'],'amortissements'=>$immoData['amort'],'dettes_total'=>$net('16')+$net('40')+$net('42,43,44'),'effectif'=>0], $manual);
-        }
-
-        return [];
-    }
-
-    private function formatXmlValue($value)
-    {
-        if (is_numeric($value)) return (string)round((float)$value);
-        return (string)$value;
-    }
-
-    /**
-     * Génère un PDF.
-     */
-    public function generatePdf($exerciceId, $companyId, $pageCode = null, $allPages = [])
-    {
-        $exercice = ExerciceComptable::find($exerciceId);
-        $company = \App\Models\Company::find($companyId);
-        
-        View::share('isExport', true);
-        View::share('isPdf', true);
-
-        $pagesToRender = [];
-        if ($pageCode) {
-            $data = $this->getPageData($exerciceId, $pageCode);
-            $viewName = 'reporting.liasse.pages.' . strtolower($pageCode);
-            $html = View::exists($viewName) ? view($viewName, compact('data'))->render() : "Contenu indisponible.";
-            $pagesToRender[] = ['title' => $pageCode, 'html' => $html];
-        } else {
-            foreach($allPages as $p) {
-                if (in_array($p['code'], ['BALANCE', 'GRAND_LIVRE'])) continue;
-                $data = $this->getPageData($exerciceId, $p['code']);
-                $viewName = 'reporting.liasse.pages.' . strtolower($p['code']);
-                if (View::exists($viewName)) {
-                    $pagesToRender[] = ['title' => $p['title'], 'html' => view($viewName, compact('data'))->render()];
-                }
-            }
-        }
-
-        $pdf = Pdf::loadView('reporting.liasse.pdf_layout', [
-            'pages' => $pagesToRender,
-            'company' => $company,
-            'exercice' => $exercice,
-            'title' => count($pagesToRender) === 1 ? $pagesToRender[0]['title'] : "Liasse Fiscale Complète"
-        ]);
-        
-        $pdf->setPaper('a4', 'portrait');
-        $pdf->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
-        return $pdf->output();
-    }
-
-    /**
-     * Génère un Excel.
-     */
-    public function generateExcel($exerciceId, $companyId, $pageCode = null, $allPages = [])
-    {
-        $filename = ($pageCode ?: 'liasse_fiscale_complete') . "_" . date('Ymd') . ".xlsx";
-        if ($pageCode) {
-            $data = $this->getPageData($exerciceId, $pageCode);
-            return Excel::download(new class($data, 'reporting.liasse.pages.' . strtolower($pageCode)) implements \Maatwebsite\Excel\Concerns\FromView {
-                private $data; private $view;
-                public function __construct($data, $view) { $this->data = $data; $this->view = $view; }
-                public function view(): \Illuminate\Contracts\View\View { return view($this->view, ['data' => $this->data, 'isExcel' => true]); }
-            }, $filename);
-        }
-        // ... (Logique multi-sheets identique ...)
-        return response()->json(['message' => 'Export complet non implémenté pour cet exemple.']);
     }
 }

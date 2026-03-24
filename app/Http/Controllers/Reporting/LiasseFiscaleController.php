@@ -58,19 +58,21 @@ class LiasseFiscaleController extends Controller
     ];
 
     /**
-     * Pages du Système Minimal de Trésorerie (SMT) — 8 pages simplifiées
-     * CA ≤ 50 M FCFA — comptabilité de trésorerie (recettes/dépenses)
-     * Type XML : RNI
+     * Pages du Système Minimal de Trésorerie (SMT) — 14 pages conformes DGI-liasse-MT
+     * CA ≤ 50 M FCFA — type XML : MT
+     * Structure basée sur les vrais fichiers MT exportés de e-impôts.ci
      */
     private $pagesSmt = [
-        1 => ['code' => 'SMT_FICHE_R1',     'title' => 'FICHE R1 : IDENTIFICATION'],
-        2 => ['code' => 'SMT_FICHE_R2',     'title' => 'FICHE R2 : ACTIVITES'],
-        3 => ['code' => 'SMT_FICHE_R3',     'title' => 'FICHE R3 : DIRIGEANTS'],
-        4 => ['code' => 'SMT_BILAN',        'title' => 'BILAN (SIMPLIFIÉ)'],
-        5 => ['code' => 'SMT_RESULTAT',     'title' => 'COMPTE DE RÉSULTAT (SMT)'],
-        6 => ['code' => 'SMT_TRESO',        'title' => 'ÉTAT DE TRÉSORERIE'],
-        7 => ['code' => 'SMT_FISCAL',       'title' => 'PASSAGE RÉSULTAT FISCAL'],
-        8 => ['code' => 'SMT_NOTES',        'title' => 'NOTES ANNEXES SIMPLIFIÉES'],
+        1 => ['code' => 'BALANCE',          'title' => 'BALANCE'],
+        2 => ['code' => 'GRAND_LIVRE',      'title' => 'GRAND LIVRE'],
+        3 => ['code' => 'SMT_FICHE_IDENT',  'title' => '1. Fiche d\'Identification'],
+        4 => ['code' => 'SMT_ACTIF',        'title' => '2. Bilan - Actif'],
+        5 => ['code' => 'SMT_PASSIF',       'title' => '3. Bilan - Passif'],
+        6 => ['code' => 'SMT_RESULTAT',     'title' => '4. Compte de Résultat'],
+        7 => ['code' => 'SMT_TRESO_ENC',    'title' => '5. Trésorerie - Encaissements'],
+        8 => ['code' => 'SMT_TRESO_DEC',    'title' => '6. Trésorerie - Décaissements'],
+        9 => ['code' => 'SMT_NOTES',        'title' => '7. Notes Annexes'],
+        10 => ['code' => 'SMT_FISCAL',      'title' => '8. Passage au Résultat Fiscal'],
     ];
 
     /**
@@ -119,14 +121,13 @@ class LiasseFiscaleController extends Controller
 
         if (!$exerciceId) return response()->json(['error' => 'Aucun exercice trouvé'], 404);
 
-        // Collect data for the page
-        if ($regime === 'smt') {
-            $data = $service->getSmtPageData($exerciceId, $pageInfo['code']);
-        } else {
-            $data = $service->getPageData($exerciceId, $pageInfo['code']);
-        }
+        $exercice = ExerciceComptable::find($exerciceId);
+        $company  = \App\Models\Company::find($companyId);
 
-        // Build view name: SMT pages live under pages/ too (smt_bilan, smt_resultat …)
+        // Universal data fetching through getPageData (which delegates to SMT if needed)
+        $data = $service->getPageData($exerciceId, $pageInfo['code']);
+
+        // Build view name
         $viewSlug = strtolower($pageInfo['code']);
         $viewName = 'reporting.liasse.pages.' . $viewSlug;
 
@@ -136,7 +137,8 @@ class LiasseFiscaleController extends Controller
                 'code'  => $pageInfo['code'],
             ])->render();
         } else {
-            $html = view($viewName, compact('data'))->render();
+            // Pass all necessary objects to the view
+            $html = view($viewName, compact('data', 'company', 'exercice'))->render();
         }
 
         $summary = $service->getSummaryData($exerciceId, $companyId);
