@@ -324,7 +324,7 @@
                                         <li><a class="dropdown-item py-3 rounded-3" href="{{ route('reporting.liasse.export', ['regime'=>$regime,'format'=>'pdf']) }}"><div class="d-flex align-items-center"><i class="bx bxs-file-pdf text-danger me-3 fs-3"></i><div><div class="fw-700">Document PDF</div><small class="text-muted">Prêt pour impression</small></div></div></a></li>
                                         <li><a class="dropdown-item py-3 rounded-3" href="{{ route('reporting.liasse.export', ['regime'=>$regime,'format'=>'excel']) }}"><div class="d-flex align-items-center"><i class="bx bxs-spreadsheet text-success me-3 fs-3"></i><div><div class="fw-700">Fichier Excel</div><small class="text-muted">Analyse et retraitement</small></div></div></a></li>
                                         <li><hr class="dropdown-divider opacity-50"></li>
-                                        <li><a class="dropdown-item py-3 rounded-3" style="background: rgba(255, 171, 0, 0.1);" href="{{ route('reporting.liasse.export', ['regime'=>$regime,'format'=>'xml']) }}"><div class="d-flex align-items-center"><i class="bx bx-code-alt text-warning me-3 fs-3"></i><div><div class="fw-700 text-warning">Flux XML EDI</div><small class="text-muted">Télétransmission DGI — type {{ $regime === 'smt' ? 'RNI' : 'NO' }}</small></div></div></a></li>
+                                        <li><a class="dropdown-item py-3 rounded-3" style="background: rgba(255, 171, 0, 0.1);" href="{{ route('reporting.liasse.export', ['regime'=>$regime,'format'=>'xml']) }}"><div class="d-flex align-items-center"><i class="bx bx-code-alt text-warning me-3 fs-3"></i><div><div class="fw-700 text-warning">Flux XML EDI</div><small class="text-muted">Télétransmission DGI — type {{ $regime === 'smt' ? 'MT' : 'NO' }}</small></div></div></a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -339,7 +339,7 @@
                                 <div class="d-flex gap-2">
                                     <button class="btn-export btn-pdf" onclick="exportPage('pdf')"><i class="bx bxs-file-pdf"></i> PDF</button>
                                     <button class="btn-export btn-excel" onclick="exportPage('excel')"><i class="bx bxs-spreadsheet"></i> Excel</button>
-                                    <button class="btn-export btn-xml" onclick="exportPage('xml')"><i class="bx bx-code-alt"></i> XML {{ $regime === 'smt' ? 'RNI' : 'NO' }}</button>
+                                    <button class="btn-export btn-xml" onclick="exportPage('xml')"><i class="bx bx-code-alt"></i> XML {{ $regime === 'smt' ? 'MT' : 'NO' }}</button>
                                 </div>
                             </div>
 

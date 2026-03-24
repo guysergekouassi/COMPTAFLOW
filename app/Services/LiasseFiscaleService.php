@@ -231,7 +231,7 @@ class LiasseFiscaleService
 
     /**
      * Génère le fichier XML au format e-SINTAX.
-     * @param string $regime 'sn' → type NO, 'smt' → type RNI
+     * @param string $regime 'sn' → type NO, 'smt' → type MT
      */
     public function generateXml($exerciceId, $companyId, string $regime = 'sn')
     {
@@ -239,7 +239,7 @@ class LiasseFiscaleService
         $company  = \App\Models\Company::find($companyId);
         if (!$exercice || !$company) throw new \Exception("Données manquantes.");
 
-        $xmlType = $regime === 'smt' ? 'RNI' : 'NO';
+        $xmlType = $regime === 'smt' ? 'MT' : 'NO';
 
         $xml  = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><EDI/>');
         $info = $xml->addChild('informations');
@@ -303,7 +303,7 @@ class LiasseFiscaleService
 
     /**
      * Calcul des données pour les pages SMT (Système Minimal de Trésorerie).
-     * Comptabilité de trésorerie simplifiée (recettes/dépenses). Type XML : RNI
+     * Comptabilité de trésorerie simplifiée (recettes/dépenses). Type XML : MT
      */
     public function getSmtPageData(int $exerciceId, string $pageCode): array
     {
@@ -324,37 +324,61 @@ class LiasseFiscaleService
             return array_merge(['ZA1'=>$exercice->date_debut->format('d/m/Y'),'ZA2'=>$exercice->date_fin->format('d/m/Y'),'ZA3'=>12], $manual);
         }
 
-        // Bilan SMT
+        // Bilan SMT — codes réels DGI : MT_ACTIF_GB/GD/GF/GZ et MT_PASSIF_HA/HB/HD/HZ
         if ($pageCode === 'SMT_BILAN') {
             $immoData    = $this->calculateValueForRangeFast('2', $balancesN);
             $immoBrut    = $immoData['brut'];
             $immoAmort   = $immoData['amort'];
-            $immoNet     = $immoBrut - $immoAmort;
-            $stocks      = $net('3');
-            $creances    = $net('409,41,42,43,44,45,46,47,48');
-            $treso_actif = $net('52,53,57');
+            $immoNet     = $immoBrut - $immoAmort;  // GB (brut immobilisé)
+            $stocks      = $net('3');               // GD (stocks)
+            $creances    = $net('409,41,42,43,44,45,46,47,48'); // GF (créances)
+            $treso_actif = $net('52,53,57');        // trésorerie
+            // GZ = total général actif (colonnes 1=N, 2=N-1)
             $totalActif  = $immoNet + $stocks + $creances + $treso_actif;
-            $capital     = $net('10'); $reserves = $net('11'); $report = $net('12');
-            $resultat    = $net('7') - $net('6');
+            // PASSIF
+            $capital     = $net('10'); // HA = capital + réserves + report
+            $reserves    = $net('11');
+            $report      = $net('12');
+            $resultat    = $net('7') - $net('6'); // HB = résultat net
             $capitauxPropres = $capital + $reserves + $report + $resultat;
-            $dettes_fin  = $net('16'); $dettes_exp = $net('40'); $dettes_fisc = $net('42,43,44');
+            $dettes_fin  = $net('16'); // HD = dettes
+            $dettes_exp  = $net('40');
+            $dettes_fisc = $net('42,43,44');
+            // HZ = total général passif
             $totalPassif = $capitauxPropres + $dettes_fin + $dettes_exp + $dettes_fisc;
-            $totalActifN1  = $netN1('2') + $netN1('3') + $netN1('41') + $netN1('52,53,57');
+            // N-1
+            $immoDataN1   = $prevExercice ? $this->calculateValueForRangeFast('2', $balancesN1) : ['brut'=>0,'amort'=>0,'net'=>0];
+            $totalActifN1  = ($immoDataN1['brut'] - $immoDataN1['amort']) + $netN1('3') + $netN1('41') + $netN1('52,53,57');
             $totalPassifN1 = $netN1('10') + $netN1('11') + $netN1('12') + ($netN1('7') - $netN1('6')) + $netN1('16') + $netN1('40');
             return compact('immoBrut','immoAmort','immoNet','stocks','creances','treso_actif','totalActif','capital','reserves','report','resultat','capitauxPropres','dettes_fin','dettes_exp','dettes_fisc','totalPassif','totalActifN1','totalPassifN1');
         }
 
-        // Compte de Résultat SMT
+        // Compte de Résultat SMT — codes réels DGI :
+        // KA=CA, KX=total produits, JA=achats, JB=services, JC=charges pers., JD=impôts
+        // JF=autres charges, JX=total charges, KZ=résultat net, KZC=résultat après IS
         if ($pageCode === 'SMT_RESULTAT') {
-            $total_produits = $net('7'); $total_charges = $net('6');
-            $resultat_exercice = $total_produits - $total_charges;
-            $total_produits_N1 = $netN1('7'); $total_charges_N1 = $netN1('6');
+            $CA              = $net('70');            // KA
+            $autres_produits = $net('71,72,73,74,75,76,77');
+            $total_produits  = $net('7');             // KX
+            $achats          = $net('601,602,603');   // JA
+            $services_ext    = $net('61,62');         // JB (transports, loyers, etc.)
+            $charges_pers    = $net('64,65,66');      // JC
+            $impots_taxes    = $net('63');            // JD
+            $autres_charges  = $net('67,68,69');      // JF
+            $total_charges   = $net('6');             // JX
+            $resultat_net    = $total_produits - $total_charges; // KZ
+            $variation_stocks= $net('603,6031');      // VA (variation stocks)
+            $resultat_fiscal = $resultat_net;         // KZC (simplifié, avant ajustement manuel)
+            // N-1
+            $total_produits_N1    = $netN1('7');
+            $total_charges_N1     = $netN1('6');
             $resultat_exercice_N1 = $total_produits_N1 - $total_charges_N1;
-            $produits_ventes=$net('70'); $produits_autres=$net('71,72,73,74,75,76,77');
-            $achats_marchand=$net('601,602'); $achats_services=$net('61,62');
-            $charges_personnel=$net('64,65,66'); $impots_taxes=$net('63');
-            $dotations=$net('68,69'); $autres_charges=$net('67');
-            return compact('produits_ventes','produits_autres','total_produits','achats_marchand','achats_services','charges_personnel','impots_taxes','dotations','autres_charges','total_charges','resultat_exercice','total_produits_N1','total_charges_N1','resultat_exercice_N1');
+            return compact(
+                'CA','autres_produits','total_produits',
+                'achats','services_ext','charges_pers','impots_taxes','autres_charges',
+                'total_charges','resultat_net','variation_stocks','resultat_fiscal',
+                'total_produits_N1','total_charges_N1','resultat_exercice_N1'
+            );
         }
 
         // État de Trésorerie SMT
