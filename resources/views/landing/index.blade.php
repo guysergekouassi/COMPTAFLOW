@@ -183,7 +183,7 @@
             <div class="row justify-content-center">
                 <div class="col-lg-10">
                     <div class="dashboard-preview-container">
-                        <img src="{{ asset('rapport_img_dashboard.png') }}" alt="Tableau de bord" class="dashboard-preview-img shadow-lg" />
+                        <img src="/rapport_img_dashboard.png" alt="Tableau de bord" class="dashboard-preview-img shadow-lg" />
                     </div>
                 </div>
             </div>
