@@ -215,6 +215,23 @@
 
     <!-- Place this tag before closing body tag for github widget button. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+    <!-- Fix Back Button Navigation -->
+    <script>
+        if (window.history && window.history.pushState) {
+            // Replace the current state with the landing page url
+            window.history.replaceState('landing', null, "{{ url('/') }}");
+            // Push the login page so we are still on it
+            window.history.pushState('login', null, window.location.href);
+            
+            // Listen to back button
+            window.addEventListener('popstate', function(e) {
+                if(e.state === 'landing') {
+                    window.location.href = "{{ url('/') }}";
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>
