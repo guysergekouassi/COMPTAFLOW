@@ -1,3 +1,5 @@
+@include('components.navbar_horizontal')
+
 <style>
     /* Styles pour le nouveau design */
     .sidebar-new {

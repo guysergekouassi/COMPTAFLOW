@@ -92,6 +92,9 @@
 
 
             {{-- SECTION : CRÉATION RAPIDE --}}
+        </div>
+
+        <div class="menu-section">
             <div class="menu-section-header mt-4">Création Rapide</div>
 
             <a href="{{ route('superadmin.companies.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.companies.create') ? 'active' : '' }}">
@@ -138,6 +141,7 @@
                 <span>Switch Entreprise</span>
             </a>
             @endif
+        </div>
         </div>
 
         {{-- SECTION 3 : OPÉRATIONS --}}
