@@ -281,7 +281,7 @@
                         <div class="toolbar-premium">
                             <div class="d-flex align-items-center">
                                 <div class="me-3 p-2 bg-white rounded-3 shadow-sm" style="border: 1px solid #e2e8f0;">
-                                    <img src="{{ asset('logo_armoiries.png') }}" alt="Armoiries" style="height: 60px; object-fit: contain;">
+                                    <img src="/logo_armoiries.png" alt="Armoiries" style="height: 60px; object-fit: contain;">
                                 </div>
                                 <div>
                         <h4 class="fw-900 mb-0 text-dark">
