@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" class="layout-menu-fixed layout-compact">
+<html lang="fr" class="layout-compact">
 @include('components.head')
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 

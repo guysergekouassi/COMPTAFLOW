@@ -142,7 +142,6 @@
             </a>
             @endif
         </div>
-        </div>
 
         {{-- SECTION 3 : OPÉRATIONS --}}
         <div class="menu-section">

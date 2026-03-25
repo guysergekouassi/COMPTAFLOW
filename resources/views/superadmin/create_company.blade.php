@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/" data-template="vertical-menu-template-free">
+<html lang="fr" class="layout-compact" data-assets-path="../assets/" data-template="vertical-menu-template-free">
 
 @include('components.head')
 
