@@ -7,8 +7,8 @@
 // });
 use App\Http\Middleware\authSuperAdminMiddleware;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\BalanceController;
-use App\Http\Controllers\BalanceTiersController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\JournauxSaisisController;
 use App\Http\Controllers\UserController;
@@ -77,6 +77,12 @@ use Illuminate\Support\Facades\Http;
 // ROUTES PUBLIQUES / AUTHENTIFICATION
 // **********************************************
 
+// Landing Page & Inscription
+Route::get('/', [LandingController::class, 'index'])->name('landing.index');
+Route::get('/inscription', [LandingController::class, 'pricing'])->name('landing.pricing');
+Route::get('/inscription/formulaire/{type}', [LandingController::class, 'registerForm'])->name('landing.register_form');
+Route::post('/inscription/submit', [LandingController::class, 'registerSubmit'])->name('landing.register_submit');
+
 Route::get('/login', function () {
     return view('login');
 })->name('login');
@@ -112,7 +118,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::post('/ia-correction', [IaController::class, 'enregistrerCorrection'])->name('ia.correction');
 
     // Pages principales
-    Route::get('/', function () { return redirect()->route('app.dashboard'); })->name('index');
+    Route::get('/app', function () { return redirect()->route('app.dashboard'); })->name('index');
     Route::get('/index', function () { return redirect()->route('app.dashboard'); })->name('index_page');
     Route::get('/accounting_balance', function () { return view('accounting_balance'); })->name('accounting_balance');
     Route::get('/accounting_entry', function () { return view('accounting_entry'); })->name('accounting_entry');
