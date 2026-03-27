@@ -256,183 +256,37 @@ class IaController extends Controller
 
     private function buildPrompt(string $planComptable, string $tiers, string $mappings, string $companyName): string
     {
-        $mappingsSection = $mappings ? "\n\n{$mappings}" : '';
-
         return <<<PROMPT
-Tu es un Expert-Comptable SYSCOHADA senior, spécialisé dans la lecture et la comptabilisation de documents financiers en Afrique de l'Ouest. Tu es doté d'une capacité de déchiffrement exceptionnelle.
+Tu es un expert-comptable SYSCOHADA pour "$companyName".
+Analyse ce document (PDF/Image) avec une précision chirurgicale.
 
-{$planComptable}
+CONSIGNES RELATIVES AUX LIBELLÉS (CRITIQUE) :
+1. UTILISE L'OCR LITTÉRAL : Les libellés dans le JSON (intitule) doivent être EXACTEMENT ceux écrits sur la facture.
+2. PAS D'INVENTION : Ne reformule pas, ne résume pas. Si c'est écrit "ACHAT SPLIT 2CV", l'intitulé DOIT être "ACHAT SPLIT 2CV".
+3. RÉPONDS UNIQUEMENT EN JSON PUR (PAS DE MARKDOWN).
 
-{$tiers}{$mappingsSection}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ PRINCIPE FONDAMENTAL — PRIORITÉ À L'EXTRACTION :
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Ton objectif est de trouver UNE FACTURE (ou preuve de paiement) dans le document fourni.
-
-1. **DOCUMENTS MIXTES (EX: BC + FACTURE)** :
-   - Si le PDF contient plusieurs pages ou plusieurs documents (ex: un Bon de Commande ET une Facture), **IGNORE** les documents non-comptables (BC, Devis) et **CONCENTRE-TOI** sur la Facture pour extraire les données.
-   - Ne rejette le document que s'il est **EXCLUSIVEMENT** un Bon de Commande ou un document sans aucune valeur comptable.
-
-2. **ÉLÉMENTS ACCEPTÉS (FACTO/REÇU/FRAIS)** :
-   - Si tu vois le mot "Facture", "Invoice", "Reçu", "Total à payer", ou une structure de tableau avec montants. Action : "est_facture": true.
-   - Sois indulgent : si le document ressemble à une facture, TRAITE-LE.
-
-3. **ÉLÉMENTS REJETÉS (AVEC PARCOURS COMPLET)** :
-   - Uniquement si le document est **100%** un Bon de Commande (Purchase Order), une Invitation, ou une image sans texte.
-   - Action : Retourner "est_facture": false, "type_rejet": "non_comptable", "explication_rejet": "Document non-comptable détecté."
-
-3. **BON DE LIVRAISON / BORDEREAU** (ACCEPTÉS si montants présents) :
-   - Si montants présents -> "est_facture": true.
-   - Sinon (juste des quantités) -> "est_facture": false, "type_rejet": "non_comptable", "explication_rejet": "Ceci est un bon de livraison sans valeurs financières."
-
-4. **PHOTOS NON COMPTABLES** :
-   - Paysage, personne, objet sans lien commercial.
-   - Action : Retourner "est_facture": false, "type_rejet": "other".
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RÈGLES D'EXTRACTION STRICTES (OCR LITTÉRAL) :
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- **LIBELLÉ LITTÉRAL** : Utilise UNIQUEMENT le texte écrit sur la facture. N'invente rien. Ex: si la ligne dit "ACHAT SPLIT 2CV", le libellé DOIT être "ACHAT SPLIT 2CV".
-- **PAS D'INVENTION** : Si une date est absente, mets null. Si un numéro de facture est absent, mets "SANS REF".
-- **CHIFFRES EXACTS** : Ne fais pas d'arrondis. Les centimes doivent être préservés.
-- **REPRODUCTIBILITÉ** : Analyse chaque document avec un regard neuf car plusieurs factures peuvent se ressembler.
-- 1 LIGNE = 1 OBJET dans le tableau "ecriture". Ne regroupe JAMAIS plusieurs articles sur une ligne.
-- COMPTES : Charges = Classe 6 (Débit) | Fournisseurs = 401xxx (Crédit) | Clients = 411xxx (Débit).
-- **JSON STRICT** : Ta réponse doit être un objet JSON valide, sans texte avant ou après.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FORMAT DE RÉPONSE (JSON STRICT, PAS DE MARKDOWN) :
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Schema JSON attendu :
 {
   "est_facture": true,
-  "statut_lecture": "lisible|partiel|illisible",
-  "type_rejet": "none",
-  "explication_rejet": "Facture acceptée. [Brève note sur la qualité si nécessaire]",
-  "type_document": "Facture|Reçu|Note de frais|Bon de livraison|Relevé|Autre",
-  "tiers": "Nom du fournisseur ou client",
+  "statut_lecture": "lisible",
+  "tiers": "Nom Exact",
   "date": "AAAA-MM-JJ",
-  "reference": "Numéro de pièce ou vide",
+  "reference": "Ref Exacte",
   "montant_ht": 0,
   "montant_tva": 0,
   "montant_ttc": 0,
   "devise": "XOF",
   "ecriture": [
-    {"compte": "601000", "intitule": "Libellé de la ligne", "debit": 10000, "credit": 0, "apply_tva": true},
-    {"compte": "401000", "intitule": "Nom du fournisseur", "debit": 0, "credit": 10000}
+    {"compte": "601100", "intitule": "Libellé Exact de la facture", "debit": 100, "credit": 0},
+    {"compte": "401100", "intitule": "Nom du Tiers Exact", "debit": 0, "credit": 100}
   ],
-  "analyse": "Description de ce que tu as lu et de tes déductions"
+  "confiance": 0.95,
+  "analyse": "..."
 }
 PROMPT;
     }
 
 
-    /**
-     * Appelle l'API Gemini avec retry exponentiel.
-     */
-    private function callGeminiApi(string $url, array $payload, string $api_key): array
-    {
-        $max_retries = 5;
-        $retry_count = 0;
-        $base_delay = 2;
-        $http_code = 0;
-        $response = '';
-
-        while ($retry_count < $max_retries) {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-            ]);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-            $response = curl_exec($ch);
-            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        
-            if ($http_code !== 200) {
-                \Illuminate\Support\Facades\Log::error("Gemini API Error ($http_code): " . $response);
-            } else {
-                // Log de succès partiel pour debug
-                \Illuminate\Support\Facades\Log::info("Gemini API Success. Response length: " . strlen($response));
-            }
-        
-            curl_close($ch);
-
-            if ($http_code == 429 || $http_code == 503) {
-                $retry_count++;
-                if ($retry_count >= $max_retries) {
-                    if ($http_code == 429) {
-                        // Vérifier si c'est un problème de Free Tier vs billing
-                        $resp = json_decode($response, true);
-                        $isFreeT = str_contains($response, 'free_tier');
-                        $msg = $isFreeT
-                            ? 'Clé API Gemini sur Free Tier (quota 0). Activez la facturation sur console.cloud.google.com pour votre projet Google Cloud.'
-                            : 'Quota Gemini dépassé. Réessayez dans quelques minutes.';
-                    } else {
-                        $msg = 'Le service IA est temporairement surchargé (503). Veuillez réessayer dans quelques instants.';
-                    }
-                    return ['error' => $msg, 'http_code' => $http_code];
-                }
-                $delay = $base_delay * pow(2, $retry_count - 1) + rand(1, 3);
-                sleep($delay);
-                continue;
-            }
-
-            if ($http_code === 200) {
-                $result = json_decode($response, true);
-                if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-                    $candidate = $result['candidates'][0];
-                    $finishReason = $candidate['finishReason'] ?? 'UNKNOWN';
-                    $json_text = $candidate['content']['parts'][0]['text'];
-                    
-                    \Illuminate\Support\Facades\Log::info("Gemini Model Output: Reason={$finishReason}, Length=" . strlen($json_text));
-
-                    // Nettoyage Markdown (si présent)
-                    $json_text = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $json_text);
-                    
-                    // Extraction du premier bloc { ... }
-                    $start = strpos($json_text, '{');
-                    $end = strrpos($json_text, '}');
-                    
-                    if ($start !== false && $end !== false) {
-                        $json_text = substr($json_text, $start, $end - $start + 1);
-                    }
-
-                    // Supprimer d'éventuels caractères invisibles/parasites
-                    $json_text = trim($json_text);
-                    $json_text = preg_replace('/[\x00-\x1F\x7F]/', '', $json_text);
-
-                    $data = json_decode($json_text, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        return ['data' => $data];
-                    }
-                    
-                    // Si la conversion JSON échoue (ex: texte tronqué), on log l'erreur et on réessaie si possible
-                    \Illuminate\Support\Facades\Log::warning("Gemini JSON Parse Error (Tentative " . ($retry_count + 1) . "): " . json_last_error_msg() . " | Content: " . substr($json_text, 0, 100) . "...");
-                    
-                    $retry_count++;
-                    if ($retry_count >= $max_retries) {
-                        \Illuminate\Support\Facades\Log::error("Gemini JSON Parse Error définitif: " . json_last_error_msg() . " | Content: " . substr($json_text, 0, 100) . "...");
-                        return ['error' => 'JSON invalide généré par l\'IA après plusieurs tentatives', 'raw' => $json_text];
-                    }
-                    
-                    $delay = $base_delay * pow(2, $retry_count - 1) + rand(1, 3);
-                    sleep($delay);
-                    continue;
-                }
-            }
-
-            break;
-        }
-
-        return ['error' => "Erreur API ({$http_code})", 'http_code' => $http_code, 'details' => json_decode($response, true) ?? ['raw' => $response]];
-    }
 
     /**
      * Compresse l'image si nécessaire pour éviter les timeouts API.

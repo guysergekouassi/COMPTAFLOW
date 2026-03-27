@@ -132,7 +132,7 @@
                                             <input type="file" id="fileInput" multiple accept="image/*,application/pdf" style="opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; z-index: 10;">
                                             <i class="bx bx-cloud-upload fs-1 text-primary mb-2"></i>
                                             <p class="mb-1 fw-bold">Cliquez ou glissez les fichiers</p>
-                                            <p class="text-muted small">Images (JPG, PNG) ou PDF (100 max)</p>
+                                            <p class="text-muted small">Images (JPG, PNG) ou PDF (500 max)</p>
                                         </label>
 
                                         <!-- Queue Progress -->
@@ -185,6 +185,11 @@
                                             <div class="text-center">
                                                 <div class="text-danger small mb-1">Rejetés</div>
                                                 <div class="h5 mb-0 fw-bold text-danger" id="statError">0</div>
+                                            </div>
+                                            <div class="vr mx-2"></div>
+                                            <div class="text-center">
+                                                <div class="text-primary small mb-1">Durée Écoulée</div>
+                                                <div class="h5 mb-0 fw-bold" id="scanTimer">00:00</div>
                                             </div>
                                         </div>
                                         <div class="text-muted small">
@@ -343,7 +348,7 @@
             if (btnStartProcessing) {
                 btnStartProcessing.onclick = async () => {
                     btnStartProcessing.disabled = true;
-                    btnStartProcessing.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>En cours...';
+                    btnStartProcessing.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span><span id="procCounter">Traitement...</span>';
 
                     const sb = document.getElementById('summaryBar');
                     if (sb) sb.classList.remove('d-none');
@@ -354,12 +359,32 @@
                     const pendingItems = filesQueue.filter(item => item.status === 'pending');
                     
                     let index = 0;
+                    let completedInSession = 0;
+                    const totalToProcess = pendingItems.length;
                     const workers = [];
+
+                    let scanStartTime = Date.now();
+                    const timerInterval = setInterval(() => {
+                        const elapsed = Math.floor((Date.now() - scanStartTime) / 1000);
+                        const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                        const secs = (elapsed % 60).toString().padStart(2, '0');
+                        const timerEl = document.getElementById('scanTimer');
+                        if (timerEl) timerEl.innerText = `${mins}:${secs}`;
+                    }, 1000);
+
+                    const updateGlobalCounter = () => {
+                        const el = document.getElementById('procCounter');
+                        if (el) el.innerText = `Traitement: ${completedInSession} / ${totalToProcess}`;
+                    };
+
+                    updateGlobalCounter();
 
                     const runWorker = async () => {
                         while (index < pendingItems.length) {
                             const item = pendingItems[index++];
                             await window.processDocument(item);
+                            completedInSession++;
+                            updateGlobalCounter();
                         }
                     };
 
@@ -368,6 +393,7 @@
                     }
 
                     await Promise.all(workers);
+                    clearInterval(timerInterval);
 
                     btnStartProcessing.classList.add('d-none');
                     if (btnSaveGroup) btnSaveGroup.classList.remove('d-none');
@@ -378,6 +404,7 @@
                 const queueEl = document.getElementById('queue_' + item.id);
                 if (!queueEl) return;
                 queueEl.classList.add('processing');
+                console.log(`[AI] Processing: ${item.file.name}...`);
                 queueEl.querySelector('.status-text').innerText = 'Traitement IA...';
                 queueEl.querySelector('.status-icon').innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span>';
 

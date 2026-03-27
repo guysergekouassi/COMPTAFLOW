@@ -214,21 +214,37 @@ class VertexAiService
 
         $text = $response['data']['candidates'][0]['content']['parts'][0]['text'];
         
-        // Nettoyage Markdown
+        // 1. Nettoyage Markdown
         $text = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $text);
         
-        $start = strpos($text, '{');
-        $end = strrpos($text, '}');
+        // 2. Recherche du bloc JSON le plus large { ... }
+        $firstBracket = strpos($text, '{');
+        $lastBracket = strrpos($text, '}');
 
-        if ($start !== false && $end !== false) {
-            $jsonText = substr($text, $start, $end - $start + 1);
+        if ($firstBracket !== false && $lastBracket !== false) {
+            $jsonText = substr($text, $firstBracket, $lastBracket - $firstBracket + 1);
+            
+            // 3. Nettoyage des caractères de contrôle et UTF8 invisibles
+            $jsonText = preg_replace('/[\x00-\x1F\x7F]/', '', $jsonText);
+            
+            // 4. Tentatives de décodage
             $data = json_decode($jsonText, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return ['data' => $data];
+            }
+            
+            // 5. Correction des erreurs JSON courantes (virgules traînantes)
+            $jsonTextFixed = preg_replace('/,\s*([\]\}])/', '$1', $jsonText);
+            $data = json_decode($jsonTextFixed, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return ['data' => $data];
             }
         }
 
-        return ['error' => 'Impossible d\'extraire un JSON valide de la réponse', 'raw_response' => $text];
+        return [
+            'error' => 'Échec de l\'extraction JSON. Réponse brute: ' . substr($text, 0, 100) . '...',
+            'raw_debug' => $text
+        ];
     }
 
     public static function testConnection(): array
