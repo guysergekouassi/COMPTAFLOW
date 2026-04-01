@@ -2058,7 +2058,8 @@ class AdminConfigController extends Controller
                 }
 
                 // Surcharges de trésorerie (Analytique, Rapprochement, etc.)
-                if (in_array($row['type'], ['Trésorerie', 'Banque', 'Caisse'])) {
+                $isTreasuryType = in_array($row['type'], ['Trésorerie', 'Tresorerie', 'Banque', 'Caisse']);
+                if ($isTreasuryType) {
                     if (!empty($manualPoste)) $row['poste_tresorerie'] = $manualPoste;
                     if (!empty($manualCompte)) $row['compte_de_tresorerie'] = $manualCompte;
                     if (!empty($manualAnalytique)) $row['traitement_analytique'] = $manualAnalytique;

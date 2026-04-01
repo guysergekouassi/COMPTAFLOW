@@ -778,7 +778,7 @@
                             <select class="form-select swal-edit-input" data-col="${typeCol}" onchange="toggleTresorerieFields(this.value, 'swal')">
                                 <option value="Achats" ${currentType === 'Achats' ? 'selected' : ''}>Achats</option>
                                 <option value="Ventes" ${currentType === 'Ventes' ? 'selected' : ''}>Ventes</option>
-                                <option value="Tresorerie" ${['Tresorerie', 'Trésorerie', 'Banque', 'Caisse'].includes(currentType) ? 'selected' : ''}>Trésorerie</option>
+                                <option value="Trésorerie" ${['Tresorerie', 'Trésorerie', 'Banque', 'Caisse'].includes(currentType) ? 'selected' : ''}>Trésorerie</option>
                                 <option value="Opérations Diverses" ${currentType === 'Opérations Diverses' ? 'selected' : ''}>Opérations Diverses</option>
                                 <option value="Standard" ${currentType === 'Standard' ? 'selected' : ''}>Standard</option>
                             </select>
