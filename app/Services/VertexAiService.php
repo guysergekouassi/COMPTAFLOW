@@ -26,7 +26,8 @@ class VertexAiService
     {
         $this->projectId = (string) (config('services.vertex_ai.project_id') ?? 'scan1-comptaflow');
         $this->projectNumber = (string) (config('services.vertex_ai.project_number') ?? '288805151479');
-        $this->location = (string) (config('services.vertex_ai.location') ?? 'europe-west2');
+        $this->location = (string) (config('services.vertex_ai.location') ?? 'us-central1');
+
         $this->model = (string) (config('services.vertex_ai.model') ?? 'gemini-1.5-flash');
         $this->apiVersion = (string) (config('services.vertex_ai.api_version') ?? env('VERTEX_AI_API_VERSION', 'v1'));
 
