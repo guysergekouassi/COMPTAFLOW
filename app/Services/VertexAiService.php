@@ -24,11 +24,12 @@ class VertexAiService
 
     public function __construct()
     {
-        $this->projectId = config('services.vertex_ai.project_id', 'scan1-comptaflow');
-        $this->projectNumber = config('services.vertex_ai.project_number', '288805151479');
-        $this->location = config('services.vertex_ai.location', 'europe-west2');
-        $this->model = config('services.vertex_ai.model', 'gemini-1.5-flash');
-        $this->apiVersion = config('services.vertex_ai.api_version', env('VERTEX_AI_API_VERSION', 'v1'));
+        $this->projectId = (string) (config('services.vertex_ai.project_id') ?? 'scan1-comptaflow');
+        $this->projectNumber = (string) (config('services.vertex_ai.project_number') ?? '288805151479');
+        $this->location = (string) (config('services.vertex_ai.location') ?? 'europe-west2');
+        $this->model = (string) (config('services.vertex_ai.model') ?? 'gemini-1.5-flash');
+        $this->apiVersion = (string) (config('services.vertex_ai.api_version') ?? env('VERTEX_AI_API_VERSION', 'v1'));
+
         
         // S'assurer que GOOGLE_APPLICATION_CREDENTIALS est visible pour getenv()
         // S'assurer que GOOGLE_APPLICATION_CREDENTIALS est visible pour getenv()
