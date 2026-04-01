@@ -51,9 +51,19 @@ class IaController extends Controller
      */
     public function traiterFacture(Request $request)
     {
+        // 0. Augmentation des ressources pour PHP
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(300);
+
         try {
             $user = Auth::user();
             $companyId = session('current_company_id', $user->company_id);
+
+            \Illuminate\Support\Facades\Log::info("Début ia-traitement", [
+                'user' => $user->email,
+                'company_id' => $companyId
+            ]);
+
 
             // Validation stricte du fichier
             $request->validate([
@@ -64,6 +74,13 @@ class IaController extends Controller
             $image_hash = md5_file($image->getPathname()) . '_' . $image->getSize();
             $cache_key = "ia_analysis_{$companyId}_{$image_hash}";
 
+            \Illuminate\Support\Facades\Log::info("Fichier reçu et validé", [
+                'name' => $image->getClientOriginalName(),
+                'size' => $image->getSize(),
+                'hash' => $image_hash
+            ]);
+
+
             // 1. Préparation de l'image / PDF
             $raw_image_data = file_get_contents($image->getPathname());
             $extension = strtolower($image->getClientOriginalExtension());
@@ -72,10 +89,17 @@ class IaController extends Controller
                 $image_data = base64_encode($raw_image_data);
                 $mime_type = "application/pdf";
             } else {
+                \Illuminate\Support\Facades\Log::info("Compression d'image...");
                 $compressed_image = $this->compressImage($image->getPathname());
                 $image_data = base64_encode($compressed_image);
                 $mime_type = "image/jpeg";
             }
+
+            \Illuminate\Support\Facades\Log::info("Encodage Base64 OK", [
+                'mime' => $mime_type,
+                'data_length' => strlen($image_data)
+            ]);
+
 
             // 2. Récupération du contexte métier
             $planComptableContext = $this->buildPlanComptableContext($companyId);
@@ -83,12 +107,18 @@ class IaController extends Controller
             $mappingsContext = $this->buildMappingsContext($companyId);
             $companyName = Company::find($companyId)->raison_sociale ?? 'Mon Entreprise';
 
+            \Illuminate\Support\Facades\Log::info("Contexte métier récupéré");
+
+
             // 3. Construction du prompt enrichi (Master Prompt preservé)
             $journalCode = $request->input('journal_code', 'AC'); // Défaut à AC si non fourni
             $prompt = $this->buildPrompt($planComptableContext, $tiersContext, $mappingsContext, $companyName, $journalCode);
 
             // 4. Appel Vertex AI via le Service
+            \Illuminate\Support\Facades\Log::info("Appel Vertex AI Service...");
             $result = $this->vertexAiService->analyzeInvoice($image_data, $mime_type, $prompt);
+            \Illuminate\Support\Facades\Log::info("Réponse Vertex AI reçue", ['has_error' => isset($result['error'])]);
+
 
             if (isset($result['error'])) {
                 $rawResponse = $result['raw_response'] ?? null;

@@ -167,11 +167,13 @@ class VertexAiService
         // Renouveler le token pour chaque appel (fetchAuthToken est rapide car il utilise le cache si valide)
         $token = $this->getAccessToken();
 
-        Log::info('Vertex AI - Initiation de l\'appel API', [
+        \Illuminate\Support\Facades\Log::info('Vertex AI - Initiation de l\'appel API', [
             'endpoint' => $this->endpoint,
             'model' => $this->model,
-            'payload_size' => strlen(json_encode($payload))
+            'payload_size' => strlen(json_encode($payload)),
+            'payload_size_mb' => round(strlen(json_encode($payload)) / 1024 / 1024, 2) . ' MB'
         ]);
+
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->endpoint);
@@ -209,10 +211,11 @@ class VertexAiService
         curl_close($ch);
 
         if ($httpCode !== 200) {
-            Log::error('Vertex AI - Erreur API détectée', [
+            \Illuminate\Support\Facades\Log::error('Vertex AI - Erreur API détectée', [
                 'http_code' => $httpCode,
-                'response' => $response,
-                'curl_error' => $error
+                'curl_error' => $error,
+                'curl_errno' => $errno,
+                'response_body_preview' => substr($response, 0, 1000)
             ]);
             return [
                 'error' => "HTTP $httpCode",
@@ -220,6 +223,7 @@ class VertexAiService
                 'details' => $response
             ];
         }
+
 
         return ['success' => true, 'data' => json_decode($response, true)];
     }
