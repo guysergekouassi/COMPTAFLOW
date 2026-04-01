@@ -17,9 +17,31 @@
         border: 1px solid #eef0f2;
         transition: transform 0.2s;
     }
-    .document-card:hover {
-        border-color: #ccd3d9;
+    .document-card:hover { border-color: #ccd3d9; }
+    
+    /* Visibility Increases */
+    .form-control-sm, .form-select-sm, .select2-container--bootstrap4 .select2-selection { 
+        font-size: 0.85rem !important; 
+        padding: 0.5rem 0.75rem !important; 
+        font-weight: 600 !important;
+        color: #334155 !important;
+        height: auto !important;
+        min-height: 38px !important;
     }
+    .doc-entries-body td { padding: 0.5rem 0.25rem !important; }
+    .doc-ref, .doc-date { font-weight: 700 !important; color: #1e40af !important; }
+    
+    /* TVA Gray out */
+    .row-vat-disabled { 
+        background-color: #f8fafc !important; 
+        opacity: 0.8; 
+    }
+    .row-vat-disabled input, .row-vat-disabled select { 
+        background-color: #f1f5f9 !important; 
+        color: #94a3b8 !important;
+        cursor: not-allowed;
+    }
+
     .queue-item {
         padding: 10px;
         border-radius: 8px;
@@ -32,42 +54,13 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    .queue-item:hover {
-        background-color: #f8fafc;
-        border-color: #cbd5e1;
-        transform: translateX(4px);
-    }
-    .queue-item.processing {
-        border-left: 4px solid #3b82f6;
-        background: #f0f7ff;
-    }
-    .queue-item.completed {
-        border-left: 4px solid #10b981;
-    }
-    .queue-item.error {
-        border-left: 4px solid #ef4444;
-        background: #fffafa;
-    }
-    .status-badge {
-        font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 12px;
-    }
-    /* Select2 adjustments for the custom layout */
-    .select2-container--bootstrap4 .select2-selection {
-        border-radius: 8px !important;
-        border: 1px solid #e2e8f0 !important;
-        height: calc(1.5em + .5rem + 2px) !important;
-        display: flex !important;
-        align-items: center !important;
-    }
-    .results-scroll-container {
-        max-height: 85vh;
-        overflow-y: auto;
-        padding: 15px;
-        scroll-behavior: smooth;
-        scrollbar-width: thin;
-    }
+    .queue-item:hover { background-color: #f8fafc; border-color: #cbd5e1; transform: translateX(4px); }
+    .queue-item.processing { border-left: 4px solid #3b82f6; background: #f0f7ff; }
+    .queue-item.completed { border-left: 4px solid #10b981; }
+    .queue-item.error { border-left: 4px solid #ef4444; background: #fffafa; }
+    .status-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; }
+    
+    .results-scroll-container { max-height: 85vh; overflow-y: auto; padding: 15px; scroll-behavior: smooth; scrollbar-width: thin; }
     .results-scroll-container::-webkit-scrollbar { width: 6px; }
     .results-scroll-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .sticky-summary {
@@ -355,7 +348,8 @@
                     const st = document.getElementById('statTotal');
                     if (st) st.innerText = filesQueue.length;
 
-                    const CONCURRENCY_LIMIT = 2;
+                    // Concurrency réduit à 1 pour éviter les erreurs 429 (Quota)
+                    const CONCURRENCY_LIMIT = 1;
                     const pendingItems = filesQueue.filter(item => item.status === 'pending');
                     
                     let index = 0;
@@ -412,6 +406,13 @@
                     const formData = new FormData();
                     formData.append('facture', item.file);
                     
+                    // Get default journal code for prefixing
+                    const defJournalId = document.getElementById('defaultJournal')?.value;
+                    const journal = JOURNALS.find(j => j.id == defJournalId);
+                    if (journal) {
+                        formData.append('journal_code', journal.code_journal);
+                    }
+                    
                     const response = await fetch("{{ route('ia.traiter') }}", {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
@@ -434,9 +435,18 @@
                     }
                 } catch (error) {
                     console.error("Process Error:", error);
+                    let errMsg = 'Échec';
+                    
+                    if (error.message.includes('429')) {
+                        errMsg = 'Quota atteint (attente...)';
+                        queueEl.querySelector('.status-icon').innerHTML = '<i class="bx bx-timer text-warning fs-4"></i>';
+                        // On pourrait relancer après un délai, mais le backend fait déjà 5 tentatives.
+                        // On affiche donc un message explicite.
+                    }
+
                     item.status = 'error';
                     queueEl.classList.replace('processing', 'error');
-                    queueEl.querySelector('.status-text').innerText = 'Échec';
+                    queueEl.querySelector('.status-text').innerText = errMsg;
                     queueEl.querySelector('.status-icon').innerHTML = '<i class="bx bxs-error-circle text-danger fs-4"></i>';
                     window.updateStats(false);
                     window.updateDocumentCard(item);
@@ -638,6 +648,33 @@
                     if (t) matchedTierId = t.id;
                 }
 
+                // --- LOGIQUE TVA & GRISÉ ---
+                const isVatRow = (lineData.compte && lineData.compte.toString().startsWith('445')) || lineData.is_vat;
+                if (isVatRow) {
+                    tr.classList.add('row-vat-disabled');
+                    const card = document.getElementById('card_' + docId);
+                    const docRef = card?.querySelector('.doc-ref')?.value || 'FACT N° -';
+                    
+                    if (lineData.intitule) {
+                        // Si le libellé ne contient pas encore TVA/, on l'ajoute proprement après le préfixe si possible
+                        if (!lineData.intitule.toUpperCase().includes('TVA/')) {
+                            if (lineData.intitule.toUpperCase().startsWith('FACT N°')) {
+                                // Déjà préfixé, on insère TVA/ après le premier slash
+                                const parts = lineData.intitule.split('/');
+                                if (parts.length > 1) {
+                                    lineData.intitule = parts[0] + '/TVA/' + parts.slice(1).join('/');
+                                } else {
+                                    lineData.intitule = lineData.intitule.replace('FACT N°', 'FACT N°') + '/TVA';
+                                }
+                            } else {
+                                lineData.intitule = docRef + '/TVA/' + lineData.intitule;
+                            }
+                        }
+                    } else {
+                        lineData.intitule = docRef + '/TVA/Taxe sur valeur ajoutée';
+                    }
+                }
+
                 const cleanAmount = val => {
                     if (typeof val === 'number') return val;
                     if (!val) return 0;
@@ -661,7 +698,7 @@
                         ${!matchedAccId && lineData.compte ? `<div class="text-danger extra-small mt-1"><i class="bx bx-error-circle"></i> ${lineData.compte} absent. <a href="javascript:void(0);" onclick="window.createQuickAccount('${docId}', '${lineData.compte}')">Créer?</a></div>` : ''}
                     </td>
                     <td class="text-center">
-                        <input type="checkbox" class="form-check-input row-has-tva" ${lineData.apply_tva ? 'checked' : ''} title="Appliquer TVA">
+                        <input type="checkbox" class="form-check-input row-has-tva" ${lineData.apply_tva && !isVatRow ? 'checked' : ''} ${isVatRow ? 'disabled' : ''} title="Appliquer TVA">
                     </td>
                     <td>
                         <select class="form-select form-select-sm select2 row-tier">
@@ -715,11 +752,14 @@
                         if (amount > 0) {
                             const vatAmount = Math.round(amount * 0.18);
                             const vatAcc = GEN_ACCOUNTS.find(a => a.numero_de_compte.startsWith('4451'));
+                            // Use document reference if available
+                            const docRef = card.querySelector('.doc-ref')?.value || 'Fact N° -';
                             window.renderEntryRow(tbody, docId, {
                                 compte_id: vatAcc ? vatAcc.id : '',
-                                libelle: 'TVA 18%',
+                                intitule: docRef + '/TVA/18%',
                                 debit: debit > 0 ? vatAmount : 0,
-                                credit: credit > 0 ? vatAmount : 0
+                                credit: credit > 0 ? vatAmount : 0,
+                                is_vat: true
                             }, {});
                         }
                     }
@@ -743,13 +783,20 @@
                 });
 
                 const type = (lastRowWithAmount && parseFloat(lastRowWithAmount.querySelector('.row-debit').value) > 0) ? 'DEBIT' : 'CREDIT';
+                const docRef = card.querySelector('.doc-ref')?.value || 'Fact N° -';
 
                 window.renderEntryRow(tbody, docId, {
                     compte_id: vatAccId,
-                    libelle: 'TVA Appliquée',
+                    intitule: docRef + '/TVA/Appliquée',
                     debit: type === 'DEBIT' ? vatAmount : 0,
-                    credit: type === 'CREDIT' ? vatAmount : 0
+                    credit: type === 'CREDIT' ? vatAmount : 0,
+                    is_vat: true
                 }, {});
+
+                // Nettoyage des champs après application
+                card.querySelector('.vat-amount-input').value = '';
+                card.querySelector('.vat-account-select').value = '';
+
                 window.updateDocBalance(docId);
             };
 
@@ -802,55 +849,24 @@
                 });
             };
 
-            window.createQuickAccount = (docId, presetNum = '') => {
-                Swal.fire({
-                    title: 'Créer un Compte Général',
-                    html: `
-                        <input id="swal-acc-num" class="swal2-input" placeholder="Numéro de compte" value="${presetNum}">
-                        <input id="swal-acc-name" class="swal2-input" placeholder="Intitulé du compte">
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Créer',
-                    preConfirm: () => {
-                        const num = document.getElementById('swal-acc-num').value;
-                        const name = document.getElementById('swal-acc-name').value;
-                        if (!num || !name) { Swal.showValidationMessage('Veuillez remplir tous les champs'); return false; }
-                        return { numero_de_compte: num, intitule: name }
-                    }
-                }).then(async result => {
-                    if (result.isConfirmed) {
-                        try {
-                            const res = await fetch("{{ route('plan_comptable.store') }}", {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                                body: JSON.stringify(result.value)
-                            });
-                            const json = await res.json();
-                            if (json.success) {
-                                const newAcc = { id: json.id, numero_de_compte: json.numero_de_compte, intitule: json.intitule };
-                                GEN_ACCOUNTS.push(newAcc);
-                                window.updateAllAccountSelects(newAcc);
-                                Swal.fire('Succès', 'Compte créé.', 'success');
-                            } else {
-                                Swal.fire('Erreur', json.error || 'Erreur inconnue', 'error');
-                            }
-                        } catch (e) { Swal.fire('Erreur', 'Impossible de créer le compte.', 'error'); }
-                    }
-                });
+            window.createQuickJournal = (docId) => {
+                const m = new bootstrap.Modal(document.getElementById('modalCenterCreateJournal'));
+                m.show();
             };
 
-            window.updateAllAccountSelects = (newAcc) => {
-                document.querySelectorAll('.row-acc').forEach(select => {
-                    const option = new Option(`${newAcc.numero_de_compte} - ${newAcc.intitule}`, newAcc.id);
-                    $(select).append(option);
-                });
+            window.createQuickAccount = (docId, presetNum = '') => {
+                const m = document.getElementById('modalCenterCreateAccount');
+                if (presetNum) {
+                    const inp = m.querySelector('#numero_de_compte');
+                    if (inp) inp.value = presetNum;
+                }
+                new bootstrap.Modal(m).show();
             };
 
             window.createQuickTier = (docId) => {
-                const modalEl = document.getElementById('createTiersModal');
+                const modalEl = document.getElementById('modalCenterCreateTier');
                 if (!modalEl) return;
                 const modal = new bootstrap.Modal(modalEl);
-                window.currentTierSelect = null;
                 modal.show();
             };
 
@@ -923,7 +939,7 @@
             window.removeDocument = (docId) => {
                 const card = document.getElementById('card_' + docId);
                 if (card) card.remove();
-                const queue = document.getElementById('queue_' + id);
+                const queue = document.getElementById('queue_' + docId);
                 if (queue) queue.remove();
                 processedDocs = processedDocs.filter(d => d.id !== docId);
                 filesQueue = filesQueue.filter(d => d.id !== docId);
@@ -1003,22 +1019,50 @@
                 if (docsToSave.length === 0) { Swal.fire('Attention', 'Aucun document valide sélectionné.', 'warning'); return; }
 
                 const btn = document.getElementById('btnSaveOnlySelected');
-                if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>...'; }
-
-                let successCount = 0;
-                for (const doc of docsToSave) {
-                    try {
-                        const formData = new FormData();
-                        formData.append('piece_justificatif', doc.file);
-                        formData.append('ecritures', JSON.stringify(doc.ecritures));
-                        const res = await fetch(SAVE_ROUTE, { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }, body: formData });
-                        const json = await res.json();
-                        if (json.success) { successCount++; window.removeDocument(doc.id); }
-                    } catch (e) { console.error(e); }
+                if (btn) { 
+                    btn.disabled = true; 
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...'; 
                 }
 
-                Swal.fire('Succès', `${successCount} documents enregistrés.`, 'success');
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bx bx-save me-1"></i> Enregistrer'; }
+                let successCount = 0;
+                // Parallélisation par lots pour booster la vitesse (5 par 5)
+                const batchSize = 5;
+                for (let i = 0; i < docsToSave.length; i += batchSize) {
+                    const batch = docsToSave.slice(i, i + batchSize);
+                    await Promise.all(batch.map(async (doc) => {
+                        try {
+                            const formData = new FormData();
+                            formData.append('piece_justificatif', doc.file);
+                            formData.append('ecritures', JSON.stringify(doc.ecritures));
+                            
+                            const res = await fetch(SAVE_ROUTE, { 
+                                method: 'POST', 
+                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }, 
+                                body: formData 
+                            });
+                            
+                            const json = await res.json();
+                            if (json.success) { 
+                                successCount++; 
+                                window.removeDocument(doc.id); 
+                            }
+                        } catch (e) { 
+                            console.error("[BulkSave] Error saving doc " + doc.id, e); 
+                        }
+                    }));
+                }
+
+                Swal.fire({
+                    title: 'Succès !',
+                    text: `${successCount} documents ont été enregistrés avec succès.`,
+                    icon: 'success',
+                    confirmButtonColor: '#3b82f6'
+                });
+                
+                if (btn) { 
+                    btn.disabled = false; 
+                    btn.innerHTML = '<i class="bx bx-save me-1"></i> Enregistrer'; 
+                }
             };
 
             window.saveSingleDocument = async (docId) => {
@@ -1091,11 +1135,124 @@
             const btnSaveAllDocs = document.getElementById('btnSaveAllDocs');
             if (btnSaveAllDocs) btnSaveAllDocs.onclick = () => window.saveDocuments('all');
             
-            const btnSaveOnlySelected = document.getElementById('btnSaveOnlySelected');
-            if (btnSaveOnlySelected) btnSaveOnlySelected.onclick = () => window.saveDocuments('selected');
+            window.saveOnlySelected = () => window.saveDocuments('selected');
+
+            // --- TIER NUMBERING LOGIC (from plan_tiers) ---
+            window.genererNumero = (prefix, targetInputId) => {
+                if (!prefix) return;
+                const targetInput = document.getElementById(targetInputId);
+                if (targetInput) targetInput.value = 'Calcul...';
+                fetch(`/plan_tiers/${prefix}`)
+                    .then(r => r.json())
+                    .then(data => { if (targetInput) targetInput.value = data.numero || ''; })
+                    .catch(e => { console.error(e); if (targetInput) targetInput.value = ''; });
+            };
+
+            window.handleCategoryChange = (selectElement) => {
+                const prefix = selectElement.options[selectElement.selectedIndex].getAttribute('data-prefix');
+                if (prefix) {
+                    window.genererNumero(prefix, 'numero_de_tiers');
+                }
+            };
             
             window.updateQueueCount();
         });
     </script>
+
+    <!-- REAL MODALS (Integrated from Main Pages) -->
+    
+    <!-- Modal Creation Compte -->
+    <div class="modal fade" id="modalCenterCreateAccount" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form action="{{ route('plan_comptable.store') }}" method="POST" class="w-full">
+                @csrf
+                <div class="modal-content p-4" style="border-radius: 20px;">
+                    <h5 class="fw-bold mb-4">Nouveau Compte Général</h5>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Numéro de compte</label>
+                        <input type="text" class="form-control" name="numero_de_compte" id="numero_de_compte" required maxlength="8">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Intitule</label>
+                        <input type="text" class="form-control" name="intitule" required>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light flex-grow-1" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary flex-grow-1">Enregistrer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Creation Tiers -->
+    <div class="modal fade" id="modalCenterCreateTier" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form action="{{ route('plan_tiers.store') }}" method="POST" class="w-full">
+                @csrf
+                <div class="modal-content p-4" style="border-radius: 20px;">
+                    <h5 class="fw-bold mb-4">Nouveau Tiers</h5>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Catégorie</label>
+                        <select name="type_de_tiers" id="type_de_tiers_scan" class="form-select" onchange="window.genererNumero(this.options[this.selectedIndex].getAttribute('data-prefix'), 'numero_de_tiers_scan')" required>
+                            <option value="" disabled selected>Choisir...</option>
+                            <option value="Fournisseur" data-prefix="40">Fournisseur (40)</option>
+                            <option value="Client" data-prefix="41">Client (41)</option>
+                            <option value="Personnel" data-prefix="42">Personnel (42)</option>
+                            <option value="Impots" data-prefix="44">Impôt (44)</option>
+                            <option value="Divers Tiers" data-prefix="47">Divers (47)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Numéro de tiers</label>
+                        <input type="text" class="form-control bg-light" name="numero_de_tiers" id="numero_de_tiers_scan" readonly required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nom / Raison Sociale</label>
+                        <input type="text" class="form-control" name="intitule" required>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light flex-grow-1" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary flex-grow-1">Enregistrer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Creation Journal -->
+    <div class="modal fade" id="modalCenterCreateJournal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form action="{{ route('accounting_journals.store') }}" method="POST" class="w-full">
+                @csrf
+                <div class="modal-content p-4" style="border-radius: 20px;">
+                    <h5 class="fw-bold mb-4">Nouveau Code Journal</h5>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <label class="form-label small fw-bold">Code</label>
+                            <input type="text" class="form-control" name="code_journal" required placeholder="ACH">
+                        </div>
+                        <div class="col-8">
+                            <label class="form-label small fw-bold">Intitule</label>
+                            <input type="text" class="form-control" name="intitule" required placeholder="Achats">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">Type</label>
+                        <select name="type" class="form-select" required>
+                            <option value="Achats">Achats</option>
+                            <option value="Ventes">Ventes</option>
+                            <option value="Tresorerie">Trésorerie</option>
+                            <option value="Divers">Divers</option>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light flex-grow-1" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary flex-grow-1">Enregistrer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

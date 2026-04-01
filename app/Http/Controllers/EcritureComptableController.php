@@ -572,7 +572,24 @@ class EcritureComptableController extends Controller
 
             // --- VALIDATION FISCALE & ÉQUILIBRE ---
             if (!$this->taxService->checkBalance($ecritures)) {
-                return response()->json(['success' => false, 'error' => 'L\'opération est déséquilibrée (Débit != Crédit).'], 422);
+                $totalDebit = 0;
+                $totalCredit = 0;
+                foreach ($ecritures as $e) {
+                    $totalDebit += floatval($e['debit'] ?? 0);
+                    $totalCredit += floatval($e['credit'] ?? 0);
+                }
+                $diff = abs($totalDebit - $totalCredit);
+                
+                \Illuminate\Support\Facades\Log::warning('StoreMultiple Balance Error', [
+                    'total_debit' => $totalDebit,
+                    'total_credit' => $totalCredit,
+                    'is_balanced' => false,
+                    'diff' => $diff
+                ]);
+                return response()->json([
+                    'success' => false, 
+                    'error' => "L'opération est déséquilibrée (Débit: $totalDebit != Crédit: $totalCredit). Écart: $diff"
+                ], 422);
             }
 
             $vatValidation = $this->taxService->validateVatConsistency($ecritures);
@@ -639,7 +656,7 @@ class EcritureComptableController extends Controller
                 // Attribution du numéro selon le statut
                 if ($status === 'approved') {
                     $ecriture->n_saisie = $globalNSaisie; // Numéro GLOBAL (ECR_)
-                    $ecriture->n_saisie_user = $data['n_saisie'] ?? $data['numero_saisie'] ?? null; // Numéro d'origine (User)
+                    $ecriture->n_saisie_user = $data['n_saisie'] ?? $data['numero_saisie'] ?? $userNSaisie; // Numéro d'origine (User)
                 }
                 else {
                     // Pour les écritures en attente: le numéro utilisateur dans les deux champs

@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\ImmoController;
 use App\Http\Controllers\Api\LettrageController;
 use App\Http\Controllers\Api\ExerciceController;
 use App\Http\Controllers\Api\ApprovalController;
+use App\Http\Controllers\Api\ScanController;
+
 
 Route::prefix('v1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -92,6 +94,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/entries/{n_saisie}', [EntryController::class, 'loadBySaisie']);
         Route::delete('/entries/{n_saisie}', [EntryController::class, 'destroy']);
         Route::post('/scan', [EntryController::class, 'scan']);
+        
+        // Nouveau Scan par lot Mobile
+        Route::get('/scan/context', [ScanController::class, 'getContext']);
+        Route::post('/scan/upload', [ScanController::class, 'upload']);
+        Route::post('/scan/batch-store', [ScanController::class, 'storeBatch']);
+
         
         // Rapports financiers
         Route::get('/reports/balance', [ReportController::class, 'balance']);

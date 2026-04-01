@@ -84,7 +84,8 @@ class IaController extends Controller
             $companyName = Company::find($companyId)->raison_sociale ?? 'Mon Entreprise';
 
             // 3. Construction du prompt enrichi (Master Prompt preservé)
-            $prompt = $this->buildPrompt($planComptableContext, $tiersContext, $mappingsContext, $companyName);
+            $journalCode = $request->input('journal_code', 'AC'); // Défaut à AC si non fourni
+            $prompt = $this->buildPrompt($planComptableContext, $tiersContext, $mappingsContext, $companyName, $journalCode);
 
             // 4. Appel Vertex AI via le Service
             $result = $this->vertexAiService->analyzeInvoice($image_data, $mime_type, $prompt);
@@ -102,12 +103,13 @@ class IaController extends Controller
                     'json_brut' => $rawResponse ? json_encode(['raw_response' => substr($rawResponse, 0, 5000)]) : json_encode($result['details'] ?? []),
                 ]);
 
+                $statusCode = ($result['http_code'] == 429) ? 429 : 500;
                 return response()->json([
                     'error' => $result['error'],
                     'details' => $result['details'] ?? null,
                     'http_code' => $result['http_code'] ?? null,
                     'raw_response' => $rawResponse
-                ], 500);
+                ], $statusCode);
             }
 
             $data = $result['data'];
@@ -254,16 +256,28 @@ class IaController extends Controller
         return "ASSOCIATIONS APPRISES (priorité haute) :\n{$lines}";
     }
 
-    private function buildPrompt(string $planComptable, string $tiers, string $mappings, string $companyName): string
+    private function buildPrompt(string $planComptable, string $tiers, string $mappings, string $companyName, string $journalCode = 'AC'): string
     {
         return <<<PROMPT
 Tu es un expert-comptable SYSCOHADA pour "$companyName".
 Analyse ce document (PDF/Image) avec une précision chirurgicale.
 
-CONSIGNES RELATIVES AUX LIBELLÉS (CRITIQUE) :
-1. UTILISE L'OCR LITTÉRAL : Les libellés dans le JSON (intitule) doivent être EXACTEMENT ceux écrits sur la facture.
-2. PAS D'INVENTION : Ne reformule pas, ne résume pas. Si c'est écrit "ACHAT SPLIT 2CV", l'intitulé DOIT être "ACHAT SPLIT 2CV".
-3. RÉPONDS UNIQUEMENT EN JSON PUR (PAS DE MARKDOWN).
+CONSIGNES RELATIVES AUX DONNÉES (CRITIQUE) :
+1. RÉFÉRENCE : Le champ "reference" DOIT être au format "FACT N°" suivi du numéro (ex: FACT N° 12345). Si aucun numéro n'est trouvé, mets "FACT N° - ".
+2. LIBELLÉS (intitule) - FORMAT STRICT : 
+   - Pour les Factures/Charges : Préfixe "FACT N° {numéro}/" suivi du libellé OCR LITTÉRAL.
+   - Pour les Règlements/Paiements : Préfixe "FACT N° {numéro}/RGLT/" suivi du libellé OCR LITTÉRAL.
+   - Pour les Opérations Diverses (OD) : Préfixe "FACT N° {numéro}/OD/" suivi du libellé OCR LITTÉRAL.
+   - Remplace "{numéro}" par le numéro réel de la facture trouvé dans le document.
+   - LITTÉRALITÉ ABSOLUE : Le texte doit être EXACTEMENT celui écrit sur le document. NE PAS RÉSUMER. NE PAS INVENTER.
+   - CASSE DU LIBELLÉ : Le libellé après le "/" doit être en **Sentence case** (Première lettre en majuscule, le reste en minuscule).
+   - Ne mets PAS de code journal dans l'intitulé.
+   - Exemple Charge : "FACT N° 1334/Achat de viande"
+   - Exemple Règlement : "FACT N° 456/RGLT/Paiement facture"
+   - Exemple OD : "FACT N° 789/OD/Salaire Axel"
+3. PLUSIEURS LIGNES D'ÉCRITURE : Si le document comporte plusieurs lignes de dépenses/opérations distinctes, tu DOIS créer une ligne d'écriture pour chaque opération réelle avec son montant et son libellé LITTÉRAL respectif.
+4. AUCUNE REFORMULATION : Si le document dit "Achat de consommables divers", utilise ce texte exact, ne résume pas en "Divers achats".
+5. RÉPONDS UNIQUEMENT EN JSON PUR (PAS DE MARKDOWN).
 
 Schema JSON attendu :
 {
@@ -271,14 +285,14 @@ Schema JSON attendu :
   "statut_lecture": "lisible",
   "tiers": "Nom Exact",
   "date": "AAAA-MM-JJ",
-  "reference": "Ref Exacte",
+  "reference": "FACT N° 000",
   "montant_ht": 0,
   "montant_tva": 0,
   "montant_ttc": 0,
   "devise": "XOF",
   "ecriture": [
-    {"compte": "601100", "intitule": "Libellé Exact de la facture", "debit": 100, "credit": 0},
-    {"compte": "401100", "intitule": "Nom du Tiers Exact", "debit": 0, "credit": 100}
+    {"compte": "601100", "intitule": "Fact N°/libellé exact", "debit": 100, "credit": 0},
+    {"compte": "401100", "intitule": "Fact N°/nom du tiers", "debit": 0, "credit": 100}
   ],
   "confiance": 0.95,
   "analyse": "..."

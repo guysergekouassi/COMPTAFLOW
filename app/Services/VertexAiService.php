@@ -20,6 +20,7 @@ class VertexAiService
     private string $model;
     private string $apiVersion;
     private $accessToken;
+    private string $endpoint;
 
     public function __construct()
     {
@@ -76,7 +77,7 @@ class VertexAiService
      */
     public function analyzeInvoice(string $imageBase64, string $mimeType, string $prompt): array
     {
-        $maxRetries = 3;
+        $maxRetries = 5;
         $retryCount = 0;
         $baseDelay = 2;
 
