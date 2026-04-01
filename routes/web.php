@@ -119,6 +119,12 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::post('/ia-traitement', [IaController::class, 'traiterFacture'])->name('ia.traiter');
     Route::post('/ia-correction', [IaController::class, 'enregistrerCorrection'])->name('ia.correction');
     Route::get('/test-vertex', [IaController::class, 'testVertexAiConnection'])->name('ia.test'); // Route de diagnostic
+    Route::get('/clear-config', function() {
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        return "Configuration et Cache nettoyés !";
+    })->name('ia.clear-config');
+
 
 
     // Pages principales
