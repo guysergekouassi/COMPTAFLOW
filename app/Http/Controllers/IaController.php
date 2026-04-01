@@ -158,6 +158,9 @@ class IaController extends Controller
     {
         $test = \App\Services\VertexAiService::testConnection();
         $config = \App\Services\VertexAiService::getConfig();
+        $credsPath = env('GOOGLE_APPLICATION_CREDENTIALS');
+        $fallbackExists = file_exists(base_path('credentials.json'));
+        
         $env = [
             'php_version' => PHP_VERSION,
             'extensions' => [
@@ -165,9 +168,12 @@ class IaController extends Controller
                 'curl' => extension_loaded('curl'),
                 'fileinfo' => extension_loaded('fileinfo'),
             ],
-            'google_creds_path' => env('GOOGLE_APPLICATION_CREDENTIALS'),
-            'google_creds_exists' => env('GOOGLE_APPLICATION_CREDENTIALS') ? file_exists(base_path(env('GOOGLE_APPLICATION_CREDENTIALS'))) : false,
+            'google_creds_env' => $credsPath,
+            'google_creds_env_exists' => $credsPath ? file_exists(base_path($credsPath)) : false,
+            'google_creds_fallback_exists' => $fallbackExists,
         ];
+
+
 
         return response()->json([
             'status' => $test['status'],

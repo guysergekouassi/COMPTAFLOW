@@ -32,13 +32,20 @@ class VertexAiService
 
         
         // S'assurer que GOOGLE_APPLICATION_CREDENTIALS est visible pour getenv()
-        // S'assurer que GOOGLE_APPLICATION_CREDENTIALS est visible pour getenv()
-        if ($creds = env('GOOGLE_APPLICATION_CREDENTIALS')) {
+        $creds = env('GOOGLE_APPLICATION_CREDENTIALS');
+        
+        // Fallback automatique : si non défini, chercher 'credentials.json' à la racine
+        if (!$creds && file_exists(base_path('credentials.json'))) {
+            $creds = 'credentials.json';
+        }
+
+        if ($creds) {
             if (!preg_match('/^([a-zA-Z]:|\/)/', $creds)) {
                 $creds = base_path($creds);
             }
             putenv("GOOGLE_APPLICATION_CREDENTIALS=$creds");
         }
+
 
         // Fix SSL for Laragon / Windows
         $caPath = 'C:/laragon/etc/ssl/cacert.pem';
