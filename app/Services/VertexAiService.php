@@ -277,9 +277,11 @@ class VertexAiService
     public static function getConfig(): array
     {
         return [
-            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
-            'location' => env('VERTEX_AI_LOCATION'),
-            'model' => env('VERTEX_AI_MODEL'),
+            'project_id' => config('services.vertex_ai.project_id'),
+            'location' => config('services.vertex_ai.location'),
+            'model' => config('services.vertex_ai.model'),
+            'api_version' => config('services.vertex_ai.api_version'),
         ];
     }
+
 }
