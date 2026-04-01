@@ -249,8 +249,13 @@ class LiasseFiscaleService
 
         // 1. SMT_FICHE_IDENT — Fusion R1 + R2 + R2D (Identification et Activités)
         if ($pageCode === 'SMT_FICHE_IDENT') {
+            $company = \App\Models\Company::find($companyId);
             $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
             return array_merge([
+                'MT_R1_A' => $company->name ?? '',
+                'MT_R1_B' => $company->ncc ?? '',
+                'MT_R1_C' => $company->address ?? '',
+                'MT_R1_D' => $company->phone ?? '',
                 'ZA1' => $exercice->date_debut->format('d/m/Y'),
                 'ZA2' => $exercice->date_fin->format('d/m/Y'),
                 'ZA3' => 12,
@@ -344,6 +349,23 @@ class LiasseFiscaleService
         }
 
         return [];
+    }
+
+    public function saveManualData($exerciceId, $companyId, $pageCode, $data)
+    {
+        if (empty($data) || !is_array($data)) return;
+
+        foreach ($data as $fieldCode => $value) {
+            \App\Models\LiasseData::updateOrCreate(
+                [
+                    'exercice_id' => $exerciceId,
+                    'company_id'  => $companyId,
+                    'page_code'   => $pageCode,
+                    'field_code'  => $fieldCode,
+                ],
+                ['value' => $value]
+            );
+        }
     }
 
     public function formatXmlValue($value)

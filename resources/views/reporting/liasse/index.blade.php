@@ -190,6 +190,8 @@
     .btn-pdf { background: #fef2f2; color: #991b1b; border-color: #fee2e2; }
     .btn-excel { background: #f0fdf4; color: #166534; border-color: #dcfce7; }
     .btn-xml { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
+    .btn-save { background: #eff6ff; color: #2563eb; border-color: #dbeafe; }
+    .btn-save:hover { background: #2563eb; color: #fff; }
 
     .btn-export:hover { 
         transform: translateY(-2px) scale(1.02);
@@ -337,6 +339,8 @@
                             <div class="canvas-header">
                                 <span id="currentPageTitle" class="fw-700 text-uppercase text-dark" style="letter-spacing: 0.05em; font-size: 0.85rem;">CHARGEMENT...</span>
                                 <div class="d-flex gap-2">
+                                    <button class="btn-export btn-save" onclick="savePageData()"><i class="bx bx-save"></i> ENREGISTRER</button>
+                                    <div class="vr mx-1 opacity-25"></div>
                                     <button class="btn-export btn-pdf" onclick="exportPage('pdf')"><i class="bx bxs-file-pdf"></i> PDF</button>
                                     <button class="btn-export btn-excel" onclick="exportPage('excel')"><i class="bx bxs-spreadsheet"></i> Excel</button>
                                     <button class="btn-export btn-xml" onclick="exportPage('xml')"><i class="bx bx-code-alt"></i> XML {{ $regime === 'smt' ? 'MT' : 'NO' }}</button>
