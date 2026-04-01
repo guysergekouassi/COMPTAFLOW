@@ -9,7 +9,9 @@ use App\Http\Middleware\authSuperAdminMiddleware;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\BalanceController;
+use App\Http\Controllers\BalanceTiersController;
 use App\Http\Controllers\CompanyController;
+
 use App\Http\Controllers\JournauxSaisisController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
