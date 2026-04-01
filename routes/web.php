@@ -116,6 +116,8 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     // *** ROUTES IA - SCAN DE FACTURES (Sécurisées) ***
     Route::post('/ia-traitement', [IaController::class, 'traiterFacture'])->name('ia.traiter');
     Route::post('/ia-correction', [IaController::class, 'enregistrerCorrection'])->name('ia.correction');
+    Route::get('/test-vertex', [IaController::class, 'testVertexAiConnection'])->name('ia.test'); // Route de diagnostic
+
 
     // Pages principales
     Route::get('/app', function () { return redirect()->route('app.dashboard'); })->name('index');

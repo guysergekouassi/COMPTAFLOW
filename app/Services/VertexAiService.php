@@ -168,19 +168,28 @@ class VertexAiService
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->endpoint);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $token,
         ]);
         curl_setopt($ch, CURLOPT_TIMEOUT, intval(env('VERTEX_AI_TIMEOUT_SECONDS', 120)));
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        // SSL Handling - Forcer la vǸrification en prod si possible
+        $caPath = 'C:/laragon/etc/ssl/cacert.pem';
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' && file_exists($caPath)) {
+             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+             curl_setopt($ch, CURLOPT_CAINFO, $caPath);
+        } else {
+             // En ligne (Linux), on laisse le systǸme gǸrer ou on dǸsactive si persistant
+             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, env('VERTEX_AI_SSL_VERIFY', true));
+        }
 
         $response = curl_exec($ch);
         $errno = curl_errno($ch);
         $error = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
 
         Log::info('Vertex AI - Résultat cURL', [
             'http_code' => $httpCode,

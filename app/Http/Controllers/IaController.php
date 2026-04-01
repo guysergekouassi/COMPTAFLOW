@@ -135,12 +135,20 @@ class IaController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['error' => 'Fichier invalide : ' . implode(', ', $e->errors()['facture'] ?? [])], 422);
         } catch (\Throwable $e) {
+            // Log de l'erreur fatale pour le diagnostic serveur
+            \Illuminate\Support\Facades\Log::error("IA Controller Error 500: " . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
-                'error' => $e->getMessage(),
+                'error' => "Erreur Serveur (500) : " . $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ], 500);
         }
+
     }
 
     /**
@@ -150,12 +158,25 @@ class IaController extends Controller
     {
         $test = \App\Services\VertexAiService::testConnection();
         $config = \App\Services\VertexAiService::getConfig();
+        $env = [
+            'php_version' => PHP_VERSION,
+            'extensions' => [
+                'gd' => extension_loaded('gd'),
+                'curl' => extension_loaded('curl'),
+                'fileinfo' => extension_loaded('fileinfo'),
+            ],
+            'google_creds_path' => env('GOOGLE_APPLICATION_CREDENTIALS'),
+            'google_creds_exists' => env('GOOGLE_APPLICATION_CREDENTIALS') ? file_exists(base_path(env('GOOGLE_APPLICATION_CREDENTIALS'))) : false,
+        ];
 
         return response()->json([
-            'test' => $test,
-            'config' => $config
+            'status' => $test['status'],
+            'vertex_test' => $test,
+            'config' => $config,
+            'env' => $env
         ]);
     }
+
 
     /**
      * Enregistre les corrections apportées par l'utilisateur (apprentissage).
