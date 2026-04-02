@@ -117,11 +117,11 @@ class IaController extends Controller
             // 4. Appel Vertex AI via le Service
             \Illuminate\Support\Facades\Log::info("Appel Vertex AI Service...");
             $result = $this->vertexAiService->analyzeInvoice($image_data, $mime_type, $prompt);
-            \Illuminate\Support\Facades\Log::info("Réponse Vertex AI reçue", ['has_error' => isset($result['error'])]);
+            \Illuminate\Support\Facades\Log::info("Réponse Vertex AI reçue", ['has_error' => $result['has_error'] ?? false]);
 
 
-            if (isset($result['error'])) {
-                $rawResponse = $result['raw_response'] ?? null;
+            if (isset($result['has_error']) && $result['has_error']) {
+                $errorMsg = $result['error_message'] ?? 'Erreur inconnue Vertex AI';
                 
                 IaLog::create([
                     'company_id' => $companyId,
@@ -129,26 +129,18 @@ class IaController extends Controller
                     'image_hash' => $image_hash,
                     'image_nom' => $image->getClientOriginalName(),
                     'status' => 'error',
-                    'erreur_message' => substr($result['error'], 0, 250),
-                    'json_brut' => $rawResponse ? json_encode(['raw_response' => substr($rawResponse, 0, 2000)]) : json_encode($result['details'] ?? []),
+                    'erreur_message' => substr($errorMsg, 0, 250),
+                    'json_brut' => json_encode(['details' => $result['details'] ?? [], 'msg' => $errorMsg]),
                 ]);
 
-                $statusCode = ($result['http_code'] == 429) ? 429 : 500;
-                return response()->json([
-                    'error' => $result['error'],
-                    'details' => $result['details'] ?? null,
-                    'http_code' => $result['http_code'] ?? null,
-                    'raw_response' => $rawResponse
-                ], $statusCode);
-            }
-
-            if (isset($result['has_error']) && $result['has_error']) {
-                $errorMsg = $result['error_message'] ?? 'Erreur inconnue de l\'API IA';
                 return response()->json([
                     'success' => false,
-                    'error' => "Erreur IA: " . $errorMsg
+                    'error' => "Erreur IA: " . $errorMsg,
+                    'http_code' => $result['http_code'] ?? 500
                 ], 500);
             }
+
+
 
             if (!isset($result['data'])) {
                 \Illuminate\Support\Facades\Log::error('IA Result missing data key', ['result' => $result]);

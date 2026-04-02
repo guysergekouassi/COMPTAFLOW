@@ -105,7 +105,10 @@ class VertexAiService
                 Log::info("IA Request via Pro Tunnel (Vertex AI) - [{$this->projectId}]");
                 $url = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
                 
-                $response = Http::withToken($token)->timeout(300)->post($url, $payload);
+                $response = Http::withToken($token)
+                    ->withHeaders(['X-Goog-User-Project' => $this->projectId])
+                    ->timeout(300)
+                    ->post($url, $payload);
             }
 
             if ($response->failed()) {
