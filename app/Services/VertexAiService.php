@@ -19,8 +19,9 @@ class VertexAiService
         $this->apiKey = env('GEMINI_API_KEY');
         $this->projectId = env('GOOGLE_CLOUD_PROJECT_ID', 'scan1-comptaflow');
         $this->location = env('GOOGLE_CLOUD_LOCATION', 'us-central1');
-        $this->apiVersion = 'v1'; // On reste sur v1 stable
-        $this->model = 'gemini-1.5-flash';
+        $this->apiVersion = 'v1'; 
+        // On utilise gemini-2.0-flash car gemini-1.5-flash est invisible pour cette clé spécifique
+        $this->model = 'gemini-2.0-flash'; 
 
         if (!$this->apiKey) {
             $creds = base_path('credentials.json');
@@ -68,7 +69,6 @@ class VertexAiService
             ],
             'generationConfig' => [
                 'temperature' => 0.1
-                // On retire response_mime_type qui cause des erreurs 400 sur certaines versions d'API
             ]
         ];
 
@@ -81,9 +81,9 @@ class VertexAiService
             $isToken = $this->apiKey && str_starts_with($this->apiKey, 'AQ.');
             $isApiKey = $this->apiKey && !$isToken;
 
-            // MÉTHODE A : Clé API Standard (AI Studio)
+            // MÉTHODE A : Clé API Standard (AI Studio) -> On utilise Gemini 2.0 Flash
             if ($isApiKey) {
-                Log::info("IA Request via Standard API KEY (v1)");
+                Log::info("IA Request via Standard API KEY (v1) - [{$this->model}]");
                 $url = "https://generativelanguage.googleapis.com/v1/models/{$this->model}:generateContent?key={$this->apiKey}";
                 
                 // Format snake_case pour API Studio
