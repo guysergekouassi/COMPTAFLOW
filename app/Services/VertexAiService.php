@@ -57,6 +57,35 @@ class VertexAiService
         }
     }
 
+    /**
+     * Cette fonction est celle appelée par IaController
+     */
+    public function analyzeInvoice(string $base64Data, string $mimeType, string $prompt)
+    {
+        $payload = [
+            'contents' => [
+                'role' => 'user',
+                'parts' => [
+                    ['text' => $prompt],
+                    [
+                        'inlineData' => [
+                            'mimeType' => $mimeType,
+                            'data' => $base64Data
+                        ]
+                    ]
+                ]
+            ],
+            'generationConfig' => [
+                'temperature' => 0.1,
+                'topP' => 0.95,
+                'maxOutputTokens' => 2048,
+                'responseMimeType' => 'application/json'
+            ]
+        ];
+
+        return $this->callVertexApi($payload);
+    }
+
     public function callVertexApi(array $payload)
     {
         try {
