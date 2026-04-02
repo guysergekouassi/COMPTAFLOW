@@ -90,7 +90,6 @@ class VertexAiService
             Log::info("Vertex AI API Request [{$this->projectId} / {$this->location}]");
 
             $response = Http::withToken($token)
-                ->withHeaders(['X-Goog-User-Project' => $this->projectId])
                 ->timeout(60)
                 ->post($this->endpoint, $payload);
 
