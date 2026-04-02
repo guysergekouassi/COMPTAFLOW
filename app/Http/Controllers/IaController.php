@@ -151,7 +151,7 @@ class IaController extends Controller
             }
 
             if (!isset($result['data'])) {
-                Log::error('IA Result missing data key', ['result' => $result]);
+                \Illuminate\Support\Facades\Log::error('IA Result missing data key', ['result' => $result]);
                 return response()->json([
                     'success' => false,
                     'error' => "Données IA manquantes dans la réponse"

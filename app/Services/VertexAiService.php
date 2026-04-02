@@ -63,7 +63,7 @@ class VertexAiService
             ],
             'generationConfig' => [
                 'temperature' => 0.1,
-                'response_mime_type' => 'application/json'
+                'responseMimeType' => 'application/json'
             ]
         ];
 
