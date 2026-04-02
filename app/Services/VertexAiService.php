@@ -22,10 +22,11 @@ class VertexAiService
         $this->projectId = 'scan1-comptaflow';
         $this->projectNumber = '288805151479';
         
-        // On bascule sur us-central1 pour garantir la disponibilité de Gemini 1.5 Flash
+        // us-central1 est la région la plus stable pour Gemini 1.5 Flash
         $this->location = 'us-central1';
         $this->apiVersion = 'v1';
-        $this->model = 'gemini-1.5-flash';
+        // Utilisation de la version précise pour éviter le 404
+        $this->model = 'gemini-1.5-flash-001';
         
         $this->endpoint = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectNumber}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
 
@@ -58,7 +59,7 @@ class VertexAiService
     }
 
     /**
-     * Cette fonction est celle appelée par IaController
+     * Analyse la facture et renvoie un tableau formatté pour IaController
      */
     public function analyzeInvoice(string $base64Data, string $mimeType, string $prompt)
     {
@@ -83,7 +84,32 @@ class VertexAiService
             ]
         ];
 
-        return $this->callVertexApi($payload);
+        $response = $this->callVertexApi($payload);
+
+        if (isset($response['has_error']) && $response['has_error']) {
+            return ['error' => $response['error_message'], 'http_code' => 500];
+        }
+
+        // Extraction du texte JSON de la réponse Gemini
+        if (!isset($response['candidates'][0]['content']['parts'][0]['text'])) {
+            Log::error('Vertex AI Invalid Response Structure', ['response' => $response]);
+            return ['error' => 'Structure de réponse IA invalide', 'http_code' => 500];
+        }
+
+        $aiText = $response['candidates'][0]['content']['parts'][0]['text'];
+        
+        // Nettoyage si l'IA a mis des backticks markdown
+        $aiText = preg_replace('/^```json\s*|\s*```$/', '', trim($aiText));
+        
+        $data = json_decode($aiText, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('Vertex AI JSON Parse Error', ['text' => $aiText]);
+            return ['error' => 'Erreur de lecture du JSON de l\'IA', 'http_code' => 500];
+        }
+
+        // On renvoie le format attendu par IaController
+        return ['data' => $data];
     }
 
     public function callVertexApi(array $payload)
