@@ -43,29 +43,44 @@ function diagForce() {
     echo "\n";
 
     // 2. Brute-force des combinaisons
-    echo "[TEST 2] Recherche d'un modèle (Brute-force) :\n";
+    echo "[TEST 2] Recherche d'un modèle (Brute-force augmenté) :\n";
     foreach ($regions as $reg) {
         foreach ($versions as $ver) {
             foreach ($models as $mod) {
-                $testUrl = "https://{$reg}-aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/publishers/google/models/{$mod}:generateContent";
+                // Variante 1: Standard (publishers/google/models)
+                $url1 = "https://{$reg}-aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/publishers/google/models/{$mod}:generateContent";
                 
-                // On fait un petit test (requête vide ou invalide juste pour voir le status)
-                $res = Http::withToken($token)
-                    ->withHeaders(['X-Goog-User-Project' => $projectId])
-                    ->timeout(5)
-                    ->post($testUrl, ['contents' => [['parts' => [['text' => 'test']]]]]);
+                // Variante 2: Direct (locations/models - fréquent sur v1beta1)
+                $url2 = "https://{$reg}-aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/models/{$mod}:generateContent";
+                
+                // Variante 3: GenerativeModels (Nouveau format)
+                $url3 = "https://{$reg}-aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/generativeModels/{$mod}:generateContent";
 
-                $status = $res->status();
-                echo sprintf("Region: %-13s | Ver: %-7s | Model: %-18s | Status: %d\n", $reg, $ver, $mod, $status);
+                $urls = [
+                    'Standard' => $url1,
+                    'Direct'   => $url2,
+                    'GenModel' => $url3
+                ];
 
-                // Si on a un 200 (Succès) ou un 400 (Bad Request - car payload incomplet), c'est gagné !
-                // Un 404 signifie que l'endpoint n'existe pas.
-                if ($status !== 404 && $status !== 403) {
-                    echo ">>> TROUVÉ ! Cet endpoint répond. <<<\n";
-                    echo "URL: $testUrl\n\n";
+                foreach ($urls as $label => $u) {
+                    $res = Http::withToken($token)
+                        ->withHeaders(['X-Goog-User-Project' => $projectId])
+                        ->timeout(3)
+                        ->post($u, ['contents' => [['parts' => [['text' => 'test']]]]]);
+
+                    $status = $res->status();
+                    if ($status !== 404) {
+                        echo sprintf("Region: %-13s | Ver: %-7s | Format: %-9s | Model: %-18s | Status: %d\n", $reg, $ver, $label, $mod, $status);
+                        if ($status === 200 || $status === 400) {
+                            echo ">>> TROUVÉ ! Cet endpoint répond. <<<\n";
+                            echo "URL: $u\n\n";
+                            return; // On s'arrête dès qu'on en a un qui marche
+                        }
+                    }
                 }
             }
         }
+        echo "Check $reg fini...\n";
     }
 }
 
