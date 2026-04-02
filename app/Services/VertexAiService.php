@@ -19,7 +19,7 @@ class VertexAiService
         $this->apiKey = env('GEMINI_API_KEY');
         $this->projectId = env('GOOGLE_CLOUD_PROJECT_ID', 'scan1-comptaflow');
         $this->location = env('GOOGLE_CLOUD_LOCATION', 'us-central1');
-        $this->apiVersion = 'v1beta1';
+        $this->apiVersion = 'v1'; // On reste sur v1 stable
         $this->model = 'gemini-1.5-flash';
 
         if (!$this->apiKey) {
@@ -67,8 +67,8 @@ class VertexAiService
                 ]
             ],
             'generationConfig' => [
-                'temperature' => 0.1,
-                'responseMimeType' => 'application/json'
+                'temperature' => 0.1
+                // On retire response_mime_type qui cause des erreurs 400 sur certaines versions d'API
             ]
         ];
 
@@ -86,16 +86,16 @@ class VertexAiService
                 Log::info("IA Request via Standard API KEY (v1)");
                 $url = "https://generativelanguage.googleapis.com/v1/models/{$this->model}:generateContent?key={$this->apiKey}";
                 
-                // Format snake_case pour AI Studio
-                $payload['contents'][0]['parts'][1] = [
+                // Format snake_case pour API Studio
+                $p = $payload;
+                $p['contents'][0]['parts'][1] = [
                     'inline_data' => [
                         'mime_type' => $payload['contents'][0]['parts'][1]['inlineData']['mimeType'],
                         'data' => $payload['contents'][0]['parts'][1]['inlineData']['data']
                     ]
                 ];
-                $payload['generationConfig']['response_mime_type'] = 'application/json';
-
-                $response = Http::timeout(300)->post($url, $payload);
+                
+                $response = Http::timeout(300)->post($url, $p);
             } 
             // MÉTHODE B : Token OAuth (AQ...) ou Service Account -> Tunnel Vertex AI (Pro)
             else {
@@ -113,14 +113,14 @@ class VertexAiService
 
             if ($response->failed()) {
                 Log::error('IA Scan API Error', ['status' => $response->status(), 'msg' => $response->body()]);
-                return ['has_error' => true, 'error_message' => $response->body()];
+                return ['has_error' => true, 'error_message' => $response->body(), 'http_code' => $response->status()];
             }
 
             $json = $response->json();
             $aiText = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
             $aiText = preg_replace('/^```json\s*|\s*```$/', '', trim($aiText));
             
-            return ['data' => json_decode($aiText, true)];
+            return ['has_error' => false, 'data' => json_decode($aiText, true)];
 
         } catch (\Exception $e) {
             Log::error('IA Scan Exception: ' . $e->getMessage());
