@@ -42,46 +42,32 @@ function diagForce() {
     }
     echo "\n";
 
-    // 2. Brute-force des combinaisons
-    echo "[TEST 2] Recherche d'un modèle (Brute-force augmenté) :\n";
-    foreach ($regions as $reg) {
-        foreach ($versions as $ver) {
-            foreach ($models as $mod) {
-                // Variante 1: Standard (publishers/google/models)
-                $url1 = "https://{$reg}-aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/publishers/google/models/{$mod}:generateContent";
-                
-                // Variante 2: Direct (locations/models - fréquent sur v1beta1)
-                $url2 = "https://{$reg}-aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/models/{$mod}:generateContent";
-                
-                // Variante 3: GenerativeModels (Nouveau format)
-                $url3 = "https://{$reg}-aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/generativeModels/{$mod}:generateContent";
-
-                $urls = [
-                    'Standard' => $url1,
-                    'Direct'   => $url2,
-                    'GenModel' => $url3,
-                    'BaseHost' => "https://aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/publishers/google/models/{$mod}:generateContent"
-                ];
-
-                foreach ($urls as $label => $u) {
-                    $res = Http::withToken($token)
-                        ->withHeaders(['X-Goog-User-Project' => $projectId])
-                        ->timeout(3)
-                        ->post($u, ['contents' => [['parts' => [['text' => 'test']]]]]);
-
-                    $status = $res->status();
-                    if ($status !== 404) {
-                        echo sprintf("Region: %-13s | Ver: %-7s | Format: %-9s | Model: %-18s | Status: %d\n", $reg, $ver, $label, $mod, $status);
-                        if ($status === 200 || $status === 400) {
-                            echo ">>> TROUVÉ ! Cet endpoint répond. <<<\n";
-                            echo "URL: $u\n\n";
-                            return; // On s'arrête dès qu'on en a un qui marche
-                        }
-                    }
-                }
+    // 2. Lister les modèles disponibles
+    echo "[TEST 2] Liste des modèles disponibles (Listing réel) :\n";
+    $testRegions = ['us-central1', 'europe-west1'];
+    foreach ($testRegions as $reg) {
+        echo "Check $reg :\n";
+        $listUrl = "https://{$reg}-aiplatform.googleapis.com/v1/projects/{$projectId}/locations/{$reg}/publishers/google/models";
+        $res = Http::withToken($token)->withHeaders(['X-Goog-User-Project' => $projectId])->get($listUrl);
+        
+        echo "  Standard URL Status: " . $res->status() . "\n";
+        if ($res->successful()) {
+            $data = $res->json();
+            foreach ($data['models'] ?? [] as $m) echo "  - " . ($m['name'] ?? 'Inconnu') . "\n";
+            if (empty($data['models'])) echo "  - (Liste vide)\n";
+        } else {
+            // Test sans publishers/google
+            $listUrl2 = "https://{$reg}-aiplatform.googleapis.com/v1/projects/{$projectId}/locations/{$reg}/models";
+            $res2 = Http::withToken($token)->withHeaders(['X-Goog-User-Project' => $projectId])->get($listUrl2);
+            echo "  Direct URL Status: " . $res2->status() . "\n";
+            if ($res2->successful()) {
+                $data = $res2->json();
+                foreach ($data['models'] ?? [] as $m) echo "  - " . ($m['name'] ?? 'Inconnu') . "\n";
+                if (empty($data['models'])) echo "  - (Liste vide)\n";
+            } else {
+                echo "  Erreur Listing: " . substr($res2->body(), 0, 100) . "\n";
             }
         }
-        echo "Check $reg fini...\n";
     }
 }
 
