@@ -19,7 +19,7 @@ class VertexAiService
         // On utilise les variables d'environnement pour être flexible entre Local et Prod
         $this->projectId = env('GOOGLE_CLOUD_PROJECT_ID', 'scan1-comptaflow');
         $this->location = env('GOOGLE_CLOUD_LOCATION', 'us-central1');
-        $this->apiVersion = 'v1';
+        $this->apiVersion = 'v1beta1';
         $this->model = 'gemini-1.5-flash';
         
         // Endpoint Vertex AI standard
