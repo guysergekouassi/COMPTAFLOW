@@ -38,9 +38,15 @@ return [
     'vertex_ai' => [
         'project_id' => env('GOOGLE_CLOUD_PROJECT_ID', 'scan1-comptaflow'),
         'project_number' => env('GOOGLE_CLOUD_PROJECT_NUMBER', '288805151479'),
-        'location' => env('VERTEX_AI_LOCATION', 'us-central1'),
+
+
+
+        'location' => env('VERTEX_AI_LOCATION', 'europe-west2'),
+
 
         'model' => env('VERTEX_AI_MODEL', 'gemini-1.5-flash'),
+
+
         'api_version' => env('VERTEX_AI_API_VERSION', 'v1'),
         'temperature' => env('VERTEX_AI_TEMPERATURE', 0.2),
         'max_tokens' => env('VERTEX_AI_MAX_TOKENS', 4096),
