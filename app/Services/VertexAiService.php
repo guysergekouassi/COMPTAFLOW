@@ -43,8 +43,8 @@ class VertexAiService
             $jsonKey = json_decode(file_get_contents($creds), true);
             $scopes = ['https://www.googleapis.com/auth/cloud-platform'];
             
-            // On spécifie le Quota Project ID (Crucial pour éviter le 404 dans certains environnements)
-            $credentials = new ServiceAccountCredentials($scopes, $jsonKey, null, $this->projectId);
+            // On remet le constructeur standard
+            $credentials = new ServiceAccountCredentials($scopes, $jsonKey);
             $token = $credentials->fetchAuthToken();
             
             return $token['access_token'];
@@ -87,7 +87,11 @@ class VertexAiService
             
             Log::info("Vertex AI - Appel Prediction API ({$this->location})...");
 
+            // On ajoute le header X-Goog-User-Project pour forcer le quota sur ce projet précis
             $response = Http::withToken($token)
+                ->withHeaders([
+                    'X-Goog-User-Project' => $this->projectId
+                ])
                 ->timeout(60)
                 ->post($this->endpoint, $payload);
 
