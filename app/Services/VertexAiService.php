@@ -28,7 +28,7 @@ class VertexAiService
         // Utilisation de la version précise pour éviter le 404
         $this->model = 'gemini-1.5-flash-001';
         
-        $this->endpoint = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectNumber}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
+        $this->endpoint = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
 
         // Chargement automatique des credentials
         $creds = base_path('credentials.json');

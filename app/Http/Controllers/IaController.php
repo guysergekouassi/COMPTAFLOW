@@ -129,8 +129,8 @@ class IaController extends Controller
                     'image_hash' => $image_hash,
                     'image_nom' => $image->getClientOriginalName(),
                     'status' => 'error',
-                    'erreur_message' => $result['error'],
-                    'json_brut' => $rawResponse ? json_encode(['raw_response' => substr($rawResponse, 0, 5000)]) : json_encode($result['details'] ?? []),
+                    'erreur_message' => substr($result['error'], 0, 250),
+                    'json_brut' => $rawResponse ? json_encode(['raw_response' => substr($rawResponse, 0, 2000)]) : json_encode($result['details'] ?? []),
                 ]);
 
                 $statusCode = ($result['http_code'] == 429) ? 429 : 500;
