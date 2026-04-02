@@ -11,6 +11,7 @@ class VertexAiService
     private ?string $apiKey;
     private string $projectId;
     private string $location;
+    private string $apiVersion;
     private string $model;
 
     public function __construct()
@@ -18,6 +19,7 @@ class VertexAiService
         $this->apiKey = env('GEMINI_API_KEY');
         $this->projectId = env('GOOGLE_CLOUD_PROJECT_ID', 'scan1-comptaflow');
         $this->location = env('GOOGLE_CLOUD_LOCATION', 'us-central1');
+        $this->apiVersion = 'v1beta1';
         $this->model = 'gemini-1.5-flash';
 
         if (!$this->apiKey) {
@@ -56,8 +58,8 @@ class VertexAiService
                     'parts' => [
                         ['text' => $prompt],
                         [
-                            'inline_data' => [
-                                'mime_type' => $mimeType,
+                            'inlineData' => [
+                                'mimeType' => $mimeType,
                                 'data' => $base64Data
                             ]
                         ]
@@ -66,7 +68,7 @@ class VertexAiService
             ],
             'generationConfig' => [
                 'temperature' => 0.1,
-                'response_mime_type' => 'application/json'
+                'responseMimeType' => 'application/json'
             ]
         ];
 
@@ -76,35 +78,33 @@ class VertexAiService
     public function callVertexApi(array $payload)
     {
         try {
-            // MÉTHODE A : Clé API (Simple et puissante pour le scan par lot)
-            if ($this->apiKey) {
-                // Détection si c'est une clé standard ou un token porteur (AQ...)
-                $isToken = str_starts_with($this->apiKey, 'AQ.');
-                
-                if ($isToken) {
-                    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
-                    $response = Http::withToken($this->apiKey)->timeout(300)->post($url, $payload);
-                } else {
-                    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
-                    $response = Http::timeout(300)->post($url, $payload);
-                }
-            } 
-            // MÉTHODE B : Vertex AI (Service Account) en secours
-            else {
-                $token = $this->getAccessToken();
-                if (!$token) throw new \Exception("Aucun canal d'IA configuré.");
+            $isToken = $this->apiKey && str_starts_with($this->apiKey, 'AQ.');
+            $isApiKey = $this->apiKey && !$isToken;
 
-                $url = "https://{$this->location}-aiplatform.googleapis.com/v1/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
+            // MÉTHODE A : Clé API Standard (AI Studio)
+            if ($isApiKey) {
+                Log::info("IA Request via Standard API KEY");
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
                 
-                // Adaptation pour format Vertex
+                // Format snake_case pour AI Studio
                 $payload['contents'][0]['parts'][1] = [
-                    'inlineData' => [
-                        'mimeType' => $payload['contents'][0]['parts'][1]['inline_data']['mime_type'],
-                        'data' => $payload['contents'][0]['parts'][1]['inline_data']['data']
+                    'inline_data' => [
+                        'mime_type' => $payload['contents'][0]['parts'][1]['inlineData']['mimeType'],
+                        'data' => $payload['contents'][0]['parts'][1]['inlineData']['data']
                     ]
                 ];
-                $payload['generationConfig']['responseMimeType'] = 'application/json';
+                $payload['generationConfig']['response_mime_type'] = 'application/json';
 
+                $response = Http::timeout(300)->post($url, $payload);
+            } 
+            // MÉTHODE B : Token OAuth (AQ...) ou Service Account -> Tunnel Vertex AI (Pro)
+            else {
+                $token = $this->apiKey ?: $this->getAccessToken();
+                if (!$token) throw new \Exception("Aucune méthode d'authentification disponible.");
+
+                Log::info("IA Request via Pro Tunnel (Vertex AI) - [{$this->projectId}]");
+                $url = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
+                
                 $response = Http::withToken($token)->timeout(300)->post($url, $payload);
             }
 
