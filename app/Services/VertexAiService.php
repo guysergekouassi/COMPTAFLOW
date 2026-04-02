@@ -16,16 +16,16 @@ class VertexAiService
 
     public function __construct()
     {
-        // Détection dynamique des réglages via .env ou valeurs par défaut pour LWS
+        // On utilise les variables d'environnement pour être flexible entre Local et Prod
         $this->projectId = env('GOOGLE_CLOUD_PROJECT_ID', 'scan1-comptaflow');
         $this->location = env('GOOGLE_CLOUD_LOCATION', 'us-central1');
         $this->apiVersion = 'v1';
         $this->model = 'gemini-1.5-flash';
         
-        // Construction de l'URL standard Vertex AI
+        // Endpoint Vertex AI standard
         $this->endpoint = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
 
-        // Détection du chemin des credentials (Local ou Production)
+        // Chargement du fichier de credentials
         $creds = base_path('credentials.json');
         if (file_exists($creds)) {
             putenv("GOOGLE_APPLICATION_CREDENTIALS=$creds");
@@ -37,7 +37,7 @@ class VertexAiService
         try {
             $creds = getenv('GOOGLE_APPLICATION_CREDENTIALS');
             if (!$creds || !file_exists($creds)) {
-                throw new \Exception("Fichier credentials introuvable à la racine du projet.");
+                throw new \Exception("Fichier credentials.json introuvable à la racine.");
             }
 
             $jsonKey = json_decode(file_get_contents($creds), true);
@@ -47,7 +47,7 @@ class VertexAiService
             $tokenData = $credentials->fetchAuthToken();
             
             if (!isset($tokenData['access_token'])) {
-                throw new \Exception("Impossible d'obtenir le token d'accès Google.");
+                throw new \Exception("Impossible d'obtenir un jeton d'accès Google.");
             }
 
             return $tokenData['access_token'];
@@ -87,10 +87,10 @@ class VertexAiService
         try {
             $token = $this->getAccessToken();
             
-            Log::info("Vertex AI Request [{$this->projectId} / {$this->location}]");
+            Log::info("Vertex AI API Request [{$this->projectId} / {$this->location}]");
 
             $response = Http::withToken($token)
-                ->withHeaders(['X-Goog-User-Project' => $projectId ?? $this->projectId])
+                ->withHeaders(['X-Goog-User-Project' => $this->projectId])
                 ->timeout(60)
                 ->post($this->endpoint, $payload);
 
@@ -105,13 +105,16 @@ class VertexAiService
             $json = $response->json();
             
             if (!isset($json['candidates'][0]['content']['parts'][0]['text'])) {
+                Log::error('Vertex AI Invalid Response', ['response' => $json]);
                 return ['has_error' => true, 'error_message' => 'Structure de réponse invalide.'];
             }
 
             $aiText = $json['candidates'][0]['content']['parts'][0]['text'];
             $aiText = preg_replace('/^```json\s*|\s*```$/', '', trim($aiText));
             
-            return ['data' => json_decode($aiText, true)];
+            $data = json_decode($aiText, true);
+
+            return ['data' => $data];
         } catch (\Exception $e) {
             Log::error('Vertex AI Exception: ' . $e->getMessage());
             return ['has_error' => true, 'error_message' => $e->getMessage()];
