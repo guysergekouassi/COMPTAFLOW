@@ -15,7 +15,7 @@ class VertexAiService
         // Passage sur l'API Google AI (Generative Language) qui est plus stable sur les régions africaines/européennes
         // Elle accepte les mêmes credentials que Vertex AI
         $this->model = 'gemini-1.5-flash';
-        $this->endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
+        $this->endpoint = "https://generativelanguage.googleapis.com/v1/models/{$this->model}:generateContent";
 
         // Chargement des credentials
         $creds = base_path('credentials.json');

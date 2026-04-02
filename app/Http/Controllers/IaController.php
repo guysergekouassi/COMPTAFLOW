@@ -142,6 +142,22 @@ class IaController extends Controller
                 ], $statusCode);
             }
 
+            if (isset($result['has_error']) && $result['has_error']) {
+                $errorMsg = $result['error_message'] ?? 'Erreur inconnue de l\'API IA';
+                return response()->json([
+                    'success' => false,
+                    'error' => "Erreur IA: " . $errorMsg
+                ], 500);
+            }
+
+            if (!isset($result['data'])) {
+                Log::error('IA Result missing data key', ['result' => $result]);
+                return response()->json([
+                    'success' => false,
+                    'error' => "Données IA manquantes dans la réponse"
+                ], 500);
+            }
+
             $data = $result['data'];
             $json_brut = json_encode($data);
 
