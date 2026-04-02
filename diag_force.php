@@ -59,7 +59,8 @@ function diagForce() {
                 $urls = [
                     'Standard' => $url1,
                     'Direct'   => $url2,
-                    'GenModel' => $url3
+                    'GenModel' => $url3,
+                    'BaseHost' => "https://aiplatform.googleapis.com/{$ver}/projects/{$projectId}/locations/{$reg}/publishers/google/models/{$mod}:generateContent"
                 ];
 
                 foreach ($urls as $label => $u) {
