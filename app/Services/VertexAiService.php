@@ -83,8 +83,8 @@ class VertexAiService
 
             // MÉTHODE A : Clé API Standard (AI Studio)
             if ($isApiKey) {
-                Log::info("IA Request via Standard API KEY");
-                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+                Log::info("IA Request via Standard API KEY (v1)");
+                $url = "https://generativelanguage.googleapis.com/v1/models/{$this->model}:generateContent?key={$this->apiKey}";
                 
                 // Format snake_case pour AI Studio
                 $payload['contents'][0]['parts'][1] = [
