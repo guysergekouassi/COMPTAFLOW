@@ -24,9 +24,9 @@ class VertexAiService
         
         // us-central1 est la région la plus stable pour Gemini 1.5 Flash
         $this->location = 'us-central1';
-        $this->apiVersion = 'v1';
-        // Utilisation de la version précise pour éviter le 404
-        $this->model = 'gemini-1.5-flash-001';
+        $this->apiVersion = 'v1beta1';
+        // Utilisation de gemini-1.5-flash (alias stable) avec v1beta1
+        $this->model = 'gemini-1.5-flash';
         
         $this->endpoint = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
 
