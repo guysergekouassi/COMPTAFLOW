@@ -116,6 +116,11 @@
         backdrop-filter: blur(8px);
         border-bottom: 1px solid #eef0f2;
     }
+
+    /* Container visibility fix for dropdowns */
+    .container-p-y, .content-wrapper, .layout-page {
+        overflow: visible !important;
+    }
 </style>
 
 <body>
@@ -131,7 +136,7 @@
                         <!-- Header -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <div class="d-flex align-items-center justify-content-between bg-white p-4 rounded-3 shadow-sm">
+                                <div class="d-flex align-items-center justify-content-between bg-white p-4 rounded-3 shadow-sm" style="overflow: visible !important;">
                                     <div>
                                         <h4 class="mb-1 fw-bold text-dark"><i class="fa-solid fa-copy me-2 text-primary"></i>Centre de Scan Groupé</h4>
                                         <p class="text-muted mb-0">Importez plusieurs factures (Photos ou PDF) et laissez l'IA générer les écritures pour vous.</p>
@@ -141,15 +146,15 @@
                                             <i class="bx bx-refresh me-1"></i> Réinitialiser
                                         </button>
                                         <div class="btn-group d-none" id="btnSaveGroup">
-                                            <button type="button" class="btn btn-primary" id="btnSaveSelected">
-                                                <i class="bx bx-save me-1"></i> Enregistrer
+                                            <button type="button" class="btn btn-primary" id="btnSaveSelected" onclick="window.saveDocuments('all')">
+                                                <i class="bx bx-save me-1"></i> Tout Enregistrer
                                             </button>
                                             <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                                                 <span class="visually-hidden">Toggle Dropdown</span>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                <li><a class="dropdown-item" href="javascript:void(0);" id="btnSaveAllDocs"><i class="bx bx-list-check me-2"></i>Tout Enregistrer</a></li>
-                                                <li><a class="dropdown-item" href="javascript:void(0);" id="btnSaveOnlySelected"><i class="bx bx-check-square me-2"></i>Enregistrer la sélection</a></li>
+                                                <li><a class="dropdown-item" href="javascript:void(0);" onclick="window.saveDocuments('all')"><i class="bx bx-list-check me-2"></i>Tout Enregistrer</a></li>
+                                                <li><a class="dropdown-item" href="javascript:void(0);" onclick="window.saveDocuments('selected')"><i class="bx bx-check-square me-2"></i>Enregistrer la sélection</a></li>
                                             </ul>
                                         </div>
                                     </div>
@@ -652,7 +657,7 @@
                                         <tbody class="doc-entries-body"></tbody>
                                         <tfoot>
                                             <tr class="bg-light fw-bold extra-small">
-                                                <td colspan="3" class="text-end">TOTAL CHARGE :</td>
+                                                <td colspan="4" class="text-end">TOTAL CHARGE :</td>
                                                 <td class="text-end total-debit">0</td>
                                                 <td class="text-end total-credit">0</td>
                                                 <td></td>
@@ -718,10 +723,41 @@
                 const ecritures = data.ecriture || data.lignes || [];
                 ecritures.forEach(l => window.renderEntryRow(tbodyConstat, docId, l, data, 'constatation'));
                 
+                // --- ROBUST SUPPLIER LOOKUP ---
+                let supplierAccId = '';
+                const supplierName = (data.fournisseur || "").toUpperCase().trim();
+                const tier = TIERS_LIST.find(t => t.intitule.toUpperCase().includes(supplierName));
+                if (tier) {
+                    // Try to find the associated general account (usually account 40xxx)
+                    const genAcc = GEN_ACCOUNTS.find(a => a.id == tier.compte_collectif_id);
+                    if (genAcc) supplierAccId = genAcc.id;
+                    else supplierAccId = window.findBestAccount(tier.compte_collectif_num, 'FOURNISSEUR');
+                } else {
+                    supplierAccId = window.findBestAccount(data.fournisseur, 'FOURNISSEUR') || '';
+                }
+
+                // --- AUTO BALANCE CHARGE ---
+                let dC = 0, cC = 0;
+                tbodyConstat.querySelectorAll('tr').forEach(tr => {
+                    dC += parseFloat(tr.querySelector('.row-debit').value) || 0;
+                    cC += parseFloat(tr.querySelector('.row-credit').value) || 0;
+                });
+
+                if (data.est_facture !== false && (dC - cC) > 0.01) {
+                    const diff = dC - cC;
+                    window.renderEntryRow(tbodyConstat, docId, {
+                        compte_id: supplierAccId,
+                        intitule: (data.reference || 'FACT') + ' / CONTREPARTIE FOURNISSEUR',
+                        debit: 0,
+                        credit: diff,
+                        type: 'FOURNISSEUR'
+                    }, data, 'constatation');
+                    cC += diff;
+                }
+
                 // --- AUTO GENERATE REGLEMENT ---
                 if (data.est_facture !== false) {
-                    const totalTTC = ecritures.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0) || data.total_ttc || 0;
-                    const supplierAccId = window.findBestAccount(data.fournisseur, 'FOURNISSEUR') || '';
+                    const totalTTC = dC || data.total_ttc || 0;
                     
                     // Row 1: Debit Supplier
                     window.renderEntryRow(tbodyReglem, docId, {
@@ -731,8 +767,10 @@
                         credit: 0
                     }, data, 'reglement');
                     
-                    // Row 2: Credit Treasury (Default)
-                    const treasuryAccId = TREASURY_POST_LIST[0]?.plan_comptable_id || '';
+                    // Row 2: Credit Treasury (Default to first Class 5 account)
+                    const class5Acc = GEN_ACCOUNTS.find(a => a.numero_de_compte.toString().startsWith('5'));
+                    const treasuryAccId = class5Acc ? class5Acc.id : (TREASURY_POST_LIST[0]?.plan_comptable_id || '');
+                    
                     window.renderEntryRow(tbodyReglem, docId, {
                         compte_id: treasuryAccId,
                         intitule: (data.reference || 'FACT') + ' / PAIEMENT',
@@ -797,12 +835,13 @@
                         </td>
                     `;
                 } else {
-                    // REGLEMENT PANE: Simplified
+                    // REGLEMENT PANE: ONLY Class 5 accounts
+                    const class5Accounts = GEN_ACCOUNTS.filter(a => a.numero_de_compte.toString().startsWith('5'));
                     tr.innerHTML = `
                         <td>
                             <select class="form-select form-select-sm select2 row-acc">
                                 <option value="">Choisir...</option>
-                                ${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}
+                                ${class5Accounts.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}
                             </select>
                         </td>
                         <td><input type="text" class="form-control form-control-sm row-lib" value="${lineData.intitule || identifiedTierName || ''}"></td>
@@ -1004,7 +1043,7 @@
                 });
                 card.querySelector('.total-debit').innerText = Math.round(dC).toLocaleString();
                 card.querySelector('.total-credit').innerText = Math.round(cC).toLocaleString();
-                const chargeBalanced = Math.abs(dC - cC) < 1 && dC > 0;
+                const chargeBalanced = Math.abs(dC - cC) < 0.01 && dC > 0;
                 
                 // --- PANE REGLEMENT ---
                 const rowsReglem = card.querySelectorAll('.doc-reglem-body tr');
@@ -1015,16 +1054,17 @@
                 });
                 card.querySelector('.reglem-total-debit').innerText = Math.round(dR).toLocaleString();
                 card.querySelector('.reglem-total-credit').innerText = Math.round(cR).toLocaleString();
-                const reglemBalanced = Math.abs(dR - cR) < 1 && dR > 0;
+                const reglemBalanced = Math.abs(dR - cR) < 0.01 && dR > 0;
 
                 const statusEl = card.querySelector('.balance-status');
                 if (chargeBalanced && reglemBalanced) {
                     statusEl.innerHTML = '<i class="bx bx-check-circle me-1"></i>Duo Équilibré';
                     statusEl.className = 'balance-status text-success small fw-bold';
                 } else {
-                    let msg = 'Déséquilibré';
-                    if (!chargeBalanced && reglemBalanced) msg = 'Charge déséquilibrée';
-                    else if (chargeBalanced && !reglemBalanced) msg = 'Règlement déséquilibré';
+                    let msg = 'Duo Déséquilibré';
+                    if (!chargeBalanced && reglemBalanced) msg = 'Charge déséquilibrée (' + Math.round(dC-cC) + ')';
+                    else if (chargeBalanced && !reglemBalanced) msg = 'Règlement déséquilibré (' + Math.round(dR-cR) + ')';
+                    else if (!chargeBalanced && !reglemBalanced) msg = 'Les deux volets déséquilibrés';
                     statusEl.innerHTML = `<i class="bx bx-error-circle me-1"></i>${msg}`;
                     statusEl.className = 'balance-status text-danger small fw-bold';
                 }
@@ -1103,10 +1143,12 @@
                     if (!journalId) return;
 
                     const ecritures = [];
+                    let fieldErrors = [];
+
                     // 1. COLLECT CHARGE ENTRIES
-                    card.querySelectorAll('.doc-entries-body tr').forEach(tr => {
+                    card.querySelectorAll('.doc-entries-body tr').forEach((tr, idx) => {
                         const accId = tr.querySelector('.row-acc').value;
-                        if (!accId) return;
+                        if (!accId) fieldErrors.push(`Charge: Compte manquant à la ligne ${idx + 1}`);
                         const vnts = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : null;
                         ecritures.push({
                             date: dDate, n_saisie: nsConstat, description_operation: (tr.querySelector('.row-lib')?.value || dRef),
@@ -1114,15 +1156,15 @@
                             debit: parseFloat(tr.querySelector('.row-debit').value) || 0,
                             credit: parseFloat(tr.querySelector('.row-credit').value) || 0,
                             code_journal_id: journalId, exercices_comptables_id: EXERCICE_ACTIF.id,
-                            poste_tresorerie_id: null, ventilations: vnts, plan_analytique: vnts ? 1 : 0
+                            ventilations: vnts, plan_analytique: vnts ? 1 : 0
                         });
                     });
 
                     // 2. COLLECT REGLEMENT ENTRIES
                     if (journalReglemId) {
-                        card.querySelectorAll('.doc-reglem-body tr').forEach(tr => {
+                        card.querySelectorAll('.doc-reglem-body tr').forEach((tr, idx) => {
                             const accId = tr.querySelector('.row-acc').value;
-                            if (!accId) return;
+                            if (!accId) fieldErrors.push(`Règlement: Compte manquant à la ligne ${idx + 1}`);
                             ecritures.push({
                                 date: dDate, n_saisie: nsReglem, description_operation: tr.querySelector('.row-lib').value,
                                 reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: null,
@@ -1133,14 +1175,36 @@
                         });
                     }
                     
+                    if (fieldErrors.length > 0) {
+                        errorDetails.push(`Document ${docId}:<br> - ${fieldErrors.join('<br> - ')}`);
+                        return; // Skip this doc
+                    }
+
                     if (ecritures.length > 0) docsToSave.push({ id: docId, ecritures, file: item.file });
                 });
 
-                if (docsToSave.length === 0) { Swal.fire('Attention', 'Aucun document valide sélectionné.', 'warning'); return; }
+                // --- VALIDATION LOCALE ---
+                const unbalanced = docsToSave.filter(doc => {
+                    const card = document.getElementById('card_' + doc.id);
+                    const status = card.querySelector('.balance-status');
+                    return !status.classList.contains('text-success');
+                });
 
-                const btn = document.getElementById('btnSaveOnlySelected');
+                if (unbalanced.length > 0) {
+                    Swal.fire({
+                        title: 'Équilibrage Impossible',
+                        text: "L'un des documents n'est pas équilibré (Charge ou Règlement). Veuillez vérifier que le montant débit égale le montant crédit dans les deux volets.",
+                        icon: 'error'
+                    });
+                    return;
+                }
+
+                const btn = document.getElementById('btnSaveSelected');
                 const originalHtml = btn ? btn.innerHTML : '';
-                if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...'; }
+                if (btn) { 
+                    btn.disabled = true; 
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Envoi en cours...'; 
+                }
 
                 let successCount = 0;
                 let errorDetails = [];
@@ -1162,7 +1226,12 @@
                             successCount++; 
                             window.removeDocument(doc.id); 
                         } else {
-                            errorDetails.push(`Doc ${doc.id}: ${json.message || 'Erreur inconnue'}`);
+                            let msg = json.message || 'Erreur inconnue';
+                            if (json.errors) {
+                                // Extract detail from validation errors
+                                msg = Object.values(json.errors).flat().join(' | ');
+                            }
+                            errorDetails.push(`Card #${doc.id}: ${msg}`);
                         }
                     } catch (e) { 
                         errorDetails.push(`Doc ${doc.id}: Impossible de contacter le serveur.`);
@@ -1196,11 +1265,19 @@
                 const dDate = card.querySelector('.doc-date').value;
                 const dRef = card.querySelector('.doc-ref').value;
 
+                const status = card.querySelector('.balance-status');
+                if (!status.classList.contains('text-success')) {
+                    Swal.fire('Erreur', 'Ce document est déséquilibré. Vérifiez la Charge et le Règlement.', 'error');
+                    return;
+                }
+
                 const ecritures = [];
+                let fieldErrors = [];
+
                 // Collect Charge
-                card.querySelectorAll('.doc-entries-body tr').forEach(tr => {
+                card.querySelectorAll('.doc-entries-body tr').forEach((tr, idx) => {
                     const accId = tr.querySelector('.row-acc').value;
-                    if (!accId) return;
+                    if (!accId) fieldErrors.push(`Charge: Compte manquant à la ligne ${idx + 1}`);
                     const vnts = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : null;
                     ecritures.push({
                         date: dDate, n_saisie: nsConstat, description_operation: (tr.querySelector('.row-lib')?.value || dRef),
@@ -1212,9 +1289,9 @@
                     });
                 });
                 // Collect Reglement
-                card.querySelectorAll('.doc-reglem-body tr').forEach(tr => {
+                card.querySelectorAll('.doc-reglem-body tr').forEach((tr, idx) => {
                     const accId = tr.querySelector('.row-acc').value;
-                    if (!accId) return;
+                    if (!accId) fieldErrors.push(`Règlement: Compte manquant à la ligne ${idx + 1}`);
                     ecritures.push({
                         date: dDate, n_saisie: nsReglem, description_operation: tr.querySelector('.row-lib').value,
                         reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: null,
@@ -1223,6 +1300,15 @@
                         code_journal_id: journalReglemId, exercices_comptables_id: EXERCICE_ACTIF.id
                     });
                 });
+
+                if (fieldErrors.length > 0) {
+                    Swal.fire({
+                        title: 'Champs Manquants',
+                        html: `<div class="text-start small">Veuillez remplir les informations suivantes : <br><br> ${fieldErrors.join('<br>')}</div>`,
+                        icon: 'warning'
+                    });
+                    return;
+                }
 
                 if (ecritures.length === 0) return;
 
@@ -1239,7 +1325,11 @@
                     if (json.success) { 
                         Swal.fire({ icon: 'success', title: 'Duo Enregistré', timer: 1000, showConfirmButton: false });
                         window.removeDocument(docId); 
-                    } else Swal.fire('Erreur', json.message || 'Échec de l\'enregistrement', 'error');
+                    } else {
+                        let msg = json.message || 'Échec de l\'enregistrement';
+                        if (json.errors) msg = Object.values(json.errors).flat().join(' | ');
+                        Swal.fire('Erreur', msg, 'error');
+                    }
                 } catch (e) { Swal.fire('Erreur', 'Serveur injoignable', 'error'); }
                 finally { btn.disabled = false; btn.innerHTML = originalHtml; }
             };
@@ -1264,9 +1354,6 @@
 
             const btnReset = document.getElementById('btnReset');
             if (btnReset) btnReset.onclick = () => window.location.reload();
-            
-            const btnSaveAllDocs = document.getElementById('btnSaveAllDocs');
-            if (btnSaveAllDocs) btnSaveAllDocs.onclick = () => window.saveDocuments('all');
             
             window.saveOnlySelected = () => window.saveDocuments('selected');
 
