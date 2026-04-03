@@ -63,6 +63,51 @@
     .results-scroll-container { max-height: 85vh; overflow-y: auto; padding: 15px; scroll-behavior: smooth; scrollbar-width: thin; }
     .results-scroll-container::-webkit-scrollbar { width: 6px; }
     .results-scroll-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    
+    /* Dual Pane Layout */
+    .dual-entry-scroll-container {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: thin;
+        scroll-behavior: smooth;
+        padding-bottom: 10px;
+    }
+    .dual-entry-scroll-container::-webkit-scrollbar { height: 8px; }
+    .dual-entry-scroll-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    
+    .entry-pane-container {
+        display: flex;
+        min-width: 1800px; /* Force spread on wide screens */
+        gap: 0;
+    }
+    .entry-pane {
+        flex: 0 0 900px;
+        padding: 15px;
+        white-space: normal;
+        position: relative;
+    }
+    .entry-pane.pane-reglement {
+        background-color: #f8fafc;
+    }
+    .vertical-separator {
+        width: 3px;
+        background: repeating-linear-gradient(0deg, #e2e8f0, #e2e8f0 10px, transparent 10px, transparent 20px);
+        margin: 0 5px;
+        flex-shrink: 0;
+    }
+    .pane-title {
+        font-size: 0.9rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .pane-title.charge { color: #2563eb; }
+    .pane-title.reglement { color: #059669; }
+    
     .sticky-summary {
         position: sticky;
         top: 0;
@@ -512,7 +557,7 @@
                     return;
                 }
 
-                // Detect best journal
+                // Detect best journals
                 let guessedJournalId = '';
                 const lines = data.ecriture || data.lignes || [];
                 const hasAchat = lines.some(l => l.compte && l.compte.toString().startsWith('6'));
@@ -523,104 +568,143 @@
                 else if (hasVente) guessedJournalId = JOURNALS.find(j => j.code_journal.includes('VT') || j.intitule.toLowerCase().includes('vente'))?.id || '';
                 else if (hasBank) guessedJournalId = JOURNALS.find(j => j.code_journal.includes('BQ') || j.intitule.toLowerCase().includes('banque'))?.id || '';
 
+                const treasuryJournals = JOURNALS.filter(j => j.type_journal === 'BQ' || j.type_journal === 'CA' || j.code_journal.includes('BQ') || j.code_journal.includes('CA'));
+                const guessedTresoJournalId = treasuryJournals[0]?.id || '';
+
                 const journalOptions = JOURNALS.map(j => `<option value="${j.id}" ${j.id == guessedJournalId ? 'selected' : ''}>${j.code_journal} - ${j.intitule}</option>`).join('');
+                const tresoJournalOptions = treasuryJournals.map(j => `<option value="${j.id}" ${j.id == guessedTresoJournalId ? 'selected' : ''}>${j.code_journal} - ${j.intitule}</option>`).join('');
+                
                 const vats = GEN_ACCOUNTS.filter(a => a.numero_de_compte.startsWith('445'));
                 const vatOptions = vats.map(a => `<option value="${a.id}">${a.numero_de_compte} - ${a.intitule}</option>`).join('');
 
                 const docIndex = Array.from(documentsContainer.children).indexOf(card) + 1;
+                const nsConstat = window.calculateNextNS(docIndex * 2 - 1);
+                const nsReglem = window.calculateNextNS(docIndex * 2);
 
                 card.innerHTML = `
                     <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-2">
                             <input type="checkbox" class="form-check-input doc-selector" value="${docId}" ${data.est_facture !== false ? 'checked' : ''}>
                             <span class="badge bg-light text-dark border fw-bold">${docIndex}</span>
-                            <h6 class="mb-0 fw-bold text-muted small">${item.file.name}</h6>
-                            ${data.est_facture === false ? `
-                                <span class="badge bg-warning text-white px-2">DOCUMENT REJETÉ</span>
-                            ` : ''}
+                            <h6 class="mb-0 fw-bold text-muted small text-truncate" style="max-width: 250px;">${item.file.name}</h6>
+                            <div class="vr mx-1"></div>
+                            <span class="balance-status text-danger extra-small fw-bold"><i class="bx bx-error-circle me-1"></i>Déséquilibré</span>
                         </div>
                         <div class="d-flex gap-2 align-items-center">
-                            <span class="balance-status text-danger small fw-bold"><i class="bx bx-error-circle me-1"></i>Déséquilibré</span>
-                            <button class="btn btn-sm btn-success ms-3 btn-save-single" onclick="window.saveSingleDocument('${docId}')" ${data.est_facture === false ? 'disabled' : ''}>
-                                <i class="bx bx-save me-1"></i>Enregistrer
+                            <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('scroll_${docId}').scrollLeft = 0">Charges</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('scroll_${docId}').scrollLeft = 900">Règlement</button>
+                            <div class="vr mx-1"></div>
+                            <button class="btn btn-sm btn-success btn-save-single" onclick="window.saveSingleDocument('${docId}')" ${data.est_facture === false ? 'disabled' : ''}>
+                                <i class="bx bx-save me-1"></i>Enregistrer Duo
                             </button>
-                            <div class="vr mx-2"></div>
                             <button class="btn btn-sm btn-light text-danger" onclick="window.removeDocument('${docId}')"><i class="bx bx-trash"></i></button>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-auto">
-                                <img src="${item.file.type.includes('pdf') ? 'https://cdn-icons-png.flaticon.com/512/337/337946.png' : previewUrl}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" onclick="window.open('${previewUrl}')">
-                            </div>
-                            <div class="col-md">
-                                ${data.est_facture === false ? `
-                                    <div class="alert alert-soft-danger border d-flex align-items-center py-2 mb-3">
-                                        <i class="bx bx-error-circle fs-4 me-3"></i>
-                                        <div>
-                                            <h6 class="mb-0 small fw-bold">Analyse : Non-comptabilisable</h6>
-                                            <p class="mb-0 extra-small">${data.explication_rejet || 'Ce document n\'a pas été identifié comme une facture valide.'}</p>
+                    <div class="card-body p-0">
+                        <div class="dual-entry-scroll-container" id="scroll_${docId}">
+                            <div class="entry-pane-container">
+                                <!-- PANE 1: CONSTATATION -->
+                                <div class="entry-pane pane-constatation">
+                                    <div class="pane-title charge"><i class="bx bx-file"></i> 1. Constatation (Charge)</div>
+                                    
+                                    ${data.est_facture === false ? `
+                                        <div class="alert alert-soft-danger border d-flex align-items-center py-2 mb-3">
+                                            <i class="bx bx-error-circle fs-4 me-3"></i>
+                                            <div><h6 class="mb-0 small fw-bold">Analyse : Non-comptabilisable</h6><p class="mb-0 extra-small">${data.explication_rejet || ''}</p></div>
+                                        </div>
+                                    ` : ''}
+
+                                    <div class="row g-2 mb-3 align-items-end">
+                                        <div class="col-md-4">
+                                            <label class="small text-muted mb-1">Journal</label>
+                                            <select class="form-select form-select-sm select2 doc-journal">${journalOptions}</select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="small text-muted mb-1">Date</label>
+                                            <input type="date" class="form-control form-control-sm doc-date" value="${window.formatDateForInput(data.date)}">
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="small text-muted mb-1">Pièce: <span class="text-primary fw-bold">${nsConstat}</span></label>
+                                            <input type="text" class="form-control form-control-sm doc-ref" value="${data.reference || data.ref || ''}" placeholder="Référence">
                                         </div>
                                     </div>
-                                ` : ''}
-                                <div class="row g-2 mb-3 align-items-end ${data.est_facture === false ? 'opacity-50' : ''}">
-                                    <div class="col-md-3">
-                                        <label class="small text-muted mb-1">Journal <a href="javascript:void(0);" onclick="window.createQuickJournal('${docId}')"><i class="bx bx-plus-circle"></i></a></label>
-                                        <select class="form-select form-select-sm select2 doc-journal">${journalOptions}</select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="small text-muted mb-1">Date</label>
-                                        <input type="date" class="form-control form-control-sm doc-date" value="${window.formatDateForInput(data.date)}">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="small text-muted mb-1">Référence / Pièce</label>
-                                        <input type="text" class="form-control form-control-sm doc-ref" value="${data.reference || data.ref || ''}">
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <div class="d-inline-block p-2 bg-light border rounded small fw-bold text-muted">
-                                            N° Saisie: <span class="text-primary">${window.calculateNextNS(docIndex)}</span>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <div class="d-flex align-items-center gap-2 mb-2 p-2 bg-light rounded border">
-                                    <span class="extra-small fw-bold text-uppercase"><i class="bx bx-bolt-circle me-1"></i>Outils Rapides</span>
-                                    <div class="ms-auto d-flex align-items-center gap-2">
-                                        <input type="number" class="form-control form-control-sm vat-amount-input" placeholder="Montant TVA" style="width: 110px;">
-                                        <select class="form-select form-select-sm vat-account-select" style="width: 160px;">
-                                            <option value="">Compte TVA...</option>
-                                            ${vatOptions}
-                                        </select>
-                                        <button class="btn btn-sm btn-primary px-3 py-1" onclick="window.applyCustomVAT('${docId}')">APPLIQUER</button>
-                                        <button class="btn btn-sm btn-dark px-3 py-1" onclick="window.apply18VAT('${docId}')">TVA 18%</button>
+                                    <div class="d-flex align-items-center gap-2 mb-2 p-2 bg-light rounded border">
+                                        <span class="extra-small fw-bold text-uppercase">TVA tools</span>
+                                        <select class="form-select form-select-sm vat-account-select" style="width: 160px;">${vatOptions}</select>
+                                        <button class="btn btn-sm btn-dark px-2" onclick="window.apply18VAT('${docId}')">TVA 18%</button>
+                                        <button class="btn btn-sm btn-primary px-2" onclick="window.applyCustomVAT('${docId}')">Appliquer</button>
+                                        <input type="number" class="form-control form-control-sm vat-amount-input ms-auto" placeholder="Montant" style="width: 90px;">
                                     </div>
-                                </div>
 
-                                <div class="table-responsive">
                                     <table class="table table-sm table-bordered align-middle mb-2">
                                         <thead class="bg-light extra-small text-uppercase">
                                             <tr>
-                                                <th style="width: 25%">Compte <a href="javascript:void(0);" onclick="window.createQuickAccount('${docId}')"><i class="bx bx-plus-circle"></i></a></th>
-                                                <th style="width: 5%" class="text-center">TVA</th>
-                                                <th style="width: 15%">Tiers <a href="javascript:void(0);" onclick="window.createQuickTier('${docId}')"><i class="bx bx-plus-circle"></i></a></th>
+                                                <th style="width: 25%">Compte</th>
+                                                <th style="width: 5%">TVA</th>
+                                                <th style="width: 20%">Tiers</th>
                                                 <th style="width: 20%">Libellé</th>
-                                                <th style="width: 10%">Débit</th>
-                                                <th style="width: 10%">Crédit</th>
-                                                <th style="width: 10%">Tréso</th>
+                                                <th style="width: 15%">Débit</th>
+                                                <th style="width: 15%">Crédit</th>
                                                 <th style="width: 5%"></th>
                                             </tr>
                                         </thead>
                                         <tbody class="doc-entries-body"></tbody>
                                         <tfoot>
                                             <tr class="bg-light fw-bold extra-small">
-                                                <td colspan="4" class="text-end">TOTAUX :</td>
+                                                <td colspan="3" class="text-end">TOTAL CHARGE :</td>
                                                 <td class="text-end total-debit">0</td>
                                                 <td class="text-end total-credit">0</td>
-                                                <td colspan="2"></td>
+                                                <td></td>
                                             </tr>
                                         </tfoot>
                                     </table>
-                                    <button class="btn btn-xs btn-outline-primary" onclick="window.addRow('${docId}')"><i class="bx bx-plus me-1"></i>Nouvelle ligne</button>
+                                    <button class="btn btn-xs btn-outline-primary" onclick="window.addRow('${docId}', 'constatation')"><i class="bx bx-plus"></i></button>
+                                </div>
+
+                                <div class="vertical-separator"></div>
+
+                                <!-- PANE 2: REGLEMENT -->
+                                <div class="entry-pane pane-reglement">
+                                    <div class="pane-title reglement"><i class="bx bx-credit-card"></i> 2. Règlement (Paiement)</div>
+                                    
+                                    <div class="row g-2 mb-3 align-items-end">
+                                        <div class="col-md-5">
+                                            <label class="small text-muted mb-1">Journal Trésorerie</label>
+                                            <select class="form-select form-select-sm select2 doc-journal-reglem">${tresoJournalOptions}</select>
+                                        </div>
+                                        <div class="col-md-7 text-end">
+                                             <div class="d-inline-block p-2 bg-white border rounded small fw-bold text-muted">
+                                                N° Saisie Règlement: <span class="text-success">${nsReglem}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <table class="table table-sm table-bordered align-middle mb-2">
+                                        <thead class="bg-success bg-opacity-10 extra-small text-uppercase">
+                                            <tr>
+                                                <th style="width: 40%">Compte</th>
+                                                <th style="width: 30%">Tiers / Libellé</th>
+                                                <th style="width: 15%">Débit</th>
+                                                <th style="width: 15%">Crédit</th>
+                                                <th style="width: 5%"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="doc-reglem-body"></tbody>
+                                        <tfoot>
+                                            <tr class="bg-white fw-bold extra-small">
+                                                <td colspan="2" class="text-end">TOTAL RÈGLEM. :</td>
+                                                <td class="text-end reglem-total-debit">0</td>
+                                                <td class="text-end reglem-total-credit">0</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                    <button class="btn btn-xs btn-outline-success" onclick="window.addRow('${docId}', 'reglement')"><i class="bx bx-plus"></i></button>
+                                    
+                                    <div class="mt-3 p-2 bg-white border rounded small text-muted italic">
+                                        <i class="bx bx-info-circle me-1"></i> Le règlement sera enregistré avec la même date et référence que la charge.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -628,51 +712,49 @@
                 `;
                 
                 processedDocs.push(item);
-                const tbody = card.querySelector('.doc-entries-body');
+                const tbodyConstat = card.querySelector('.doc-entries-body');
+                const tbodyReglem = card.querySelector('.doc-reglem-body');
+                
                 const ecritures = data.ecriture || data.lignes || [];
-                ecritures.forEach(l => window.renderEntryRow(tbody, docId, l, data));
+                ecritures.forEach(l => window.renderEntryRow(tbodyConstat, docId, l, data, 'constatation'));
+                
+                // --- AUTO GENERATE REGLEMENT ---
+                if (data.est_facture !== false) {
+                    const totalTTC = ecritures.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0) || data.total_ttc || 0;
+                    const supplierAccId = window.findBestAccount(data.fournisseur, 'FOURNISSEUR') || '';
+                    
+                    // Row 1: Debit Supplier
+                    window.renderEntryRow(tbodyReglem, docId, {
+                        compte_id: supplierAccId,
+                        intitule: (data.reference || 'FACT') + ' / REGLEMENT',
+                        debit: totalTTC,
+                        credit: 0
+                    }, data, 'reglement');
+                    
+                    // Row 2: Credit Treasury (Default)
+                    const treasuryAccId = TREASURY_POST_LIST[0]?.plan_comptable_id || '';
+                    window.renderEntryRow(tbodyReglem, docId, {
+                        compte_id: treasuryAccId,
+                        intitule: (data.reference || 'FACT') + ' / PAIEMENT',
+                        debit: 0,
+                        credit: totalTTC
+                    }, data, 'reglement');
+                }
 
                 $(card).find('.select2').select2({ theme: 'bootstrap4', width: '100%' });
                 $(card).find('input, select').on('change input', () => window.updateDocBalance(docId));
                 window.updateDocBalance(docId);
             };
 
-            window.renderEntryRow = function(tbody, docId, lineData, docData) {
+            window.renderEntryRow = function(tbody, docId, lineData, docData, type = 'constatation') {
                 const tr = document.createElement('tr');
-                const matchedAccId = window.findBestAccount(lineData.compte, lineData.type) || lineData.compte_id || '';
+                const matchedAccId = lineData.compte_id || window.findBestAccount(lineData.compte, lineData.type) || '';
                 const identifiedTierName = (docData.tiers || docData.fournisseur || "").toUpperCase().trim();
                 let matchedTierId = '';
 
                 if (lineData.type === 'FOURNISSEUR' || (lineData.compte && lineData.compte.toString().startsWith('40'))) {
                     const t = TIERS_LIST.find(t => t.intitule.toUpperCase().includes(identifiedTierName));
                     if (t) matchedTierId = t.id;
-                }
-
-                // --- LOGIQUE TVA & GRISÉ ---
-                const isVatRow = (lineData.compte && lineData.compte.toString().startsWith('445')) || lineData.is_vat;
-                if (isVatRow) {
-                    tr.classList.add('row-vat-disabled');
-                    const card = document.getElementById('card_' + docId);
-                    const docRef = card?.querySelector('.doc-ref')?.value || 'FACT N° -';
-                    
-                    if (lineData.intitule) {
-                        // Si le libellé ne contient pas encore TVA/, on l'ajoute proprement après le préfixe si possible
-                        if (!lineData.intitule.toUpperCase().includes('TVA/')) {
-                            if (lineData.intitule.toUpperCase().startsWith('FACT N°')) {
-                                // Déjà préfixé, on insère TVA/ après le premier slash
-                                const parts = lineData.intitule.split('/');
-                                if (parts.length > 1) {
-                                    lineData.intitule = parts[0] + '/TVA/' + parts.slice(1).join('/');
-                                } else {
-                                    lineData.intitule = lineData.intitule.replace('FACT N°', 'FACT N°') + '/TVA';
-                                }
-                            } else {
-                                lineData.intitule = docRef + '/TVA/' + lineData.intitule;
-                            }
-                        }
-                    } else {
-                        lineData.intitule = docRef + '/TVA/Taxe sur valeur ajoutée';
-                    }
                 }
 
                 const cleanAmount = val => {
@@ -687,41 +769,51 @@
                     </optgroup>
                 `).join('');
 
-                const isClass5 = matchedAccId && GEN_ACCOUNTS.find(a => a.id == matchedAccId)?.numero_de_compte.startsWith('5');
-
-                tr.innerHTML = `
-                    <td>
-                        <select class="form-select form-select-sm select2 row-acc" onchange="window.toggleTresorerie(this)">
-                            <option value="">Choisir...</option>
-                            ${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}
-                        </select>
-                        ${!matchedAccId && lineData.compte ? `<div class="text-danger extra-small mt-1"><i class="bx bx-error-circle"></i> ${lineData.compte} absent. <a href="javascript:void(0);" onclick="window.createQuickAccount('${docId}', '${lineData.compte}')">Créer?</a></div>` : ''}
-                    </td>
-                    <td class="text-center">
-                        <input type="checkbox" class="form-check-input row-has-tva" ${lineData.apply_tva && !isVatRow ? 'checked' : ''} ${isVatRow ? 'disabled' : ''} title="Appliquer TVA">
-                    </td>
-                    <td>
-                        <select class="form-select form-select-sm select2 row-tier">
-                            <option value="">Néant</option>
-                            ${TIERS_LIST.map(t => `<option value="${t.id}" ${t.id == matchedTierId ? 'selected' : ''}>[${t.compte_collectif_num}] ${t.intitule}</option>`).join('')}
-                        </select>
-                    </td>
-                    <td><input type="text" class="form-control form-control-sm row-lib" value="${lineData.intitule || identifiedTierName || lineData.libelle || ''}"></td>
-                    <td><input type="number" class="form-control form-control-sm text-end row-debit" value="${cleanAmount(lineData.debit) || (lineData.type === 'DEBIT' ? cleanAmount(lineData.montant) : 0)}"></td>
-                    <td><input type="number" class="form-control form-control-sm text-end row-credit" value="${cleanAmount(lineData.credit) || (lineData.type === 'CREDIT' ? cleanAmount(lineData.montant) : 0)}"></td>
-                    <td>
-                        <select class="form-select form-select-sm row-poste-treso" ${isClass5 ? '' : 'disabled'}>
-                            <option value="">Néant</option>
-                            ${treasuryOptions}
-                        </select>
-                    </td>
-                    <td class="text-center">
-                        <div class="d-flex gap-1 justify-content-center">
-                            <button class="btn btn-xs btn-light-primary" onclick="window.ouvrirVentilationCompte(this)" title="Ventilation"><i class="bx bx-pie-chart-alt"></i></button>
+                if (type === 'constatation') {
+                    const isVatRow = (lineData.compte && lineData.compte.toString().startsWith('445')) || lineData.is_vat;
+                    if (isVatRow) tr.classList.add('row-vat-disabled');
+                    
+                    tr.innerHTML = `
+                        <td>
+                            <select class="form-select form-select-sm select2 row-acc">
+                                <option value="">Choisir...</option>
+                                ${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" class="form-check-input row-has-tva" ${lineData.apply_tva && !isVatRow ? 'checked' : ''} ${isVatRow ? 'disabled' : ''}>
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm select2 row-tier">
+                                <option value="">Néant</option>
+                                ${TIERS_LIST.map(t => `<option value="${t.id}" ${t.id == matchedTierId ? 'selected' : ''}>[${t.compte_collectif_num}] ${t.intitule}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td><input type="text" class="form-control form-control-sm row-lib" value="${lineData.intitule || identifiedTierName || ''}"></td>
+                        <td><input type="number" class="form-control form-control-sm text-end row-debit" value="${cleanAmount(lineData.debit) || (lineData.type === 'DEBIT' ? cleanAmount(lineData.montant) : 0)}"></td>
+                        <td><input type="number" class="form-control form-control-sm text-end row-credit" value="${cleanAmount(lineData.credit) || (lineData.type === 'CREDIT' ? cleanAmount(lineData.montant) : 0)}"></td>
+                        <td class="text-center">
                             <button class="btn btn-xs btn-light-danger" onclick="this.closest('tr').remove(); window.updateDocBalance('${docId}')"><i class="bx bx-trash"></i></button>
-                        </div>
-                    </td>
-                `;
+                        </td>
+                    `;
+                } else {
+                    // REGLEMENT PANE: Simplified
+                    tr.innerHTML = `
+                        <td>
+                            <select class="form-select form-select-sm select2 row-acc">
+                                <option value="">Choisir...</option>
+                                ${GEN_ACCOUNTS.map(a => `<option value="${a.id}" ${a.id == matchedAccId ? 'selected' : ''}>${a.numero_de_compte} - ${a.intitule}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td><input type="text" class="form-control form-control-sm row-lib" value="${lineData.intitule || identifiedTierName || ''}"></td>
+                        <td><input type="number" class="form-control form-control-sm text-end row-debit" value="${cleanAmount(lineData.debit) || 0}"></td>
+                        <td><input type="number" class="form-control form-control-sm text-end row-credit" value="${cleanAmount(lineData.credit) || 0}"></td>
+                        <td class="text-center">
+                            <button class="btn btn-xs btn-light-danger" onclick="this.closest('tr').remove(); window.updateDocBalance('${docId}')"><i class="bx bx-trash"></i></button>
+                        </td>
+                    `;
+                }
+                
                 tbody.appendChild(tr);
                 $(tr).find('.select2').select2({ theme: 'bootstrap4', width: '100%' });
             };
@@ -849,11 +941,6 @@
                 });
             };
 
-            window.createQuickJournal = (docId) => {
-                const m = new bootstrap.Modal(document.getElementById('modalCenterCreateJournal'));
-                m.show();
-            };
-
             window.createQuickAccount = (docId, presetNum = '') => {
                 const m = document.getElementById('modalCenterCreateAccount');
                 if (presetNum) {
@@ -907,23 +994,38 @@
             window.updateDocBalance = (docId) => {
                 const card = document.getElementById('card_' + docId);
                 if (!card) return;
-                const rows = card.querySelectorAll('.doc-entries-body tr');
-                let d = 0, c = 0;
-                rows.forEach(tr => {
-                    d += parseFloat(tr.querySelector('.row-debit').value) || 0;
-                    c += parseFloat(tr.querySelector('.row-credit').value) || 0;
+                
+                // --- PANE CHARGE ---
+                const rowsCharge = card.querySelectorAll('.doc-entries-body tr');
+                let dC = 0, cC = 0;
+                rowsCharge.forEach(tr => {
+                    dC += parseFloat(tr.querySelector('.row-debit').value) || 0;
+                    cC += parseFloat(tr.querySelector('.row-credit').value) || 0;
                 });
+                card.querySelector('.total-debit').innerText = Math.round(dC).toLocaleString();
+                card.querySelector('.total-credit').innerText = Math.round(cC).toLocaleString();
+                const chargeBalanced = Math.abs(dC - cC) < 1 && dC > 0;
                 
-                card.querySelector('.total-debit').innerText = Math.round(d).toLocaleString();
-                card.querySelector('.total-credit').innerText = Math.round(c).toLocaleString();
-                
-                const balanced = Math.abs(d - c) < 1 && d > 0;
+                // --- PANE REGLEMENT ---
+                const rowsReglem = card.querySelectorAll('.doc-reglem-body tr');
+                let dR = 0, cR = 0;
+                rowsReglem.forEach(tr => {
+                    dR += parseFloat(tr.querySelector('.row-debit').value) || 0;
+                    cR += parseFloat(tr.querySelector('.row-credit').value) || 0;
+                });
+                card.querySelector('.reglem-total-debit').innerText = Math.round(dR).toLocaleString();
+                card.querySelector('.reglem-total-credit').innerText = Math.round(cR).toLocaleString();
+                const reglemBalanced = Math.abs(dR - cR) < 1 && dR > 0;
+
                 const statusEl = card.querySelector('.balance-status');
-                if (balanced) {
-                    statusEl.innerHTML = '<i class="bx bx-check-circle me-1"></i>Équilibré';
+                if (chargeBalanced && reglemBalanced) {
+                    statusEl.innerHTML = '<i class="bx bx-check-circle me-1"></i>Duo Équilibré';
                     statusEl.className = 'balance-status text-success small fw-bold';
                 } else {
-                    statusEl.innerHTML = '<i class="bx bx-error-circle me-1"></i>Déséquilibré';
+                    let msg = 'Déséquilibré';
+                    if (!chargeBalanced && reglemBalanced) msg = 'Charge déséquilibrée';
+                    else if (chargeBalanced && !reglemBalanced) msg = 'Règlement déséquilibré';
+                    statusEl.innerHTML = `<i class="bx bx-error-circle me-1"></i>${msg}`;
                     statusEl.className = 'balance-status text-danger small fw-bold';
                 }
             };
@@ -933,6 +1035,7 @@
                 if (parts.length < 2) return INITIAL_NS + '_' + docIndex;
                 const prefix = parts[0] + '_';
                 const sequenceValue = parseInt(parts[1]);
+                // docIndex represents the total sequential position across all operations (2 per document)
                 return prefix + (sequenceValue + docIndex - 1).toString().padStart(12, '0');
             };
 
@@ -944,14 +1047,15 @@
                 processedDocs = processedDocs.filter(d => d.id !== docId);
                 filesQueue = filesQueue.filter(d => d.id !== docId);
                 if (processedDocs.length === 0 && filesQueue.length === 0) {
-                    if (emptyState) emptyState.classList.remove('d-none');
+                    if (document.getElementById('emptyState')) document.getElementById('emptyState').classList.remove('d-none');
                 }
                 window.updateQueueCount();
             };
 
-            window.addRow = (docId) => {
-                const tbody = document.querySelector(`#card_${docId} .doc-entries-body`);
-                window.renderEntryRow(tbody, docId, {compte:'', intitule:'', debit:0, credit:0}, {});
+            window.addRow = (docId, type = 'constatation') => {
+                const selector = type === 'constatation' ? '.doc-entries-body' : '.doc-reglem-body';
+                const tbody = document.querySelector(`#card_${docId} ${selector}`);
+                window.renderEntryRow(tbody, docId, {compte:'', intitule:'', debit:0, credit:0}, {}, type);
                 window.updateDocBalance(docId);
             };
 
@@ -990,28 +1094,44 @@
                     if (!card) return;
                     
                     const journalId = card.querySelector('.doc-journal').value;
+                    const journalReglemId = card.querySelector('.doc-journal-reglem').value;
                     const dDate = card.querySelector('.doc-date').value;
                     const dRef = card.querySelector('.doc-ref').value;
-                    const dNSaisie = card.querySelector('.text-primary').innerText;
+                    const nsConstat = card.querySelector('.pane-constatation .text-primary').innerText;
+                    const nsReglem = card.querySelector('.pane-reglement .text-success').innerText;
 
                     if (!journalId) return;
 
                     const ecritures = [];
+                    // 1. COLLECT CHARGE ENTRIES
                     card.querySelectorAll('.doc-entries-body tr').forEach(tr => {
                         const accId = tr.querySelector('.row-acc').value;
                         if (!accId) return;
-                        const debit = parseFloat(tr.querySelector('.row-debit').value) || 0;
-                        const credit = parseFloat(tr.querySelector('.row-credit').value) || 0;
                         const vnts = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : null;
-
                         ecritures.push({
-                            date: dDate, n_saisie: dNSaisie, description_operation: tr.querySelector('.row-lib').value,
-                            reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: tr.querySelector('.row-tier').value || null,
-                            debit, credit, code_journal_id: journalId, exercices_comptables_id: EXERCICE_ACTIF.id,
-                            poste_tresorerie_id: tr.querySelector('.row-poste-treso')?.value || null,
-                            ventilations: vnts, plan_analytique: vnts ? 1 : 0
+                            date: dDate, n_saisie: nsConstat, description_operation: (tr.querySelector('.row-lib')?.value || dRef),
+                            reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: tr.querySelector('.row-tier')?.value || null,
+                            debit: parseFloat(tr.querySelector('.row-debit').value) || 0,
+                            credit: parseFloat(tr.querySelector('.row-credit').value) || 0,
+                            code_journal_id: journalId, exercices_comptables_id: EXERCICE_ACTIF.id,
+                            poste_tresorerie_id: null, ventilations: vnts, plan_analytique: vnts ? 1 : 0
                         });
                     });
+
+                    // 2. COLLECT REGLEMENT ENTRIES
+                    if (journalReglemId) {
+                        card.querySelectorAll('.doc-reglem-body tr').forEach(tr => {
+                            const accId = tr.querySelector('.row-acc').value;
+                            if (!accId) return;
+                            ecritures.push({
+                                date: dDate, n_saisie: nsReglem, description_operation: tr.querySelector('.row-lib').value,
+                                reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: null,
+                                debit: parseFloat(tr.querySelector('.row-debit').value) || 0,
+                                credit: parseFloat(tr.querySelector('.row-credit').value) || 0,
+                                code_journal_id: journalReglemId, exercices_comptables_id: EXERCICE_ACTIF.id
+                            });
+                        });
+                    }
                     
                     if (ecritures.length > 0) docsToSave.push({ id: docId, ecritures, file: item.file });
                 });
@@ -1019,50 +1139,47 @@
                 if (docsToSave.length === 0) { Swal.fire('Attention', 'Aucun document valide sélectionné.', 'warning'); return; }
 
                 const btn = document.getElementById('btnSaveOnlySelected');
-                if (btn) { 
-                    btn.disabled = true; 
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...'; 
-                }
+                const originalHtml = btn ? btn.innerHTML : '';
+                if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...'; }
 
                 let successCount = 0;
-                // Parallélisation par lots pour booster la vitesse (5 par 5)
-                const batchSize = 5;
-                for (let i = 0; i < docsToSave.length; i += batchSize) {
-                    const batch = docsToSave.slice(i, i + batchSize);
-                    await Promise.all(batch.map(async (doc) => {
-                        try {
-                            const formData = new FormData();
-                            formData.append('piece_justificatif', doc.file);
-                            formData.append('ecritures', JSON.stringify(doc.ecritures));
-                            
-                            const res = await fetch(SAVE_ROUTE, { 
-                                method: 'POST', 
-                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }, 
-                                body: formData 
-                            });
-                            
-                            const json = await res.json();
-                            if (json.success) { 
-                                successCount++; 
-                                window.removeDocument(doc.id); 
-                            }
-                        } catch (e) { 
-                            console.error("[BulkSave] Error saving doc " + doc.id, e); 
+                let errorDetails = [];
+
+                for (let doc of docsToSave) {
+                    try {
+                        const formData = new FormData();
+                        formData.append('piece_justificatif', doc.file);
+                        formData.append('ecritures', JSON.stringify(doc.ecritures));
+                        
+                        const res = await fetch(SAVE_ROUTE, { 
+                            method: 'POST', 
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }, 
+                            body: formData 
+                        });
+                        
+                        const json = await res.json();
+                        if (json.success) { 
+                            successCount++; 
+                            window.removeDocument(doc.id); 
+                        } else {
+                            errorDetails.push(`Doc ${doc.id}: ${json.message || 'Erreur inconnue'}`);
                         }
-                    }));
+                    } catch (e) { 
+                        errorDetails.push(`Doc ${doc.id}: Impossible de contacter le serveur.`);
+                    }
                 }
 
-                Swal.fire({
-                    title: 'Succès !',
-                    text: `${successCount} documents ont été enregistrés avec succès.`,
-                    icon: 'success',
-                    confirmButtonColor: '#3b82f6'
-                });
-                
-                if (btn) { 
-                    btn.disabled = false; 
-                    btn.innerHTML = '<i class="bx bx-save me-1"></i> Enregistrer'; 
+                if (errorDetails.length > 0) {
+                    Swal.fire({
+                        title: 'Traitement Partiel',
+                        html: `<p>${successCount} documents enregistrés.</p><div class="text-danger small text-start">${errorDetails.join('<br>')}</div>`,
+                        icon: 'warning'
+                    });
+                } else {
+                    Swal.fire({ title: 'Succès !', text: `${successCount} documents Duo enregistrés.`, icon: 'success' });
                 }
+                
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
             };
 
             window.saveSingleDocument = async (docId) => {
@@ -1071,27 +1188,43 @@
                 if (!card || !item) return;
 
                 const journalId = card.querySelector('.doc-journal').value;
-                if (!journalId) { Swal.fire('Journal Manquant', 'Sélectionnez un journal.', 'warning'); return; }
+                const journalReglemId = card.querySelector('.doc-journal-reglem').value;
+                if (!journalId || !journalReglemId) { Swal.fire('Journaux Manquants', 'Sélectionnez les deux journaux (Charge et Trésorerie).', 'warning'); return; }
 
-                const dNSaisie = card.querySelector('.text-primary').innerText;
+                const nsConstat = card.querySelector('.pane-constatation .text-primary').innerText;
+                const nsReglem = card.querySelector('.pane-reglement .text-success').innerText;
                 const dDate = card.querySelector('.doc-date').value;
                 const dRef = card.querySelector('.doc-ref').value;
 
                 const ecritures = [];
+                // Collect Charge
                 card.querySelectorAll('.doc-entries-body tr').forEach(tr => {
                     const accId = tr.querySelector('.row-acc').value;
                     if (!accId) return;
                     const vnts = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : null;
                     ecritures.push({
-                        date: dDate, n_saisie: dNSaisie, description_operation: tr.querySelector('.row-lib').value,
-                        reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: tr.querySelector('.row-tier').value || null,
+                        date: dDate, n_saisie: nsConstat, description_operation: (tr.querySelector('.row-lib')?.value || dRef),
+                        reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: tr.querySelector('.row-tier')?.value || null,
                         debit: parseFloat(tr.querySelector('.row-debit').value) || 0,
                         credit: parseFloat(tr.querySelector('.row-credit').value) || 0,
                         code_journal_id: journalId, exercices_comptables_id: EXERCICE_ACTIF.id,
-                        poste_tresorerie_id: tr.querySelector('.row-poste-treso')?.value || null,
                         ventilations: vnts, plan_analytique: vnts ? 1 : 0
                     });
                 });
+                // Collect Reglement
+                card.querySelectorAll('.doc-reglem-body tr').forEach(tr => {
+                    const accId = tr.querySelector('.row-acc').value;
+                    if (!accId) return;
+                    ecritures.push({
+                        date: dDate, n_saisie: nsReglem, description_operation: tr.querySelector('.row-lib').value,
+                        reference_piece: dRef, plan_comptable_id: accId, plan_tiers_id: null,
+                        debit: parseFloat(tr.querySelector('.row-debit').value) || 0,
+                        credit: parseFloat(tr.querySelector('.row-credit').value) || 0,
+                        code_journal_id: journalReglemId, exercices_comptables_id: EXERCICE_ACTIF.id
+                    });
+                });
+
+                if (ecritures.length === 0) return;
 
                 const btn = card.querySelector('.btn-save-single');
                 const originalHtml = btn.innerHTML;
@@ -1104,9 +1237,9 @@
                     const res = await fetch(SAVE_ROUTE, { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }, body: formData });
                     const json = await res.json();
                     if (json.success) { 
-                        Swal.fire({ icon: 'success', title: 'Enregistré', timer: 1000, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: 'Duo Enregistré', timer: 1000, showConfirmButton: false });
                         window.removeDocument(docId); 
-                    } else Swal.fire('Erreur', json.message || 'Erreur', 'error');
+                    } else Swal.fire('Erreur', json.message || 'Échec de l\'enregistrement', 'error');
                 } catch (e) { Swal.fire('Erreur', 'Serveur injoignable', 'error'); }
                 finally { btn.disabled = false; btn.innerHTML = originalHtml; }
             };

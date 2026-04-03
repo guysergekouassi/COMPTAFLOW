@@ -545,202 +545,143 @@ class EcritureComptableController extends Controller
             }
 
             $activeCompanyId = session('current_company_id', $user->company_id);
-
-            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
-                ->where('is_active', 1)
-                ->first();
-
-            if (!$exerciceActif) {
-                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
-                    ->where('cloturer', 0)
-                    ->orderBy('date_debut', 'desc')
-                    ->first();
-            }
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first() 
+                            ?? ExerciceComptable::where('company_id', $activeCompanyId)->where('cloturer', 0)->orderBy('date_debut', 'desc')->first();
 
             if (!$exerciceActif || $exerciceActif->cloturer) {
                 return response()->json(['success' => false, 'error' => 'Impossible d\'enregistrer : L\'exercice est clôturé ou inexistant.'], 422);
             }
 
-            $ecritures = $request->input('ecritures');
-            if (is_string($ecritures)) {
-                $ecritures = json_decode($ecritures, true);
+            $ecrituresRaw = $request->input('ecritures');
+            if (is_string($ecrituresRaw)) {
+                $ecrituresRaw = json_decode($ecrituresRaw, true);
             }
 
-            if (empty($ecritures) || !is_array($ecritures)) {
+            if (empty($ecrituresRaw) || !is_array($ecrituresRaw)) {
                 return response()->json(['success' => false, 'error' => 'Aucune écriture à enregistrer.'], 400);
             }
 
-            // --- VALIDATION FISCALE & ÉQUILIBRE ---
-            if (!$this->taxService->checkBalance($ecritures)) {
+            // --- GROUP BY N_SAISIE ---
+            $groups = [];
+            foreach ($ecrituresRaw as $e) {
+                $ns = $e['n_saisie'] ?? $e['numero_saisie'] ?? 'DEFAULT';
+                $groups[$ns][] = $e;
+            }
+
+            // --- VALIDATE EACH GROUP BALANCE ---
+            foreach ($groups as $ns => $groupEcritures) {
                 $totalDebit = 0;
                 $totalCredit = 0;
-                foreach ($ecritures as $e) {
+                foreach ($groupEcritures as $e) {
                     $totalDebit += floatval($e['debit'] ?? 0);
                     $totalCredit += floatval($e['credit'] ?? 0);
                 }
                 $diff = abs($totalDebit - $totalCredit);
-                
-                \Illuminate\Support\Facades\Log::warning('StoreMultiple Balance Error', [
-                    'total_debit' => $totalDebit,
-                    'total_credit' => $totalCredit,
-                    'is_balanced' => false,
-                    'diff' => $diff
-                ]);
-                return response()->json([
-                    'success' => false, 
-                    'error' => "L'opération est déséquilibrée (Débit: $totalDebit != Crédit: $totalCredit). Écart: $diff"
-                ], 422);
+                if ($diff > 0.1) {
+                    return response()->json([
+                        'success' => false, 
+                        'error' => "Opération $ns déséquilibrée (D: $totalDebit != C: $totalCredit). Écart: $diff"
+                    ], 422);
+                }
             }
 
-            $vatValidation = $this->taxService->validateVatConsistency($ecritures);
-            // On ne bloque pas forcément ici, mais on pourrait loguer ou alerter.
-            // Pour l'instant, on laisse passer si c'est juste un avertissement, 
-            // mais on peut le rendre bloquant si nécessaire.
-
-            // Gestion du filtrage auto
             $hasApprovalPower = $user->isAdmin() || $user->hasPermission('admin.approvals');
             $status = $hasApprovalPower ? 'approved' : 'pending';
 
-            // Gestion du fichier justificatif
             $pieceFilename = null;
-            $file = $request->file('piece_justificatif') ?? $request->file('ecritures.0.piece_justificatif');
-
+            $file = $request->file('piece_justificatif');
             if ($file) {
                 $pieceFilename = time() . '_' . preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
                 $file->move(public_path('justificatifs'), $pieceFilename);
             }
 
             DB::beginTransaction();
-            $firstEcriture = null;
-            $globalNSaisie = null;
-            $userNSaisie = null;
+            $globalNSaisieMap = []; // Cache for global sequence numbers (status=approved)
 
-            // Générer le numéro approprié selon le statut
-            if ($status === 'approved') {
-                // Pour les écritures approuvées: générer le numéro global ECR_
-                $globalNSaisie = $this->generateGlobalSaisieNumber($activeCompanyId);
-            }
-            else {
-                // Pour les écritures en attente: utiliser le numéro utilisateur CPT-{initiales}_
-                $userNSaisie = $ecritures[0]['n_saisie'] ?? $ecritures[0]['numero_saisie'] ?? null;
-                if (!$userNSaisie) {
-                    throw new \Exception("Le numéro de saisie utilisateur est requis pour les écritures en attente.");
-                }
-            }
-
-            foreach ($ecritures as $data) {
-                // ... (existing logic)
-                $planComptableId = !empty($data['plan_comptable_id']) ? $data['plan_comptable_id'] : ($data['compte_general'] ?? null);
-                if (!$planComptableId)
-                    throw new \Exception("Un compte général est requis.");
-
-                $codeJournalId = !empty($data['code_journal_id']) ? $data['code_journal_id'] : ($data['journal_id'] ?? null);
-                if (!$codeJournalId)
-                    throw new \Exception("Un code journal est requis.");
-
-                $dateString = !empty($data['date']) ? $data['date'] : now()->format('Y-m-d');
-                $date = \Carbon\Carbon::parse($dateString);
-                $exerciceId = $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? $exerciceActif->id;
-
-                $journalSaisi = \App\Models\JournalSaisi::firstOrCreate([
-                    'annee' => $date->year,
-                    'mois' => $date->month,
-                    'exercices_comptables_id' => $exerciceId,
-                    'code_journals_id' => $codeJournalId,
-                    'company_id' => $activeCompanyId,
-                ], ['user_id' => $user->id]);
-
-                $ecriture = new EcritureComptable();
-                $ecriture->date = $dateString;
-
-                // Attribution du numéro selon le statut
+            foreach ($groups as $userNS => $groupEcritures) {
+                $currentGlobalNS = null;
                 if ($status === 'approved') {
-                    $ecriture->n_saisie = $globalNSaisie; // Numéro GLOBAL (ECR_)
-                    $ecriture->n_saisie_user = $data['n_saisie'] ?? $data['numero_saisie'] ?? $userNSaisie; // Numéro d'origine (User)
-                }
-                else {
-                    // Pour les écritures en attente: le numéro utilisateur dans les deux champs
-                    $ecriture->n_saisie = $userNSaisie; // Numéro utilisateur (CPT-XXX_)
-                    $ecriture->n_saisie_user = $userNSaisie; // Même numéro pour traçabilité
+                    $currentGlobalNS = $this->generateGlobalSaisieNumber($activeCompanyId);
                 }
 
-                $ecriture->description_operation = $data['description_operation'] ?? $data['libelle'] ?? $data['description'] ?? '';
-                $ecriture->reference_piece = $data['reference_piece'] ?? $data['reference'] ?? null;
-                $ecriture->plan_comptable_id = $planComptableId;
-                $ecriture->plan_tiers_id = !empty($data['plan_tiers_id']) ? $data['plan_tiers_id'] : ($data['compte_tiers'] ?? null);
-                $ecriture->debit = $data['debit'] ?? 0;
-                $ecriture->credit = $data['credit'] ?? 0;
-                $ecriture->plan_analytique = (isset($data['plan_analytique']) && $data['plan_analytique'] == 1) ? 1 : 0;
-                $ecriture->code_journal_id = $codeJournalId;
-                $ecriture->company_id = $activeCompanyId;
-                $ecriture->user_id = $user->id;
-                $ecriture->piece_justificatif = $pieceFilename;
-                $ecriture->exercices_comptables_id = $exerciceId;
-                $ecriture->journaux_saisis_id = $journalSaisi->id;
-                $ecriture->statut = $status;
-                $ecriture->poste_tresorerie_id = $this->resolveTreasuryPost($activeCompanyId, $planComptableId) ?? ($data['poste_tresorerie_id'] ?? null);
-                $ecriture->save();
+                $firstInGroup = null;
 
-                // Validation Analytique : Si le plan analytique est activé, il faut au moins une ventilation
-                if ($ecriture->plan_analytique) {
-                    if (empty($data['ventilations']) || !is_array($data['ventilations'])) {
-                        $compte = $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte : 'Inconnu';
-                        throw new \Exception("La ventilation analytique est obligatoire pour le compte $compte car il est marqué comme analytique.");
+                foreach ($groupEcritures as $data) {
+                    $planComptableId = !empty($data['plan_comptable_id']) ? $data['plan_comptable_id'] : ($data['compte_general'] ?? null);
+                    if (!$planComptableId) throw new \Exception("Un compte général est requis pour l'opération $userNS.");
+
+                    $codeJournalId = !empty($data['code_journal_id']) ? $data['code_journal_id'] : ($data['journal_id'] ?? null);
+                    if (!$codeJournalId) throw new \Exception("Un code journal est requis pour l'opération $userNS.");
+
+                    $dateString = !empty($data['date']) ? $data['date'] : now()->format('Y-m-d');
+                    $date = \Carbon\Carbon::parse($dateString);
+                    $exerciceId = $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? $exerciceActif->id;
+
+                    $journalSaisi = \App\Models\JournalSaisi::firstOrCreate([
+                        'annee' => $date->year,
+                        'mois' => $date->month,
+                        'exercices_comptables_id' => $exerciceId,
+                        'code_journals_id' => $codeJournalId,
+                        'company_id' => $activeCompanyId,
+                    ], ['user_id' => $user->id]);
+
+                    $ecriture = new EcritureComptable();
+                    $ecriture->date = $dateString;
+                    $ecriture->n_saisie = ($status === 'approved') ? $currentGlobalNS : $userNS;
+                    $ecriture->n_saisie_user = $userNS;
+                    $ecriture->description_operation = $data['description_operation'] ?? $data['libelle'] ?? '';
+                    $ecriture->reference_piece = $data['reference_piece'] ?? $data['reference'] ?? null;
+                    $ecriture->plan_comptable_id = $planComptableId;
+                    $ecriture->plan_tiers_id = !empty($data['plan_tiers_id']) ? $data['plan_tiers_id'] : ($data['compte_tiers'] ?? null);
+                    $ecriture->debit = $data['debit'] ?? 0;
+                    $ecriture->credit = $data['credit'] ?? 0;
+                    $ecriture->plan_analytique = (isset($data['plan_analytique']) && $data['plan_analytique'] == 1) ? 1 : 0;
+                    $ecriture->code_journal_id = $codeJournalId;
+                    $ecriture->company_id = $activeCompanyId;
+                    $ecriture->user_id = $user->id;
+                    $ecriture->piece_justificatif = $pieceFilename;
+                    $ecriture->exercices_comptables_id = $exerciceId;
+                    $ecriture->journaux_saisis_id = $journalSaisi->id;
+                    $ecriture->statut = $status;
+                    $ecriture->poste_tresorerie_id = $this->resolveTreasuryPost($activeCompanyId, $planComptableId) ?? ($data['poste_tresorerie_id'] ?? null);
+                    $ecriture->save();
+
+                    if (!$firstInGroup) $firstInGroup = $ecriture;
+
+                    if ($ecriture->plan_analytique && !empty($data['ventilations'])) {
+                        foreach ($data['ventilations'] as $v) {
+                            $ecriture->ventilations()->create([
+                                'section_id' => $v['section_id'],
+                                'montant' => $v['montant'],
+                                'pourcentage' => $v['pourcentage'],
+                            ]);
+                        }
                     }
                 }
 
-                // Sauvegarder les ventilations si présentes
-                if (!empty($data['ventilations']) && is_array($data['ventilations'])) {
-                    $totalLignePct = 0;
-                    foreach ($data['ventilations'] as $v) {
-                        $totalLignePct += $v['pourcentage'];
-                        $ecriture->ventilations()->create([
-                            'section_id' => $v['section_id'],
-                            'montant' => $v['montant'],
-                            'pourcentage' => $v['pourcentage'],
-                        ]);
-                    }
-
-                    // Vérification de l'équilibre à 100%
-                    if (abs($totalLignePct - 100) > 0.1) {
-                        $compte = $ecriture->planComptable ? $ecriture->planComptable->numero_de_compte : 'Inconnu';
-                        throw new \Exception("Le total des ventilations pour le compte $compte est de $totalLignePct%. Il doit être exactement de 100%.");
-                    }
+                if ($status === 'pending' && $firstInGroup) {
+                    Approval::create([
+                        'approvable_type' => EcritureComptable::class,
+                        'approvable_id' => $firstInGroup->id,
+                        'type' => 'accounting_entry',
+                        'status' => 'pending',
+                        'requested_by' => $user->id,
+                        'data' => ['n_saisie' => $userNS]
+                    ]);
                 }
-
-                if (!$firstEcriture)
-                    $firstEcriture = $ecriture;
-            }
-
-            if ($status === 'pending' && $firstEcriture) {
-                Approval::create([
-                    'approvable_type' => EcritureComptable::class ,
-                    'approvable_id' => $firstEcriture->id,
-                    'type' => 'accounting_entry',
-                    'status' => 'pending',
-                    'requested_by' => $user->id,
-                    'data' => ['n_saisie' => $firstEcriture->n_saisie] // Stocker le numéro utilisateur
-                ]);
             }
 
             DB::commit();
 
-            // ... cleanup brouillon
             $batchId = $request->input('batch_id');
             if ($batchId) {
-                \App\Models\Brouillon::where('batch_id', $batchId)
-                    ->where('company_id', $activeCompanyId)
-                    ->delete();
+                \App\Models\Brouillon::where('batch_id', $batchId)->where('company_id', $activeCompanyId)->delete();
             }
 
-            return response()->json(['success' => true, 'message' => $status === 'approved' ? 'Écritures validées avec succès.' : 'Écritures enregistrées (en attente d\'approbation).']);
+            return response()->json(['success' => true, 'message' => $status === 'approved' ? 'Opérations validées avec succès.' : 'Opérations Duo enregistrées (en attente).']);
         }
         catch (\Throwable $e) {
             DB::rollBack();
-            \Illuminate\Support\Facades\Log::error('Error in storeMultiple: ' . $e->getMessage(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString()
-            ]);
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
