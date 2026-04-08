@@ -20,80 +20,61 @@
     <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
 
     <style>
+        /* ... existing styles ... */
         body {
             background-color: #f8fafc;
             font-family: "Public Sans", sans-serif;
             position: relative;
             overflow-x: hidden;
         }
+        .bg-blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.15; z-index: -1; pointer-events: none; }
+        .blob-1 { width: 600px; height: 600px; background: #696cff; top: -20%; left: -10%; }
+        .blob-2 { width: 600px; height: 600px; background: #e83e8c; bottom: -20%; right: -10%; }
+        .glass-panel { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(20px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08); border-radius: 20px; padding: 3rem; }
+        .section-title { position: relative; padding-bottom: 10px; margin-bottom: 25px; font-weight: 700; color: #32475c; font-size: 1.25rem; }
+        .section-title::after { content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 40px; background: #696cff; border-radius: 4px; }
+        .form-control, .form-select { border-radius: 8px; padding: 0.6rem 1rem; background-color: #f8fafc; border: 1px solid #d9dee3; color: #566a7f; transition: all 0.2s; }
+        .form-control:focus, .form-select:focus { background-color: #fff; border-color: #696cff; box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.15); }
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #566a7f; margin-bottom: 0.4rem; }
 
-        /* Blobs */
-        .bg-blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.15;
-            z-index: -1;
+        /* TOAST NOTIFICATION */
+        #toast-container {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 360px;
+            max-width: 560px;
             pointer-events: none;
         }
-        .blob-1 {
-            width: 600px; height: 600px;
-            background: #696cff;
-            top: -20%; left: -10%;
+        .toast-msg {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.13);
+            border-left: 5px solid #ef4444;
+            padding: 18px 22px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            pointer-events: all;
+            animation: slideDown 0.35s cubic-bezier(.21,1.02,.73,1) forwards;
         }
-        .blob-2 {
-            width: 600px; height: 600px;
-            background: #e83e8c;
-            bottom: -20%; right: -10%;
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
-            border-radius: 20px;
-            padding: 3rem;
-        }
-
-        .section-title {
-            position: relative;
-            padding-bottom: 10px;
-            margin-bottom: 25px;
-            font-weight: 700;
-            color: #32475c;
-            font-size: 1.25rem;
-        }
-        .section-title::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            height: 3px;
-            width: 40px;
-            background: #696cff;
-            border-radius: 4px;
-        }
-
-        .form-control, .form-select {
-            border-radius: 8px;
-            padding: 0.6rem 1rem;
-            background-color: #f8fafc;
-            border: 1px solid #d9dee3;
-            color: #566a7f;
-            transition: all 0.2s;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: #fff;
-            border-color: #696cff;
-            box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.15);
-        }
-        .form-label {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #566a7f;
-            margin-bottom: 0.4rem;
-        }
+        .toast-msg.success { border-left-color: #22c55e; }
+        .toast-msg.fade-out { animation: fadeOut 0.4s ease forwards; }
+        .toast-icon { font-size: 22px; margin-top: 1px; flex-shrink: 0; }
+        .toast-icon.error { color: #ef4444; }
+        .toast-icon.success { color: #22c55e; }
+        .toast-body { flex: 1; }
+        .toast-title { font-weight: 700; font-size: 15px; color: #0f172a; margin-bottom: 4px; }
+        .toast-text { font-size: 13.5px; color: #475569; line-height: 1.5; }
+        .toast-close { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; padding: 0; line-height: 1; flex-shrink: 0; }
+        .toast-close:hover { color: #334155; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
     </style>
 </head>
 <body class="py-5">
@@ -113,24 +94,20 @@
             <p class="text-muted mt-2">Remplissez les informations ci-dessous pour configurer votre environnement de travail.</p>
         </div>
 
-        @if(session('error'))
-            <div class="alert alert-danger d-flex align-items-center mb-4 rounded-3" role="alert">
-                <i class="fa-solid fa-circle-exclamation me-3 fs-4"></i>
-                <div>
-                    {{ session('error') }}
-                </div>
-            </div>
-        @endif
-        
-        @if ($errors->any())
-            <div class="alert alert-danger mb-4 rounded-3">
-                <ul class="mb-0 ps-3">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+        {{-- TOAST CONTAINER --}}
+        <div id="toast-container"></div>
+
+        <script>
+            window.__TOAST_ERRORS__ = [];
+            @if(session('error'))
+                window.__TOAST_ERRORS__.push("{{ addslashes(session('error')) }}");
+            @endif
+            @if(isset($errors) && count($errors->all()) > 0)
+                @foreach ($errors->all() as $error)
+                    window.__TOAST_ERRORS__.push("{{ addslashes($error) }}");
+                @endforeach
+            @endif
+        </script>
 
         <form action="{{ route('landing.register_submit') }}" method="POST" class="glass-panel mb-5">
             @csrf
@@ -254,5 +231,35 @@
         </div>
     </div>
 
+
+<script>
+(function() {
+    const container = document.getElementById('toast-container');
+    if (!container || !window.__TOAST_ERRORS__ || !window.__TOAST_ERRORS__.length) return;
+
+    function showToast(message, type) {
+        type = type || 'error';
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg' + (type === 'success' ? ' success' : '');
+        const icon = type === 'error'
+            ? '<i class="fa-solid fa-circle-exclamation toast-icon error"></i>'
+            : '<i class="fa-solid fa-circle-check toast-icon success"></i>';
+        const title = type === 'error' ? 'Erreur de validation' : 'Succès';
+        toast.innerHTML = icon +
+            '<div class="toast-body"><div class="toast-title">' + title + '</div>' +
+            '<div class="toast-text">' + message + '</div></div>' +
+            '<button class="toast-close" onclick="this.parentElement.remove()">&times;</button>';
+        container.appendChild(toast);
+        setTimeout(function() {
+            toast.classList.add('fade-out');
+            setTimeout(function() { toast.remove(); }, 400);
+        }, 6000);
+    }
+
+    window.__TOAST_ERRORS__.forEach(function(msg, i) {
+        setTimeout(function() { showToast(msg, 'error'); }, i * 250);
+    });
+})();
+</script>
 </body>
 </html>

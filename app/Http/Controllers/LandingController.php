@@ -47,6 +47,10 @@ class LandingController extends Controller
      */
     public function registerSubmit(Request $request)
     {
+        // Utiliser l'email admin comme email entreprise si non fourni ou identique
+        $companyEmail = $request->filled('company_email') ? $request->company_email : $request->admin_email;
+        $request->merge(['company_email' => $companyEmail]);
+
         $request->validate([
             'type' => 'required|in:entreprise,comptable',
             // Infos entreprise
@@ -58,12 +62,18 @@ class LandingController extends Controller
             'adresse' => 'required|string|max:255',
             'code_postal' => 'required|string|max:50',
             'country' => 'required|string|max:100',
-            'company_email' => 'required|email|max:255|unique:companies,email_adresse',
+            'company_email' => 'nullable|email|max:255|unique:companies,email_adresse',
             // Infos Admin
             'admin_name' => 'required|string|max:255',
             'admin_last_name' => 'required|string|max:255',
-            'admin_email' => 'required|email|unique:users,email_adresse|max:255',
+            'admin_email' => 'required|email|max:255|unique:users,email_adresse',
             'admin_password' => 'required|string|min:8|confirmed',
+        ], [
+            'company_email.unique' => 'Cette adresse e-mail est déjà associée à une autre entreprise. Veuillez en utiliser une différente.',
+            'admin_email.unique' => 'Cette adresse e-mail de connexion est déjà utilisée. Veuillez en saisir une autre.',
+            'admin_email.required' => 'L\'adresse e-mail de connexion est obligatoire.',
+            'admin_password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'admin_password.confirmed' => 'Les mots de passe ne correspondent pas.',
         ]);
 
         try {
@@ -85,7 +95,7 @@ class LandingController extends Controller
                 'code_postal' => $request->code_postal,
                 'country' => $request->country,
                 'phone_number' => $request->phone_number,
-                'email_adresse' => $request->company_email,
+                'email_adresse' => $companyEmail,
                 'identification_TVA' => $request->identification_TVA,
                 'parent_company_id' => null, // Racine
             ]);
