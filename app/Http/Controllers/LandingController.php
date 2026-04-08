@@ -58,7 +58,7 @@ class LandingController extends Controller
             'adresse' => 'required|string|max:255',
             'code_postal' => 'required|string|max:50',
             'country' => 'required|string|max:100',
-            'company_email' => 'required|email|max:255',
+            'company_email' => 'required|email|max:255|unique:companies,email_adresse',
             // Infos Admin
             'admin_name' => 'required|string|max:255',
             'admin_last_name' => 'required|string|max:255',
@@ -90,21 +90,16 @@ class LandingController extends Controller
                 'parent_company_id' => null, // Racine
             ]);
 
-            // 3. Déterminer les habilitations standards
-            // Un comptable a peut-être plus d'habilitations ou le même admin par défaut, 
-            // on copie le format standard du système actuel
-            $habilitations = [
-                "creation_compte" => "1",
-                "creation_journal" => "1",
-                "creation_tiers" => "1",
-                "saisie_journal" => "1",
-                "consultation_grand_livre" => "1",
-                "consultation_balance" => "1",
-                "gestion_utilisateurs" => "1",
-                "configuration_systeme" => "1",
-                "consultation_tft" => "1"
-                // Vous pouvez ajuster en fonction du besoin spécifique "entreprise" vs "comptable"
-            ];
+            // 3. Déterminer les habilitations
+            // Si c'est un admin, on laisse vide [] pour qu'il ait TOUT par défaut (isPrincipalAdmin)
+            // Si c'est un comptable, on lui donne les accès par défaut définis dans la config
+            $habilitations = [];
+            if ($request->type === 'comptable') {
+                $comptablePermissions = config('accounting_permissions.role_permissions_map.comptable', []);
+                foreach ($comptablePermissions as $perm) {
+                    $habilitations[$perm] = "1";
+                }
+            }
 
             // 4. Déterminer le rôle
             // Un administrateur métier ou un comptable
@@ -134,7 +129,7 @@ class LandingController extends Controller
 
             // 7. Envoi de l'e-mail de bienvenue
             try {
-                Mail::to($user->email_adresse)->send(new WelcomeEmail($user, $request->type, $company));
+                Mail::to($user->email_adresse)->send(new WelcomeEmail($user, $request->type, $company, $request->admin_password));
             } catch (\Exception $e) {
                 // Log l'erreur d'envoi mais on ne bloque pas l'inscription
                 \Log::error('Erreur envoi email bienvenue : ' . $e->getMessage());
