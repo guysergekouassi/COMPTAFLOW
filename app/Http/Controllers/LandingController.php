@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 use App\Mail\WelcomeEmail;
 
 class LandingController extends Controller
@@ -106,8 +107,8 @@ class LandingController extends Controller
             ];
 
             // 4. Déterminer le rôle
-            // Un administrateur métier
-            $role = 'admin';
+            // Un administrateur métier ou un comptable
+            $role = ($request->type === 'comptable') ? 'comptable' : 'admin';
 
             // 5. Créer l'utilisateur Administrateur
             $user = User::create([
@@ -128,7 +129,10 @@ class LandingController extends Controller
 
             DB::commit();
 
-            // 6. Envoi de l'e-mail de bienvenue
+            // 6. Connecter l'utilisateur automatiquement
+            Auth::login($user);
+
+            // 7. Envoi de l'e-mail de bienvenue
             try {
                 Mail::to($user->email_adresse)->send(new WelcomeEmail($user, $request->type, $company));
             } catch (\Exception $e) {
@@ -136,7 +140,7 @@ class LandingController extends Controller
                 \Log::error('Erreur envoi email bienvenue : ' . $e->getMessage());
             }
 
-            return redirect()->route('login')->with('success', 'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.');
+            return redirect()->route('app.dashboard')->with('success', 'Votre compte a été créé avec succès.');
 
         } catch (\Exception $e) {
             DB::rollBack();
