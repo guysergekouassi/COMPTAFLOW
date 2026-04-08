@@ -123,7 +123,7 @@ class LandingController extends Controller
             ]);
 
             // Assigner l'administrateur à l'entreprise
-            $company->admin_id = $user->id;
+            $company->user_id = $user->id;
             $company->save();
 
             DB::commit();
