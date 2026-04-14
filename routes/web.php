@@ -118,12 +118,44 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     // *** ROUTES IA - SCAN DE FACTURES (Sécurisées) ***
     Route::post('/ia-traitement', [IaController::class, 'traiterFacture'])->name('ia.traiter');
     Route::post('/ia-correction', [IaController::class, 'enregistrerCorrection'])->name('ia.correction');
-    Route::get('/test-vertex', [IaController::class, 'testVertexAiConnection'])->name('ia.test'); // Route de diagnostic
+    Route::get('/test-vertex', [IaController::class, 'testVertexAiConnection'])->name('ia.test');
     Route::get('/clear-config', function() {
         \Illuminate\Support\Facades\Artisan::call('config:clear');
         \Illuminate\Support\Facades\Artisan::call('cache:clear');
         return "Configuration et Cache nettoyés !";
     })->name('ia.clear-config');
+
+    // *** ROUTES MODULE ANALYSE COMPTABLE IA (Multi-fichiers Excel/PDF/CSV + Chat + Projets) ***
+    Route::prefix('excel-ia')->name('excel_ia.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ExcelIaController::class, 'index'])->name('index');
+        Route::post('/analyser', [\App\Http\Controllers\ExcelIaController::class, 'analyser'])->name('analyser')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+        Route::post('/chat', [\App\Http\Controllers\ExcelIaController::class, 'chat'])->name('chat')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+        Route::post('/export-txt', [\App\Http\Controllers\ExcelIaController::class, 'exportTxt'])->name('export_txt');
+        Route::post('/injecter-bdd', [\App\Http\Controllers\ExcelIaController::class, 'injecterBdd'])->name('injecter_bdd');
+        Route::post('/injecter-et-telecharger', [\App\Http\Controllers\ExcelIaController::class, 'injecterEtTelecharger'])->name('injecter_et_telecharger');
+        Route::get('/historique', [\App\Http\Controllers\ExcelIaController::class, 'historique'])->name('historique');
+        Route::get('/historique/{id}', [\App\Http\Controllers\ExcelIaController::class, 'historiqueShow'])->name('historique.show');
+
+        // Projets
+        Route::get('/projets', [\App\Http\Controllers\ExcelIaProjetController::class, 'index'])->name('projets.index');
+        Route::post('/projets', [\App\Http\Controllers\ExcelIaProjetController::class, 'store'])->name('projets.store');
+        Route::get('/projets/{id}', [\App\Http\Controllers\ExcelIaProjetController::class, 'show'])->name('projets.show');
+        Route::put('/projets/{id}', [\App\Http\Controllers\ExcelIaProjetController::class, 'update'])->name('projets.update');
+        Route::delete('/projets/{id}', [\App\Http\Controllers\ExcelIaProjetController::class, 'destroy'])->name('projets.destroy');
+        Route::post('/projets/{id}/fichiers', [\App\Http\Controllers\ExcelIaProjetController::class, 'uploadFichier'])->name('projets.fichiers.upload');
+        Route::delete('/projets/fichiers/{id}', [\App\Http\Controllers\ExcelIaProjetController::class, 'deleteFichier'])->name('projets.fichiers.destroy');
+        Route::post('/projets/{id}/instructions', [\App\Http\Controllers\ExcelIaProjetController::class, 'updateInstructions'])->name('projets.instructions.update');
+    });
+
+    // *** ROUTES FACTURES PRODUITES ***
+    Route::prefix('factures-produites')->name('factures_produites.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\FactureProduiteController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\FactureProduiteController::class, 'store'])->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\FactureProduiteController::class, 'show'])->name('show');
+        Route::delete('/{id}', [\App\Http\Controllers\FactureProduiteController::class, 'destroy'])->name('destroy');
+        Route::get('/{id}/download', [\App\Http\Controllers\FactureProduiteController::class, 'download'])->name('download');
+    });
+
 
 
 

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Google\Auth\Credentials\ServiceAccountCredentials;
+use Google\Auth\ApplicationDefaultCredentials;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
@@ -13,15 +13,23 @@ class VertexAiService
     private string $location;
     private string $apiVersion;
     private string $model;
+    private string $mode;
 
     public function __construct()
     {
         $this->apiKey = env('GEMINI_API_KEY');
         $this->projectId = env('GOOGLE_CLOUD_PROJECT_ID', 'scan1-comptaflow');
-        $this->location = env('GOOGLE_CLOUD_LOCATION', 'us-central1');
-        $this->apiVersion = 'v1'; 
-        // On utilise gemini-2.5-flash car Google demande d'utiliser un modèle plus récent dans ses logs
-        $this->model = 'gemini-2.5-flash'; 
+        $this->location = env('GOOGLE_CLOUD_LOCATION', env('VERTEX_AI_LOCATION', 'europe-west2'));
+        $this->apiVersion = env('VERTEX_AI_API_VERSION', 'v1');
+        $this->model = env('VERTEX_AI_MODEL', 'gemini-1.5-flash'); 
+
+        // Mode de fonctionnement (vertex_ai ou gemini)
+        $this->mode = env('COMPTAFLOW_IA_MODE', 'gemini');
+
+        // Si on est en mode Vertex, on ignore la clé API Gemini
+        if ($this->mode === 'vertex_ai') {
+            $this->apiKey = null;
+        }
 
         if (!$this->apiKey) {
             $creds = base_path('credentials.json');
@@ -33,24 +41,34 @@ class VertexAiService
 
     private function getAccessToken(): ?string
     {
+        // En mode Gemini API (Method A), pas besoin de token OAuth
         if ($this->apiKey) return null;
 
         try {
-            $creds = getenv('GOOGLE_APPLICATION_CREDENTIALS');
-            if (!$creds || !file_exists($creds)) return null;
-
-            $jsonKey = json_decode(file_get_contents($creds), true);
-            $scopes = ['https://www.googleapis.com/auth/cloud-platform'];
-            $credentials = new ServiceAccountCredentials($scopes, $jsonKey);
-            $tokenData = $credentials->fetchAuthToken();
+            $credsPath = env('GOOGLE_APPLICATION_CREDENTIALS');
             
-            return $tokenData['access_token'] ?? null;
+            if ($credsPath && file_exists($credsPath)) {
+                // Si un chemin est spécifié dans le .env, on l'utilise pour putenv
+                // Cela aide google-auth à trouver le fichier dans certains environnements
+                putenv("GOOGLE_APPLICATION_CREDENTIALS=$credsPath");
+            }
+
+            // Utilise les ADC (Application Default Credentials)
+            $credentials = ApplicationDefaultCredentials::getCredentials();
+            
+            // On rafraîchit le token
+            $token = $credentials->fetchAuthToken();
+            
+            return $token['access_token'] ?? null;
         } catch (\Exception $e) {
-            Log::error('Vertex AI Auth Error: ' . $e->getMessage());
+            Log::error('Vertex AI Auth Error (ADC): ' . $e->getMessage());
             return null;
         }
     }
 
+    /**
+     * Analyse une facture avec une seule image (Compatibilité ascendante)
+     */
     public function analyzeInvoice(string $base64Data, string $mimeType, string $prompt)
     {
         $payload = [
@@ -75,55 +93,125 @@ class VertexAiService
         return $this->callVertexApi($payload);
     }
 
+    /**
+     * Méthode générique pour appeler Gemini (v1 ou Vertex)
+     */
+    public function generateContent(array $contents, array $generationConfig = [])
+    {
+        $payload = [
+            'contents' => $contents,
+            'generationConfig' => array_merge([
+                'temperature' => 0.1,
+                'maxOutputTokens' => 2048,
+            ], $generationConfig),
+        ];
+
+        return $this->callVertexApi($payload);
+    }
+
     public function callVertexApi(array $payload)
     {
-        try {
-            $isToken = $this->apiKey && str_starts_with($this->apiKey, 'AQ.');
-            $isApiKey = $this->apiKey && !$isToken;
+        $maxRetries = 3;
+        $attempt = 0;
 
-            // MÉTHODE A : Clé API Standard (AI Studio) -> On utilise Gemini 2.5 Flash
-            if ($isApiKey) {
-                Log::info("IA Request via Standard API KEY (v1) - [{$this->model}]");
-                $url = "https://generativelanguage.googleapis.com/v1/models/{$this->model}:generateContent?key={$this->apiKey}";
-                
-                // Format snake_case pour API Studio
-                $p = $payload;
-                $p['contents'][0]['parts'][1] = [
-                    'inline_data' => [
-                        'mime_type' => $payload['contents'][0]['parts'][1]['inlineData']['mimeType'],
-                        'data' => $payload['contents'][0]['parts'][1]['inlineData']['data']
-                    ]
+        while ($attempt < $maxRetries) {
+            try {
+                $isToken = $this->apiKey && str_starts_with($this->apiKey, 'AQ.');
+                $isApiKey = $this->apiKey && !$isToken;
+
+                // MÉTHODE A : Clé API Standard (AI Studio)
+                if ($isApiKey) {
+                    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+                    $p = $payload;
+                    foreach ($p['contents'] as &$content) {
+                        foreach ($content['parts'] as &$part) {
+                            if (isset($part['inlineData'])) {
+                                $part['inline_data'] = [
+                                    'mime_type' => $part['inlineData']['mimeType'],
+                                    'data' => $part['inlineData']['data']
+                                ];
+                                unset($part['inlineData']);
+                            }
+                        }
+                    }
+                    if (isset($p['generationConfig'])) {
+                        $configMapping = ['maxOutputTokens' => 'max_output_tokens', 'topP' => 'top_p', 'topK' => 'top_k'];
+                        foreach ($configMapping as $old => $new) {
+                            if (isset($p['generationConfig'][$old])) {
+                                $p['generationConfig'][$new] = $p['generationConfig'][$old];
+                                unset($p['generationConfig'][$old]);
+                            }
+                        }
+                    }
+                    $response = Http::timeout(300)->post($url, $p);
+                } 
+                // MÉTHODE B : Pro Tunnel (Vertex AI)
+                else {
+                    $token = $this->apiKey ?: $this->getAccessToken();
+                    $url = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
+                    
+                    // Vertex AI impose la présence du champ 'role' (user/model)
+                    $p = $payload;
+                    foreach ($p['contents'] as &$content) {
+                        if (!isset($content['role'])) {
+                            $content['role'] = 'user';
+                        }
+                    }
+
+                    $response = Http::withToken($token)->withHeaders(['X-Goog-User-Project' => $this->projectId])->timeout(300)->post($url, $p);
+                }
+
+                if ($response->failed()) {
+                    // Retry on 503 (Overloaded) or 429 (Quota)
+                    if (in_array($response->status(), [503, 429]) && $attempt < $maxRetries - 1) {
+                        $attempt++;
+                        $delay = pow(2, $attempt);
+                        Log::warning("IA API Retry ({$response->status()}) after {$delay}s...");
+                        sleep($delay);
+                        continue;
+                    }
+                    Log::error('IA API Error', ['status' => $response->status(), 'msg' => $response->body()]);
+                    return ['has_error' => true, 'error_message' => $response->body(), 'http_code' => $response->status()];
+                }
+
+                $json = $response->json();
+                $rawText = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                $aiText = preg_replace('/^```json\s*|\s*```$/', '', trim($rawText));
+                $jsonData = json_decode($aiText, true);
+
+                return [
+                    'has_error' => false, 
+                    'data' => $jsonData ?: $rawText,
+                    'raw_text' => $rawText
                 ];
-                
-                $response = Http::timeout(300)->post($url, $p);
-            } 
-            // MÉTHODE B : Token OAuth (AQ...) ou Service Account -> Tunnel Vertex AI (Pro)
-            else {
-                $token = $this->apiKey ?: $this->getAccessToken();
-                if (!$token) throw new \Exception("Aucune méthode d'authentification disponible.");
 
-                Log::info("IA Request via Pro Tunnel (Vertex AI) - [{$this->projectId}]");
-                $url = "https://{$this->location}-aiplatform.googleapis.com/{$this->apiVersion}/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
-                
-                $response = Http::withToken($token)
-                    ->withHeaders(['X-Goog-User-Project' => $this->projectId])
-                    ->timeout(300)
-                    ->post($url, $payload);
+            } catch (\Exception $e) {
+                if ($attempt < $maxRetries - 1) {
+                    $attempt++;
+                    sleep(2);
+                    continue;
+                }
+                Log::error('IA API Exception: ' . $e->getMessage());
+                return ['has_error' => true, 'error_message' => $e->getMessage()];
             }
+        }
+    }
 
-            if ($response->failed()) {
-                Log::error('IA Scan API Error', ['status' => $response->status(), 'msg' => $response->body()]);
-                return ['has_error' => true, 'error_message' => $response->body(), 'http_code' => $response->status()];
-            }
-
-            $json = $response->json();
-            $aiText = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
-            $aiText = preg_replace('/^```json\s*|\s*```$/', '', trim($aiText));
+    /**
+     * Test simple pour vérifier la connectivité Vertex AI Pro
+     */
+    public static function testConnection(): array
+    {
+        try {
+            $service = new self();
             
-            return ['has_error' => false, 'data' => json_decode($aiText, true)];
+            $testPayload = [
+                'contents' => [['parts' => [['text' => 'Réponds UNIQUEMENT avec : {"status":"ok"}']]]],
+                'generationConfig' => ['maxOutputTokens' => 50, 'temperature' => 0.1]
+            ];
 
+            return $service->callVertexApi($testPayload);
         } catch (\Exception $e) {
-            Log::error('IA Scan Exception: ' . $e->getMessage());
             return ['has_error' => true, 'error_message' => $e->getMessage()];
         }
     }

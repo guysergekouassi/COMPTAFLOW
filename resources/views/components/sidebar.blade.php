@@ -739,6 +739,14 @@
                     <i class="fa-solid fa-copy"></i>
                     <span>Centre de Scan</span>
                 </a>
+                <a href="{{ route('excel_ia.index') }}" class="menu-link-new {{ request()->routeIs('excel_ia.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-robot text-primary"></i>
+                    <span>Analyse Comptable IA</span>
+                </a>
+                <a href="{{ route('factures_produites.index') }}" class="menu-link-new {{ request()->routeIs('factures_produites.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-file-invoice text-success"></i>
+                    <span>Factures Produites</span>
+                </a>
                 @if(auth()->user()->hasPermission('accounting_entry_list'))
                 <a href="{{ route('ecriture.hub') }}" class="menu-link-new {{ request()->routeIs('ecriture.hub') ? 'active' : '' }}">
                     <i class="fa-solid fa-layer-group"></i>
