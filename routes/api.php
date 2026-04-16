@@ -121,6 +121,10 @@ Route::prefix('v1')->group(function () {
         // Suppression générique
         Route::delete('/accounting/{type}/{id}', [AccountingController::class, 'destroy']);
 
+        // ── Honoraires & Abonnements (Super Admin Mobile) ──────────────────────
+        Route::get('/honoraires', [\App\Http\Controllers\Super\HonorairesController::class, 'apiIndex']);
+        Route::get('/honoraires/{companyId}', [\App\Http\Controllers\Super\HonorairesController::class, 'apiShow']);
+
         Route::post('/logout', [AuthController::class, 'logout']);
     });
 });

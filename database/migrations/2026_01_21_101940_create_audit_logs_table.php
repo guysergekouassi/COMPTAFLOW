@@ -11,22 +11,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('audit_logs', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->unsignedBigInteger('company_id')->nullable();
-            $table->string('action'); // ex: CREATE, UPDATE, DELETE, LOGIN
-            $table->string('model_type')->nullable(); // ex: App\Models\EcritureComptable
-            $table->unsignedBigInteger('model_id')->nullable();
-            $table->text('description')->nullable();
-            $table->json('payload')->nullable(); // Anciennes vs Nouvelles valeurs
-            $table->string('ip_address')->nullable();
-            $table->string('user_agent')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('audit_logs')) {
+            Schema::create('audit_logs', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->unsignedBigInteger('company_id')->nullable();
+                $table->string('action'); // ex: CREATE, UPDATE, DELETE, LOGIN
+                $table->string('model_type')->nullable(); // ex: App\Models\EcritureComptable
+                $table->unsignedBigInteger('model_id')->nullable();
+                $table->text('description')->nullable();
+                $table->json('payload')->nullable(); // Anciennes vs Nouvelles valeurs
+                $table->string('ip_address')->nullable();
+                $table->string('user_agent')->nullable();
+                $table->timestamps();
 
-            $table->index('user_id');
-            $table->index('company_id');
-        });
+                $table->index('user_id');
+                $table->index('company_id');
+            });
+        }
     }
 
     /**

@@ -46,6 +46,11 @@
                     <span class="badge bg-danger rounded-pill ms-auto">{{ $unreadNotificationsCount }}</span>
                 @endif
             </a>
+
+            <a href="{{ route('superadmin.honoraires') }}" class="menu-link-new {{ request()->routeIs('superadmin.honoraires*') ? 'active' : '' }}">
+                <i class="fa-solid fa-money-check-dollar"></i>
+                <span>Honoraires & Abonnements</span>
+            </a>
         </div>
 
         {{-- SECTION NOUVELLE : ADMINISTRATION INTERNE --}}

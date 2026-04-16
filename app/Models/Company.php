@@ -63,4 +63,14 @@ class Company extends Model
     {
         return $this->hasMany(EcritureComptable::class, 'company_id');
     }
+
+    public function appSubscriptions()
+    {
+        return $this->hasMany(AppSubscription::class, 'company_id');
+    }
+
+    public function serviceHonoraires()
+    {
+        return $this->hasMany(ServiceHonoraire::class, 'company_id');
+    }
 }

@@ -715,6 +715,12 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
     // Tableau de Bord Super Admin (Statistiques Globales)
     Route::get('/superadmin/dashboard', [SuperAdminDashboardController::class, 'index'])->name('superadmin.dashboard');
 
+    // Honoraires & Abonnements
+    Route::get('/superadmin/honoraires', [\App\Http\Controllers\Super\HonorairesController::class, 'index'])->name('superadmin.honoraires');
+    Route::get('/superadmin/honoraires/{companyId}', [\App\Http\Controllers\Super\HonorairesController::class, 'show'])->name('superadmin.honoraires.show');
+    Route::get('/superadmin/honoraires-parametrage', [\App\Http\Controllers\Super\HonorairesController::class, 'getPrixCatalogue'])->name('superadmin.honoraires.parametrage');
+    Route::post('/superadmin/honoraires-parametrage', [\App\Http\Controllers\Super\HonorairesController::class, 'updatePrix'])->name('superadmin.honoraires.update_prix');
+
     // Gestion des Entités (Ancien Dashboard)
     Route::get('/entities', [SuperAdminDashboardController::class, 'entities'])->name('superadmin.entities');
 
