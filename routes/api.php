@@ -29,6 +29,7 @@ Route::prefix('v1')->group(function () {
         });
         
         Route::get('/dashboard', [DashboardController::class, 'index']);
+        Route::get('/dashboard/chat-history/{contactId}', [DashboardController::class, 'chatHistory']);
         
         // Approbations / Validation
         Route::get('/approvals', [ApprovalController::class, 'index']);

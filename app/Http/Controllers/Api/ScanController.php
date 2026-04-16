@@ -104,20 +104,25 @@ class ScanController extends Controller
             $prompt = $this->scanService->buildPrompt($companyId, $request->input('journal_code', 'AC'));
             $result = $this->vertexAiService->analyzeInvoice($image_data, $mime_type, $prompt);
 
-            if (isset($result['error'])) {
+            if (isset($result['has_error']) && $result['has_error']) {
+                $errorMsg = $result['error_message'] ?? 'Erreur inconnue Vertex AI';
                 IaLog::create([
                     'company_id' => $companyId,
                     'user_id' => $user->id,
                     'image_hash' => $image_hash,
                     'image_nom' => $file->getClientOriginalName(),
                     'status' => 'error',
-                    'erreur_message' => $result['error'],
+                    'erreur_message' => substr($errorMsg, 0, 250),
                     'json_brut' => json_encode($result),
                 ]);
-                return response()->json(['error' => $result['error']], 500);
+                return response()->json(['success' => false, 'error' => $errorMsg], 500);
             }
 
-            $data = $result['data'];
+            $data = $result['data'] ?? null;
+            
+            if (!$data) {
+                return response()->json(['success' => false, 'error' => 'Aucune donnée extraite par l\'IA'], 500);
+            }
             
             IaLog::create([
                 'company_id' => $companyId,

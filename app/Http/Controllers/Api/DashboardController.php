@@ -11,201 +11,326 @@ use App\Models\PlanTiers;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Models\InternalNotification;
 
-/**
- * DashboardController regroupe les statistiques pour les 3 interfaces mobile :
- * 1. Super Admin (Vue globale du système)
- * 2. Admin (Vue globale de son entreprise/sous-entreprises)
- * 3. Comptable (Vue opérationnelle de ses activités)
- */
 class DashboardController extends Controller
 {
     /**
-     * Retourne les données du tableau de bord selon le rôle de l'utilisateur.
+     * Point d'entrée principal du Dashboard.
      */
     public function index(Request $request)
     {
         $user = $request->user();
-        $role = $user->role;
 
-        // Détermination de l'entreprise et de l'exercice contextuel
-        $companyId = $request->header('X-Company-Id', $user->company_id);
+        // RECUPERATION DU CONTEXTE (SOCIÉTÉ)
+        // 1. Priorité au header (si défini et non vide)
+        // 2. Repli sur le company_id de l'utilisateur
+        // 3. Dernier recours : première société pour un SuperAdmin
+        $companyId = $request->header('X-Company-Id');
+        if (!$companyId || $companyId === 'null' || $companyId === 'undefined') {
+            $companyId = $user->company_id;
+        }
+
+        if (!$companyId && ($user->isAdmin() || $user->isSuperAdmin())) {
+            $firstCompany = Company::orderBy('id')->first();
+            $companyId = $firstCompany ? $firstCompany->id : null;
+        }
+
+        // RECUPERATION DU CONTEXTE (EXERCICE)
         $exerciceId = $request->header('X-Exercice-Id');
+        if (!$exerciceId || $exerciceId === 'null' || $exerciceId === 'undefined') {
+            if ($companyId) {
+                $exerciceId = $this->getActiveExerciceId($companyId);
+            }
+        }
+
+        $month = $request->query('month');
+        $year = $request->query('year');
 
         $data = [
-            'role' => $role,
+            'role' => $user->role,
             'user' => [
+                'id' => $user->id,
                 'name' => $user->name,
                 'last_name' => $user->last_name,
             ],
-            'company' => \App\Models\Company::find($companyId),
+            'debug' => [
+                'company_id' => $companyId,
+                'exercice_id' => $exerciceId,
+                'role' => $user->role,
+            ],
+            'company' => $companyId ? Company::find($companyId) : null,
             'stats' => []
         ];
 
-        if ($user->isSuperAdmin()) {
-            $data['stats'] = $this->getSuperAdminStats();
-        } elseif ($user->isAdmin()) {
-            $data['stats'] = $this->getAdminStats($companyId, $exerciceId);
+        // LOGIQUE DE STATS HARMONISÉE
+        if ($user->isAdmin() || $user->isSuperAdmin()) {
+            $data['stats'] = $this->getAdminStats($companyId, $exerciceId, $month, $year);
+            if ($user->isSuperAdmin()) {
+                $data['stats'] = array_merge($data['stats'], $this->getSuperAdminStats());
+            }
         } else {
-            $data['stats'] = $this->getComptableStats($user->id, $companyId, $exerciceId);
+            // Pour le collaborateur, on renvoie une structure hybride stable
+            $data['stats'] = $this->getComptableStats($user->id, $companyId, $exerciceId, $month, $year);
         }
+
+        // RECUPERATION DES COLLABORATEURS DE LA SOCIETE
+        $data['collaborators'] = User::where('company_id', $companyId)
+            ->where('id', '!=', $user->id)
+            ->select('id', 'name', 'last_name')
+            ->get()
+            ->map(function($u) {
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name . ' ' . ($u->last_name ?? '')
+                ];
+            });
 
         return response()->json($data);
     }
 
-    /**
-     * Statistiques pour le Super Administrateur.
-     */
     private function getSuperAdminStats()
     {
         return [
             'total_companies' => Company::count(),
             'active_companies' => Company::where('is_active', true)->count(),
             'total_users' => User::count(),
-            'volume_traitement' => EcritureComptable::count(),
-            'taux_completion' => $this->getGlobalCompletionRate(),
-            'growth_chart' => $this->getCompanyGrowthData(),
         ];
     }
 
-    /**
-     * Statistiques pour l'Administrateur d'entreprise.
-     */
-    private function getAdminStats($companyId, $exerciceId = null)
+    private function getAdminStats($companyId, $exerciceId = null, $month = null, $year = null)
     {
-        if (!$exerciceId) {
-            $exerciceId = $this->getActiveExerciceId($companyId);
+        // Données mensuelles
+        $revenue = $this->getDetailedStats($companyId, $exerciceId, $month, $year, 'revenue');
+        $expenses = $this->getDetailedStats($companyId, $exerciceId, $month, $year, 'expenses');
+        $charges = $this->getDetailedStats($companyId, $exerciceId, $month, $year, 'charges');
+
+        $approved_revenue = $revenue['approved'];
+        $approved_expenses = $expenses['approved'];
+
+        // Calcul de la croissance : 
+        // Si mois présent : comparer avec mois précédent
+        // Si mois absent : comparer avec année précédente
+        if ($month) {
+            $prev_period = $this->getPreviousPeriod($month, $year);
+            $prev_revenue = $this->getDetailedStats($companyId, $exerciceId, $prev_period['month'], $prev_period['year'], 'revenue')['approved'];
+        } else {
+            $prev_revenue = $this->getDetailedStats($companyId, $exerciceId, null, ($year ?? Carbon::now()->year) - 1, 'revenue')['approved'];
         }
 
-        $revenue = $this->getTotalRevenue($companyId, $exerciceId);
-        $expenses = $this->getTotalExpenses($companyId, $exerciceId);
+        $margin_rate = $approved_revenue != 0 ? (($approved_revenue - $approved_expenses) / abs($approved_revenue)) * 100 : 0;
+        $growth_rate = $prev_revenue != 0 ? (($approved_revenue - $prev_revenue) / abs($prev_revenue)) * 100 : 0;
 
         return [
-            'total_revenue' => $revenue,
-            'total_expenses' => $expenses,
-            'net_result' => $revenue - $expenses,
-            'monthly_entries' => $this->getMonthlyEntriesCount($companyId),
+            'revenue' => $revenue,
+            'expenses' => $expenses,
+            'charges' => $charges,
+            'honoraires' => ['approved' => 0, 'pending' => 0, 'total' => 0], // Placeholder
+            'net_result' => $approved_revenue - $approved_expenses,
+            'total_revenue' => $approved_revenue, 
+            'total_expenses' => $approved_expenses, 
             'cash_balance' => $this->getCashBalance($companyId),
-            'clients_count' => PlanTiers::where('company_id', $companyId)->where('type_de_tiers', 'client')->count(),
-            'suppliers_count' => PlanTiers::where('company_id', $companyId)->where('type_de_tiers', 'fournisseur')->count(),
-            'revenue_chart' => $this->getRevenueChartData($companyId, $exerciceId),
-            'recent_entries' => EcritureComptable::where('company_id', $companyId)
-                ->when($exerciceId, fn($q) => $q->where('exercices_comptables_id', $exerciceId))
-                ->latest('date')
-                ->limit(5)
-                ->get(['id', 'description_operation', 'date', 'debit', 'credit', 'statut']),
+            'margin_rate' => round($margin_rate, 2),
+            'growth_rate' => round($growth_rate, 2),
+            'revenue_chart' => $this->getMonthlyChartData($companyId, $year),
+            'expense_distribution' => $this->getExpenseDistribution($companyId, $exerciceId, $month, $year),
+            'recent_entries' => EcritureComptable::withoutGlobalScopes()->where('company_id', $companyId)->latest()->limit(5)->get(),
+            'unread_messages_count' => InternalNotification::where('receiver_id', auth()->id())->where('is_read', 0)->count(),
+            'conversations' => $this->getConversations(auth()->id()),
         ];
     }
 
-    /**
-     * Statistiques pour le Comptable.
-     */
-    private function getComptableStats($userId, $companyId, $exerciceId = null)
+    private function getComptableStats($userId, $companyId, $exerciceId = null, $month = null, $year = null)
     {
-        if (!$exerciceId) {
-            $exerciceId = $this->getActiveExerciceId($companyId);
+        // On récupère les stats de base de l'entreprise
+        $base = $this->getAdminStats($companyId, $exerciceId, $month, $year);
+
+        $m = $month ?? Carbon::now()->month;
+        $y = $year ?? Carbon::now()->year;
+
+        // On y ajoute les stats spécifiques au collaborateur
+        return array_merge($base, [
+            'my_monthly_entries' => EcritureComptable::where('user_id', $userId)
+                ->whereMonth('date', $m)->whereYear('date', $y)->count(),
+            'alerts' => $this->getComptableAlerts($userId, $companyId, $exerciceId),
+        ]);
+    }
+
+    private function getDetailedStats($companyId, $exerciceId, $month = null, $year = null, $type = 'revenue')
+    {
+        $query = EcritureComptable::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->when($month, fn($q) => $q->whereMonth('date', $month))
+            ->when($year, fn($q) => $q->whereYear('date', $year))
+            ->when(!$year && !$month && $exerciceId, fn($q) => $q->where('exercices_comptables_id', $exerciceId));
+
+        if ($type === 'revenue') {
+            $query->whereHas('planComptable', fn($q) => $q->withoutGlobalScopes()->where('numero_de_compte', 'like', '7%'));
+            $field = 'credit';
+        } else {
+            $query->whereHas('planComptable', fn($q) => $q->withoutGlobalScopes()->where('numero_de_compte', 'like', '6%'));
+            $field = 'debit';
         }
 
+        $results = (clone $query)->selectRaw('statut, SUM(' . $field . ') as total')
+            ->groupBy('statut')->pluck('total', 'statut');
+
         return [
-            'my_monthly_entries' => EcritureComptable::where('user_id', $userId)
-                ->whereMonth('date', Carbon::now()->month)
-                ->count(),
-            'pending_approvals' => DB::table('approvals')->where('status', 'pending')->count(), // Exemple simplifié
-            'recent_entries' => EcritureComptable::where('user_id', $userId)
-                ->latest()
-                ->limit(5)
-                ->get(['id', 'description_operation', 'date', 'debit', 'credit']),
-            'alerts' => $this->getComptableAlerts($userId, $companyId, $exerciceId),
+            'approved' => (float) ($results['approved'] ?? 0),
+            'pending' => (float) ($results['pending'] ?? 0),
+            'draft' => (float) ($results['draft'] ?? 0),
+            'total' => (float) (($results['approved'] ?? 0) + ($results['pending'] ?? 0) + ($results['draft'] ?? 0))
         ];
-    }
-
-    // --- Méthodes Utilitaires ---
-
-    private function getGlobalCompletionRate()
-    {
-        $total = ExerciceComptable::count();
-        $closed = ExerciceComptable::where('cloturer', true)->count();
-        return $total > 0 ? round(($closed / $total) * 100, 1) : 0;
-    }
-
-    private function getCompanyGrowthData()
-    {
-        return Company::select(
-            DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
-            DB::raw('count(*) as total')
-        )
-        ->where('created_at', '>=', now()->subYear())
-        ->groupBy('month')
-        ->orderBy('month')
-        ->get();
-    }
-
-    private function getActiveExerciceId($companyId)
-    {
-        $exercice = ExerciceComptable::where('company_id', $companyId)
-            ->where('is_active', true)
-            ->first();
-        return $exercice ? $exercice->id : null;
-    }
-
-    private function getTotalRevenue($companyId, $exerciceId)
-    {
-        return EcritureComptable::where('company_id', $companyId)
-            ->where('statut', 'approved')
-            ->when($exerciceId, fn($q) => $q->where('exercices_comptables_id', $exerciceId))
-            ->whereHas('planComptable', fn($q) => $q->where('numero_de_compte', 'like', '7%'))
-            ->sum('credit');
-    }
-
-    private function getTotalExpenses($companyId, $exerciceId)
-    {
-        return EcritureComptable::where('company_id', $companyId)
-            ->where('statut', 'approved')
-            ->when($exerciceId, fn($q) => $q->where('exercices_comptables_id', $exerciceId))
-            ->whereHas('planComptable', fn($q) => $q->where('numero_de_compte', 'like', '6%'))
-            ->sum('debit');
-    }
-
-    private function getMonthlyEntriesCount($companyId)
-    {
-        return EcritureComptable::where('company_id', $companyId)
-            ->whereMonth('date', Carbon::now()->month)
-            ->count();
     }
 
     private function getCashBalance($companyId)
     {
-        return EcritureComptable::where('company_id', $companyId)
-            ->whereHas('planComptable', fn($q) => $q->where('numero_de_compte', 'like', '5%'))
-            ->selectRaw('SUM(debit) - SUM(credit) as balance')
-            ->first()
-            ->balance ?? 0;
+        if (!$companyId)
+            return 0;
+        return EcritureComptable::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->whereHas('planComptable', fn($q) => $q->withoutGlobalScopes()->where('numero_de_compte', 'like', '5%'))
+            ->selectRaw('SUM(debit) - SUM(credit) as balance')->first()->balance ?? 0;
     }
 
-    private function getRevenueChartData($companyId, $exerciceId)
+    private function getMonthlyChartData($companyId, $year)
     {
-        return EcritureComptable::where('company_id', $companyId)
-            ->when($exerciceId, fn($q) => $q->where('exercices_comptables_id', $exerciceId))
-            ->whereHas('planComptable', fn($q) => $q->where('numero_de_compte', 'like', '7%'))
+        if (!$companyId)
+            return [];
+        $y = $year ?? Carbon::now()->year;
+        $results = EcritureComptable::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->when($year, fn($q) => $q->whereYear('date', $year))
+            ->whereHas('planComptable', fn($q) => $q->withoutGlobalScopes()->where('numero_de_compte', 'like', '7%'))
             ->selectRaw('MONTH(date) as month, SUM(credit) as total')
-            ->groupBy('month')
-            ->get();
+            ->groupBy('month')->pluck('total', 'month');
+
+        $chart = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $chart[] = ['month' => $i, 'total' => (float) ($results[$i] ?? 0)];
+        }
+        return $chart;
+    }
+
+    private function getExpenseDistribution($companyId, $exerciceId, $month = null, $year = null)
+    {
+        if (!$companyId)
+            return [];
+        $results = EcritureComptable::withoutGlobalScopes()
+            ->where('ecriture_comptables.company_id', $companyId)
+            ->when($month, fn($q) => $q->whereMonth('ecriture_comptables.date', $month))
+            ->when($year, fn($q) => $q->whereYear('ecriture_comptables.date', $year))
+            ->when(!$year && !$month && $exerciceId, fn($q) => $q->where('ecriture_comptables.exercices_comptables_id', $exerciceId))
+            ->join('plan_comptables', 'ecriture_comptables.plan_comptable_id', '=', 'plan_comptables.id')
+            ->where('plan_comptables.numero_de_compte', 'like', '6%')
+            ->select('plan_comptables.numero_de_compte', DB::raw('SUM(ecriture_comptables.debit) as total'))
+            ->groupBy('plan_comptables.numero_de_compte')->get();
+
+        $final = [];
+        $grouped = [];
+        foreach ($results as $res) {
+            $prefix = substr($res->numero_de_compte, 0, 2);
+            $label = match($prefix) {
+                '60' => 'Achats',
+                '61' => 'Services Ext.',
+                '62' => 'Autres Serv.',
+                '63' => 'Impôts & Taxes',
+                '64' => 'Personnel',
+                '65' => 'Autres Charges',
+                '66' => 'Charges Fin.',
+                '68' => 'Amortissements',
+                default => 'Autres',
+            };
+            if (!isset($grouped[$label])) {
+                $grouped[$label] = 0;
+            }
+            $grouped[$label] += (float) $res->total;
+        }
+
+        foreach ($grouped as $label => $total) {
+            if ($total > 0) {
+                $final[] = ['label' => $label, 'value' => $total];
+            }
+        }
+        return $final;
+    }
+
+    private function getActiveExerciceId($companyId)
+    {
+        $ex = ExerciceComptable::where('company_id', $companyId)->where('is_active', true)->first();
+        return $ex ? $ex->id : null;
+    }
+
+    private function getPreviousPeriod($month, $year)
+    {
+        $m = $month ?? Carbon::now()->month;
+        $y = $year ?? Carbon::now()->year;
+        return $m == 1 ? ['month' => 12, 'year' => $y - 1] : ['month' => $m - 1, 'year' => $y];
     }
 
     private function getComptableAlerts($userId, $companyId, $exerciceId)
     {
         $alerts = [];
-        $noDocCount = EcritureComptable::where('user_id', $userId)
-            ->whereNull('piece_justificatif')
-            ->count();
+        $count = EcritureComptable::where('user_id', $userId)->whereNull('piece_justificatif')->count();
+        if ($count > 0)
+            $alerts[] = ['type' => 'warning', 'message' => "$count écritures sans pièce"];
+        return $alerts;
+    }
 
-        if ($noDocCount > 0) {
-            $alerts[] = [
-                'type' => 'warning',
-                'message' => "$noDocCount écritures sans pièce justificative",
+    private function getConversations($userId)
+    {
+        $latestMessages = InternalNotification::where('sender_id', $userId)
+            ->orWhere('receiver_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(function ($item) use ($userId) {
+                return $item->sender_id == $userId ? $item->receiver_id : $item->sender_id;
+            });
+
+        $conversations = [];
+        foreach ($latestMessages as $contactId => $messages) {
+            $lastMsg = $messages->first();
+            $contact = User::find($contactId);
+            if (!$contact) continue;
+
+            $conversations[] = [
+                'contact_id' => $contactId,
+                'contact_name' => $contact->name . ' ' . ($contact->last_name ?? ''),
+                'last_message' => $lastMsg->message,
+                'last_message_time' => $lastMsg->created_at->toISOString(),
+                'unread_count' => $messages->where('receiver_id', $userId)->where('is_read', 0)->count(),
+                'is_last_message_from_me' => $lastMsg->sender_id == $userId,
             ];
         }
 
-        return $alerts;
+        return $conversations;
+    }
+
+    /**
+     * Récupère l'historique des messages pour un contact spécifique.
+     */
+    public function chatHistory(Request $request, $contactId)
+    {
+        $userId = auth()->id();
+        
+        $messages = InternalNotification::where(function($q) use ($userId, $contactId) {
+                $q->where('sender_id', $userId)->where('receiver_id', $contactId);
+            })
+            ->orWhere(function($q) use ($userId, $contactId) {
+                $q->where('sender_id', $contactId)->where('receiver_id', $userId);
+            })
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // Marquer comme lu
+        InternalNotification::where('sender_id', $contactId)
+            ->where('receiver_id', $userId)
+            ->where('is_read', 0)
+            ->update(['is_read' => 1]);
+
+        return response()->json([
+            'contact_id' => $contactId,
+            'messages' => $messages
+        ]);
     }
 }
