@@ -2451,6 +2451,7 @@ class AdminConfigController extends Controller
                     $errors[] = "Impossible de déduire le type de tiers (Fournisseur/Client) pour la génération. Veuillez vérifier le compte collectif ou l'intitulé.";
                 } else {
                     // --- LOGIQUE DE DOUBLONS SMART POUR TIERS ---
+                    $upperOrigNum = strtoupper($importedNum);
                     $finalNum = $importedNum;
                     $existingMatch = $tierDetails->get(strtoupper($finalNum)) ?? (isset($tierMapping[$upperOrigNum]) ? $tierDetails->get(strtoupper($tierMapping[$upperOrigNum])) : null);
                     
