@@ -174,19 +174,19 @@
                                                     </div>
                                                 </td>
                                                 <td class="text-end">
-                                                    <h5 class="mb-0 amount-font">{{ number_format($data['actif'][$key]['total'], 0, ',', ' ') }}</h5>
+                                                    <h5 class="mb-0 amount-font">{{ number_format($data['actif'][$key]['total_net'], 0, ',', ' ') }}</h5>
                                                 </td>
                                             </tr>
 
                                             <!-- Subcategories -->
                                             @foreach($data['actif'][$key]['subcategories'] as $subKey => $subData)
-                                                @if($subData['total'] != 0 || !empty($subData['details']))
+                                                @if($subData['net'] != 0 || !empty($subData['details']))
                                                 <tr>
                                                     <td class="ps-5 pt-1 pb-1">
                                                         <span class="fw-semibold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">{{ $subData['label'] }}</span>
                                                     </td>
                                                     <td class="text-end pt-1 pb-1">
-                                                        <span class="fw-bold text-dark small">{{ number_format($subData['total'], 0, ',', ' ') }}</span>
+                                                        <span class="fw-bold text-dark small">{{ number_format($subData['net'], 0, ',', ' ') }}</span>
                                                     </td>
                                                 </tr>
                                                 
@@ -219,10 +219,10 @@
 
                                     <div class="total-footer bg-primary">
                                         <div class="d-flex flex-column">
-                                            <small class="text-white opacity-75 fw-bold text-uppercase">Total Actif</small>
+                                            <small class="text-white opacity-75 fw-bold text-uppercase">Total Actif Net</small>
                                             <span class="fw-bold small">Somme des emplois</span>
                                         </div>
-                                        <h3 class="mb-0 amount-font text-white">{{ number_format($data['actif']['total'], 0, ',', ' ') }} <small class="fs-6">FCFA</small></h3>
+                                        <h3 class="mb-0 amount-font text-white">{{ number_format($data['actif']['total_net'], 0, ',', ' ') }} <small class="fs-6">FCFA</small></h3>
                                     </div>
                                 </div>
                             </div>
