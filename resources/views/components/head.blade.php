@@ -17,11 +17,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
 
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
 
     <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/favicon/favicon.ico') }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -30,8 +32,11 @@
         href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap"
         rel="stylesheet" />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/boxicons/2.1.4/css/boxicons.min.css" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/boxicons/2.1.4/css/boxicons.min.css" rel="stylesheet"></noscript>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/boxicons/2.1.4/css/boxicons.min.css" rel="stylesheet"
+        media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/boxicons/2.1.4/css/boxicons.min.css" rel="stylesheet">
+    </noscript>
     <link rel="stylesheet" href="{{ asset('assets/vendor/css/core.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
 
@@ -47,7 +52,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Core JS (Moved to head for guaranteed availability) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- DataTables CSS & JS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
@@ -136,7 +141,7 @@
         .content-wrapper:not(.premium-mode) .card,
         .content-wrapper:not(.premium-mode) [class*="bg-white"] {
             border-radius: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
             border: 1px solid #e5e7eb;
             overflow: hidden;
             transition: all 0.3s ease;
@@ -167,22 +172,45 @@
         }
 
         /* FORCER LES COULEURS DE FOND */
-        .bg-blue-100 { background-color: #dbeafe !important; }
-        .bg-purple-100 { background-color: #f3e8ff !important; }
-        .bg-green-100 { background-color: #d1fae5 !important; }
-        .bg-orange-100 { background-color: #fed7aa !important; }
+        .bg-blue-100 {
+            background-color: #dbeafe !important;
+        }
 
-        .text-primary { color: #3b82f6 !important; }
-        .text-purple-600 { color: #9333ea !important; }
-        .text-success { color: #10b981 !important; }
-        .text-orange-600 { color: #ea580c !important; }
+        .bg-purple-100 {
+            background-color: #f3e8ff !important;
+        }
+
+        .bg-green-100 {
+            background-color: #d1fae5 !important;
+        }
+
+        .bg-orange-100 {
+            background-color: #fed7aa !important;
+        }
+
+        .text-primary {
+            color: #3b82f6 !important;
+        }
+
+        .text-purple-600 {
+            color: #9333ea !important;
+        }
+
+        .text-success {
+            color: #10b981 !important;
+        }
+
+        .text-orange-600 {
+            color: #ea580c !important;
+        }
 
         /* Stabilisation du layout */
-        .layout-page, .content-wrapper {
+        .layout-page,
+        .content-wrapper {
             background: #f8f9fa;
             min-height: 100vh;
         }
-        
+
         /* Skeleton loading placeholder color */
         .glass-card:empty {
             min-height: 200px;
@@ -192,8 +220,13 @@
         }
 
         @keyframes skeleton-loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
         }
     </style>
 </head>

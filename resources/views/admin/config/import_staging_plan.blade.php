@@ -374,9 +374,14 @@
                                                                          <i class="fa-solid fa-file-import text-[8px]"></i> Original: {{ $row['data']['numero_original'] }}
                                                                      </div>
                                                                  @endif
-                                                                  @if(!empty($row['data']['suggested_account']) && $row['data']['suggested_account'] != ($row['data']['numero_de_compte'] ?? ''))
+                                                                  @if(!empty($row['data']['suggested_account']) && $row['data']['suggested_account'] != ($row['data']['numero_original'] ?? ''))
                                                                       <div class="text-[9px] text-emerald-500 font-black italic mt-1">
                                                                           <i class="fa-solid fa-arrow-turn-up fa-rotate-90 me-1"></i> Suggéré: {{ $row['data']['suggested_account'] }}
+                                                                      </div>
+                                                                  @endif
+                                                                  @if(!empty($row['data']['info_renum']))
+                                                                      <div class="text-[8px] text-blue-500 font-medium mt-1">
+                                                                          <i class="fa-solid fa-info-circle me-1"></i> {{ $row['data']['info_renum'] }}
                                                                       </div>
                                                                   @endif
                                                             </div>

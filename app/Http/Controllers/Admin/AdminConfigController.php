@@ -1891,46 +1891,55 @@ class AdminConfigController extends Controller
                     }
                 }
 
-                // GESTION DES DOUBLONS ET COLLISIONS
+                // GESTION DES DOUBLONS ET COLLISIONS (SMART NUMBERING)
                 if (!empty($rowCompte) && empty($errors)) {
-                    $isDuplicateInDb = in_array($rowCompte, $existingAccounts) || isset($accountMapping[strtoupper($originalRawValue)]);
-                    $isDuplicateInBatch = isset($batchAccounts[$rowCompte]);
+                    $existing = $accountDetails->get($rowCompte);
+                    if (!$existing && isset($accountMapping[strtoupper($originalRawValue)])) {
+                        $mappedAcc = $accountMapping[strtoupper($originalRawValue)];
+                        $existing = $accountDetails->get($mappedAcc);
+                    }
 
-                    if ($isDuplicateInDb) {
-                        // Si existe déjà en base, on le marque d'abord comme doublon (priorité sur la renumérotation du lot)
-                        $existing = $accountDetails->get($rowCompte);
-                        if (!$existing && isset($accountMapping[strtoupper($originalRawValue)])) {
-                            $mappedAcc = $accountMapping[strtoupper($originalRawValue)];
-                            $existing = $accountDetails->get($mappedAcc);
+                    $isExactDuplicateInDb = ($existing && trim(strtoupper($existing->intitule)) === trim(strtoupper($row['intitule'] ?? '')));
+                    $isExactDuplicateInBatch = false;
+                    foreach ($rowsWithStatus as $prevRow) {
+                        if (($prevRow['status'] ?? '') === 'valid' && ($prevRow['data']['numero_original'] ?? '') === $originalRawValue && trim(strtoupper($prevRow['data']['intitule'] ?? '')) === trim(strtoupper($row['intitule'] ?? ''))) {
+                            $isExactDuplicateInBatch = true;
+                            break;
                         }
+                    }
 
+                    if ($isExactDuplicateInDb || $isExactDuplicateInBatch) {
+                        // VRAI DOUBLON : Numéro + Intitulé identiques => On ignore
                         $row['is_duplicate'] = true;
-                        $row['existing_label'] = $existing ? $existing->intitule : null;
-                        $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
+                        $row['existing_label'] = $existing ? $existing->intitule : ($row['intitule'] ?? null);
+                        $row['info'] = "Doublon exact (Déjà présent). Cette ligne sera ignorée.";
                         $duplicateCount++;
-                    } elseif ($isDuplicateInBatch) {
-                        // Si doublon SEULEMENT dans le lot actuel, on génère un nouveau numéro
-                        $racine = substr($rowCompte, 0, 3);
-                        if (!isset($localMaxAccounts[$racine])) {
-                            $maxInDb = \App\Models\PlanComptable::where('company_id', $targetCompanyId)
-                                ->where('numero_de_compte', 'LIKE', $racine . '%')
-                                ->whereRaw('LENGTH(numero_de_compte) = ?', [$accountDigits])
-                                ->max('numero_de_compte');
-                            $localMaxAccounts[$racine] = $maxInDb ?: ($racine . str_pad('0', ($accountDigits - 3), '0', STR_PAD_LEFT));
+                    } else {
+                        // VARIATION OU NOUVEAU COMPTE
+                        // Si le numéro est déjà pris par un AUTRE libellé (dans le lot ou en DB)
+                        $isNumberTakenInDb = $existing !== null;
+                        $isNumberTakenInBatch = isset($batchAccounts[$rowCompte]);
+
+                        if ($isNumberTakenInDb || $isNumberTakenInBatch) {
+                            // On cherche le prochain numéro disponible (+1)
+                            $nextId = \App\Services\NumberingService::findNextAvailable(
+                                'account', 
+                                $targetCompanyId, 
+                                $rowCompte, 
+                                $accountDigits, 
+                                array_keys($batchAccounts)
+                            );
+                            
+                            $row['numero_de_compte'] = $nextId;
+                            $row['suggested_account'] = $nextId;
+                            $row['info_renum'] = "Numéro $rowCompte déjà utilisé. Réattribution séquentielle vers $nextId.";
+                            $rowCompte = $nextId;
                         }
-                        
-                        $lastId = $localMaxAccounts[$racine];
-                        $sequencePart = substr($lastId, 3);
-                        $nextSeq = (int)$sequencePart + 1;
-                        $newId = $racine . str_pad($nextSeq, ($accountDigits - 3), '0', STR_PAD_LEFT);
-                        
-                        $row['numero_de_compte'] = $newId;
-                        $row['suggested_account'] = $newId;
-                        $rowCompte = $newId;
-                        $localMaxAccounts[$racine] = $newId;
                     }
                     
-                    $batchAccounts[$rowCompte] = $originalRawValue;
+                    if (!($row['is_duplicate'] ?? false)) {
+                        $batchAccounts[$rowCompte] = $originalRawValue;
+                    }
                 }
 
                 if (empty(trim($row['intitule'] ?? ''))) {
@@ -2441,149 +2450,46 @@ class AdminConfigController extends Controller
                     $row['numero_de_tiers'] = 'NON GÉNÉRÉ';
                     $errors[] = "Impossible de déduire le type de tiers (Fournisseur/Client) pour la génération. Veuillez vérifier le compte collectif ou l'intitulé.";
                 } else {
-                    // --- COHÉRENCE DU LOT ET BASE DE DONNÉES ---
-                    $upperOrigNum = strtoupper($importedNum);
-                    // Check against both numero_de_tiers AND numero_original in DB
-                    $existsInDb = !empty($importedNum) && (in_array($upperOrigNum, $existingTiers) || isset($tierMapping[$upperOrigNum]));
-
-                    if ($existsInDb) {
-                        $existing = $tierDetails->get($upperOrigNum) ?? null;
-                        if (!$existing) {
-                            // Search via numero_original
-                            $existingByOrig = PlanTiers::where('company_id', $targetCompanyId)
-                                                      ->where('numero_original', $importedNum)
-                                                      ->first();
-                            $existingLabel = $existingByOrig ? $existingByOrig->intitule : 'Inconnu';
-                        } else {
-                            $existingLabel = $existing->intitule;
+                    // --- LOGIQUE DE DOUBLONS SMART POUR TIERS ---
+                    $finalNum = $importedNum;
+                    $existingMatch = $tierDetails->get(strtoupper($finalNum)) ?? (isset($tierMapping[$upperOrigNum]) ? $tierDetails->get(strtoupper($tierMapping[$upperOrigNum])) : null);
+                    
+                    $isExactDuplicateInDb = ($existingMatch && trim(strtoupper($existingMatch->intitule)) === trim(strtoupper($row['intitule'] ?? '')));
+                    $isExactDuplicateInBatch = false;
+                    foreach ($rowsWithStatus as $prevRow) {
+                        if (($prevRow['status'] ?? '') === 'valid' && ($prevRow['data']['numero_original'] ?? '') === $upperOrigNum && trim(strtoupper($prevRow['data']['intitule'] ?? '')) === trim(strtoupper($row['intitule'] ?? ''))) {
+                            $isExactDuplicateInBatch = true;
+                            break;
                         }
+                    }
 
-                        $row['numero_de_tiers'] = $importedNum;
+                    if ($isExactDuplicateInDb || $isExactDuplicateInBatch) {
+                        // VRAI DOUBLON
                         $row['is_duplicate'] = true;
-                        $row['existing_label'] = $existingLabel;
-                        $row['info'] = "Existe déjà (Nom: " . $existingLabel . "). Il sera ignoré.";
+                        $row['existing_label'] = $existingMatch ? $existingMatch->intitule : ($row['intitule'] ?? null);
+                        $row['info'] = "Doublon exact (Tiers déjà présent).";
                         $duplicateCount++;
-                        $batchTierMap[$upperOrigNum] = $importedNum;
-                    } elseif (!empty($importedNum) && isset($batchTierMap[$upperOrigNum])) {
-                        $row['numero_de_tiers'] = $batchTierMap[$upperOrigNum];
+                        $batchTierMap[$upperOrigNum] = $finalNum;
                     } else {
-                        $row['numero_de_tiers'] = null; // Reset pour éviter de garder l'ancien si la génération échoue
+                        // VARIATION OU NOUVEAU TIERS
+                        $isNumberTakenInDb = $existingMatch !== null;
+                        $isNumberTakenInBatch = isset($batchTierMap[$upperOrigNum]) || in_array($finalNum, array_values($batchTierMap));
 
-                        if (!empty($rowCompte)) {
-                            // Correspondance automatique pour le compte collectif
-                            if (!in_array($rowCompte, $existingAccounts) && isset($accountMapping[$rowCompte])) {
-                                $row['numero_original_compte'] = $rowCompte;
-                                $row['compte_general'] = $accountMapping[$rowCompte];
-                                $rowCompte = $row['compte_general'];
-                            }
-
-                            $prefix = substr($rowCompte, 0, 2);
-                            
-                            // On cherche le compte spécifique
-                            $planAcc = $accountDetails->get($rowCompte);
-
-                            if ($planAcc) {
-                                // Logique de génération avec mémoire locale pour éviter les doublons dans le staging
-                                // PRIORITÉ : Variable $generationPrefix (Importé) > $prefix (Compte)
-                                $finalPrefix = $generationPrefix ?? ($prefix ?? ($planAcc ? substr($planAcc->numero_de_compte, 0, 2) : '40'));
-
-                                if (!isset($localMaxTiers[$finalPrefix])) {
-                                    $resp = $this->getNextTierNumber(new Request([
-                                        'plan_comptable_id' => $planAcc->id,
-                                        'prefix' => $finalPrefix,
-                                        'intitule' => $row['intitule'] ?? ''
-                                    ]));
-                                    $genData = $resp->getData();
-                                    if ($genData->success) {
-                                        $row['numero_de_tiers'] = $genData->next_id;
-                                        // On stocke le dernier numéro généré pour ce préfixe
-                                        $localMaxTiers[$finalPrefix] = $genData->next_id;
-                                    } else {
-                                        $errors[] = "Erreur de génération : " . ($genData->message ?? 'Inconnue');
-                                    }
-                                } else {
-                                    // On repart du dernier numéro généré localement pour ce préfixe
-                                    $lastId = $localMaxTiers[$finalPrefix];
-                                    $prefixLen = strlen($finalPrefix);
-                                    $sequencePart = substr($lastId, $prefixLen);
-                                    
-                                    if (is_numeric($sequencePart)) {
-                                        $nextSeq = (int)$sequencePart + 1;
-                                        $availableSpace = max(1, $tierDigits - $prefixLen);
-                                        $newId = $finalPrefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
-                                        
-                                        $row['numero_de_tiers'] = $newId;
-                                        $localMaxTiers[$finalPrefix] = $newId;
-                                    } else {
-                                        // Cas alphanumérique ou erreur de format
-                                        $resp = $this->getNextTierNumber(new Request([
-                                            'plan_comptable_id' => $planAcc->id,
-                                            'prefix' => $finalPrefix,
-                                            'intitule' => $row['intitule'] ?? ''
-                                        ]));
-                                        $genData = $resp->getData();
-                                        if ($genData->success) {
-                                            $row['numero_de_tiers'] = $genData->next_id;
-                                            $localMaxTiers[$finalPrefix] = $genData->next_id;
-                                        }
-                                    }
-                                }
-                            } else {
-                                $errors[] = "Le compte collectif $rowCompte n'existe pas. Veuillez le créer au préalable.";
-                                $row['is_virtual'] = true;
-                            }
-                        } else {
-                            $errors[] = "Compte collectif absent ou impossible à déterminer.";
-                            $row['is_virtual'] = true;
+                        if ($isNumberTakenInDb || $isNumberTakenInBatch) {
+                            $nextId = \App\Services\NumberingService::findNextAvailable(
+                                'tier',
+                                $targetCompanyId,
+                                $finalNum,
+                                $tierDigits,
+                                array_values($batchTierMap)
+                            );
+                            $row['numero_de_tiers'] = $nextId;
+                            $row['suggested_tier'] = $nextId;
+                            $row['info_renum'] = "Numéro tiers $finalNum déjà utilisé. Séquence suivante: $nextId.";
+                            $finalNum = $nextId;
                         }
-
-                        // GÉNÉRATION DE SECOURS (Si le compte est absent ou inexistant)
-                        if (empty($row['numero_de_tiers'])) {
-                            $finalPrefix = $generationPrefix ?? '40';
-                            $row['is_virtual'] = true;
-                            
-                            if (!isset($localMaxTiers[$finalPrefix])) {
-                                $resp = $this->getNextTierNumber(new Request([
-                                    'plan_comptable_id' => null,
-                                    'prefix' => $finalPrefix,
-                                    'intitule' => $row['intitule'] ?? ''
-                                ]));
-                                $genData = $resp->getData();
-                                if ($genData->success) {
-                                    $row['numero_de_tiers'] = $genData->next_id;
-                                    $localMaxTiers[$finalPrefix] = $genData->next_id;
-                                }
-                            } else {
-                                $lastId = $localMaxTiers[$finalPrefix];
-                                $prefixLen = strlen($finalPrefix);
-                                $sequencePart = substr($lastId, $prefixLen);
-                                
-                                if (is_numeric($sequencePart)) {
-                                    $nextSeq = (int)$sequencePart + 1;
-                                    $availableSpace = max(1, $tierDigits - $prefixLen);
-                                    $newId = $finalPrefix . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
-                                    $row['numero_de_tiers'] = $newId;
-                                    $localMaxTiers[$finalPrefix] = $newId;
-                                } else {
-                                     // Cas alphanumérique fallback
-                                     $resp = $this->getNextTierNumber(new Request([
-                                         'plan_comptable_id' => null,
-                                         'prefix' => $finalPrefix,
-                                         'intitule' => $row['intitule'] ?? ''
-                                     ]));
-                                     $genData = $resp->getData();
-                                     if ($genData->success) {
-                                         $row['numero_de_tiers'] = $genData->next_id;
-                                         $localMaxTiers[$finalPrefix] = $genData->next_id;
-                                     }
-                                }
-                            }
-                        }
-                        
-                        // Enregistrer l'ID généré pour ce code original dans ce lot
-                        if (!empty($row['numero_de_tiers'])) {
-                            $batchTierMap[$upperOrigNum] = $row['numero_de_tiers'];
-                        }
+                        $row['numero_de_tiers'] = $finalNum;
+                        $batchTierMap[$upperOrigNum] = $finalNum;
                     }
 
                     if (empty($row['numero_de_tiers'])) {
@@ -3207,43 +3113,38 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    // RECHERCHE D'EXISTANT (DOUBLON)
-                    // On vérifie d'abord si le numéro original ou le numéro standard existe déjà
-                    $existingMatchId = $planComptableIds[$rowCompte] ?? $planComptableOriginalIds[strtoupper($numeroOriginalPlan)] ?? null;
+                    // --- LOGIQUE DE DOUBLONS SMART ---
+                    // On vérifie le numéro standardisé (pour collision) ET le numéro d'origine
+                    $existingMatch = PlanComptable::where('company_id', $targetCompanyId)
+                        ->where(function($q) use ($rowCompte, $numeroOriginalPlan) {
+                            $q->where('numero_de_compte', $rowCompte)
+                              ->orWhere('numero_original', $numeroOriginalPlan);
+                        })->first();
 
-                    if ($existingMatchId) {
-                        // Ignorer les doublons conformément à la demande de l'utilisateur
+                    $isExactDuplicate = ($existingMatch && trim(strtoupper($existingMatch->intitule)) === trim(strtoupper($rowMapped['intitule'] ?? '')));
+                    
+                    if ($isExactDuplicate) {
                         $duplicateCount++;
-                        continue;
+                        continue; // Skip exact duplicate
                     }
 
-                    // GESTION DES COLLISIONS PAR NUMÉROTATION SÉQUENTIELLE (Seulement si nouveau)
-                    if (isset($batchAccounts[$rowCompte])) {
-                        $racine = substr($rowCompte, 0, 3);
-                        if (!isset($localMaxAccounts[$racine])) {
-                            $maxInDb = PlanComptable::where('company_id', $targetCompanyId)
-                                ->where('numero_de_compte', 'LIKE', $racine . '%')
-                                ->whereRaw('LENGTH(numero_de_compte) = ?', [$accountDigits])
-                                ->max('numero_de_compte');
-                            $localMaxAccounts[$racine] = $maxInDb ?: ($racine . str_pad('0', ($accountDigits - 3), '0', STR_PAD_LEFT));
-                        }
-                        $lastId = $localMaxAccounts[$racine];
-                        $sequencePart = substr($lastId, 3);
-                        $nextSeq = (int)$sequencePart + 1;
-                        $newId = $racine . str_pad($nextSeq, ($accountDigits - 3), '0', STR_PAD_LEFT);
-                        
-                        $rowCompte = $newId;
-                        $localMaxAccounts[$racine] = $newId;
+                    // VARIATION OU NOUVEL ENREGISTREMENT
+                    $isNumberTakenInDb = $existingMatch !== null;
+                    $isNumberTakenInBatch = isset($batchAccounts[$rowCompte]);
+
+                    if ($isNumberTakenInDb || $isNumberTakenInBatch) {
+                        // Collision de numéro avec un libellé différent => Renommage séquentiel
+                        $nextId = \App\Services\NumberingService::findNextAvailable(
+                            'account',
+                            $targetCompanyId,
+                            $rowCompte,
+                            $accountDigits,
+                            array_keys($batchAccounts)
+                        );
+                        $rowCompte = $nextId;
                     }
+
                     $batchAccounts[$rowCompte] = $numeroOriginalPlan;
-
-                    // On vérifie si par hasard le NOUVEAU numéro existe déjà (sécurité ultime)
-                    $existingMatchId = $planComptableIds[$rowCompte] ?? null;
-
-                    if ($existingMatchId) {
-                        $duplicateCount++;
-                        continue;
-                    }
                         // CREATE nouveau
                         $classe = substr($rowCompte, 0, 1);
                         $type = in_array((int)$classe, [1, 2, 3, 4, 5, 9]) ? 'Bilan' : 'Compte de résultat';
@@ -3407,38 +3308,49 @@ class AdminConfigController extends Controller
                     // Et on garde le numéro du fichier dans numero_original
                     $finalNum = $numeroGenere ?? $rowNum;
 
-                    // RECHERCHE ROBUSTE DU TIERS EXISTANT
-                    // On cherche par le numéro original fourni OU par le numéro de tiers s'il correspondait déjà
-                    // IMPORTANT : On ne matche pas si le numéro original est vide pour éviter les collisions (doublons)
-                    $existingTier = null;
-                    if (!empty($numeroOriginalTiers)) {
-                        $existingTier = PlanTiers::where('company_id', $targetCompanyId)
-                            ->where(function($q) use ($numeroOriginalTiers, $importedNum) {
-                                $q->where('numero_original', $numeroOriginalTiers);
-                                if (!empty($importedNum)) $q->orWhere('numero_original', $importedNum);
-                                $q->orWhere('numero_de_tiers', $numeroOriginalTiers);
-                                if (!empty($importedNum)) $q->orWhere('numero_de_tiers', $importedNum);
-                            })
-                            ->first();
-                    }
+                    // --- LOGIQUE DE DOUBLONS SMART POUR TIERS ---
+                    $existingTier = PlanTiers::where('company_id', $targetCompanyId)
+                        ->where(function($q) use ($numeroOriginalTiers, $importedNum, $finalNum) {
+                            $q->where('numero_original', $numeroOriginalTiers)
+                              ->orWhere('numero_original', $importedNum)
+                              ->orWhere('numero_de_tiers', $finalNum);
+                        })->first();
 
-                    if ($existingTier) {
-                        // Ignorer les doublons conformément à la demande de l'utilisateur
+                    $isExactDuplicate = ($existingTier && trim(strtoupper($existingTier->intitule)) === trim(strtoupper($rowMapped['intitule'] ?? '')));
+
+                    if ($isExactDuplicate) {
                         $duplicateCount++;
                         continue;
-                    } else {
-                        // CREATE nouveau
-                        PlanTiers::create([
-                            'numero_de_tiers' => strtoupper($finalNum),
-                            'intitule' => strtoupper($rowMapped['intitule'] ?? 'TIERS SANS NOM'),
-                            'type_de_tiers' => ucfirst(strtolower($rowMapped['type_de_tiers'] ?? 'Autre')),
-                            'compte_general' => $compteCollectifId,
-                            'numero_original' => $numeroOriginalTiers,
-                            'user_id' => $user->id,
-                            'company_id' => $targetCompanyId
-                        ]);
-                        $importedCount++;
                     }
+
+                    // VARIATION OU NOUVEAU TIERS
+                    $isNumberTakenInDb = $existingTier !== null;
+                    $isNumberTakenInBatch = in_array($finalNum, array_values($batchTierMap));
+
+                    if ($isNumberTakenInDb || $isNumberTakenInBatch) {
+                        // Collision => Renommage séquentiel
+                        $nextId = \App\Services\NumberingService::findNextAvailable(
+                            'tier',
+                            $targetCompanyId,
+                            $finalNum,
+                            $targetCompany->tier_digits ?? 8,
+                            array_values($batchTierMap)
+                        );
+                        $finalNum = $nextId;
+                    }
+                    $batchTierMap[$numeroOriginalTiers] = $finalNum;
+
+                    // CREATE nouveau
+                    PlanTiers::create([
+                        'numero_de_tiers' => strtoupper($finalNum),
+                        'intitule' => strtoupper($rowMapped['intitule'] ?? 'TIERS SANS NOM'),
+                        'type_de_tiers' => ucfirst(strtolower($rowMapped['type_de_tiers'] ?? 'Autre')),
+                        'compte_general' => $compteCollectifId,
+                        'numero_original' => $numeroOriginalTiers,
+                        'user_id' => $user->id,
+                        'company_id' => $targetCompanyId
+                    ]);
+                    $importedCount++;
 
                 } elseif ($import->type == 'journals') {
                     // --- IMPORT JOURNAUX ---

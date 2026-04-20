@@ -137,7 +137,7 @@
                             <div class="mb-6">
                                 <label for="email" class="form-label">Email</label>
                                 <input type="text" class="form-control" id="email" name="email_adresse"
-                                    placeholder="Entrez votre email"  autofocus **autocomplete="username"** />
+                                    placeholder="Entrez votre email" autofocus **autocomplete="username" ** />
                                 @error('email_adresse')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
@@ -147,7 +147,8 @@
                                 <label class="form-label" for="password">Mot de passe</label>
                                 <div class="input-group input-group-merge">
                                     <input type="password" id="password" class="form-control" name="password"
-                                        placeholder="*********" aria-describedby="password" **autocomplete="current-password"**/>
+                                        placeholder="*********" aria-describedby="password"
+                                        **autocomplete="current-password" ** />
                                     <span class="input-group-text cursor-pointer"><i
                                             class="icon-base bx bx-hide"></i></span>
                                 </div>
@@ -167,7 +168,7 @@
                                             class="icon-base bx bx-hide"></i></span>
                                 </div>
                                 @error('password')
-                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </div> --}}
 
@@ -223,10 +224,10 @@
             window.history.replaceState('landing', null, "{{ url('/') }}");
             // Push the login page so we are still on it
             window.history.pushState('login', null, window.location.href);
-            
+
             // Listen to back button
-            window.addEventListener('popstate', function(e) {
-                if(e.state === 'landing') {
+            window.addEventListener('popstate', function (e) {
+                if (e.state === 'landing') {
                     window.location.href = "{{ url('/') }}";
                 }
             });
