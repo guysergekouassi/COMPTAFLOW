@@ -65,6 +65,8 @@
         padding: 16px 12px;
         height: calc(100vh - 80px) !important;
         max-height: calc(100vh - 80px) !important;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
     }
 
     .sidebar-nav::-webkit-scrollbar {
@@ -72,16 +74,16 @@
     }
 
     .sidebar-nav::-webkit-scrollbar-track {
-        background: #f1f1f1;
+        background: transparent;
     }
 
     .sidebar-nav::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 3px;
+        background: rgba(148, 163, 184, 0.5);
+        border-radius: 4px;
     }
 
     .sidebar-nav::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
+        background: rgba(148, 163, 184, 0.8);
     }
 
     .menu-section {
