@@ -90,10 +90,16 @@
             <td class="num-right">{{ $fmt($data['dettes_fisc'] ?? 0) }}</td>
             <td class="num-right text-muted">—</td>
         </tr>
+        <tr>
+            <td class="ref-code">HD→Trés.</td>
+            <td>Trésorerie Passif (Comptes 52, 56)</td>
+            <td class="num-right">{{ $fmt($data['treso_passif'] ?? 0) }}</td>
+            <td class="num-right text-muted">—</td>
+        </tr>
         <tr class="smt-sous-total">
             <td class="ref-code">MT_PASSIF_HD</td>
             <td>SOUS-TOTAL DETTES</td>
-            <td class="num-right">{{ $fmt(($data['dettes_fin'] ?? 0) + ($data['dettes_exp'] ?? 0) + ($data['dettes_fisc'] ?? 0)) }}</td>
+            <td class="num-right">{{ $fmt(($data['dettes_fin'] ?? 0) + ($data['dettes_exp'] ?? 0) + ($data['dettes_fisc'] ?? 0) + ($data['treso_passif'] ?? 0)) }}</td>
             <td class="num-right text-muted">—</td>
         </tr>
 

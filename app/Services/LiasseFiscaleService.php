@@ -200,11 +200,102 @@ class LiasseFiscaleService
             }
         }
 
-        if ($pageCode === 'TFT') {
-            $result['detailed_tft'] = $this->reportingService->getTFTData($exerciceId, $companyId, null, true);
+        // ── Post-processing: calcul des totaux par page ──────────────────────────
+        if ($pageCode === 'BILAN_ACTIF') {
+            // Total Actif Immobilisé (AZ)
+            $immoFields = ['AE','AF','AG','AH','AJ','AK','AL','AM','AN','AP','AR','AS'];
+            $az_brut = $az_amort = $az_net = 0;
+            foreach ($immoFields as $f) {
+                $az_brut  += $result[$f.'_brut']  ?? 0;
+                $az_amort += $result[$f.'_amort'] ?? 0;
+                $az_net   += $result[$f.'_net']   ?? 0;
+            }
+            $result['AZ_brut']  = $az_brut;
+            $result['AZ_amort'] = $az_amort;
+            $result['AZ_net']   = $az_net;
+            $result['AZ_net_N1'] = array_sum(array_map(fn($f) => $result[$f.'_net_N1'] ?? 0, $immoFields));
+            // Total Actif Circulant (BK)
+            $result['BK_brut']  = ($result['BB_brut'] ??0) + ($result['BG_brut'] ??0);
+            $result['BK_amort'] = ($result['BB_amort']??0) + ($result['BG_amort']??0);
+            $result['BK_net']   = ($result['BB_net']  ??0) + ($result['BG_net']  ??0);
+            $result['BK_net_N1']= ($result['BB_net_N1']??0) + ($result['BG_net_N1']??0);
+            // Total Trésorerie Actif (BT)
+            $result['BT_brut']  = $result['BS_brut']  ?? 0;
+            $result['BT_amort'] = $result['BS_amort'] ?? 0;
+            $result['BT_net']   = $result['BS_net']   ?? 0;
+            $result['BT_net_N1']= $result['BS_net_N1']?? 0;
+            // Total Général Actif (BZ)
+            $result['BZ_brut']  = $az_brut  + ($result['BK_brut'] ??0) + ($result['BT_brut'] ??0);
+            $result['BZ_amort'] = $az_amort + ($result['BK_amort']??0) + ($result['BT_amort']??0);
+            $result['BZ_net']   = $az_net   + ($result['BK_net']  ??0) + ($result['BT_net']  ??0);
+            $result['BZ_net_N1']= ($result['AZ_net_N1']??0) + ($result['BK_net_N1']??0) + ($result['BT_net_N1']??0);
         }
+
+        if ($pageCode === 'BILAN_PASSIF') {
+            // Résultat net de l'exercice (CJ) = Produits - Charges
+            $produits = $this->calculateValueForRangeFast('7', $balancesN)['net'];
+            $charges  = $this->calculateValueForRangeFast('6', $balancesN)['net'];
+            $result['CJ'] = $produits - $charges;
+            $result['CJ_N1'] = $prevExercice
+                ? ($this->calculateValueForRangeFast('7', $balancesN1)['net'] - $this->calculateValueForRangeFast('6', $balancesN1)['net'])
+                : 0;
+            // Total Capitaux Propres (CP)
+            $result['CP']    = ($result['CA']??0) + ($result['CF']??0) + ($result['CG']??0) + ($result['CJ']??0);
+            $result['CP_N1'] = ($result['CA_N1']??0) + ($result['CF_N1']??0) + ($result['CG_N1']??0) + ($result['CJ_N1']??0);
+            // Total Dettes Financières (DP)
+            $result['DP']    = $result['DA']    ?? 0;
+            $result['DP_N1'] = $result['DA_N1'] ?? 0;
+            // Total Passif Circulant (FG)
+            $result['FG']    = $result['FB']    ?? 0;
+            $result['FG_N1'] = $result['FB_N1'] ?? 0;
+            // Total Trésorerie Passif (HP)
+            $result['HP']    = $result['HA']    ?? 0;
+            $result['HP_N1'] = $result['HA_N1'] ?? 0;
+            // Total Général Passif (GZ)
+            $result['GZ']    = ($result['CP']??0) + ($result['DP']??0) + ($result['FG']??0) + ($result['HP']??0);
+            $result['GZ_N1'] = ($result['CP_N1']??0) + ($result['DP_N1']??0) + ($result['FG_N1']??0) + ($result['HP_N1']??0);
+        }
+
         if ($pageCode === 'RESULTAT') {
             $result['detailed_sig'] = $this->reportingService->getSIGData($exerciceId, $companyId, null, true);
+            // Marge commerciale (XC) = Ventes marchandises - Achats marchandises
+            $result['XC'] = ($result['XA']??0) - ($result['XB']??0);
+            $result['XC_N1'] = ($result['XA_N1']??0) - ($result['XB_N1']??0);
+            // Valeur Ajoutée (XF) = XC + Production - Consommation
+            $result['XF'] = ($result['XC']??0) + ($result['XD']??0) - ($result['XE']??0);
+            $result['XF_N1'] = ($result['XC_N1']??0) + ($result['XD_N1']??0) - ($result['XE_N1']??0);
+            // EBE (XI) = XF + Subventions - Charges personnel
+            $result['XI'] = ($result['XF']??0) + ($result['XG']??0) - ($result['XH']??0);
+            $result['XI_N1'] = ($result['XF_N1']??0) + ($result['XG_N1']??0) - ($result['XH_N1']??0);
+            // Résultat Exploitation (XL) = XI + Reprises - Dotations
+            $result['XL'] = ($result['XI']??0) + ($result['XJ']??0) - ($result['XK']??0);
+            $result['XL_N1'] = ($result['XI_N1']??0) + ($result['XJ_N1']??0) - ($result['XK_N1']??0);
+            // Résultat Financier (XO) = Revenus financiers - Frais financiers
+            $result['XO'] = ($result['XM']??0) - ($result['XN']??0);
+            $result['XO_N1'] = ($result['XM_N1']??0) - ($result['XN_N1']??0);
+            // Résultat des AO (XP) = XL + XO
+            $result['XP'] = ($result['XL']??0) + ($result['XO']??0);
+            $result['XP_N1'] = ($result['XL_N1']??0) + ($result['XO_N1']??0);
+            // Résultat HAO (XS) = Produits HAO - Charges HAO
+            $result['XS'] = ($result['XQ']??0) - ($result['XR']??0);
+            $result['XS_N1'] = ($result['XQ_N1']??0) - ($result['XR_N1']??0);
+            // Résultat Net (XV) = XP + XS - Participation - IS
+            $result['XV'] = ($result['XP']??0) + ($result['XS']??0) - ($result['XT']??0) - ($result['XU']??0);
+            $result['XV_N1'] = ($result['XP_N1']??0) + ($result['XS_N1']??0) - ($result['XT_N1']??0) - ($result['XU_N1']??0);
+        }
+
+        if ($pageCode === 'TFT') {
+            $result['detailed_tft'] = $this->reportingService->getTFTData($exerciceId, $companyId, null, true);
+            // ZC = Flux opérationnels nets (ZA - ZB)
+            $result['ZC'] = ($result['ZA']??0) + ($result['ZB']??0);
+            // ZF = Flux investissements nets (ZE - ZD; décaiss négatif)
+            $result['ZF'] = ($result['ZE']??0) - ($result['ZD']??0);
+            // ZJ = Flux financement nets
+            $result['ZJ'] = ($result['ZG']??0) + ($result['ZH']??0) - ($result['ZI']??0);
+            // ZK = Variation nette trésorerie
+            $result['ZK'] = ($result['ZC']??0) + ($result['ZF']??0) + ($result['ZJ']??0);
+            // ZM = Trésorerie fin = Trésorerie début + variation
+            $result['ZM'] = ($result['ZL']??0) + ($result['ZK']??0);
         }
 
         $manualData = LiasseData::where('exercice_id', $exerciceId)
@@ -272,61 +363,97 @@ class LiasseFiscaleService
             $immoAmort   = $immoData['amort'];
             $immoNet     = $immoBrut - $immoAmort;
             $stocks      = $net('3');
+            // Créances = clients + autres débiteurs (409=avances fourn, 41, 42, 43, 44, 45, 46, 47, 48)
             $creances    = $net('409,41,42,43,44,45,46,47,48');
-            $treso_actif = $net('52,53,57');
+            // Trésorerie active: banques (52,53), caisse (57), virements (58), valeurs à encaisser (50)
+            $treso_actif = $net('50,52,53,57,58');
             $totalActif  = $immoNet + $stocks + $creances + $treso_actif;
-            $totalActifN1 = $prevExercice ? ($netN1('2') + $netN1('3') + $netN1('41') + $netN1('52,53,57')) : 0;
+            $totalActifN1 = $prevExercice
+                ? ($this->calculateValueForRangeFast('2', $balancesN1)['net'] + $netN1('3') + $netN1('409,41,42,43,44,45,46,47,48') + $netN1('50,52,53,57,58'))
+                : 0;
             return compact('immoBrut','immoAmort','immoNet','stocks','creances','treso_actif','totalActif','totalActifN1');
         }
 
         // 3. SMT_PASSIF — Bilan Passif (HA, HB, HD, HZ)
         if ($pageCode === 'SMT_PASSIF') {
-            $capital     = $net('10');
-            $reserves    = $net('11');
-            $report      = $net('12');
+            $capital     = $net('101,102,103,104,105,106,107,108,109');
+            $reserves    = $net('111,112,113,114,115,116,117,118,119');
+            $report      = $net('121,122,129');
             $resultat    = $net('7') - $net('6');
             $capitauxPropres = $capital + $reserves + $report + $resultat;
-            $dettes_fin  = $net('16');
-            $dettes_exp  = $net('40');
-            $dettes_fisc = $net('42,43,44');
-            $totalPassif = $capitauxPropres + $dettes_fin + $dettes_exp + $dettes_fisc;
-            $totalPassifN1 = $prevExercice ? ($netN1('10') + $netN1('11') + $netN1('12') + ($netN1('7')-$netN1('6')) + $netN1('16') + $netN1('40')) : 0;
-            return compact('capital','reserves','report','resultat','capitauxPropres','dettes_fin','dettes_exp','dettes_fisc','totalPassif','totalPassifN1');
+            $dettes_fin  = $net('161,162,163,164,165,166,168');
+            // Dettes exploitation: fournisseurs (40) + dettes fiscales/sociales (42,43,44,45) + autres créditeurs (46,47,48)
+            $dettes_exp  = $net('401,402,403,404,405,408,409');
+            $dettes_fisc = $net('421,422,423,424,425,426,427,428,431,432,433,434,435,436,437,438,441,442,443,444,445,446,447,448,462');
+            $treso_passif = $net('521,522,523,524,525,526,527,528,529,561,562,563,564,565,566,567,568,569');
+            $totalPassif = $capitauxPropres + $dettes_fin + $dettes_exp + $dettes_fisc + $treso_passif;
+            $totalPassifN1 = $prevExercice
+                ? ($netN1('101,102,103,104,105,106,107,108,109') + $netN1('111,112,113,114,115,116,117,118,119') + $netN1('121,122,129')
+                   + ($netN1('7') - $netN1('6')) + $netN1('161,162,163,164,165,166,168') + $netN1('401,402,403,404,405,408,409'))
+                : 0;
+            return compact('capital','reserves','report','resultat','capitauxPropres','dettes_fin','dettes_exp','dettes_fisc','treso_passif','totalPassif','totalPassifN1');
         }
 
         // 4. SMT_RESULTAT — Compte de Résultat (KA→KZ)
         if ($pageCode === 'SMT_RESULTAT') {
             $total_produits  = $net('7');
             $total_charges   = $net('6');
+            $achats          = $net('601,602,603,604,605,606,607,608,609');
+            $services_ext    = $net('61,62');
+            $charges_pers    = $net('641,642,643,644,645,646,647,648,649,651,652,653,654,655,656,657,658,659');
+            $impots_taxes    = $net('631,632,633,634,635,636,637,638,639,646,647');
+            $autres_charges  = $net('67,68,69');
+            
+            $ca = $net('701,702,703,704,705,706,707,708,709,71,72,73,74,75');
+            $autres_produits = $net('76,77,78,79');
+
             return [
-                'CA'              => $net('70'),
+                'CA'              => $ca,
+                'autres_produits' => $autres_produits,
                 'total_produits'  => $total_produits,
-                'achats'          => $net('601,602,603'),
-                'services_ext'    => $net('61,62'),
-                'charges_pers'    => $net('64,65,66'),
-                'impots_taxes'    => $net('63'),
-                'autres_charges'  => $net('67,68,69'),
+                'achats'          => $achats,
+                'services_ext'    => $services_ext,
+                'charges_pers'    => $charges_pers,
+                'impots_taxes'    => $impots_taxes,
+                'autres_charges'  => $autres_charges,
                 'total_charges'   => $total_charges,
                 'resultat_net'    => $total_produits - $total_charges,
                 'total_produits_N1' => $netN1('7'),
                 'total_charges_N1'  => $netN1('6'),
+                'resultat_exercice_N1' => $netN1('7') - $netN1('6'),
             ];
         }
 
         // 5. SMT_TRESO_ENC — Trésorerie (Encaissements)
         if ($pageCode === 'SMT_TRESO_ENC') {
             $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
-            return array_merge(['enc_ventes' => $net('70'), 'enc_divers' => $net('71,72,75,76')], $manual);
+            // Encaissements = toutes les ventes et produits reçus
+            $enc_ventes = $net('701,702,703,704,705,706,707,708,709');
+            $enc_divers = $net('71,72,73,74,75,76,77,78,79');
+            $enc_total  = $enc_ventes + $enc_divers;
+            return array_merge([
+                'enc_ventes' => $enc_ventes,
+                'enc_divers' => $enc_divers,
+                'enc_total'  => $enc_total,
+            ], $manual);
         }
 
         // 6. SMT_TRESO_DEC — Trésorerie (Décaissements)
         if ($pageCode === 'SMT_TRESO_DEC') {
             $manual = \App\Models\LiasseData::where('exercice_id',$exerciceId)->where('company_id',$companyId)->where('page_code',$pageCode)->pluck('value','field_code')->toArray();
+            $dec_achats   = $net('601,602,603,604,605,606,607,608,609'); // tous achats
+            $dec_services = $net('61,62');                                // transports + services ext
+            $dec_pers     = $net('641,642,643,644,645,646,647,648,649,651,652,653,654,655,656');
+            $dec_impots   = $net('631,632,633,634,635,636,637,638,639');
+            $dec_autres   = $net('67,68,69');
+            $dec_total    = $dec_achats + $dec_services + $dec_pers + $dec_impots + $dec_autres;
             return array_merge([
-                'dec_achats' => $net('601,602'),
-                'dec_services' => $net('61,62'),
-                'dec_pers' => $net('64,65,66'),
-                'dec_impots' => $net('63'),
+                'dec_achats'   => $dec_achats,
+                'dec_services' => $dec_services,
+                'dec_pers'     => $dec_pers,
+                'dec_impots'   => $dec_impots,
+                'dec_autres'   => $dec_autres,
+                'dec_total'    => $dec_total,
             ], $manual);
         }
 
