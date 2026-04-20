@@ -3019,6 +3019,7 @@ class AdminConfigController extends Controller
             $localMaxTiers = [];
             $localMaxJournals = [];
             $batchJournalMap = [];
+            $batchTierMap = [];
             $journalDigits = $targetCompany->journal_code_digits ?? 4;
             $localMaxAccounts = [];
             $batchAccounts = [];
