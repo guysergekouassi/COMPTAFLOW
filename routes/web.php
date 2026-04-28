@@ -119,6 +119,10 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::post('/ia-traitement', [IaController::class, 'traiterFacture'])->name('ia.traiter');
     Route::post('/ia-correction', [IaController::class, 'enregistrerCorrection'])->name('ia.correction');
     Route::get('/test-vertex', [IaController::class, 'testVertexAiConnection'])->name('ia.test');
+    
+    // *** NOUVELLE INTERFACE AGENTS IA PREMIUM ***
+    Route::get('/admin/ia/chat', [App\Http\Controllers\AgentChatController::class, 'index'])->name('admin.ia.chat');
+    Route::post('/admin/ia/chat/send', [App\Http\Controllers\AgentChatController::class, 'sendMessage'])->name('admin.ia.chat.send');
     Route::get('/clear-config', function() {
         \Illuminate\Support\Facades\Artisan::call('config:clear');
         \Illuminate\Support\Facades\Artisan::call('cache:clear');
@@ -265,6 +269,14 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::get('/ecritures/check-reference', [EcritureComptableController::class, 'checkReference'])->name('ecriture.check_reference');
     Route::delete('/ecritures/saisie/{n_saisie}', [EcritureComptableController::class, 'deleteBySaisie'])->name('ecriture.delete_saisie');
     Route::delete('/ecritures/delete-all', [EcritureComptableController::class, 'deleteAll'])->name('ecriture.delete_all');
+
+    // --- CORRECTION ÉCRITURE ---
+    Route::prefix('adjustment')->name('adjustment.')->group(function () {
+        Route::get('/duplicates', [App\Http\Controllers\AdjustmentController::class, 'duplicates'])->name('duplicates');
+        Route::get('/bulk-edit', [App\Http\Controllers\AdjustmentController::class, 'bulkEdit'])->name('bulk_edit');
+        Route::post('/bulk-update', [App\Http\Controllers\AdjustmentController::class, 'bulkUpdate'])->name('bulk_update');
+        Route::get('/search-references', [App\Http\Controllers\AdjustmentController::class, 'searchReferences'])->name('search_references');
+    });
 
     // Brouillons
     Route::get('/brouillons', [App\Http\Controllers\BrouillonController::class, 'index'])->name('brouillons.index');

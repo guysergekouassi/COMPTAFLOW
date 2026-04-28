@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\Http;
  */
 class ExcelIaService
 {
-    private VertexAiService $vertexAi;
+    private PythonAiService $pythonAi;
 
-    public function __construct(VertexAiService $vertexAi)
+    public function __construct(PythonAiService $pythonAi)
     {
-        $this->vertexAi = $vertexAi;
+        $this->pythonAi = $pythonAi;
     }
 
     /**
@@ -59,8 +59,13 @@ class ExcelIaService
             $userPrompt .= "\n\n---\n## REQUÊTE CALCULÉE\n" . $message;
             $userPrompt .= "\n(Rappel : Si je parle du 'fichier' ou des 'données', je parle de la BASE DE CONNAISSANCE ci-dessus).";
 
-            $result = $this->callGeminiChat($userPrompt, $visionFiles, $systemInstruction);
-            return $result;
+            $result = $this->pythonAi->chat($userPrompt, $companyId, 'superviseur');
+            
+            if (!$result['success']) {
+                return $result;
+            }
+
+            return ['success' => true, 'reponse' => $result['data']['reponse'] ?? '', 'type' => 'chat'];
 
         } catch (\Throwable $e) {
             Log::error("[ExcelIA Chat] Erreur: " . $e->getMessage());
@@ -102,8 +107,13 @@ class ExcelIaService
             $systemInstruction = $identityPrompt . $instructionsProjet;
             $userPrompt = $analysisPrompt;
 
-            $result = $this->callGemini($userPrompt, $visionFiles, $systemInstruction);
-            return $result;
+            $result = $this->pythonAi->chat($userPrompt, $companyId, 'comptabilite');
+
+            if (!$result['success']) {
+                return $result;
+            }
+
+            return $this->parseReponseIA($result['data']['reponse'] ?? '');
 
         } catch (\Throwable $e) {
             Log::error("[ExcelIA] Erreur critique: " . $e->getMessage());

@@ -13,12 +13,12 @@ use App\Models\Company;
 
 class IaController extends Controller
 {
-    private \App\Services\VertexAiService $vertexAiService;
+    private \App\Services\PythonAiService $pythonAiService;
 
     public function __construct()
     {
         $this->middleware('auth');
-        $this->vertexAiService = new \App\Services\VertexAiService();
+        $this->pythonAiService = new \App\Services\PythonAiService();
     }
 
     public function dashboard(Request $request)
@@ -114,14 +114,12 @@ class IaController extends Controller
             $journalCode = $request->input('journal_code', 'AC'); // Défaut à AC si non fourni
             $prompt = $this->buildPrompt($planComptableContext, $tiersContext, $mappingsContext, $companyName, $journalCode);
 
-            // 4. Appel Vertex AI via le Service
-            \Illuminate\Support\Facades\Log::info("Appel Vertex AI Service...");
-            $result = $this->vertexAiService->analyzeInvoice($image_data, $mime_type, $prompt);
-            \Illuminate\Support\Facades\Log::info("Réponse Vertex AI reçue", ['has_error' => $result['has_error'] ?? false]);
-
-
-            if (isset($result['has_error']) && $result['has_error']) {
-                $errorMsg = $result['error_message'] ?? 'Erreur inconnue Vertex AI';
+            // 4. Appel de l'API Python via le Service
+            \Illuminate\Support\Facades\Log::info("Appel Python AI Service...");
+            $result = $this->pythonAiService->analyzeInvoice($image);
+            
+            if (!$result['success']) {
+                $errorMsg = $result['error'] ?? 'Erreur inconnue API Python';
                 
                 IaLog::create([
                     'company_id' => $companyId,

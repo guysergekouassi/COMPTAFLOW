@@ -31,7 +31,7 @@ class AdminConfigController extends Controller
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
         $mainCompany = Company::where('id', $companyId)->first();
-        
+
         // Statistiques du modèle de référence
         $stats = [
             'accounts' => PlanComptable::where('company_id', $companyId)->count(),
@@ -68,7 +68,7 @@ class AdminConfigController extends Controller
 
         $user = Auth::user();
         $company = Company::findOrFail(session('current_company_id', $user->company_id));
-        
+
         $company->update([
             'accounting_system' => $request->accounting_system,
             'account_digits' => $request->account_digits,
@@ -91,7 +91,7 @@ class AdminConfigController extends Controller
         $plansComptables = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('numero_de_compte')
             ->get();
-        
+
         $hasAccounts = $plansComptables->count() > 0;
 
         return view('admin.config.plan_comptable', compact('plansComptables', 'hasAccounts', 'mainCompany'));
@@ -106,13 +106,13 @@ class AdminConfigController extends Controller
         $planTiers = PlanTiers::where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('numero_de_tiers')
             ->get();
-        
+
         $plansComptables = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('numero_de_compte')
             ->get();
 
         $mainCompany = Company::findOrFail(session('current_company_id', $user->company_id));
-        
+
         return view('admin.config.plan_tiers', compact('planTiers', 'plansComptables', 'mainCompany'));
     }
 
@@ -127,7 +127,7 @@ class AdminConfigController extends Controller
             ->where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('code_journal')
             ->get();
-        
+
         // On récupère aussi le plan comptable pour les comptes de trésorerie
         $plansComptables = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
             ->orderBy('numero_de_compte')
@@ -150,7 +150,7 @@ class AdminConfigController extends Controller
     public function chargeImports()
     {
         $user = Auth::user();
-        
+
         $importedCount = EcritureComptable::where('company_id', session('current_company_id', $user->company_id))
             ->where('statut', 'imported')
             ->count();
@@ -208,11 +208,11 @@ class AdminConfigController extends Controller
             // CHARGEMENT DU PLAN COMPTABLE SYSCOHADA COMPLET
             // Source: config/syscohada_complet.php (870 comptes extraits de syscohada.txt)
             $syscohadaComplet = require config_path('syscohada_complet.php');
-            
+
             if (empty($syscohadaComplet)) {
                 return redirect()->back()->with('error', 'Erreur: Le fichier SYSCOHADA complet est introuvable ou vide.');
             }
-            
+
             // Utiliser directement le référentiel complet
             $templates = $syscohadaComplet;
 
@@ -289,7 +289,7 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             $digits = $request->digits;
-            
+
             // On utilise les libellés SYSCOHADA par défaut (même pour CUSTOM comme demandé)
             $templates = [
                 '1' => 'Comptes de capitaux propres',
@@ -305,11 +305,11 @@ class AdminConfigController extends Controller
 
             DB::beginTransaction();
             $count = 0;
-            
+
             foreach ($templates as $classPrefix => $intitule) {
                 // Génération de base pour la classe
                 $numeroBase = str_pad($classPrefix, $digits, '0', STR_PAD_RIGHT);
-                
+
                 if (!PlanComptable::where('company_id', session('current_company_id', $user->company_id))->where('numero_de_compte', $numeroBase)->exists()) {
                     PlanComptable::create([
                         'numero_de_compte' => $numeroBase,
@@ -326,7 +326,7 @@ class AdminConfigController extends Controller
                     $prefix = $classPrefix . ($request->seq_prefix ?? '');
                     for ($i = $request->seq_start; $i <= $request->seq_end; $i++) {
                         $numero = str_pad($prefix . $i, $digits, '0', STR_PAD_RIGHT);
-                        
+
                         if (strlen($numero) <= $digits && !PlanComptable::where('company_id', session('current_company_id', $user->company_id))->where('numero_de_compte', $numero)->exists()) {
                             PlanComptable::create([
                                 'numero_de_compte' => $numero,
@@ -340,7 +340,7 @@ class AdminConfigController extends Controller
                     }
                 }
             }
-            
+
             DB::commit();
             return redirect()->back()->with('success', "$count comptes générés avec succès.");
 
@@ -490,7 +490,7 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             $templates = [
                 ['code' => 'ACH', 'intitule' => 'JOURNAL DES ACHATS', 'type' => 'Achats'],
                 ['code' => 'VEN', 'intitule' => 'JOURNAL DES VENTES', 'type' => 'Ventes'],
@@ -535,11 +535,11 @@ class AdminConfigController extends Controller
             $user = Auth::user();
             $company = Company::findOrFail(session('current_company_id', $user->company_id));
             $digits = (int)($company->tier_digits ?? 8);
-            
+
             $prefix = $request->input('prefix'); // Préfixe de catégorie (ex: 40, 41)
             $planComptableId = $request->input('plan_comptable_id');
             $intitule = $request->input('intitule', '');
-            
+
             // Si pas de préfixe fourni, on essaie de l'extraire du compte général
             if (!$prefix && $planComptableId) {
                 $planAccount = PlanComptable::find($planComptableId);
@@ -561,23 +561,23 @@ class AdminConfigController extends Controller
             // Nettoyage du nom : majuscules, seulement lettres, max 3
             $cleanName = strtoupper(preg_replace('/[^a-zA-Z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $intitule)));
             $namePart = substr($cleanName, 0, 3);
-            
+
             // Si le nom est trop court, on complete avec des X ou on prend ce qu'il y a
             if (strlen($namePart) < 1) $namePart = 'XXX';
-            
+
             $base = $prefix . $namePart;
         }
 
         // --- Logique commune de recherche de séquence ---
         // On cherche le max séquentiel pour la base déterminée (soit Prefix simple, soit Prefix+Nom)
         // La base peut être "411" (numeric) ou "411DUP" (alphanumeric)
-        
+
         $availableSpace = max(0, $digits - strlen($base));
-        
+
         // Si plus de place pour la séquence, on retourne la base tronquée (cas extrême)
         if ($availableSpace === 0) {
             return response()->json([
-                'success' => true, 
+                'success' => true,
                 'next_id' => substr($base, 0, $digits)
             ]);
         }
@@ -597,10 +597,10 @@ class AdminConfigController extends Controller
         }
 
         $seq = $maxSeq + 1;
-        
+
         // Construction finale avec padding strict sur l'espace disponible
         $nextId = $base . str_pad($seq, $availableSpace, '0', STR_PAD_LEFT);
-        
+
         if (strlen($nextId) > $digits) {
             $nextId = substr($nextId, 0, $digits);
         }
@@ -636,7 +636,7 @@ class AdminConfigController extends Controller
         $digits = $company->tier_digits ?? 8;
 
         $num = strtoupper($request->numero_de_tiers);
-        
+
         // Sécurité de longueur
         if (strlen($num) != $digits) {
              $prefix = substr($num, 0, 2); // On essaie de garder le préfixe si possible
@@ -745,7 +745,7 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             $currentCompanyId = session('current_company_id');
-            
+
             if (!$currentCompanyId) {
                 return response()->json(['success' => false, 'message' => 'Aucune entité active sélectionnée.'], 400);
             }
@@ -759,14 +759,14 @@ class AdminConfigController extends Controller
 
             // Récupérer le plan de l'admin
             $adminPlans = PlanComptable::where('company_id', $parentCompanyId)->get();
-            
+
             DB::beginTransaction();
             $count = 0;
             foreach ($adminPlans as $plan) {
                 $exists = PlanComptable::where('company_id', $currentCompanyId)
                     ->where('numero_de_compte', $plan->numero_de_compte)
                     ->exists();
-                
+
                 if (!$exists) {
                     $newPlan = $plan->replicate();
                     $newPlan->company_id = $currentCompanyId;
@@ -778,7 +778,7 @@ class AdminConfigController extends Controller
             DB::commit();
 
             return response()->json([
-                'success' => true, 
+                'success' => true,
                 'message' => "$count comptes ont été synchronisés avec succès."
             ]);
 
@@ -796,19 +796,19 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             $currentCompanyId = session('current_company_id');
-            
+
             $currentCompany = Company::find($currentCompanyId);
             $parentCompanyId = $currentCompany->parent_company_id ?? $user->company_id;
 
             $adminTiers = PlanTiers::where('company_id', $parentCompanyId)->get();
-            
+
             DB::beginTransaction();
             $count = 0;
             foreach ($adminTiers as $tier) {
                 $exists = PlanTiers::where('company_id', $currentCompanyId)
                     ->where('numero_de_tiers', $tier->numero_de_tiers)
                     ->exists();
-                
+
                 if (!$exists) {
                     $newTier = $tier->replicate();
                     $newTier->company_id = $currentCompanyId;
@@ -819,7 +819,7 @@ class AdminConfigController extends Controller
             DB::commit();
 
             return response()->json([
-                'success' => true, 
+                'success' => true,
                 'message' => "$count fiches tiers synchronisées."
             ]);
         } catch (\Exception $e) {
@@ -836,19 +836,19 @@ class AdminConfigController extends Controller
         try {
             $user = Auth::user();
             $currentCompanyId = session('current_company_id');
-            
+
             $currentCompany = Company::find($currentCompanyId);
             $parentCompanyId = $currentCompany->parent_company_id ?? $user->company_id;
 
             $adminJournals = CodeJournal::where('company_id', $parentCompanyId)->get();
-            
+
             DB::beginTransaction();
             $count = 0;
             foreach ($adminJournals as $journal) {
                 $exists = CodeJournal::where('company_id', $currentCompanyId)
                     ->where('code_journal', $journal->code_journal)
                     ->exists();
-                
+
                 if (!$exists) {
                     $newJournal = $journal->replicate();
                     $newJournal->company_id = $currentCompanyId;
@@ -859,7 +859,7 @@ class AdminConfigController extends Controller
             DB::commit();
 
             return response()->json([
-                'success' => true, 
+                'success' => true,
                 'message' => "$count journaux synchronisés."
             ]);
         } catch (\Exception $e) {
@@ -1016,7 +1016,7 @@ class AdminConfigController extends Controller
 
         try {
             $journal = CodeJournal::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
-            
+
             $posteTresorerie = $request->poste_tresorerie_autre ?: $request->poste_tresorerie;
 
             $compteId = null;
@@ -1062,11 +1062,11 @@ class AdminConfigController extends Controller
     public function importUpload(Request $request)
     {
         file_put_contents(base_path('debug_import.txt'), "[" . date('H:i:s') . "] START UPLOAD\n", FILE_APPEND);
-        
+
         try {
             $user = Auth::user();
             $file = $request->file('file');
-            
+
             if (!$file) {
                 file_put_contents(base_path('debug_import.txt'), "[" . date('H:i:s') . "] NO FILE RECEIVED\n", FILE_APPEND);
                 return redirect()->back()->with('error', "Aucun fichier n'a été reçu.");
@@ -1074,11 +1074,11 @@ class AdminConfigController extends Controller
 
             $extension = strtolower($file->getClientOriginalExtension());
             $type = $request->type;
-            
+
             $targetCompanyId = session('current_company_id', $user->company_id);
-            
+
             file_put_contents(base_path('debug_import.txt'), "[" . date('H:i:s') . "] FILE: " . $file->getClientOriginalName() . " EXT: $extension TYPE: $type TARGET_CO: $targetCompanyId\n", FILE_APPEND);
-            
+
             ImportStaging::where('user_id', $user->id)
                 ->where('company_id', $targetCompanyId)
                 ->where('type', $request->type)
@@ -1086,7 +1086,7 @@ class AdminConfigController extends Controller
                 ->delete();
 
             $sheetData = [];
-            
+
             file_put_contents(base_path('debug_import.txt'), "[" . date('H:i:s') . "] PRE-PARSING\n", FILE_APPEND);
 
             if ($extension === 'xml') {
@@ -1141,7 +1141,7 @@ class AdminConfigController extends Controller
                 $dom = new \DOMDocument();
                 @$dom->loadHTML($html);
                 $tables = $dom->getElementsByTagName('table');
-                
+
                 if ($tables->length > 0) {
                     // On prend la table qui a le plus de lignes (souvent la table de données)
                     $bestTable = null;
@@ -1152,7 +1152,7 @@ class AdminConfigController extends Controller
                             $bestTable = $t;
                         }
                     }
-                    
+
                     if ($bestTable) {
                         foreach ($bestTable->getElementsByTagName('tr') as $tr) {
                             $rowData = [];
@@ -1165,7 +1165,7 @@ class AdminConfigController extends Controller
             } elseif ($extension === 'txt' || $extension === 'csv') {
                 // --- ANALYSEUR TXT ULTRA-ROBUSTE (ENCODING + FIXED/DELIM) ---
                 $rawContent = file_get_contents($file->getRealPath());
-                
+
                 // 1. DÉTECTION & CONVERSION ENCODING (Export souvent ANSI/ISO)
                 $enc = mb_detect_encoding($rawContent, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII']);
                 if ($enc && $enc !== 'UTF-8') {
@@ -1175,7 +1175,7 @@ class AdminConfigController extends Controller
                 $content = explode("\n", str_replace("\r", "", $rawContent));
                 $content = array_filter($content, fn($l) => trim($l) !== '');
                 $sample = array_slice($content, 0, 50); // Scan plus large
-                
+
                 // 2. ESSAI DÉLIMITÉ
                 $delimiters = [';', ',', "\t", '|'];
                 $bestDelim = null;
@@ -1183,9 +1183,9 @@ class AdminConfigController extends Controller
                 foreach($delimiters as $d) {
                     $colsCount = array_map(fn($l) => count(explode($d, $l)), $sample);
                     $avgCols = count($colsCount) > 0 ? array_sum($colsCount) / count($colsCount) : 0;
-                    if ($avgCols > $maxCols && $avgCols > 1.5) { 
-                        $maxCols = $avgCols; 
-                        $bestDelim = $d; 
+                    if ($avgCols > $maxCols && $avgCols > 1.5) {
+                        $maxCols = $avgCols;
+                        $bestDelim = $d;
                     }
                 }
 
@@ -1199,21 +1199,21 @@ class AdminConfigController extends Controller
                     foreach($sample as $l) {
                         for($i=0; $i<mb_strlen($l); $i++) if (mb_substr($l, $i, 1) !== ' ') $density[$i]++;
                     }
-                    
+
                     $offsets = [0];
                     $inSilence = false;
                     for($i=1; $i<$maxL - 1; $i++) {
                         // Un silence est une zone où la densité est nulle sur TOUT l'échantillon
                         $isVoid = ($density[$i] == 0);
-                        if ($isVoid && !$inSilence) { 
-                            $inSilence = true; 
-                        } elseif (!$isVoid && $inSilence) { 
+                        if ($isVoid && !$inSilence) {
+                            $inSilence = true;
+                        } elseif (!$isVoid && $inSilence) {
                             // Fin du silence = nouveau début de colonne
-                            $offsets[] = $i; 
-                            $inSilence = false; 
+                            $offsets[] = $i;
+                            $inSilence = false;
                         }
                     }
-                    
+
                     foreach($content as $l) {
                         $row = [];
                         for($i=0; $i<count($offsets); $i++) {
@@ -1284,52 +1284,52 @@ class AdminConfigController extends Controller
         $fieldsDictionary = [
             'initial' => [
                 'numero_de_compte' => [
-                    'label' => 'Numéro de compte', 
-                    'required' => true, 
-                    'icon' => 'fa-hashtag', 
+                    'label' => 'Numéro de compte',
+                    'required' => true,
+                    'icon' => 'fa-hashtag',
                     'auto_generate' => true,
                     'match' => ['compte', 'num', 'code', 'acc', 'no', 'numero', 'ncompte', 'noaccount', 'comptenumber', 'comptegeneral', 'cptgen', 'cpt', 'compte_numero', 'compte_num'],
                     'pattern' => '/^\d{3,12}$/',
                     'info' => 'Ce champ sera automatiquement standardisé (longueur fixe) lors de l\'importation.'
                 ],
                 'intitule' => [
-                    'label' => 'Intitulé du compte', 
-                    'required' => true, 
-                    'icon' => 'fa-font', 
+                    'label' => 'Intitulé du compte',
+                    'required' => true,
+                    'icon' => 'fa-font',
                     'match' => ['intitule', 'libelle', 'nom', 'desc', 'label', 'designation', 'intitule_compte', 'label_compte', 'accountname', 'libelledelasaisie', 'description', 'nomcompte', 'compte_intitule'],
                     'pattern' => '/^[a-zA-Z]/i'
                 ]
             ],
             'tiers' => [
                 'numero_de_tiers' => [
-                    'label' => 'Numéro de Tiers', 
-                    'required' => false, 
-                    'icon' => 'fa-hashtag', 
-                    'auto_generate' => true, 
+                    'label' => 'Numéro de Tiers',
+                    'required' => false,
+                    'icon' => 'fa-hashtag',
+                    'auto_generate' => true,
                     'match' => ['identifiant', 'id', 'numtiers', 'notiers', 'numerotiers', 'codetiers', 'idtiers', 'comptetiers', 'auxiliaire', 'tiers', 'code_tiers', 'num_tiers', 'tier_num', 'tiers_numero', 'ctiers_numero'],
                     'pattern' => '/^[A-Z0-9]{2,15}$/i',
                     'info' => 'Ce champ sera automatiquement généré. Tout numéro importé sera remplacé par un nouveau numéro conforme à votre configuration.'
                 ],
                 'intitule' => [
-                    'label' => 'Nom / Intitulé', 
-                    'required' => true, 
-                    'icon' => 'fa-font', 
+                    'label' => 'Nom / Intitulé',
+                    'required' => true,
+                    'icon' => 'fa-font',
                     'match' => ['intituledutiers', 'nomdutiers', 'raisondutiers', 'societe', 'intitule', 'nomtiers', 'client', 'fournisseur', 'nom', 'raison', 'raisonsociale', 'denomination', 'libelle', 'name', 'tiers_nom', 'nom_client', 'nom_fournisseur', 'tiers_intitule', 'ctiers_intitule'],
                     'pattern' => '/^[a-zA-Z]/i'
                 ],
                 'type_de_tiers' => [
-                    'label' => 'Catégorie / Type', 
-                    'required' => false, 
-                    'icon' => 'fa-tags', 
+                    'label' => 'Catégorie / Type',
+                    'required' => false,
+                    'icon' => 'fa-tags',
                     'auto_generate' => true,
                     'match' => ['type', 'categorie', 'cat', 'nature', 'naturetiers', 'typetiers', 'qualite', 'classification', 'cat_tiers', 'role', 'statut'],
                     'pattern' => '/^(cl|fo|cli|fou|0|1|2|3)$/i',
                     'info' => 'La catégorie sera automatiquement déterminée à partir du préfixe du numéro de tiers importé.'
                 ],
                 'compte_general' => [
-                    'label' => 'Compte général', 
-                    'required' => true, 
-                    'icon' => 'fa-link', 
+                    'label' => 'Compte général',
+                    'required' => true,
+                    'icon' => 'fa-link',
                     'auto_generate' => true,
                     'match' => ['rattachement', 'collectif', 'comptegeneral', 'cptgeneral', 'nocptcollectif', 'compte_collectif', 'compte_general', 'general', 'compte', 'comptecollectif', 'cptcollectif', 'numerocompte', 'numcompte', 'comptetiers', 'collectif_num', 'cpt_collectif', 'compte_numero'],
                     'pattern' => '/^(401|411|4)\d*/'
@@ -1337,33 +1337,33 @@ class AdminConfigController extends Controller
             ],
             'journals' => [
                 'code_journal' => [
-                    'label' => 'Code Journal', 
-                    'required' => true, 
-                    'icon' => 'fa-tag', 
+                    'label' => 'Code Journal',
+                    'required' => true,
+                    'icon' => 'fa-tag',
                     'auto_generate' => true,
                     'match' => ['code', 'jnl', 'abr', 'codejournal', 'journalcode', 'jrn', 'abreviation', 'code_jnl', 'journal_code'], // Removed 'journal' to avoid confusion with Label
                     'pattern' => '/^[A-Z0-9]{2,5}$/i',
                     'info' => 'Le code journal importé sera standardisé.'
                 ],
                 'intitule' => [
-                    'label' => 'Intitulé du Journal', 
-                    'required' => true, 
-                    'icon' => 'fa-font', 
+                    'label' => 'Intitulé du Journal',
+                    'required' => true,
+                    'icon' => 'fa-font',
                     'match' => ['intitule', 'libelle', 'nom', 'label', 'designation', 'intitulejnl', 'nomdujournal', 'jnlname', 'libelle_journal', 'nom_journal', 'journal_intitule', 'journal', 'description'], // 'Journal' is often the name in headers
                     'pattern' => '/^[a-zA-Z]/i'
                 ],
                 'type' => [
-                    'label' => 'Type (Achats, Ventes, etc.)', 
-                    'required' => true, 
-                    'icon' => 'fa-layer-group', 
+                    'label' => 'Type (Achats, Ventes, etc.)',
+                    'required' => true,
+                    'icon' => 'fa-layer-group',
                     'auto_generate' => true,
                     'match' => ['type', 'nature', 'cat', 'flux', 'categorie', 'journaltype', 'type_journal', 'classement'],
                     'pattern' => '/^(ach|ven|bq|ca|od|0|1|2|3)$/i'
                 ],
                 'compte_de_tresorerie' => [
-                    'label' => 'Compte Trésorerie', 
-                    'required' => false, 
-                    'icon' => 'fa-university', 
+                    'label' => 'Compte Trésorerie',
+                    'required' => false,
+                    'icon' => 'fa-university',
                     'match' => ['compte_tresorerie', 'treso', 'banque', 'caisse', 'comptetresorerie', 'ncomptetresorerie', 'ctres', 'cpte_treso', 'nocountetresorerie', 'compte_banque', 'num_compte_treso', 'compte_caisse', 'compte_numero'],
                     'pattern' => '/^5\d+/'
                 ],
@@ -1372,9 +1372,9 @@ class AdminConfigController extends Controller
             ],
             'courant' => [
                 'jour' => [
-                    'label' => 'Date / Jour', 
-                    'required' => true, 
-                    'icon' => 'fa-calendar', 
+                    'label' => 'Date / Jour',
+                    'required' => true,
+                    'icon' => 'fa-calendar',
                     'match' => ['date', 'jour', 'period', 'quantieme', 'mvt', 'dateecrit', 'ecrituredate', 'date_operation', 'date_ecriture', 'quantieme', 'ecriture_date', 'dateecr'],
                     'pattern' => '/^\d{1,4}/'
                 ],
@@ -1386,47 +1386,47 @@ class AdminConfigController extends Controller
                     'pattern' => '/^.{1,50}$/'
                 ],
                 'journal' => [
-                    'label' => 'Code Journal', 
-                    'required' => true, 
-                    'icon' => 'fa-book', 
+                    'label' => 'Code Journal',
+                    'required' => true,
+                    'icon' => 'fa-book',
                     'match' => ['journal', 'code', 'jnl', 'jrn', 'codejnl', 'idjnl', 'code_journal', 'jnl_code', 'identifiant_journal', 'ecriture_journal'],
                     'pattern' => '/^[A-Z0-9]{2,5}$/i'
                 ],
                 'reference' => ['label' => 'Référence Pièce', 'required' => false, 'icon' => 'fa-receipt', 'match' => ['ref', 'piece', 'facture', 'num', 'doc', 'numpiece', 'refpiece', 'ndoc', 'n_piece', 'reference_piece', 'n_facture', 'ecriture_piece', 'ecriture_reference']],
                 'compte' => [
-                    'label' => 'Numéro Compte', 
-                    'required' => true, 
-                    'icon' => 'fa-hashtag', 
+                    'label' => 'Numéro Compte',
+                    'required' => true,
+                    'icon' => 'fa-hashtag',
                     'match' => ['compte', 'num', 'general', 'acc', 'ncompte', 'numaccount', 'compte_general', 'cpt_gen', 'numero_compte', 'ecriture_compte', 'compte_numero'],
                     'pattern' => '/^(?!401|411)\d{3,12}$/' // Ignore les comptes commençant par 401/411 pour favoriser le mapping Tiers
                 ],
                 'libelle' => ['label' => 'Libellé Opération', 'required' => true, 'icon' => 'fa-font', 'match' => ['libelle', 'desc', 'nom', 'intitule', 'comm', 'objet', 'libelleecrit', 'description', 'intitule_operation', 'commentaire', 'designation_operation', 'ecriture_libelle', 'libelle_operation']],
                 'debit' => [
-                    'label' => 'Montant Débit', 
-                    'required' => true, 
-                    'icon' => 'fa-plus-circle', 
+                    'label' => 'Montant Débit',
+                    'required' => true,
+                    'icon' => 'fa-plus-circle',
                     'match' => ['debit', 'montant', 'flux_d', 'entree', 'amount_d', 'midebit', 'debits', 'montant_debit', 'somme_debit', 'ecriture_debit', 'montant_d', 'ecrc_montant', 'debit_montant'],
                     'is_numeric' => true
                 ],
                 'credit' => [
-                    'label' => 'Montant Crédit', 
-                    'required' => true, 
-                    'icon' => 'fa-minus-circle', 
+                    'label' => 'Montant Crédit',
+                    'required' => true,
+                    'icon' => 'fa-minus-circle',
                     'match' => ['credit', 'montant_c', 'flux_c', 'sortie', 'amount_c', 'micredit', 'credits', 'montant_credit', 'somme_credit', 'ecriture_credit', 'montant_c', 'ecrc_montant', 'credit_montant'],
                     'is_numeric' => true
                 ],
                 'tiers' => [
-                    'label' => 'Compte Tiers', 
-                    'required' => false, 
-                    'icon' => 'fa-user', 
+                    'label' => 'Compte Tiers',
+                    'required' => false,
+                    'icon' => 'fa-user',
                     'match' => ['tier', 'auxiliaire', 'client', 'fourn', 'compte_t', 'aux', 'tiersaux', 'compte_auxiliaire', 'auxiliaire_num', 'tiers_id', 'ecriture_tiers', 'tiers_numero'],
                     'pattern' => '/^(401|411)\d*/' // Priorité absolue aux comptes commençant par 401/411
                 ],
                 // CAS 1 : Filtrage par Type
                 'type_ecriture' => [
-                    'label' => 'Type Écriture (A/G)', 
-                    'required' => false, 
-                    'icon' => 'fa-filter', 
+                    'label' => 'Type Écriture (A/G)',
+                    'required' => false,
+                    'icon' => 'fa-filter',
                     'match' => ['type', 'type_ecriture', 'lettrage', 'statut', 'analytique', 'g_a', 'type_journal'],
                     'pattern' => '/^[AGag]$/'
                 ]
@@ -1438,7 +1438,7 @@ class AdminConfigController extends Controller
 
         // LOGIQUE D'INTELLIGENCE AVANCÉE : Détection En-tête vs Données vs Titre (Junk)
         $headers = [];
-        $headerIndex = -1; 
+        $headerIndex = -1;
         $dataStartIndex = 0;
         $maxHeaderMatches = 0;
         $scanLimit = min(count($import->raw_data), 20);
@@ -1446,7 +1446,7 @@ class AdminConfigController extends Controller
         for ($i = 0; $i < $scanLimit; $i++) {
             $row = $import->raw_data[$i];
             if (empty(array_filter($row))) continue;
-            
+
             $headerMatches = 0;
             $dataMatches = 0;
 
@@ -1455,7 +1455,7 @@ class AdminConfigController extends Controller
                 if ($cell === '') continue;
 
                 // 1. Détection de patterns de DONNÉES (Dates, Comptes, Montants)
-                if (preg_match('/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/', $cell) || 
+                if (preg_match('/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/', $cell) ||
                     preg_match('/^\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}$/', $cell)) {
                     $dataMatches += 2;
                 }
@@ -1468,7 +1468,7 @@ class AdminConfigController extends Controller
                 try {
                     $cleanCell = strtolower(preg_replace('/[^a-z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $cell)));
                 } catch (\Exception $e) { $cleanCell = ''; }
-                
+
                 if (empty($cleanCell) || strlen($cleanCell) < 3) continue;
 
                 foreach ($fields as $field) {
@@ -1476,7 +1476,7 @@ class AdminConfigController extends Controller
                         try {
                             $cleanM = strtolower(preg_replace('/[^a-z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $m)));
                         } catch (\Exception $e) { $cleanM = ''; }
-                        
+
                         if ($cleanCell === $cleanM || (strlen($cleanCell) > 3 && str_contains($cleanCell, $cleanM))) {
                             $headerMatches++;
                             break 2;
@@ -1515,14 +1515,14 @@ class AdminConfigController extends Controller
         // MOTEUR DE CORRESPONDANCE "INFAILLIBLE" : Multicritère
         // 1. Dictionnaire étendu, 2. Regex Pattern, 3. Analyse statistique
         $dataSamples = array_slice($import->raw_data, $dataStartIndex, 20);
-        
+
         foreach ($fields as $fieldKey => &$field) {
             $field['suggested_col'] = null;
             $bestScore = 0;
 
             foreach ($headers as $colIdx => $header) {
                 $score = 0;
-                
+
                 // --- CRITÈRE 1 : CORRESPONDANCE SÉMANTIQUE (NOM DE COLONNE) ---
                 if ($header) {
                     $cleanHeader = strtolower(preg_replace('/[^a-z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $header)));
@@ -1537,7 +1537,7 @@ class AdminConfigController extends Controller
                 $formatMatches = 0;
                 $totalPopulated = 0;
                 $sampleValues = [];
-                
+
                 foreach ($dataSamples as $sampleRow) {
                     $cell = trim((string)($sampleRow[$colIdx] ?? ''));
                     if ($cell === '') continue;
@@ -1563,10 +1563,10 @@ class AdminConfigController extends Controller
                 if (count($sampleValues) > 0) {
                     // Si la colonne ressemble à un compte général (ex: 601)
                     if (($fieldKey == 'compte' || $fieldKey == 'numero_de_compte') && collect($sampleValues)->every(fn($v) => is_numeric($v) && strlen($v) >= 3)) $score += 50;
-                    
+
                     // Si la colonne ressemble à un tiers (commence par 401 ou 411)
                     if ($fieldKey == 'compte_general' && collect($sampleValues)->every(fn($v) => str_starts_with($v, '401') || str_starts_with($v, '411'))) $score += 80;
-                    
+
                     // Si la colonne contient des montants avec décimales
                     if (($fieldKey == 'debit' || $fieldKey == 'credit') && collect($sampleValues)->contains(fn($v) => str_contains($v, ',') || str_contains($v, '.'))) $score += 40;
                 }
@@ -1584,7 +1584,7 @@ class AdminConfigController extends Controller
         $import->update([
             'mapping' => $currentMapping
         ]);
-        
+
         $typeLabels = [
             'initial' => 'Plan Comptable Master',
             'tiers' => 'Modèle de Tiers',
@@ -1592,14 +1592,14 @@ class AdminConfigController extends Controller
             'courant' => 'Écritures Comptables'
         ];
         $importTitle = $typeLabels[$import->type] ?? 'Importation';
-        
+
         $viewName = 'admin.config.import_mapper';
         if ($import->type == 'initial') $viewName = 'admin.config.import_mapper_plan';
         elseif ($import->type == 'tiers') $viewName = 'admin.config.import_mapper_tiers';
         elseif ($import->type == 'journals') $viewName = 'admin.config.import_mapper_journals';
 
         $user = Auth::user();
-        
+
         // --- CALCUL DES DOUBLONS POTENTIELS (POUR AFFICHAGE MAPPAGE) ---
         $potentialDuplicates = 0;
         $targetCompanyId = $import->company_id ?: session('current_company_id', $user->company_id);
@@ -1627,7 +1627,7 @@ class AdminConfigController extends Controller
                 $colIdx = $codeField['suggested_col'];
                 $existingCodes = CodeJournal::where('company_id', $targetCompanyId)->pluck('code')->toArray();
                 $existingOriginals = CodeJournal::where('company_id', $targetCompanyId)->whereNotNull('numero_original')->pluck('numero_original')->toArray();
-                
+
                 $allExisting = array_flip(array_unique(array_merge(
                     array_map('strtoupper', $existingCodes),
                     array_map('strtoupper', $existingOriginals)
@@ -1684,16 +1684,16 @@ class AdminConfigController extends Controller
         $import = ImportStaging::findOrFail($id);
         $user = Auth::user();
         $targetCompanyId = $import->company_id ?: session('current_company_id', $user->company_id);
-        
+
         $targetCompany = Company::find($targetCompanyId);
         $accountDigits = $targetCompany->account_digits ?? 8;
         $tierDigits = $targetCompany->tier_digits ?? 8;
         $journalDigits = $targetCompany->journal_code_digits ?? 4;
-        
+
         $mapping = $import->mapping;
-        
+
         $headerIndex = $mapping['_header_index'] ?? 0;
-        
+
         // Nettoyage des données : Ignorer les lignes avant les titres et les lignes totalement vides basées sur les colonnes mappées
         $rawRows = array_slice($import->raw_data, $headerIndex + 1, null, true);
         $data = array_filter($rawRows, function($row) use ($mapping) {
@@ -1706,13 +1706,13 @@ class AdminConfigController extends Controller
             }
             return $hasData;
         });
-        
+
         $ignoredEmptyLines = count($rawRows) - count($data);
 
         $existingAccounts = PlanComptable::where('company_id', $targetCompanyId)
             ->pluck('numero_de_compte')
             ->toArray();
-            
+
         $accountDetails = PlanComptable::where('company_id', $targetCompanyId)
             ->select('id', 'numero_de_compte', 'intitule')
             ->get()
@@ -1722,7 +1722,7 @@ class AdminConfigController extends Controller
             ->select('id', 'code_journal', 'intitule', 'numero_original')
             ->get()
             ->keyBy(fn($item) => strtoupper($item->code_journal));
-            
+
         $existingJournalsArr = $journalDetails->keys()->toArray();
         $journalMapping = [];
         foreach($journalDetails as $j) {
@@ -1735,7 +1735,7 @@ class AdminConfigController extends Controller
             ->select('id', 'numero_de_tiers', 'intitule')
             ->get()
             ->keyBy(fn($item) => strtoupper($item->numero_de_tiers));
-            
+
         $existingTiers = $tierDetails->keys()->toArray();
 
         // --- DICTIONNAIRES DE CORRESPONDANCE (AUTO-LOOKUP) ---
@@ -1749,7 +1749,7 @@ class AdminConfigController extends Controller
                     $accountMapping[strtoupper(trim($acc->numero_original))] = trim($acc->numero_de_compte);
                 }
             });
-            
+
         $journalMapping = [];
         CodeJournal::where('company_id', $targetCompanyId)
             ->whereNotNull('numero_original')
@@ -1776,9 +1776,9 @@ class AdminConfigController extends Controller
         $localMaxTiers = [];
         $localMaxJournals = [];
         $localMaxAccounts = [];
-        
+
         // Mappage de lot pour assurer la cohérence (Ex: CAI -> CAIS001 pour toutes les lignes identiques)
-        $batchJournalMap = []; 
+        $batchJournalMap = [];
         $batchTierMap = [];
 
         $maxMappingIndex = 0;
@@ -1795,7 +1795,7 @@ class AdminConfigController extends Controller
         $errorCount = 0;
         $validCount = 0;
         $duplicateCount = 0;
-        
+
         $missingAccounts = [];
         $missingJournals = [];
         $missingTiers = [];
@@ -1803,10 +1803,10 @@ class AdminConfigController extends Controller
         foreach($data as $index => $rowRaw) {
             // PADDING : Forcer la ligne à avoir au moins assez de colonnes pour couvrir le mapping
             $row = array_pad($rowRaw, $maxMappingIndex + 1, null);
-            
+
             // INITIALISATION AVEC TOUTES LES CLÉS POSSIBLES (Évite le null / Sans nom)
             $processedRow = [
-                'intitule' => null, 
+                'intitule' => null,
                 'libelle' => null,
                 'numero_de_compte' => null,
                 'compte' => null,
@@ -1827,7 +1827,7 @@ class AdminConfigController extends Controller
 
             foreach($mapping as $fKey => $cId) {
                 if ($fKey === '_header_index' || $cId === null || $cId === "" || $cId === "AUTO") continue;
-                
+
                 $val = null;
                 if (array_key_exists($fKey, $rowRaw)) {
                     // Priorité 1: Si une valeur a été surchargée manuellement via Edit Staging
@@ -1838,24 +1838,24 @@ class AdminConfigController extends Controller
                     $idx = (int)$cId;
                     $val = $row[$idx] ?? null;
                 }
-                
+
                 if ($val !== null) {
                     $processedRow[$fKey] = is_string($val) ? trim($val) : $val;
                 }
             }
-            
+
             // SYNCHRONISATION DES NOMS : 'intitule' est le standard pour Plan & Tiers, 'libelle' pour Écritures
             if (empty($processedRow['intitule']) && !empty($processedRow['libelle'])) {
                 $processedRow['intitule'] = $processedRow['libelle'];
             } elseif (empty($processedRow['libelle']) && !empty($processedRow['intitule'])) {
                 $processedRow['libelle'] = $processedRow['intitule'];
             }
-            
+
             // On bascule sur le tableau nommé
             $row = $processedRow;
 
             $errors = [];
-            
+
             if ($import->type == 'initial') {
                 // Validation pour Plan Comptable
                 $rowCompte = trim($row['numero_de_compte'] ?? '');
@@ -1923,20 +1923,20 @@ class AdminConfigController extends Controller
                         if ($isNumberTakenInDb || $isNumberTakenInBatch) {
                             // On cherche le prochain numéro disponible (+1)
                             $nextId = \App\Services\NumberingService::findNextAvailable(
-                                'account', 
-                                $targetCompanyId, 
-                                $rowCompte, 
-                                $accountDigits, 
+                                'account',
+                                $targetCompanyId,
+                                $rowCompte,
+                                $accountDigits,
                                 array_keys($batchAccounts)
                             );
-                            
+
                             $row['numero_de_compte'] = $nextId;
                             $row['suggested_account'] = $nextId;
                             $row['info_renum'] = "Numéro $rowCompte déjà utilisé. Réattribution séquentielle vers $nextId.";
                             $rowCompte = $nextId;
                         }
                     }
-                    
+
                     if (!($row['is_duplicate'] ?? false)) {
                         $batchAccounts[$rowCompte] = $originalRawValue;
                     }
@@ -1948,7 +1948,7 @@ class AdminConfigController extends Controller
             } elseif ($import->type == 'journals') {
                 // Validation pour Journaux
                 $rowCode = trim($row['code_journal'] ?? '');
-                
+
                 // --- LOGIQUE TYPE : DETECTION + OVERRIDE ---
                 if (empty($rowCode) || (isset($mapping['code_journal']) && $mapping['code_journal'] === 'AUTO')) {
                     // Fallback pour numero_original : on cherche la première colonne qui ressemble à un code journal (2-5 caractères, majuscules/chiffres)
@@ -1960,7 +1960,7 @@ class AdminConfigController extends Controller
                         }
                     }
                 }
-                
+
                 // On détermine les index virtuels pour stocker les surcharges manuelles
                 // Ces colonnes n'existent pas dans le fichier source mais sont injectées via le modal d'édition
                 $typeOverrideIndex = $maxMappingIndex + 1;
@@ -1983,11 +1983,11 @@ class AdminConfigController extends Controller
                 }
 
                 $detectedType = null;
-                
+
                 // --- STANDARTISATION DU CODE JOURNAL ---
                 // On garde la valeur originale non modifiée pour affichage de la source "Original: WVE1"
                 $rawOriginalCode = $rowCode;
-                
+
                 // On standardise le code SEULEMENT s'il n'est pas issu d'une saisie manuelle
                 // ou si on veut forcer la cohérence à 4-5 chars par défaut.
                 // MAIS l'utilisateur a dit : "seul les codes générer doivent respecter la configuration"
@@ -2006,7 +2006,7 @@ class AdminConfigController extends Controller
                     $row['type'] = $manualType;
                 } else {
                     // Sinon, on lance la détection automatique
-                    
+
                     // PRIORITÉ 1 : Présence d'un compte de trésorerie (Classe 5)
                     // Si la colonne 'compte_de_tresorerie' est mappée ou contient une valeur
                     $rowCompteTreso = trim($row['compte_de_tresorerie'] ?? '');
@@ -2074,11 +2074,11 @@ class AdminConfigController extends Controller
                     if (!empty($manualAnalytique)) $row['traitement_analytique'] = $manualAnalytique;
                     if (!empty($manualRapprochement)) $row['rapprochement_sur'] = $manualRapprochement;
                 }
-                
+
                 // Stockage du numéro original (si pas surchargé manuellement, c'est la détection ou le mappé)
                 // On utilise la valeur brute AVANT standardisation
                 $row['numero_original'] = $rawOriginalCode;
-                
+
                 // On injecte tous les index dans data pour que le JS puisse les utiliser
                 $row['type_override_index'] = $typeOverrideIndex;
                 $row['poste_override_index'] = $posteTresoOverrideIndex;
@@ -2107,7 +2107,7 @@ class AdminConfigController extends Controller
                             } else {
                                 // "Autre" : On déduit du libellé (Intitulé) pour créer un code propre (ex: WAVE -> WAV)
                                 $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($row['intitule'] ?? 'TRZ'));
-                                
+
                                 if (!empty($intituleNorm) && !Str::contains($intituleNorm, 'TRZ')) {
                                     $prefix = substr($intituleNorm, 0, 3);
                                 } elseif (!empty($origAlpha)) {
@@ -2156,11 +2156,11 @@ class AdminConfigController extends Controller
                         } else {
                             $suffix = $matches[1];
                         }
-                        
+
                         $nextNum = (int)$suffix + 1;
                         $numStr = (string)$nextNum;
                         $numLen = strlen($numStr);
-                        
+
                         // Logique intelligente qui réduit le préfixe si le numéro prend trop de place pour respecter la configuration
                         if ($numLen >= $journalDigits) {
                             $newCode = substr($numStr, -$journalDigits);
@@ -2169,7 +2169,7 @@ class AdminConfigController extends Controller
                             $actualPrefix = substr($prefix, 0, $maxPrefixLen);
                             $newCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
                         }
-                        
+
                         $row['code_journal'] = $newCode;
                         $localMaxJournals[$prefix] = $newCode;
                     }
@@ -2179,7 +2179,7 @@ class AdminConfigController extends Controller
                 // --- DÉDUPLICATION ET UNICITÉ DES CODES JOURNAUX (BATCH CONSISTENCY) ---
                 if (!empty($rowCode)) {
                     $upperOrig = strtoupper(trim($row['numero_original'] ?? $rowCode));
-                    
+
                     // On vérifie d'abord si le code existe déjà en base pour CETTE société (par code OU numéro original)
                     $isDuplicateInDb = in_array(strtoupper($rowCode), $existingJournalsArr) || isset($journalMapping[$upperOrig]);
 
@@ -2199,7 +2199,7 @@ class AdminConfigController extends Controller
                         // Si pas doublon en DB, on vérifie si collision avec un autre du lot (localMaxJournals)
                         $tempCode = $rowCode;
                         $counter = 1;
-                        
+
                         while (isset($localMaxJournals[strtoupper($tempCode)])) {
                             $counter++;
                             $numStr = (string)$counter;
@@ -2209,7 +2209,7 @@ class AdminConfigController extends Controller
                             } else {
                                 $prefix = 'JRN';
                             }
-                            
+
                             if ($numLen >= $journalDigits) {
                                 $tempCode = substr($numStr, -$journalDigits);
                             } else {
@@ -2219,7 +2219,7 @@ class AdminConfigController extends Controller
                             }
                             if ($counter > 500) break;
                         }
-                        
+
                         $rowCode = $tempCode;
                         $batchJournalMap[$upperOrig] = $rowCode;
                         $localMaxJournals[strtoupper($rowCode)] = $rowCode;
@@ -2231,12 +2231,12 @@ class AdminConfigController extends Controller
                     $errors[] = "Erreur système : Impossible de générer un code journal.";
                 }
                 // Plus besoin de l'erreur de doublon car géré par la séquence
-                
+
                 // Validation Compte Trésorerie
                 $typeNorm = mb_strtolower($row['type'] ?? '');
                 if (str_contains($typeNorm, 'trésorerie') || str_contains($typeNorm, 'tresorerie') || str_contains($typeNorm, 'banque') || str_contains($typeNorm, 'caisse')) {
                     if (empty($trimTreso = trim($row['compte_de_tresorerie'] ?? ''))) {
-                        $errors[] = "Compte de trésorerie manquant"; 
+                        $errors[] = "Compte de trésorerie manquant";
                     } elseif (!in_array($trimTreso, $existingAccounts)) {
                          // Correspondance automatique pour le compte de trésorerie
                          if (isset($accountMapping[$trimTreso])) {
@@ -2259,7 +2259,7 @@ class AdminConfigController extends Controller
                 $rowCompte = trim($row['compte_general'] ?? '');
                 $rowType = trim($row['type_de_tiers'] ?? '');
 
-                // NETTOYAGE : Si le compte général contient du texte (ex: "Associés 1401000"), 
+                // NETTOYAGE : Si le compte général contient du texte (ex: "Associés 1401000"),
                 // on essaie d'extraire uniquement la partie numérique.
                 if (!empty($rowCompte) && !is_numeric($rowCompte)) {
                     if (preg_match('/\d+/', $rowCompte, $matches)) {
@@ -2281,7 +2281,7 @@ class AdminConfigController extends Controller
 
 
                 // LOGIQUE DE DÉTECTION DE CATÉGORIE PAR PRÉFIXE (Stratégies Multiples)
-                
+
                 $generationPrefix = null;
                 $prefix = null;
                 $categoryMap = [
@@ -2300,7 +2300,7 @@ class AdminConfigController extends Controller
                 // =========================================================================
                 // LOGIQUE DE DÉTECTION DU TYPE DE TIERS (3 STRATÉGIES)
                 // =========================================================================
-                
+
                 $generationPrefix = null;
                 $prefix = null;
                 $categoryMap = [
@@ -2328,7 +2328,7 @@ class AdminConfigController extends Controller
                 // Priorité aux préfixes (lettres) puis aux mots-clés dans l'intitulé
                 if (!$generationPrefix) {
                     $upperNum = strtoupper($importedNum);
-                    
+
                     // 2a. Détection par préfixe de code (Alias Sage, Quadratus, etc.)
                     if (preg_match('/^(FOU|FOUR|FRN|FRS|FR-|F-|F\d|FR\d)/', $upperNum)) {
                         $generationPrefix = '40';
@@ -2381,9 +2381,9 @@ class AdminConfigController extends Controller
 
                 // Stockage du numéro original
                 $row['numero_original'] = $importedNum;
-                
+
                 // Si le compte général est vide, on peut aussi le déduire
-                if (empty($rowCompte) && !empty($generationPrefix)) { 
+                if (empty($rowCompte) && !empty($generationPrefix)) {
                     $rowCompte = $prefix . str_pad('0', ($accountDigits - 2), '0', STR_PAD_RIGHT);
                     $row['compte_general'] = $rowCompte;
                 }
@@ -2407,7 +2407,7 @@ class AdminConfigController extends Controller
                             $match = $accountDetails->filter(function($item, $key) use ($searchVal) {
                                 return str_starts_with($key, $searchVal);
                             })->sortBy('numero_de_compte')->first();
-                            
+
                             if ($match) {
                                 $row['suggested_account'] = $match->numero_de_compte;
                                 $row['suggested_account_label'] = $match->intitule;
@@ -2440,11 +2440,11 @@ class AdminConfigController extends Controller
                     // mais on peut lever une alerte si c'est inattendu.
                     // Pour l'instant, on se concentre sur les collisions du Plan Comptable.
                 }
-                
+
                 // GÉNÉRATION FORCÉE POUR L'IMPORTATION
                 // Tout numéro importé est gardé en référence mais remplacé
                 $row['numero_original'] = $importedNum;
-                
+
                 // VALIDATION CLASSE 4 OBLIGATOIRE POUR LES TIERS
                 if (!$generationPrefix) {
                     $row['numero_de_tiers'] = 'NON GÉNÉRÉ';
@@ -2454,7 +2454,7 @@ class AdminConfigController extends Controller
                     $upperOrigNum = strtoupper($importedNum);
                     $finalNum = $importedNum;
                     $existingMatch = $tierDetails->get(strtoupper($finalNum)) ?? (isset($tierMapping[$upperOrigNum]) ? $tierDetails->get(strtoupper($tierMapping[$upperOrigNum])) : null);
-                    
+
                     $isExactDuplicateInDb = ($existingMatch && trim(strtoupper($existingMatch->intitule)) === trim(strtoupper($row['intitule'] ?? '')));
                     $isExactDuplicateInBatch = false;
                     foreach ($rowsWithStatus as $prevRow) {
@@ -2497,7 +2497,7 @@ class AdminConfigController extends Controller
                         $errors[] = "Numéro de tiers impossible à générer avec le préfixe $finalPrefix.";
                     }
                 }
-                
+
                 // Normalisation finale du type de tiers pour l'affichage
                 if (!empty($rowType)) {
                     $row['type_de_tiers'] = $rowType;
@@ -2549,7 +2549,7 @@ class AdminConfigController extends Controller
                 if (!empty($rowJournal)) {
                     $rowJournalUpper = strtoupper(trim($rowJournal));
                     if (isset($journalMapping[$rowJournalUpper])) {
-                        $row['code_original_journal'] = $rowJournal; 
+                        $row['code_original_journal'] = $rowJournal;
                         $row['journal'] = $journalMapping[$rowJournalUpper];
                         $rowJournal = $row['journal'];
                     } elseif (in_array($rowJournalUpper, array_map('strtoupper', $existingJournalsArr))) {
@@ -2562,10 +2562,10 @@ class AdminConfigController extends Controller
                 // 2. Compte Général
                 if (!empty($rowCompte)) {
                     $rowCompteNormalized = strtoupper(trim((string)$rowCompte));
-                    
+
                     // Standardisation automatique (ex: 6011 -> 60110000)
                     $rowCompteNormalized = $this->standardizeAccountNumber($rowCompteNormalized, $accountDigits);
-                    
+
                     if (isset($accountMapping[$rowCompteNormalized])) {
                         $row['numero_original_compte'] = $rowCompte;
                         $row['compte'] = $accountMapping[$rowCompteNormalized];
@@ -2640,7 +2640,7 @@ class AdminConfigController extends Controller
                         } catch (\Exception $e) {
                              $errors[] = "Date Excel invalide : $rowDateStr";
                         }
-                    } 
+                    }
                     // Essayer le format Jour uniquement (1-31)
                     elseif (is_numeric($rowDateStr) && strlen($rowDateStr) <= 2) {
                         $day = (int)$rowDateStr;
@@ -2650,7 +2650,7 @@ class AdminConfigController extends Controller
                         } else {
                             $errors[] = "Jour invalide : $rowDateStr";
                         }
-                    } 
+                    }
                     // Essayer les formats standards (d/m/Y, Y-m-d, d-m-Y)
                     else {
                         try {
@@ -2683,7 +2683,7 @@ class AdminConfigController extends Controller
                             if ($exercice) {
                                 // On utilise startOfDay() pour comparer proprement les dates sans heures
                                 if (!$parsedDate->between($exercice->date_debut->startOfDay(), $exercice->date_fin->endOfDay())) {
-                                    $errors[] = "Date hors exercice : " . $parsedDate->format('d/m/Y') . 
+                                    $errors[] = "Date hors exercice : " . $parsedDate->format('d/m/Y') .
                                                 " (Exercice : " . $exercice->date_debut->format('d/m/Y') . " - " . $exercice->date_fin->format('d/m/Y') . ")";
                                 }
                             }
@@ -2696,7 +2696,7 @@ class AdminConfigController extends Controller
                 if (empty($rowTiers) && Str::startsWith($rowCompte, ['401', '402', '411', '412'])) {
                     $errors[] = "Un numéro de tiers est obligatoire pour le compte '$rowCompte'.";
                 }
-                
+
                 if (!empty($rowTiers)) {
                     $tierExists = in_array($rowTiers, $existingTiers);
                     if (!$tierExists) {
@@ -2704,7 +2704,7 @@ class AdminConfigController extends Controller
                         $errors[] = "Tiers inconnu : $rowTiers$originalPart";
                     }
                 }
-                
+
                 $row['debit_val'] = $rowDebit;
                 $row['credit_val'] = $rowCredit;
 
@@ -2730,7 +2730,7 @@ class AdminConfigController extends Controller
                         ])->where('reference_piece', 'like', strtoupper($row['reference'] ?? 'IMPORT'))
                           ->where('description_operation', 'like', strtoupper($row['libelle'] ?? 'IMPORTATION EXTERNE'))
                           ->exists();
-                          
+
                          if ($isDuplicate) {
                              $row['is_duplicate'] = true;
                              $row['info'] = "Existe déjà en base de données.";
@@ -2746,9 +2746,9 @@ class AdminConfigController extends Controller
 
             $status = (count($errors) > 0) ? 'error' : (($row['is_duplicate'] ?? false) ? 'duplicate' : 'valid');
             if ($status === 'error' && count($errors) === 0) {
-                $errors = ["Erreur de validation inconnue"]; 
+                $errors = ["Erreur de validation inconnue"];
             }
-            if ($status == 'error') $errorCount++; 
+            if ($status == 'error') $errorCount++;
             elseif ($status == 'valid') $validCount++;
 
             $rowsWithStatus[] = [
@@ -2837,7 +2837,7 @@ class AdminConfigController extends Controller
 
             $totalDebit = array_sum(array_map(fn($r) => ($r['status'] ?? null) === 'duplicate' ? 0 : (float)($r['debit'] ?? 0), $rowsWithStatus));
             $totalCredit = array_sum(array_map(fn($r) => ($r['status'] ?? null) === 'duplicate' ? 0 : (float)($r['credit'] ?? 0), $rowsWithStatus));
-            
+
             if (abs($totalDebit - $totalCredit) > 0.01) {
                 $diff = round($totalDebit - $totalCredit, 2);
                 $import->update(['description' => "ATTENTION : Lot total déséquilibré de $diff"]);
@@ -2884,7 +2884,7 @@ class AdminConfigController extends Controller
         // --- FILTRAGE côté serveur ---
         $statusFilter = request('status', 'all');
         $searchFilter = request('search');
-        
+
         $rowsWithStatusFiltered = $rowsWithStatus;
 
         if ($statusFilter !== 'all') {
@@ -2939,10 +2939,10 @@ class AdminConfigController extends Controller
         $import = ImportStaging::findOrFail($id);
         $user = Auth::user();
         $targetCompanyId = $import->company_id ?: session('current_company_id', $user->company_id);
-        
+
         $targetCompany = Company::find($targetCompanyId);
         $mapping = $import->mapping;
-        
+
         $headerIndex = $mapping['_header_index'] ?? 0;
 
         // Nettoyage des données : Ignorer les lignes avant les titres et les lignes totalement vides basées sur les colonnes mappées
@@ -2960,9 +2960,9 @@ class AdminConfigController extends Controller
         $exercice = ExerciceComptable::find($import->exercice_id);
         $accountDigits = $targetCompany->account_digits ?? 8;
         $journalLimit = 10;
-        
+
         $groupBalances = []; // Pour l'équilibre des écritures
-        
+
         // REPORT STATISTICS
         $report = [
             'status' => 'success',
@@ -2975,7 +2975,7 @@ class AdminConfigController extends Controller
             'new_tiers' => 0,
             'errors' => []
         ];
-        
+
         $importedCount = 0;
         $skippedCount = 0;
         $duplicateCount = 0;
@@ -3013,9 +3013,9 @@ class AdminConfigController extends Controller
             $existingJournalsOriginal = array_change_key_case($existingJournalsOriginal, CASE_UPPER);
 
             // Pour les écritures, on va grouper par référence pour donner le même numéro ECR_ au besoin
-            // Ou plus simplement, un ECR_ par ligne si elles sont indépendantes. 
+            // Ou plus simplement, un ECR_ par ligne si elles sont indépendantes.
             // Mais généralement, l'import regroupe par "n_saisie" d'origine.
-            $ecrMapping = []; 
+            $ecrMapping = [];
             $localMaxTiers = [];
             $localMaxJournals = [];
             $batchJournalMap = [];
@@ -3049,15 +3049,15 @@ class AdminConfigController extends Controller
                  $rowMapped = [];
                  foreach($mapping as $field => $colIndex) {
                      if ($field === '_header_index') continue;
-                     
+
                      // 1. Priorité aux surcharges manuelles (clés textuelles dans $rowOrig)
                      if (isset($rowOrig[$field]) && $rowOrig[$field] !== null && $rowOrig[$field] !== "") {
                          $rowMapped[$field] = $rowOrig[$field];
-                     } 
+                     }
                      // 2. Valeurs FIXES
                      elseif (is_string($colIndex) && str_starts_with($colIndex, 'FIXED:')) {
                          $rowMapped[$field] = substr($colIndex, 6);
-                     } 
+                     }
                      // 3. Données brutes de la colonne mappée
                      else {
                          $rowMapped[$field] = $rowOrig[$colIndex] ?? null;
@@ -3071,7 +3071,7 @@ class AdminConfigController extends Controller
                 $numeroOriginalTiers = trim($rowMapped['numero_de_tiers'] ?? '');
                 // Pour Journals
                 $numeroOriginalJournal = trim($rowMapped['code'] ?? '');
-                
+
                 // Fallback : Si le numéro original est vide ou AUTO, on essaie de le trouver dans les colonnes brutes (souvent col 0 ou 1)
                 if ((empty($numeroOriginalTiers) || $numeroOriginalTiers === 'AUTO') && $import->type == 'tiers') {
                      // Recherche simple : première colonne qui ressemble à un numéro de tiers (commence par 4)
@@ -3103,7 +3103,7 @@ class AdminConfigController extends Controller
                         $errors[] = "Ligne " . ($index + 1) . " : Numéro de compte manquant.";
                         continue;
                     }
-                    
+
                     $numeroOriginalPlan = $rowCompteDeduced; // Capture la valeur brute
                     $rowCompte = $this->standardizeAccountNumber($rowCompteDeduced, $accountDigits);
                     if (empty($rowCompte)) {
@@ -3124,7 +3124,7 @@ class AdminConfigController extends Controller
                         })->first();
 
                     $isExactDuplicate = ($existingMatch && trim(strtoupper($existingMatch->intitule)) === trim(strtoupper($rowMapped['intitule'] ?? '')));
-                    
+
                     if ($isExactDuplicate) {
                         $duplicateCount++;
                         continue; // Skip exact duplicate
@@ -3150,7 +3150,7 @@ class AdminConfigController extends Controller
                         // CREATE nouveau
                         $classe = substr($rowCompte, 0, 1);
                         $type = in_array((int)$classe, [1, 2, 3, 4, 5, 9]) ? 'Bilan' : 'Compte de résultat';
-                        
+
                         $newAcc = PlanComptable::create([
                             'numero_de_compte' => $rowCompte,
                             'intitule' => strtoupper($rowMapped['intitule'] ?? 'COMPTE SANS NOM'),
@@ -3226,7 +3226,7 @@ class AdminConfigController extends Controller
                             ->where('numero_de_compte', 'LIKE', $prefix . '%')
                             ->orderBy('numero_de_compte', 'asc')
                             ->first();
-                         
+
                          if ($match) {
                              $compteCollectifId = $match->id;
                              $rowCompteNum = $match->numero_de_compte;
@@ -3253,13 +3253,13 @@ class AdminConfigController extends Controller
                         $errors[] = "Ligne " . ($index + 1) . " : Impossible de lier le tiers '$rowIntitule' à un compte collectif (Classe 4).";
                         continue;
                     }
-                    
+
                     // LOGIQUE DE GÉNÉRATION BASÉE SUR LE PRÉFIXE IMPORTÉ
                     // On force la génération d'un numéro conforme au format de l'entreprise
                     // Tout en gardant le numéro importé comme "numéro original" pour la traçabilité
                     $numeroGenere = null;
                     $importedNum = trim($rowMapped['numero_de_tiers'] ?? '');
-                    
+
                     // On essaie de déterminer le préfixe de génération (ex: 401)
                     $generationPrefix = null;
                     if (!empty($importedNum) && strlen($importedNum) >= 2) {
@@ -3273,7 +3273,7 @@ class AdminConfigController extends Controller
                     // Génération du numéro séquentiel
                     $tierIdType = $targetCompany->tier_id_type ?? 'numeric';
                     $base = $prefix;
-                    
+
                     if ($tierIdType === 'alphanumeric' && !empty($rowIntitule)) {
                         $cleanName = strtoupper(preg_replace('/[^a-zA-Z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $rowIntitule)));
                         $namePart = substr($cleanName, 0, 3);
@@ -3409,7 +3409,7 @@ class AdminConfigController extends Controller
                     $detectedType = null;
                     if (empty($type) || ($mapping['type'] ?? 'AUTO') === 'AUTO') {
                         $searchStr = strtoupper($rowCode . ' ' . ($rowMapped['intitule'] ?? ''));
-                        
+
                         $rowCompteTreso = $this->standardizeAccountNumber(trim($compteNumStr), $accountDigits);
                         if (!empty($rowCompteTreso) && str_starts_with($rowCompteTreso, '5')) {
                             $detectedType = 'Trésorerie';
@@ -3457,7 +3457,7 @@ class AdminConfigController extends Controller
                             } else {
                                 // "Autre" : On déduit du libellé (Intitulé) pour créer un code propre (ex: WAVE -> WAV)
                                 $intituleNorm = preg_replace('/[^A-Z]/', '', strtoupper($rowMapped['intitule'] ?? 'TRZ'));
-                                
+
                                 if (!empty($intituleNorm) && !Str::contains($intituleNorm, 'TRZ')) {
                                     $prefix = substr($intituleNorm, 0, 3);
                                 } elseif (!empty($origAlpha)) {
@@ -3483,7 +3483,7 @@ class AdminConfigController extends Controller
                     if (empty($manualCodeOrig)) {
                         // REGROUPEMENT PAR CODE ORIGINAL (COHÉRENCE BATCH)
                         $upperOrig = strtoupper(trim($rowMapped['code_original'] ?? $rowMapped['intitule'] ?? ''));
-                        
+
                         if (isset($batchJournalMap[$upperOrig])) {
                             $rowCode = $batchJournalMap[$upperOrig];
                         } else {
@@ -3502,10 +3502,10 @@ class AdminConfigController extends Controller
                             } else {
                                 $nextNum = 1;
                             }
-                            
+
                             $numStr = (string)$nextNum;
                             $numLen = strlen($numStr);
-                                
+
                             // REGLA: SEUL LES CODES GÉNÉRÉS DOIVENT RESPECTER LA CONFIGURATION
                             if ($numLen >= $journalDigits) {
                                 // Si le numéro seul dépasse ou égale la longueur, on garde le numéro (tronqué si vraiment trop long)
@@ -3516,12 +3516,12 @@ class AdminConfigController extends Controller
                                 $actualPrefix = substr($prefix, 0, $maxPrefixLen);
                                 $rowCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
                             }
-                            
+
                             $localMaxJournals[$prefix] = $rowCode;
                             $batchJournalMap[$upperOrig] = $rowCode;
                         }
                     } else {
-                        // Si surcharge manuelle, on l'utilise directement. 
+                        // Si surcharge manuelle, on l'utilise directement.
                         // On normalise (MAJUSCULE) mais on laisse la longueur telle que saisie par l'utilisateur
                         // SAUF si c'est vraiment trop long pour la DB (sécurité 10 chars par exemple)
                         $rowCode = strtoupper(trim($manualCodeOrig));
@@ -3645,13 +3645,13 @@ class AdminConfigController extends Controller
                          $normCredit = (string)$parseAmount($rowMapped['credit'] ?? 0);
                          $normTiers = strtoupper(trim($rowMapped['tiers'] ?? ''));
                          $normNSaisie = trim($rowMapped['n_saisie'] ?? '');
-                         
+
                          $sigParts = [
                              trim($rowMapped['jour'] ?? ''),
                              trim($rowJournal),
                              trim($rowCompte),
                              $normTiers,
-                             (string)(float)$normDebit, 
+                             (string)(float)$normDebit,
                              (string)(float)$normCredit,
                              $normRef,
                              $normLib,
@@ -3748,7 +3748,7 @@ class AdminConfigController extends Controller
                     } else {
                         // Cas 3: Date texte. On priorise d/m/Y pour éviter les inversions (m/d/Y)
                         $dateStrNormalized = str_replace(['\\', '.', ' '], ['/', '/', '/'], trim($dateStr));
-                        
+
                         // FIX : Gestion explicite des années à 2 chiffres pour éviter les erreurs de siècle (ex: 27 -> 1927)
                         // On cherche DD/MM/YY ou D/M/YY
                         if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/', $dateStrNormalized, $matches)) {
@@ -3824,23 +3824,23 @@ class AdminConfigController extends Controller
                         $journalSaisiId = $js->id;
                     }
 
-                    // DÉTECTION DE DOUBLONS NON-BLOQUANTS (Multi-Exercice supporté par la date)
-                    $duplicate = EcritureComptable::where([
-                        'date' => $date->format('Y-m-d'),
-                        'code_journal_id' => $journalId,
-                        'plan_comptable_id' => $compteId,
-                        'plan_tiers_id' => $tiersId,
-                        'debit' => $debit,
-                        'credit' => $credit,
-                        'company_id' => $targetCompanyId,
-                    ])->where('reference_piece', 'like', strtoupper($rowMapped['reference'] ?? 'IMPORT'))
-                      ->where('description_operation', 'like', strtoupper($rowMapped['libelle'] ?? 'IMPORTATION EXTERNE'))
-                      ->first();
+                    // DÉTECTION DE DOUBLONS NON-BLOQUANTS (Multi-Exercice supporté par la date) - DÉSACTIVÉE PAR L'IA
+                    // $duplicate = EcritureComptable::where([
+                    //     'date' => $date->format('Y-m-d'),
+                    //     'code_journal_id' => $journalId,
+                    //     'plan_comptable_id' => $compteId,
+                    //     'plan_tiers_id' => $tiersId,
+                    //     'debit' => $debit,
+                    //     'credit' => $credit,
+                    //     'company_id' => $targetCompanyId,
+                    // ])->where('reference_piece', 'like', strtoupper($rowMapped['reference'] ?? 'IMPORT'))
+                    //   ->where('description_operation', 'like', strtoupper($rowMapped['libelle'] ?? 'IMPORTATION EXTERNE'))
+                    //   ->first();
 
-                    if ($duplicate) {
-                        $skippedCount++;
-                        continue;
-                    }
+                    // if ($duplicate) {
+                    //     $skippedCount++;
+                    //     // continue; // La logique de détection de doublons est désactivée.
+                    // }
 
                     EcritureComptable::create([
                         'date' => $date,
@@ -3886,7 +3886,7 @@ class AdminConfigController extends Controller
                 'status' => 'committed',
                 'error_log' => "Importation réussie : $importedCount $msg_type créés." . ($duplicateCount > 0 ? " ($duplicateCount doublons ignorés)" : "")
             ]);
-            
+
             // Finalize Stats
             $report['processed_g'] = $importedCount;
             $report['skipped_g'] = $skippedCount;
@@ -3907,7 +3907,7 @@ class AdminConfigController extends Controller
                 'import_id' => $id,
                 'user_id' => $user->id ?? 'N/A'
             ]);
-            
+
             $report['status'] = 'error';
             $report['errors'][] = "Erreur Système : " . $e->getMessage();
             return view('admin.import.report', ['report' => $report, 'batch_id' => $id]);
@@ -3930,11 +3930,11 @@ class AdminConfigController extends Controller
                 // Essayer d'extraire la racine (ex: 411)
                 $prefix = substr(preg_replace('/[^0-9]/', '', $original), 0, 3);
                 if (empty($prefix)) $prefix = '411'; // Par défaut client
-                
+
                 $maxAccount = PlanComptable::where('company_id', $companyId)
                     ->where('numero_de_compte', 'LIKE', $prefix . '%')
                     ->max('numero_de_compte');
-                    
+
                 if ($maxAccount) {
                     $suggestion = str_pad((int)$maxAccount + 1, strlen($maxAccount), '0', STR_PAD_LEFT);
                 } else {
@@ -3978,7 +3978,7 @@ class AdminConfigController extends Controller
 
         try {
             $user = Auth::user();
-            
+
             $exists = PlanComptable::where('company_id', session('current_company_id', $user->company_id))
                 ->where('numero_de_compte', $request->numero_compte)
                 ->exists();
@@ -4047,7 +4047,7 @@ class AdminConfigController extends Controller
 
         try {
             $user = Auth::user();
-            
+
             $exists = PlanTiers::where('company_id', session('current_company_id', $user->company_id))
                 ->where('numero_de_tiers', $request->numero_tiers)
                 ->exists();
@@ -4121,7 +4121,7 @@ class AdminConfigController extends Controller
 
         try {
             $user = Auth::user();
-            
+
             $exists = CodeJournal::where('company_id', session('current_company_id', $user->company_id))
                 ->where('code_journal', $request->code_journal)
                 ->exists();
@@ -4201,7 +4201,7 @@ class AdminConfigController extends Controller
         try {
             $import = ImportStaging::findOrFail($id);
             $data = $import->raw_data;
-            
+
             // L'index passé ici est l'index original dans le tableau $data
             if (!isset($data[$index])) {
                 Log::warning("STAGING UPDATE: Index $index not found in raw_data");
@@ -4209,7 +4209,7 @@ class AdminConfigController extends Controller
             }
 
             $newValues = $request->input('values');
-            
+
             Log::info("STAGING UPDATE: Data received", [
                 'target_index' => $index,
                 'provided_values' => $newValues,
@@ -4250,17 +4250,17 @@ class AdminConfigController extends Controller
         try {
             $import = ImportStaging::findOrFail($id);
             $data = $import->raw_data;
-            
+
             if (!isset($data[$index])) {
                 return response()->json(['success' => false, 'message' => 'Ligne non trouvée.'], 404);
             }
 
             // Supprimer la ligne par sa clé exacte
             unset($data[$index]);
-            
+
             // Réindexer pour éviter les trous dans le JSON (optionnel mais propre pour des tableaux 0-indexed)
             $data = array_values($data);
-            
+
             $import->update(['raw_data' => $data]);
 
             return response()->json(['success' => true, 'message' => 'Ligne supprimée de l\'import.']);
@@ -4277,32 +4277,32 @@ class AdminConfigController extends Controller
         try {
             $import = ImportStaging::findOrFail($id);
             $data = $import->raw_data;
-            
+
             $newValues = $request->input('values', []);
-            
+
             // On s'assure que les clés sont numériques (correspondance colonnes brutes)
             $row = [];
-            
+
             // On calcule l'index max du mapping pour initialiser une ligne vide cohérente
             $maxIdx = 0;
             foreach($import->mapping as $idx) {
                 if(is_numeric($idx)) $maxIdx = max($maxIdx, (int)$idx);
             }
-            
+
             // Initialiser la ligne avec des nulls
             $row = array_fill(0, $maxIdx + 1, null);
-            
+
             // Remplir avec les valeurs reçues
             foreach($newValues as $colIdx => $val) {
                 if (is_numeric($colIdx)) {
                     $row[(int)$colIdx] = $val;
                 }
             }
-            
+
             $data[] = $row;
-            
+
             $import->update(['raw_data' => $data]);
-            
+
             return response()->json(['success' => true, 'message' => 'Ligne ajoutée avec succès.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -4317,13 +4317,13 @@ class AdminConfigController extends Controller
         try {
             $import = ImportStaging::findOrFail($id);
             $indices = $request->input('indices', []);
-            
+
             if (empty($indices)) {
                 return response()->json(['success' => false, 'message' => 'Aucune ligne sélectionnée.'], 400);
             }
 
             $data = $import->raw_data;
-            
+
             // Trier les indices par ordre décroissant pour éviter les décalages lors de la suppression
             sort($indices);
             $indices = array_reverse($indices);
@@ -4333,7 +4333,7 @@ class AdminConfigController extends Controller
                     array_splice($data, $index, 1);
                 }
             }
-            
+
             $import->update(['raw_data' => $data]);
 
             return response()->json(['success' => true, 'message' => count($indices) . ' lignes supprimées de l\'import.']);
@@ -4398,11 +4398,11 @@ class AdminConfigController extends Controller
             case 'ecritures':
                 $query = EcritureComptable::with(['planComptable', 'planTiers', 'codeJournal'])
                     ->where('company_id', session('current_company_id', $user->company_id));
-                
+
                 if ($request->input('status') == 'validated') {
                     $query->where('statut', 'approved');
                 }
-                
+
                 if ($request->input('journal') && $request->input('journal') != 'all') {
                     $query->where('code_journal_id', $request->input('journal'));
                 }
@@ -4436,7 +4436,7 @@ class AdminConfigController extends Controller
                     $filename .= ".txt";
                     $contentType = 'text/plain';
                 } elseif ($format == 'sage') {
-                    $headers = []; 
+                    $headers = [];
                     $callback = function($file) use ($data) {
                         foreach ($data as $row) {
                             $line = implode("\t", [
@@ -4489,7 +4489,7 @@ class AdminConfigController extends Controller
 
         return new StreamedResponse(function() use ($headers, $callback, $format) {
             $file = fopen('php://output', 'w');
-            
+
             if ($format != 'sage' && $format != 'fec') {
                 fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             }
@@ -4515,7 +4515,7 @@ class AdminConfigController extends Controller
         $import = ImportStaging::findOrFail($id);
         $user = Auth::user();
         $accountDigits = $user->company->account_digits ?? 8;
-        
+
         $mapping = $import->mapping;
         $rawData = $import->raw_data;
         $modified = false;
@@ -4565,7 +4565,7 @@ class AdminConfigController extends Controller
                             ->where('numero_de_compte', 'LIKE', $search . '%')
                             ->orderBy('numero_de_compte')
                             ->first();
-                            
+
                         if ($match) {
                             $row[$col] = $match->numero_de_compte;
                             $modified = true;
@@ -4816,10 +4816,10 @@ class AdminConfigController extends Controller
         // On récupère temporairement le contrôleur pour appeler la logique (ou on la duplique/isole)
         // Étant donné la taille du fichier, je vais extraire la logique de importStaging() plus tard.
         // Pour l'instant on va simuler l'appel à importStaging mais capturer les données.
-        
+
         // ATTENTION: importStaging() retourne une vue. On va injecter un flag pour qu'il retourne les données.
         // Ou plus simplement, on va copier la logique vitale ici.
-        
+
         // Je vais implémenter une version qui ne dépend pas de la vue.
         return $this->importStaging($import->id, true); // On ajoute un paramètre 'return_data'
     }
@@ -4832,19 +4832,19 @@ class AdminConfigController extends Controller
         $import = ImportStaging::findOrFail($id);
         $data = $this->importStaging($import->id, true);
         $rowsWithStatus = $data['rowsWithStatus'] ?? [];
-        
+
         $errorRows = array_filter($rowsWithStatus, fn($r) => ($r['status'] ?? '') === 'error');
-        
+
         if (empty($errorRows)) {
             return back()->with('error', "Aucune ligne en erreur à exporter.");
         }
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        
+
         $headers = ['Index', 'N° Saisie', 'Date', 'Journal', 'Référence', 'Compte', 'Tiers', 'Libellé', 'Débit', 'Crédit', 'Erreurs'];
         $sheet->fromArray($headers, NULL, 'A1');
-        
+
         $rowNum = 2;
         foreach ($errorRows as $r) {
             $rowData = $r['data'];
@@ -4880,7 +4880,7 @@ class AdminConfigController extends Controller
             $import = ImportStaging::findOrFail($id);
             $data = $this->importStaging($import->id, true);
             $rowsWithStatus = $data['rowsWithStatus'] ?? [];
-            
+
             $indicesToDelete = [];
             foreach ($rowsWithStatus as $r) {
                 if (($r['status'] ?? '') === 'error') {
@@ -4907,5 +4907,3 @@ class AdminConfigController extends Controller
         }
     }
 }
-
-

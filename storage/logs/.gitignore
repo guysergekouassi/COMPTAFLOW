@@ -40,3 +40,14 @@ Thumbs.db
 .idea/
 *.swp
 SYNERGIE-PHARMA
+SOURCE DU PROJET -AGENT -IA
+guide_installation_complet.txt 
+presentation_agents_ia_v2.html 
+presentation_agents_ia.html
+SOURCE DU PROJET -AGENT -IA/python/agents.py SOURCE DU PROJET -AGENT -IA/python/ingest.py SOURCE DU PROJET -AGENT -IA/python/main.py SOURCE DU PROJET -AGENT -IA/python/passenger_wsgi.py   
+public/previews/*.pdf
+guide_installation_complet.txt
+presentation_agents_ia_v2.html
+presentation_agents_ia.html
+  
+

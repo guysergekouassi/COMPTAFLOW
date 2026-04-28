@@ -745,6 +745,10 @@
                     <i class="fa-solid fa-robot text-primary"></i>
                     <span>Analyse Comptable IA</span>
                 </a>
+                <a href="{{ route('admin.ia.chat') }}" class="menu-link-new {{ request()->routeIs('admin.ia.chat') ? 'active' : '' }}">
+                    <i class="fa-solid fa-user-astronaut text-info"></i>
+                    <span>Assistant IA Premium</span>
+                </a>
                 <a href="{{ route('factures_produites.index') }}" class="menu-link-new {{ request()->routeIs('factures_produites.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-file-invoice text-success"></i>
                     <span>Factures Produites</span>
@@ -795,6 +799,19 @@
                 @endif
             </div>
             @endif
+
+            {{-- SECTION : CORRECTION ÉCRITURE --}}
+            <div class="menu-section">
+                <div class="menu-section-header">Correction Écriture</div>
+                <a href="{{ route('adjustment.duplicates') }}" class="menu-link-new {{ request()->routeIs('adjustment.duplicates') ? 'active' : '' }}">
+                    <i class="fa-solid fa-clone"></i>
+                    <span>Détection de doublons</span>
+                </a>
+                <a href="{{ route('adjustment.bulk_edit') }}" class="menu-link-new {{ request()->routeIs('adjustment.bulk_edit') ? 'active' : '' }}">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Modification par lot</span>
+                </a>
+            </div>
 
             {{-- ANALYTIQUE --}}
             @php

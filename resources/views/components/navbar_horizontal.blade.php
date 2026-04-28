@@ -191,6 +191,9 @@
         <div class="nav-h-item" data-target="admin_interne">
             <i class="fa-solid fa-user-tie"></i> Administration Interne
         </div>
+        <div class="nav-h-item" data-target="correction_ecriture">
+            <i class="fa-solid fa-screwdriver-wrench"></i> Correction Écriture
+        </div>
     </div>
 </div>
 
@@ -220,6 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (text.includes('traitement')) sectionId = 'traitement';
             else if (text.includes('analytique')) sectionId = 'analytique';
             else if (text.includes('administration interne')) sectionId = 'admin_interne';
+            else if (text.includes('correction écriture') || text.includes('correction')) sectionId = 'correction_ecriture';
             
             section.setAttribute('data-section-id', sectionId);
         }
