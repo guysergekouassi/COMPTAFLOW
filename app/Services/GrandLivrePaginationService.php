@@ -46,14 +46,14 @@ class GrandLivrePaginationService
             // Récupération infos compte
             if (!$isTiersReport) {
                 $compteModel = $accountOperations->first()->planComptable;
-                $numero = $compteModel->numero_de_compte ?? '-';
-                $numero_orig = $compteModel->numero_original;
-                $intitule = $compteModel->intitule ?? 'Intitulé inconnu';
+                $numero = $compteModel?->numero_de_compte ?? '-';
+                $numero_orig = $compteModel?->numero_original ?? '';
+                $intitule = $compteModel?->intitule ?? 'Intitulé inconnu';
             } else {
                 $compteModel = $accountOperations->first()->planTiers;
-                $numero = $compteModel->numero_de_tiers ?? '-';
-                $numero_orig = $compteModel->numero_original;
-                $intitule = $compteModel->intitule ?? 'Intitulé inconnu';
+                $numero = $compteModel?->numero_de_tiers ?? '-';
+                $numero_orig = $compteModel?->numero_original ?? '';
+                $intitule = $compteModel?->intitule ?? 'Intitulé inconnu';
             }
 
             // Logique d'affichage du numéro (Header)
@@ -229,14 +229,14 @@ class GrandLivrePaginationService
              // ... Récupération infos compte (idem plus haut) ...
              if (!$isTiersReport) {
                 $compteModel = $accountOperations->first()->planComptable;
-                $numero = $compteModel->numero_de_compte ?? '-';
-                $numero_orig = $compteModel->numero_original;
-                $intitule = $compteModel->intitule ?? 'Intitulé inconnu';
+                $numero = $compteModel?->numero_de_compte ?? '-';
+                $numero_orig = $compteModel?->numero_original ?? '';
+                $intitule = $compteModel?->intitule ?? 'Intitulé inconnu';
             } else {
                 $compteModel = $accountOperations->first()->planTiers;
-                $numero = $compteModel->numero_de_tiers ?? '-';
-                $numero_orig = $compteModel->numero_original;
-                $intitule = $compteModel->intitule ?? 'Intitulé inconnu';
+                $numero = $compteModel?->numero_de_tiers ?? '-';
+                $numero_orig = $compteModel?->numero_original ?? '';
+                $intitule = $compteModel?->intitule ?? 'Intitulé inconnu';
             }
 
             $numeroAffiche = $numero;
@@ -404,8 +404,8 @@ class GrandLivrePaginationService
     private function formatEntryData($ecriture, $displayMode)
     {
         // Logique de formatage identique à la vue précédente
-        $jl_sys = $ecriture->codeJournal->code_journal ?? '-';
-        $jl_orig = $ecriture->codeJournal->numero_original ?? ''; 
+        $jl_sys = $ecriture->codeJournal?->code_journal ?? '-';
+        $jl_orig = $ecriture->codeJournal?->numero_original ?? ''; 
         $aff_jl = match ($displayMode) {
             'origine' => !empty($jl_orig) ? $jl_orig : $jl_sys,
             'both' => ($jl_sys . (!empty($jl_orig) && $jl_orig !== $jl_sys ? '<br><span style="color:#555;font-size:8px">(' . $jl_orig . ')</span>' : '')),
@@ -420,16 +420,16 @@ class GrandLivrePaginationService
             default => $n_sys,
         };
 
-        $cpt_sys = $ecriture->planComptable->numero_de_compte ?? '';
-        $cpt_orig = $ecriture->planComptable->numero_original ?? '';
+        $cpt_sys = $ecriture->planComptable?->numero_de_compte ?? '';
+        $cpt_orig = $ecriture->planComptable?->numero_original ?? '';
         $aff_compte = match ($displayMode) {
             'origine' => !empty($cpt_orig) ? $cpt_orig : $cpt_sys,
             'both' => ($cpt_sys . (!empty($cpt_orig) && $cpt_orig !== $cpt_sys ? '<br><span style="color:#555;font-size:8px">(' . $cpt_orig . ')</span>' : '')),
             default => $cpt_sys,
         };
 
-        $tiers_sys = $ecriture->planTiers->numero_de_tiers ?? '';
-        $tiers_orig = $ecriture->planTiers->numero_original ?? '';
+        $tiers_sys = $ecriture->planTiers?->numero_de_tiers ?? '';
+        $tiers_orig = $ecriture->planTiers?->numero_original ?? '';
         $aff_tiers = match ($displayMode) {
             'origine' => !empty($tiers_orig) ? $tiers_orig : $tiers_sys,
             'both' => ($tiers_sys . (!empty($tiers_orig) && $tiers_orig !== $tiers_sys ? '<br><span style="color:#555;font-size:8px">(' . $tiers_orig . ')</span>' : '')),

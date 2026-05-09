@@ -23,6 +23,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/exercices/by-email/{email}', [ExerciceController::class, 'getByEmail']);
 
+    // Route spéciale pour l'Agent IA (Python)
+    Route::post('/agent/execute', [\App\Http\Controllers\AiAgentController::class, 'executeAction']);
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {
             return $request->user();

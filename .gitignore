@@ -115,3 +115,10 @@ routes.txt
 syscohada.txt
 temp_log.txt
 tmp_*.txt
+
+# --- Agent IA & React Source (à ne PAS publier sur Git) ---
+zip-react/
+SOURCE\ DU\ PROJET\ -AGENT\ -IA/
+guide_installation_complet.txt
+presentation_agents_ia_v2.html
+presentation_agents_ia.html
