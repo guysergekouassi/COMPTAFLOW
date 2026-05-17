@@ -122,18 +122,22 @@
                                                      </div>
                                                      <div class="col-md-7">
                                                          <select name="mapping[{{ $key }}]" class="select-mapping" @if($field['required'] ?? false) required @endif>
-                                                             <option value="">-- Ignorer cette colonne --</option>
+                                                             <option value="" {{ (isset($import->mapping) && is_array($import->mapping) && array_key_exists($key, $import->mapping) && $import->mapping[$key] === "") ? 'selected' : '' }}>-- Ignorer cette colonne --</option>
                                                              @foreach($headers as $index => $header)
                                                                  @php
                                                                      $selected = false;
-                                                                     if (isset($field['suggested_col'])) {
-                                                                         $selected = ($field['suggested_col'] === $index);
+                                                                     if (isset($import->mapping) && is_array($import->mapping) && array_key_exists($key, $import->mapping)) {
+                                                                         $selected = ($import->mapping[$key] === (string)$index);
                                                                      } else {
-                                                                         $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $header)));
-                                                                         foreach(($field['match'] ?? []) as $m) {
-                                                                             if(str_contains($cleanHeader, $m)) {
-                                                                                 $selected = true;
-                                                                                 break;
+                                                                         if (isset($field['suggested_col'])) {
+                                                                             $selected = ($field['suggested_col'] === $index);
+                                                                         } else {
+                                                                             $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $header)));
+                                                                             foreach(($field['match'] ?? []) as $m) {
+                                                                                 if(str_contains($cleanHeader, $m)) {
+                                                                                     $selected = true;
+                                                                                     break;
+                                                                                 }
                                                                              }
                                                                          }
                                                                      }

@@ -346,9 +346,14 @@ class UniversalImportController extends Controller
             if ($internalType === 'entries') {
                 $groups = [];
                 foreach ($validPayloads as $index => $p) {
-                    $key = ($p['date_ecriture'] ?? 'no-date') . '_' . ($p['n_saisie'] ?? 'no-saisie');
+                    $date = $p['date_ecriture'] ?? 'no-date';
+                    $journal = strtoupper($p['code_journal'] ?? 'no-journal');
+                    $saisie = strtoupper($p['n_saisie'] ?? $p['reference_piece'] ?? 'IMPORT');
+                    
+                    $key = $date . '_' . $journal . '_' . $saisie;
+                    
                     if (!isset($groups[$key])) {
-                        $groups[$key] = ['debit' => 0.0, 'credit' => 0.0, 'lines' => []];
+                        $groups[$key] = ['debit' => 0.0, 'credit' => 0.0, 'lines' => [], 'date' => $date, 'journal' => $journal, 'saisie' => $saisie];
                     }
                     $groups[$key]['debit'] += (float)($p['debit'] ?? 0);
                     $groups[$key]['credit'] += (float)($p['credit'] ?? 0);
@@ -358,10 +363,8 @@ class UniversalImportController extends Controller
                 foreach ($groups as $key => $totals) {
                     // Use a small epsilon for float comparison
                     if (abs($totals['debit'] - $totals['credit']) > 0.001) {
-                        $parts = explode('_', $key);
-                        $date = $parts[0];
-                        $saisie = $parts[1] ?? 'Inconnue';
-                        $errors[] = "Écriture déséquilibrée pour la saisie '$saisie' du $date (Débit: {$totals['debit']}, Crédit: {$totals['credit']}).";
+                        $diff = round(abs($totals['debit'] - $totals['credit']), 2);
+                        $errors[] = "Écriture déséquilibrée pour la saisie '{$totals['saisie']}' du {$totals['date']} (Journal {$totals['journal']}). Écart de $diff (Débit: {$totals['debit']}, Crédit: {$totals['credit']}).";
                     }
                 }
             }

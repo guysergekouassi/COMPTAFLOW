@@ -2057,7 +2057,7 @@ class AdminConfigController extends Controller
                                 $row['poste_tresorerie'] = 'Autre';
                             }
                         }
-                        elseif (Str::contains($searchStr, ['OD', 'DIV', 'VAR'])) $detectedType = 'Standard';
+                        elseif (Str::contains($searchStr, ['OD', 'DIV', 'VAR', 'OPÉRATION'])) $detectedType = 'Opérations Diverses';
                     }
 
                     // Assignation du type détecté ou par défaut
@@ -2124,7 +2124,8 @@ class AdminConfigController extends Controller
                         if (in_array(strtoupper($origAlpha), ['RAN', 'OD'])) {
                             $prefix = strtoupper($origAlpha);
                         } else {
-                            $prefix = 'ST';
+                            // S'assurer qu'un journal reconnu comme Opération Diverse prenne "OD" en préfixe.
+                            $prefix = str_contains($typeLower, 'opération') ? 'OD' : 'ST';
                         }
                     }
 
@@ -2450,10 +2451,48 @@ class AdminConfigController extends Controller
                     $row['numero_de_tiers'] = 'NON GÉNÉRÉ';
                     $errors[] = "Impossible de déduire le type de tiers (Fournisseur/Client) pour la génération. Veuillez vérifier le compte collectif ou l'intitulé.";
                 } else {
-                    // --- LOGIQUE DE DOUBLONS SMART POUR TIERS ---
+                    // --- GÉNÉRATION AUTOMATIQUE DU TIERS ---
                     $upperOrigNum = strtoupper($importedNum);
-                    $finalNum = $importedNum;
-                    $existingMatch = $tierDetails->get(strtoupper($finalNum)) ?? (isset($tierMapping[$upperOrigNum]) ? $tierDetails->get(strtoupper($tierMapping[$upperOrigNum])) : null);
+                    $tierIdType = $targetCompany->tier_id_type ?? 'numeric';
+                    $base = $generationPrefix;
+                    
+                    if ($tierIdType === 'alphanumeric' && !empty($row['intitule'])) {
+                        $cleanName = strtoupper(preg_replace('/[^a-zA-Z]/', '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $row['intitule'])));
+                        $namePart = substr($cleanName, 0, 3);
+                        if (strlen($namePart) < 1) $namePart = 'XXX';
+                        $base = $generationPrefix . $namePart;
+                    }
+
+                    $numeroGenere = null;
+                    if (!isset($localMaxTiers[$base])) {
+                        // Pour le staging, on peut estimer la séquence avec findNextAvailable
+                        $numeroGenere = \App\Services\NumberingService::findNextAvailable(
+                            'tier',
+                            $targetCompanyId,
+                            $base . str_pad('1', max(0, $tierDigits - strlen($base)), '0', STR_PAD_LEFT),
+                            $tierDigits,
+                            array_values($batchTierMap)
+                        );
+                        $localMaxTiers[$base] = $numeroGenere;
+                    } else {
+                        $lastId = $localMaxTiers[$base];
+                        $baseLen = strlen($base);
+                        $sequencePart = substr($lastId, $baseLen);
+                        if (is_numeric($sequencePart)) {
+                            $nextSeq = (int)$sequencePart + 1;
+                            $availableSpace = max(0, $tierDigits - $baseLen);
+                            $numeroGenere = $base . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                            $localMaxTiers[$base] = $numeroGenere;
+                        } else {
+                            $numeroGenere = $base . str_pad('1', max(0, $tierDigits - strlen($base)), '0', STR_PAD_LEFT);
+                            $localMaxTiers[$base] = $numeroGenere;
+                        }
+                    }
+
+                    $finalNum = $numeroGenere;
+
+                    // --- LOGIQUE DE DOUBLONS SMART POUR TIERS ---
+                    $existingMatch = $tierDetails->get(strtoupper($importedNum)) ?? (isset($tierMapping[$upperOrigNum]) ? $tierDetails->get(strtoupper($tierMapping[$upperOrigNum])) : null);
 
                     $isExactDuplicateInDb = ($existingMatch && trim(strtoupper($existingMatch->intitule)) === trim(strtoupper($row['intitule'] ?? '')));
                     $isExactDuplicateInBatch = false;
@@ -2470,11 +2509,11 @@ class AdminConfigController extends Controller
                         $row['existing_label'] = $existingMatch ? $existingMatch->intitule : ($row['intitule'] ?? null);
                         $row['info'] = "Doublon exact (Tiers déjà présent).";
                         $duplicateCount++;
-                        $batchTierMap[$upperOrigNum] = $finalNum;
+                        $row['numero_de_tiers'] = $existingMatch ? $existingMatch->numero_de_tiers : ($batchTierMap[$upperOrigNum] ?? $importedNum);
                     } else {
-                        // VARIATION OU NOUVEAU TIERS
-                        $isNumberTakenInDb = $existingMatch !== null;
-                        $isNumberTakenInBatch = isset($batchTierMap[$upperOrigNum]) || in_array($finalNum, array_values($batchTierMap));
+                        // VARIATION OU NOUVEAU TIERS - On vérifie si la séquence générée est libre
+                        $isNumberTakenInDb = $tierDetails->has($finalNum);
+                        $isNumberTakenInBatch = in_array($finalNum, array_values($batchTierMap));
 
                         if ($isNumberTakenInDb || $isNumberTakenInBatch) {
                             $nextId = \App\Services\NumberingService::findNextAvailable(
@@ -2484,17 +2523,15 @@ class AdminConfigController extends Controller
                                 $tierDigits,
                                 array_values($batchTierMap)
                             );
-                            $row['numero_de_tiers'] = $nextId;
-                            $row['suggested_tier'] = $nextId;
-                            $row['info_renum'] = "Numéro tiers $finalNum déjà utilisé. Séquence suivante: $nextId.";
                             $finalNum = $nextId;
                         }
                         $row['numero_de_tiers'] = $finalNum;
                         $batchTierMap[$upperOrigNum] = $finalNum;
+                        $row['info_renum'] = "Sera généré en : " . $finalNum;
                     }
 
                     if (empty($row['numero_de_tiers'])) {
-                        $errors[] = "Numéro de tiers impossible à générer avec le préfixe $finalPrefix.";
+                        $errors[] = "Numéro de tiers impossible à générer.";
                     }
                 }
 
@@ -2770,17 +2807,14 @@ class AdminConfigController extends Controller
                     continue;
                 }
 
-                // Groupement: si n_saisie est mappé, on groupe STRICTEMENT par n_saisie (clé d'écriture)
-                // et on ignore les lignes sans n_saisie (elles sont déjà en erreur explicite).
-                if ($nSaisieMapped) {
-                    $ref = trim((string)($r['data']['n_saisie'] ?? ''));
-                    if ($ref === '') {
-                        continue;
-                    }
-                } else {
+                // Groupement: on utilise n_saisie en priorité, sinon reference, sinon jour+journal
+                $ref = trim((string)($r['data']['n_saisie'] ?? ''));
+                if ($ref === '') {
+                    $ref = trim((string)($r['data']['reference'] ?? ''));
+                }
+                if ($ref === '') {
                     $ref = trim((string)($r['data']['jour'] ?? ''))
-                        . '|' . trim((string)($r['data']['journal'] ?? ''))
-                        . '|' . trim((string)($r['data']['reference'] ?? ''));
+                        . '|' . trim((string)($r['data']['journal'] ?? ''));
                 }
 
                 if (true) { // On track quand même pour info
@@ -2818,15 +2852,13 @@ class AdminConfigController extends Controller
                     continue;
                 }
 
-                if ($nSaisieMapped) {
-                    $ref = trim((string)($r['data']['n_saisie'] ?? ''));
-                    if ($ref === '') {
-                        continue;
-                    }
-                } else {
+                $ref = trim((string)($r['data']['n_saisie'] ?? ''));
+                if ($ref === '') {
+                    $ref = trim((string)($r['data']['reference'] ?? ''));
+                }
+                if ($ref === '') {
                     $ref = trim((string)($r['data']['jour'] ?? ''))
-                        . '|' . trim((string)($r['data']['journal'] ?? ''))
-                        . '|' . trim((string)($r['data']['reference'] ?? ''));
+                        . '|' . trim((string)($r['data']['journal'] ?? ''));
                 }
 
                 $r['group_key'] = $ref;
@@ -3087,7 +3119,23 @@ class AdminConfigController extends Controller
                 if ($import->type == 'initial') {
                     // --- IMPORT PLAN COMPTABLE ---
                     $msg_type = "comptes";
-                    $rowCompteDeduced = trim($rowMapped['numero_de_compte'] ?? '');
+
+                    // CALCUL DES INDEX DE SURCHARGE (overrides) - IDENTIQUE À importStaging
+                    $maxMappingIndex = 0;
+                    foreach ($mapping as $mIdx) {
+                        if (is_numeric($mIdx)) {
+                            $maxMappingIndex = max($maxMappingIndex, (int)$mIdx);
+                        }
+                    }
+                    $compteOverrideIndex = $maxMappingIndex + 1;
+                    $intituleOverrideIndex = $maxMappingIndex + 2;
+
+                    $rowRaw = $rowOrig;
+                    $manualCompte = $rowRaw[$compteOverrideIndex] ?? null;
+                    $manualIntitule = $rowRaw[$intituleOverrideIndex] ?? null;
+
+                    $rowCompteDeduced = !empty($manualCompte) ? trim($manualCompte) : trim($rowMapped['numero_de_compte'] ?? '');
+                    $rowIntitule = !empty($manualIntitule) ? trim($manualIntitule) : trim($rowMapped['intitule'] ?? '');
 
                     if (empty($rowCompteDeduced) || $rowCompteDeduced === 'AUTO') {
                         // Déduction si AUTO ou vide
@@ -3110,7 +3158,7 @@ class AdminConfigController extends Controller
                         $errors[] = "Ligne " . ($index + 1) . " : Numéro de compte invalide après standardisation.";
                         continue;
                     }
-                    if (empty(trim($rowMapped['intitule'] ?? ''))) {
+                    if (empty($rowIntitule)) {
                         $errors[] = "Ligne " . ($index + 1) . " : L'intitulé du compte '$rowCompte' est obligatoire.";
                         continue;
                     }
@@ -3123,7 +3171,7 @@ class AdminConfigController extends Controller
                               ->orWhere('numero_original', $numeroOriginalPlan);
                         })->first();
 
-                    $isExactDuplicate = ($existingMatch && trim(strtoupper($existingMatch->intitule)) === trim(strtoupper($rowMapped['intitule'] ?? '')));
+                    $isExactDuplicate = ($existingMatch && trim(strtoupper($existingMatch->intitule)) === trim(strtoupper($rowIntitule)));
 
                     if ($isExactDuplicate) {
                         $duplicateCount++;
@@ -3153,7 +3201,7 @@ class AdminConfigController extends Controller
 
                         $newAcc = PlanComptable::create([
                             'numero_de_compte' => $rowCompte,
-                            'intitule' => strtoupper($rowMapped['intitule'] ?? 'COMPTE SANS NOM'),
+                            'intitule' => strtoupper($rowIntitule ?? 'COMPTE SANS NOM'),
                             'numero_original' => $numeroOriginalPlan,
                             'type_de_compte' => $type,
                             'classe' => $classe,
@@ -3166,9 +3214,27 @@ class AdminConfigController extends Controller
                     } elseif ($import->type == 'tiers') {
                     // --- IMPORT TIERS ---
                     $msg_type = "tiers";
-                    $rowCompteNum = $this->standardizeAccountNumber(trim($rowMapped['compte_general'] ?? ''), $accountDigits);
-                    $rowType = trim($rowMapped['type_de_tiers'] ?? '');
-                    $rowNum = trim($rowMapped['numero_de_tiers'] ?? '');
+                    
+                    // CALCUL DES INDEX DE SURCHARGE (overrides) - IDENTIQUE À importStaging
+                    $maxMappingIndex = 0;
+                    foreach ($mapping as $mIdx) {
+                        if (is_numeric($mIdx)) {
+                            $maxMappingIndex = max($maxMappingIndex, (int)$mIdx);
+                        }
+                    }
+                    $typeTiersOverrideIndex = $maxMappingIndex + 1;
+                    $compteGeneraleOverrideIndex = $maxMappingIndex + 2;
+                    $numeroTiersOverrideIndex = $maxMappingIndex + 3;
+
+                    $rowRaw = $rowOrig;
+                    $manualTypeTiers = $rowRaw[$typeTiersOverrideIndex] ?? null;
+                    $manualCompteGeneral = $rowRaw[$compteGeneraleOverrideIndex] ?? null;
+                    $manualNumeroTiers = $rowRaw[$numeroTiersOverrideIndex] ?? null;
+
+                    $compteGenRaw = !empty($manualCompteGeneral) ? $manualCompteGeneral : ($rowMapped['compte_general'] ?? '');
+                    $rowCompteNum = $this->standardizeAccountNumber(trim($compteGenRaw), $accountDigits);
+                    $rowType = !empty($manualTypeTiers) ? trim($manualTypeTiers) : trim($rowMapped['type_de_tiers'] ?? '');
+                    $rowNum = !empty($manualNumeroTiers) ? trim($manualNumeroTiers) : trim($rowMapped['numero_de_tiers'] ?? '');
                     $rowIntitule = trim($rowMapped['intitule'] ?? '');
 
                     if (empty($rowIntitule)) {
@@ -3176,8 +3242,8 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    // DÉDUCTION INTELLIGENTE DU COMPTE COLLECTIF (SIMILAIRE AU STAGING)
-                    if (empty($rowCompteNum) || $rowCompteNum === 'AUTO' || (isset($mapping['compte_general']) && $mapping['compte_general'] === 'AUTO')) {
+                    // DÉTECTION INTELLIGENTE DU COMPTE COLLECTIF (SIMILAIRE AU STAGING)
+                    if (empty($manualCompteGeneral) && (empty($rowCompteNum) || $rowCompteNum === 'AUTO' || (isset($mapping['compte_general']) && $mapping['compte_general'] === 'AUTO'))) {
                         $rowCompteNum = null;
 
                         // 1. Stratégie par préfixe du numéro de tiers importé (Alias Sage, Quadratus, etc.)
@@ -3291,6 +3357,9 @@ class AdminConfigController extends Controller
                         if ($genData->success) {
                             $numeroGenere = $genData->next_id;
                             $localMaxTiers[$base] = $genData->next_id;
+                        } else {
+                            $numeroGenere = $base . str_pad('1', max(0, (int)($targetCompany->tier_digits ?? 8) - strlen($base)), '0', STR_PAD_LEFT);
+                            $localMaxTiers[$base] = $numeroGenere;
                         }
                     } else {
                         // Génération locale pour le batch
@@ -3303,6 +3372,9 @@ class AdminConfigController extends Controller
                             $newId = $base . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
                             $numeroGenere = $newId;
                             $localMaxTiers[$base] = $newId;
+                        } else {
+                            $numeroGenere = $base . str_pad('1', max(0, (int)($targetCompany->tier_digits ?? 8) - strlen($base)), '0', STR_PAD_LEFT);
+                            $localMaxTiers[$base] = $numeroGenere;
                         }
                     }
 
@@ -3342,11 +3414,22 @@ class AdminConfigController extends Controller
                     }
                     $batchTierMap[$numeroOriginalTiers] = $finalNum;
 
+                    if (empty($manualTypeTiers) && (empty($rowType) || ($mapping['type_de_tiers'] ?? 'AUTO') === 'AUTO')) {
+                        $searchStrTiers = strtoupper($rowMapped['intitule'] ?? '') . ' ' . $rowCompteNum;
+                        if (Str::contains($searchStrTiers, ['FOURN', 'FRN', 'ACHAT'])) {
+                            $rowType = 'Fournisseur';
+                        } elseif (Str::contains($searchStrTiers, ['SALAR', 'EMP', 'PAIE', 'PERSONNEL'])) {
+                            $rowType = 'Salarie';
+                        } else {
+                            $rowType = 'Client';
+                        }
+                    }
+
                     // CREATE nouveau
                     PlanTiers::create([
                         'numero_de_tiers' => strtoupper($finalNum),
                         'intitule' => strtoupper($rowMapped['intitule'] ?? 'TIERS SANS NOM'),
-                        'type_de_tiers' => ucfirst(strtolower($rowMapped['type_de_tiers'] ?? 'Autre')),
+                        'type_de_tiers' => ucfirst(strtolower($rowType ?? 'Autre')),
                         'compte_general' => $compteCollectifId,
                         'numero_original' => $numeroOriginalTiers,
                         'user_id' => $user->id,
@@ -3407,7 +3490,7 @@ class AdminConfigController extends Controller
                     $compteNumStr = !empty($manualCompte) ? $manualCompte : ($rowMapped['compte_de_tresorerie'] ?? '');
 
                     $detectedType = null;
-                    if (empty($type) || ($mapping['type'] ?? 'AUTO') === 'AUTO') {
+                    if (empty($manualType) && (empty($type) || ($mapping['type'] ?? 'AUTO') === 'AUTO')) {
                         $searchStr = strtoupper($rowCode . ' ' . ($rowMapped['intitule'] ?? ''));
 
                         $rowCompteTreso = $this->standardizeAccountNumber(trim($compteNumStr), $accountDigits);
@@ -3473,7 +3556,8 @@ class AdminConfigController extends Controller
                         if (in_array(strtoupper($origAlpha), ['RAN', 'OD'])) {
                             $prefix = strtoupper($origAlpha);
                         } else {
-                            $prefix = 'ST';
+                            // S'assurer qu'un journal reconnu comme Opération Diverse prenne "OD" en préfixe.
+                            $prefix = str_contains($typeLower, 'opération') ? 'OD' : 'ST';
                         }
                     }
 
@@ -3789,16 +3873,19 @@ class AdminConfigController extends Controller
                         continue;
                     }
 
-                    // LOGIQUE MASTER NUMBERING : Groupement par n_saisie d'origine ou référence
+                    // LOGIQUE MASTER NUMBERING : Groupement par date, journal et (n_saisie ou référence)
                     $origNSaisie = $rowMapped['n_saisie'] ?? $rowMapped['reference'] ?? 'IMPORT';
-                    if (!isset($ecrMapping[$origNSaisie])) {
-                        $ecrMapping[$origNSaisie] = $this->generateGlobalSaisieNumber($targetCompanyId);
+                    // Clé unique pour regrouper les lignes de la même écriture
+                    $groupKey = $date->format('Y-m-d') . '_' . strtoupper($rowJournal) . '_' . strtoupper($origNSaisie);
+
+                    if (!isset($ecrMapping[$groupKey])) {
+                        $ecrMapping[$groupKey] = $this->generateGlobalSaisieNumber($targetCompanyId);
                     }
-                    $globalNSaisie = $ecrMapping[$origNSaisie];
+                    $globalNSaisie = $ecrMapping[$groupKey];
 
                     // TRACKING EQUILIBRE
                     if (!isset($groupBalances[$globalNSaisie])) {
-                        $groupBalances[$globalNSaisie] = ['debit' => 0, 'credit' => 0, 'ref' => $origNSaisie];
+                        $groupBalances[$globalNSaisie] = ['debit' => 0, 'credit' => 0, 'ref' => $origNSaisie, 'journal' => $rowJournal, 'date' => $date->format('d/m/Y')];
                     }
                     $groupBalances[$globalNSaisie]['debit'] += round($debit, 2);
                     $groupBalances[$globalNSaisie]['credit'] += round($credit, 2);
@@ -3869,7 +3956,7 @@ class AdminConfigController extends Controller
                 foreach ($groupBalances as $ns => $bal) {
                     if (abs($bal['debit'] - $bal['credit']) > 0.01) {
                         $diff = round(abs($bal['debit'] - $bal['credit']), 2);
-                        $errors[] = "DÉSÉQUILIBRE : Le groupe d'écritures '{$bal['ref']}' est déséquilibré de $diff (Débit: {$bal['debit']}, Crédit: {$bal['credit']}).";
+                        $errors[] = "DÉSÉQUILIBRE : L'écriture '{$bal['ref']}' du {$bal['date']} (Journal {$bal['journal']}) est déséquilibrée de $diff (Débit: {$bal['debit']}, Crédit: {$bal['credit']}).";
                     }
                 }
             }
