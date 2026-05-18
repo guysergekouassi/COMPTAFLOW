@@ -196,7 +196,17 @@ class UniversalImportController extends Controller
         $targetExerciceId = $metadataReq->exercice_id ?? $metadata['exercice_id'] ?? null;
         $headerIndexMap = array_flip($headers); // HeaderName => Index
 
-        // Retrieve Data
+        // OPTIMISATION DES PERFORMANCES POUR LES GROS FICHIERS
+        set_time_limit(0);
+        ini_set('memory_limit', '2G');
+
+        $companyId = session('current_company_id') ?? Auth::user()->company_id;
+        $importConfig = ImportConfig::where('company_id', $companyId)->first();
+        if (!$importConfig) return redirect()->route('admin.config.external_import')->with('error', "Veuillez d'abord configurer le mapping.");
+
+        $mapping = $importConfig->mapping;
+        $internalType = $importConfig->internal_type;
+
         $stagingRows = ImportStaging::where('batch_id', $batchId)->where('type', '!=', 'metadata')->get();
         if ($stagingRows->isEmpty()) return redirect()->route('admin.config.external_import')->with('error', "Aucune donnée à importer.");
 
@@ -206,6 +216,8 @@ class UniversalImportController extends Controller
             $errors = [];
             $validPayloads = [];
             $importBatchMax = [];
+            $jsCache = [];
+            $batchEcritures = [];
 
             // PHASE 1: Validation & Construction
             foreach ($stagingRows as $index => $rowRecord) {
@@ -466,24 +478,47 @@ class UniversalImportController extends Controller
                      
                      // Generate or get JournalSaisi
                      if ($p['code_journal_id']) {
-                         $journalSaisi = \App\Models\JournalSaisi::firstOrCreate([
-                             'annee' => $dateObj->year,
-                             'mois' => $dateObj->month,
-                             'exercices_comptables_id' => $p['exercices_comptables_id'],
-                             'code_journals_id' => $p['code_journal_id'],
-                             'company_id' => $companyId,
-                         ], ['user_id' => $userId]);
-                         $p['journaux_saisis_id'] = $journalSaisi->id;
+                         $jsCacheKey = $dateObj->year . '_' . $dateObj->month . '_' . $p['exercices_comptables_id'] . '_' . $p['code_journal_id'];
+                         
+                         if (isset($jsCache[$jsCacheKey])) {
+                             $p['journaux_saisis_id'] = $jsCache[$jsCacheKey];
+                         } else {
+                             $journalSaisi = \App\Models\JournalSaisi::firstOrCreate([
+                                 'annee' => $dateObj->year,
+                                 'mois' => $dateObj->month,
+                                 'exercices_comptables_id' => $p['exercices_comptables_id'],
+                                 'code_journals_id' => $p['code_journal_id'],
+                                 'company_id' => $companyId,
+                             ], ['user_id' => $userId]);
+                             $p['journaux_saisis_id'] = $journalSaisi->id;
+                             $jsCache[$jsCacheKey] = $journalSaisi->id;
+                         }
                      }
 
-                     \App\Models\EcritureComptable::create($p);
-                     $count++;
+                     $p['created_at'] = now();
+                     $p['updated_at'] = now();
+                     $batchEcritures[] = $p;
+
+                     if (count($batchEcritures) >= 1000) {
+                         \App\Models\EcritureComptable::insert($batchEcritures);
+                         $count += count($batchEcritures);
+                         $batchEcritures = [];
+                     }
                 }
             }
 
-            // Clean Staging
-            ImportStaging::where('batch_id', $batchId)->delete();
+            // INSERTION FINALE DU BATCH RESTANT
+            if (!empty($batchEcritures)) {
+                \App\Models\EcritureComptable::insert($batchEcritures);
+                $count += count($batchEcritures);
+                $batchEcritures = [];
+            }
+
             DB::commit();
+            
+            // Clean up staging
+            ImportStaging::where('batch_id', $batchId)->delete();
+            $importConfig->delete();
 
             $msg = "Import effectué avec succès ($count enregistrements ajoutés).";
             if ($ignoredCount > 0) {

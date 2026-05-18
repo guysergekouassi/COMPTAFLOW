@@ -2968,6 +2968,10 @@ class AdminConfigController extends Controller
      */
     public function commitImport(Request $request, $id)
     {
+        // OPTIMISATION DES PERFORMANCES POUR LES GROS FICHIERS
+        set_time_limit(0);
+        ini_set('memory_limit', '2G');
+
         $import = ImportStaging::findOrFail($id);
         $user = Auth::user();
         $targetCompanyId = $import->company_id ?: session('current_company_id', $user->company_id);
@@ -3075,6 +3079,10 @@ class AdminConfigController extends Controller
             // DEDUPLICATION_BUFFER: Pour le CAS 2 (Sans colonne Type)
             $deduplicationBuffer = [];
             $isTypeMapped = !empty($mapping['type_ecriture']);
+
+            // OPTIMISATION BATCH INSERTION
+            $batchEcritures = [];
+            $jsCache = [];
 
             foreach ($data as $index => $rowOrig) {
                  // ANALYSE DATA SELON MAPPING (support FIXED values et MANUAL OVERRIDES)
@@ -3899,38 +3907,27 @@ class AdminConfigController extends Controller
                     // LOGIQUE JOURNAL SAISI : On s'assure que le lien existe pour les rapports
                     $journalSaisiId = null;
                     if ($journalId) {
-                        $js = \App\Models\JournalSaisi::firstOrCreate([
-                            'annee' => $date->year,
-                            'mois' => $date->month,
-                            'exercices_comptables_id' => $import->exercice_id ?? session('current_exercice_id'),
-                            'code_journals_id' => $journalId,
-                            'company_id' => $targetCompanyId,
-                        ], [
-                            'user_id' => $user->id
-                        ]);
-                        $journalSaisiId = $js->id;
+                        $jsCacheKey = $date->year . '_' . $date->month . '_' . ($import->exercice_id ?? session('current_exercice_id')) . '_' . $journalId;
+                        
+                        if (isset($jsCache[$jsCacheKey])) {
+                            $journalSaisiId = $jsCache[$jsCacheKey];
+                        } else {
+                            $js = \App\Models\JournalSaisi::firstOrCreate([
+                                'annee' => $date->year,
+                                'mois' => $date->month,
+                                'exercices_comptables_id' => $import->exercice_id ?? session('current_exercice_id'),
+                                'code_journals_id' => $journalId,
+                                'company_id' => $targetCompanyId,
+                            ], [
+                                'user_id' => $user->id
+                            ]);
+                            $journalSaisiId = $js->id;
+                            $jsCache[$jsCacheKey] = $js->id;
+                        }
                     }
 
-                    // DÉTECTION DE DOUBLONS NON-BLOQUANTS (Multi-Exercice supporté par la date) - DÉSACTIVÉE PAR L'IA
-                    // $duplicate = EcritureComptable::where([
-                    //     'date' => $date->format('Y-m-d'),
-                    //     'code_journal_id' => $journalId,
-                    //     'plan_comptable_id' => $compteId,
-                    //     'plan_tiers_id' => $tiersId,
-                    //     'debit' => $debit,
-                    //     'credit' => $credit,
-                    //     'company_id' => $targetCompanyId,
-                    // ])->where('reference_piece', 'like', strtoupper($rowMapped['reference'] ?? 'IMPORT'))
-                    //   ->where('description_operation', 'like', strtoupper($rowMapped['libelle'] ?? 'IMPORTATION EXTERNE'))
-                    //   ->first();
-
-                    // if ($duplicate) {
-                    //     $skippedCount++;
-                    //     // continue; // La logique de détection de doublons est désactivée.
-                    // }
-
-                    EcritureComptable::create([
-                        'date' => $date,
+                    $batchEcritures[] = [
+                        'date' => $date->format('Y-m-d'),
                         'n_saisie' => $globalNSaisie, // MASTER
                         'n_saisie_user' => $origNSaisie, // ORIGIN
                         'reference_piece' => strtoupper($rowMapped['reference'] ?? 'IMPORT'),
@@ -3945,10 +3942,24 @@ class AdminConfigController extends Controller
                         'exercices_comptables_id' => $import->exercice_id ?? session('current_exercice_id'),
                         'company_id' => $targetCompanyId,
                         'user_id' => $user->id,
-                        'statut' => 'approved'
-                    ]);
-                    $importedCount++;
+                        'statut' => 'approved',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ];
+
+                    if (count($batchEcritures) >= 1000) {
+                        EcritureComptable::insert($batchEcritures);
+                        $importedCount += count($batchEcritures);
+                        $batchEcritures = [];
+                    }
                 }
+            }
+
+            // INSERTION FINALE DU BATCH RESTANT
+            if (!empty($batchEcritures)) {
+                EcritureComptable::insert($batchEcritures);
+                $importedCount += count($batchEcritures);
+                $batchEcritures = [];
             }
 
             // VÉRIFICATION FINALE DE L'ÉQUILIBRE (Écritures uniquement)
