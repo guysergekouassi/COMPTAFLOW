@@ -2834,15 +2834,17 @@ class AdminConfigController extends Controller
                     continue;
                 }
 
-                // Groupement: on utilise n_saisie en priorité, sinon reference, sinon jour+journal
-                $ref = trim((string)($r['data']['n_saisie'] ?? ''));
-                if ($ref === '') {
-                    $ref = trim((string)($r['data']['reference'] ?? ''));
+                $nSaisie = trim((string)($r['data']['n_saisie'] ?? ''));
+                $reference = trim((string)($r['data']['reference'] ?? ''));
+                $jour = trim((string)($r['data']['jour'] ?? ''));
+                $journal = trim((string)($r['data']['journal'] ?? ''));
+                
+                $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
+                if ($keyPart === '') {
+                    $keyPart = 'row_' . $r['index']; // fallback
                 }
-                if ($ref === '') {
-                    $ref = trim((string)($r['data']['jour'] ?? ''))
-                        . '|' . trim((string)($r['data']['journal'] ?? ''));
-                }
+                
+                $ref = $jour . '|' . $journal . '|' . $keyPart;
 
                 if (true) { // On track quand même pour info
                     if (!isset($balances[$ref])) $balances[$ref] = ['d' => 0, 'c' => 0, 'rows' => []];

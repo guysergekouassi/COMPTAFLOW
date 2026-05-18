@@ -95,7 +95,7 @@
                 @include('components.header', ['page_title' => 'Importation / <span class="text-primary">' . $importTitle . '</span>'])
 
                 <div class="content-wrapper">
-                    <div class="container-xxl flex-grow-1 container-p-y">
+                    <div class="container-xxl flex-grow-1 container-p-y" id="staging-dynamic-content">
                         
                         @if(session('error'))
                             <div class="alert alert-danger alert-dismissible fade show rounded-[20px] mb-4 border-0 shadow-sm" role="alert">
@@ -224,20 +224,20 @@
 
                         <div class="row mb-6">
                             <div class="col-md-3">
-                                <div class="bg-emerald-50 p-4 rounded-2xl border {{ $statusFilter == 'valid' ? 'border-emerald-500 active' : 'border-emerald-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'valid', 'page' => 1]) }}'">
+                                <div class="bg-emerald-50 p-4 rounded-2xl border {{ $statusFilter == 'valid' ? 'border-emerald-500 active' : 'border-emerald-100' }} cursor-pointer card-filter" onclick="loadStagingPage('{{ request()->fullUrlWithQuery(['status' => 'valid', 'page' => 1]) }}')">
                                     <div class="text-xs font-bold text-emerald-600 uppercase mb-1">Lignes Valides</div>
                                     <div class="h4 font-black text-emerald-700 mb-0">{{ $validCount }}</div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}'">
+                                <div class="bg-rose-50 p-4 rounded-2xl border {{ $statusFilter == 'error' ? 'border-rose-500 active' : 'border-rose-100' }} cursor-pointer card-filter" onclick="loadStagingPage('{{ request()->fullUrlWithQuery(['status' => 'error', 'page' => 1]) }}')">
                                     <div class="text-xs font-bold text-rose-600 uppercase mb-1">Erreurs détectées</div>
                                     <div class="h4 font-black text-rose-700 mb-0">{{ $errorCount }}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="d-flex gap-3 h-100">
-                                    <div class="bg-white p-4 rounded-2xl border {{ $statusFilter == 'all' ? 'border-primary active' : 'border-slate-100' }} cursor-pointer card-filter flex-grow-1" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'all', 'page' => 1]) }}'">
+                                    <div class="bg-white p-4 rounded-2xl border {{ $statusFilter == 'all' ? 'border-primary active' : 'border-slate-100' }} cursor-pointer card-filter flex-grow-1" onclick="loadStagingPage('{{ request()->fullUrlWithQuery(['status' => 'all', 'page' => 1]) }}')">
                                         <div class="text-xs font-bold text-slate-400 uppercase mb-2">Tout afficher</div>
                                         <div class="d-flex gap-4">
                                             <div class="text-xs d-flex align-items-center gap-2">
@@ -254,7 +254,7 @@
                                     <div class="bg-white p-4 rounded-2xl border border-slate-100 d-flex align-items-center" style="width: 300px;">
                                         <div class="input-group input-group-merge border-0 bg-slate-50 rounded-xl px-2">
                                             <span class="input-group-text border-0 bg-transparent"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></span>
-                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') window.location.href='{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value))">
+                                            <input type="text" id="stagingSearch" class="form-control border-0 bg-transparent ps-0" placeholder="Filtrer numéro / libellé..." value="{{ $searchFilter }}" onkeyup="if(event.key === 'Enter') loadStagingPage('{{ request()->fullUrlWithQuery(['search' => '']) }}'.replace('search=', 'search=' + encodeURIComponent(this.value)))">
                                         </div>
                                     </div>
                                 </div>
@@ -467,18 +467,18 @@
                                 </div>
                                 <div class="d-flex gap-2">
                                     @if($currentPage > 1)
-                                        <a href="{{ request()->fullUrlWithQuery(['page' => $currentPage - 1]) }}" class="btn btn-sm btn-outline-secondary rounded-xl px-4">
+                                        <a href="javascript:void(0)" onclick="loadStagingPage('{{ request()->fullUrlWithQuery(['page' => $currentPage - 1]) }}')" class="btn btn-sm btn-outline-secondary rounded-xl px-4">
                                             <i class="fa-solid fa-chevron-left me-1"></i> Préc.
                                         </a>
                                     @endif
                                     @for($p = max(1, $currentPage - 2); $p <= min($totalPages, $currentPage + 2); $p++)
-                                        <a href="{{ request()->fullUrlWithQuery(['page' => $p]) }}"
+                                        <a href="javascript:void(0)" onclick="loadStagingPage('{{ request()->fullUrlWithQuery(['page' => $p]) }}')"
                                            class="btn btn-sm {{ $p == $currentPage ? 'btn-primary' : 'btn-outline-secondary' }} rounded-xl px-3">
                                             {{ $p }}
                                         </a>
                                     @endfor
                                     @if($currentPage < $totalPages)
-                                        <a href="{{ request()->fullUrlWithQuery(['page' => $currentPage + 1]) }}" class="btn btn-sm btn-outline-secondary rounded-xl px-4">
+                                        <a href="javascript:void(0)" onclick="loadStagingPage('{{ request()->fullUrlWithQuery(['page' => $currentPage + 1]) }}')" class="btn btn-sm btn-outline-secondary rounded-xl px-4">
                                             Suiv. <i class="fa-solid fa-chevron-right ms-1"></i>
                                         </a>
                                     @endif
@@ -540,6 +540,50 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+        /**
+         * Charge la page de staging en AJAX pour une expérience fluide (filtres, pagination)
+         */
+        function loadStagingPage(url) {
+            const container = document.getElementById('staging-dynamic-content');
+            if (!container) return;
+            
+            container.style.opacity = '0.5';
+            container.style.pointerEvents = 'none';
+
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newContent = doc.getElementById('staging-dynamic-content');
+                    
+                    if (newContent) {
+                        container.innerHTML = newContent.innerHTML;
+                        window.history.pushState({url: url}, '', url);
+                        
+                        // Si des init supplémentaires sont nécessaires, on peut les appeler ici
+                    } else {
+                        window.location.href = url; // Fallback
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur AJAX:', error);
+                    window.location.href = url; // Fallback
+                })
+                .finally(() => {
+                    container.style.opacity = '1';
+                    container.style.pointerEvents = 'auto';
+                });
+        }
+
+        window.addEventListener('popstate', function(e) {
+            if (e.state && e.state.url) {
+                loadStagingPage(e.state.url);
+            } else {
+                window.location.reload();
+            }
+        });
+
         let currentFilter = 'all';
 
         function filterTable(type, clickedEl) {
