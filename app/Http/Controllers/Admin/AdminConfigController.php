@@ -2845,6 +2845,13 @@ class AdminConfigController extends Controller
                 $jour = trim((string)($r['data']['jour'] ?? ''));
                 $journal = trim((string)($r['data']['journal'] ?? ''));
                 
+                if (strtoupper($journal) === 'RAN') {
+                    $nSaisie = 'RAN';
+                    $reference = 'RAN';
+                    $r['data']['n_saisie'] = 'RAN';
+                    $r['data']['reference'] = 'RAN';
+                }
+                
                 $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
                 if ($keyPart === '') {
                     $keyPart = 'row_' . $r['index']; // fallback
@@ -2891,6 +2898,11 @@ class AdminConfigController extends Controller
                 $reference = trim((string)($r['data']['reference'] ?? ''));
                 $jour = trim((string)($r['data']['jour'] ?? ''));
                 $journal = trim((string)($r['data']['journal'] ?? ''));
+                
+                if (strtoupper($journal) === 'RAN') {
+                    $nSaisie = 'RAN';
+                    $reference = 'RAN';
+                }
                 
                 $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
                 if ($keyPart === '') {
@@ -3958,6 +3970,11 @@ class AdminConfigController extends Controller
 
                     // LOGIQUE MASTER NUMBERING : Groupement par date, journal et (n_saisie ou référence)
                     $origNSaisie = $rowMapped['n_saisie'] ?? $rowMapped['reference'] ?? 'IMPORT';
+                    
+                    if (strtoupper($rowJournal) === 'RAN') {
+                        $origNSaisie = 'RAN';
+                    }
+                    
                     // Clé unique pour regrouper les lignes de la même écriture
                     $groupKey = $date->format('Y-m-d') . '_' . strtoupper($rowJournal) . '_' . strtoupper($origNSaisie);
 
