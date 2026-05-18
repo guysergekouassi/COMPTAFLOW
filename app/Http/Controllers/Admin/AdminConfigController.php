@@ -3524,11 +3524,37 @@ class AdminConfigController extends Controller
                             $detectedType = 'Trésorerie';
                         }
 
+                        // PRIORITÉ 2 : Analyse sémantique si pas de compte ou type non encore détecté
                         if (!$detectedType) {
-                            if (Str::contains($searchStr, ['ACH', 'FOURN', 'FRN'])) $detectedType = 'Achats';
-                            elseif (Str::contains($searchStr, ['VEN', 'CLT', 'CLI'])) $detectedType = 'Ventes';
-                            elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'CAI', 'CASH', 'CAS', 'BANQUE', 'CAISSE', 'WAVE', 'DJAMO', 'MTN', 'MOOV', 'ORANGE', 'OM', 'MOMO'])) {
+                            // Utiliser des mots complets pour éviter les faux positifs (ex: "AUTRES" contient "TRES")
+                            $words = preg_split('/[\s\-_]+/', $searchStr);
+                            $isTreso = false;
+                            
+                            $tresoKeywords = ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRZ', 'BANKING', 'CAI', 'CASH', 'BANQUE', 'CAISSE', 'WAVE', 'DJAMO', 'MTN', 'MOOV', 'ORANGE', 'OM', 'MOMO', 'TRESORERIE', 'TRESOR'];
+                            foreach ($words as $word) {
+                                if (in_array($word, $tresoKeywords)) {
+                                    $isTreso = true;
+                                    break;
+                                }
+                            }
+
+                            // On vérifie aussi les sous-chaînes pour les mots longs et indubitables
+                            if (!$isTreso) {
+                                if (Str::contains($searchStr, ['BANK', 'BANQUE', 'CAISSE', 'TRESORERIE', 'CASH'])) {
+                                    $isTreso = true;
+                                }
+                            }
+
+                            if ($isTreso) {
                                 $detectedType = 'Trésorerie';
+                            } elseif (Str::contains($searchStr, ['ACH', 'FOURN', 'FRN'])) {
+                                $detectedType = 'Achats';
+                            } elseif (Str::contains($searchStr, ['VEN', 'CLT', 'CLI'])) {
+                                $detectedType = 'Ventes';
+                            } elseif (Str::contains($searchStr, ['RAN', 'REPORT', 'NOUVEAU'])) {
+                                $detectedType = 'À-nouveaux';
+                            } elseif (Str::contains($searchStr, ['OD', 'DIV', 'VAR', 'OPÉRATION'])) {
+                                $detectedType = 'Opérations Diverses';
                             }
                         }
                         $type = $detectedType ?? 'Opérations Diverses';
