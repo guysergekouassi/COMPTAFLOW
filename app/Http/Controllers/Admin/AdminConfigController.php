@@ -1681,6 +1681,9 @@ class AdminConfigController extends Controller
      */
     public function importStaging($id, $returnData = false)
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '2G');
+
         $import = ImportStaging::findOrFail($id);
         $user = Auth::user();
         $targetCompanyId = $import->company_id ?: session('current_company_id', $user->company_id);
