@@ -2164,8 +2164,11 @@ class AdminConfigController extends Controller
                             $prefix = 'BQ';
                         }
                     }
+                    elseif (str_contains($typeLower, 'nouveau') || str_contains($typeLower, 'ran') || strtoupper($origAlpha) === 'RAN') {
+                        $prefix = 'RAN';
+                    }
                     elseif (str_contains($typeLower, 'opération') || str_contains($typeLower, 'diverse') || str_contains($typeLower, 'standard')) {
-                        if (in_array(strtoupper($origAlpha), ['RAN', 'OD'])) {
+                        if (in_array(strtoupper($origAlpha), ['OD'])) {
                             $prefix = strtoupper($origAlpha);
                         } else {
                             // S'assurer qu'un journal reconnu comme Opération Diverse prenne "OD" en préfixe.
@@ -3655,12 +3658,21 @@ class AdminConfigController extends Controller
                         } else {
                             $prefix = 'BQ';
                         }
+                    } elseif (str_contains($typeLower, 'nouveau') || str_contains($typeLower, 'ran') || strtoupper($origAlpha) === 'RAN') {
+                        $prefix = 'RAN';
                     } elseif (str_contains($typeLower, 'opération') || str_contains($typeLower, 'diverse') || str_contains($typeLower, 'standard')) {
-                        if (in_array(strtoupper($origAlpha), ['RAN', 'OD'])) {
+                        if (in_array(strtoupper($origAlpha), ['OD'])) {
                             $prefix = strtoupper($origAlpha);
                         } else {
                             // S'assurer qu'un journal reconnu comme Opération Diverse prenne "OD" en préfixe.
                             $prefix = str_contains($typeLower, 'opération') ? 'OD' : 'ST';
+                        }
+                    } else {
+                        // type générique ou inconnu
+                        if (!empty($origAlpha)) {
+                            $prefix = substr($origAlpha, 0, $journalDigits - 1);
+                        } else {
+                            $prefix = substr('JRN', 0, max(1, $journalDigits - 2));
                         }
                     }
 
