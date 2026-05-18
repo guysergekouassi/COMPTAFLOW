@@ -3962,7 +3962,11 @@ class AdminConfigController extends Controller
                     $groupKey = $date->format('Y-m-d') . '_' . strtoupper($rowJournal) . '_' . strtoupper($origNSaisie);
 
                     if (!isset($ecrMapping[$groupKey])) {
-                        $ecrMapping[$groupKey] = $this->generateGlobalSaisieNumber($targetCompanyId);
+                        if (str_starts_with(strtoupper($origNSaisie), 'RAN') || strtoupper($rowJournal) === 'RAN') {
+                            $ecrMapping[$groupKey] = $this->generateRanSaisieNumber($targetCompanyId);
+                        } else {
+                            $ecrMapping[$groupKey] = $this->generateGlobalSaisieNumber($targetCompanyId);
+                        }
                     }
                     $globalNSaisie = $ecrMapping[$groupKey];
 
@@ -4847,6 +4851,25 @@ class AdminConfigController extends Controller
         $maxNumeric = max($lastRealSaisie, $lastApprovalSaisie);
 
         return 'ECR_' . str_pad($maxNumeric + 1, 12, '0', STR_PAD_LEFT);
+    }
+
+    private function generateRanSaisieNumber($companyId)
+    {
+        $company = \App\Models\Company::find($companyId);
+        $targetLength = $company->journal_code_digits ?? 4; 
+        
+        $lastRealSaisie = \App\Models\EcritureComptable::where('company_id', $companyId)
+            ->where('n_saisie', 'like', 'RAN%')
+            ->get(['n_saisie'])
+            ->map(function($e) {
+                return (int) substr($e->n_saisie, 3);
+            })
+            ->max() ?? 0;
+            
+        $next = $lastRealSaisie + 1;
+        $numLength = max(1, $targetLength - 3);
+        
+        return 'RAN' . str_pad($next, $numLength, '0', STR_PAD_LEFT);
     }
 
     /**
