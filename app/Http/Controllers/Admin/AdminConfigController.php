@@ -2944,7 +2944,7 @@ class AdminConfigController extends Controller
         $errorCount = 0;
         $validCount = 0;
         foreach ($rowsWithStatus as $r) {
-            if (($r['status'] ?? null) === 'error') {
+            if (($r['status'] ?? null) === 'error' || ($r['status'] ?? null) === 'duplicate') {
                 $errorCount++;
             } elseif (($r['status'] ?? null) === 'valid') {
                 $validCount++;
@@ -2991,7 +2991,11 @@ class AdminConfigController extends Controller
 
         $rowsWithStatusFiltered = $rowsWithStatus;
 
-        if ($statusFilter !== 'all') {
+        if ($statusFilter === 'error') {
+            $rowsWithStatusFiltered = array_filter($rowsWithStatusFiltered, function($r) {
+                return in_array($r['status'] ?? null, ['error', 'duplicate']);
+            });
+        } elseif ($statusFilter !== 'all') {
             $rowsWithStatusFiltered = array_filter($rowsWithStatusFiltered, function($r) use ($statusFilter) {
                 return ($r['status'] ?? null) === $statusFilter;
             });
