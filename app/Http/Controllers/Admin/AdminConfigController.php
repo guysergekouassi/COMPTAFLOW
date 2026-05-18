@@ -2844,8 +2844,9 @@ class AdminConfigController extends Controller
                 $reference = trim((string)($r['data']['reference'] ?? ''));
                 $jour = trim((string)($r['data']['jour'] ?? ''));
                 $journal = trim((string)($r['data']['journal'] ?? ''));
+                $originalJournal = trim((string)($r['data']['code_original_journal'] ?? ''));
                 
-                if (strtoupper($journal) === 'RAN') {
+                if (strtoupper($journal) === 'RAN' || strtoupper($originalJournal) === 'RAN') {
                     $nSaisie = 'RAN';
                     $reference = 'RAN';
                     $r['data']['n_saisie'] = 'RAN';
@@ -2898,8 +2899,9 @@ class AdminConfigController extends Controller
                 $reference = trim((string)($r['data']['reference'] ?? ''));
                 $jour = trim((string)($r['data']['jour'] ?? ''));
                 $journal = trim((string)($r['data']['journal'] ?? ''));
+                $originalJournal = trim((string)($r['data']['code_original_journal'] ?? ''));
                 
-                if (strtoupper($journal) === 'RAN') {
+                if (strtoupper($journal) === 'RAN' || strtoupper($originalJournal) === 'RAN') {
                     $nSaisie = 'RAN';
                     $reference = 'RAN';
                 }
@@ -3971,7 +3973,7 @@ class AdminConfigController extends Controller
                     // LOGIQUE MASTER NUMBERING : Groupement par date, journal et (n_saisie ou référence)
                     $origNSaisie = $rowMapped['n_saisie'] ?? $rowMapped['reference'] ?? 'IMPORT';
                     
-                    if (strtoupper($rowJournal) === 'RAN') {
+                    if (strtoupper($rowJournal) === 'RAN' || strtoupper($rowJournalRaw) === 'RAN') {
                         $origNSaisie = 'RAN';
                     }
                     
