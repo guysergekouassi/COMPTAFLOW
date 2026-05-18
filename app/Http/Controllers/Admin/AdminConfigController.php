@@ -1793,28 +1793,40 @@ class AdminConfigController extends Controller
 
         $exercice = ExerciceComptable::find($import->exercice_id);
 
-        $existingEcrituresDbHashes = [];
-        if ($import->type === 'courant') {
-            \App\Models\EcritureComptable::where('company_id', $targetCompanyId)
-                ->where('exercices_comptables_id', $import->exercice_id ?? session('current_exercice_id'))
-                ->select('date', 'code_journal_id', 'plan_comptable_id', 'plan_tiers_id', 'debit', 'credit', 'reference_piece', 'description_operation')
-                ->chunk(5000, function ($ecritures) use (&$existingEcrituresDbHashes) {
-                    foreach ($ecritures as $e) {
-                        $hash = md5($e->date . '|' . $e->code_journal_id . '|' . $e->plan_comptable_id . '|' . $e->plan_tiers_id . '|' . (float)$e->debit . '|' . (float)$e->credit . '|' . strtoupper($e->reference_piece) . '|' . strtoupper($e->description_operation));
-                        $existingEcrituresDbHashes[$hash] = true;
-                    }
-                });
-        }
+        $cacheKey = 'import_staging_v3_' . $import->id . '_' . $import->updated_at->timestamp;
+        $cachedData = \Illuminate\Support\Facades\Cache::get($cacheKey);
 
-        $rowsWithStatus = [];
-        $batchAccounts = []; // [ 'numero_standard' => 'numero_original' ]
-        $errorCount = 0;
-        $validCount = 0;
-        $duplicateCount = 0;
+        if ($cachedData) {
+            $rowsWithStatus = $cachedData['rowsWithStatus'];
+            $errorCount = $cachedData['errorCount'];
+            $validCount = $cachedData['validCount'];
+            $duplicateCount = $cachedData['duplicateCount'];
+            $missingAccounts = $cachedData['missingAccounts'];
+            $missingJournals = $cachedData['missingJournals'];
+            $missingTiers = $cachedData['missingTiers'];
+        } else {
+            $existingEcrituresDbHashes = [];
+            if ($import->type === 'courant') {
+                \App\Models\EcritureComptable::where('company_id', $targetCompanyId)
+                    ->where('exercices_comptables_id', $import->exercice_id ?? session('current_exercice_id'))
+                    ->select('date', 'code_journal_id', 'plan_comptable_id', 'plan_tiers_id', 'debit', 'credit', 'reference_piece', 'description_operation')
+                    ->chunk(5000, function ($ecritures) use (&$existingEcrituresDbHashes) {
+                        foreach ($ecritures as $e) {
+                            $hash = md5($e->date . '|' . $e->code_journal_id . '|' . $e->plan_comptable_id . '|' . $e->plan_tiers_id . '|' . (float)$e->debit . '|' . (float)$e->credit . '|' . strtoupper($e->reference_piece) . '|' . strtoupper($e->description_operation));
+                            $existingEcrituresDbHashes[$hash] = true;
+                        }
+                    });
+            }
 
-        $missingAccounts = [];
-        $missingJournals = [];
-        $missingTiers = [];
+            $rowsWithStatus = [];
+            $batchAccounts = []; // [ 'numero_standard' => 'numero_original' ]
+            $errorCount = 0;
+            $validCount = 0;
+            $duplicateCount = 0;
+
+            $missingAccounts = [];
+            $missingJournals = [];
+            $missingTiers = [];
 
         foreach($data as $index => $rowRaw) {
             // PADDING : Forcer la ligne à avoir au moins assez de colonnes pour couvrir le mapping
@@ -2875,14 +2887,17 @@ class AdminConfigController extends Controller
                     continue;
                 }
 
-                $ref = trim((string)($r['data']['n_saisie'] ?? ''));
-                if ($ref === '') {
-                    $ref = trim((string)($r['data']['reference'] ?? ''));
+                $nSaisie = trim((string)($r['data']['n_saisie'] ?? ''));
+                $reference = trim((string)($r['data']['reference'] ?? ''));
+                $jour = trim((string)($r['data']['jour'] ?? ''));
+                $journal = trim((string)($r['data']['journal'] ?? ''));
+                
+                $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
+                if ($keyPart === '') {
+                    $keyPart = 'row_' . $r['index']; // fallback
                 }
-                if ($ref === '') {
-                    $ref = trim((string)($r['data']['jour'] ?? ''))
-                        . '|' . trim((string)($r['data']['journal'] ?? ''));
-                }
+                
+                $ref = $jour . '|' . $journal . '|' . $keyPart;
 
                 $r['group_key'] = $ref;
                 $r['group_debit'] = $groupSummary[$ref]['debit'] ?? null;
@@ -2912,6 +2927,17 @@ class AdminConfigController extends Controller
                 $validCount++;
             }
         }
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, [
+            'rowsWithStatus' => $rowsWithStatus,
+            'errorCount' => $errorCount,
+            'validCount' => $validCount,
+            'duplicateCount' => $duplicateCount,
+            'missingAccounts' => $missingAccounts,
+            'missingJournals' => $missingJournals,
+            'missingTiers' => $missingTiers,
+        ], 3600);
+    }
 
         $typeLabels = [
             'initial' => 'Plan Comptable Master',
