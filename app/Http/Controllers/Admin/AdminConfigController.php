@@ -1793,6 +1793,19 @@ class AdminConfigController extends Controller
 
         $exercice = ExerciceComptable::find($import->exercice_id);
 
+        $existingEcrituresDbHashes = [];
+        if ($import->type === 'courant') {
+            \App\Models\EcritureComptable::where('company_id', $targetCompanyId)
+                ->where('exercices_comptables_id', $import->exercice_id ?? session('current_exercice_id'))
+                ->select('date', 'code_journal_id', 'plan_comptable_id', 'plan_tiers_id', 'debit', 'credit', 'reference_piece', 'description_operation')
+                ->chunk(5000, function ($ecritures) use (&$existingEcrituresDbHashes) {
+                    foreach ($ecritures as $e) {
+                        $hash = md5($e->date . '|' . $e->code_journal_id . '|' . $e->plan_comptable_id . '|' . $e->plan_tiers_id . '|' . (float)$e->debit . '|' . (float)$e->credit . '|' . strtoupper($e->reference_piece) . '|' . strtoupper($e->description_operation));
+                        $existingEcrituresDbHashes[$hash] = true;
+                    }
+                });
+        }
+
         $rowsWithStatus = [];
         $batchAccounts = []; // [ 'numero_standard' => 'numero_original' ]
         $errorCount = 0;
@@ -2775,19 +2788,8 @@ class AdminConfigController extends Controller
                     $tiersId = $tiersObj ? $tiersObj->id : null;
 
                     if ($compteId && $journalId) {
-                         $isDuplicate = \App\Models\EcritureComptable::where([
-                            'date' => $parsedDate->format('Y-m-d'),
-                            'code_journal_id' => $journalId,
-                            'plan_comptable_id' => $compteId,
-                            'plan_tiers_id' => $tiersId,
-                            'debit' => $rowDebit,
-                            'credit' => $rowCredit,
-                            'company_id' => $targetCompanyId,
-                        ])->where('reference_piece', 'like', strtoupper($row['reference'] ?? 'IMPORT'))
-                          ->where('description_operation', 'like', strtoupper($row['libelle'] ?? 'IMPORTATION EXTERNE'))
-                          ->exists();
-
-                         if ($isDuplicate) {
+                         $hash = md5($parsedDate->format('Y-m-d') . '|' . $journalId . '|' . $compteId . '|' . $tiersId . '|' . (float)$rowDebit . '|' . (float)$rowCredit . '|' . strtoupper($row['reference'] ?? 'IMPORT') . '|' . strtoupper($row['libelle'] ?? 'IMPORTATION EXTERNE'));
+                         if (isset($existingEcrituresDbHashes[$hash])) {
                              $row['is_duplicate'] = true;
                              $row['info'] = "Existe déjà en base de données.";
                              $duplicateCount++;
