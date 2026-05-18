@@ -522,22 +522,24 @@
     </div>
 
     <!-- OVERLAY DE CHARGEMENT -->
-    <div id="loadingOverlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/90 backdrop-blur-md hidden transition-opacity duration-300">
-        <div class="relative w-24 h-24 mb-8">
-            <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-            <div class="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
-            <div class="absolute inset-0 flex items-center justify-center">
-                <i class="fa-solid fa-cloud-arrow-up text-3xl text-primary animate-pulse"></i>
+    <div id="loadingOverlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-[24px] shadow-2xl flex flex-col items-center justify-center max-w-md w-full mx-4 border border-slate-100">
+            <div class="relative w-24 h-24 mb-6">
+                <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-primary animate-pulse"></i>
+                </div>
             </div>
-        </div>
-        <h3 class="text-2xl font-bold text-slate-800 mb-2">Migration en cours...</h3>
-        <p class="text-slate-500 mb-6 text-center max-w-md">Veuillez patienter. Le système traite et sécurise vos données. Ne fermez pas cette page.</p>
-        
-        <div class="w-64 bg-slate-200 rounded-full h-2.5 overflow-hidden">
-            <div id="loadingProgress" class="bg-primary h-2.5 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
-        </div>
-        <div class="mt-2 text-sm font-medium text-slate-600">
-            <span id="loadingPercentage">0</span>%
+            <h3 class="text-2xl font-black text-slate-800 mb-2">Migration en cours...</h3>
+            <p class="text-slate-500 text-sm mb-6 text-center">Veuillez patienter. Le système traite et sécurise vos données. Ne fermez pas cette page.</p>
+            
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden mb-2">
+                <div id="loadingProgress" class="bg-primary h-3 rounded-full transition-all duration-300 ease-out relative overflow-hidden" style="width: 0%"></div>
+            </div>
+            <div class="text-xs font-bold text-slate-600">
+                <span id="loadingPercentage">0</span>%
+            </div>
         </div>
     </div>
 
