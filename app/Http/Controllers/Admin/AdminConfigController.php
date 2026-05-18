@@ -2029,18 +2029,7 @@ class AdminConfigController extends Controller
                         }
                     }
 
-                    // PRIORITÉ 1.5 : Si on a un compte de trésorerie de renseigné, c'est D'OFFICE une trésorerie
-                    if (!$detectedType && !empty($row['compte_de_tresorerie'])) {
-                        $detectedType = 'Trésorerie';
-                        $searchStr = strtoupper($rowCode . ' ' . ($row['intitule'] ?? ''));
-                        if (Str::contains($searchStr, ['CAI', 'CASH', 'CAISSE'])) {
-                            $row['poste_tresorerie'] = 'Caisse';
-                        } elseif (Str::contains($searchStr, ['BQ', 'BNQ', 'BANK', 'SG', 'ECO', 'BOA', 'UBA', 'TRES', 'TRZ', 'BANKING', 'BANQUE'])) {
-                            $row['poste_tresorerie'] = 'Banque';
-                        } else {
-                            $row['poste_tresorerie'] = 'Autre';
-                        }
-                    }
+
 
                     // PRIORITÉ 2 : Analyse sémantique si pas de compte ou type non encore détecté
                     if (!$detectedType) {

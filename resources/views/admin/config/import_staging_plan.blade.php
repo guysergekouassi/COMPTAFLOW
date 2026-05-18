@@ -534,7 +534,7 @@
             <h3 class="text-2xl font-black text-slate-800 mb-2">Migration en cours...</h3>
             <p class="text-slate-500 text-sm mb-6 text-center">Veuillez patienter. Le système traite et sécurise vos données. Ne fermez pas cette page.</p>
             
-            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden mb-2">
+            <div class="w-64 mx-auto bg-slate-100 rounded-full h-3 overflow-hidden mb-2">
                 <div id="loadingProgress" class="bg-primary h-3 rounded-full transition-all duration-300 ease-out relative overflow-hidden" style="width: 0%"></div>
             </div>
             <div class="text-xs font-bold text-slate-600">
