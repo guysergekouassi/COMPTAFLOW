@@ -2847,10 +2847,13 @@ class AdminConfigController extends Controller
                 $originalJournal = trim((string)($r['data']['code_original_journal'] ?? ''));
                 
                 if (strtoupper($journal) === 'RAN' || strtoupper($originalJournal) === 'RAN') {
-                    $nSaisie = 'RAN';
-                    $reference = 'RAN';
-                    $r['data']['n_saisie'] = 'RAN';
-                    $r['data']['reference'] = 'RAN';
+                    if (!isset($cachedRanNumberForStaging)) {
+                        $cachedRanNumberForStaging = $this->generateRanSaisieNumber($targetCompanyId);
+                    }
+                    $nSaisie = $cachedRanNumberForStaging;
+                    $reference = $cachedRanNumberForStaging;
+                    $r['data']['n_saisie'] = $cachedRanNumberForStaging;
+                    $r['data']['reference'] = $cachedRanNumberForStaging;
                 }
                 
                 $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
@@ -2902,8 +2905,11 @@ class AdminConfigController extends Controller
                 $originalJournal = trim((string)($r['data']['code_original_journal'] ?? ''));
                 
                 if (strtoupper($journal) === 'RAN' || strtoupper($originalJournal) === 'RAN') {
-                    $nSaisie = 'RAN';
-                    $reference = 'RAN';
+                    if (!isset($cachedRanNumberForStaging)) {
+                        $cachedRanNumberForStaging = $this->generateRanSaisieNumber($targetCompanyId);
+                    }
+                    $nSaisie = $cachedRanNumberForStaging;
+                    $reference = $cachedRanNumberForStaging;
                 }
                 
                 $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
