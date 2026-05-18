@@ -495,7 +495,7 @@
                                         <i class="fa-solid fa-trash me-2"></i> Annuler l'import
                                     </button>
                                 </form>
-                                <form action="{{ route('admin.import.commit', $import->id) }}" method="POST">
+                                <form id="commitForm" action="{{ route('admin.import.commit', $import->id) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="btn btn-primary rounded-xl px-10 py-3 font-bold shadow-lg shadow-primary/20" @if($errorCount > 0) disabled title="Veuillez corriger toutes les erreurs avant la migration." @endif>
                                         <i class="fa-solid fa-cloud-arrow-down me-2"></i> Lancer la migration finale
@@ -532,6 +532,26 @@
                     @include('components.footer')
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- OVERLAY DE CHARGEMENT -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/90 backdrop-blur-md hidden transition-opacity duration-300">
+        <div class="relative w-24 h-24 mb-8">
+            <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i class="fa-solid fa-cloud-arrow-up text-3xl text-primary animate-pulse"></i>
+            </div>
+        </div>
+        <h3 class="text-2xl font-bold text-slate-800 mb-2">Migration en cours...</h3>
+        <p class="text-slate-500 mb-6 text-center max-w-md">Veuillez patienter. Le système traite et sécurise vos données. Ne fermez pas cette page.</p>
+        
+        <div class="w-64 bg-slate-200 rounded-full h-2.5 overflow-hidden">
+            <div id="loadingProgress" class="bg-primary h-2.5 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+        </div>
+        <div class="mt-2 text-sm font-medium text-slate-600">
+            <span id="loadingPercentage">0</span>%
         </div>
     </div>
 
@@ -983,6 +1003,32 @@
             });
         }
 
+        // OVERLAY DE CHARGEMENT POUR LA MIGRATION FINALE
+        const commitForm = document.getElementById('commitForm');
+        if (commitForm) {
+            commitForm.addEventListener('submit', function(e) {
+                if (e.defaultPrevented) return;
+
+                document.getElementById('loadingOverlay').classList.remove('hidden');
+                
+                let progress = 0;
+                const progressBar = document.getElementById('loadingProgress');
+                const progressText = document.getElementById('loadingPercentage');
+                
+                const interval = setInterval(() => {
+                    if (progress < 90) {
+                        progress += Math.random() * 10;
+                    } else if (progress < 99) {
+                        progress += Math.random() * 1.5;
+                    }
+                    if (progress > 99) progress = 99;
+                    
+                    const currentProgress = Math.floor(progress);
+                    progressBar.style.width = currentProgress + '%';
+                    progressText.innerText = currentProgress;
+                }, 500);
+            });
+        }
     </script>
 </body>
 </html>
