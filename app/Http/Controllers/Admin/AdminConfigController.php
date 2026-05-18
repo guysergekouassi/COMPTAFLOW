@@ -2860,26 +2860,6 @@ class AdminConfigController extends Controller
                 }
                 
                 $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
-                
-                // Si n_saisie et reference sont vides et que c'est un journal OD, on génère un groupe
-                if ($keyPart === '' && str_starts_with(strtoupper($journal), 'OD')) {
-                    $odGroupKey = $jour . '_' . $journal;
-                    if (!isset($cachedOdNumbers)) $cachedOdNumbers = [];
-                    if (!isset($cachedOdNumbers[$odGroupKey])) {
-                        static $odCounterForStaging = 0;
-                        if (!isset($baseGlobalSaisieNumber)) {
-                            $baseGlobalSaisieNumber = (int) substr($this->generateGlobalSaisieNumber($targetCompanyId), 4);
-                        }
-                        $odCounterForStaging++;
-                        $cachedOdNumbers[$odGroupKey] = 'ECR_' . str_pad($baseGlobalSaisieNumber + $odCounterForStaging, 12, '0', STR_PAD_LEFT);
-                    }
-                    $nSaisie = $cachedOdNumbers[$odGroupKey];
-                    $reference = 'IMPORT';
-                    $r['data']['n_saisie'] = $nSaisie;
-                    $r['data']['reference'] = $reference;
-                    $keyPart = $nSaisie;
-                }
-                
                 if ($keyPart === '') {
                     $keyPart = 'row_' . $r['index']; // fallback
                 }
@@ -2936,24 +2916,6 @@ class AdminConfigController extends Controller
                 }
                 
                 $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
-                
-                // Si n_saisie et reference sont vides et que c'est un journal OD, on génère un groupe
-                if ($keyPart === '' && str_starts_with(strtoupper($journal), 'OD')) {
-                    $odGroupKey = $jour . '_' . $journal;
-                    if (!isset($cachedOdNumbers)) $cachedOdNumbers = [];
-                    if (!isset($cachedOdNumbers[$odGroupKey])) {
-                        static $odCounterForStaging2 = 0;
-                        if (!isset($baseGlobalSaisieNumber)) {
-                            $baseGlobalSaisieNumber = (int) substr($this->generateGlobalSaisieNumber($targetCompanyId), 4);
-                        }
-                        $odCounterForStaging2++;
-                        $cachedOdNumbers[$odGroupKey] = 'ECR_' . str_pad($baseGlobalSaisieNumber + $odCounterForStaging2, 12, '0', STR_PAD_LEFT);
-                    }
-                    $nSaisie = $cachedOdNumbers[$odGroupKey];
-                    $reference = 'IMPORT';
-                    $keyPart = $nSaisie;
-                }
-                
                 if ($keyPart === '') {
                     $keyPart = 'row_' . $r['index']; // fallback
                 }
@@ -4027,28 +3989,17 @@ class AdminConfigController extends Controller
                     }
 
                     // LOGIQUE MASTER NUMBERING : Groupement par date, journal et (n_saisie ou référence)
-                    $origNSaisieRaw = trim((string)($rowMapped['n_saisie'] ?? ''));
-                    $origRefRaw     = trim((string)($rowMapped['reference'] ?? ''));
-                    $origNSaisie    = ($origNSaisieRaw !== '' ? $origNSaisieRaw : ($origRefRaw !== '' ? $origRefRaw : ''));
-
+                    $origNSaisie = $rowMapped['n_saisie'] ?? $rowMapped['reference'] ?? 'IMPORT';
+                    
                     if (strtoupper($rowJournal) === 'RAN' || strtoupper($rowJournalRaw) === 'RAN') {
                         $origNSaisie = 'RAN';
-                    }
-                    
-                    // Pour les journaux OD sans n_saisie : on groupe par date+journal
-                    if ($origNSaisie === '' && str_starts_with(strtoupper($rowJournal), 'OD')) {
-                        $origNSaisie = 'OD_AUTO_' . $date->format('Ymd') . '_' . strtoupper($rowJournal);
-                    }
-                    
-                    if ($origNSaisie === '') {
-                        $origNSaisie = 'IMPORT';
                     }
                     
                     // Clé unique pour regrouper les lignes de la même écriture
                     $groupKey = $date->format('Y-m-d') . '_' . strtoupper($rowJournal) . '_' . strtoupper($origNSaisie);
 
                     if (!isset($ecrMapping[$groupKey])) {
-                        if (strtoupper($origNSaisie) === 'RAN' || strtoupper($rowJournal) === 'RAN') {
+                        if (str_starts_with(strtoupper($origNSaisie), 'RAN') || strtoupper($rowJournal) === 'RAN') {
                             $ecrMapping[$groupKey] = $this->generateRanSaisieNumber($targetCompanyId);
                         } else {
                             $ecrMapping[$groupKey] = $this->generateGlobalSaisieNumber($targetCompanyId);
