@@ -1,5 +1,10 @@
-<div class="container-xxl flex-grow-1 container-p-y" id="staging-dynamic-content">
-                        
+<div class="container-xxl flex-grow-1 container-p-y staging-fade-in" id="staging-dynamic-content" style="animation: fadeIn 0.3s ease-in-out;">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
                         @if(session('error'))
                             <div class="alert alert-danger alert-dismissible fade show rounded-[20px] mb-4 border-0 shadow-sm" role="alert">
                                 <div class="d-flex align-items-center">
