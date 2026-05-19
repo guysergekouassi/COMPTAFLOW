@@ -136,9 +136,16 @@
             fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(response => response.text())
                 .then(html => {
-                    // On insère directement le HTML retourné par la vue partielle en remplaçant le conteneur lui-même
-                    container.outerHTML = html;
-                    window.history.pushState({url: url}, '', url);
+                    // On utilise le DOMParser pour éviter les erreurs "no parent node" si cliqué plusieurs fois rapidement
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newContent = doc.getElementById('staging-dynamic-content');
+                    
+                    const currentContainer = document.getElementById('staging-dynamic-content');
+                    if (newContent && currentContainer) {
+                        currentContainer.innerHTML = newContent.innerHTML;
+                        window.history.pushState({url: url}, '', url);
+                    }
                     
                     // Si des init supplémentaires sont nécessaires, on peut les appeler ici
                     if (typeof initializeStagingEvents === 'function') {
