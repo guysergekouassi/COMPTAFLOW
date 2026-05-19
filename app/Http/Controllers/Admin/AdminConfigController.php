@@ -3031,7 +3031,7 @@ class AdminConfigController extends Controller
 
         if (request()->ajax()) {
             return view('admin.config.import_staging_content', compact(
-                'import', 'rowsWithStatusPaged',
+                'import', 'rowsWithStatus', 'rowsWithStatusPaged',
                 'errorCount', 'validCount', 'duplicateCount', 'importTitle',
                 'user', 'plansComptables', 'accountDigits',
                 'currentPage', 'totalPages', 'totalRows', 'perPage',
