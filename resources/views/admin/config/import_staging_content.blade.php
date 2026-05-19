@@ -314,7 +314,7 @@
                                                                  <div class="text-[10px] text-slate-400 italic">{{ $row['data']['numero_original_tiers'] }}</div>
                                                              @endif
                                                         </td>
-                                                        <td class="search-target">{{ Str::limit($row['data']['libelle'] ?? '-', 30) }}</td>
+                                                        <td class="search-target">{{ \Illuminate\Support\Str::limit($row['data']['libelle'] ?? '-', 30) }}</td>
                                                         <td class="text-end fw-bold">{{ number_format($row['debit'], 0, ',', ' ') }}</td>
                                                         <td class="text-end fw-bold">{{ number_format($row['credit'], 0, ',', ' ') }}</td>
                                                      @endif
