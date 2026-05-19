@@ -3029,6 +3029,17 @@ class AdminConfigController extends Controller
             ];
         }
 
+        if (request()->ajax()) {
+            return view('admin.config.import_staging_content', compact(
+                'import', 'rowsWithStatusPaged',
+                'errorCount', 'validCount', 'duplicateCount', 'importTitle',
+                'user', 'plansComptables', 'accountDigits',
+                'currentPage', 'totalPages', 'totalRows', 'perPage',
+                'statusFilter', 'searchFilter', 'mapping',
+                'missingAccounts', 'missingJournals', 'missingTiers'
+            ));
+        }
+
         return view($viewName, compact(
             'import', 'rowsWithStatus', 'rowsWithStatusPaged',
             'errorCount', 'validCount', 'duplicateCount', 'importTitle',
