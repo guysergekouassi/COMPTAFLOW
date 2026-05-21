@@ -129,16 +129,13 @@ class ImportCommitJob implements ShouldQueue
             'errors'       => [],
         ];
 
-        $importedCount      = 0;
-        $skippedCount       = 0;
-        $duplicateCount     = 0;
-        $errors             = [];
-        $groupBalances      = [];
-        $ecrMapping         = [];
-        $jsCache            = [];
-        $deduplicationBuffer = [];
-        $batchEcritures     = [];
-        $isTypeMapped       = !empty($mapping['type_ecriture']);
+        $importedCount  = 0;
+        $skippedCount   = 0;
+        $errors         = [];
+        $groupBalances  = [];
+        $ecrMapping     = [];
+        $jsCache        = [];
+        $batchEcritures = [];
 
         $parseAmount = function ($val) {
             if (empty($val)) return 0.0;
@@ -196,31 +193,15 @@ class ImportCommitJob implements ShouldQueue
                 $rowJournalRaw = trim($rowMapped['journal'] ?? '');
                 $rowJournal    = $this->standardizeJournalCode($rowJournalRaw, $journalDigits);
 
-                // ── Déduplication conservative (sans colonne Type) ──
-                if (!$isTypeMapped) {
-                    $isHiddenA      = false;
-                    $mappedColIndexes = array_filter(array_values($mapping), fn($v) => is_numeric($v));
-                    foreach ($rowOrig as $colIdx => $cellVal) {
-                        if (in_array($colIdx, $mappedColIndexes)) continue;
-                        $v = strtoupper(trim($cellVal ?? ''));
-                        if ($v === 'A' || $v === 'ANALYTIQUE') { $isHiddenA = true; break; }
-                    }
-                    if ($isHiddenA) { $report['filtered_a']++; continue; }
-
-                    $sig = md5(implode('|', [
-                        trim($rowMapped['jour'] ?? ''),
-                        trim($rowJournal),
-                        trim($rowCompte),
-                        strtoupper(trim($rowMapped['tiers'] ?? '')),
-                        (string)(float)$parseAmount($rowMapped['debit'] ?? 0),
-                        (string)(float)$parseAmount($rowMapped['credit'] ?? 0),
-                        trim($rowMapped['reference'] ?? ''),
-                        trim($rowMapped['libelle'] ?? ''),
-                        trim($rowMapped['n_saisie'] ?? ''),
-                    ]));
-                    if (isset($deduplicationBuffer[$sig])) { $duplicateCount++; $report['deduplicated']++; continue; }
-                    $deduplicationBuffer[$sig] = true;
+                // ── Détection des lignes analytiques cachées (colonne hors mapping) ──
+                $isHiddenA        = false;
+                $mappedColIndexes = array_filter(array_values($mapping), fn($v) => is_numeric($v));
+                foreach ($rowOrig as $colIdx => $cellVal) {
+                    if (in_array($colIdx, $mappedColIndexes)) continue;
+                    $v = strtoupper(trim($cellVal ?? ''));
+                    if ($v === 'A' || $v === 'ANALYTIQUE') { $isHiddenA = true; break; }
                 }
+                if ($isHiddenA) { $report['filtered_a']++; continue; }
 
                 // ── Validations basiques ──
                 if (empty($rowCompte))  { $errors[] = "L{$index}: Compte manquant."; continue; }
@@ -391,13 +372,13 @@ class ImportCommitJob implements ShouldQueue
 
             // ── Commit ──
             $report['processed_g']  = $importedCount;
-            $report['deduplicated'] = $duplicateCount + $skippedCount;
+            $report['deduplicated'] = 0;
             $report['total_debit']  = array_sum(array_column($groupBalances, 'debit'));
             $report['total_credit'] = array_sum(array_column($groupBalances, 'credit'));
 
             $import->update([
                 'status'    => 'committed',
-                'error_log' => "Importation réussie : {$importedCount} écritures créées." . ($duplicateCount > 0 ? " ({$duplicateCount} doublons ignorés)" : ''),
+                'error_log' => "Importation réussie : {$importedCount} écritures créées.",
                 'metadata'  => array_merge($import->metadata ?? [], [
                     'commit_status'   => 'done',
                     'commit_progress' => 100,
