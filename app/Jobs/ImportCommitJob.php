@@ -272,7 +272,7 @@ class ImportCommitJob implements ShouldQueue
                     $origNSaisie = 'RAN';
                 }
 
-                $groupKey = $date->format('Y-m-d') . '_' . strtoupper($rowJournal) . '_' . strtoupper($origNSaisie);
+                $groupKey   = $date->format('Y-m-d') . '_' . $journalId . '_' . strtoupper($origNSaisie);
 
                 if (!isset($ecrMapping[$groupKey])) {
                     // ✅ INCRÉMENTATION LOCALE — 0 requête DB
@@ -284,12 +284,14 @@ class ImportCommitJob implements ShouldQueue
                 }
                 $globalNSaisie = $ecrMapping[$groupKey];
 
-                // Suivi équilibre
-                if (!isset($groupBalances[$globalNSaisie])) {
-                    $groupBalances[$globalNSaisie] = ['debit' => 0, 'credit' => 0, 'ref' => $origNSaisie, 'journal' => $rowJournal, 'date' => $date->format('d/m/Y')];
+                // Suivi équilibre : même clé que le groupKey (date + journalId + n_saisie)
+                // journalId est l'ID normalisé en DB — ACH et ACH1 résolvent au même ID
+                // donc toutes les lignes d'une même pièce sont bien groupées ensemble
+                if (!isset($groupBalances[$groupKey])) {
+                    $groupBalances[$groupKey] = ['debit' => 0, 'credit' => 0, 'ref' => $origNSaisie, 'journal' => $rowJournal, 'date' => $date->format('d/m/Y')];
                 }
-                $groupBalances[$globalNSaisie]['debit']  += round($debit, 2);
-                $groupBalances[$globalNSaisie]['credit'] += round($credit, 2);
+                $groupBalances[$groupKey]['debit']  += round($debit, 2);
+                $groupBalances[$groupKey]['credit'] += round($credit, 2);
 
                 // ── JournalSaisi (avec cache en mémoire) ──
                 $journalSaisiId = null;
@@ -346,11 +348,14 @@ class ImportCommitJob implements ShouldQueue
                 $importedCount += count($batchEcritures);
             }
 
-            // ── Vérification équilibre finale ──
-            foreach ($groupBalances as $ns => $bal) {
+            // ── Vérification équilibre BLOQUANTE (par pièce = date + n_saisie) ──
+            foreach ($groupBalances as $bk => $bal) {
                 if (abs($bal['debit'] - $bal['credit']) > 0.01) {
-                    $diff    = round(abs($bal['debit'] - $bal['credit']), 2);
-                    $errors[] = "DÉSÉQUILIBRE : Écriture '{$bal['ref']}' du {$bal['date']} (Journal {$bal['journal']}) : écart de {$diff}.";
+                    $diff     = number_format(abs($bal['debit'] - $bal['credit']), 2, ',', ' ');
+                    $errors[] = "DÉSÉQUILIBRE : Pièce '{$bal['ref']}' du {$bal['date']} (Journal {$bal['journal']}) — Débit : "
+                              . number_format($bal['debit'], 2, ',', ' ')
+                              . " / Crédit : " . number_format($bal['credit'], 2, ',', ' ')
+                              . " / Écart : {$diff}.";
                 }
             }
 

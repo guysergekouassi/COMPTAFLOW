@@ -98,11 +98,11 @@
                             </div>
                         </div>
 
-                        <!-- 3. ERROR LOGS if any -->
+                        <!-- 3. ERREURS BLOQUANTES -->
                         @if(!empty($report['errors']))
                         <div class="card border-0 shadow-sm rounded-xl overflow-hidden mb-4">
                             <div class="card-header bg-red-500 text-white font-bold py-3">
-                                <i class="fa-solid fa-bug me-2"></i> Journal des Erreurs
+                                <i class="fa-solid fa-bug me-2"></i> Erreurs Bloquantes
                             </div>
                             <div class="card-body bg-red-50 p-0">
                                 <div class="list-group list-group-flush">
@@ -114,10 +114,32 @@
                                 </div>
                             </div>
                         </div>
-                        @else
-                        <!-- SUCCESS INFO -->
+                        @endif
+
+                        <!-- 3b. AVERTISSEMENTS D'ÉQUILIBRE (non-bloquants) -->
+                        @if(!empty($report['warnings']))
+                        <div class="card border-0 shadow-sm rounded-xl overflow-hidden mb-4">
+                            <div class="card-header text-white font-bold py-3" style="background:#f59e0b;">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                                Avertissements d'Équilibre (import validé — données Sage)
+                            </div>
+                            <div class="card-body p-0" style="background:#fffbeb;">
+                                <div class="list-group list-group-flush">
+                                    @foreach($report['warnings'] as $warn)
+                                        <div class="list-group-item bg-transparent py-3" style="border-color:#fde68a;color:#92400e;">
+                                            <i class="fa-solid fa-circle-info me-2"></i> {{ $warn }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- 3c. SUCCÈS (quand pas d'erreurs bloquantes) -->
+                        @if(empty($report['errors']))
                         <div class="row">
                             <div class="col-md-12">
+                                @if(empty($report['warnings']))
                                 <div class="alert alert-success d-flex align-items-center p-4 border-0 shadow-sm rounded-xl">
                                     <div class="me-4 text-green-500 bg-white p-3 rounded-full shadow-sm">
                                         <i class="fa-solid fa-scale-balanced fa-2x"></i>
@@ -127,15 +149,26 @@
                                         <p class="mb-0 opacity-75">Le système a vérifié l'équilibre global et par pièce. Aucune anomalie détectée.</p>
                                     </div>
                                 </div>
+                                @else
+                                <div class="alert d-flex align-items-center p-4 border-0 shadow-sm rounded-xl" style="background:#fffbeb;border-left:4px solid #f59e0b!important;">
+                                    <div class="me-4 bg-white p-3 rounded-full shadow-sm" style="color:#f59e0b;">
+                                        <i class="fa-solid fa-check-circle fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold mb-1" style="color:#92400e;">Import Réussi avec Avertissements</h4>
+                                        <p class="mb-0" style="color:#b45309;">Les écritures ont été importées. Vérifiez les avertissements d'équilibre ci-dessus.</p>
+                                    </div>
+                                </div>
+                                @endif
                             </div>
-                            @if($report['new_accounts'] > 0 || $report['new_tiers'] > 0)
+                            @if(($report['new_accounts'] ?? 0) > 0 || ($report['new_tiers'] ?? 0) > 0)
                             <div class="col-md-12 mt-3">
                                 <div class="card bg-blue-50 border-0 text-blue-800">
                                     <div class="card-body">
                                         <h6 class="font-bold"><i class="fa-solid fa-info-circle me-2"></i>Enrichissement de la base :</h6>
                                         <ul class="mb-0">
-                                            @if($report['new_accounts'] > 0) <li>{{ $report['new_accounts'] }} nouveaux Comptes Généraux créés.</li> @endif
-                                            @if($report['new_tiers'] > 0) <li>{{ $report['new_tiers'] }} nouveaux Tiers créés.</li> @endif
+                                            @if(($report['new_accounts'] ?? 0) > 0) <li>{{ $report['new_accounts'] }} nouveaux Comptes Généraux créés.</li> @endif
+                                            @if(($report['new_tiers'] ?? 0) > 0) <li>{{ $report['new_tiers'] }} nouveaux Tiers créés.</li> @endif
                                         </ul>
                                     </div>
                                 </div>
