@@ -2775,11 +2775,11 @@ class AdminConfigController extends Controller
                     }
                 }
 
-                // Validation Tiers obligatoire pour 401/411
+                // Validation Tiers obligatoire pour 401/411 (désactivée à la demande de l'utilisateur)
                 $rowTiers = trim($row['tiers'] ?? '');
-                if (empty($rowTiers) && Str::startsWith($rowCompte, ['401', '402', '411', '412'])) {
-                    $errors[] = "Un numéro de tiers est obligatoire pour le compte '$rowCompte'.";
-                }
+                // if (empty($rowTiers) && Str::startsWith($rowCompte, ['401', '402', '411', '412'])) {
+                //     $errors[] = "Un numéro de tiers est obligatoire pour le compte '$rowCompte'.";
+                // }
 
                 if (!empty($rowTiers)) {
                     $tierExists = in_array($rowTiers, $existingTiers);
@@ -4029,11 +4029,11 @@ class AdminConfigController extends Controller
                     $groupBalances[$globalNSaisie]['debit'] += round($debit, 2);
                     $groupBalances[$globalNSaisie]['credit'] += round($credit, 2);
 
-                    // VALIDATION TIERS OBLIGATOIRE (401/411)
-                    if (Str::startsWith($rowCompte, ['401', '402', '411', '412']) && !$tiersId) {
-                        $errors[] = "Ligne " . ($index + 1) . " : Un tiers est obligatoire pour le compte '$rowCompte'.";
-                        continue;
-                    }
+                    // VALIDATION TIERS OBLIGATOIRE (401/411) (désactivée à la demande de l'utilisateur)
+                    // if (Str::startsWith($rowCompte, ['401', '402', '411', '412']) && !$tiersId) {
+                    //     $errors[] = "Ligne " . ($index + 1) . " : Un tiers est obligatoire pour le compte '$rowCompte'.";
+                    //     continue;
+                    // }
 
                     // LOGIQUE JOURNAL SAISI : On s'assure que le lien existe pour les rapports
                     $journalSaisiId = null;

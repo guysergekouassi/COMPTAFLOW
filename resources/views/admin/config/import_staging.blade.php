@@ -62,6 +62,10 @@
         opacity: 0.5;
     }
 
+    .row-error td {
+        background-color: #fffafb !important;
+    }
+
     .status-indicator {
         width: 10px;
         height: 10px;
@@ -205,6 +209,12 @@
         }
 
         async function quickCreateAccount(numero, libelle, importId = null) {
+            if (numero instanceof HTMLElement) {
+                const btn = numero;
+                numero = btn.dataset.compte || btn.dataset.numero;
+                libelle = btn.dataset.libelle;
+                importId = btn.dataset.importId || "{{ $import->id }}";
+            }
             Swal.showLoading();
             let suggestion = numero;
             try {

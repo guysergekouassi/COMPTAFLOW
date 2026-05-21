@@ -245,12 +245,30 @@
                                                          <td class="@if($row['status'] == 'error') cell-error @endif search-target">
                                                              {{ $row['data']['numero_de_compte'] ?? '-' }}
                                                          </td>
-                                                         <td class="search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
+                                                         <td class="search-target">
+                                                             <div>{{ $row['data']['intitule'] ?? '-' }}</div>
+                                                             @if($row['status'] == 'error' && !empty($row['errors']))
+                                                                 @foreach($row['errors'] as $err)
+                                                                     <div class="text-rose-600 text-[10px] font-bold mt-1">
+                                                                         <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ $err }}
+                                                                     </div>
+                                                                 @endforeach
+                                                             @endif
+                                                         </td>
                                                      @elseif($import->type == 'journals')
                                                          <td class="@if($row['status'] == 'error') cell-error @endif search-target">
                                                              {{ $row['data']['code_journal'] ?? '-' }}
                                                          </td>
-                                                         <td class="search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
+                                                         <td class="search-target">
+                                                             <div>{{ $row['data']['intitule'] ?? '-' }}</div>
+                                                             @if($row['status'] == 'error' && !empty($row['errors']))
+                                                                 @foreach($row['errors'] as $err)
+                                                                     <div class="text-rose-600 text-[10px] font-bold mt-1">
+                                                                         <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ $err }}
+                                                                     </div>
+                                                                 @endforeach
+                                                             @endif
+                                                         </td>
                                                          <td>
                                                              <span class="badge bg-label-info">
                                                                  {{ $row['data']['type'] ?? 'Achats' }}
@@ -273,7 +291,16 @@
                                                                  <span class="badge bg-label-warning italic text-[10px]">Sera auto-généré</span>
                                                              @endif
                                                          </td>
-                                                         <td class="fw-bold search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
+                                                         <td class="fw-bold search-target">
+                                                             <div>{{ $row['data']['intitule'] ?? '-' }}</div>
+                                                             @if($row['status'] == 'error' && !empty($row['errors']))
+                                                                 @foreach($row['errors'] as $err)
+                                                                     <div class="text-rose-600 text-[10px] font-bold mt-1">
+                                                                         <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ $err }}
+                                                                     </div>
+                                                                 @endforeach
+                                                             @endif
+                                                         </td>
                                                          <td>
                                                              <span class="badge bg-label-primary">
                                                                  {{ $row['data']['type_de_tiers'] ?? 'Client' }}
@@ -281,8 +308,16 @@
                                                          </td>
                                                          <td class="font-mono">{{ $row['data']['compte_general'] ?? '-' }}</td>
                                                      @else
+                                                        @php
+                                                            $rowErrorsStr = implode(' ', $row['errors'] ?? []);
+                                                            $hasDateError = str_contains(strtolower($rowErrorsStr), 'date') || str_contains(strtolower($rowErrorsStr), 'exercice');
+                                                            $hasJournalError = str_contains(strtolower($rowErrorsStr), 'journal');
+                                                            $hasCompteError = str_contains(strtolower($rowErrorsStr), 'compte');
+                                                            $hasTiersError = str_contains(strtolower($rowErrorsStr), 'tiers');
+                                                            $hasBalanceError = str_contains(strtolower($rowErrorsStr), 'équilibre') || str_contains(strtolower($rowErrorsStr), 'déséquilibre') || str_contains(strtolower($rowErrorsStr), 'vide');
+                                                        @endphp
                                                         <td class="search-target">{{ $row['data']['n_saisie'] ?? '-' }}</td>
-                                                        <td>
+                                                        <td class="@if($hasBalanceError) cell-error @endif">
                                                             @php $gd = $row['group_diff'] ?? null; @endphp
                                                             @if($row['status'] == 'ignored')
                                                                 <span class="badge bg-label-warning">Ignorée</span>
@@ -298,28 +333,37 @@
                                                                 <div class="text-[10px] text-slate-400 italic">D={{ number_format((float)$row['group_debit'], 0, ',', ' ') }} / C={{ number_format((float)$row['group_credit'], 0, ',', ' ') }}</div>
                                                             @endif
                                                         </td>
-                                                        <td>{{ $row['data']['jour'] ?? '-' }}</td>
-                                                        <td>
+                                                        <td class="@if($hasDateError) cell-error @endif">{{ $row['data']['jour'] ?? '-' }}</td>
+                                                        <td class="@if($hasJournalError) cell-error @endif">
                                                             <div class="fw-bold">{{ $row['data']['journal'] ?? '-' }}</div>
                                                             @if(!empty($row['data']['code_original_journal']))
                                                                 <div class="text-[10px] text-slate-400 italic">{{ $row['data']['code_original_journal'] }}</div>
                                                             @endif
                                                         </td>
                                                         <td>{{ $row['data']['reference'] ?? '-' }}</td>
-                                                        <td class="@if(in_array('error', $row['errors']) || str_contains(implode(' ', $row['errors']), 'Compte')) cell-error @endif search-target" 
-                                                            title="{{ implode(', ', array_filter($row['errors'], fn($e) => str_contains($e, 'Compte'))) }}">
+                                                        <td class="@if($hasCompteError) cell-error @endif search-target" 
+                                                            title="{{ implode(', ', array_filter($row['errors'] ?? [], fn($e) => str_contains($e, 'Compte'))) }}">
                                                             <div class="fw-bold">{{ $row['data']['compte'] ?? '-' }}</div>
                                                              @if(!empty($row['data']['numero_original_compte']))
                                                                  <div class="text-[10px] text-slate-400 italic">{{ $row['data']['numero_original_compte'] }}</div>
                                                              @endif
                                                         </td>
-                                                        <td class="@if(str_contains(implode(' ', $row['errors']), 'Tiers inconnu')) cell-error @endif">
+                                                        <td class="@if($hasTiersError) cell-error @endif">
                                                             <div class="fw-bold">{{ $row['data']['tiers'] ?? '-' }}</div>
                                                              @if(!empty($row['data']['numero_original_tiers']))
                                                                  <div class="text-[10px] text-slate-400 italic">{{ $row['data']['numero_original_tiers'] }}</div>
                                                              @endif
                                                         </td>
-                                                        <td class="search-target">{{ \Illuminate\Support\Str::limit($row['data']['libelle'] ?? '-', 30) }}</td>
+                                                        <td class="search-target">
+                                                            <div>{{ \Illuminate\Support\Str::limit($row['data']['libelle'] ?? '-', 30) }}</div>
+                                                            @if($row['status'] == 'error' && !empty($row['errors']))
+                                                                @foreach($row['errors'] as $err)
+                                                                    <div class="text-rose-600 text-[10px] font-bold mt-1">
+                                                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ $err }}
+                                                                    </div>
+                                                                @endforeach
+                                                            @endif
+                                                        </td>
                                                         <td class="text-end fw-bold">{{ number_format($row['debit'], 0, ',', ' ') }}</td>
                                                         <td class="text-end fw-bold">{{ number_format($row['credit'], 0, ',', ' ') }}</td>
                                                      @endif
