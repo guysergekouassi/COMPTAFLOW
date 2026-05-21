@@ -3082,8 +3082,8 @@ class AdminConfigController extends Controller
 
         return view('admin.import.processing', [
             'import'    => $import,
-            'statusUrl' => route('import.job.status', $id),
-            'reportUrl' => route('import.report.view', $id),
+            'statusUrl' => route('admin.import.job.status', $id),
+            'reportUrl' => route('admin.import.report.view', $id),
         ]);
     }
 
