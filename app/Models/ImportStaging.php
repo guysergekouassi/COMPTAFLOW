@@ -23,7 +23,8 @@ class ImportStaging extends Model
 
     protected $casts = [
         'raw_data' => 'array',
-        'mapping' => 'array'
+        'mapping'  => 'array',
+        'metadata' => 'array',
     ];
 
     public function company()

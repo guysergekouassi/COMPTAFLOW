@@ -519,6 +519,8 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
         Route::post('/import/process-mapping/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'processMapping'])->name('import.process_mapping');
         Route::get('/import/staging/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'importStaging'])->name('import.staging');
         Route::post('/import/commit/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'commitImport'])->name('import.commit');
+        Route::get('/import/status/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'importJobStatus'])->name('import.job.status');
+        Route::get('/import/report/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'importReportView'])->name('import.report.view');
         Route::delete('/import/cancel/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'cancelImport'])->name('import.cancel');
         Route::post('/import/quick-account', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickAccountCreate'])->name('import.quick_account');
         Route::post('/import/quick-tier', [App\Http\Controllers\Admin\AdminConfigController::class, 'quickTierCreate'])->name('import.quick_tier');
