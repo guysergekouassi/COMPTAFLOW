@@ -3114,6 +3114,22 @@ class AdminConfigController extends Controller
         $import = ImportStaging::findOrFail($id);
         $report = ($import->metadata ?? [])['commit_report']
                ?? ['status' => $import->status, 'processed_g' => 0, 'errors' => [], 'error_log' => $import->error_log];
+
+        // Ensure all keys required by resources/views/admin/import/report.blade.php exist
+        $defaults = [
+            'status'       => 'success',
+            'processed_g'  => 0,
+            'filtered_a'   => 0,
+            'deduplicated' => 0,
+            'total_debit'  => 0.0,
+            'total_credit' => 0.0,
+            'new_accounts' => 0,
+            'new_tiers'    => 0,
+            'errors'       => [],
+            'warnings'     => [],
+        ];
+        $report = array_merge($defaults, $report);
+
         return view('admin.import.report', ['report' => $report, 'batch_id' => $id]);
     }
 

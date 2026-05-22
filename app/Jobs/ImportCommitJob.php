@@ -583,7 +583,18 @@ class ImportCommitJob implements ShouldQueue
 
             if (!empty($errors)) {
                 DB::rollBack();
-                $report = ['status' => 'error', 'errors' => $errors, 'processed_g' => $importedCount];
+                $report = [
+                    'status'       => 'error',
+                    'processed_g'  => $importedCount,
+                    'filtered_a'   => 0,
+                    'deduplicated' => 0,
+                    'total_debit'  => 0.0,
+                    'total_credit' => 0.0,
+                    'new_accounts' => 0,
+                    'new_tiers'    => 0,
+                    'errors'       => $errors,
+                    'warnings'     => [],
+                ];
                 $import->update([
                     'status'    => 'error',
                     'error_log' => implode("\n", array_slice($errors, 0, 20)),
@@ -597,9 +608,16 @@ class ImportCommitJob implements ShouldQueue
             }
 
             $report = [
-                'status'      => 'success',
-                'processed_g' => $importedCount,
-                'errors'      => [],
+                'status'       => 'success',
+                'processed_g'  => $importedCount,
+                'filtered_a'   => 0,
+                'deduplicated' => 0,
+                'total_debit'  => 0.0,
+                'total_credit' => 0.0,
+                'new_accounts' => ($import->type === 'initial' ? $importedCount : 0),
+                'new_tiers'    => ($import->type === 'tiers' ? $importedCount : 0),
+                'errors'       => [],
+                'warnings'     => [],
             ];
 
             $import->update([
@@ -623,7 +641,18 @@ class ImportCommitJob implements ShouldQueue
                 'metadata'  => array_merge($import->metadata ?? [], [
                     'commit_status'   => 'error',
                     'commit_progress' => 100,
-                    'commit_report'   => ['status' => 'error', 'errors' => [$e->getMessage()]],
+                    'commit_report'   => [
+                        'status'       => 'error',
+                        'processed_g'  => 0,
+                        'filtered_a'   => 0,
+                        'deduplicated' => 0,
+                        'total_debit'  => 0.0,
+                        'total_credit' => 0.0,
+                        'new_accounts' => 0,
+                        'new_tiers'    => 0,
+                        'errors'       => [$e->getMessage()],
+                        'warnings'     => [],
+                    ],
                 ]),
             ]);
         }
