@@ -459,7 +459,8 @@ class AdminConfigController extends Controller
         ]);
 
         try {
-            Excel::import(new \App\Imports\MasterTiersImport, $request->file('file'));
+            $file = $request->file('file');
+            Excel::import(new \App\Imports\MasterTiersImport($file->getRealPath()), $file);
             return redirect()->back()->with('success', 'Importation des tiers terminée avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de l\'importation des tiers : ' . $e->getMessage());
@@ -476,7 +477,8 @@ class AdminConfigController extends Controller
         ]);
 
         try {
-            Excel::import(new \App\Imports\MasterJournalImport, $request->file('file'));
+            $file = $request->file('file');
+            Excel::import(new \App\Imports\MasterJournalImport($file->getRealPath()), $file);
             return redirect()->back()->with('success', 'Importation des journaux terminée avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de l\'importation des journaux : ' . $e->getMessage());
@@ -1622,10 +1624,11 @@ class AdminConfigController extends Controller
                 }
             }
         } elseif ($import->type == 'journals') {
-            $codeField = $fields['code'] ?? null;
+            // Fix: clé correcte 'code_journal' (et non 'code') dans le dictionnaire
+            $codeField = $fields['code_journal'] ?? null;
             if ($codeField && $codeField['suggested_col'] !== null) {
                 $colIdx = $codeField['suggested_col'];
-                $existingCodes = CodeJournal::where('company_id', $targetCompanyId)->pluck('code')->toArray();
+                $existingCodes = CodeJournal::where('company_id', $targetCompanyId)->pluck('code_journal')->toArray();
                 $existingOriginals = CodeJournal::where('company_id', $targetCompanyId)->whereNotNull('numero_original')->pluck('numero_original')->toArray();
 
                 $allExisting = array_flip(array_unique(array_merge(

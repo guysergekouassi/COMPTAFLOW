@@ -47,8 +47,22 @@ class ImportCommitJob implements ShouldQueue
 
         $targetCompanyId = $import->company_id ?: $user->company_id;
         $targetCompany   = Company::find($targetCompanyId);
-        $mapping         = $import->mapping;
-        $headerIndex     = $mapping['_header_index'] ?? 0;
+
+        $this->updateProgress($import, 0, 'Initialisation…');
+
+        // ═══════════════════════════════════════════════════════
+        // AIGUILLAGE PAR TYPE D'IMPORT
+        // initial / tiers / journals → handleReferentialImport()
+        // courant (écritures) → logique existante ci-dessous
+        // ═══════════════════════════════════════════════════════
+        if (in_array($import->type, ['initial', 'tiers', 'journals'])) {
+            $this->handleReferentialImport($import, $user, $targetCompanyId, $targetCompany);
+            return;
+        }
+
+        // ─── Suite : Écritures comptables (courant) uniquement ──────────────
+        $mapping     = $import->mapping;
+        $headerIndex = $mapping['_header_index'] ?? 0;
 
         // Filtrage des lignes vides
         $data = array_filter(
@@ -63,14 +77,12 @@ class ImportCommitJob implements ShouldQueue
             }
         );
 
-        $totalRows   = count($data);
-        $exercice    = ExerciceComptable::find($import->exercice_id);
+        $totalRows     = count($data);
+        $exercice      = ExerciceComptable::find($import->exercice_id);
         $accountDigits = $targetCompany->account_digits ?? 8;
         $journalDigits = $targetCompany->journal_code_digits ?? 4;
         $journalLimit  = 10;
         $ranNumLength  = max(1, $journalDigits - 3);
-
-        $this->updateProgress($import, 0, 'Initialisation…');
 
         // ─────────────────────────────────────────────
         // CHARGEMENT EN MÉMOIRE (élimine les N+1 queries)
@@ -443,5 +455,177 @@ class ImportCommitJob implements ShouldQueue
             $code = substr($code, 0, $digits);
         }
         return $code;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Importation Reférentielle (initial / tiers / journals)
+    // Utilise la logique de staging du controller pour générer les codes
+    // et ne tente PAS de traiter ces lignes comme des écritures.
+    // ──────────────────────────────────────────────────────────────
+    private function handleReferentialImport(
+        ImportStaging $import,
+        User $user,
+        int $targetCompanyId,
+        Company $targetCompany
+    ): void {
+        DB::beginTransaction();
+        try {
+            $accountDigits = $targetCompany->account_digits ?? 8;
+            $journalDigits = $targetCompany->journal_code_digits ?? 4;
+
+            // Simuler l'auth pour que AdminConfigController puisse appeler Auth::user()
+            \Illuminate\Support\Facades\Auth::setUser($user);
+
+            // Obtenir les lignes validées via la logique de staging
+            // (génération de codes, déduplication, validation incluses)
+            $ctrl   = app(\App\Http\Controllers\Admin\AdminConfigController::class);
+            $staged = $ctrl->importStaging($import->id, true);
+
+            $rowsWithStatus = $staged['rowsWithStatus'] ?? [];
+            $importedCount  = 0;
+            $errors         = [];
+
+            $this->updateProgress($import, 15, 'Traitement des lignes…');
+
+            $validRows  = array_filter($rowsWithStatus, fn($r) => ($r['status'] ?? '') === 'valid');
+            $totalValid = count($validRows);
+            $processed  = 0;
+
+            foreach ($validRows as $r) {
+                $row = $r['data'];
+                $processed++;
+
+                if ($processed % 100 === 0) {
+                    $pct = 15 + (int) round(($processed / max(1, $totalValid)) * 75);
+                    $this->updateProgress($import, $pct, "Insertion {$processed}/{$totalValid}…");
+                }
+
+                try {
+                    if ($import->type === 'initial') {
+                        // ── Plan Comptable ──
+                        $num   = $this->standardizeAccountNumber(trim($row['numero_de_compte'] ?? ''), $accountDigits);
+                        $label = mb_strtoupper(trim($row['intitule'] ?? ''));
+                        if (empty($num) || empty($label)) continue;
+
+                        $prefix = substr($num, 0, 1);
+                        $classe = is_numeric($prefix) ? (int)$prefix : 0;
+                        $type   = in_array($classe, [1, 2, 3, 4, 5, 9]) ? 'Bilan' : 'Compte de résultat';
+
+                        PlanComptable::firstOrCreate(
+                            ['company_id' => $targetCompanyId, 'numero_de_compte' => $num],
+                            [
+                                'intitule'        => $label,
+                                'type_de_compte'  => $type,
+                                'classe'          => $classe,
+                                'adding_strategy' => 'imported',
+                                'numero_original' => $row['numero_original'] ?? null,
+                                'user_id'         => $user->id,
+                            ]
+                        );
+                        $importedCount++;
+
+                    } elseif ($import->type === 'tiers') {
+                        // ── Plan Tiers ──
+                        $num   = strtoupper(trim($row['numero_de_tiers'] ?? ''));
+                        $label = strtoupper(trim($row['intitule'] ?? ''));
+                        if (empty($num) || empty($label) || $num === 'NON GÉNÉRÉ') continue;
+
+                        $compteGen = trim($row['compte_general'] ?? '');
+
+                        PlanTiers::firstOrCreate(
+                            ['company_id' => $targetCompanyId, 'numero_de_tiers' => $num],
+                            [
+                                'intitule'        => $label,
+                                'type_de_tiers'   => $row['type_de_tiers'] ?? 'Autre',
+                                'compte_general'  => $compteGen ?: null,
+                                'numero_original' => $row['numero_original'] ?? null,
+                                'user_id'         => $user->id,
+                            ]
+                        );
+                        $importedCount++;
+
+                    } elseif ($import->type === 'journals') {
+                        // ── Code Journal ──
+                        $code  = strtoupper(trim($row['code_journal'] ?? ''));
+                        $label = strtoupper(trim($row['intitule'] ?? ''));
+                        if (empty($code) || empty($label)) continue;
+
+                        // Résolution du compte de trésorerie (si présent)
+                        $compteIdTreso = null;
+                        $compteTresoNum = trim($row['compte_de_tresorerie'] ?? '');
+                        if (!empty($compteTresoNum)) {
+                            $planTresoObj = PlanComptable::where('company_id', $targetCompanyId)
+                                ->where('numero_de_compte', $compteTresoNum)
+                                ->first();
+                            $compteIdTreso = $planTresoObj?->id;
+                        }
+
+                        CodeJournal::firstOrCreate(
+                            ['company_id' => $targetCompanyId, 'code_journal' => $code],
+                            [
+                                'intitule'              => $label,
+                                'type'                  => $row['type'] ?? 'Standard',
+                                'poste_tresorerie'      => $row['poste_tresorerie'] ?? null,
+                                'compte_de_tresorerie'  => $compteIdTreso,
+                                'traitement_analytique' => $row['traitement_analytique'] ?? null,
+                                'rapprochement_sur'     => $row['rapprochement_sur'] ?? null,
+                                'numero_original'       => $row['numero_original'] ?? null,
+                                'user_id'               => $user->id,
+                            ]
+                        );
+                        $importedCount++;
+                    }
+
+                } catch (\Throwable $e) {
+                    $errors[] = "Ligne {$r['index']}: " . $e->getMessage();
+                }
+            }
+
+            if (!empty($errors)) {
+                DB::rollBack();
+                $report = ['status' => 'error', 'errors' => $errors, 'processed_g' => $importedCount];
+                $import->update([
+                    'status'    => 'error',
+                    'error_log' => implode("\n", array_slice($errors, 0, 20)),
+                    'metadata'  => array_merge($import->metadata ?? [], [
+                        'commit_status'   => 'error',
+                        'commit_progress' => 100,
+                        'commit_report'   => $report,
+                    ]),
+                ]);
+                return;
+            }
+
+            $report = [
+                'status'      => 'success',
+                'processed_g' => $importedCount,
+                'errors'      => [],
+            ];
+
+            $import->update([
+                'status'    => 'committed',
+                'error_log' => "Importation réussie : {$importedCount} enregistrement(s) créé(s).",
+                'metadata'  => array_merge($import->metadata ?? [], [
+                    'commit_status'   => 'done',
+                    'commit_progress' => 100,
+                    'commit_report'   => $report,
+                ]),
+            ]);
+
+            DB::commit();
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error("IMPORT_JOB_REF [{$this->importId}]: " . $e->getMessage(), ['exception' => $e]);
+            $import->update([
+                'status'    => 'error',
+                'error_log' => 'Erreur système : ' . $e->getMessage(),
+                'metadata'  => array_merge($import->metadata ?? [], [
+                    'commit_status'   => 'error',
+                    'commit_progress' => 100,
+                    'commit_report'   => ['status' => 'error', 'errors' => [$e->getMessage()]],
+                ]),
+            ]);
+        }
     }
 }
