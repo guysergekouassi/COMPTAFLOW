@@ -274,7 +274,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gérer le clic
     navItems.forEach(item => {
         item.addEventListener('click', () => {
-            activateSection(item.getAttribute('data-target'));
+            const sectionId = item.getAttribute('data-target');
+            activateSection(sectionId);
+
+            // Naviguer vers le 1er lien réel de la section
+            const section = document.querySelector(`.sidebar-new .menu-section[data-section-id="${sectionId}"]`);
+            if (section) {
+                // Chercher le premier <a> avec un vrai href (pas modal, pas #)
+                const firstLink = Array.from(section.querySelectorAll('a[href]')).find(function(a) {
+                    const href = a.getAttribute('href');
+                    return href && href !== '#' && !a.hasAttribute('data-bs-toggle');
+                });
+                if (firstLink) {
+                    window.location.href = firstLink.getAttribute('href');
+                }
+            }
         });
     });
 

@@ -355,6 +355,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <div id="entries-main-content">
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-4">
                                 <!-- Total Débit -->
                                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
@@ -757,10 +758,11 @@
                 </div>
                     
                     @if(isset($pagination) && $pagination->hasPages())
-                        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
+                        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100" id="pagination-zone">
                             {{ $pagination->links('pagination::bootstrap-5') }}
                         </div>
                     @endif
+                    </div><!-- /#entries-main-content -->
 
                     <!-- Modal Détails Analytique -->
                     <div class="modal fade" id="modalDetailsAnalytique" tabindex="-1" aria-hidden="true">
@@ -1791,4 +1793,72 @@
         const modal = new bootstrap.Modal(document.getElementById('modalDetailsAnalytique'));
         modal.show();
     };
+
+    // =========================================================
+    // AJAX PAGINATION — Pas de rechargement complet de la page
+    // =========================================================
+    (function() {
+        function ajaxLoadPage(url) {
+            const container = document.getElementById('entries-main-content');
+            if (!container) return;
+
+            // Indiquer le chargement
+            container.style.transition = 'opacity 0.15s ease';
+            container.style.opacity = '0.45';
+            container.style.pointerEvents = 'none';
+
+            // Remonter doucement vers le conteneur
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
+                }
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error('Erreur HTTP ' + response.status);
+                return response.text();
+            })
+            .then(function(html) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContainer = doc.getElementById('entries-main-content');
+                if (newContainer) {
+                    container.innerHTML = newContainer.innerHTML;
+                    // Mettre à jour l'URL sans rechargement
+                    history.pushState({ ajax: true }, '', url);
+                }
+                container.style.opacity = '1';
+                container.style.pointerEvents = '';
+            })
+            .catch(function(err) {
+                console.warn('Pagination AJAX error — fallback rechargement :', err);
+                container.style.opacity = '1';
+                container.style.pointerEvents = '';
+                window.location.href = url;
+            });
+        }
+
+        // Interception par délégation sur le document
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest(
+                '#entries-main-content .pagination a[href], #entries-main-content nav[aria-label] a[href], #entries-main-content [data-page] a[href]'
+            );
+            if (!link) return;
+            const url = link.getAttribute('href');
+            if (!url || url === '#') return;
+            e.preventDefault();
+            e.stopPropagation();
+            ajaxLoadPage(url);
+        });
+
+        // Gestion du bouton Précédent/Suivant du navigateur
+        window.addEventListener('popstate', function(e) {
+            if (e.state && e.state.ajax) {
+                ajaxLoadPage(window.location.href);
+            }
+        });
+    })();
 </script>

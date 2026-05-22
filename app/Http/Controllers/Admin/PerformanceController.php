@@ -25,26 +25,58 @@ class PerformanceController extends Controller
         // Données Globales (Tous les utilisateurs de l'entreprise)
         $dashboardData = $this->getGlobalDashboardData($currentCompanyId);
 
-        // Exercice en cours
-         $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
-            ->where('cloturer', 0)
-            ->orderBy('date_debut', 'desc')
-            ->first();
+        // Exercice en cours : priorité session > is_active > non clôturé
+        $contextId = session('current_exercice_id');
+        $exerciceEnCours = null;
+
+        if ($contextId) {
+            $exerciceEnCours = ExerciceComptable::where('id', $contextId)
+                ->where('company_id', $currentCompanyId)
+                ->first();
+        }
+
+        if (!$exerciceEnCours) {
+            $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
+                ->where('is_active', 1)
+                ->first();
+        }
+
+        if (!$exerciceEnCours) {
+            $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
 
         return view('admin.performance.index', array_merge($dashboardData, [
-            'currentCompany' => $currentCompany,
+            'currentCompany'  => $currentCompany,
             'exerciceEnCours' => $exerciceEnCours
         ]));
     }
 
     private function getGlobalDashboardData($companyId)
     {
-        try {
+        // Priorité : session > is_active > non clôturé
+        $contextId = session('current_exercice_id');
+        $currentExercice = null;
+
+        if ($contextId) {
+            $currentExercice = ExerciceComptable::where('id', $contextId)
+                ->where('company_id', $companyId)
+                ->first();
+        }
+
+        if (!$currentExercice) {
+            $currentExercice = ExerciceComptable::where('company_id', $companyId)
+                ->where('is_active', 1)
+                ->first();
+        }
+
+        if (!$currentExercice) {
             $currentExercice = ExerciceComptable::where('company_id', $companyId)
                 ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
                 ->first();
-        } catch (\Exception $e) {
-            $currentExercice = ExerciceComptable::where('company_id', $companyId)->first();
         }
 
         $exerciceId = $currentExercice ? $currentExercice->id : null;

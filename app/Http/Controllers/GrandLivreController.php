@@ -61,6 +61,10 @@ class GrandLivreController extends Controller
 
     public function generateGrandLivre(Request $request)
     {
+        // Augmenter les limites pour les gros volumes
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
         try {
             $request->validate([
                 'date_debut' => 'required|date',
@@ -129,28 +133,25 @@ class GrandLivreController extends Controller
             $format_fichier = $request->format_fichier ?? 'pdf'; // PDF par défaut
             $grandLivresPath = public_path('grand_livres/'); // même dossier que ton PDF
 
-            // Calcul des soldes initiaux par compte
-            $soldesInitiaux = [];
-            foreach ($comptesIds as $idCompte) {
-                $prev = EcritureComptable::where('company_id', $companyId)
-                    ->where('plan_comptable_id', $idCompte)
-                    ->where('date', '<', $request->date_debut);
-                
-                if (session()->has('current_exercice_id')) {
-                    $prev->where('exercices_comptables_id', session('current_exercice_id'));
-                }
+            // Calcul des soldes initiaux par compte (1 seule requête GROUP BY au lieu de N requêtes)
+            $soldeQuery = EcritureComptable::where('company_id', $companyId)
+                ->whereIn('plan_comptable_id', $comptesIds)
+                ->where('date', '<', $request->date_debut)
+                ->selectRaw('plan_comptable_id, SUM(debit) as si_debit, SUM(credit) as si_credit')
+                ->groupBy('plan_comptable_id');
 
-                $si_debit = (float)$prev->sum('debit');
-                $si_credit = (float)$prev->sum('credit');
-                
-                if ($si_debit != 0 || $si_credit != 0) {
-                    $soldesInitiaux[$idCompte] = [
-                        'debit' => $si_debit,
-                        'credit' => $si_credit,
-                        'solde' => $si_debit - $si_credit
-                    ];
-                }
+            if (session()->has('current_exercice_id')) {
+                $soldeQuery->where('exercices_comptables_id', session('current_exercice_id'));
             }
+
+            $soldesInitiaux = $soldeQuery->get()
+                ->keyBy('plan_comptable_id')
+                ->map(function ($r) {
+                    $d = (float) $r->si_debit;
+                    $c = (float) $r->si_credit;
+                    return ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
+                })
+                ->toArray();
 
             if ($format_fichier === 'excel') {
                 $filename = 'grand_livre_excel_' . $compte1->numero_de_compte . '_' . $compte2->numero_de_compte . '_' . now()->format('YmdHis') . '.xlsx';
@@ -246,6 +247,10 @@ class GrandLivreController extends Controller
 
     public function previewGrandLivre(Request $request)
     {
+        // Augmenter les limites pour les gros volumes
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
         try {
             $request->validate([
                 'date_debut' => 'required|date',
@@ -314,28 +319,25 @@ class GrandLivreController extends Controller
 
             $titre = "Prévisualisation Grand-livre des comptes";
 
-            // Calcul des soldes initiaux par compte
-            $soldesInitiaux = [];
-            foreach ($comptesIds as $idCompte) {
-                $prev = EcritureComptable::where('company_id', $companyId)
-                    ->where('plan_comptable_id', $idCompte)
-                    ->where('date', '<', $request->date_debut);
-                
-                if (session()->has('current_exercice_id')) {
-                    $prev->where('exercices_comptables_id', session('current_exercice_id'));
-                }
+            // Calcul des soldes initiaux par compte (1 seule requête GROUP BY au lieu de N requêtes)
+            $soldeQuery = EcritureComptable::where('company_id', $companyId)
+                ->whereIn('plan_comptable_id', $comptesIds)
+                ->where('date', '<', $request->date_debut)
+                ->selectRaw('plan_comptable_id, SUM(debit) as si_debit, SUM(credit) as si_credit')
+                ->groupBy('plan_comptable_id');
 
-                $si_debit = (float)$prev->sum('debit');
-                $si_credit = (float)$prev->sum('credit');
-                
-                if ($si_debit != 0 || $si_credit != 0) {
-                    $soldesInitiaux[$idCompte] = [
-                        'debit' => $si_debit,
-                        'credit' => $si_credit,
-                        'solde' => $si_debit - $si_credit
-                    ];
-                }
+            if (session()->has('current_exercice_id')) {
+                $soldeQuery->where('exercices_comptables_id', session('current_exercice_id'));
             }
+
+            $soldesInitiaux = $soldeQuery->get()
+                ->keyBy('plan_comptable_id')
+                ->map(function ($r) {
+                    $d = (float) $r->si_debit;
+                    $c = (float) $r->si_credit;
+                    return ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
+                })
+                ->toArray();
 
             // UTILISATION DU SERVICE DE PAGINATION
             $paginationService = new \App\Services\GrandLivrePaginationService();

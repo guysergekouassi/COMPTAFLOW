@@ -363,8 +363,12 @@
                                    href="{{ route('exercice_comptable.switch', $exo->id) }}"
                                    data-exercice-switch="{{ $exo->id }}">
                                    <span>{{ $exo->intitule }}</span>
-                                   @if($exo->is_active)
-                                       <span class="badge bg-warning text-dark ms-2" style="font-size: 0.6rem;">DÉFAUT</span>
+                                   @if($exerciceActif && $exerciceActif->id === $exo->id)
+                                       {{-- Exercice actuellement sélectionné (session ou actif) --}}
+                                       <span class="badge bg-success text-white ms-2" style="font-size: 0.6rem;">ACTIVÉ</span>
+                                   @elseif($exo->is_active)
+                                       {{-- Exercice par défaut global (non sélectionné actuellement) --}}
+                                       <span class="badge bg-warning text-dark ms-2" style="font-size: 0.6rem;">PAR DÉFAUT</span>
                                    @endif
                                 </a>
                             </li>

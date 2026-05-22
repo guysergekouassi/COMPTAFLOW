@@ -184,7 +184,15 @@
                                 <div class="flex justify-between items-start">
                                     <div>
                                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Exercice Actif</p>
-                                        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $exerciceYear ?? date('Y') }}</h3>
+                                        @if(isset($exerciceEnCours) && $exerciceEnCours)
+                                            <h3 class="text-xl font-black text-slate-800 mt-1">{{ $exerciceEnCours->intitule }}</h3>
+                                            <p class="text-xs text-slate-500 mt-1 mb-0">
+                                                {{ \Carbon\Carbon::parse($exerciceEnCours->date_debut)->format('d/m/Y') }}
+                                                → {{ \Carbon\Carbon::parse($exerciceEnCours->date_fin)->format('d/m/Y') }}
+                                            </p>
+                                        @else
+                                            <h3 class="text-2xl font-black text-slate-800 mt-1">{{ $exerciceYear ?? date('Y') }}</h3>
+                                        @endif
                                     </div>
                                     <div class="p-3 bg-slate-100 text-slate-800 rounded-2xl">
                                         <i class="fas fa-calendar-alt text-lg"></i>
@@ -192,7 +200,7 @@
                                 </div>
                                 <div class="mt-4">
                                     <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1">
-                                        <div class="bg-indigo-600 h-1.5 rounded-full" style="width: {{ $exerciceProgress ?? 0 }}%"></div>
+                                        <div class="bg-indigo-600 h-1.5 rounded-full transition-all duration-700" style="width: {{ $exerciceProgress ?? 0 }}%"></div>
                                     </div>
                                     <p class="text-[10px] font-bold text-slate-400 uppercase">Progression : {{ $exerciceProgress ?? 0 }}%</p>
                                 </div>
