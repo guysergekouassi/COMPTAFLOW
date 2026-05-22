@@ -46,6 +46,12 @@ class ImportCommitJob implements ShouldQueue
         $user   = User::findOrFail($this->userId);
 
         $targetCompanyId = $import->company_id ?: $user->company_id;
+
+        // Force correct Tenant context in Queue/CLI environments
+        \Illuminate\Support\Facades\Auth::setUser($user);
+        \Illuminate\Support\Facades\Session::put('current_company_id', $targetCompanyId);
+        $user->company_id = $targetCompanyId; // memory override fallback
+
         $targetCompany   = Company::find($targetCompanyId);
 
         $this->updateProgress($import, 0, 'Initialisation…');
@@ -279,7 +285,13 @@ class ImportCommitJob implements ShouldQueue
                 }
 
                 // ── Groupement / Numérotation ECR (OPTIMISÉ : 0 requête DB ici) ──
-                $origNSaisie = $rowMapped['n_saisie'] ?? $rowMapped['reference'] ?? 'IMPORT';
+                $nsVal = trim((string)($rowMapped['n_saisie'] ?? ''));
+                $refVal = trim((string)($rowMapped['reference'] ?? ''));
+                if ($nsVal === '' && $refVal !== '') {
+                    $nsVal = $refVal;
+                    $rowMapped['n_saisie'] = $refVal;
+                }
+                $origNSaisie = $nsVal !== '' ? $nsVal : 'IMPORT';
                 if (strtoupper($rowJournal) === 'RAN' || strtoupper($rowJournalRaw) === 'RAN') {
                     $origNSaisie = 'RAN';
                 }

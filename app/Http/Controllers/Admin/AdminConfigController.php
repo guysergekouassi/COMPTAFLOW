@@ -2699,8 +2699,14 @@ class AdminConfigController extends Controller
                     $missingJournals[$rowJournal] = $row['intitule'] ?? 'Journal ' . $rowJournal;
                 }
 
+                $ns = trim((string)($row['n_saisie'] ?? ''));
+                $ref = trim((string)($row['reference'] ?? ''));
+                if ($ns === '' && $ref !== '') {
+                    $ns = $ref;
+                    $row['n_saisie'] = $ref;
+                }
+
                 if (array_key_exists('n_saisie', $mapping) && $mapping['n_saisie'] !== null && $mapping['n_saisie'] !== '' && $mapping['n_saisie'] !== 'AUTO') {
-                    $ns = trim((string)($row['n_saisie'] ?? ''));
                     if ($ns === '') {
                         $errors[] = "Numéro de saisie manquant";
                     }
