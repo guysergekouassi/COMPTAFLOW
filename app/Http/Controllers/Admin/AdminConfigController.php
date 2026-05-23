@@ -2069,7 +2069,9 @@ class AdminConfigController extends Controller
                         // Séparation en mots pour éviter les faux positifs (ex: "AUTRES" contient "TRES")
                         $words = preg_split('/[\s\-_]+/', $searchStr);
                         
-                        if (Str::contains($searchStr, ['ACH', 'FOURN', 'FRN'])) {
+                        if (Str::contains($searchStr, ['RAN', 'REPORT', 'NOUVEAU'])) {
+                            $detectedType = 'REPORT A NOUVEAU';
+                        } elseif (Str::contains($searchStr, ['ACH', 'FOURN', 'FRN'])) {
                             $detectedType = 'Achats';
                         } elseif (Str::contains($searchStr, ['VEN', 'CLT', 'CLI'])) {
                             $detectedType = 'Ventes';

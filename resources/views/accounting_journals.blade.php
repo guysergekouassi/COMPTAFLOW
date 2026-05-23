@@ -420,6 +420,7 @@
                                     <option value="Tresorerie">Trésorerie</option>
                                     <option value="Opérations Diverses">Opérations Diverses</option>
                                     <option value="Standard">Standard</option>
+                                    <option value="REPORT A NOUVEAU">REPORT A NOUVEAU</option>
                                 </select>
                             </div>
                             <div class="col-12 text-start">
@@ -516,6 +517,7 @@
                                     <option value="Tresorerie">Trésorerie</option>
                                     <option value="Opérations Diverses">Opérations Diverses</option>
                                     <option value="Standard">Standard</option>
+                                    <option value="REPORT A NOUVEAU">REPORT A NOUVEAU</option>
                                 </select>
                             </div>
                             <div class="col-12 text-start">
@@ -786,6 +788,7 @@
                 else if (type === 'Ventes') prefix = 'VEN';
                 else if (type === 'Opérations Diverses') prefix = 'OD';
                 else if (type === 'Standard') prefix = 'STD';
+                else if (type === 'REPORT A NOUVEAU') prefix = 'RAN';
                 else if (type === 'Tresorerie') {
                     const caisse = document.getElementById(mode === 'edit' ? 'edit_treso_caisse' : 'treso_caisse_create');
                     const banque = document.getElementById(mode === 'edit' ? 'edit_treso_banque' : 'treso_banque_create');

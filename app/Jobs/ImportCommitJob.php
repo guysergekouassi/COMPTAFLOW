@@ -630,10 +630,10 @@ class ImportCommitJob implements ShouldQueue
                             [
                                 'intitule'              => $label,
                                 'type'                  => $row['type'] ?? 'Standard',
-                                'poste_tresorerie'      => $row['poste_tresorerie'] ?? 'Autre',
+                                'poste_tresorerie'      => $row['poste_tresorerie'] ?? null,
                                 'compte_de_tresorerie'  => $compteIdTreso,
                                 'traitement_analytique' => $analytiqueBool,
-                                'rapprochement_sur'     => $row['rapprochement_sur'] ?? 'Manuel',
+                                'rapprochement_sur'     => $row['rapprochement_sur'] ?? null,
                                 'numero_original'       => $row['numero_original'] ?? null,
                                 'user_id'               => $user->id,
                             ]
