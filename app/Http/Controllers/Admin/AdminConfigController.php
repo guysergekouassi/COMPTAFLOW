@@ -680,7 +680,7 @@ class AdminConfigController extends Controller
         $user = Auth::user();
         $company = Company::findOrFail(session('current_company_id', $user->company_id));
             $digits = $company->journal_code_digits ?? 4;
-        $codeType = $company->journal_code_type ?? 'alphabetical';
+        $codeType = $company->journal_code_type ?? 'alphanumeric';
 
         $request->validate([
             'code_journal' => 'required|string',
@@ -699,11 +699,9 @@ class AdminConfigController extends Controller
             return redirect()->back()->with('error', "Le code journal doit comporter exactement $digits caractères.");
         }
 
-        // Validation du type de code
-        if ($codeType == 'numeric' && !ctype_digit($code)) {
-            return redirect()->back()->with('error', "Le code journal doit être uniquement numérique.");
-        } elseif ($codeType == 'alphabetical' && !ctype_alpha($code)) {
-            return redirect()->back()->with('error', "Le code journal doit être uniquement alphabétique.");
+        // Validation du type de code (Tous les codes journaux sont toujours de type alphanumérique)
+        if (!preg_match('/^[A-Z0-9]+$/', $code)) {
+            return redirect()->back()->with('error', "Le code journal doit être uniquement alphanumérique (lettres et chiffres en majuscules).");
         }
 
         $exists = CodeJournal::where('company_id', session('current_company_id', $user->company_id))
@@ -979,7 +977,7 @@ class AdminConfigController extends Controller
         $user = Auth::user();
         $company = Company::findOrFail(session('current_company_id', $user->company_id));
         $digits = $company->journal_code_digits ?? 4;
-        $codeType = $company->journal_code_type ?? 'alphabetical';
+        $codeType = $company->journal_code_type ?? 'alphanumeric';
 
         $request->validate([
             'code_journal' => 'required|string',
@@ -999,11 +997,9 @@ class AdminConfigController extends Controller
             return redirect()->back()->with('error', "Le code journal doit comporter exactement $digits caractères.");
         }
 
-        // Validation du type de code
-        if ($codeType == 'numeric' && !ctype_digit($code)) {
-            return redirect()->back()->with('error', "Le code journal doit être uniquement numérique.");
-        } elseif ($codeType == 'alphabetical' && !ctype_alpha($code)) {
-            return redirect()->back()->with('error', "Le code journal doit être uniquement alphabétique.");
+        // Validation du type de code (Tous les codes journaux sont toujours de type alphanumérique)
+        if (!preg_match('/^[A-Z0-9]+$/', $code)) {
+            return redirect()->back()->with('error', "Le code journal doit être uniquement alphanumérique (lettres et chiffres en majuscules).");
         }
 
         // Unicité

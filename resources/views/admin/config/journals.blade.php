@@ -114,7 +114,7 @@
                                     </form>
                                     <div class="d-flex flex-column gap-2 mt-2">
                                         <button class="btn btn-outline-warning w-100 border-2 font-black rounded-xl" data-bs-toggle="modal" data-bs-target="#modalJournalSettings">
-                                            <i class="fa-solid fa-gears me-2"></i> Configurer (Code: {{ $mainCompany->journal_code_digits ?? '4' }} {{ strtoupper(substr($mainCompany->journal_code_type ?? 'alpha', 0, 3)) }})
+                                            <i class="fa-solid fa-gears me-2"></i> Configurer (Code: {{ $mainCompany->journal_code_digits ?? '4' }} ALPHANUM)
                                         </button>
                                         <button class="btn btn-outline-light w-100 border-2 font-black rounded-xl" data-bs-toggle="modal" data-bs-target="#modalImportJournals">
                                             <i class="fa-solid fa-file-import me-2"></i> Importer Journaux (Excel/CSV)
@@ -446,9 +446,10 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label font-black text-slate-700 uppercase text-xs">Type de Code</label>
-                                <select name="journal_code_type" class="form-select border-slate-200 py-3 rounded-xl font-bold">
-                                    <option value="alphanumeric" {{ ($mainCompany->journal_code_type ?? 'alphanumeric') == 'alphanumeric' ? 'selected' : '' }}>Alphanumérique</option>
+                                <select class="form-select border-slate-200 py-3 rounded-xl font-bold bg-slate-50" disabled>
+                                    <option value="alphanumeric" selected>Alphanumérique</option>
                                 </select>
+                                <input type="hidden" name="journal_code_type" value="alphanumeric">
                             </div>
                             <input type="hidden" name="accounting_system" value="{{ $mainCompany->accounting_system }}">
                             <input type="hidden" name="account_digits" value="{{ $mainCompany->account_digits }}">
