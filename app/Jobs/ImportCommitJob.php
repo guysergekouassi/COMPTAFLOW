@@ -542,14 +542,57 @@ class ImportCommitJob implements ShouldQueue
                         $label = strtoupper(trim($row['intitule'] ?? ''));
                         if (empty($num) || empty($label) || $num === 'NON GÉNÉRÉ') continue;
 
-                        $compteGen = trim($row['compte_general'] ?? '');
+                        $compteGenNum = trim($row['compte_general'] ?? '');
+                        $compteGenId = null;
+                        if (!empty($compteGenNum)) {
+                            // Find the account by its standardized account number
+                            $pc = PlanComptable::where('company_id', $targetCompanyId)
+                                ->where('numero_de_compte', $compteGenNum)
+                                ->first();
+                            if ($pc) {
+                                $compteGenId = $pc->id;
+                            } else {
+                                // Fallback: check if it's already an ID
+                                if (is_numeric($compteGenNum)) {
+                                    $pcById = PlanComptable::where('company_id', $targetCompanyId)
+                                        ->where('id', (int)$compteGenNum)
+                                        ->first();
+                                    if ($pcById) {
+                                        $compteGenId = $pcById->id;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!$compteGenId) {
+                            $typeTiers = $row['type_de_tiers'] ?? 'Autre';
+                            $fallbackAccountNum = in_array(strtolower($typeTiers), ['fournisseur', 'cnps', 'impots']) ? '40110000' : '41110000';
+                            $fallbackAccountNum = substr($fallbackAccountNum, 0, 3) . str_pad('0', ($accountDigits - 3), '0', STR_PAD_RIGHT);
+
+                            $pcFallback = PlanComptable::where('company_id', $targetCompanyId)
+                                ->where('numero_de_compte', $fallbackAccountNum)
+                                ->first();
+                            if ($pcFallback) {
+                                $compteGenId = $pcFallback->id;
+                            } else {
+                                // Last resort: any account starting with 4
+                                $pcAny = PlanComptable::where('company_id', $targetCompanyId)
+                                    ->where('numero_de_compte', 'LIKE', '4%')
+                                    ->first();
+                                if ($pcAny) {
+                                    $compteGenId = $pcAny->id;
+                                } else {
+                                    throw new \Exception("Aucun compte collectif de classe 4 trouvé en base pour rattacher le tiers '$num'.");
+                                }
+                            }
+                        }
 
                         PlanTiers::firstOrCreate(
                             ['company_id' => $targetCompanyId, 'numero_de_tiers' => $num],
                             [
                                 'intitule'        => $label,
                                 'type_de_tiers'   => $row['type_de_tiers'] ?? 'Autre',
-                                'compte_general'  => $compteGen ?: null,
+                                'compte_general'  => $compteGenId,
                                 'numero_original' => $row['numero_original'] ?? null,
                                 'user_id'         => $user->id,
                             ]
@@ -572,15 +615,25 @@ class ImportCommitJob implements ShouldQueue
                             $compteIdTreso = $planTresoObj?->id;
                         }
 
+                        // Résolution robuste de traitement_analytique (colonne booléenne NOT NULL)
+                        $analytiqueVal = $row['traitement_analytique'] ?? null;
+                        $analytiqueBool = 0;
+                        if ($analytiqueVal !== null) {
+                            $cleanAna = strtolower(trim((string)$analytiqueVal));
+                            if (in_array($cleanAna, ['oui', 'yes', 'true', '1', 'o', 'y'])) {
+                                $analytiqueBool = 1;
+                            }
+                        }
+
                         CodeJournal::firstOrCreate(
                             ['company_id' => $targetCompanyId, 'code_journal' => $code],
                             [
                                 'intitule'              => $label,
                                 'type'                  => $row['type'] ?? 'Standard',
-                                'poste_tresorerie'      => $row['poste_tresorerie'] ?? null,
+                                'poste_tresorerie'      => $row['poste_tresorerie'] ?? 'Autre',
                                 'compte_de_tresorerie'  => $compteIdTreso,
-                                'traitement_analytique' => $row['traitement_analytique'] ?? null,
-                                'rapprochement_sur'     => $row['rapprochement_sur'] ?? null,
+                                'traitement_analytique' => $analytiqueBool,
+                                'rapprochement_sur'     => $row['rapprochement_sur'] ?? 'Manuel',
                                 'numero_original'       => $row['numero_original'] ?? null,
                                 'user_id'               => $user->id,
                             ]
