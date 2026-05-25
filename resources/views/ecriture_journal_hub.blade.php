@@ -297,7 +297,7 @@
                                             <span class="badge bg-slate-100 text-slate-500 rounded-pill ms-2" style="font-size: 0.65rem">{{ count($journals) }}</span>
                                         </h2>
                                         <div class="d-flex align-items-center gap-4">
-                                            <a href="{{ route('accounting_entry_list', ['journal_type' => $journalType]) }}" class="category-link" onclick="event.stopPropagation()">
+                                            <a href="{{ route('accounting_entry_list', ['journal_type' => $category]) }}" class="category-link" onclick="event.stopPropagation()">
                                                 Voir toutes les écritures <i class="bx bx-right-arrow-alt ms-1"></i>
                                             </a>
                                             <i class="bx bx-chevron-down fs-4 chevron-icon"></i>

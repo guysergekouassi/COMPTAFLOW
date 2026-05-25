@@ -27,10 +27,6 @@ class GrandLivreController extends Controller
             ->orderBy('numero_de_compte', 'asc')
             ->get(); // Récupère TOUS les résultats sans limite Laravel
 
-        $grandLivre = GrandLivre::where('company_id', $companyId)
-            ->orderByDesc('created_at')
-            ->get();
-
         // Récupérer l'exercice en cours (Priorité au CONTEXTE, puis ACTIF)
         $contextExerciceId = session('current_exercice_id');
         $exerciceEnCours = null;
@@ -52,6 +48,20 @@ class GrandLivreController extends Controller
                 ->where('cloturer', 0)
                 ->orderBy('date_debut', 'desc')
                 ->first();
+        }
+
+        // Filtre les fichiers générés par l'exercice en cours
+        $grandLivre = [];
+        if ($exerciceEnCours) {
+            $grandLivre = GrandLivre::where('company_id', $companyId)
+                ->where('date_debut', '>=', $exerciceEnCours->date_debut)
+                ->where('date_fin', '<=', $exerciceEnCours->date_fin)
+                ->orderByDesc('created_at')
+                ->get();
+        } else {
+            $grandLivre = GrandLivre::where('company_id', $companyId)
+                ->orderByDesc('created_at')
+                ->get();
         }
 
         return view('accounting_ledger', compact('PlanComptable', 'grandLivre', 'companyId', 'exerciceEnCours'));

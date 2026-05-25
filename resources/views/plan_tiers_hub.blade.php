@@ -301,12 +301,26 @@
                             @php
                                 $normalizedCategory = strtoupper($category);
                                 $catPrefix = match($normalizedCategory) {
-                                    'CLIENTS' => '41',
                                     'FOURNISSEURS' => '40',
+                                    'CLIENTS' => '41',
                                     'PERSONNEL' => '42',
-                                    'ÉTAT & IMPÔTS', 'ORGANISMES SOCIAUX' => '44',
+                                    'ORGANISMES SOCIAUX' => '43',
+                                    'ÉTAT & IMPÔTS' => '44',
                                     'ASSOCIÉS' => '45',
-                                    'PROVISIONS & DÉPRÉCIATIONS' => '49',
+                                    'DÉBITEURS & CRÉDITEURS DIVERS' => '46',
+                                    'COMPTES TRANSITOIRES' => '47',
+                                    'DETTES SUR IMMO' => '48',
+                                    'PROVISIONS & DÉPRÉCIATIONS', 'DÉPRÉCIATION' => '49',
+                                    default => null
+                                };
+
+                                $tierType = match($normalizedCategory) {
+                                    'FOURNISSEURS' => 'Fournisseur',
+                                    'CLIENTS' => 'Client',
+                                    'PERSONNEL' => 'Personnel',
+                                    'ORGANISMES SOCIAUX' => 'CNPS',
+                                    'ÉTAT & IMPÔTS' => 'Impots',
+                                    'ASSOCIÉS' => 'Associé',
                                     default => null
                                 };
 
@@ -331,11 +345,18 @@
                                         <span class="badge bg-slate-100 text-slate-500 rounded-pill ms-2" style="font-size: 0.65rem">{{ count($tiers) }}</span>
                                     </h2>
                                     <div class="d-flex align-items-center gap-4">
-                                        @if($catPrefix)
-                                        <a href="{{ route('accounting_entry_list', ['tier_prefix' => $catPrefix]) }}" class="category-link" onclick="event.stopPropagation()">
+                                        @php
+                                            $linkParams = [];
+                                            if ($catPrefix) {
+                                                $linkParams['tier_prefix'] = $catPrefix;
+                                            }
+                                            if ($tierType) {
+                                                $linkParams['tier_type'] = $tierType;
+                                            }
+                                        @endphp
+                                        <a href="{{ route('accounting_entry_list', $linkParams) }}" class="category-link" onclick="event.stopPropagation()">
                                             Voir toutes les écritures <i class="bx bx-right-arrow-alt ms-1"></i>
                                         </a>
-                                        @endif
                                         <i class="bx bx-chevron-down fs-4 chevron-icon"></i>
                                     </div>
                                 </div>

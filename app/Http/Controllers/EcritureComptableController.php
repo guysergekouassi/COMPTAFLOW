@@ -787,7 +787,7 @@ class EcritureComptableController extends Controller
         }
         if (!empty($data['journal_type'])) {
             $baseQuery->whereHas('codeJournal', function ($q) use ($data) {
-                $q->where('type', $data['journal_type']);
+                $q->where('type', 'like', $data['journal_type'] . '%');
             });
         }
         if (!empty($data['plan_tiers_id'])) {
@@ -796,6 +796,11 @@ class EcritureComptableController extends Controller
         if (!empty($data['tier_prefix'])) {
             $baseQuery->whereHas('planTiers', function ($q) use ($data) {
                 $q->where('numero_de_tiers', 'like', $data['tier_prefix'] . '%');
+            });
+        }
+        if (!empty($data['tier_type'])) {
+            $baseQuery->whereHas('planTiers', function ($q) use ($data) {
+                $q->where('type_de_tiers', 'like', $data['tier_type'] . '%');
             });
         }
 

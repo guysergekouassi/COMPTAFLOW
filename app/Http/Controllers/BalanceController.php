@@ -30,10 +30,6 @@ class BalanceController extends Controller
             ->orderBy('numero_de_compte', 'asc')
             ->get();
 
-        $Balance = Balance::where('company_id', $companyId)
-            ->orderByDesc('created_at')
-            ->get();
-
         // Récupérer l'exercice en cours (Priorité au CONTEXTE, puis ACTIF)
         $contextExerciceId = session('current_exercice_id');
         $exerciceEnCours = null;
@@ -62,6 +58,20 @@ class BalanceController extends Controller
             $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
                 ->orderBy('date_debut', 'desc')
                 ->first();
+        }
+
+        // Filtre les fichiers générés par l'exercice en cours
+        $Balance = [];
+        if ($exerciceEnCours) {
+            $Balance = Balance::where('company_id', $companyId)
+                ->where('date_debut', '>=', $exerciceEnCours->date_debut)
+                ->where('date_fin', '<=', $exerciceEnCours->date_fin)
+                ->orderByDesc('created_at')
+                ->get();
+        } else {
+            $Balance = Balance::where('company_id', $companyId)
+                ->orderByDesc('created_at')
+                ->get();
         }
 
         return view('accounting_balance', compact('PlanComptable', 'Balance', 'exerciceEnCours'));

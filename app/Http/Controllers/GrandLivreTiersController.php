@@ -28,10 +28,6 @@ class GrandLivreTiersController extends Controller
             ->orderBy('numero_de_tiers')
             ->get();
 
-        $grandLivre = GrandLivreTiers::where('company_id', $companyId)
-            ->orderByDesc('created_at')
-            ->get();
-
         // Récupérer l'exercice en cours (Priorité au CONTEXTE, puis ACTIF)
         $contextExerciceId = session('current_exercice_id');
         $exerciceEnCours = null;
@@ -53,6 +49,20 @@ class GrandLivreTiersController extends Controller
                 ->where('cloturer', 0)
                 ->orderBy('date_debut', 'desc')
                 ->first();
+        }
+
+        // Filtre les fichiers générés par l'exercice en cours
+        $grandLivre = [];
+        if ($exerciceEnCours) {
+            $grandLivre = GrandLivreTiers::where('company_id', $companyId)
+                ->where('date_debut', '>=', $exerciceEnCours->date_debut)
+                ->where('date_fin', '<=', $exerciceEnCours->date_fin)
+                ->orderByDesc('created_at')
+                ->get();
+        } else {
+            $grandLivre = GrandLivreTiers::where('company_id', $companyId)
+                ->orderByDesc('created_at')
+                ->get();
         }
 
         return view('accounting_ledger_tiers', compact('PlanTiers', 'grandLivre', 'exerciceEnCours'));
@@ -123,55 +133,25 @@ class GrandLivreTiersController extends Controller
             // Filtrage en mémoire sur les comptes Tiers pour être sûr d'avoir exactement la plage demandée
             $ecritures = $ecritures->whereIn('plan_tiers_id', $comptesIds);
 
-            $count = $ecritures->count();
-            // On ne bloque plus si vide
-            // if ($count === 0) { ... }
+            // Calcul des soldes initiaux par Tiers (1 seule requête GROUP BY au lieu de N requêtes)
+            $soldeQuery = EcritureComptable::where('company_id', $companyId)
+                ->whereIn('plan_tiers_id', $comptesIds)
+                ->where('date', '<', $request->date_debut)
+                ->selectRaw('plan_tiers_id, SUM(debit) as si_debit, SUM(credit) as si_credit')
+                ->groupBy('plan_tiers_id');
 
-            $format_fichier = $request->format_fichier ?? 'pdf'; // 📌 PDF par défaut
-            $grandLivresPath = public_path('grand_livres_tiers/');
-
-            // 🔹 Excel
-            if ($format_fichier === 'excel') {
-                $filename = 'grand_livre_tiers_' . $compte1->numero_de_tiers . '_' . $compte2->numero_de_tiers . '_' . now()->format('YmdHis') . '.xlsx';
-
-                Excel::store(new GrandLivreTiersExport($ecritures, $soldesInitiaux), $filename, 'grand_livres_tiers');
-
-                GrandLivreTiers::create([
-                    'date_debut' => $request->date_debut,
-                    'date_fin' => $request->date_fin,
-                    'plan_tiers_id_1' => $request->plan_tiers_id_1,
-                    'plan_tiers_id_2' => $request->plan_tiers_id_2,
-                    'format' => $format_fichier,
-                    'grand_livre_tiers' => $filename,
-                    'user_id' => $user->id,
-                    'company_id' => $user->company_id,
-                ]);
-
-                return back()->with('success', "Excel Grand Livre des Tiers généré avec succès ! ($count écritures)");
+            if (session()->has('current_exercice_id')) {
+                $soldeQuery->where('exercices_comptables_id', session('current_exercice_id'));
             }
 
-            // Calcul des soldes initiaux par Tiers
-            $soldesInitiaux = [];
-            foreach ($comptesIds as $idTiers) {
-                $prev = EcritureComptable::where('company_id', $companyId)
-                    ->where('plan_tiers_id', $idTiers)
-                    ->where('date', '<', $request->date_debut);
-                
-                if (session()->has('current_exercice_id')) {
-                    $prev->where('exercices_comptables_id', session('current_exercice_id'));
-                }
-
-                $si_debit = (float)$prev->sum('debit');
-                $si_credit = (float)$prev->sum('credit');
-                
-                if ($si_debit != 0 || $si_credit != 0) {
-                    $soldesInitiaux[$idTiers] = [
-                        'debit' => $si_debit,
-                        'credit' => $si_credit,
-                        'solde' => $si_debit - $si_credit
-                    ];
-                }
-            }
+            $soldesInitiaux = $soldeQuery->get()
+                ->keyBy('plan_tiers_id')
+                ->map(function ($r) {
+                    $d = (float) $r->si_debit;
+                    $c = (float) $r->si_credit;
+                    return ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
+                })
+                ->toArray();
 
             // 🔹 CSV
             if ($format_fichier === 'csv') {
@@ -313,28 +293,25 @@ class GrandLivreTiersController extends Controller
 
             $titre = "Prévisualisation Grand-livre des Tiers";
 
-            // Calcul des soldes initiaux par Tiers
-            $soldesInitiaux = [];
-            foreach ($comptesIds as $idTiers) {
-                $prev = EcritureComptable::where('company_id', $companyId)
-                    ->where('plan_tiers_id', $idTiers)
-                    ->where('date', '<', $request->date_debut);
-                
-                if (session()->has('current_exercice_id')) {
-                    $prev->where('exercices_comptables_id', session('current_exercice_id'));
-                }
+            // Calcul des soldes initiaux par Tiers (1 seule requête GROUP BY au lieu de N requêtes)
+            $soldeQuery = EcritureComptable::where('company_id', $companyId)
+                ->whereIn('plan_tiers_id', $comptesIds)
+                ->where('date', '<', $request->date_debut)
+                ->selectRaw('plan_tiers_id, SUM(debit) as si_debit, SUM(credit) as si_credit')
+                ->groupBy('plan_tiers_id');
 
-                $si_debit = (float)$prev->sum('debit');
-                $si_credit = (float)$prev->sum('credit');
-                
-                if ($si_debit != 0 || $si_credit != 0) {
-                    $soldesInitiaux[$idTiers] = [
-                        'debit' => $si_debit,
-                        'credit' => $si_credit,
-                        'solde' => $si_debit - $si_credit
-                    ];
-                }
+            if (session()->has('current_exercice_id')) {
+                $soldeQuery->where('exercices_comptables_id', session('current_exercice_id'));
             }
+
+            $soldesInitiaux = $soldeQuery->get()
+                ->keyBy('plan_tiers_id')
+                ->map(function ($r) {
+                    $d = (float) $r->si_debit;
+                    $c = (float) $r->si_credit;
+                    return ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
+                })
+                ->toArray();
 
             // UTILISATION DU SERVICE DE PAGINATION
             $paginationService = new \App\Services\GrandLivrePaginationService();

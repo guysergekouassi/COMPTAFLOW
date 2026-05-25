@@ -122,6 +122,9 @@ class ComptaDashboardController extends Controller
         // KPI 5: Solde Trésorerie (Somme des comptes classe 5)
         $cashBalance = EcritureComptable::where('company_id', $companyId)
             ->where('statut', 'approved')
+            ->when($exerciceId, function($query) use ($exerciceId) {
+                return $query->where('exercices_comptables_id', $exerciceId);
+            })
             ->whereHas('planComptable', function($query) {
                 $query->where('numero_de_compte', 'like', '5%');
             })
@@ -187,16 +190,25 @@ class ComptaDashboardController extends Controller
             })->count();
 
         // KPI 7: Exercice en cours
-        $exerciceYear = $currentExercice ? $currentExercice->annee : date('Y');
+        $exerciceYear = $currentExercice ? Carbon::parse($currentExercice->date_debut)->year : date('Y');
 
-        // Calcul de la progression de l'exercice (approximation basée sur les mois écoulés)
+        // Calcul de la progression réelle et dynamique de l'exercice basée sur le pourcentage de jours écoulés
         $exerciceProgress = 0;
         if ($currentExercice) {
             $start = Carbon::parse($currentExercice->date_debut);
+            $end = Carbon::parse($currentExercice->date_fin);
             $now = Carbon::now();
-            if ($now->greaterThan($start)) {
-                $diffMonths = $start->diffInMonths($now);
-                $exerciceProgress = min(100, round(($diffMonths / 12) * 100));
+            
+            if ($now->greaterThanOrEqualTo($end)) {
+                $exerciceProgress = 100;
+            } elseif ($now->lessThanOrEqualTo($start)) {
+                $exerciceProgress = 0;
+            } else {
+                $totalDays = $start->diffInDays($end);
+                $elapsedDays = $start->diffInDays($now);
+                if ($totalDays > 0) {
+                    $exerciceProgress = min(100, max(0, round(($elapsedDays / $totalDays) * 100)));
+                }
             }
         }
 
