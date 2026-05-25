@@ -179,10 +179,39 @@ class GrandLivreTiersController extends Controller
 
 
 
-            // 🔹 PDF (par défaut) : Génération asynchrone en arrière-plan
+            // 🔹 PDF (par défaut)
             $filename = 'grand_livre_tiers_' . $compte1->numero_de_tiers . '_' . $compte2->numero_de_tiers . '_' . now()->format('YmdHis') . '.pdf';
 
-            $record = GrandLivreTiers::create([
+            $titre = "Grand-livre des Tiers";
+
+            // UTILISATION DU SERVICE DE PAGINATION
+            $paginationService = new \App\Services\GrandLivrePaginationService();
+            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $display_mode);
+
+            $pdf = app('dompdf.wrapper');
+            $pdf->getDomPDF()->set_option('isPhpEnabled', true);
+            $pdf->getDomPDF()->set_option('enable_font_subsetting', false); // Désactiver le subsetting de polices pour un gain de temps massif (10x plus rapide)
+            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
+            $pdf->loadView('grand_livre', [
+                'company_name' => $user->company->company_name ?? 'Non défini',
+                'paginatedData' => $paginatedData,
+                'date_debut' => $request->date_debut,
+                'date_fin' => $request->date_fin,
+                'compte' => $compte1->numero_de_tiers,
+                'compte_2' => $compte2->numero_de_tiers,
+                'user' => $user,
+                'titre' => $titre,
+                'display_mode' => $display_mode 
+            ]);
+
+            $grandLivresPath = public_path('grand_livres_tiers/');
+            if (!file_exists($grandLivresPath)) {
+                mkdir($grandLivresPath, 0777, true);
+            }
+
+            $pdf->save($grandLivresPath . $filename);
+
+            GrandLivreTiers::create([
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
                 'plan_tiers_id_1' => $request->plan_tiers_id_1,
@@ -193,17 +222,7 @@ class GrandLivreTiersController extends Controller
                 'company_id' => $user->company_id,
             ]);
 
-            // Lancement du processus en arrière-plan
-            $exerciceId = session('exercice_actif_id') ?? session('current_exercice_id');
-            $command = "php " . base_path('artisan') . " grandlivre:generate --type=tiers --id=" . $record->id . ($exerciceId ? " --exercice=" . $exerciceId : "");
-
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                pclose(popen("start /B " . $command, "r"));
-            } else {
-                exec($command . " > /dev/null 2>&1 &");
-            }
-
-            return redirect()->route('accounting_ledger.loading', ['file' => $filename, 'type' => 'tiers']);
+            return back()->with('success', "PDF Grand Livre des Tiers généré avec succès ! ($count écritures)");
 
         } catch (\Exception $e) {
             Log::error('Erreur lors de la génération du grand livre des Tiers : ' . $e->getMessage());
@@ -314,7 +333,7 @@ class GrandLivreTiersController extends Controller
 
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
-            $pdf->getDomPDF()->set_option('enable_font_subsetting', true);
+            $pdf->getDomPDF()->set_option('enable_font_subsetting', false); // Désactiver le subsetting de polices pour un gain de temps massif (10x plus rapide)
             $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
             $pdf->loadView('grand_livre', [
                 'company_name' => $user->company->company_name ?? 'Non défini',

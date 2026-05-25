@@ -1,6 +1,6 @@
     <style>
         @page {
-            margin: 20px;
+            margin: 110px 20px 35px 20px;
         }
 
         body {
@@ -15,11 +15,14 @@
             width: 100%;
         }
 
-        /* En-tête global complet (Référence image Sage) */
-        .report-header-box {
-            width: 100%;
+        /* En-tête global complet en position FIXE */
+        #header-box {
+            position: fixed;
+            top: -95px;
+            left: 0;
+            right: 0;
+            height: 75px;
             border: 1px solid #000;
-            margin-bottom: 20px;
             padding: 5px;
         }
 
@@ -177,6 +180,40 @@
 <body>
     <div class="watermark">COMPTAFLOW</div>
 
+    <!-- Header Sage 100 Restauration Complète en position FIXE -->
+    <div id="header-box">
+        <table class="header-top-row">
+            <tr>
+                <td style="width: 30%;">
+                    <div class="company-name">{{ $company_name }}</div>
+                    <div style="font-size: 9px;">Impression définitive</div>
+                </td>
+                <td style="width: 40%;">
+                    <div class="title-large">{{ $titre }}</div>
+                    <div class="title-sub">Complet</div>
+                    @if(isset($compte) && isset($compte_2))
+                        <div class="subtitle-range">Du {{ $compte }} au {{ $compte_2 }}</div>
+                    @endif
+                </td>
+                <td style="width: 30%;" class="info-right">
+                    Période du {{ \Carbon\Carbon::parse($date_debut)->format('d/m/y') }}<br>
+                    au {{ \Carbon\Carbon::parse($date_fin)->format('d/m/y') }}<br>
+                    Tenue de compte : {{ $user->company->currency ?? 'FCFA' }}
+                </td>
+            </tr>
+        </table>
+
+        <div class="header-bottom-bar">
+            <table class="header-bottom-row">
+                <tr>
+                    <td style="width: 33%; text-align: left;">© ComptaFlow - Logiciel de comptabilité</td>
+                    <td style="width: 34%; text-align: center;">Date de tirage : {{ now()->format('d/m/y à H:i:s') }}</td>
+                    <td style="width: 33%; text-align: right; color: transparent;">Page : 000</td> <!-- Rendu transparent car dessiné dynamiquement par le canvas PHP -->
+                </tr>
+            </table>
+        </div>
+    </div>
+
     @php
         $pages = $paginatedData['pages'];
         $grandTotalDebit = $paginatedData['grand_total_debit'];
@@ -185,40 +222,6 @@
 
     @foreach ($pages as $index => $page)
         <div class="container {{ $index < count($pages) - 1 ? 'page-break' : '' }}">
-            
-            <!-- Header Sage 100 Restauration Complète -->
-            <div class="report-header-box">
-                <table class="header-top-row">
-                    <tr>
-                        <td style="width: 30%;">
-                            <div class="company-name">{{ $company_name }}</div>
-                            <div style="font-size: 9px;">Impression définitive</div>
-                        </td>
-                        <td style="width: 40%;">
-                            <div class="title-large">{{ $titre }}</div>
-                            <div class="title-sub">Complet</div>
-                            @if(isset($compte) && isset($compte_2))
-                                <div class="subtitle-range">Du {{ $compte }} au {{ $compte_2 }}</div>
-                            @endif
-                        </td>
-                        <td style="width: 30%;" class="info-right">
-                            Période du {{ \Carbon\Carbon::parse($date_debut)->format('d/m/y') }}<br>
-                            au {{ \Carbon\Carbon::parse($date_fin)->format('d/m/y') }}<br>
-                            Tenue de compte : {{ $user->company->currency ?? 'FCFA' }}
-                        </td>
-                    </tr>
-                </table>
-
-                <div class="header-bottom-bar">
-                    <table class="header-bottom-row">
-                        <tr>
-                            <td style="width: 33%; text-align: left;">© ComptaFlow - Logiciel de comptabilité</td>
-                            <td style="width: 34%; text-align: center;">Date de tirage : {{ now()->format('d/m/y à H:i:s') }}</td>
-                            <td style="width: 33%; text-align: right;">Page : {{ $index + 1 }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
 
             @php $tableOpen = false; @endphp
 
@@ -441,6 +444,11 @@
         $dateText = "tirage le {{ now()->format('d/m/Y H:i') }}";
         $dateTextWidth = $fontMetrics->get_text_width($dateText, $font, 7);
         $pdf->page_text($w - $dateTextWidth - 20, $y, $dateText, $font, 7, [0,0,0]);
+
+        // Page number en haut à droite dans le header-box (y = 86)
+        $headerPageText = "Page : {PAGE_NUM} / {PAGE_COUNT}";
+        $headerPageTextWidth = $fontMetrics->get_text_width($headerPageText, $font, 8.5);
+        $pdf->page_text($w - $headerPageTextWidth - 25, 86, $headerPageText, $font, 8.5, [0,0,0]);
     }
     </script>
 </body>

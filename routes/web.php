@@ -363,8 +363,6 @@ Route::get('/test-saisie-number', function() {
     Route::post('accounting_ledger', [GrandLivreController::class, 'generateGrandLivre'])->name('accounting_ledger.generateGrandLivre');
     Route::post('accounting_ledger/previsualisation', [GrandLivreController::class, 'previewGrandLivre'])->name('accounting_ledger.previewGrandLivre');
     Route::delete('/accounting_ledger/{id}', [GrandLivreController::class, 'destroy'])->name('accounting_ledger.destroy');
-    Route::get('/accounting_ledger/loading', [GrandLivreController::class, 'showLoadingPage'])->name('accounting_ledger.loading');
-    Route::get('/accounting_ledger/check-status', [GrandLivreController::class, 'checkStatus'])->name('accounting_ledger.check_status');
 
     // *****************ROUTE GESTION DES GRANDS LIVRES DES TIERS
     Route::get('/accounting_ledger_tiers', [GrandLivreTiersController::class, 'index'])->name('accounting_ledger_tiers');
