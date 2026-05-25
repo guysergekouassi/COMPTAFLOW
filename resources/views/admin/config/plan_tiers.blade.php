@@ -132,12 +132,9 @@
                                         <button class="btn btn-premium w-100" data-bs-toggle="modal" data-bs-target="#modalCenterCreate">
                                             <i class="fa-solid fa-user-plus me-2"></i> Nouveau Complice
                                         </button>
-                                        <form action="{{ route('admin.config.reset_tiers') }}" method="POST" onsubmit="return confirm('Voulez-vous vider tout le répertoire des tiers master ?');">
-                                            @csrf
-                                            <button type="submit" class="btn btn-danger rounded-xl px-4 py-3" title="Annuler / Vider les tiers">
-                                                <i class="fa-solid fa-trash-can"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-danger rounded-xl px-4 py-3" title="Annuler / Vider les tiers" data-bs-toggle="modal" data-bs-target="#modalConfirmResetTiers">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
                                     </div>
                                     <button class="btn btn-outline-light w-100 border-2 font-black rounded-xl" data-bs-toggle="modal" data-bs-target="#modalImportTiers">
                                         <i class="fa-solid fa-file-import me-2"></i> Importer Excel/CSV
@@ -635,6 +632,43 @@
             }
         });
     </script>
+    <!-- Modal de confirmation de réinitialisation (Vider) -->
+    <div class="modal fade" id="modalConfirmResetTiers" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content premium-modal-content">
+                <!-- Header -->
+                <div class="text-center mb-6 position-relative">
+                    <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                        Vider le <span class="text-red-600">Répertoire</span>
+                    </h1>
+                </div>
+
+                <div class="text-center space-y-3 mb-8">
+                    <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                        Voulez-vous vider tout le répertoire des tiers master ? Les tiers liés à des écritures comptables seront conservés pour préserver l'intégrité de vos données.
+                    </p>
+                </div>
+
+                <!-- Actions -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <form action="{{ route('admin.config.reset_tiers') }}" method="POST" class="w-full">
+                        @csrf
+                        <button type="submit" class="btn-save-premium !bg-red-600 hover:!bg-red-700 shadow-red-200">
+                            Vider tout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de confirmation de suppression -->
     <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">

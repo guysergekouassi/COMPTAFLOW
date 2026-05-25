@@ -52,6 +52,63 @@
         font-size: 0.7rem;
         text-transform: uppercase;
     }
+
+    /* Premium Modal Design */
+    .premium-modal-content {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 1);
+        border-radius: 20px;
+        box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+        width: 400px !important;
+        max-width: 400px !important;
+        margin: auto !important;
+        padding: 1.25rem !important;
+    }
+    .premium-modal-dialog {
+        width: 400px !important;
+        max-width: 400px !important;
+        margin: 1.75rem auto !important;
+    }
+    
+    .btn-save-premium {
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        background-color: #1e40af !important;
+        color: white !important;
+        font-weight: 800 !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1) !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+        width: 100%;
+    }
+
+    .btn-save-premium:hover {
+        background-color: #1e3a8a !important;
+        transform: translateY(-2px) !important;
+    }
+
+    .btn-cancel-premium {
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        color: #94a3b8 !important;
+        font-weight: 700 !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+        background: transparent !important;
+        width: 100%;
+    }
+
+    .btn-cancel-premium:hover {
+        background-color: #f8fafc !important;
+        color: #475569 !important;
+    }
 </style>
 
 <body>
@@ -76,12 +133,9 @@
                                         <button class="btn btn-premium w-100" data-bs-toggle="modal" data-bs-target="#modalCenterCreate">
                                             <i class="fa-solid fa-plus me-2"></i> Ajouter un compte général
                                         </button>
-                                        <form action="{{ route('admin.config.reset_plan') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir vider tout le plan comptable master ?');">
-                                            @csrf
-                                            <button type="submit" class="btn btn-danger rounded-xl px-4 py-3" title="Annuler / Vider le plan">
-                                                <i class="fa-solid fa-trash-can"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-danger rounded-xl px-4 py-3" title="Annuler / Vider le plan" data-bs-toggle="modal" data-bs-target="#modalConfirmResetPlan">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
                                     </div>
 
                                     <div class="d-flex flex-column gap-2 mt-2">
@@ -179,11 +233,14 @@
                                             <td class="pe-8 py-6 text-end">
                                                 <div class="btn-group">
                                                     <button class="btn btn-icon btn-sm btn-outline-primary border-0 rounded-circle" onclick="editAccount({{ $plan->id }}, '{{ $plan->numero_de_compte }}', '{{ addslashes($plan->intitule) }}')" title="Modifier"><i class="fa-solid fa-pen-to-square"></i></button>
-                                                    <form action="{{ route('admin.config.delete_account', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce compte du modèle master ?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-icon btn-sm btn-outline-danger border-0 rounded-circle" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button>
-                                                    </form>
+                                                     <button type="button" class="btn btn-icon btn-sm btn-outline-danger border-0 rounded-circle" 
+                                                         title="Supprimer"
+                                                         data-bs-toggle="modal" 
+                                                         data-bs-target="#deleteConfirmationModal"
+                                                         data-name="{{ $plan->numero_de_compte }} - {{ $plan->intitule }}"
+                                                         data-url="{{ route('admin.config.delete_account', $plan->id) }}">
+                                                         <i class="fa-solid fa-trash-can"></i>
+                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -355,7 +412,100 @@
         </div>
     </div>
 
+    <!-- Modal de confirmation de réinitialisation (Vider) -->
+    <div class="modal fade" id="modalConfirmResetPlan" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content premium-modal-content">
+                <!-- Header -->
+                <div class="text-center mb-6 position-relative">
+                    <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                        Vider le <span class="text-red-600">Plan Comptable</span>
+                    </h1>
+                </div>
+
+                <div class="text-center space-y-3 mb-8">
+                    <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                        Êtes-vous sûr de vouloir vider tout le plan comptable master ? Les comptes liés à des écritures comptables seront conservés pour préserver l'intégrité de vos données.
+                    </p>
+                </div>
+
+                <!-- Actions -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <form action="{{ route('admin.config.reset_plan') }}" method="POST" class="w-full">
+                        @csrf
+                        <button type="submit" class="btn-save-premium !bg-red-600 hover:!bg-red-700 shadow-red-200">
+                            Vider tout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmation de suppression -->
+    <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content premium-modal-content">
+                <!-- Header -->
+                <div class="text-center mb-6 position-relative">
+                    <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
+                        Confirmer la <span class="text-red-600">Suppression</span>
+                    </h1>
+                </div>
+
+                <div class="text-center space-y-3 mb-8">
+                    <p class="text-slate-500 text-sm font-medium leading-relaxed">
+                        Êtes-vous sûr de vouloir supprimer ce compte ? Cette action est irréversible.
+                    </p>
+                    <div id="accountToDeleteName" class="text-slate-900 font-bold"></div>
+                </div>
+
+                <!-- Actions -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" class="btn-cancel-premium" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <form id="deleteAccountForm" method="POST" action="" class="w-full">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-save-premium !bg-red-600 hover:!bg-red-700 shadow-red-200">
+                            Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Gestion de la modale de suppression
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteModal = document.getElementById('deleteConfirmationModal');
+            if (deleteModal) {
+                deleteModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const name = button.getAttribute('data-name');
+                    const url = button.getAttribute('data-url');
+                    
+                    const modalName = deleteModal.querySelector('#accountToDeleteName');
+                    const modalForm = deleteModal.querySelector('#deleteAccountForm');
+                    
+                    modalName.textContent = name;
+                    modalForm.action = url;
+                });
+            }
+        });
         // Filtre de recherche amélioré - filtre automatiquement lors de la saisie
         document.getElementById('masterSearch')?.addEventListener('input', function() {
             const searchValue = this.value.toLowerCase().trim();
