@@ -208,29 +208,10 @@ class GrandLivreController extends Controller
             $filename = 'grand_livre_' . $compte1->numero_de_compte . '_' . $compte2->numero_de_compte . '_' . now()->format('YmdHis') . '.pdf';
             $titre = "Grand-livre des comptes";
 
-            // UTILISATION DU SERVICE DE PAGINATION
-            $paginationService = new \App\Services\GrandLivrePaginationService();
-            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $request->display_mode);
+            // PDF (par défaut) : Génération asynchrone en arrière-plan
+            $filename = 'grand_livre_' . $compte1->numero_de_compte . '_' . $compte2->numero_de_compte . '_' . now()->format('YmdHis') . '.pdf';
 
-            $pdf = app('dompdf.wrapper');
-            $pdf->getDomPDF()->set_option('isPhpEnabled', true);
-            $pdf->getDomPDF()->set_option('enable_font_subsetting', true);
-            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
-            $pdf->loadView('grand_livre', [
-                'company_name' => $user->company->company_name ?? 'Non défini',
-                'paginatedData' => $paginatedData, // Nouvelle variable principale
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-                'compte' => $compte1->numero_de_compte,
-                'compte_2' => $compte2->numero_de_compte,
-                'user' => $user,
-                'titre' => $titre,
-                'display_mode' => $request->display_mode ?? 'comptaflow',
-            ]);
-
-            $pdf->save($grandLivresPath . $filename);
-
-            GrandLivre::create([
+            $record = GrandLivre::create([
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
                 'plan_comptable_id_1' => $request->plan_comptable_id_1,
@@ -241,7 +222,17 @@ class GrandLivreController extends Controller
                 'company_id' => $user->company_id,
             ]);
 
-            return back()->with('success', "PDF Grand Livre généré avec succès ! ($count écritures)");
+            // Lancement du processus en arrière-plan
+            $exerciceId = session('exercice_actif_id') ?? session('current_exercice_id');
+            $command = "php " . base_path('artisan') . " grandlivre:generate --type=general --id=" . $record->id . ($exerciceId ? " --exercice=" . $exerciceId : "");
+
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                pclose(popen("start /B " . $command, "r"));
+            } else {
+                exec($command . " > /dev/null 2>&1 &");
+            }
+
+            return redirect()->route('accounting_ledger.loading', ['file' => $filename, 'type' => 'general']);
 
         } catch (\Exception $e) {
             Log::error('Erreur lors de la génération du grand livre : ' . $e->getMessage());
@@ -418,5 +409,28 @@ class GrandLivreController extends Controller
             Log::error('Erreur lors de la suppression du grand livre : ' . $e->getMessage());
             return redirect()->back()->with('error', 'Une erreur est survenue lors de la suppression.');
         }
+    }
+
+    public function showLoadingPage(Request $request)
+    {
+        $filename = $request->query('file');
+        $type = $request->query('type');
+        $redirect = $type === 'tiers' ? route('accounting_ledger_tiers') : route('accounting_ledger');
+
+        return view('grand_livre_loading', compact('filename', 'type', 'redirect'));
+    }
+
+    public function checkStatus(Request $request)
+    {
+        $filename = $request->query('file');
+        $type = $request->query('type');
+
+        $path = $type === 'tiers' ? public_path('grand_livres_tiers/') : public_path('grand_livres/');
+        $exists = file_exists($path . $filename);
+
+        return response()->json([
+            'completed' => $exists,
+            'download_url' => $exists ? ($type === 'tiers' ? asset('grand_livres_tiers/' . $filename) : asset('grand_livres/' . $filename)) : null
+        ]);
     }
 }
