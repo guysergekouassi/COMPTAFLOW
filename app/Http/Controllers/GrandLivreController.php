@@ -114,11 +114,7 @@ class GrandLivreController extends Controller
                 ->with([
                     'planComptable',
                     'planTiers',
-                    'codeJournal',
-                    'JournauxSaisis',
-                    'ExerciceComptable',
-                    'user',
-                    'company'
+                    'codeJournal'
                 ])
                 ->where('ecriture_comptables.company_id', $companyId)
                 ->whereIn('ecriture_comptables.plan_comptable_id', $comptesIds)
@@ -298,11 +294,7 @@ class GrandLivreController extends Controller
                 ->with([
                     'planComptable',
                     'planTiers',
-                    'codeJournal',
-                    'JournauxSaisis',
-                    'ExerciceComptable',
-                    'user',
-                    'company'
+                    'codeJournal'
                 ])
                 ->where('ecriture_comptables.company_id', $companyId)
                 ->whereIn('ecriture_comptables.plan_comptable_id', $comptesIds)

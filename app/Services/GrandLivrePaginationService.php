@@ -6,7 +6,7 @@ use Carbon\Carbon;
 
 class GrandLivrePaginationService
 {
-    protected $linesPerPage = 32; // Ajustable selon la densité souhaitée
+    protected $linesPerPage = 22; // Ajustable pour garantir que la page ne dépasse jamais la hauteur A4 physique
     protected $minAccountSpace = 6; // Espace minimum (lignes) pour commencer un compte sur une page
 
     /**

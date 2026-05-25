@@ -112,11 +112,11 @@ class ComptaDashboardController extends Controller
             ->whereYear('date', Carbon::now()->year)
             ->count();
 
-        // KPI 5: Solde Trésorerie (Somme des comptes classe 5)
+        // KPI 5: Solde Trésorerie (Somme des comptes classe 5 cumulés jusqu'à la fin de l'exercice)
         $cashBalance = EcritureComptable::where('company_id', $companyId)
             ->where('statut', 'approved')
-            ->when($exerciceId, function($query) use ($exerciceId) {
-                return $query->where('exercices_comptables_id', $exerciceId);
+            ->when($currentExercice, function($query) use ($currentExercice) {
+                return $query->where('date', '<=', $currentExercice->date_fin);
             })
             ->whereHas('planComptable', function($query) {
                 $query->where('numero_de_compte', 'like', '5%');
@@ -185,20 +185,27 @@ class ComptaDashboardController extends Controller
         // KPI 7: Exercice en cours
         $exerciceYear = $currentExercice ? Carbon::parse($currentExercice->date_debut)->year : date('Y');
 
-        // Calcul de la progression réelle et dynamique de l'exercice basée sur le pourcentage de jours écoulés
+        // Calcul de la progression de l'exercice basée sur la date de la dernière écriture saisie (progression du travail réel)
         $exerciceProgress = 0;
         if ($currentExercice) {
             $start = Carbon::parse($currentExercice->date_debut);
             $end = Carbon::parse($currentExercice->date_fin);
-            $now = Carbon::now();
             
-            if ($now->greaterThanOrEqualTo($end)) {
+            // Trouver la date de la dernière écriture approuvée pour cet exercice
+            $latestEntryDate = EcritureComptable::where('company_id', $companyId)
+                ->where('exercices_comptables_id', $currentExercice->id)
+                ->where('statut', 'approved')
+                ->max('date');
+                
+            $referenceDate = $latestEntryDate ? Carbon::parse($latestEntryDate) : Carbon::now();
+            
+            if ($referenceDate->greaterThanOrEqualTo($end)) {
                 $exerciceProgress = 100;
-            } elseif ($now->lessThanOrEqualTo($start)) {
+            } elseif ($referenceDate->lessThanOrEqualTo($start)) {
                 $exerciceProgress = 0;
             } else {
                 $totalDays = $start->diffInDays($end);
-                $elapsedDays = $start->diffInDays($now);
+                $elapsedDays = $start->diffInDays($referenceDate);
                 if ($totalDays > 0) {
                     $exerciceProgress = min(100, max(0, round(($elapsedDays / $totalDays) * 100)));
                 }
