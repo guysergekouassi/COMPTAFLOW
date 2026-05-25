@@ -102,6 +102,7 @@
             width: 100%;
             border-collapse: collapse;
             border: 1px solid #000;
+            table-layout: fixed;
         }
 
         table.data-table th {
@@ -236,6 +237,19 @@
                             @endif
                         </div>
                         <table class="data-table">
+                        <colgroup>
+                            <col style="width: 7%;">
+                            <col style="width: 8%;">
+                            <col style="width: 8%;">
+                            <col style="width: 4%;">
+                            <col style="width: 7%;">
+                            <col style="width: 7%;">
+                            <col style="width: 24%;">
+                            <col style="width: 3%;">
+                            <col style="width: 11%;">
+                            <col style="width: 11%;">
+                            <col style="width: 10%;">
+                        </colgroup>
                         <tbody>
                         @php $tableOpen = true; @endphp
 
@@ -243,6 +257,19 @@
                             @if(!$tableOpen)
                                 <div class="account-box">
                                 <table class="data-table">
+                                <colgroup>
+                                    <col style="width: 7%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 4%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 24%;">
+                                    <col style="width: 3%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 10%;">
+                                </colgroup>
                                 <tbody>
                                 @php $tableOpen = true; @endphp
                             @endif
@@ -262,7 +289,21 @@
 
                 @elseif ($row['type'] === 'initial_balance')
                             @if(!$tableOpen)
-                                <div class="account-box"><table class="data-table"><tbody>
+                                <div class="account-box"><table class="data-table">
+                                <colgroup>
+                                    <col style="width: 7%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 4%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 24%;">
+                                    <col style="width: 3%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 10%;">
+                                </colgroup>
+                                <tbody>
                                 @php $tableOpen = true; @endphp
                             @endif
                             <tr class="initial-balance-row">
@@ -274,7 +315,21 @@
 
                 @elseif ($row['type'] === 'entry_line')
                             @if(!$tableOpen)
-                                <div class="account-box"><table class="data-table"><tbody>
+                                <div class="account-box"><table class="data-table">
+                                <colgroup>
+                                    <col style="width: 7%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 4%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 24%;">
+                                    <col style="width: 3%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 10%;">
+                                </colgroup>
+                                <tbody>
                                 @php $tableOpen = true; @endphp
                             @endif
                             @php $data = $row['data']; @endphp
@@ -316,7 +371,21 @@
 
                 @elseif ($row['type'] === 'reported')
                             @if(!$tableOpen)
-                                <div class="account-box"><table class="data-table"><tbody>
+                                <div class="account-box"><table class="data-table">
+                                <colgroup>
+                                    <col style="width: 7%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 4%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 24%;">
+                                    <col style="width: 3%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 10%;">
+                                </colgroup>
+                                <tbody>
                                 @php $tableOpen = true; @endphp
                             @endif
                             <tr style="background-color: #f1f5f9; font-weight: bold;">
@@ -366,7 +435,7 @@
 
     <script type="text/php">
     if (isset($pdf)) {
-        $font = $fontMetrics->get_font("DejaVu Sans", "normal");
+        $font = $fontMetrics->get_font("helvetica", "normal");
         $size = 8;
         $w = $pdf->get_width();
         $h = $pdf->get_height();

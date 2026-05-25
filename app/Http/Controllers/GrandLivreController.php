@@ -73,7 +73,7 @@ class GrandLivreController extends Controller
     {
         // Augmenter les limites pour les gros volumes
         set_time_limit(300);
-        ini_set('memory_limit', '512M');
+        ini_set('memory_limit', '1024M');
 
         try {
             $request->validate([
@@ -218,6 +218,8 @@ class GrandLivreController extends Controller
 
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
+            $pdf->getDomPDF()->set_option('enable_font_subsetting', true);
+            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
             $pdf->loadView('grand_livre', [
                 'company_name' => $user->company->company_name ?? 'Non défini',
                 'paginatedData' => $paginatedData, // Nouvelle variable principale
@@ -260,7 +262,7 @@ class GrandLivreController extends Controller
     {
         // Augmenter les limites pour les gros volumes
         set_time_limit(300);
-        ini_set('memory_limit', '512M');
+        ini_set('memory_limit', '1024M');
 
         try {
             $request->validate([
@@ -357,6 +359,8 @@ class GrandLivreController extends Controller
 
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
+            $pdf->getDomPDF()->set_option('enable_font_subsetting', true);
+            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
             $pdf->loadView('grand_livre', [
                 'company_name' => $user->company->company_name ?? 'Non défini',
                 'paginatedData' => $paginatedData,

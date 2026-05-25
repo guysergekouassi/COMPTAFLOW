@@ -73,6 +73,10 @@ class GrandLivreTiersController extends Controller
 
     public function generateGrandLivre(Request $request)
     {
+        // Augmenter les limites pour les gros volumes
+        set_time_limit(300);
+        ini_set('memory_limit', '1024M');
+
         try {
             $request->validate([
                 'date_debut' => 'required|date',
@@ -186,6 +190,9 @@ class GrandLivreTiersController extends Controller
             $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $display_mode);
 
             $pdf = app('dompdf.wrapper');
+            $pdf->getDomPDF()->set_option('isPhpEnabled', true);
+            $pdf->getDomPDF()->set_option('enable_font_subsetting', true);
+            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
             $pdf->loadView('grand_livre', [
                 'company_name' => $user->company->company_name ?? 'Non défini',
                 'paginatedData' => $paginatedData,
@@ -197,6 +204,11 @@ class GrandLivreTiersController extends Controller
                 'titre' => $titre,
                 'display_mode' => $display_mode 
             ]);
+
+            $grandLivresPath = public_path('grand_livres_tiers/');
+            if (!file_exists($grandLivresPath)) {
+                mkdir($grandLivresPath, 0777, true);
+            }
 
             $pdf->save($grandLivresPath . $filename);
 
@@ -222,6 +234,10 @@ class GrandLivreTiersController extends Controller
 
     public function previewGrandLivreTiers(Request $request)
     {
+        // Augmenter les limites pour les gros volumes
+        set_time_limit(300);
+        ini_set('memory_limit', '1024M');
+
         try {
             $request->validate([
                 'date_debut' => 'required|date',
@@ -320,6 +336,9 @@ class GrandLivreTiersController extends Controller
             $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $display_mode);
 
             $pdf = app('dompdf.wrapper');
+            $pdf->getDomPDF()->set_option('isPhpEnabled', true);
+            $pdf->getDomPDF()->set_option('enable_font_subsetting', true);
+            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
             $pdf->loadView('grand_livre', [
                 'company_name' => $user->company->company_name ?? 'Non défini',
                 'paginatedData' => $paginatedData,
