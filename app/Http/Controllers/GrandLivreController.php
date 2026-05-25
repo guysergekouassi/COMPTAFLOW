@@ -71,9 +71,9 @@ class GrandLivreController extends Controller
 
     public function generateGrandLivre(Request $request)
     {
-        // Augmenter les limites pour les gros volumes
-        set_time_limit(300);
-        ini_set('memory_limit', '1024M');
+        // Désactiver la limite de temps et allouer assez de mémoire pour gérer les gros volumes PDF
+        set_time_limit(0);
+        ini_set('memory_limit', '2048M');
 
         try {
             $request->validate([
@@ -141,9 +141,6 @@ class GrandLivreController extends Controller
             
             $format_fichier = $request->format_fichier ?? 'pdf'; // PDF par défaut
 
-            if ($format_fichier === 'pdf' && $count > 1500) {
-                return back()->with('error', "Le volume d'écritures ($count lignes) est trop important pour générer un PDF. Veuillez choisir le format Excel ou CSV (qui sont instantanés), ou restreindre la plage de dates / comptes.");
-            }
             // On continue même si vide pour générer un état "NÉANT"
             $grandLivresPath = public_path('grand_livres/'); // même dossier que ton PDF
 
@@ -263,9 +260,9 @@ class GrandLivreController extends Controller
 
     public function previewGrandLivre(Request $request)
     {
-        // Augmenter les limites pour les gros volumes
-        set_time_limit(300);
-        ini_set('memory_limit', '1024M');
+        // Désactiver la limite de temps et allouer assez de mémoire pour gérer les gros volumes PDF
+        set_time_limit(0);
+        ini_set('memory_limit', '2048M');
 
         try {
             $request->validate([
@@ -333,12 +330,6 @@ class GrandLivreController extends Controller
             Log::info('Final Result Count: ' . $ecritures->count());
 
             $count = $ecritures->count();
-            if ($count > 1500) {
-                return response()->json([
-                    'success' => false,
-                    'error' => "Le volume d'écritures ($count lignes) est trop important pour la prévisualisation PDF. Veuillez exporter au format Excel ou CSV, ou restreindre la plage de dates / comptes."
-                ], 422);
-            }
 
             // On autorise la prévisualisation vide
 
