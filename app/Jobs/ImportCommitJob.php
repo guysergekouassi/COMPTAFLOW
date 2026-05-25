@@ -393,16 +393,8 @@ class ImportCommitJob implements ShouldQueue
                 $refVal = trim((string)($rowMapped['reference'] ?? ''));
 
                 if ($groupingKeyStrategy === 'reference') {
-                    if ($refVal === '' && $nsVal !== '') {
-                        $refVal = $nsVal;
-                        $rowMapped['reference'] = $nsVal;
-                    }
                     $origNSaisie = $refVal !== '' ? $refVal : 'IMPORT';
                 } else {
-                    if ($nsVal === '' && $refVal !== '') {
-                        $nsVal = $refVal;
-                        $rowMapped['n_saisie'] = $refVal;
-                    }
                     $origNSaisie = $nsVal !== '' ? $nsVal : 'IMPORT';
                 }
 

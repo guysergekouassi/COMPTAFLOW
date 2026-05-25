@@ -2899,18 +2899,10 @@ class AdminConfigController extends Controller
                 $ref = trim((string)($row['reference'] ?? ''));
 
                 if ($groupingKeyStrategy === 'reference') {
-                    if ($ref === '' && $ns !== '') {
-                        $ref = $ns;
-                        $row['reference'] = $ns;
-                    }
                     if ($ref === '') {
                         $errors[] = "Numéro de facture / référence manquant";
                     }
                 } else {
-                    if ($ns === '' && $ref !== '') {
-                        $ns = $ref;
-                        $row['n_saisie'] = $ref;
-                    }
                     if ($ns === '') {
                         $errors[] = "Numéro de saisie manquant";
                     }
@@ -3072,16 +3064,8 @@ class AdminConfigController extends Controller
                 }
                 
                 if ($groupingKeyStrategy === 'reference') {
-                    if ($reference === '' && $nSaisie !== '') {
-                        $reference = $nSaisie;
-                        $r['data']['reference'] = $nSaisie;
-                    }
                     $keyPart = $reference;
                 } else {
-                    if ($nSaisie === '' && $reference !== '') {
-                        $nSaisie = $reference;
-                        $r['data']['n_saisie'] = $reference;
-                    }
                     $keyPart = $nSaisie;
                 }
                 
@@ -3140,14 +3124,8 @@ class AdminConfigController extends Controller
                 }
                 
                 if ($groupingKeyStrategy === 'reference') {
-                    if ($reference === '' && $nSaisie !== '') {
-                        $reference = $nSaisie;
-                    }
                     $keyPart = $reference;
                 } else {
-                    if ($nSaisie === '' && $reference !== '') {
-                        $nSaisie = $reference;
-                    }
                     $keyPart = $nSaisie;
                 }
                 
