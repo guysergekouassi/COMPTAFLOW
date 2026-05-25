@@ -85,7 +85,10 @@ class MasterTiersImport implements ToModel, WithCustomCsvSettings
         $numero = strtoupper($num);
 
         $exists = PlanTiers::where('company_id', $this->companyId)
-            ->where('numero_de_tiers', $numero)
+            ->where(function($q) use ($numero, $num) {
+                $q->where('numero_de_tiers', $numero)
+                  ->orWhere('numero_original', $num);
+            })
             ->exists();
 
         if ($exists) {
@@ -94,6 +97,7 @@ class MasterTiersImport implements ToModel, WithCustomCsvSettings
 
         return new PlanTiers([
             'numero_de_tiers' => $numero,
+            'numero_original' => $num,
             'intitule'        => strtoupper($label),
             'type_de_tiers'   => $type,
             'user_id'         => $this->userId,

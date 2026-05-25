@@ -121,6 +121,7 @@ class GrandLivreController extends Controller
                     'company'
                 ])
                 ->where('ecriture_comptables.company_id', $companyId)
+                ->whereIn('ecriture_comptables.plan_comptable_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin])
                 ->orderBy('plan_comptables.numero_de_compte', 'asc')
                 ->orderBy('date', 'asc')
@@ -133,7 +134,7 @@ class GrandLivreController extends Controller
 
             $ecritures = $query->get();
 
-            // Filtrage en mémoire sur les comptes (car on a récupéré par date globale pour être sûr)
+            // Filtrage en mémoire sur les comptes (conservé par sécurité, mais instantané car déjà filtré)
             $ecritures = $ecritures->whereIn('plan_comptable_id', $comptesIds);
             
             $count = $ecritures->count();
@@ -302,6 +303,7 @@ class GrandLivreController extends Controller
                     'company'
                 ])
                 ->where('ecriture_comptables.company_id', $companyId)
+                ->whereIn('ecriture_comptables.plan_comptable_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin])
                 ->orderBy('plan_comptables.numero_de_compte', 'asc')
                 ->orderBy('date', 'asc')
@@ -320,7 +322,7 @@ class GrandLivreController extends Controller
             Log::info('Computed Ids Count: ' . $comptesIds->count());
             Log::info('Query Result (Pre-Filter): ' . $ecritures->count());
 
-            // Filtrage en mémoire par comptes
+            // Filtrage en mémoire par comptes (conservé par sécurité, mais instantané car déjà filtré)
             $ecritures = $ecritures->whereIn('plan_comptable_id', $comptesIds);
             
             Log::info('Final Result Count: ' . $ecritures->count());

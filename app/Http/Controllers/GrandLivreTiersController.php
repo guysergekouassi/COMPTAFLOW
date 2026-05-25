@@ -117,6 +117,7 @@ class GrandLivreTiersController extends Controller
                     'company'
                 ])
                 ->where('ecriture_comptables.company_id', $companyId)
+                ->whereIn('ecriture_comptables.plan_tiers_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin])
                 ->orderBy('plan_tiers.numero_de_tiers', 'asc')
                 ->orderBy('date', 'asc')
@@ -130,7 +131,7 @@ class GrandLivreTiersController extends Controller
             // Récupéraion globale
             $ecritures = $query->get();
 
-            // Filtrage en mémoire sur les comptes Tiers pour être sûr d'avoir exactement la plage demandée
+            // Filtrage en mémoire sur les comptes Tiers (conservé par sécurité, mais instantané car déjà filtré)
             $ecritures = $ecritures->whereIn('plan_tiers_id', $comptesIds);
 
             // Calcul des soldes initiaux par Tiers (1 seule requête GROUP BY au lieu de N requêtes)
@@ -262,6 +263,7 @@ class GrandLivreTiersController extends Controller
                     'company'
                 ])
                 ->where('ecriture_comptables.company_id', $companyId)
+                ->whereIn('ecriture_comptables.plan_tiers_id', $comptesIds)
                 ->whereBetween('ecriture_comptables.date', [$request->date_debut, $request->date_fin])
                 ->orderBy('plan_tiers.numero_de_tiers', 'asc')
                 ->orderBy('date', 'asc')
@@ -281,7 +283,7 @@ class GrandLivreTiersController extends Controller
             Log::info('Computed Ids Count: ' . $comptesIds->count());
             Log::info('Query Result (Pre-Filter): ' . $ecritures->count());
 
-            // Filtrage en mémoire sur les comptes Tiers
+            // Filtrage en mémoire sur les comptes Tiers (conservé par sécurité, mais instantané car déjà filtré)
             $ecritures = $ecritures->whereIn('plan_tiers_id', $comptesIds);
 
             Log::info('Final Result Count: ' . $ecritures->count());

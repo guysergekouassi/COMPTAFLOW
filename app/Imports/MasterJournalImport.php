@@ -90,7 +90,10 @@ class MasterJournalImport implements ToModel, WithCustomCsvSettings
         $codeFormatted = $this->standardizeJournalCode($code, $this->journalDigits);
 
         $exists = CodeJournal::where('company_id', $this->companyId)
-            ->where('code_journal', $codeFormatted)
+            ->where(function($q) use ($codeFormatted, $codeRaw) {
+                $q->where('code_journal', $codeFormatted)
+                  ->orWhere('numero_original', $codeRaw);
+            })
             ->exists();
 
         if ($exists) {

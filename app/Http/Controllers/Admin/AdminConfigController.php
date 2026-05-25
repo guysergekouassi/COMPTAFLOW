@@ -1926,42 +1926,26 @@ class AdminConfigController extends Controller
                         $existing = $accountDetails->get($mappedAcc);
                     }
 
-                    $isExactDuplicateInDb = ($existing && trim(strtoupper($existing->intitule)) === trim(strtoupper($row['intitule'] ?? '')));
-                    $isExactDuplicateInBatch = false;
+                    // Strict code-based duplicate check (DB or Batch)
+                    $isDuplicateInDb = ($existing !== null);
+                    $isDuplicateInBatch = false;
                     foreach ($rowsWithStatus as $prevRow) {
-                        if (($prevRow['status'] ?? '') === 'valid' && ($prevRow['data']['numero_original'] ?? '') === $originalRawValue && trim(strtoupper($prevRow['data']['intitule'] ?? '')) === trim(strtoupper($row['intitule'] ?? ''))) {
-                            $isExactDuplicateInBatch = true;
-                            break;
+                        if (($prevRow['status'] ?? '') === 'valid') {
+                            $prevOrig = $prevRow['data']['numero_original'] ?? '';
+                            $prevCompte = $prevRow['data']['numero_de_compte'] ?? '';
+                            if ((!empty($originalRawValue) && strtoupper($prevOrig) === strtoupper($originalRawValue)) || 
+                                (!empty($rowCompte) && strtoupper($prevCompte) === strtoupper($rowCompte))) {
+                                $isDuplicateInBatch = true;
+                                break;
+                            }
                         }
                     }
 
-                    if ($isExactDuplicateInDb || $isExactDuplicateInBatch) {
-                        // VRAI DOUBLON : Numéro + Intitulé identiques => On ignore
+                    if ($isDuplicateInDb || $isDuplicateInBatch) {
                         $row['is_duplicate'] = true;
                         $row['existing_label'] = $existing ? $existing->intitule : ($row['intitule'] ?? null);
-                        $row['info'] = "Doublon exact (Déjà présent). Cette ligne sera ignorée.";
+                        $row['info'] = "Doublon (Déjà présent). Cette ligne sera ignorée.";
                         $duplicateCount++;
-                    } else {
-                        // VARIATION OU NOUVEAU COMPTE
-                        // Si le numéro est déjà pris par un AUTRE libellé (dans le lot ou en DB)
-                        $isNumberTakenInDb = $existing !== null;
-                        $isNumberTakenInBatch = isset($batchAccounts[$rowCompte]);
-
-                        if ($isNumberTakenInDb || $isNumberTakenInBatch) {
-                            // On cherche le prochain numéro disponible (+1)
-                            $nextId = \App\Services\NumberingService::findNextAvailable(
-                                'account',
-                                $targetCompanyId,
-                                $rowCompte,
-                                $accountDigits,
-                                array_keys($batchAccounts)
-                            );
-
-                            $row['numero_de_compte'] = $nextId;
-                            $row['suggested_account'] = $nextId;
-                            $row['info_renum'] = "Numéro $rowCompte déjà utilisé. Réattribution séquentielle vers $nextId.";
-                            $rowCompte = $nextId;
-                        }
                     }
 
                     if (!($row['is_duplicate'] ?? false)) {
@@ -2231,19 +2215,27 @@ class AdminConfigController extends Controller
 
                     // On vérifie d'abord si le code existe déjà en base pour CETTE société (par code OU numéro original)
                     $isDuplicateInDb = in_array(strtoupper($rowCode), $existingJournalsArr) || isset($journalMapping[$upperOrig]);
+                    $isDuplicateInBatch = false;
+                    foreach ($rowsWithStatus as $prevRow) {
+                        if (($prevRow['status'] ?? '') === 'valid') {
+                            $prevOrig = $prevRow['data']['numero_original'] ?? '';
+                            $prevJournal = $prevRow['data']['code_journal'] ?? '';
+                            if ((!empty($upperOrig) && strtoupper($prevOrig) === strtoupper($upperOrig)) || 
+                                (!empty($rowCode) && strtoupper($prevJournal) === strtoupper($rowCode))) {
+                                $isDuplicateInBatch = true;
+                                break;
+                            }
+                        }
+                    }
 
-                    if ($isDuplicateInDb) {
+                    if ($isDuplicateInDb || $isDuplicateInBatch) {
                         $existing = $journalDetails->get(strtoupper($rowCode)) ?? $journalDetails->first(fn($j) => strtoupper($j->numero_original) === $upperOrig);
                         $row['is_duplicate'] = true;
                         $row['existing_label'] = $existing ? $existing->intitule : null;
-                        $row['info'] = "Existe déjà (Nom: " . ($row['existing_label'] ?? 'Inconnu') . "). Il sera ignoré.";
+                        $row['info'] = "Doublon (Journal déjà présent). Il sera ignoré.";
                         $duplicateCount++;
                         // On garde le code journal tel quel pour le mapping du lot
                         $batchJournalMap[$upperOrig] = $rowCode;
-                    } elseif (isset($batchJournalMap[$upperOrig])) {
-                        // Si déjà vu dans ce lot (mais pas en DB), on reprend le même code généré
-                        $rowCode = $batchJournalMap[$upperOrig];
-                        $row['code_journal'] = $rowCode;
                     } else {
                         // Si pas doublon en DB, on vérifie si collision avec un autre du lot (localMaxJournals)
                         $tempCode = $rowCode;
@@ -2542,20 +2534,25 @@ class AdminConfigController extends Controller
                     // --- LOGIQUE DE DOUBLONS SMART POUR TIERS ---
                     $existingMatch = $tierDetails->get(strtoupper($importedNum)) ?? (isset($tierMapping[$upperOrigNum]) ? $tierDetails->get(strtoupper($tierMapping[$upperOrigNum])) : null);
 
-                    $isExactDuplicateInDb = ($existingMatch && trim(strtoupper($existingMatch->intitule)) === trim(strtoupper($row['intitule'] ?? '')));
-                    $isExactDuplicateInBatch = false;
+                    $isDuplicateInDb = ($existingMatch !== null);
+                    $isDuplicateInBatch = false;
                     foreach ($rowsWithStatus as $prevRow) {
-                        if (($prevRow['status'] ?? '') === 'valid' && ($prevRow['data']['numero_original'] ?? '') === $upperOrigNum && trim(strtoupper($prevRow['data']['intitule'] ?? '')) === trim(strtoupper($row['intitule'] ?? ''))) {
-                            $isExactDuplicateInBatch = true;
-                            break;
+                        if (($prevRow['status'] ?? '') === 'valid') {
+                            $prevOrig = $prevRow['data']['numero_original'] ?? '';
+                            $prevTiers = $prevRow['data']['numero_de_tiers'] ?? '';
+                            if ((!empty($upperOrigNum) && strtoupper($prevOrig) === strtoupper($upperOrigNum)) || 
+                                (!empty($importedNum) && strtoupper($prevTiers) === strtoupper($importedNum))) {
+                                $isDuplicateInBatch = true;
+                                break;
+                            }
                         }
                     }
 
-                    if ($isExactDuplicateInDb || $isExactDuplicateInBatch) {
+                    if ($isDuplicateInDb || $isDuplicateInBatch) {
                         // VRAI DOUBLON
                         $row['is_duplicate'] = true;
                         $row['existing_label'] = $existingMatch ? $existingMatch->intitule : ($row['intitule'] ?? null);
-                        $row['info'] = "Doublon exact (Tiers déjà présent).";
+                        $row['info'] = "Doublon (Tiers déjà présent). Cette ligne sera ignorée.";
                         $duplicateCount++;
                         $row['numero_de_tiers'] = $existingMatch ? $existingMatch->numero_de_tiers : ($batchTierMap[$upperOrigNum] ?? $importedNum);
                     } else {

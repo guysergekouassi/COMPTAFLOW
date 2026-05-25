@@ -93,7 +93,10 @@ class MasterPlanImport implements ToModel, WithCustomCsvSettings
         $numero = str_pad($num, $this->digits, '0', STR_PAD_RIGHT);
 
         $exists = PlanComptable::where('company_id', $this->companyId)
-            ->where('numero_de_compte', $numero)
+            ->where(function($q) use ($numero, $num) {
+                $q->where('numero_de_compte', $numero)
+                  ->orWhere('numero_original', $num);
+            })
             ->exists();
 
         if ($exists) {
@@ -107,6 +110,7 @@ class MasterPlanImport implements ToModel, WithCustomCsvSettings
 
         return new PlanComptable([
             'numero_de_compte' => $numero,
+            'numero_original'  => $num,
             'intitule'         => mb_strtoupper($label),
             'type_de_compte'   => $type,
             'classe'           => $classe,
