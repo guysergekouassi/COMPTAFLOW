@@ -1914,6 +1914,120 @@ class AdminConfigController extends Controller
             $missingJournals = [];
             $missingTiers = [];
 
+            // --- DÉTERMINATION GLOBALE DYNAMIQUE DE LA STRATÉGIE DE GROUPAGE ---
+            $groupingKeyStrategy = 'n_saisie'; // default
+            
+            if ($import->type === 'courant') {
+                $parseAmountTemp = function($val) {
+                    if (empty($val)) return 0.0;
+                    $val = trim((string)$val);
+                    $val = str_replace([' ', ' ', "\xC2\xA0"], '', $val);
+                    $isNegative = str_starts_with($val, '-');
+                    $val = ltrim($val, '-');
+                    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+                        $val = (strrpos($val, ',') > strrpos($val, '.')) ? str_replace(['.', ','], ['', '.'], $val) : str_replace(',', '', $val);
+                    } else {
+                        $val = str_replace(',', '.', $val);
+                    }
+                    $val = preg_replace('/[^0-9.]/', '', $val);
+                    return $isNegative ? -(float)$val : (float)$val;
+                };
+
+                $nSaisieCol = $mapping['n_saisie'] ?? null;
+                $referenceCol = $mapping['reference'] ?? null;
+                $jourCol = $mapping['jour'] ?? null;
+                $journalCol = $mapping['journal'] ?? null;
+                $debitCol = $mapping['debit'] ?? null;
+                $creditCol = $mapping['credit'] ?? null;
+                
+                $hasNSaisie = ($nSaisieCol !== null && $nSaisieCol !== '' && $nSaisieCol !== 'AUTO');
+                $hasReference = ($referenceCol !== null && $referenceCol !== '' && $referenceCol !== 'AUTO');
+                
+                if ($hasNSaisie && $hasReference) {
+                    $nSaisieValues = [];
+                    $referenceValues = [];
+                    $groupsNSaisie = [];
+                    $groupsReference = [];
+                    
+                    foreach ($data as $rowRawTemp) {
+                        $nsVal = trim((string)($rowRawTemp[$nSaisieCol] ?? ''));
+                        $refVal = trim((string)($rowRawTemp[$referenceCol] ?? ''));
+                        $jour = trim((string)($rowRawTemp[$jourCol] ?? ''));
+                        $journal = trim((string)($rowRawTemp[$journalCol] ?? ''));
+                        
+                        $debit = 0.0;
+                        if ($debitCol !== null && $debitCol !== '') {
+                            $debit = $parseAmountTemp($rowRawTemp[$debitCol] ?? 0);
+                        }
+                        $credit = 0.0;
+                        if ($creditCol !== null && $creditCol !== '') {
+                            $credit = $parseAmountTemp($rowRawTemp[$creditCol] ?? 0);
+                        }
+                        
+                        if ($nsVal !== '') {
+                            $nSaisieValues[] = $nsVal;
+                            $keyNS = $jour . '|' . $journal . '|' . strtoupper($nsVal);
+                            if (!isset($groupsNSaisie[$keyNS])) {
+                                $groupsNSaisie[$keyNS] = ['d' => 0.0, 'c' => 0.0];
+                            }
+                            $groupsNSaisie[$keyNS]['d'] += $debit;
+                            $groupsNSaisie[$keyNS]['c'] += $credit;
+                        }
+                        
+                        if ($refVal !== '') {
+                            $referenceValues[] = $refVal;
+                            $keyRef = $jour . '|' . $journal . '|' . strtoupper($refVal);
+                            if (!isset($groupsReference[$keyRef])) {
+                                $groupsReference[$keyRef] = ['d' => 0.0, 'c' => 0.0];
+                            }
+                            $groupsReference[$keyRef]['d'] += $debit;
+                            $groupsReference[$keyRef]['c'] += $credit;
+                        }
+                    }
+                    
+                    $uniqueNSaisie = array_unique($nSaisieValues);
+                    $uniqueReference = array_unique($referenceValues);
+                    
+                    $totalRowsCount = count($data);
+                    if ($totalRowsCount > 0) {
+                        $nsRatio = count($uniqueNSaisie) / $totalRowsCount;
+                        $refRatio = count($uniqueReference) / $totalRowsCount;
+                        
+                        if (count($uniqueNSaisie) < 10 && count($uniqueReference) >= 10 && $nsRatio < 0.05) {
+                            $groupingKeyStrategy = 'reference';
+                        } elseif (count($uniqueReference) < 10 && count($uniqueNSaisie) >= 10 && $refRatio < 0.05) {
+                            $groupingKeyStrategy = 'n_saisie';
+                        } else {
+                            $unbalancedNS = 0;
+                            foreach ($groupsNSaisie as $g) {
+                                if (abs($g['d'] - $g['c']) > 0.01) {
+                                    $unbalancedNS++;
+                                }
+                            }
+                            
+                            $unbalancedRef = 0;
+                            foreach ($groupsReference as $g) {
+                                if (abs($g['d'] - $g['c']) > 0.01) {
+                                    $unbalancedRef++;
+                                }
+                            }
+                            
+                            if ($unbalancedRef < $unbalancedNS) {
+                                $groupingKeyStrategy = 'reference';
+                            } else {
+                                $groupingKeyStrategy = 'n_saisie';
+                            }
+                        }
+                    }
+                } elseif ($hasReference) {
+                    $groupingKeyStrategy = 'reference';
+                } else {
+                    $groupingKeyStrategy = 'n_saisie';
+                }
+                
+                Log::info("DYNAMIC GROUPING PRE-DECISION: $groupingKeyStrategy selected for import $id");
+            }
+
         foreach($data as $index => $rowRaw) {
             // PADDING : Forcer la ligne à avoir au moins assez de colonnes pour couvrir le mapping
             $row = array_pad($rowRaw, $maxMappingIndex + 1, null);
@@ -2783,12 +2897,20 @@ class AdminConfigController extends Controller
 
                 $ns = trim((string)($row['n_saisie'] ?? ''));
                 $ref = trim((string)($row['reference'] ?? ''));
-                if ($ns === '' && $ref !== '') {
-                    $ns = $ref;
-                    $row['n_saisie'] = $ref;
-                }
 
-                if (array_key_exists('n_saisie', $mapping) && $mapping['n_saisie'] !== null && $mapping['n_saisie'] !== '' && $mapping['n_saisie'] !== 'AUTO') {
+                if ($groupingKeyStrategy === 'reference') {
+                    if ($ref === '' && $ns !== '') {
+                        $ref = $ns;
+                        $row['reference'] = $ns;
+                    }
+                    if ($ref === '') {
+                        $errors[] = "Numéro de facture / référence manquant";
+                    }
+                } else {
+                    if ($ns === '' && $ref !== '') {
+                        $ns = $ref;
+                        $row['n_saisie'] = $ref;
+                    }
                     if ($ns === '') {
                         $errors[] = "Numéro de saisie manquant";
                     }
@@ -2927,7 +3049,6 @@ class AdminConfigController extends Controller
 
         // --- VALIDATION GLOBALE & PAR GROUPE (Équilibre) ---
         if ($import->type == 'courant') {
-            $nSaisieMapped = isset($mapping['n_saisie']) && $mapping['n_saisie'] !== null && $mapping['n_saisie'] !== '' && $mapping['n_saisie'] !== 'AUTO';
             $balances = [];
             foreach ($rowsWithStatus as &$r) {
                 if ($r['status'] === 'duplicate') {
@@ -2950,7 +3071,20 @@ class AdminConfigController extends Controller
                     $r['data']['reference'] = $cachedRanNumberForStaging;
                 }
                 
-                $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
+                if ($groupingKeyStrategy === 'reference') {
+                    if ($reference === '' && $nSaisie !== '') {
+                        $reference = $nSaisie;
+                        $r['data']['reference'] = $nSaisie;
+                    }
+                    $keyPart = $reference;
+                } else {
+                    if ($nSaisie === '' && $reference !== '') {
+                        $nSaisie = $reference;
+                        $r['data']['n_saisie'] = $reference;
+                    }
+                    $keyPart = $nSaisie;
+                }
+                
                 if ($keyPart === '') {
                     $keyPart = 'row_' . $r['index']; // fallback
                 }
@@ -2973,7 +3107,6 @@ class AdminConfigController extends Controller
                     'credit' => round((float)$b['c'], 2),
                     'diff' => round((float)($b['d'] - $b['c']), 2),
                 ];
-
             }
 
             foreach ($balances as $ref => $b) {
@@ -3006,7 +3139,18 @@ class AdminConfigController extends Controller
                     $reference = $cachedRanNumberForStaging;
                 }
                 
-                $keyPart = $nSaisie !== '' ? $nSaisie : $reference;
+                if ($groupingKeyStrategy === 'reference') {
+                    if ($reference === '' && $nSaisie !== '') {
+                        $reference = $nSaisie;
+                    }
+                    $keyPart = $reference;
+                } else {
+                    if ($nSaisie === '' && $reference !== '') {
+                        $nSaisie = $reference;
+                    }
+                    $keyPart = $nSaisie;
+                }
+                
                 if ($keyPart === '') {
                     $keyPart = 'row_' . $r['index']; // fallback
                 }

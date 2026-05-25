@@ -174,6 +174,110 @@ class ImportCommitJob implements ShouldQueue
 
         $msg_type = 'écritures';
 
+        // --- DÉTERMINATION GLOBALE DYNAMIQUE DE LA STRATÉGIE DE GROUPAGE ---
+        $groupingKeyStrategy = 'n_saisie'; // default
+        
+        $nSaisieCol = $mapping['n_saisie'] ?? null;
+        $referenceCol = $mapping['reference'] ?? null;
+        $jourCol = $mapping['jour'] ?? null;
+        $journalCol = $mapping['journal'] ?? null;
+        $debitCol = $mapping['debit'] ?? null;
+        $creditCol = $mapping['credit'] ?? null;
+        
+        $hasNSaisie = ($nSaisieCol !== null && $nSaisieCol !== '' && $nSaisieCol !== 'AUTO');
+        $hasReference = ($referenceCol !== null && $referenceCol !== '' && $referenceCol !== 'AUTO');
+        
+        if ($hasNSaisie && $hasReference) {
+            $nSaisieValues = [];
+            $referenceValues = [];
+            $groupsNSaisie = [];
+            $groupsReference = [];
+            
+            foreach ($data as $rowOrigTemp) {
+                // S'assurer que le mapping est reproduit de la même façon que dans la boucle principale
+                $rowMappedTemp = [];
+                foreach ($mapping as $fieldTemp => $colIndexTemp) {
+                    if ($fieldTemp === '_header_index') continue;
+                    if (isset($rowOrigTemp[$fieldTemp]) && $rowOrigTemp[$fieldTemp] !== null && $rowOrigTemp[$fieldTemp] !== '') {
+                        $rowMappedTemp[$fieldTemp] = $rowOrigTemp[$fieldTemp];
+                    } elseif (is_string($colIndexTemp) && str_starts_with($colIndexTemp, 'FIXED:')) {
+                        $rowMappedTemp[$fieldTemp] = substr($colIndexTemp, 6);
+                    } else {
+                        $rowMappedTemp[$fieldTemp] = $rowOrigTemp[$colIndexTemp] ?? null;
+                    }
+                }
+                
+                $nsVal = trim((string)($rowMappedTemp['n_saisie'] ?? ''));
+                $refVal = trim((string)($rowMappedTemp['reference'] ?? ''));
+                $jour = trim((string)($rowMappedTemp['jour'] ?? ''));
+                $journal = trim((string)($rowMappedTemp['journal'] ?? ''));
+                
+                $debit = $parseAmount($rowMappedTemp['debit'] ?? 0);
+                $credit = $parseAmount($rowMappedTemp['credit'] ?? 0);
+                
+                if ($nsVal !== '') {
+                    $nSaisieValues[] = $nsVal;
+                    $keyNS = $jour . '|' . $journal . '|' . strtoupper($nsVal);
+                    if (!isset($groupsNSaisie[$keyNS])) {
+                        $groupsNSaisie[$keyNS] = ['d' => 0.0, 'c' => 0.0];
+                    }
+                    $groupsNSaisie[$keyNS]['d'] += $debit;
+                    $groupsNSaisie[$keyNS]['c'] += $credit;
+                }
+                
+                if ($refVal !== '') {
+                    $referenceValues[] = $refVal;
+                    $keyRef = $jour . '|' . $journal . '|' . strtoupper($refVal);
+                    if (!isset($groupsReference[$keyRef])) {
+                        $groupsReference[$keyRef] = ['d' => 0.0, 'c' => 0.0];
+                    }
+                    $groupsReference[$keyRef]['d'] += $debit;
+                    $groupsReference[$keyRef]['c'] += $credit;
+                }
+            }
+            
+            $uniqueNSaisie = array_unique($nSaisieValues);
+            $uniqueReference = array_unique($referenceValues);
+            
+            $totalRowsCount = count($data);
+            if ($totalRowsCount > 0) {
+                $nsRatio = count($uniqueNSaisie) / $totalRowsCount;
+                $refRatio = count($uniqueReference) / $totalRowsCount;
+                
+                if (count($uniqueNSaisie) < 10 && count($uniqueReference) >= 10 && $nsRatio < 0.05) {
+                    $groupingKeyStrategy = 'reference';
+                } elseif (count($uniqueReference) < 10 && count($uniqueNSaisie) >= 10 && $refRatio < 0.05) {
+                    $groupingKeyStrategy = 'n_saisie';
+                } else {
+                    $unbalancedNS = 0;
+                    foreach ($groupsNSaisie as $g) {
+                        if (abs($g['d'] - $g['c']) > 0.01) {
+                            $unbalancedNS++;
+                        }
+                    }
+                    
+                    $unbalancedRef = 0;
+                    foreach ($groupsReference as $g) {
+                        if (abs($g['d'] - $g['c']) > 0.01) {
+                            $unbalancedRef++;
+                        }
+                    }
+                    
+                    if ($unbalancedRef < $unbalancedNS) {
+                        $groupingKeyStrategy = 'reference';
+                    } else {
+                        $groupingKeyStrategy = 'n_saisie';
+                    }
+                }
+            }
+        } elseif ($hasReference) {
+            $groupingKeyStrategy = 'reference';
+        } else {
+            $groupingKeyStrategy = 'n_saisie';
+        }
+        
+        Log::info("COMMIT JOB DYNAMIC GROUPING DECISION: $groupingKeyStrategy selected for import " . $import->id);
+
         DB::beginTransaction();
         try {
             $rowNum    = 0;
@@ -287,11 +391,21 @@ class ImportCommitJob implements ShouldQueue
                 // ── Groupement / Numérotation ECR (OPTIMISÉ : 0 requête DB ici) ──
                 $nsVal = trim((string)($rowMapped['n_saisie'] ?? ''));
                 $refVal = trim((string)($rowMapped['reference'] ?? ''));
-                if ($nsVal === '' && $refVal !== '') {
-                    $nsVal = $refVal;
-                    $rowMapped['n_saisie'] = $refVal;
+
+                if ($groupingKeyStrategy === 'reference') {
+                    if ($refVal === '' && $nsVal !== '') {
+                        $refVal = $nsVal;
+                        $rowMapped['reference'] = $nsVal;
+                    }
+                    $origNSaisie = $refVal !== '' ? $refVal : 'IMPORT';
+                } else {
+                    if ($nsVal === '' && $refVal !== '') {
+                        $nsVal = $refVal;
+                        $rowMapped['n_saisie'] = $refVal;
+                    }
+                    $origNSaisie = $nsVal !== '' ? $nsVal : 'IMPORT';
                 }
-                $origNSaisie = $nsVal !== '' ? $nsVal : 'IMPORT';
+
                 if (strtoupper($rowJournal) === 'RAN' || strtoupper($rowJournalRaw) === 'RAN') {
                     $origNSaisie = 'RAN';
                 }
