@@ -399,14 +399,7 @@
 
             @if($tableOpen) </tbody></table></div> @endif
 
-            {{-- Footer info per page --}}
-            <div class="page-footer">
-                <div style="display: table; width: 100%;">
-                    <div style="display: table-cell; width: 33%;">© ComptaFlow</div>
-                    <div style="display: table-cell; width: 33%; text-align: center;">Page {{ $index + 1 }} / {{ count($pages) }}</div>
-                    <div style="display: table-cell; width: 33%; text-align: right;">{{ now()->format('d/m/Y H:i') }}</div>
-                </div>
-            </div>
+
         </div>
     @endforeach
 
@@ -423,27 +416,31 @@
         </div>
     @endif
 
-    <div class="footer">
-        <div style="width: 100%; display: flex; justify-content: space-between; font-size: 10px; border-top: 1px solid #000; padding-top: 5px;">
-            <div style="text-align: center">
-                Impression générée par {{ $user->name ?? 'Utilisateur inconnu' }}
-                le {{ \Carbon\Carbon::now()->format('d/m/Y à H:i') }}
-            </div>
-            <div id="pagination" style="text-align: center"></div>
-        </div>
-    </div>
+
 
     <script type="text/php">
     if (isset($pdf)) {
         $font = $fontMetrics->get_font("helvetica", "normal");
-        $size = 8;
+        $size = 7;
         $w = $pdf->get_width();
         $h = $pdf->get_height();
-        $text = "{PAGE_NUM} / {PAGE_COUNT}";
+        
+        // Page number centré en bas
+        $text = "Page {PAGE_NUM} / {PAGE_COUNT}";
         $textWidth = $fontMetrics->get_text_width($text, $font, $size);
-        $x = $w - $textWidth - 20; 
-        $y = $h - 30;              
+        $x = ($w - $textWidth) / 2; 
+        $y = $h - 25;              
         $pdf->page_text($x, $y, $text, $font, $size, [0,0,0]);
+
+        // Impression générée par... à gauche
+        $user_name = "{{ $user->name ?? 'Utilisateur inconnu' }}";
+        $leftText = "© ComptaFlow | Impression générée par " . $user_name;
+        $pdf->page_text(20, $y, $leftText, $font, 7, [0,0,0]);
+
+        // Date de tirage à droite
+        $dateText = "tirage le {{ now()->format('d/m/Y H:i') }}";
+        $dateTextWidth = $fontMetrics->get_text_width($dateText, $font, 7);
+        $pdf->page_text($w - $dateTextWidth - 20, $y, $dateText, $font, 7, [0,0,0]);
     }
     </script>
 </body>

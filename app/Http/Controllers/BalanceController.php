@@ -159,6 +159,10 @@ class BalanceController extends Controller
 
     public function generateBalance(Request $request)
     {
+        // Augmenter les limites pour les gros volumes
+        set_time_limit(300);
+        ini_set('memory_limit', '1024M');
+
         $request->validate([
             'date_debut' => 'required|date',
             'date_fin' => 'required|date|after_or_equal:date_debut',
@@ -282,6 +286,8 @@ class BalanceController extends Controller
 
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
+            $pdf->getDomPDF()->set_option('enable_font_subsetting', true);
+            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
             $pdf->loadView('balance', [
                 'company_name' => $user->company->company_name ?? 'Non défini',
                 'ecritures' => $ecritures,
@@ -397,6 +403,10 @@ class BalanceController extends Controller
 
     public function previewBalance(Request $request)
     {
+        // Augmenter les limites pour les gros volumes
+        set_time_limit(300);
+        ini_set('memory_limit', '1024M');
+
         try {
             // --- Validation des entrées ---
             $request->validate([
@@ -493,6 +503,8 @@ class BalanceController extends Controller
             // --- Chargement du PDF avec la bonne vue ---
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
+            $pdf->getDomPDF()->set_option('enable_font_subsetting', true);
+            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
             $pdf->loadView($view, [
                 'company_name' => $user->company->company_name ?? 'Non défini',
                 'ecritures' => $ecritures,

@@ -265,6 +265,19 @@
                 $totalGestionSoldeCredit += $soldeCredit;
             }
         }
+
+        // Calcul correct des soldes des totaux (différence des totaux de mouvements)
+        $bilanMouvDiff = $totalBilanMouvDebit - $totalBilanMouvCredit;
+        $bilanTotalSoldeDebit = $bilanMouvDiff > 0 ? $bilanMouvDiff : 0;
+        $bilanTotalSoldeCredit = $bilanMouvDiff < 0 ? abs($bilanMouvDiff) : 0;
+
+        $gestionMouvDiff = $totalGestionMouvDebit - $totalGestionMouvCredit;
+        $gestionTotalSoldeDebit = $gestionMouvDiff > 0 ? $gestionMouvDiff : 0;
+        $gestionTotalSoldeCredit = $gestionMouvDiff < 0 ? abs($gestionMouvDiff) : 0;
+
+        $balanceMouvDiff = $totalMouvementDebit - $totalMouvementCredit;
+        $balanceTotalSoldeDebit = $balanceMouvDiff > 0 ? $balanceMouvDiff : 0;
+        $balanceTotalSoldeCredit = $balanceMouvDiff < 0 ? abs($balanceMouvDiff) : 0;
     @endphp
 
     <!-- Tableau principal -->
@@ -318,8 +331,8 @@
                 <td colspan="2" class="total-label">Totaux comptes de bilan</td>
                 <td class="col-montant">{{ number_format($totalBilanMouvDebit, 0, ',', ' ') }}</td>
                 <td class="col-montant">{{ number_format($totalBilanMouvCredit, 0, ',', ' ') }}</td>
-                <td class="col-montant">{{ number_format($totalBilanSoldeDebit, 0, ',', ' ') }}</td>
-                <td class="col-montant">{{ number_format($totalBilanSoldeCredit, 0, ',', ' ') }}</td>
+                <td class="col-montant">{{ $bilanTotalSoldeDebit > 0 ? number_format($bilanTotalSoldeDebit, 0, ',', ' ') : '' }}</td>
+                <td class="col-montant">{{ $bilanTotalSoldeCredit > 0 ? number_format($bilanTotalSoldeCredit, 0, ',', ' ') : '' }}</td>
             </tr>
 
             <!-- Totaux comptes de gestion -->
@@ -327,8 +340,8 @@
                 <td colspan="2" class="total-label">Totaux comptes de gestion</td>
                 <td class="col-montant">{{ number_format($totalGestionMouvDebit, 0, ',', ' ') }}</td>
                 <td class="col-montant">{{ number_format($totalGestionMouvCredit, 0, ',', ' ') }}</td>
-                <td class="col-montant">{{ number_format($totalGestionSoldeDebit, 0, ',', ' ') }}</td>
-                <td class="col-montant">{{ number_format($totalGestionSoldeCredit, 0, ',', ' ') }}</td>
+                <td class="col-montant">{{ $gestionTotalSoldeDebit > 0 ? number_format($gestionTotalSoldeDebit, 0, ',', ' ') : '' }}</td>
+                <td class="col-montant">{{ $gestionTotalSoldeCredit > 0 ? number_format($gestionTotalSoldeCredit, 0, ',', ' ') : '' }}</td>
             </tr>
 
             <!-- Totaux de la balance -->
@@ -336,32 +349,34 @@
                 <td colspan="2" class="total-label">Totaux de la balance</td>
                 <td class="col-montant">{{ number_format($totalMouvementDebit, 0, ',', ' ') }}</td>
                 <td class="col-montant">{{ number_format($totalMouvementCredit, 0, ',', ' ') }}</td>
-                <td class="col-montant">{{ number_format($totalSoldeDebit, 0, ',', ' ') }}</td>
-                <td class="col-montant">{{ number_format($totalSoldeCredit, 0, ',', ' ') }}</td>
+                <td class="col-montant">{{ $balanceTotalSoldeDebit > 0 ? number_format($balanceTotalSoldeDebit, 0, ',', ' ') : '' }}</td>
+                <td class="col-montant">{{ $balanceTotalSoldeCredit > 0 ? number_format($balanceTotalSoldeCredit, 0, ',', ' ') : '' }}</td>
             </tr>
         </tbody>
     </table>
 
-    <!-- Footer -->
-    <div class="footer">
-        Impression générée par {{ $user->name ?? 'Utilisateur inconnu' }} le {{ \Carbon\Carbon::now()->format('d/m/Y à H:i') }}
-    </div>
+
 
     <script type="text/php">
     if (isset($pdf)) {
-        $font = $fontMetrics->get_font("DejaVu Sans", "normal");
+        $font = $fontMetrics->get_font("helvetica", "normal");
         $size = 7;
 
         $w = $pdf->get_width();
         $h = $pdf->get_height();
 
+        // 1. Page centré en bas
         $text = "Page {PAGE_NUM} / {PAGE_COUNT}";
         $textWidth = $fontMetrics->get_text_width($text, $font, $size);
-
-        $x = $w - $textWidth - 20;
+        $x = ($w - $textWidth) / 2;
         $y = $h - 25;
-
         $pdf->page_text($x, $y, $text, $font, $size, [0,0,0]);
+
+        // 2. Impression générée par... à gauche
+        $user_name = "{{ $user->name ?? 'Utilisateur inconnu' }}";
+        $date_tirage = "{{ \Carbon\Carbon::now()->format('d/m/Y à H:i') }}";
+        $leftText = "© ComptaFlow | Impression générée par " . $user_name . " le " . $date_tirage;
+        $pdf->page_text(20, $y, $leftText, $font, 7, [0,0,0]);
     }
     </script>
 
