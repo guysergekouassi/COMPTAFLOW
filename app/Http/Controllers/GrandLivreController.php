@@ -138,10 +138,13 @@ class GrandLivreController extends Controller
             $ecritures = $ecritures->whereIn('plan_comptable_id', $comptesIds);
             
             $count = $ecritures->count();
-            // On continue même si vide pour générer un état "NÉANT"
-
-            // Nouveau : choix du format
+            
             $format_fichier = $request->format_fichier ?? 'pdf'; // PDF par défaut
+
+            if ($format_fichier === 'pdf' && $count > 1500) {
+                return back()->with('error', "Le volume d'écritures ($count lignes) est trop important pour générer un PDF. Veuillez choisir le format Excel ou CSV (qui sont instantanés), ou restreindre la plage de dates / comptes.");
+            }
+            // On continue même si vide pour générer un état "NÉANT"
             $grandLivresPath = public_path('grand_livres/'); // même dossier que ton PDF
 
             // Calcul des soldes initiaux par compte (1 seule requête GROUP BY au lieu de N requêtes)
@@ -328,6 +331,14 @@ class GrandLivreController extends Controller
             $ecritures = $ecritures->whereIn('plan_comptable_id', $comptesIds);
             
             Log::info('Final Result Count: ' . $ecritures->count());
+
+            $count = $ecritures->count();
+            if ($count > 1500) {
+                return response()->json([
+                    'success' => false,
+                    'error' => "Le volume d'écritures ($count lignes) est trop important pour la prévisualisation PDF. Veuillez exporter au format Excel ou CSV, ou restreindre la plage de dates / comptes."
+                ], 422);
+            }
 
             // On autorise la prévisualisation vide
 

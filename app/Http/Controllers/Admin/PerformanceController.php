@@ -25,12 +25,12 @@ class PerformanceController extends Controller
         // Données Globales (Tous les utilisateurs de l'entreprise)
         $dashboardData = $this->getGlobalDashboardData($currentCompanyId);
 
-        // Exercice en cours : priorité session > is_active > non clôturé
-        $contextId = session('current_exercice_id');
+        // Récupérer l'exercice en cours résolu par le middleware
+        $exerciceId = session('exercice_actif_id') ?? session('current_exercice_id');
         $exerciceEnCours = null;
 
-        if ($contextId) {
-            $exerciceEnCours = ExerciceComptable::where('id', $contextId)
+        if ($exerciceId) {
+            $exerciceEnCours = ExerciceComptable::where('id', $exerciceId)
                 ->where('company_id', $currentCompanyId)
                 ->first();
         }
@@ -38,11 +38,8 @@ class PerformanceController extends Controller
         if (!$exerciceEnCours) {
             $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
                 ->where('is_active', 1)
-                ->first();
-        }
-
-        if (!$exerciceEnCours) {
-            $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
+                ->first()
+                ?? ExerciceComptable::where('company_id', $currentCompanyId)
                 ->where('cloturer', 0)
                 ->orderBy('date_debut', 'desc')
                 ->first();
@@ -56,12 +53,12 @@ class PerformanceController extends Controller
 
     private function getGlobalDashboardData($companyId)
     {
-        // Priorité : session > is_active > non clôturé
-        $contextId = session('current_exercice_id');
+        // Récupérer l'exercice en cours résolu par le middleware
+        $exerciceId = session('exercice_actif_id') ?? session('current_exercice_id');
         $currentExercice = null;
 
-        if ($contextId) {
-            $currentExercice = ExerciceComptable::where('id', $contextId)
+        if ($exerciceId) {
+            $currentExercice = ExerciceComptable::where('id', $exerciceId)
                 ->where('company_id', $companyId)
                 ->first();
         }
@@ -69,11 +66,8 @@ class PerformanceController extends Controller
         if (!$currentExercice) {
             $currentExercice = ExerciceComptable::where('company_id', $companyId)
                 ->where('is_active', 1)
-                ->first();
-        }
-
-        if (!$currentExercice) {
-            $currentExercice = ExerciceComptable::where('company_id', $companyId)
+                ->first()
+                ?? ExerciceComptable::where('company_id', $companyId)
                 ->where('cloturer', 0)
                 ->orderBy('date_debut', 'desc')
                 ->first();

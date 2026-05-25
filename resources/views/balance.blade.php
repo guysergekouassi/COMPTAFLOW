@@ -232,9 +232,9 @@
             $soldeDebit = $solde > 0 ? $solde : 0;
             $soldeCredit = $solde < 0 ? abs($solde) : 0;
             
-            // Déterminer si c'est un compte de bilan ou de gestion
+            // Déterminer si c'est un compte de bilan ou de gestion (uniquement classes 6 et 7)
             $premiereClasse = substr($numeroCompte, 0, 1);
-            $estBilan = in_array($premiereClasse, ['1', '2', '3', '4', '5']);
+            $estBilan = !in_array($premiereClasse, ['6', '7']);
             
             $comptesData[] = [
                 'numero' => $numeroCompte,

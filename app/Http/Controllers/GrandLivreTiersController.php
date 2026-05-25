@@ -138,6 +138,13 @@ class GrandLivreTiersController extends Controller
             // Filtrage en mémoire sur les comptes Tiers (conservé par sécurité, mais instantané car déjà filtré)
             $ecritures = $ecritures->whereIn('plan_tiers_id', $comptesIds);
 
+            $count = $ecritures->count();
+            $format_fichier = $request->format_fichier ?? 'pdf';
+
+            if ($format_fichier === 'pdf' && $count > 1500) {
+                return back()->with('error', "Le volume d'écritures ($count lignes) est trop important pour générer un PDF. Veuillez choisir le format Excel ou CSV (qui sont instantanés), ou restreindre la plage de dates / tiers.");
+            }
+
             // Calcul des soldes initiaux par Tiers (1 seule requête GROUP BY au lieu de N requêtes)
             $soldeQuery = EcritureComptable::where('company_id', $companyId)
                 ->whereIn('plan_tiers_id', $comptesIds)
@@ -305,6 +312,12 @@ class GrandLivreTiersController extends Controller
             Log::info('Final Result Count: ' . $ecritures->count());
 
             $count = $ecritures->count();
+            if ($count > 1500) {
+                return response()->json([
+                    'success' => false,
+                    'error' => "Le volume d'écritures ($count lignes) est trop important pour la prévisualisation PDF. Veuillez exporter au format Excel ou CSV, ou restreindre la plage de dates / tiers."
+                ], 422);
+            }
             // On ne bloque plus si vide
             // if ($count === 0) { ... }
 

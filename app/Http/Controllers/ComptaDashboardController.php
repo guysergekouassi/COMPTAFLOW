@@ -29,12 +29,12 @@ class ComptaDashboardController extends Controller
         // Récupérer les données comptables réelles
         $dashboardData = $this->getDashboardData($currentCompanyId);
         
-        // Récupérer l'exercice en cours (Priorité au CONTEXTE, puis ACTIF)
-        $contextExerciceId = session('current_exercice_id');
+        // Récupérer l'exercice en cours résolu par le middleware
+        $exerciceId = session('exercice_actif_id') ?? session('current_exercice_id');
         $exerciceEnCours = null;
 
-        if ($contextExerciceId) {
-            $exerciceEnCours = ExerciceComptable::where('id', $contextExerciceId)
+        if ($exerciceId) {
+            $exerciceEnCours = ExerciceComptable::where('id', $exerciceId)
                 ->where('company_id', $currentCompanyId)
                 ->first();
         }
@@ -42,11 +42,8 @@ class ComptaDashboardController extends Controller
         if (!$exerciceEnCours) {
              $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
                 ->where('is_active', 1)
-                ->first();
-        }
-
-        if (!$exerciceEnCours) {
-            $exerciceEnCours = ExerciceComptable::where('company_id', $currentCompanyId)
+                ->first()
+                ?? ExerciceComptable::where('company_id', $currentCompanyId)
                 ->where('cloturer', 0)
                 ->orderBy('date_debut', 'desc')
                 ->first();
@@ -61,28 +58,24 @@ class ComptaDashboardController extends Controller
 
     private function getDashboardData($companyId)
     {
-        // Récupérer l'exercice du contexte (session) ou l'exercice actif par défaut
-        $contextExerciceId = session('current_exercice_id');
+        // Récupérer l'exercice en cours résolu par le middleware
+        $exerciceId = session('exercice_actif_id') ?? session('current_exercice_id');
         $currentExercice = null;
 
-        if ($contextExerciceId) {
-            $currentExercice = ExerciceComptable::where('id', $contextExerciceId)
+        if ($exerciceId) {
+            $currentExercice = ExerciceComptable::where('id', $exerciceId)
                 ->where('company_id', $companyId)
                 ->first();
         }
 
         if (!$currentExercice) {
-            // Logique de repli existante
             $currentExercice = ExerciceComptable::where('company_id', $companyId)
                 ->where('is_active', 1)
+                ->first()
+                ?? ExerciceComptable::where('company_id', $companyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
                 ->first();
-
-            if (!$currentExercice) {
-                $currentExercice = ExerciceComptable::where('company_id', $companyId)
-                    ->where('cloturer', 0)
-                    ->orderBy('date_debut', 'desc')
-                    ->first();
-            }
         }
 
         $exerciceId = $currentExercice ? $currentExercice->id : null;
