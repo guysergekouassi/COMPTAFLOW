@@ -357,7 +357,26 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            PlanComptable::where('company_id', session('current_company_id', $user->company_id))->delete();
+            $companyId = session('current_company_id', $user->company_id);
+
+            // Récupérer les identifiants uniques des comptes liés à des écritures
+            $linkedIds = \App\Models\EcritureComptable::where('company_id', $companyId)
+                ->whereNotNull('plan_comptable_id')
+                ->pluck('plan_comptable_id')
+                ->unique()
+                ->toArray();
+
+            // Supprimer uniquement les comptes non liés
+            $deletedCount = PlanComptable::where('company_id', $companyId)
+                ->whereNotIn('id', $linkedIds)
+                ->delete();
+
+            $remainingCount = PlanComptable::where('company_id', $companyId)->count();
+
+            if ($remainingCount > 0) {
+                return redirect()->back()->with('warning', "$deletedCount comptes ont été supprimés. Cependant, $remainingCount comptes n'ont pas pu être supprimés car ils sont liés à des écritures.");
+            }
+
             return redirect()->back()->with('success', 'Plan comptable réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
@@ -371,7 +390,26 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            PlanTiers::where('company_id', session('current_company_id', $user->company_id))->delete();
+            $companyId = session('current_company_id', $user->company_id);
+
+            // Récupérer les identifiants uniques des tiers liés à des écritures
+            $linkedIds = \App\Models\EcritureComptable::where('company_id', $companyId)
+                ->whereNotNull('plan_tiers_id')
+                ->pluck('plan_tiers_id')
+                ->unique()
+                ->toArray();
+
+            // Supprimer uniquement les tiers non liés
+            $deletedCount = PlanTiers::where('company_id', $companyId)
+                ->whereNotIn('id', $linkedIds)
+                ->delete();
+
+            $remainingCount = PlanTiers::where('company_id', $companyId)->count();
+
+            if ($remainingCount > 0) {
+                return redirect()->back()->with('warning', "$deletedCount tiers ont été supprimés. Cependant, $remainingCount tiers n'ont pas pu être supprimés car ils sont liés à des écritures.");
+            }
+
             return redirect()->back()->with('success', 'Plan tiers réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
@@ -385,7 +423,26 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            CodeJournal::where('company_id', session('current_company_id', $user->company_id))->delete();
+            $companyId = session('current_company_id', $user->company_id);
+
+            // Récupérer les identifiants uniques des journaux liés à des écritures
+            $linkedIds = \App\Models\EcritureComptable::where('company_id', $companyId)
+                ->whereNotNull('code_journal_id')
+                ->pluck('code_journal_id')
+                ->unique()
+                ->toArray();
+
+            // Supprimer uniquement les journaux non liés
+            $deletedCount = CodeJournal::where('company_id', $companyId)
+                ->whereNotIn('id', $linkedIds)
+                ->delete();
+
+            $remainingCount = CodeJournal::where('company_id', $companyId)->count();
+
+            if ($remainingCount > 0) {
+                return redirect()->back()->with('warning', "$deletedCount journaux ont été supprimés. Cependant, $remainingCount journaux n'ont pas pu être supprimés car ils sont liés à des écritures.");
+            }
+
             return redirect()->back()->with('success', 'Modèle de journaux réinitialisé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de la réinitialisation : ' . $e->getMessage());
