@@ -875,7 +875,17 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            $account = PlanComptable::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
+            $companyId = session('current_company_id', $user->company_id);
+            $account = PlanComptable::where('company_id', $companyId)->findOrFail($id);
+            
+            $utilise = \App\Models\EcritureComptable::where('company_id', $companyId)
+                ->where('plan_comptable_id', $id)
+                ->exists();
+                
+            if ($utilise) {
+                return redirect()->back()->with('error', 'Impossible de supprimer ce compte car il est lié à une écriture.');
+            }
+            
             $account->delete();
             return redirect()->back()->with('success', 'Compte supprimé du modèle avec succès.');
         } catch (\Exception $e) {
@@ -890,7 +900,17 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            $tier = PlanTiers::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
+            $companyId = session('current_company_id', $user->company_id);
+            $tier = PlanTiers::where('company_id', $companyId)->findOrFail($id);
+            
+            $utilise = \App\Models\EcritureComptable::where('company_id', $companyId)
+                ->where('plan_tiers_id', $id)
+                ->exists();
+                
+            if ($utilise) {
+                return redirect()->back()->with('error', 'Impossible de supprimer ce plan tiers car il est lié à une écriture.');
+            }
+            
             $tier->delete();
             return redirect()->back()->with('success', 'Tiers supprimé du modèle avec succès.');
         } catch (\Exception $e) {
@@ -905,7 +925,17 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
-            $journal = CodeJournal::where('company_id', session('current_company_id', $user->company_id))->findOrFail($id);
+            $companyId = session('current_company_id', $user->company_id);
+            $journal = CodeJournal::where('company_id', $companyId)->findOrFail($id);
+            
+            $utilise = \App\Models\EcritureComptable::where('company_id', $companyId)
+                ->where('code_journal_id', $id)
+                ->exists();
+                
+            if ($utilise) {
+                return redirect()->back()->with('error', 'Impossible de supprimer ce code journal car il est lié à une écriture.');
+            }
+            
             $journal->delete();
             return redirect()->back()->with('success', 'Journal supprimé du modèle avec succès.');
         } catch (\Exception $e) {
