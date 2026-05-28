@@ -6,20 +6,19 @@ use App\Models\PlanTiers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\EcritureComptable;
 use App\Models\GrandLivreTiers;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use App\Exports\GrandLivreTiersExport;
-
 use App\Models\ExerciceComptable;
-use PDF;
 
 class GrandLivreTiersController extends Controller
 {
     public function index(Request $request)
     {
-        $user = Auth::user();
+        $user      = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
 
         $PlanTiers = PlanTiers::withoutGlobalScopes()
@@ -28,366 +27,344 @@ class GrandLivreTiersController extends Controller
             ->orderBy('numero_de_tiers')
             ->get();
 
-        // Récupérer l'exercice en cours (Priorité au CONTEXTE, puis ACTIF)
+        // Récupérer l'exercice en cours
         $contextExerciceId = session('current_exercice_id');
-        $exerciceEnCours = null;
-
+        $exerciceEnCours   = null;
         if ($contextExerciceId) {
             $exerciceEnCours = ExerciceComptable::where('id', $contextExerciceId)
-                ->where('company_id', $companyId)
-                ->first();
+                ->where('company_id', $companyId)->first();
         }
-
-        if (!$exerciceEnCours) {
-             $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
-                ->where('is_active', 1)
-                ->first();
-        }
-
         if (!$exerciceEnCours) {
             $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
-                ->where('cloturer', 0)
-                ->orderBy('date_debut', 'desc')
-                ->first();
+                ->where('is_active', 1)->first();
+        }
+        if (!$exerciceEnCours) {
+            $exerciceEnCours = ExerciceComptable::where('company_id', $companyId)
+                ->where('cloturer', 0)->orderBy('date_debut', 'desc')->first();
         }
 
-        // Filtre les fichiers générés par l'exercice en cours
-        $grandLivre = [];
-        if ($exerciceEnCours) {
-            $grandLivre = GrandLivreTiers::where('company_id', $companyId)
+        $grandLivre = $exerciceEnCours
+            ? GrandLivreTiers::where('company_id', $companyId)
                 ->where('date_debut', '>=', $exerciceEnCours->date_debut)
                 ->where('date_fin', '<=', $exerciceEnCours->date_fin)
-                ->orderByDesc('created_at')
-                ->get();
-        } else {
-            $grandLivre = GrandLivreTiers::where('company_id', $companyId)
-                ->orderByDesc('created_at')
-                ->get();
-        }
+                ->orderByDesc('created_at')->get()
+            : GrandLivreTiers::where('company_id', $companyId)
+                ->orderByDesc('created_at')->get();
 
         return view('accounting_ledger_tiers', compact('PlanTiers', 'grandLivre', 'exerciceEnCours'));
     }
 
-    
-
-
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Génération Grand Livre Tiers (PDF / Excel / CSV)
+    // ─────────────────────────────────────────────────────────────────────────
     public function generateGrandLivre(Request $request)
     {
-        // Désactiver la limite de temps et allouer assez de mémoire pour gérer les gros volumes PDF
         set_time_limit(0);
-        ini_set('memory_limit', '2048M');
+        ini_set('memory_limit', '512M');
 
         try {
             $request->validate([
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after_or_equal:date_debut',
+                'date_debut'      => 'required|date',
+                'date_fin'        => 'required|date|after_or_equal:date_debut',
                 'plan_tiers_id_1' => 'required|exists:plan_tiers,id',
                 'plan_tiers_id_2' => 'required|exists:plan_tiers,id',
-                'format_fichier' => 'nullable|in:pdf,excel,csv',
-                'display_mode' => 'nullable|in:origine,comptaflow,both'
+                'format_fichier'  => 'nullable|in:pdf,excel,csv',
+                'display_mode'    => 'nullable|in:origine,comptaflow,both',
             ]);
 
-            $user = Auth::user();
-            $companyId = session('current_company_id', $user->company_id); // Fix: use session/auth logic consistently
-            $display_mode = $request->display_mode ?? 'comptaflow';
+            $user        = Auth::user();
+            $companyId   = session('current_company_id', $user->company_id);
+            $format      = $request->format_fichier ?? 'pdf';
+            $displayMode = $request->display_mode   ?? 'comptaflow';
+            $exerciceId  = session('current_exercice_id');
 
-            // Lookup avec withoutGlobalScopes pour garantir l'accès
-            $compte1 = PlanTiers::withoutGlobalScopes()->where('company_id', $companyId)->findOrFail($request->plan_tiers_id_1);
-            $compte2 = PlanTiers::withoutGlobalScopes()->where('company_id', $companyId)->findOrFail($request->plan_tiers_id_2);
-
-            // Comparaison de chaînes pour la plage de Tiers (important pour le tri lexicographique)
-            $v1 = (string)$compte1->numero_de_tiers;
-            $v2 = (string)$compte2->numero_de_tiers;
-
-            // Correction BUG: PHP compare les chaînes numériques comme des entiers
-            $min = strcmp($v1, $v2) < 0 ? $v1 : $v2;
-            $max = strcmp($v1, $v2) < 0 ? $v2 : $v1;
+            [$compte1, $compte2, $min, $max] = $this->resolveTiersRange($companyId, $request);
 
             $comptesIds = PlanTiers::withoutGlobalScopes()
                 ->where('company_id', $companyId)
                 ->where('numero_de_tiers', '>=', $min)
                 ->where('numero_de_tiers', '<=', $max)
-                ->pluck('id');
-
-            $query = EcritureComptable::join('plan_tiers', 'ecriture_comptables.plan_tiers_id', '=', 'plan_tiers.id')
-                ->select('ecriture_comptables.*')
-                ->with([
-                    'planTiers',
-                    'planComptable',
-                    'codeJournal'
-                ])
-                ->where('ecriture_comptables.company_id', $companyId)
-                ->whereIn('ecriture_comptables.plan_tiers_id', $comptesIds)
-                ->whereBetween('date', [$request->date_debut, $request->date_fin])
-                ->orderBy('plan_tiers.numero_de_tiers', 'asc')
-                ->orderBy('date', 'asc')
-                ->orderBy('n_saisie', 'asc');
-
-            // Filtrage strict par exercice si le contexte est défini
-            if (session()->has('current_exercice_id')) {
-                $query->where('exercices_comptables_id', session('current_exercice_id'));
-            }
-
-            // Récupéraion globale
-            $ecritures = $query->get();
-
-            // Filtrage en mémoire sur les comptes Tiers (conservé par sécurité, mais instantané car déjà filtré)
-            $ecritures = $ecritures->whereIn('plan_tiers_id', $comptesIds);
-
-            $count = $ecritures->count();
-            $format_fichier = $request->format_fichier ?? 'pdf';
-
-            // Calcul des soldes initiaux par Tiers (1 seule requête GROUP BY au lieu de N requêtes)
-            $soldeQuery = EcritureComptable::where('company_id', $companyId)
-                ->whereIn('plan_tiers_id', $comptesIds)
-                ->where('date', '<', $request->date_debut)
-                ->selectRaw('plan_tiers_id, SUM(debit) as si_debit, SUM(credit) as si_credit')
-                ->groupBy('plan_tiers_id');
-
-            if (session()->has('current_exercice_id')) {
-                $soldeQuery->where('exercices_comptables_id', session('current_exercice_id'));
-            }
-
-            $soldesInitiaux = $soldeQuery->get()
-                ->keyBy('plan_tiers_id')
-                ->map(function ($r) {
-                    $d = (float) $r->si_debit;
-                    $c = (float) $r->si_credit;
-                    return ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
-                })
+                ->pluck('id')
                 ->toArray();
 
-            // 🔹 CSV
-            if ($format_fichier === 'csv') {
-                $filename = 'grand_livre_tiers_' . $compte1->numero_de_tiers . '_' . $compte2->numero_de_tiers . '_' . now()->format('YmdHis') . '.csv';
+            $ecritures      = $this->fetchEcrituresFlat($companyId, $comptesIds, $request->date_debut, $request->date_fin, $exerciceId);
+            $count          = $ecritures->count();
+            $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $comptesIds, $request->date_debut, $exerciceId);
 
+            // ── CSV ──────────────────────────────────────────────────────────
+            if ($format === 'csv') {
+                $filename = "grand_livre_tiers_csv_{$compte1->numero_de_tiers}_{$compte2->numero_de_tiers}_" . now()->format('YmdHis') . '.csv';
                 Excel::store(new GrandLivreTiersExport($ecritures, $soldesInitiaux), $filename, 'grand_livres_tiers');
-
-                GrandLivreTiers::create([
-                    'date_debut' => $request->date_debut,
-                    'date_fin' => $request->date_fin,
-                    'plan_tiers_id_1' => $request->plan_tiers_id_1,
-                    'plan_tiers_id_2' => $request->plan_tiers_id_2,
-                    'format' => $format_fichier,
-                    'grand_livre_tiers' => $filename,
-                    'user_id' => $user->id,
-                    'company_id' => $user->company_id,
-                ]);
-
-                return back()->with('success', "CSV Grand Livre des Tiers généré avec succès ! ($count écritures)");
+                GrandLivreTiers::create($this->livreData($request, $user, $format, $filename));
+                return back()->with('success', "CSV Grand Livre des Tiers généré avec succès ! ({$count} écritures)");
             }
 
-
-
-            // 🔹 PDF (par défaut)
-            $filename = 'grand_livre_tiers_' . $compte1->numero_de_tiers . '_' . $compte2->numero_de_tiers . '_' . now()->format('YmdHis') . '.pdf';
-
-            $titre = "Grand-livre des Tiers";
-
-            // UTILISATION DU SERVICE DE PAGINATION
-            $paginationService = new \App\Services\GrandLivrePaginationService();
-            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $display_mode);
-
-            $pdf = app('dompdf.wrapper');
-            $pdf->getDomPDF()->set_option('isPhpEnabled', true);
-            $pdf->getDomPDF()->set_option('enable_font_subsetting', false); // Désactiver le subsetting de polices pour un gain de temps massif (10x plus rapide)
-            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
-            $pdf->loadView('grand_livre', [
-                'company_name' => $user->company->company_name ?? 'Non défini',
-                'paginatedData' => $paginatedData,
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-                'compte' => $compte1->numero_de_tiers,
-                'compte_2' => $compte2->numero_de_tiers,
-                'user' => $user,
-                'titre' => $titre,
-                'display_mode' => $display_mode 
-            ]);
-
+            // ── PDF ──────────────────────────────────────────────────────────
+            $filename  = "grand_livre_tiers_{$compte1->numero_de_tiers}_{$compte2->numero_de_tiers}_" . now()->format('YmdHis') . '.pdf';
+            $titre     = 'Grand-livre des Tiers';
             $grandLivresPath = public_path('grand_livres_tiers/');
             if (!file_exists($grandLivresPath)) {
                 mkdir($grandLivresPath, 0777, true);
             }
 
-            $pdf->save($grandLivresPath . $filename);
+            $paginationService = new \App\Services\GrandLivrePaginationService();
+            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $displayMode);
 
-            GrandLivreTiers::create([
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-                'plan_tiers_id_1' => $request->plan_tiers_id_1,
-                'plan_tiers_id_2' => $request->plan_tiers_id_2,
-                'format' => $format_fichier,
-                'grand_livre_tiers' => $filename,
-                'user_id' => $user->id,
-                'company_id' => $user->company_id,
+            $pdf = $this->buildDompdf();
+            $pdf->loadView('grand_livre', [
+                'company_name'  => $user->company->company_name ?? 'Non défini',
+                'paginatedData' => $paginatedData,
+                'date_debut'    => $request->date_debut,
+                'date_fin'      => $request->date_fin,
+                'compte'        => $compte1->numero_de_tiers,
+                'compte_2'      => $compte2->numero_de_tiers,
+                'user'          => $user,
+                'titre'         => $titre,
+                'display_mode'  => $displayMode,
             ]);
 
-            return back()->with('success', "PDF Grand Livre des Tiers généré avec succès ! ($count écritures)");
+            $pdf->save($grandLivresPath . $filename);
+            GrandLivreTiers::create($this->livreData($request, $user, $format, $filename));
+
+            return back()->with('success', "PDF Grand Livre des Tiers généré avec succès ! ({$count} écritures)");
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la génération du grand livre des Tiers : ' . $e->getMessage());
+            Log::error('Erreur grand livre Tiers : ' . $e->getMessage());
             return back()->with('error', 'Une erreur est survenue : ' . $e->getMessage());
         }
     }
 
-
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Prévisualisation Tiers
+    // ─────────────────────────────────────────────────────────────────────────
     public function previewGrandLivreTiers(Request $request)
     {
-        // Désactiver la limite de temps et allouer assez de mémoire pour gérer les gros volumes PDF
         set_time_limit(0);
-        ini_set('memory_limit', '2048M');
+        ini_set('memory_limit', '512M');
 
         try {
             $request->validate([
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after_or_equal:date_debut',
+                'date_debut'      => 'required|date',
+                'date_fin'        => 'required|date|after_or_equal:date_debut',
                 'plan_tiers_id_1' => 'required|exists:plan_tiers,id',
                 'plan_tiers_id_2' => 'required|exists:plan_tiers,id',
-                'display_mode' => 'nullable|in:origine,comptaflow,both'
+                'display_mode'    => 'nullable|in:origine,comptaflow,both',
             ]);
 
-            $user = Auth::user();
-            $companyId = session('current_company_id', $user->company_id);
-            $display_mode = $request->display_mode ?? 'comptaflow';
+            $user        = Auth::user();
+            $companyId   = session('current_company_id', $user->company_id);
+            $displayMode = $request->display_mode ?? 'comptaflow';
+            $exerciceId  = session('current_exercice_id');
 
-            $compte1 = PlanTiers::withoutGlobalScopes()->where('company_id', $companyId)->findOrFail($request->plan_tiers_id_1);
-            $compte2 = PlanTiers::withoutGlobalScopes()->where('company_id', $companyId)->findOrFail($request->plan_tiers_id_2);
-
-            // Comparaison de chaînes pour la plage de Tiers (important pour le tri lexicographique)
-            $v1 = (string)$compte1->numero_de_tiers;
-            $v2 = (string)$compte2->numero_de_tiers;
-
-            // Correction BUG: PHP compare les chaînes numériques comme des entiers
-            $min = strcmp($v1, $v2) < 0 ? $v1 : $v2;
-            $max = strcmp($v1, $v2) < 0 ? $v2 : $v1;
+            [$compte1, $compte2, $min, $max] = $this->resolveTiersRange($companyId, $request);
 
             $comptesIds = PlanTiers::withoutGlobalScopes()
                 ->where('company_id', $companyId)
                 ->where('numero_de_tiers', '>=', $min)
                 ->where('numero_de_tiers', '<=', $max)
-                ->pluck('id');
-
-            $query = EcritureComptable::join('plan_tiers', 'ecriture_comptables.plan_tiers_id', '=', 'plan_tiers.id')
-                ->select('ecriture_comptables.*')
-                ->with([
-                    'planTiers',
-                    'planComptable',
-                    'codeJournal'
-                ])
-                ->where('ecriture_comptables.company_id', $companyId)
-                ->whereIn('ecriture_comptables.plan_tiers_id', $comptesIds)
-                ->whereBetween('ecriture_comptables.date', [$request->date_debut, $request->date_fin])
-                ->orderBy('plan_tiers.numero_de_tiers', 'asc')
-                ->orderBy('date', 'asc')
-                ->orderBy('n_saisie', 'asc');
-
-            if (session()->has('current_exercice_id')) {
-                $query->where('exercices_comptables_id', session('current_exercice_id'));
-            }
-
-            // Récupéraion globale
-            $ecritures = $query->get();
-
-            // Log debug
-            Log::info('--- PREVIEW GRAND LIVRE TIERS DEBUG ---');
-            Log::info('Company ID: ' . $companyId);
-            Log::info('Range Tiers: ' . $min . ' - ' . $max);
-            Log::info('Computed Ids Count: ' . $comptesIds->count());
-            Log::info('Query Result (Pre-Filter): ' . $ecritures->count());
-
-            // Filtrage en mémoire sur les comptes Tiers (conservé par sécurité, mais instantané car déjà filtré)
-            $ecritures = $ecritures->whereIn('plan_tiers_id', $comptesIds);
-
-            Log::info('Final Result Count: ' . $ecritures->count());
-
-            $count = $ecritures->count();
-            // On ne bloque plus si vide
-            // if ($count === 0) { ... }
-
-
-            $titre = "Prévisualisation Grand-livre des Tiers";
-
-            // Calcul des soldes initiaux par Tiers (1 seule requête GROUP BY au lieu de N requêtes)
-            $soldeQuery = EcritureComptable::where('company_id', $companyId)
-                ->whereIn('plan_tiers_id', $comptesIds)
-                ->where('date', '<', $request->date_debut)
-                ->selectRaw('plan_tiers_id, SUM(debit) as si_debit, SUM(credit) as si_credit')
-                ->groupBy('plan_tiers_id');
-
-            if (session()->has('current_exercice_id')) {
-                $soldeQuery->where('exercices_comptables_id', session('current_exercice_id'));
-            }
-
-            $soldesInitiaux = $soldeQuery->get()
-                ->keyBy('plan_tiers_id')
-                ->map(function ($r) {
-                    $d = (float) $r->si_debit;
-                    $c = (float) $r->si_credit;
-                    return ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
-                })
+                ->pluck('id')
                 ->toArray();
 
-            // UTILISATION DU SERVICE DE PAGINATION
-            $paginationService = new \App\Services\GrandLivrePaginationService();
-            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $display_mode);
+            $ecritures      = $this->fetchEcrituresFlat($companyId, $comptesIds, $request->date_debut, $request->date_fin, $exerciceId);
+            $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $comptesIds, $request->date_debut, $exerciceId);
 
-            $pdf = app('dompdf.wrapper');
-            $pdf->getDomPDF()->set_option('isPhpEnabled', true);
-            $pdf->getDomPDF()->set_option('enable_font_subsetting', false); // Désactiver le subsetting de polices pour un gain de temps massif (10x plus rapide)
-            $pdf->getDomPDF()->set_option('isHtml5ParserEnabled', true);
+            $titre = 'Prévisualisation Grand-livre des Tiers';
+            $paginationService = new \App\Services\GrandLivrePaginationService();
+            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $displayMode);
+
+            $pdf = $this->buildDompdf();
             $pdf->loadView('grand_livre', [
-                'company_name' => $user->company->company_name ?? 'Non défini',
+                'company_name'  => $user->company->company_name ?? 'Non défini',
                 'paginatedData' => $paginatedData,
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-                'compte' => $compte1->numero_de_tiers,
-                'compte_2' => $compte2->numero_de_tiers,
-                'user' => $user,
-                'titre' => $titre,
-                'display_mode' => $display_mode 
+                'date_debut'    => $request->date_debut,
+                'date_fin'      => $request->date_fin,
+                'compte'        => $compte1->numero_de_tiers,
+                'compte_2'      => $compte2->numero_de_tiers,
+                'user'          => $user,
+                'titre'         => $titre,
+                'display_mode'  => $displayMode,
             ]);
 
-
-            // 🔹 Générer un fichier temporaire
-            $fileName = 'preview_grand_livre_tiers' . time() . '.pdf';
+            $fileName = 'preview_grand_livre_tiers_' . time() . '.pdf';
             $filePath = public_path('previews/' . $fileName);
-
-            // Crée le dossier s’il n’existe pas
             if (!file_exists(public_path('previews'))) {
                 mkdir(public_path('previews'), 0777, true);
             }
-
             file_put_contents($filePath, $pdf->output());
 
-            // Retourner une URL publique
-            $url = asset('previews/' . $fileName);
+            return response()->json(['success' => true, 'url' => asset('previews/' . $fileName)]);
 
-            return response()->json([
-                'success' => true,
-                'url' => $url
-            ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Suppression
+    // ─────────────────────────────────────────────────────────────────────────
     public function destroy($id)
     {
         try {
-            $livre = GrandLivreTiers::findOrFail($id);
-
+            $livre    = GrandLivreTiers::findOrFail($id);
             $filePath = public_path('grand_livres_tiers/' . $livre->grand_livre_tiers);
-
             if (File::exists($filePath)) {
                 File::delete($filePath);
             }
-
             $livre->delete();
-
             return redirect()->back()->with('success', 'Grand livre des Tiers supprimé avec succès.');
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la suppression du grand livre des Tiers : ' . $e->getMessage());
+            Log::error('Erreur suppression grand livre Tiers : ' . $e->getMessage());
             return redirect()->back()->with('error', 'Une erreur est survenue lors de la suppression.');
         }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    //  HELPERS PRIVÉS
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * UNE SEULE requête SQL (flat JOIN) — aucun eager loading Eloquent.
+     */
+    private function fetchEcrituresFlat(int $companyId, array $comptesIds, string $dateDebut, string $dateFin, ?int $exerciceId)
+    {
+        if (empty($comptesIds)) {
+            return collect();
+        }
+
+        $query = DB::table('ecriture_comptables as e')
+            ->join('plan_tiers as pt', 'e.plan_tiers_id', '=', 'pt.id')
+            ->leftJoin('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
+            ->leftJoin('code_journals as cj', 'e.code_journal_id', '=', 'cj.id')
+            ->where('e.company_id', $companyId)
+            ->whereIn('e.plan_tiers_id', $comptesIds)
+            ->whereBetween('e.date', [$dateDebut, $dateFin])
+            ->select([
+                'e.id',
+                'e.date',
+                'e.n_saisie',
+                'e.n_saisie_user',
+                'e.description_operation',
+                'e.reference_piece',
+                'e.plan_comptable_id',
+                'e.plan_tiers_id',
+                'e.code_journal_id',
+                'e.debit',
+                'e.credit',
+                'e.lettrage',
+                DB::raw('pt.numero_de_tiers   as pt_numero'),
+                DB::raw('pt.numero_original   as pt_numero_original'),
+                DB::raw('pt.intitule          as pt_intitule'),
+                DB::raw('pc.numero_de_compte  as pc_numero'),
+                DB::raw('pc.numero_original   as pc_numero_original'),
+                DB::raw('pc.intitule          as pc_intitule'),
+                DB::raw('cj.code_journal      as cj_code'),
+                DB::raw('cj.numero_original   as cj_numero_original'),
+            ])
+            ->orderBy('pt.numero_de_tiers', 'asc')
+            ->orderBy('e.date', 'asc')
+            ->orderBy('e.n_saisie', 'asc');
+
+        if ($exerciceId) {
+            $query->where('e.exercices_comptables_id', $exerciceId);
+        }
+
+        return $query->get()->map(function ($row) {
+            $row->planTiers = (object)[
+                'numero_de_tiers' => $row->pt_numero,
+                'numero_original' => $row->pt_numero_original,
+                'intitule'        => $row->pt_intitule,
+            ];
+            $row->planComptable = $row->pc_numero ? (object)[
+                'numero_de_compte' => $row->pc_numero,
+                'numero_original'  => $row->pc_numero_original,
+                'intitule'         => $row->pc_intitule,
+            ] : null;
+            $row->codeJournal = $row->cj_code ? (object)[
+                'code_journal'    => $row->cj_code,
+                'numero_original' => $row->cj_numero_original,
+            ] : null;
+            return $row;
+        });
+    }
+
+    /**
+     * Soldes initiaux Tiers (1 requête GROUP BY).
+     */
+    private function fetchSoldesInitiaux(int $companyId, array $comptesIds, string $dateDebut, ?int $exerciceId): array
+    {
+        if (empty($comptesIds)) {
+            return [];
+        }
+
+        $query = DB::table('ecriture_comptables')
+            ->where('company_id', $companyId)
+            ->whereIn('plan_tiers_id', $comptesIds)
+            ->where('date', '<', $dateDebut)
+            ->selectRaw('plan_tiers_id, SUM(debit) as si_debit, SUM(credit) as si_credit')
+            ->groupBy('plan_tiers_id');
+
+        if ($exerciceId) {
+            $query->where('exercices_comptables_id', $exerciceId);
+        }
+
+        $result = [];
+        foreach ($query->get() as $row) {
+            $d = (float) $row->si_debit;
+            $c = (float) $row->si_credit;
+            $result[$row->plan_tiers_id] = ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
+        }
+        return $result;
+    }
+
+    /**
+     * Résout la plage min/max des numéros de tiers.
+     */
+    private function resolveTiersRange(int $companyId, Request $request): array
+    {
+        $compte1 = PlanTiers::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->findOrFail($request->plan_tiers_id_1);
+        $compte2 = PlanTiers::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->findOrFail($request->plan_tiers_id_2);
+
+        $v1  = (string) $compte1->numero_de_tiers;
+        $v2  = (string) $compte2->numero_de_tiers;
+        $min = strcmp($v1, $v2) <= 0 ? $v1 : $v2;
+        $max = strcmp($v1, $v2) <= 0 ? $v2 : $v1;
+
+        return [$compte1, $compte2, $min, $max];
+    }
+
+    /**
+     * Construit DOMPDF avec les options de performance optimales.
+     */
+    private function buildDompdf()
+    {
+        $pdf    = app('dompdf.wrapper');
+        $domPdf = $pdf->getDomPDF();
+        $domPdf->set_option('isPhpEnabled', true);
+        $domPdf->set_option('enable_font_subsetting', false);
+        $domPdf->set_option('isHtml5ParserEnabled', false);
+        $domPdf->set_option('isRemoteEnabled', false);
+        $domPdf->set_option('defaultFont', 'helvetica');
+        return $pdf;
+    }
+
+    /**
+     * Données communes pour enregistrement GrandLivreTiers en BD.
+     */
+    private function livreData(Request $request, $user, string $format, string $filename): array
+    {
+        return [
+            'date_debut'      => $request->date_debut,
+            'date_fin'        => $request->date_fin,
+            'plan_tiers_id_1' => $request->plan_tiers_id_1,
+            'plan_tiers_id_2' => $request->plan_tiers_id_2,
+            'format'          => $format,
+            'grand_livre_tiers' => $filename,
+            'user_id'         => $user->id,
+            'company_id'      => $user->company_id,
+        ];
     }
 }
