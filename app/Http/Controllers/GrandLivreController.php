@@ -110,28 +110,21 @@ class GrandLivreController extends Controller
                 return back()->with('success', ucfirst($format) . " Grand Livre généré avec succès ! ({$count} écritures)");
             }
 
-            // ── PDF ────────────────────────────────────────────────────────
-            $filename  = "grand_livre_{$compte1->numero_de_compte}_{$compte2->numero_de_compte}_" . now()->format('YmdHis') . '.pdf';
-            $titre     = 'Grand-livre des comptes';
+            // ── PDF via mPDF (génération native, sans parsing HTML) ──────────
+            $filename        = "grand_livre_{$compte1->numero_de_compte}_{$compte2->numero_de_compte}_" . now()->format('YmdHis') . '.pdf';
+            $titre           = 'Grand-livre des comptes';
             $grandLivresPath = public_path('grand_livres/');
+            if (!file_exists($grandLivresPath)) {
+                mkdir($grandLivresPath, 0777, true);
+            }
 
-            $paginationService = new \App\Services\GrandLivrePaginationService();
-            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $displayMode);
-
-            $pdf = $this->buildDompdf();
-            $pdf->loadView('grand_livre', [
-                'company_name'  => $user->company->company_name ?? 'Non défini',
-                'paginatedData' => $paginatedData,
-                'date_debut'    => $request->date_debut,
-                'date_fin'      => $request->date_fin,
-                'compte'        => $compte1->numero_de_compte,
-                'compte_2'      => $compte2->numero_de_compte,
-                'user'          => $user,
-                'titre'         => $titre,
-                'display_mode'  => $displayMode,
-            ]);
-
-            $pdf->save($grandLivresPath . $filename);
+            (new \App\Services\GrandLivrePdfService())->generate(
+                $ecritures, $soldesInitiaux, $titre, $displayMode,
+                $user->company->company_name ?? 'Non défini',
+                $request->date_debut, $request->date_fin,
+                $compte1->numero_de_compte, $compte2->numero_de_compte,
+                $grandLivresPath . $filename
+            );
 
             GrandLivre::create($this->livreData($request, $user, $format, $filename));
 
@@ -171,28 +164,20 @@ class GrandLivreController extends Controller
             $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $min, $max, $request->date_debut, $exerciceId);
 
             $titre = 'Prévisualisation Grand-livre des comptes';
-            $paginationService = new \App\Services\GrandLivrePaginationService();
-            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $displayMode);
-
-            $pdf = $this->buildDompdf();
-            $pdf->loadView('grand_livre', [
-                'company_name'  => $user->company->company_name ?? 'Non défini',
-                'paginatedData' => $paginatedData,
-                'date_debut'    => $request->date_debut,
-                'date_fin'      => $request->date_fin,
-                'compte'        => $compte1->numero_de_compte,
-                'compte_2'      => $compte2->numero_de_compte,
-                'user'          => $user,
-                'titre'         => $titre,
-                'display_mode'  => $displayMode,
-            ]);
 
             $fileName = 'preview_grand_livre_' . time() . '.pdf';
             $filePath = public_path('previews/' . $fileName);
             if (!file_exists(public_path('previews'))) {
                 mkdir(public_path('previews'), 0777, true);
             }
-            file_put_contents($filePath, $pdf->output());
+
+            (new \App\Services\GrandLivrePdfService())->generate(
+                $ecritures, $soldesInitiaux, $titre, $displayMode,
+                $user->company->company_name ?? 'Non défini',
+                $request->date_debut, $request->date_fin,
+                $compte1->numero_de_compte, $compte2->numero_de_compte,
+                $filePath
+            );
 
             return response()->json(['success' => true, 'url' => asset('previews/' . $fileName)]);
 

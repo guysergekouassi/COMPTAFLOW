@@ -92,31 +92,22 @@ class GrandLivreTiersController extends Controller
                 return back()->with('success', "CSV Grand Livre des Tiers généré avec succès ! ({$count} écritures)");
             }
 
-            // ── PDF ──────────────────────────────────────────────────────────
-            $filename  = "grand_livre_tiers_{$compte1->numero_de_tiers}_{$compte2->numero_de_tiers}_" . now()->format('YmdHis') . '.pdf';
-            $titre     = 'Grand-livre des Tiers';
+            // ── PDF via mPDF ───────────────────────────────────────────────
+            $filename        = "grand_livre_tiers_{$compte1->numero_de_tiers}_{$compte2->numero_de_tiers}_" . now()->format('YmdHis') . '.pdf';
+            $titre           = 'Grand-livre des Tiers';
             $grandLivresPath = public_path('grand_livres_tiers/');
             if (!file_exists($grandLivresPath)) {
                 mkdir($grandLivresPath, 0777, true);
             }
 
-            $paginationService = new \App\Services\GrandLivrePaginationService();
-            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $displayMode);
+            (new \App\Services\GrandLivrePdfService())->generate(
+                $ecritures, $soldesInitiaux, $titre, $displayMode,
+                $user->company->company_name ?? 'Non défini',
+                $request->date_debut, $request->date_fin,
+                $compte1->numero_de_tiers, $compte2->numero_de_tiers,
+                $grandLivresPath . $filename
+            );
 
-            $pdf = $this->buildDompdf();
-            $pdf->loadView('grand_livre', [
-                'company_name'  => $user->company->company_name ?? 'Non défini',
-                'paginatedData' => $paginatedData,
-                'date_debut'    => $request->date_debut,
-                'date_fin'      => $request->date_fin,
-                'compte'        => $compte1->numero_de_tiers,
-                'compte_2'      => $compte2->numero_de_tiers,
-                'user'          => $user,
-                'titre'         => $titre,
-                'display_mode'  => $displayMode,
-            ]);
-
-            $pdf->save($grandLivresPath . $filename);
             GrandLivreTiers::create($this->livreData($request, $user, $format, $filename));
 
             return back()->with('success', "PDF Grand Livre des Tiers généré avec succès ! ({$count} écritures)");
@@ -155,28 +146,20 @@ class GrandLivreTiersController extends Controller
             $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $min, $max, $request->date_debut, $exerciceId);
 
             $titre = 'Prévisualisation Grand-livre des Tiers';
-            $paginationService = new \App\Services\GrandLivrePaginationService();
-            $paginatedData = $paginationService->paginate($ecritures, $soldesInitiaux, $titre, $displayMode);
-
-            $pdf = $this->buildDompdf();
-            $pdf->loadView('grand_livre', [
-                'company_name'  => $user->company->company_name ?? 'Non défini',
-                'paginatedData' => $paginatedData,
-                'date_debut'    => $request->date_debut,
-                'date_fin'      => $request->date_fin,
-                'compte'        => $compte1->numero_de_tiers,
-                'compte_2'      => $compte2->numero_de_tiers,
-                'user'          => $user,
-                'titre'         => $titre,
-                'display_mode'  => $displayMode,
-            ]);
 
             $fileName = 'preview_grand_livre_tiers_' . time() . '.pdf';
             $filePath = public_path('previews/' . $fileName);
             if (!file_exists(public_path('previews'))) {
                 mkdir(public_path('previews'), 0777, true);
             }
-            file_put_contents($filePath, $pdf->output());
+
+            (new \App\Services\GrandLivrePdfService())->generate(
+                $ecritures, $soldesInitiaux, $titre, $displayMode,
+                $user->company->company_name ?? 'Non défini',
+                $request->date_debut, $request->date_fin,
+                $compte1->numero_de_tiers, $compte2->numero_de_tiers,
+                $filePath
+            );
 
             return response()->json(['success' => true, 'url' => asset('previews/' . $fileName)]);
 
