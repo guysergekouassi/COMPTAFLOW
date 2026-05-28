@@ -40,13 +40,13 @@ class GrandLivrePdfService
     ];
 
     // Couleurs
-    const NAVY   = [27,  62, 110];   // Bleu marine — réservé total général
-    const BLUE_L = [220, 230, 245];  // Bleu clair  — en-têtes colonnes
+    const NAVY   = [27,  62, 110];   // Bleu marine — en-têtes colonnes + total général
     const BLUE_M = [200, 215, 235];  // Bleu moyen  — total compte
     const GREY_H = [210, 210, 210];  // Gris moyen  — en-tête compte (style balance)
     const GREY_L = [242, 242, 248];  // Gris clair  — sous-totaux saisie
     const YELLOW = [255, 252, 225];  // Jaune doux  — solde initial
     const WHITE  = [255, 255, 255];
+    const ORANGE = [220,  80,   0];  // Orange      — "Impression définitive" (style balance)
 
     private Mpdf   $mpdf;
     private float  $pw;          // page width utile
@@ -174,9 +174,10 @@ class GrandLivrePdfService
         $pw = $this->pw;
         $ml = self::ML;
 
-        // ── Ligne 1 : Société | Titre | Période ──────────────────────────
+        // ── Ligne 1 : Société (gras) | Titre (gras, grand) | Période ────
         $this->mpdf->SetXY($ml, $y);
         $this->mpdf->SetFont('dejavusans', 'B', 9);
+        $this->mpdf->SetTextColor(0, 0, 0);
         $this->mpdf->Cell($pw / 3, 5, $this->companyName, 0, 0, 'L');
 
         $this->mpdf->SetFont('dejavusans', 'B', 12);
@@ -185,10 +186,15 @@ class GrandLivrePdfService
         $this->mpdf->SetFont('dejavusans', '', 8);
         $this->mpdf->Cell($pw / 3, 5, 'Période du ' . $this->fmtDate($this->dateDebut), 0, 1, 'R');
 
-        // ── Ligne 2 : sous-titre | plage comptes | suite période ─────────
+        // ── Ligne 2 : « Impression définitive » (orange italic) | plage | fin période
         $this->mpdf->SetXY($ml, $y + 5);
-        $this->mpdf->SetFont('dejavusans', '', 7.5);
+        // Orange italic — identique au style balance
+        $this->mpdf->SetFont('dejavusans', 'I', 7.5);
+        $this->mpdf->SetTextColor(...self::ORANGE);
         $this->mpdf->Cell($pw / 3, 4, 'Impression définitive', 0, 0, 'L');
+        // Reset couleur
+        $this->mpdf->SetTextColor(0, 0, 0);
+        $this->mpdf->SetFont('dejavusans', '', 7.5);
         $this->mpdf->Cell($pw / 3, 4, 'Comptes : ' . $this->compteMin . ' → ' . $this->compteMax, 0, 0, 'C');
         $this->mpdf->Cell($pw / 3, 4, 'au ' . $this->fmtDate($this->dateFin), 0, 1, 'R');
 
@@ -199,6 +205,7 @@ class GrandLivrePdfService
         // ── Ligne 3 : © ComptaFlow | Date de tirage | Page X ─────────────
         $this->mpdf->SetXY($ml, $y + 11);
         $this->mpdf->SetFont('dejavusans', '', 7);
+        $this->mpdf->SetTextColor(0, 0, 0);
         $this->mpdf->Cell($pw / 3, 4, '© ComptaFlow - Logiciel de comptabilité', 0, 0, 'L');
         $dateStr = 'Date de tirage : ' . now()->format('d/m/Y') . ' à ' . now()->format('H:i:s');
         $this->mpdf->Cell($pw / 3, 4, $dateStr, 0, 0, 'C');
@@ -328,9 +335,11 @@ class GrandLivrePdfService
     private function renderColumnHeader(): void
     {
         $c = self::C;
+        // Identique au style balance : fond bleu marine foncé + texte blanc
         $this->mpdf->SetFont('dejavusans', 'B', 7);
-        $this->mpdf->SetFillColor(...self::BLUE_L);
-        $this->mpdf->SetDrawColor(160, 160, 160);
+        $this->mpdf->SetFillColor(...self::NAVY);
+        $this->mpdf->SetTextColor(255, 255, 255);
+        $this->mpdf->SetDrawColor(...self::NAVY);
         $this->mpdf->SetXY(self::ML, $this->Y);
         $this->mpdf->Cell($c['date'],    self::RH, 'Date',      1, 0, 'C', true);
         $this->mpdf->Cell($c['journal'], self::RH, 'Jnl',       1, 0, 'C', true);
@@ -343,6 +352,9 @@ class GrandLivrePdfService
         $this->mpdf->Cell($c['debit'],   self::RH, 'Débit',     1, 0, 'R', true);
         $this->mpdf->Cell($c['credit'],  self::RH, 'Crédit',    1, 0, 'R', true);
         $this->mpdf->Cell($c['solde'],   self::RH, 'Solde',     1, 1, 'R', true);
+        // Reset couleur texte
+        $this->mpdf->SetTextColor(0, 0, 0);
+        $this->mpdf->SetDrawColor(160, 160, 160);
         $this->Y += self::RH;
         $this->mpdf->SetY($this->Y);
     }
