@@ -25,14 +25,15 @@ class GrandLivrePdfService
 
     // Largeurs colonnes (A4 paysage : 297 - 16 = 281 mm utiles)
     // Date | Jnl | N°Saisie | Pièce | Compte | Tiers | Libellé | Ltr | Débit | Crédit | Solde
+    // Total = 16+10+22+24+14+14+68+8+27+27+27 = 257 mm (< 281 mm)
     const C = [
-        'date'    => 18,
+        'date'    => 16,   // réduit (-2) pour laisser plus d'espace à Pièce/Saisie
         'journal' => 10,
-        'saisie'  => 20,
-        'piece'   => 18,
+        'saisie'  => 22,   // élargi (+2) — références saisie longues
+        'piece'   => 24,   // élargi (+6) — références pièce souvent longues
         'compte'  => 14,
         'tiers'   => 14,
-        'libelle' => 78,
+        'libelle' => 68,   // réduit (-10) — reste largement suffisant
         'lettr'   => 8,
         'debit'   => 27,
         'credit'  => 27,
@@ -153,6 +154,8 @@ class GrandLivrePdfService
         $this->mpdf->AddPage('L');
         $this->pageNum++;
         $this->renderPageHeader();
+        // En-tête colonnes une seule fois par page (pas par compte)
+        $this->renderColumnHeader();
     }
 
     /** S'assure qu'il reste $mm mm sur la page, sinon saute de page. */
@@ -292,9 +295,6 @@ class GrandLivrePdfService
             1, 1, 'L', true);
         $this->Y += 7;
 
-        // ── En-tête colonnes ──────────────────────────────────────────────
-        $this->renderColumnHeader();
-
         // ── Solde initial ─────────────────────────────────────────────────
         if ($si['debit'] != 0 || $si['credit'] != 0) {
             $this->renderInitialBalance($si['debit'], $si['credit'], $si['solde']);
@@ -389,13 +389,13 @@ class GrandLivrePdfService
         $this->mpdf->SetFont('dejavusans', '', 7);
         $this->mpdf->SetFillColor(...self::WHITE);
         $this->mpdf->SetXY(self::ML, $this->Y);
-        $this->mpdf->Cell($c['date'],    self::RH, $this->fmtDate($e->date ?? ''),               1, 0, 'C');
-        $this->mpdf->Cell($c['journal'], self::RH, mb_substr($jl,  0, 6),                        1, 0, 'C');
-        $this->mpdf->Cell($c['saisie'],  self::RH, mb_substr($ns,  0, 16),                       1, 0, 'C');
-        $this->mpdf->Cell($c['piece'],   self::RH, mb_substr($e->reference_piece ?? '-', 0, 14), 1, 0, 'C');
-        $this->mpdf->Cell($c['compte'],  self::RH, mb_substr($cpt, 0, 10),                       1, 0, 'C');
-        $this->mpdf->Cell($c['tiers'],   self::RH, mb_substr($ti,  0, 10),                       1, 0, 'C');
-        $this->mpdf->Cell($c['libelle'], self::RH, mb_substr($e->description_operation ?? '', 0, 54), 1, 0, 'L');
+        $this->mpdf->Cell($c['date'],    self::RH, $this->fmtDate($e->date ?? ''),                    1, 0, 'C');
+        $this->mpdf->Cell($c['journal'], self::RH, mb_substr($jl,  0, 6),                             1, 0, 'C');
+        $this->mpdf->Cell($c['saisie'],  self::RH, mb_substr($ns,  0, 13),                            1, 0, 'C'); // 22mm≈13 chars
+        $this->mpdf->Cell($c['piece'],   self::RH, mb_substr($e->reference_piece ?? '-', 0, 15),      1, 0, 'C'); // 24mm≈15 chars
+        $this->mpdf->Cell($c['compte'],  self::RH, mb_substr($cpt, 0, 9),                             1, 0, 'C'); // 14mm≈9 chars
+        $this->mpdf->Cell($c['tiers'],   self::RH, mb_substr($ti,  0, 9),                             1, 0, 'C'); // 14mm≈9 chars
+        $this->mpdf->Cell($c['libelle'], self::RH, mb_substr($e->description_operation ?? '', 0, 44), 1, 0, 'L'); // 68mm≈44 chars
         $this->mpdf->Cell($c['lettr'],   self::RH, mb_substr($e->lettrage ?? '', 0, 4),          1, 0, 'C');
         $this->mpdf->Cell($c['debit'],   self::RH, $d  > 0 ? $this->fmt($d)  : '',              1, 0, 'R');
         $this->mpdf->Cell($c['credit'],  self::RH, $cv > 0 ? $this->fmt($cv) : '',              1, 0, 'R');
