@@ -261,6 +261,7 @@ class GrandLivreController extends Controller
             ->join('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
             ->leftJoin('plan_tiers as pt', 'e.plan_tiers_id', '=', 'pt.id')
             ->leftJoin('code_journals as cj', 'e.code_journal_id', '=', 'cj.id')
+            ->leftJoin('lettrages as ltr', 'e.lettrage_id', '=', 'ltr.id')
             ->where('e.company_id', $companyId)
             ->whereIn('e.plan_comptable_id', $comptesIds)
             ->whereBetween('e.date', [$dateDebut, $dateFin])
@@ -277,7 +278,8 @@ class GrandLivreController extends Controller
                 'e.code_journal_id',
                 'e.debit',
                 'e.credit',
-                'e.lettrage',
+                // Code de lettrage (via JOIN lettrages)
+                DB::raw('ltr.code             as lettrage_code'),
                 // Plan comptable
                 DB::raw('pc.numero_de_compte  as pc_numero'),
                 DB::raw('pc.numero_original   as pc_numero_original'),
@@ -318,6 +320,8 @@ class GrandLivreController extends Controller
                 'code_journal'    => $row->cj_code,
                 'numero_original' => $row->cj_numero_original,
             ] : null;
+            // Normaliser le lettrage pour le service de pagination
+            $row->lettrage = $row->lettrage_code ?? '';
 
             return $row;
         });

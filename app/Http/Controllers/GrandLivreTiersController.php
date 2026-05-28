@@ -235,6 +235,7 @@ class GrandLivreTiersController extends Controller
             ->join('plan_tiers as pt', 'e.plan_tiers_id', '=', 'pt.id')
             ->leftJoin('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
             ->leftJoin('code_journals as cj', 'e.code_journal_id', '=', 'cj.id')
+            ->leftJoin('lettrages as ltr', 'e.lettrage_id', '=', 'ltr.id')
             ->where('e.company_id', $companyId)
             ->whereIn('e.plan_tiers_id', $comptesIds)
             ->whereBetween('e.date', [$dateDebut, $dateFin])
@@ -250,7 +251,7 @@ class GrandLivreTiersController extends Controller
                 'e.code_journal_id',
                 'e.debit',
                 'e.credit',
-                'e.lettrage',
+                DB::raw('ltr.code             as lettrage_code'),
                 DB::raw('pt.numero_de_tiers   as pt_numero'),
                 DB::raw('pt.numero_original   as pt_numero_original'),
                 DB::raw('pt.intitule          as pt_intitule'),
@@ -283,6 +284,7 @@ class GrandLivreTiersController extends Controller
                 'code_journal'    => $row->cj_code,
                 'numero_original' => $row->cj_numero_original,
             ] : null;
+            $row->lettrage = $row->lettrage_code ?? '';
             return $row;
         });
     }
