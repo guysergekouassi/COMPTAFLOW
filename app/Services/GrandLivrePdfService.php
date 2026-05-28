@@ -40,9 +40,10 @@ class GrandLivrePdfService
     ];
 
     // Couleurs
-    const NAVY   = [27,  62, 110];   // Bleu marine — en-têtes compte
-    const BLUE_L = [220, 230, 245];  // Bleu clair — en-têtes colonnes
-    const BLUE_M = [180, 205, 235];  // Bleu moyen — total compte
+    const NAVY   = [27,  62, 110];   // Bleu marine — réservé total général
+    const BLUE_L = [220, 230, 245];  // Bleu clair  — en-têtes colonnes
+    const BLUE_M = [200, 215, 235];  // Bleu moyen  — total compte
+    const GREY_H = [210, 210, 210];  // Gris moyen  — en-tête compte (style balance)
     const GREY_L = [242, 242, 248];  // Gris clair  — sous-totaux saisie
     const YELLOW = [255, 252, 225];  // Jaune doux  — solde initial
     const WHITE  = [255, 255, 255];
@@ -274,15 +275,14 @@ class GrandLivrePdfService
         // ── Vérification espace (header + colonnes + 1 ligne) ─────────────
         $this->need(3 * self::RH + 4);
 
-        // ── En-tête compte (bleu marine) ──────────────────────────────────
+        // ── En-tête compte (gris clair + texte noir gras, style balance) ────
         $this->mpdf->SetXY(self::ML, $this->Y);
-        $this->mpdf->SetFillColor(...self::NAVY);
-        $this->mpdf->SetTextColor(255, 255, 255);
+        $this->mpdf->SetFillColor(...self::GREY_H);
+        $this->mpdf->SetTextColor(0, 0, 0);
         $this->mpdf->SetFont('dejavusans', 'B', 8);
         $this->mpdf->Cell($this->pw, 6,
             '  ' . $numAff . '  —  ' . mb_strtoupper($label),
-            0, 1, 'L', true);
-        $this->mpdf->SetTextColor(0, 0, 0);
+            1, 1, 'L', true);
         $this->Y += 7;
 
         // ── En-tête colonnes ──────────────────────────────────────────────
@@ -434,9 +434,9 @@ class GrandLivrePdfService
         $this->mpdf->SetTextColor(255, 255, 255);
         $this->mpdf->SetXY(self::ML, $this->Y);
         $this->mpdf->Cell($labelW,        7, 'TOTAL GÉNÉRAL', 1, 0, 'R', true);
-        $this->mpdf->Cell($cols['debit'], 7, $this->fmt($d),        1, 0, 'R', true);
-        $this->mpdf->Cell($cols['credit'],7, $this->fmt($c),        1, 0, 'R', true);
-        $this->mpdf->Cell($cols['solde'], 7, $this->fmtSolde($d-$c),1, 1, 'R', true);
+        $this->mpdf->Cell($cols['debit'], 7, $this->fmt($d),         1, 0, 'R', true);
+        $this->mpdf->Cell($cols['credit'],7, $this->fmt($c),         1, 0, 'R', true);
+        $this->mpdf->Cell($cols['solde'], 7, $this->fmtSolde($d-$c), 1, 1, 'R', true);
         $this->mpdf->SetTextColor(0, 0, 0);
     }
 
