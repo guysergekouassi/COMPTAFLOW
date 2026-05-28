@@ -86,25 +86,16 @@ class GrandLivreController extends Controller
 
             [$compte1, $compte2, $min, $max] = $this->resolveAccountRange($companyId, $request);
 
-            // ── 1. Récupérer les IDs de comptes dans la plage ──────────────
-            $comptesIds = PlanComptable::withoutGlobalScopes()
-                ->where('company_id', $companyId)
-                ->where('numero_de_compte', '>=', $min)
-                ->where('numero_de_compte', '<=', $max)
-                ->pluck('id')
-                ->toArray();
-
-            // ── 2. UNE SEULE requête SQL avec 3 JOINs ─────────────────────
-            //    (pas d'Eloquent eager-loading = pas de N requêtes supplémentaires)
+            // ── 1 requête SQL plate (JOIN BETWEEN — sans whereIn massif) ───
             $ecritures = $this->fetchEcrituresFlat(
-                $companyId, $comptesIds, $request->date_debut, $request->date_fin, $exerciceId
+                $companyId, $min, $max, $request->date_debut, $request->date_fin, $exerciceId
             );
 
             $count = $ecritures->count();
 
-            // ── 3. Soldes initiaux (1 seule requête GROUP BY) ──────────────
+            // ── Soldes initiaux (1 seule requête GROUP BY) ─────────────────
             $soldesInitiaux = $this->fetchSoldesInitiaux(
-                $companyId, $comptesIds, $request->date_debut, $exerciceId, 'plan_comptable_id'
+                $companyId, $min, $max, $request->date_debut, $exerciceId
             );
 
             // ── Excel / CSV ────────────────────────────────────────────────
@@ -176,15 +167,8 @@ class GrandLivreController extends Controller
 
             [$compte1, $compte2, $min, $max] = $this->resolveAccountRange($companyId, $request);
 
-            $comptesIds = PlanComptable::withoutGlobalScopes()
-                ->where('company_id', $companyId)
-                ->where('numero_de_compte', '>=', $min)
-                ->where('numero_de_compte', '<=', $max)
-                ->pluck('id')
-                ->toArray();
-
-            $ecritures      = $this->fetchEcrituresFlat($companyId, $comptesIds, $request->date_debut, $request->date_fin, $exerciceId);
-            $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $comptesIds, $request->date_debut, $exerciceId, 'plan_comptable_id');
+            $ecritures      = $this->fetchEcrituresFlat($companyId, $min, $max, $request->date_debut, $request->date_fin, $exerciceId);
+            $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $min, $max, $request->date_debut, $exerciceId);
 
             $titre = 'Prévisualisation Grand-livre des comptes';
             $paginationService = new \App\Services\GrandLivrePaginationService();
@@ -247,26 +231,25 @@ class GrandLivreController extends Controller
     // ═════════════════════════════════════════════════════════════════════════
 
     /**
-     * UNE SEULE requête SQL (flat JOIN) — aucun eager loading Eloquent.
-     * Retourne une Collection d'objets stdClass enrichis de propriétés
-     * compatibles avec ce qu'attend GrandLivrePaginationService.
+     * UNE SEULE requête SQL optimisée.
+     * INNER JOIN sur plan_comptables avec condition BETWEEN sur numero_de_compte
+     * → Pas de whereIn massif, MySQL utilise les index.
      */
-    private function fetchEcrituresFlat(int $companyId, array $comptesIds, string $dateDebut, string $dateFin, ?int $exerciceId)
+    private function fetchEcrituresFlat(int $companyId, string $min, string $max, string $dateDebut, string $dateFin, ?int $exerciceId)
     {
-        if (empty($comptesIds)) {
-            return collect();
-        }
-
         $query = DB::table('ecriture_comptables as e')
-            ->join('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
+            ->join('plan_comptables as pc', function ($join) use ($companyId, $min, $max) {
+                $join->on('e.plan_comptable_id', '=', 'pc.id')
+                     ->where('pc.company_id', '=', $companyId)
+                     ->where('pc.numero_de_compte', '>=', $min)
+                     ->where('pc.numero_de_compte', '<=', $max);
+            })
             ->leftJoin('plan_tiers as pt', 'e.plan_tiers_id', '=', 'pt.id')
             ->leftJoin('code_journals as cj', 'e.code_journal_id', '=', 'cj.id')
             ->leftJoin('lettrages as ltr', 'e.lettrage_id', '=', 'ltr.id')
             ->where('e.company_id', $companyId)
-            ->whereIn('e.plan_comptable_id', $comptesIds)
             ->whereBetween('e.date', [$dateDebut, $dateFin])
             ->select([
-                // Écriture principale
                 'e.id',
                 'e.date',
                 'e.n_saisie',
@@ -278,17 +261,13 @@ class GrandLivreController extends Controller
                 'e.code_journal_id',
                 'e.debit',
                 'e.credit',
-                // Code de lettrage (via JOIN lettrages)
                 DB::raw('ltr.code             as lettrage_code'),
-                // Plan comptable
                 DB::raw('pc.numero_de_compte  as pc_numero'),
                 DB::raw('pc.numero_original   as pc_numero_original'),
                 DB::raw('pc.intitule          as pc_intitule'),
-                // Plan tiers
                 DB::raw('pt.numero_de_tiers   as pt_numero'),
                 DB::raw('pt.numero_original   as pt_numero_original'),
                 DB::raw('pt.intitule          as pt_intitule'),
-                // Code journal
                 DB::raw('cj.code_journal      as cj_code'),
                 DB::raw('cj.numero_original   as cj_numero_original'),
             ])
@@ -300,12 +279,7 @@ class GrandLivreController extends Controller
             $query->where('e.exercices_comptables_id', $exerciceId);
         }
 
-        // Récupérer en stdClass, puis adapter pour le service de pagination
-        $rows = $query->get();
-
-        // Transformer en objets compatibles avec GrandLivrePaginationService
-        return $rows->map(function ($row) {
-            // Créer des sous-objets stdClass qui imitent les relations Eloquent
+        return $query->get()->map(function ($row) {
             $row->planComptable = (object)[
                 'numero_de_compte' => $row->pc_numero,
                 'numero_original'  => $row->pc_numero_original,
@@ -320,38 +294,37 @@ class GrandLivreController extends Controller
                 'code_journal'    => $row->cj_code,
                 'numero_original' => $row->cj_numero_original,
             ] : null;
-            // Normaliser le lettrage pour le service de pagination
             $row->lettrage = $row->lettrage_code ?? '';
-
             return $row;
         });
     }
 
     /**
-     * Calcule les soldes initiaux (avant date_debut) en une seule requête GROUP BY.
+     * Soldes initiaux via JOIN BETWEEN — sans whereIn massif.
      */
-    private function fetchSoldesInitiaux(int $companyId, array $comptesIds, string $dateDebut, ?int $exerciceId, string $groupByColumn): array
+    private function fetchSoldesInitiaux(int $companyId, string $min, string $max, string $dateDebut, ?int $exerciceId): array
     {
-        if (empty($comptesIds)) {
-            return [];
-        }
-
-        $query = DB::table('ecriture_comptables')
-            ->where('company_id', $companyId)
-            ->whereIn($groupByColumn, $comptesIds)
-            ->where('date', '<', $dateDebut)
-            ->selectRaw("{$groupByColumn}, SUM(debit) as si_debit, SUM(credit) as si_credit")
-            ->groupBy($groupByColumn);
+        $query = DB::table('ecriture_comptables as e')
+            ->join('plan_comptables as pc', function ($join) use ($companyId, $min, $max) {
+                $join->on('e.plan_comptable_id', '=', 'pc.id')
+                     ->where('pc.company_id', '=', $companyId)
+                     ->where('pc.numero_de_compte', '>=', $min)
+                     ->where('pc.numero_de_compte', '<=', $max);
+            })
+            ->where('e.company_id', $companyId)
+            ->where('e.date', '<', $dateDebut)
+            ->selectRaw('e.plan_comptable_id, SUM(e.debit) as si_debit, SUM(e.credit) as si_credit')
+            ->groupBy('e.plan_comptable_id');
 
         if ($exerciceId) {
-            $query->where('exercices_comptables_id', $exerciceId);
+            $query->where('e.exercices_comptables_id', $exerciceId);
         }
 
         $result = [];
         foreach ($query->get() as $row) {
             $d = (float) $row->si_debit;
             $c = (float) $row->si_credit;
-            $result[$row->$groupByColumn] = ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
+            $result[$row->plan_comptable_id] = ['debit' => $d, 'credit' => $c, 'solde' => $d - $c];
         }
         return $result;
     }

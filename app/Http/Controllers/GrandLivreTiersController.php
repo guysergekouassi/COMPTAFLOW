@@ -80,16 +80,9 @@ class GrandLivreTiersController extends Controller
 
             [$compte1, $compte2, $min, $max] = $this->resolveTiersRange($companyId, $request);
 
-            $comptesIds = PlanTiers::withoutGlobalScopes()
-                ->where('company_id', $companyId)
-                ->where('numero_de_tiers', '>=', $min)
-                ->where('numero_de_tiers', '<=', $max)
-                ->pluck('id')
-                ->toArray();
-
-            $ecritures      = $this->fetchEcrituresFlat($companyId, $comptesIds, $request->date_debut, $request->date_fin, $exerciceId);
+            $ecritures      = $this->fetchEcrituresFlat($companyId, $min, $max, $request->date_debut, $request->date_fin, $exerciceId);
             $count          = $ecritures->count();
-            $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $comptesIds, $request->date_debut, $exerciceId);
+            $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $min, $max, $request->date_debut, $exerciceId);
 
             // ── CSV ──────────────────────────────────────────────────────────
             if ($format === 'csv') {
@@ -158,15 +151,8 @@ class GrandLivreTiersController extends Controller
 
             [$compte1, $compte2, $min, $max] = $this->resolveTiersRange($companyId, $request);
 
-            $comptesIds = PlanTiers::withoutGlobalScopes()
-                ->where('company_id', $companyId)
-                ->where('numero_de_tiers', '>=', $min)
-                ->where('numero_de_tiers', '<=', $max)
-                ->pluck('id')
-                ->toArray();
-
-            $ecritures      = $this->fetchEcrituresFlat($companyId, $comptesIds, $request->date_debut, $request->date_fin, $exerciceId);
-            $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $comptesIds, $request->date_debut, $exerciceId);
+            $ecritures      = $this->fetchEcrituresFlat($companyId, $min, $max, $request->date_debut, $request->date_fin, $exerciceId);
+            $soldesInitiaux = $this->fetchSoldesInitiaux($companyId, $min, $max, $request->date_debut, $exerciceId);
 
             $titre = 'Prévisualisation Grand-livre des Tiers';
             $paginationService = new \App\Services\GrandLivrePaginationService();
@@ -225,19 +211,19 @@ class GrandLivreTiersController extends Controller
     /**
      * UNE SEULE requête SQL (flat JOIN) — aucun eager loading Eloquent.
      */
-    private function fetchEcrituresFlat(int $companyId, array $comptesIds, string $dateDebut, string $dateFin, ?int $exerciceId)
+    private function fetchEcrituresFlat(int $companyId, string $min, string $max, string $dateDebut, string $dateFin, ?int $exerciceId)
     {
-        if (empty($comptesIds)) {
-            return collect();
-        }
-
         $query = DB::table('ecriture_comptables as e')
-            ->join('plan_tiers as pt', 'e.plan_tiers_id', '=', 'pt.id')
+            ->join('plan_tiers as pt', function ($join) use ($companyId, $min, $max) {
+                $join->on('e.plan_tiers_id', '=', 'pt.id')
+                     ->where('pt.company_id', '=', $companyId)
+                     ->where('pt.numero_de_tiers', '>=', $min)
+                     ->where('pt.numero_de_tiers', '<=', $max);
+            })
             ->leftJoin('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
             ->leftJoin('code_journals as cj', 'e.code_journal_id', '=', 'cj.id')
             ->leftJoin('lettrages as ltr', 'e.lettrage_id', '=', 'ltr.id')
             ->where('e.company_id', $companyId)
-            ->whereIn('e.plan_tiers_id', $comptesIds)
             ->whereBetween('e.date', [$dateDebut, $dateFin])
             ->select([
                 'e.id',
@@ -292,21 +278,22 @@ class GrandLivreTiersController extends Controller
     /**
      * Soldes initiaux Tiers (1 requête GROUP BY).
      */
-    private function fetchSoldesInitiaux(int $companyId, array $comptesIds, string $dateDebut, ?int $exerciceId): array
+    private function fetchSoldesInitiaux(int $companyId, string $min, string $max, string $dateDebut, ?int $exerciceId): array
     {
-        if (empty($comptesIds)) {
-            return [];
-        }
-
-        $query = DB::table('ecriture_comptables')
-            ->where('company_id', $companyId)
-            ->whereIn('plan_tiers_id', $comptesIds)
-            ->where('date', '<', $dateDebut)
-            ->selectRaw('plan_tiers_id, SUM(debit) as si_debit, SUM(credit) as si_credit')
-            ->groupBy('plan_tiers_id');
+        $query = DB::table('ecriture_comptables as e')
+            ->join('plan_tiers as pt', function ($join) use ($companyId, $min, $max) {
+                $join->on('e.plan_tiers_id', '=', 'pt.id')
+                     ->where('pt.company_id', '=', $companyId)
+                     ->where('pt.numero_de_tiers', '>=', $min)
+                     ->where('pt.numero_de_tiers', '<=', $max);
+            })
+            ->where('e.company_id', $companyId)
+            ->where('e.date', '<', $dateDebut)
+            ->selectRaw('e.plan_tiers_id, SUM(e.debit) as si_debit, SUM(e.credit) as si_credit')
+            ->groupBy('e.plan_tiers_id');
 
         if ($exerciceId) {
-            $query->where('exercices_comptables_id', $exerciceId);
+            $query->where('e.exercices_comptables_id', $exerciceId);
         }
 
         $result = [];
