@@ -28,7 +28,7 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
 
-            $table->index(['company_id', 'compte_tresorerie_id', 'statut']);
+            $table->index(['company_id', 'compte_tresorerie_id', 'statut'], 'rb_company_compte_statut_idx');
         });
     }
 
