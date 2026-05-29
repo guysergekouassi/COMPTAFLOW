@@ -721,6 +721,10 @@
                     <span>Poste Trésorerie</span>
                 </a>
                 @endif
+                <a href="{{ route('rapprochement.index') }}" class="menu-link-new {{ request()->routeIs('rapprochement.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-balance-scale text-emerald-600"></i>
+                    <span>Rapprochement Bancaire</span>
+                </a>
             </div>
             @endif
 

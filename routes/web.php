@@ -29,6 +29,7 @@ use App\Http\Controllers\GrandLivreController;
 use App\Http\Controllers\GrandLivreTiersController;
 use App\Http\Controllers\GestionTresorerieController;
 use App\Http\Controllers\FluxTresorerieController;
+use App\Http\Controllers\RapprochementBancaireController;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Controllers\TresorerieContro\TresorerieController;
 use App\Http\Controllers\compteController;
@@ -381,6 +382,21 @@ Route::get('/test-saisie-number', function() {
     Route::post('accounting_balance_tiers', [BalanceTiersController::class, 'generateBalance'])->name('accounting_balance_tiers.generateBalance');
     Route::post('accounting_balance_tiers/previsualisation', [BalanceTiersController::class, 'previewBalanceTiers'])->name('accounting_balance_tiers.previewBalanceTiers');
     Route::delete('/accounting_balance_tiers/{id}', [BalanceTiersController::class, 'destroy'])->name('accounting_balance_tiers.destroy');
+
+    // *****************ROUTE RAPPROCHEMENT BANCAIRE
+    Route::prefix('rapprochement')->name('rapprochement.')->group(function () {
+        Route::get('/',                                       [RapprochementBancaireController::class, 'index'])                ->name('index');
+        Route::post('/',                                      [RapprochementBancaireController::class, 'store'])                ->name('store');
+        Route::get('/{id}',                                   [RapprochementBancaireController::class, 'show'])                 ->name('show');
+        Route::post('/{id}/import',                           [RapprochementBancaireController::class, 'importReleve'])         ->name('import');
+        Route::post('/{id}/analyser',                         [RapprochementBancaireController::class, 'analyser'])             ->name('analyser');
+        Route::post('/{id}/auto',                             [RapprochementBancaireController::class, 'autoRapprocher'])       ->name('auto');
+        Route::post('/{id}/pointage',                         [RapprochementBancaireController::class, 'savePointage'])         ->name('pointage.save');
+        Route::delete('/{id}/pointage/{pointageId}',          [RapprochementBancaireController::class, 'deletePointage'])       ->name('pointage.delete');
+        Route::post('/{id}/enregistrer',                      [RapprochementBancaireController::class, 'enregistrer'])          ->name('enregistrer');
+        Route::post('/{id}/ecriture',                         [RapprochementBancaireController::class, 'genererEcriture'])      ->name('ecriture');
+        Route::get('/{id}/ecritures-disponibles',             [RapprochementBancaireController::class, 'getEcrituresDisponibles'])->name('ecritures_disponibles');
+    });
 
     // *****************ROUTE GESTION DE LA TRESORERIE
     Route::get('/gestion_tresorerie', [GestionTresorerieController::class, 'index'])->name('gestion_tresorerie');
