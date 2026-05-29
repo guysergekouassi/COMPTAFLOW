@@ -116,8 +116,14 @@ class RapprochementBancaireController extends Controller
             ? $this->matchingService->getStats($id)
             : null;
 
+        // Plan comptable pour le modal « Générer écriture corrective »
+        // On propose les comptes de charges (6xx), produits (7xx) et frais (627xxx = frais banque)
+        $planComptables = \App\Models\PlanComptable::where('company_id', $companyId)
+            ->orderBy('numero_de_compte')
+            ->get(['id', 'numero_de_compte', 'intitule']);
+
         return view('rapprochement.show', compact(
-            'rapprochement', 'ecritures', 'ecrituresPointeesIds', 'stats'
+            'rapprochement', 'ecritures', 'ecrituresPointeesIds', 'stats', 'planComptables'
         ));
     }
 
@@ -270,36 +276,79 @@ class RapprochementBancaireController extends Controller
     public function genererEcriture(Request $request, int $id)
     {
         $validated = $request->validate([
-            'ligne_releve_id'  => 'required|exists:lignes_releve_bancaire,id',
-            'plan_comptable_id'=> 'required|exists:plan_comptables,id',
-            'description'      => 'required|string|max:255',
+            'ligne_releve_id'   => 'required|exists:lignes_releve_bancaire,id',
+            'plan_comptable_id' => 'required|exists:plan_comptables,id',
+            'description'       => 'required|string|max:255',
+            'sens'              => 'nullable|in:debit,credit',
         ]);
 
-        $rapprochement = RapprochementBancaire::with(['codeJournal', 'compteTresorerie'])->findOrFail($id);
+        $rapprochement = RapprochementBancaire::with(['codeJournal', 'compteTresorerie', 'exercice'])->findOrFail($id);
         $ligne         = LigneReleveBancaire::findOrFail($validated['ligne_releve_id']);
+        $companyId     = Auth::user()->company_id;
 
-        // Créer l'écriture comptable corrective
+        // ── Générer un n_saisie de type RAPPRO_XXXXX ──────────────────────────
+        $lastNum = EcritureComptable::where('company_id', $companyId)
+            ->where('n_saisie', 'like', 'RAPPRO_%')
+            ->max(DB::raw('CAST(SUBSTRING(n_saisie, 8) AS UNSIGNED)')) ?? 0;
+        $nSaisie = 'RAPPRO_' . str_pad($lastNum + 1, 5, '0', STR_PAD_LEFT);
+
+        // ── Sens de l'écriture (logique banque à l'envers) ────────────────────
+        // Banque CRÉDIT (entrée argent en banque) = DÉBIT en comptabilité (débit 512)
+        // Banque DÉBIT  (sortie argent en banque) = CRÉDIT en comptabilité (crédit 512)
+        $montantBanqueDebit  = $ligne->debit  > 0 ? (float) $ligne->debit  : 0;
+        $montantBanqueCredit = $ligne->credit > 0 ? (float) $ligne->credit : 0;
+
+        // L'écriture double :
+        // Ligne 1 — compte contrepartie (compte de charge/produit saisi par user)
+        // Ligne 2 — compte banque (512) lié au CompteTresorerie → géré via compte_tresorerie_id
+
+        // Débit / Crédit du compte de contrepartie :
+        //   Si la banque est débitée (sortie) → la charge est débitée
+        //   Si la banque est créditée (entrée) → le produit est crédité
+        $debitContrepartie  = $montantBanqueDebit  > 0 ? $montantBanqueDebit  : 0;
+        $creditContrepartie = $montantBanqueCredit > 0 ? $montantBanqueCredit : 0;
+
+        // Sens forcé par l'utilisateur ?
+        if ($validated['sens'] === 'debit') {
+            $debitContrepartie  = max($montantBanqueDebit, $montantBanqueCredit);
+            $creditContrepartie = 0;
+        } elseif ($validated['sens'] === 'credit') {
+            $debitContrepartie  = 0;
+            $creditContrepartie = max($montantBanqueDebit, $montantBanqueCredit);
+        }
+
+        // ── Créer l'écriture ─────────────────────────────────────────────────
         $ecriture = EcritureComptable::create([
-            'company_id'              => Auth::user()->company_id,
+            'company_id'              => $companyId,
+            'n_saisie'                => $nSaisie,
+            'n_saisie_user'           => $nSaisie,
             'date'                    => $ligne->date_operation->format('Y-m-d'),
             'description_operation'   => $validated['description'],
-            'reference_piece'         => $ligne->reference ?? 'RAPPRO-' . $id,
+            'reference_piece'         => 'RAPPRO-' . str_pad($id, 5, '0', STR_PAD_LEFT),
             'plan_comptable_id'       => $validated['plan_comptable_id'],
             'code_journal_id'         => $rapprochement->code_journal_id,
+            'exercices_comptables_id' => $rapprochement->exercice_id,
             'compte_tresorerie_id'    => $rapprochement->compte_tresorerie_id,
-            'debit'                   => $ligne->credit > 0 ? $ligne->credit : 0,
-            'credit'                  => $ligne->debit  > 0 ? $ligne->debit  : 0,
+            'debit'                   => $debitContrepartie,
+            'credit'                  => $creditContrepartie,
             'user_id'                 => Auth::id(),
             'statut'                  => 'valide',
         ]);
 
-        // Pointer automatiquement cette écriture avec la ligne relevé
-        $this->matchingService->savePointage($id, $ligne->id, $ecriture->id, 'auto', 'Écriture générée par rapprochement');
+        // ── Pointer automatiquement ──────────────────────────────────────────
+        $this->matchingService->savePointage(
+            $id, $ligne->id, $ecriture->id, 'auto',
+            'Écriture corrective générée automatiquement (' . $nSaisie . ')'
+        );
+
+        $stats = $this->matchingService->getStats($id);
 
         return response()->json([
-            'success'  => true,
-            'ecriture' => $ecriture,
-            'message'  => 'Écriture corrective créée et pointée automatiquement.',
+            'success'   => true,
+            'ecriture'  => $ecriture,
+            'n_saisie'  => $nSaisie,
+            'stats'     => $stats,
+            'message'   => '✅ Écriture ' . $nSaisie . ' créée et pointée automatiquement.',
         ]);
     }
 

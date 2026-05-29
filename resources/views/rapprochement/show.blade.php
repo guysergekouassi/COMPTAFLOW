@@ -472,7 +472,7 @@
                             <td class="text-right font-mono text-xs text-red-600">{{ $l->debit > 0 ? number_format($l->debit, 0, ',', ' ') : '' }}</td>
                             <td class="text-right font-mono text-xs text-green-600">{{ $l->credit > 0 ? number_format($l->credit, 0, ',', ' ') : '' }}</td>
                             <td>
-                              <button onclick="ouvrirGenererEcriture({{ $l->id }}, '{{ addslashes($l->libelle) }}', {{ max($l->debit, $l->credit) }})"
+                              <button onclick="ouvrirGenererEcriture({{ $l->id }}, '{{ addslashes($l->libelle) }}', {{ max($l->debit, $l->credit) }}, '{{ $l->date_operation }}', {{ $l->debit }}, {{ $l->credit }})"
                                 class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition font-bold">
                                 + Écriture
                               </button>
@@ -499,35 +499,122 @@
 
 {{-- ═══════════════════════ MODAL : GÉNÉRER ÉCRITURE ═══════════════════════ --}}
 <div class="modal fade" id="modalGenererEcriture" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content" style="border-radius:20px; padding:1.5rem;">
-      <div class="flex items-center justify-between mb-4">
-        <h5 class="font-extrabold text-slate-800 mb-0">➕ Générer une écriture corrective</h5>
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content" style="border-radius:20px; padding:1.75rem; max-height:90vh; overflow-y:auto;">
+
+      {{-- En-tête --}}
+      <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-pen-to-square text-white"></i>
+          </div>
+          <div>
+            <h5 class="font-extrabold text-slate-900 mb-0">Générer une écriture corrective</h5>
+            <p class="text-xs text-slate-400 mb-0">Journal : <strong>{{ $rapprochement->codeJournal?->code_journal ?? 'Non défini' }}</strong></p>
+          </div>
+        </div>
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
+
+      {{-- Info banque --}}
+      <div class="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-200">
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-xs text-slate-400 font-bold uppercase mb-1">Date</div>
+            <div class="font-bold text-slate-700 text-sm" id="genDate">—</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-bold uppercase mb-1">Libellé banque</div>
+            <div class="font-bold text-slate-700 text-sm truncate" id="genLibelle">—</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-bold uppercase mb-1">Montant</div>
+            <div class="font-extrabold text-blue-700 text-base font-mono" id="genMontant">—</div>
+          </div>
+        </div>
+      </div>
+
       <input type="hidden" id="genLigneId">
-      <div class="mb-3">
-        <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Libellé banque</label>
-        <p class="text-sm text-slate-700 font-medium" id="genLibelle">—</p>
+      <input type="hidden" id="genDebit">
+      <input type="hidden" id="genCredit">
+
+      <div class="row g-3">
+
+        {{-- Description --}}
+        <div class="col-12">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+            📝 Libellé de l'écriture
+          </label>
+          <input type="text" id="genDescription"
+            class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            placeholder="Ex : Frais bancaires janvier 2025">
+        </div>
+
+        {{-- Sens (Débit / Crédit) --}}
+        <div class="col-12">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+            🔄 Sens de l'écriture (compte de contrepartie)
+          </label>
+          <div class="flex gap-3">
+            <label class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-400 transition flex-1"
+              id="labelSensDebit">
+              <input type="radio" name="sens_ecriture" id="sensDebit" value="debit" class="text-blue-600">
+              <div>
+                <div class="font-bold text-slate-800 text-sm">Débit 📤</div>
+                <div class="text-xs text-slate-400">Charge / Sortie (frais bancaires…)</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-green-400 transition flex-1"
+              id="labelSensCredit">
+              <input type="radio" name="sens_ecriture" id="sensCredit" value="credit" class="text-green-600">
+              <div>
+                <div class="font-bold text-slate-800 text-sm">Crédit 📥</div>
+                <div class="text-xs text-slate-400">Produit / Entrée (intérêts créditeurs…)</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {{-- Compte de contrepartie --}}
+        <div class="col-12">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+            🏷️ Compte de contrepartie <span class="text-red-500">*</span>
+          </label>
+
+          {{-- Recherche rapide --}}
+          <div class="relative mb-2">
+            <input type="text" id="rechercheCompte"
+              class="w-full border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Rechercher un compte (ex: 627 frais)…">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          </div>
+
+          <select id="genPlanComptableId"
+            class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+            size="6" style="overflow-y:auto;">
+            @foreach($planComptables as $p)
+              <option value="{{ $p->id }}" data-num="{{ $p->numero_de_compte }}" data-lib="{{ strtolower($p->intitule ?? '') }}">
+                {{ $p->numero_de_compte }} — {{ $p->intitule }}
+              </option>
+            @endforeach
+          </select>
+          <div class="text-xs text-slate-400 mt-1">
+            💡 Comptes fréquents : <button type="button" class="text-blue-600 underline font-medium" onclick="filtreRapide('627')">627 Frais bancaires</button>
+            · <button type="button" class="text-blue-600 underline font-medium" onclick="filtreRapide('775')">775 Intérêts</button>
+            · <button type="button" class="text-blue-600 underline font-medium" onclick="filtreRapide('512')">512 Banque</button>
+          </div>
+        </div>
       </div>
-      <div class="mb-3">
-        <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Montant</label>
-        <p class="text-sm font-extrabold text-blue-700 font-mono" id="genMontant">—</p>
-      </div>
-      <div class="mb-3">
-        <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Description de l'opération</label>
-        <input type="text" id="genDescription" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Ex: Frais bancaires janvier 2025">
-      </div>
-      <div class="mb-4">
-        <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Compte de contrepartie</label>
-        <select id="genPlanComptableId" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
-          <option value="">— Sélectionnez un compte —</option>
-          {{-- Peuplé dynamiquement via JS ou pré-chargé --}}
-        </select>
-      </div>
-      <div class="flex gap-3">
-        <button class="flex-1 py-2 rounded-xl text-slate-500 border border-slate-200 text-sm font-medium" data-bs-dismiss="modal">Annuler</button>
-        <button onclick="confirmerGenererEcriture()" class="flex-1 py-2 bg-blue-700 text-white rounded-xl text-sm font-bold">Créer l'écriture</button>
+
+      {{-- Footer --}}
+      <div class="flex gap-3 mt-5 pt-4" style="border-top:1px solid #e2e8f0;">
+        <button type="button" class="flex-1 py-2.5 rounded-xl text-slate-500 border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition"
+          data-bs-dismiss="modal">Annuler</button>
+        <button type="button" onclick="confirmerGenererEcriture()"
+          class="flex-1 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition flex items-center justify-center gap-2"
+          id="btnConfirmerEcriture">
+          <i class="fas fa-save"></i> Créer l'écriture et pointer
+        </button>
       </div>
     </div>
   </div>
@@ -784,28 +871,111 @@ document.getElementById('btnEnregistrer')?.addEventListener('click', async () =>
 });
 
 // ── GÉNÉRER ÉCRITURE CORRECTIVE ───────────────────────────────────────
-function ouvrirGenererEcriture(ligneId, libelle, montant) {
-    document.getElementById('genLigneId').value = ligneId;
-    document.getElementById('genLibelle').textContent = libelle;
-    document.getElementById('genMontant').textContent = formatNum(montant) + ' FCFA';
-    document.getElementById('genDescription').value = libelle;
+function ouvrirGenererEcriture(ligneId, libelle, montant, date, debit, credit) {
+    document.getElementById('genLigneId').value         = ligneId;
+    document.getElementById('genLibelle').textContent   = libelle;
+    document.getElementById('genMontant').textContent   = formatNum(montant) + ' FCFA';
+    document.getElementById('genDate').textContent      = date ? formatDate(date) : '—';
+    document.getElementById('genDebit').value           = debit  || 0;
+    document.getElementById('genCredit').value          = credit || 0;
+    document.getElementById('genDescription').value     = libelle;
+
+    // Auto-sélection du sens selon le mouvement bancaire
+    // Banque DÉBIT  (sortie d'argent) → on débite la charge (frais)
+    // Banque CRÉDIT (entrée d'argent) → on crédite le produit (intérêts)
+    const d = parseFloat(debit)  || 0;
+    const c = parseFloat(credit) || 0;
+    if (d > 0) {
+        document.getElementById('sensDebit').checked  = true;
+        document.getElementById('sensCredit').checked = false;
+        document.getElementById('labelSensDebit').classList.add('border-blue-500','bg-blue-50');
+        document.getElementById('labelSensCredit').classList.remove('border-green-500','bg-green-50');
+        filtreRapide('627'); // suggestion : frais bancaires
+    } else if (c > 0) {
+        document.getElementById('sensCredit').checked = true;
+        document.getElementById('sensDebit').checked  = false;
+        document.getElementById('labelSensCredit').classList.add('border-green-500','bg-green-50');
+        document.getElementById('labelSensDebit').classList.remove('border-blue-500','bg-blue-50');
+        filtreRapide('775'); // suggestion : intérêts créditeurs
+    }
+
     new bootstrap.Modal(document.getElementById('modalGenererEcriture')).show();
 }
 
-async function confirmerGenererEcriture() {
-    const ligneId  = document.getElementById('genLigneId').value;
-    const planId   = document.getElementById('genPlanComptableId').value;
-    const desc     = document.getElementById('genDescription').value;
-    if(!planId) { toast('Sélectionnez un compte de contrepartie', 'error'); return; }
-    const data = await apiPost(`/rapprochement/${RAPPROCHEMENT_ID}/ecriture`, {
-        ligne_releve_id: ligneId, plan_comptable_id: planId, description: desc
+// Filtre rapide (boutons suggestion)
+function filtreRapide(terme) {
+    document.getElementById('rechercheCompte').value = terme;
+    filtrerComptes(terme);
+}
+
+// Filtre live du select plan comptable
+function filtrerComptes(terme) {
+    const select  = document.getElementById('genPlanComptableId');
+    const options = select.querySelectorAll('option');
+    const q       = (terme || '').toLowerCase();
+    let firstVisible = null;
+    options.forEach(opt => {
+        const num = (opt.dataset.num || '').toLowerCase();
+        const lib = (opt.dataset.lib || '').toLowerCase();
+        const visible = !q || num.startsWith(q) || lib.includes(q);
+        opt.style.display = visible ? '' : 'none';
+        if (visible && !firstVisible) firstVisible = opt;
     });
-    if(data.success) {
-        toast('✅ ' + data.message, 'success');
-        bootstrap.Modal.getInstance(document.getElementById('modalGenererEcriture')).hide();
-        setTimeout(() => location.reload(), 1500);
-    } else {
-        toast(data.message || 'Erreur', 'error');
+    if (firstVisible) {
+        select.querySelectorAll('option').forEach(o => o.selected = false);
+        firstVisible.selected = true;
+    }
+}
+
+// Live search
+document.getElementById('rechercheCompte')?.addEventListener('input', e => filtrerComptes(e.target.value));
+
+// Highlight radio sens
+document.querySelectorAll('input[name="sens_ecriture"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        const isDebit  = document.getElementById('sensDebit').checked;
+        const isCredit = document.getElementById('sensCredit').checked;
+        document.getElementById('labelSensDebit').classList.toggle('border-blue-500', isDebit);
+        document.getElementById('labelSensDebit').classList.toggle('bg-blue-50', isDebit);
+        document.getElementById('labelSensCredit').classList.toggle('border-green-500', isCredit);
+        document.getElementById('labelSensCredit').classList.toggle('bg-green-50', isCredit);
+    });
+});
+
+async function confirmerGenererEcriture() {
+    const ligneId = document.getElementById('genLigneId').value;
+    const planId  = document.getElementById('genPlanComptableId').value;
+    const desc    = document.getElementById('genDescription').value.trim();
+    const sensEl  = document.querySelector('input[name="sens_ecriture"]:checked');
+    const sens    = sensEl ? sensEl.value : null;
+
+    if (!planId) { toast('Sélectionnez un compte de contrepartie', 'error'); return; }
+    if (!desc)   { toast('Saisissez un libellé pour l\'écriture',   'error'); return; }
+
+    const btn = document.getElementById('btnConfirmerEcriture');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Création…';
+
+    try {
+        const data = await apiPost(`/rapprochement/${RAPPROCHEMENT_ID}/ecriture`, {
+            ligne_releve_id:   ligneId,
+            plan_comptable_id: planId,
+            description:       desc,
+            sens:              sens,
+        });
+        if (data.success) {
+            toast(data.message || '✅ Écriture créée', 'success');
+            if (data.stats) updateStats(data.stats);
+            bootstrap.Modal.getInstance(document.getElementById('modalGenererEcriture')).hide();
+            setTimeout(() => location.reload(), 1800);
+        } else {
+            toast(data.message || 'Erreur lors de la création', 'error');
+        }
+    } catch(e) {
+        toast('Erreur réseau', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Créer l\'écriture et pointer';
     }
 }
 </script>
