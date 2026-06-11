@@ -183,8 +183,8 @@
                                                         <div class="col-5">
                                                             <label class="form-label text-xs font-black text-slate-400 uppercase">Format</label>
                                                             <select name="source" class="form-select rounded-xl border-slate-200">
-                                                                <option value="excel" selected>Excel/CSV</option>
-                                                                <option value="sage">Texte (.txt)</option>
+                                                                <option value="sage" selected>Texte (.txt)</option>
+                                                                <option value="excel">Excel/CSV</option>
                                                                 <option value="xml">XML</option>
                                                                 <option value="html">HTML</option>
                                                             </select>
@@ -220,11 +220,11 @@
                                                         <div class="col-5">
                                                             <label class="form-label text-xs font-black text-slate-400 uppercase">Format</label>
                                                              <select name="source" class="form-select rounded-xl border-slate-200">
-                                                                <option value="excel" selected>Excel/CSV</option>
-                                                                <option value="sage">Texte (.txt)</option>
-                                                                <option value="xml">XML</option>
-                                                                <option value="html">HTML</option>
-                                                            </select>
+                                                                 <option value="sage" selected>Texte (.txt)</option>
+                                                                 <option value="excel">Excel/CSV</option>
+                                                                 <option value="xml">XML</option>
+                                                                 <option value="html">HTML</option>
+                                                             </select>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -257,8 +257,8 @@
                                                         <div class="col-5">
                                                             <label class="form-label text-xs font-black text-slate-400 uppercase">Format</label>
                                                             <select name="source" class="form-select rounded-xl border-slate-200">
-                                                                <option value="excel" selected>Excel/CSV</option>
-                                                                <option value="sage">Texte (.txt)</option>
+                                                                <option value="sage" selected>Texte (.txt)</option>
+                                                                <option value="excel">Excel/CSV</option>
                                                                 <option value="xml">XML</option>
                                                                 <option value="html">HTML</option>
                                                             </select>
@@ -289,8 +289,8 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label font-bold text-slate-600">Source des données</label>
                                                         <select name="source" class="form-select border-slate-200 py-3 rounded-xl font-bold">
-                                                            <option value="excel" selected>Excel/CSV</option>
-                                                            <option value="sage">Texte (.txt)</option>
+                                                            <option value="sage" selected>Texte (.txt)</option>
+                                                            <option value="excel">Excel/CSV</option>
                                                             <option value="xml">XML</option>
                                                             <option value="html">HTML</option>
                                                         </select>

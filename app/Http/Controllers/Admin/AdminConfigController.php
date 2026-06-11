@@ -1879,7 +1879,7 @@ class AdminConfigController extends Controller
 
         $exercice = ExerciceComptable::find($import->exercice_id);
 
-        $cacheKey = 'import_staging_v3_' . $import->id . '_' . $import->updated_at->timestamp;
+        $cacheKey = 'import_staging_v4_' . $import->id . '_' . $import->updated_at->timestamp;
         $cachedData = \Illuminate\Support\Facades\Cache::get($cacheKey);
 
         if ($cachedData) {
@@ -2162,10 +2162,14 @@ class AdminConfigController extends Controller
 
                 // GESTION DES DOUBLONS ET COLLISIONS (SMART NUMBERING)
                 if (!empty($rowCompte) && empty($errors)) {
-                    $existing = $accountDetails->get($rowCompte);
-                    if (!$existing && isset($accountMapping[strtoupper($originalRawValue)])) {
+                    // Prioritize lookup by original account number mapping (in case it was previously renumbered)
+                    $existing = null;
+                    if (isset($accountMapping[strtoupper($originalRawValue)])) {
                         $mappedAcc = $accountMapping[strtoupper($originalRawValue)];
                         $existing = $accountDetails->get($mappedAcc);
+                    }
+                    if (!$existing) {
+                        $existing = $accountDetails->get($rowCompte);
                     }
 
                     // Strict code-based duplicate check (DB or Batch)
@@ -2204,21 +2208,40 @@ class AdminConfigController extends Controller
                                 $seqStr = (string)$newSeq;
                                 $candidate = substr($rowCompte, 0, strlen($rowCompte) - strlen($seqStr)) . $seqStr;
                                 
-                                $candExistsDb = PlanComptable::where('company_id', $targetCompanyId)
-                                    ->where('numero_de_compte', $candidate)
-                                    ->exists();
+                                // Check if candidate exists in DB and if it has the SAME label
+                                $candDb = $accountDetails->get($candidate);
+                                if ($candDb && trim(strtoupper($candDb->intitule)) === $currentLabelUpper) {
+                                    $row['is_duplicate'] = true;
+                                    $row['existing_label'] = $candDb->intitule;
+                                    $row['info'] = "Doublon (Déjà présent). Cette ligne sera ignorée.";
+                                    $duplicateCount++;
+                                    $newCompteCandidate = '';
+                                    break;
+                                }
                                 
-                                $candExistsBatch = false;
+                                // Check if candidate exists in batch and if it has the SAME label
+                                $candBatchRow = null;
                                 foreach ($rowsWithStatus as $prev) {
                                     if (($prev['status'] ?? '') === 'valid') {
                                         $pCompte = $prev['data']['numero_de_compte'] ?? '';
                                         $pSug = $prev['data']['suggested_account'] ?? '';
                                         if ($pCompte === $candidate || $pSug === $candidate) {
-                                            $candExistsBatch = true;
+                                            $candBatchRow = $prev;
                                             break;
                                         }
                                     }
                                 }
+                                if ($candBatchRow && trim(strtoupper($candBatchRow['data']['intitule'] ?? '')) === $currentLabelUpper) {
+                                    $row['is_duplicate'] = true;
+                                    $row['existing_label'] = $candBatchRow['data']['intitule'];
+                                    $row['info'] = "Doublon (Déjà présent). Cette ligne sera ignorée.";
+                                    $duplicateCount++;
+                                    $newCompteCandidate = '';
+                                    break;
+                                }
+
+                                $candExistsDb = ($candDb !== null);
+                                $candExistsBatch = ($candBatchRow !== null);
                                 
                                 if (!$candExistsDb && !$candExistsBatch) {
                                     $newCompteCandidate = $candidate;
@@ -2233,7 +2256,7 @@ class AdminConfigController extends Controller
                                 $rowCompte = $newCompteCandidate;
                                 $row['info'] = "Nouveau numéro suggéré (" . $newCompteCandidate . ") car le libellé diffère de l'existant.";
                                 $row['is_duplicate'] = false;
-                            } else {
+                            } elseif (!isset($row['is_duplicate'])) {
                                 $row['is_duplicate'] = true;
                                 $row['existing_label'] = $existingLabel;
                                 $row['info'] = "Impossible de trouver un numéro libre. Doublon.";
@@ -3118,7 +3141,9 @@ class AdminConfigController extends Controller
                 // }
 
                 if (!empty($rowTiers)) {
-                    $tierExists = in_array($rowTiers, $existingTiers);
+                    // Use case-insensitive check since $existingTiers keys are uppercased
+                    // but $rowTiers after tierMapping resolution may have original DB casing
+                    $tierExists = in_array(strtoupper($rowTiers), $existingTiers);
                     if (!$tierExists) {
                         $originalPart = !empty($row['numero_original_tiers']) ? " (L'original '{$row['numero_original_tiers']}' n'a pas pu être rattaché)" : "";
                         $errors[] = "Tiers inconnu : $rowTiers$originalPart";

@@ -164,25 +164,47 @@ class UniversalParser
             $content = mb_convert_encoding($content, 'UTF-8', 'ISO-8859-1'); 
         }
 
-        $lines = explode(PHP_EOL, $content);
+        $lines = preg_split('/\r\n|\r|\n/', $content);
         $lines = array_map([$this, 'normalizeString'], $lines);
         $lines = array_filter($lines, fn($l) => !empty(trim($l))); // Remove empty lines
         $lines = array_values($lines); // Re-index
 
         if (empty($lines)) throw new \Exception("Le fichier texte ne contient aucune ligne de données.");
 
-        // Detect Delimiter on first line
-        $firstLine = $lines[0];
-        $delimiters = ["\t" => 0, ";" => 0, "|" => 0, "," => 0];
-        foreach ($delimiters as $d => $c) {
-            $delimiters[$d] = substr_count($firstLine, $d);
+        // Detect Delimiter robustly
+        $bestDelimiter = ';'; // Default to semicolon
+        $delimitersList = [";", "\t", "|", ","];
+        $maxScores = [";" => 0, "\t" => 0, "|" => 0, "," => 0];
+        
+        $sampleLines = array_slice($lines, 0, 5);
+        foreach ($delimitersList as $d) {
+            $counts = [];
+            foreach ($sampleLines as $line) {
+                $counts[] = substr_count($line, $d);
+            }
+            $maxScores[$d] = min($counts);
         }
-        arsort($delimiters);
-        $bestDelimiter = array_key_first($delimiters);
+        
+        arsort($maxScores);
+        if ($maxScores[array_key_first($maxScores)] > 0) {
+            $bestDelimiter = array_key_first($maxScores);
+        } else {
+            // Simple fallback check on first line
+            $firstLine = $lines[0] ?? '';
+            $simpleCounts = [";" => 0, "\t" => 0, "|" => 0, "," => 0];
+            foreach ($simpleCounts as $d => $c) {
+                $simpleCounts[$d] = substr_count($firstLine, $d);
+            }
+            arsort($simpleCounts);
+            if ($simpleCounts[array_key_first($simpleCounts)] > 0) {
+                $bestDelimiter = array_key_first($simpleCounts);
+            }
+        }
         
         // If no frequent delimiter, assume fixed width or single column? 
         // For now, default to single column if count is 0, but usually tabs or semi-colons exist.
-        if ($delimiters[$bestDelimiter] == 0) {
+        $delimiterCount = substr_count($lines[0] ?? '', $bestDelimiter);
+        if ($delimiterCount == 0) {
              // Fallback: Check if it looks like fixed width? 
              // Without config, we assume it might be a raw dump. Return as single column.
              $rows = array_map(fn($l) => [$l], $lines);
@@ -190,8 +212,12 @@ class UniversalParser
         } else {
             $rows = [];
             foreach ($lines as $line) {
-                // str_getcsv is robust
-                $rows[] = str_getcsv($line, $bestDelimiter);
+                // If the delimiter is a semicolon, tab or pipe, explode is safer to avoid column shifting due to quotes
+                if (in_array($bestDelimiter, [';', "\t", '|'])) {
+                    $rows[] = explode($bestDelimiter, $line);
+                } else {
+                    $rows[] = str_getcsv($line, $bestDelimiter);
+                }
             }
 
             // Heuristic: only treat first row as headers if it clearly looks like headers.
