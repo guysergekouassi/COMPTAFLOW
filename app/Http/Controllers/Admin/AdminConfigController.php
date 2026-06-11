@@ -1654,14 +1654,47 @@ class AdminConfigController extends Controller
 
                     // Si la colonne contient des montants avec décimales
                     if (($fieldKey == 'debit' || $fieldKey == 'credit') && collect($sampleValues)->contains(fn($v) => str_contains($v, ',') || str_contains($v, '.'))) $score += 40;
-                }
+
+                    // --- RÈGLES ANTI-CONFUSION TIERS / MONTANTS ---
+                    if ($fieldKey === 'tiers') {
+                        // Pénalité forte si la colonne est entièrement numérique avec des valeurs > 100
+                        // (= montants financiers, pas des codes tiers)
+                        $allNumericLarge = collect($sampleValues)->filter(fn($v) => $v !== '')->every(
+                            fn($v) => is_numeric(str_replace([' ', ','], ['', '.'], $v)) && (float)str_replace([' ', ','], ['', '.'], $v) > 100
+                        );
+                        if ($allNumericLarge) {
+                            $score -= 200; // Disqualifie cette colonne pour le champ tiers
+                        }
+
+                        // Bonus si la colonne contient des codes alphanumériques courts (2-15 car, avec au moins une lettre)
+                        // Ex: "CGE", "401ANGHOURA", "CLIDURAND"
+                        $hasAlphanumericCodes = collect($sampleValues)->filter(fn($v) => $v !== '')->contains(
+                            fn($v) => preg_match('/^[A-Z0-9]{2,15}$/i', $v) && preg_match('/[A-Za-z]/', $v)
+                        );
+                        if ($hasAlphanumericCodes) {
+                            $score += 60;
+                        }
+                    }
+
+                    // --- RÈGLES ANTI-CONFUSION DÉBIT/CRÉDIT / CODES ---
+                    if ($fieldKey === 'debit' || $fieldKey === 'credit') {
+                        // Pénalité si la colonne contient principalement des codes non-numériques
+                        $hasNonNumeric = collect($sampleValues)->filter(fn($v) => $v !== '')->contains(
+                            fn($v) => !is_numeric(str_replace([' ', ',', '.'], ['', '.', ''], $v))
+                        );
+                        if ($hasNonNumeric) {
+                            $score -= 150;
+                        }
+                    }
+                } // end if (count($sampleValues) > 0)
 
                 if ($score > $bestScore && $score > 35) {
                     $bestScore = $score;
                     $field['suggested_col'] = $colIdx;
                 }
-            }
-        }
+            } // end foreach headers
+        } // end foreach fields
+
 
         // Enregistrer l'index de l'en-tête SANS écraser le mapping existant
         $currentMapping = $import->mapping ?? [];
@@ -3229,15 +3262,16 @@ class AdminConfigController extends Controller
                     $keyPart = 'row_' . $r['index']; // fallback
                 }
                 
-                $ref = $jour . '|' . $journal . '|' . $keyPart;
+                // Group by date + keyPart only (NOT journal) to ensure all lines of the same
+                // saisie/reference are in the same group even if journal values differ slightly
+                $ref = $jour . '|' . $keyPart;
 
-                if (true) { // On track quand même pour info
-                    if (!isset($balances[$ref])) $balances[$ref] = ['d' => 0, 'c' => 0, 'rows' => []];
-                    $balances[$ref]['d'] += round((float)$r['debit'], 2);
-                    $balances[$ref]['c'] += round((float)$r['credit'], 2);
-                    $balances[$ref]['rows'][] = &$r;
-                }
+                if (!isset($balances[$ref])) $balances[$ref] = ['d' => 0, 'c' => 0, 'rows' => []];
+                $balances[$ref]['d'] += round((float)$r['debit'], 2);
+                $balances[$ref]['c'] += round((float)$r['credit'], 2);
+                $balances[$ref]['rows'][] = &$r;
             }
+
 
             // Résumé par groupe pour affichage (débit/crédit/diff par n_saisie)
             $groupSummary = [];
@@ -3289,7 +3323,7 @@ class AdminConfigController extends Controller
                     $keyPart = 'row_' . $r['index']; // fallback
                 }
                 
-                $ref = $jour . '|' . $journal . '|' . $keyPart;
+                $ref = $jour . '|' . $keyPart;
 
                 $r['group_key'] = $ref;
                 $r['group_debit'] = $groupSummary[$ref]['debit'] ?? null;
