@@ -1833,12 +1833,22 @@ class AdminConfigController extends Controller
 
         $existingAccounts = PlanComptable::where('company_id', $targetCompanyId)
             ->pluck('numero_de_compte')
+            ->map(fn($v) => strtoupper(trim($v)))
             ->toArray();
 
+        // Clé UPPERCASE pour que ->get() fonctionne quelle que soit la casse en base
         $accountDetails = PlanComptable::where('company_id', $targetCompanyId)
-            ->select('id', 'numero_de_compte', 'intitule')
+            ->select('id', 'numero_de_compte', 'intitule', 'numero_original')
             ->get()
-            ->keyBy('numero_de_compte');
+            ->keyBy(fn($item) => strtoupper(trim($item->numero_de_compte)));
+
+        // Index secondaire : numero_original → objet, pour retrouver les comptes importés depuis leur code d'origine
+        $accountDetailsByOriginal = PlanComptable::where('company_id', $targetCompanyId)
+            ->whereNotNull('numero_original')
+            ->where('numero_original', '!=', '')
+            ->select('id', 'numero_de_compte', 'intitule', 'numero_original')
+            ->get()
+            ->keyBy(fn($item) => strtoupper(trim($item->numero_original)));
 
         $journalDetails = CodeJournal::where('company_id', $targetCompanyId)
             ->select('id', 'code_journal', 'intitule', 'numero_original')
@@ -1854,9 +1864,17 @@ class AdminConfigController extends Controller
         }
 
         $tierDetails = PlanTiers::where('company_id', $targetCompanyId)
-            ->select('id', 'numero_de_tiers', 'intitule')
+            ->select('id', 'numero_de_tiers', 'intitule', 'numero_original')
             ->get()
-            ->keyBy(fn($item) => strtoupper($item->numero_de_tiers));
+            ->keyBy(fn($item) => strtoupper(trim($item->numero_de_tiers)));
+
+        // Index secondaire tiers : numero_original → objet
+        $tierDetailsByOriginal = PlanTiers::where('company_id', $targetCompanyId)
+            ->whereNotNull('numero_original')
+            ->where('numero_original', '!=', '')
+            ->select('id', 'numero_de_tiers', 'intitule', 'numero_original')
+            ->get()
+            ->keyBy(fn($item) => strtoupper(trim($item->numero_original)));
 
         $existingTiers = $tierDetails->keys()->toArray();
 
@@ -2195,14 +2213,26 @@ class AdminConfigController extends Controller
 
                 // GESTION DES DOUBLONS ET COLLISIONS (SMART NUMBERING)
                 if (!empty($rowCompte) && empty($errors)) {
-                    // Prioritize lookup by original account number mapping (in case it was previously renumbered)
+                    // Recherche du doublon en base :
+                    // 1. Par numero_original (code source du fichier, ex: "601")
+                    // 2. Par numero_de_compte standardisé (ex: "60110000")
+                    // 3. Via accountMapping (numero_original → numero_de_compte mappé lors du 1er import)
                     $existing = null;
-                    if (isset($accountMapping[strtoupper($originalRawValue)])) {
-                        $mappedAcc = $accountMapping[strtoupper($originalRawValue)];
+                    $upperOrigRaw = strtoupper(trim($originalRawValue));
+                    $upperRowCompte = strtoupper(trim($rowCompte));
+
+                    // Priorité 1 : via l'index numero_original (ex: fichier a "601", déjà en base comme original)
+                    if (!$existing && isset($accountDetailsByOriginal[$upperOrigRaw])) {
+                        $existing = $accountDetailsByOriginal[$upperOrigRaw];
+                    }
+                    // Priorité 2 : via le mapping numero_original → numero_de_compte (renommage 1er import)
+                    if (!$existing && isset($accountMapping[$upperOrigRaw])) {
+                        $mappedAcc = strtoupper(trim($accountMapping[$upperOrigRaw]));
                         $existing = $accountDetails->get($mappedAcc);
                     }
+                    // Priorité 3 : via le numero_de_compte standardisé directement
                     if (!$existing) {
-                        $existing = $accountDetails->get($rowCompte);
+                        $existing = $accountDetails->get($upperRowCompte);
                     }
 
                     // Strict code-based duplicate check (DB or Batch)
@@ -2967,7 +2997,21 @@ class AdminConfigController extends Controller
                     $finalNum = $numeroGenere;
 
                     // --- LOGIQUE DE DOUBLONS SMART POUR TIERS ---
-                    $existingMatch = $tierDetails->get(strtoupper($importedNum)) ?? (isset($tierMapping[$upperOrigNum]) ? $tierDetails->get(strtoupper($tierMapping[$upperOrigNum])) : null);
+                    // Recherche multi-niveau : par numero_original, puis par tierMapping, puis par numero_de_tiers généré
+                    $upperOrigNum2 = strtoupper(trim($upperOrigNum ?? ''));
+                    $existingMatch = null;
+                    // Priorité 1 : index numero_original
+                    if (!$existingMatch && isset($tierDetailsByOriginal[$upperOrigNum2])) {
+                        $existingMatch = $tierDetailsByOriginal[$upperOrigNum2];
+                    }
+                    // Priorité 2 : via tierMapping (numero_original → numero généré)
+                    if (!$existingMatch && isset($tierMapping[$upperOrigNum2])) {
+                        $existingMatch = $tierDetails->get(strtoupper($tierMapping[$upperOrigNum2]));
+                    }
+                    // Priorité 3 : numero_de_tiers directement (cas où importedNum = code généré)
+                    if (!$existingMatch) {
+                        $existingMatch = $tierDetails->get(strtoupper($importedNum));
+                    }
 
                     $isDuplicateInDb = ($existingMatch !== null);
                     $isDuplicateInBatch = false;
