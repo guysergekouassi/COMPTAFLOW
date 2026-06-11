@@ -387,7 +387,7 @@
                                             </td>
 
                                             <td class="px-8 py-6">
-                                                <span class="text-sm text-slate-600">{{ $plan->created_at->format('d/m/Y') }}</span>
+                                                <span class="text-sm text-slate-600">{{ $plan->created_at ? $plan->created_at->format('d/m/Y') : '-' }}</span>
                                             </td>
                                             <td class="px-8 py-6">
                                                 <div class="btn-group" role="group">

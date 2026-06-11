@@ -2130,6 +2130,8 @@ class AdminConfigController extends Controller
                     // Strict code-based duplicate check (DB or Batch)
                     $isDuplicateInDb = ($existing !== null);
                     $isDuplicateInBatch = false;
+                    $existingLabel = $existing ? $existing->intitule : null;
+
                     foreach ($rowsWithStatus as $prevRow) {
                         if (($prevRow['status'] ?? '') === 'valid') {
                             $prevOrig = $prevRow['data']['numero_original'] ?? '';
@@ -2137,16 +2139,66 @@ class AdminConfigController extends Controller
                             if ((!empty($originalRawValue) && strtoupper($prevOrig) === strtoupper($originalRawValue)) || 
                                 (!empty($rowCompte) && strtoupper($prevCompte) === strtoupper($rowCompte))) {
                                 $isDuplicateInBatch = true;
+                                $existingLabel = $prevRow['data']['intitule'] ?? null;
                                 break;
                             }
                         }
                     }
 
                     if ($isDuplicateInDb || $isDuplicateInBatch) {
-                        $row['is_duplicate'] = true;
-                        $row['existing_label'] = $existing ? $existing->intitule : ($row['intitule'] ?? null);
-                        $row['info'] = "Doublon (Déjà présent). Cette ligne sera ignorée.";
-                        $duplicateCount++;
+                        $currentLabelUpper = trim(strtoupper($row['intitule'] ?? ''));
+                        $existingLabelUpper = trim(strtoupper($existingLabel ?? ''));
+
+                        if ($currentLabelUpper === $existingLabelUpper) {
+                            $row['is_duplicate'] = true;
+                            $row['existing_label'] = $existingLabel;
+                            $row['info'] = "Doublon (Déjà présent). Cette ligne sera ignorée.";
+                            $duplicateCount++;
+                        } else {
+                            // The numbers match but labels differ. Auto-increment to find next available.
+                            $newSeq = 1;
+                            $newCompteCandidate = '';
+                            
+                            while ($newSeq <= 999) {
+                                $seqStr = (string)$newSeq;
+                                $candidate = substr($rowCompte, 0, strlen($rowCompte) - strlen($seqStr)) . $seqStr;
+                                
+                                $candExistsDb = PlanComptable::where('company_id', $targetCompanyId)
+                                    ->where('numero_de_compte', $candidate)
+                                    ->exists();
+                                
+                                $candExistsBatch = false;
+                                foreach ($rowsWithStatus as $prev) {
+                                    if (($prev['status'] ?? '') === 'valid') {
+                                        $pCompte = $prev['data']['numero_de_compte'] ?? '';
+                                        $pSug = $prev['data']['suggested_account'] ?? '';
+                                        if ($pCompte === $candidate || $pSug === $candidate) {
+                                            $candExistsBatch = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                if (!$candExistsDb && !$candExistsBatch) {
+                                    $newCompteCandidate = $candidate;
+                                    break;
+                                }
+                                $newSeq++;
+                            }
+                            
+                            if ($newCompteCandidate !== '') {
+                                $row['numero_de_compte'] = $newCompteCandidate;
+                                $row['suggested_account'] = $newCompteCandidate;
+                                $rowCompte = $newCompteCandidate;
+                                $row['info'] = "Nouveau numéro suggéré (" . $newCompteCandidate . ") car le libellé diffère de l'existant.";
+                                $row['is_duplicate'] = false;
+                            } else {
+                                $row['is_duplicate'] = true;
+                                $row['existing_label'] = $existingLabel;
+                                $row['info'] = "Impossible de trouver un numéro libre. Doublon.";
+                                $duplicateCount++;
+                            }
+                        }
                     }
 
                     if (!($row['is_duplicate'] ?? false)) {
