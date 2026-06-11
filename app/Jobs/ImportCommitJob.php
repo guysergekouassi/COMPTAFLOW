@@ -87,6 +87,7 @@ class ImportCommitJob implements ShouldQueue
         $exercice      = ExerciceComptable::find($import->exercice_id);
         $accountDigits = $targetCompany->account_digits ?? 8;
         $journalDigits = $targetCompany->journal_code_digits ?? 4;
+        $tierDigits    = $targetCompany->tier_digits ?? 8;
         $journalLimit  = 10;
         $ranNumLength  = max(1, $journalDigits - 3);
 
@@ -193,6 +194,11 @@ class ImportCommitJob implements ShouldQueue
             $groupsNSaisie = [];
             $groupsReference = [];
             
+            $lastJourTemp = null;
+            $lastJournalTemp = null;
+            $lastNSaisieTemp = null;
+            $lastReferenceTemp = null;
+
             foreach ($data as $rowOrigTemp) {
                 // S'assurer que le mapping est reproduit de la même façon que dans la boucle principale
                 $rowMappedTemp = [];
@@ -206,6 +212,25 @@ class ImportCommitJob implements ShouldQueue
                         $rowMappedTemp[$fieldTemp] = $rowOrigTemp[$colIndexTemp] ?? null;
                     }
                 }
+                
+                // Carry-over logic
+                if (empty($rowMappedTemp['jour']) && $lastJourTemp !== null) {
+                    $rowMappedTemp['jour'] = $lastJourTemp;
+                }
+                if (empty($rowMappedTemp['journal']) && $lastJournalTemp !== null) {
+                    $rowMappedTemp['journal'] = $lastJournalTemp;
+                }
+                if (empty($rowMappedTemp['n_saisie']) && $lastNSaisieTemp !== null) {
+                    $rowMappedTemp['n_saisie'] = $lastNSaisieTemp;
+                }
+                if (empty($rowMappedTemp['reference']) && $lastReferenceTemp !== null) {
+                    $rowMappedTemp['reference'] = $lastReferenceTemp;
+                }
+
+                if (!empty($rowMappedTemp['jour'])) $lastJourTemp = $rowMappedTemp['jour'];
+                if (!empty($rowMappedTemp['journal'])) $lastJournalTemp = $rowMappedTemp['journal'];
+                if (!empty($rowMappedTemp['n_saisie'])) $lastNSaisieTemp = $rowMappedTemp['n_saisie'];
+                if (!empty($rowMappedTemp['reference'])) $lastReferenceTemp = $rowMappedTemp['reference'];
                 
                 $nsVal = trim((string)($rowMappedTemp['n_saisie'] ?? ''));
                 $refVal = trim((string)($rowMappedTemp['reference'] ?? ''));
@@ -278,6 +303,11 @@ class ImportCommitJob implements ShouldQueue
         
         Log::info("COMMIT JOB DYNAMIC GROUPING DECISION: $groupingKeyStrategy selected for import " . $import->id);
 
+        $lastJour = null;
+        $lastJournal = null;
+        $lastNSaisie = null;
+        $lastReference = null;
+
         DB::beginTransaction();
         try {
             $rowNum    = 0;
@@ -304,6 +334,25 @@ class ImportCommitJob implements ShouldQueue
                         $rowMapped[$field] = $rowOrig[$colIndex] ?? null;
                     }
                 }
+
+                // Carry-over logic
+                if (empty($rowMapped['jour']) && $lastJour !== null) {
+                    $rowMapped['jour'] = $lastJour;
+                }
+                if (empty($rowMapped['journal']) && $lastJournal !== null) {
+                    $rowMapped['journal'] = $lastJournal;
+                }
+                if (empty($rowMapped['n_saisie']) && $lastNSaisie !== null) {
+                    $rowMapped['n_saisie'] = $lastNSaisie;
+                }
+                if (empty($rowMapped['reference']) && $lastReference !== null) {
+                    $rowMapped['reference'] = $lastReference;
+                }
+
+                if (!empty($rowMapped['jour'])) $lastJour = $rowMapped['jour'];
+                if (!empty($rowMapped['journal'])) $lastJournal = $rowMapped['journal'];
+                if (!empty($rowMapped['n_saisie'])) $lastNSaisie = $rowMapped['n_saisie'];
+                if (!empty($rowMapped['reference'])) $lastReference = $rowMapped['reference'];
 
                 // ── Type A (Analytique) → ignorer ──
                 if (isset($rowMapped['type_ecriture']) && strtoupper(trim($rowMapped['type_ecriture'])) === 'A') {
@@ -340,8 +389,12 @@ class ImportCommitJob implements ShouldQueue
                 if (!$journalId) { $errors[] = "L{$index}: Journal '$rowJournal' introuvable."; continue; }
 
                 $tiersNum = trim($rowMapped['tiers'] ?? '');
+                $tiersNumUpper = strtoupper($tiersNum);
+                if (is_numeric($tiersNumUpper) && strlen($tiersNumUpper) < $tierDigits) {
+                    $tiersNumUpper = str_pad($tiersNumUpper, $tierDigits, '0', STR_PAD_RIGHT);
+                }
                 $tiersId  = !empty($tiersNum)
-                    ? ($planTiersIds[strtoupper($tiersNum)] ?? $planTiersOriginalIds[strtoupper($tiersNum)] ?? null)
+                    ? ($planTiersIds[$tiersNumUpper] ?? $planTiersOriginalIds[strtoupper($tiersNum)] ?? null)
                     : null;
 
                 $debit  = $parseAmount($rowMapped['debit']  ?? 0);

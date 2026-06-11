@@ -1949,11 +1949,26 @@ class AdminConfigController extends Controller
                     $groupsNSaisie = [];
                     $groupsReference = [];
                     
+                    $lastJourTemp = null;
+                    $lastJournalTemp = null;
+                    $lastNSaisieTemp = null;
+                    $lastReferenceTemp = null;
+                    
                     foreach ($data as $rowRawTemp) {
                         $nsVal = trim((string)($rowRawTemp[$nSaisieCol] ?? ''));
                         $refVal = trim((string)($rowRawTemp[$referenceCol] ?? ''));
                         $jour = trim((string)($rowRawTemp[$jourCol] ?? ''));
                         $journal = trim((string)($rowRawTemp[$journalCol] ?? ''));
+
+                        if (empty($jour) && $lastJourTemp !== null) $jour = $lastJourTemp;
+                        if (empty($journal) && $lastJournalTemp !== null) $journal = $lastJournalTemp;
+                        if (empty($nsVal) && $lastNSaisieTemp !== null) $nsVal = $lastNSaisieTemp;
+                        if (empty($refVal) && $lastReferenceTemp !== null) $refVal = $lastReferenceTemp;
+
+                        if (!empty($jour)) $lastJourTemp = $jour;
+                        if (!empty($journal)) $lastJournalTemp = $journal;
+                        if (!empty($nsVal)) $lastNSaisieTemp = $nsVal;
+                        if (!empty($refVal)) $lastReferenceTemp = $refVal;
                         
                         $debit = 0.0;
                         if ($debitCol !== null && $debitCol !== '') {
@@ -2028,6 +2043,11 @@ class AdminConfigController extends Controller
                 Log::info("DYNAMIC GROUPING PRE-DECISION: $groupingKeyStrategy selected for import $id");
             }
 
+        $lastJour = null;
+        $lastJournal = null;
+        $lastNSaisie = null;
+        $lastReference = null;
+
         foreach($data as $index => $rowRaw) {
             // PADDING : Forcer la ligne à avoir au moins assez de colonnes pour couvrir le mapping
             $row = array_pad($rowRaw, $maxMappingIndex + 1, null);
@@ -2081,6 +2101,27 @@ class AdminConfigController extends Controller
 
             // On bascule sur le tableau nommé
             $row = $processedRow;
+
+            // Carry-over logic for entries (courant) import
+            if ($import->type === 'courant') {
+                if (empty($row['jour']) && $lastJour !== null) {
+                    $row['jour'] = $lastJour;
+                }
+                if (empty($row['journal']) && $lastJournal !== null) {
+                    $row['journal'] = $lastJournal;
+                }
+                if (empty($row['n_saisie']) && $lastNSaisie !== null) {
+                    $row['n_saisie'] = $lastNSaisie;
+                }
+                if (empty($row['reference']) && $lastReference !== null) {
+                    $row['reference'] = $lastReference;
+                }
+
+                if (!empty($row['jour'])) $lastJour = $row['jour'];
+                if (!empty($row['journal'])) $lastJournal = $row['journal'];
+                if (!empty($row['n_saisie'])) $lastNSaisie = $row['n_saisie'];
+                if (!empty($row['reference'])) $lastReference = $row['reference'];
+            }
 
             $errors = [];
 
@@ -2756,29 +2797,52 @@ class AdminConfigController extends Controller
                         $base = $generationPrefix . $namePart;
                     }
 
+                    // CRITICAL IMPROVEMENT: If the imported number is already valid, keep it!
+                    // Valid means: 
+                    // 1. Length matches $tierDigits
+                    // 2. Starts with the correct class prefix
+                    // 3. For numeric type, it must be numeric
+                    $isValidAlready = false;
+                    $cleanedNum = $upperOrigNum;
+                    if (is_numeric($cleanedNum)) {
+                        $cleanedNum = str_pad($cleanedNum, $tierDigits, '0', STR_PAD_RIGHT);
+                    }
+                    
+                    if (strlen($cleanedNum) == $tierDigits && str_starts_with($cleanedNum, $generationPrefix)) {
+                        if ($tierIdType === 'numeric') {
+                            $isValidAlready = is_numeric($cleanedNum);
+                        } else {
+                            $isValidAlready = true;
+                        }
+                    }
+
                     $numeroGenere = null;
-                    if (!isset($localMaxTiers[$base])) {
-                        // Pour le staging, on peut estimer la séquence avec findNextAvailable
-                        $numeroGenere = \App\Services\NumberingService::findNextAvailable(
-                            'tier',
-                            $targetCompanyId,
-                            $base . str_pad('1', max(0, $tierDigits - strlen($base)), '0', STR_PAD_LEFT),
-                            $tierDigits,
-                            array_values($batchTierMap)
-                        );
-                        $localMaxTiers[$base] = $numeroGenere;
+                    if ($isValidAlready) {
+                        $numeroGenere = $cleanedNum;
                     } else {
-                        $lastId = $localMaxTiers[$base];
-                        $baseLen = strlen($base);
-                        $sequencePart = substr($lastId, $baseLen);
-                        if (is_numeric($sequencePart)) {
-                            $nextSeq = (int)$sequencePart + 1;
-                            $availableSpace = max(0, $tierDigits - $baseLen);
-                            $numeroGenere = $base . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                        if (!isset($localMaxTiers[$base])) {
+                            // Pour le staging, on peut estimer la séquence avec findNextAvailable
+                            $numeroGenere = \App\Services\NumberingService::findNextAvailable(
+                                'tier',
+                                $targetCompanyId,
+                                $base . str_pad('1', max(0, $tierDigits - strlen($base)), '0', STR_PAD_LEFT),
+                                $tierDigits,
+                                array_values($batchTierMap)
+                            );
                             $localMaxTiers[$base] = $numeroGenere;
                         } else {
-                            $numeroGenere = $base . str_pad('1', max(0, $tierDigits - strlen($base)), '0', STR_PAD_LEFT);
-                            $localMaxTiers[$base] = $numeroGenere;
+                            $lastId = $localMaxTiers[$base];
+                            $baseLen = strlen($base);
+                            $sequencePart = substr($lastId, $baseLen);
+                            if (is_numeric($sequencePart)) {
+                                $nextSeq = (int)$sequencePart + 1;
+                                $availableSpace = max(0, $tierDigits - $baseLen);
+                                $numeroGenere = $base . str_pad($nextSeq, $availableSpace, '0', STR_PAD_LEFT);
+                                $localMaxTiers[$base] = $numeroGenere;
+                            } else {
+                                $numeroGenere = $base . str_pad('1', max(0, $tierDigits - strlen($base)), '0', STR_PAD_LEFT);
+                                $localMaxTiers[$base] = $numeroGenere;
+                            }
                         }
                     }
 
@@ -2914,14 +2978,29 @@ class AdminConfigController extends Controller
                 // 3. Tiers
                 if (!empty($rowTiers)) {
                     $rowTiersUpper = strtoupper(trim($rowTiers));
+                    
+                    // Standardisation/padding automatique si le tiers est numérique et plus court que tier_digits
+                    $standardizedTier = $rowTiersUpper;
+                    if (is_numeric($rowTiersUpper) && strlen($rowTiersUpper) < $tierDigits) {
+                        $standardizedTier = str_pad($rowTiersUpper, $tierDigits, '0', STR_PAD_RIGHT);
+                    }
+                    
                     if (isset($tierMapping[$rowTiersUpper])) {
                         $row['numero_original_tiers'] = $rowTiers;
                         $row['tiers'] = $tierMapping[$rowTiersUpper];
+                        $rowTiers = $row['tiers'];
+                    } elseif (isset($tierMapping[$standardizedTier])) {
+                        $row['numero_original_tiers'] = $rowTiers;
+                        $row['tiers'] = $tierMapping[$standardizedTier];
                         $rowTiers = $row['tiers'];
                     } elseif (in_array($rowTiersUpper, array_map('strtoupper', $existingTiers))) {
                         // Déjà un code standardisé correct
                         $row['tiers'] = $rowTiersUpper;
                         $rowTiers = $rowTiersUpper;
+                    } elseif (in_array($standardizedTier, array_map('strtoupper', $existingTiers))) {
+                        // Déjà un code standardisé correct (version paddée)
+                        $row['tiers'] = $standardizedTier;
+                        $rowTiers = $standardizedTier;
                     } else {
                         $errors[] = "Tiers inconnu : $rowTiers";
                         $missingTiers[$rowTiersUpper] = $row['intitule'] ?? 'Tiers ' . $rowTiersUpper;
