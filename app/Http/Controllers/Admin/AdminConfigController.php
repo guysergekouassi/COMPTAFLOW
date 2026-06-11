@@ -2231,6 +2231,8 @@ class AdminConfigController extends Controller
                             $row['is_duplicate'] = true;
                             $row['existing_label'] = $existingLabel;
                             $row['info'] = "Doublon (Déjà présent). Cette ligne sera ignorée.";
+                            unset($row['suggested_account']);
+                            unset($row['info_renum']);
                             $duplicateCount++;
                         } else {
                             // The numbers match but labels differ. Auto-increment to find next available.
@@ -2247,6 +2249,8 @@ class AdminConfigController extends Controller
                                     $row['is_duplicate'] = true;
                                     $row['existing_label'] = $candDb->intitule;
                                     $row['info'] = "Doublon (Déjà présent). Cette ligne sera ignorée.";
+                                    unset($row['suggested_account']);
+                                    unset($row['info_renum']);
                                     $duplicateCount++;
                                     $newCompteCandidate = '';
                                     break;
@@ -2268,6 +2272,8 @@ class AdminConfigController extends Controller
                                     $row['is_duplicate'] = true;
                                     $row['existing_label'] = $candBatchRow['data']['intitule'];
                                     $row['info'] = "Doublon (Déjà présent). Cette ligne sera ignorée.";
+                                    unset($row['suggested_account']);
+                                    unset($row['info_renum']);
                                     $duplicateCount++;
                                     $newCompteCandidate = '';
                                     break;
@@ -2293,6 +2299,8 @@ class AdminConfigController extends Controller
                                 $row['is_duplicate'] = true;
                                 $row['existing_label'] = $existingLabel;
                                 $row['info'] = "Impossible de trouver un numéro libre. Doublon.";
+                                unset($row['suggested_account']);
+                                unset($row['info_renum']);
                                 $duplicateCount++;
                             }
                         }
@@ -2467,8 +2475,12 @@ class AdminConfigController extends Controller
                 $row['code_journal_override_index'] = $codeJournalOverrideIndex;
 
                 // --- GÉNÉRATION SÉQUENTIELLE DU CODE JOURNAL ---
-                // FORCÉE: On génère toujours automatiquement selon le type (comme pour les tiers)
+                // Si le code d'origine importé est déjà valide, on le conserve au lieu d'en générer un nouveau.
+                $isValidAlready = !empty($rowCode) && strlen($rowCode) <= $journalDigits && preg_match('/^[A-Z0-9]+$/i', $rowCode);
+
                 if (!empty($manualCodeOrig)) {
+                     $row['code_journal'] = $rowCode;
+                } elseif ($isValidAlready) {
                      $row['code_journal'] = $rowCode;
                 } else {
                     $prefix = 'JRN';
@@ -2578,14 +2590,63 @@ class AdminConfigController extends Controller
                         }
                     }
 
+                    $existing = $journalDetails->get(strtoupper($rowCode)) ?? $journalDetails->first(fn($j) => strtoupper($j->numero_original) === $upperOrig);
+                    $existingLabel = $existing ? $existing->intitule : null;
+                    if (!$existingLabel) {
+                        foreach ($rowsWithStatus as $prevRow) {
+                            if (($prevRow['status'] ?? '') === 'valid') {
+                                $prevOrig = $prevRow['data']['numero_original'] ?? '';
+                                $prevJournal = $prevRow['data']['code_journal'] ?? '';
+                                if ((!empty($upperOrig) && strtoupper($prevOrig) === strtoupper($upperOrig)) || 
+                                    (!empty($rowCode) && strtoupper($prevJournal) === strtoupper($rowCode))) {
+                                    $existingLabel = $prevRow['data']['intitule'] ?? null;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     if ($isDuplicateInDb || $isDuplicateInBatch) {
-                        $existing = $journalDetails->get(strtoupper($rowCode)) ?? $journalDetails->first(fn($j) => strtoupper($j->numero_original) === $upperOrig);
-                        $row['is_duplicate'] = true;
-                        $row['existing_label'] = $existing ? $existing->intitule : null;
-                        $row['info'] = "Doublon (Journal déjà présent). Il sera ignoré.";
-                        $duplicateCount++;
-                        // On garde le code journal tel quel pour le mapping du lot
-                        $batchJournalMap[$upperOrig] = $rowCode;
+                        $currentLabelUpper = trim(strtoupper($row['intitule'] ?? ''));
+                        $existingLabelUpper = trim(strtoupper($existingLabel ?? ''));
+
+                        if ($currentLabelUpper === $existingLabelUpper) {
+                            $row['is_duplicate'] = true;
+                            $row['existing_label'] = $existingLabel;
+                            $row['info'] = "Doublon (Journal déjà présent). Il sera ignoré.";
+                            $duplicateCount++;
+                            $batchJournalMap[$upperOrig] = $rowCode;
+                        } else {
+                            $tempCode = $rowCode;
+                            $counter = 1;
+
+                            while (in_array(strtoupper($tempCode), $existingJournalsArr) || isset($localMaxJournals[strtoupper($tempCode)]) || strtoupper($tempCode) === strtoupper($rowCode)) {
+                                $counter++;
+                                $numStr = (string)$counter;
+                                $numLen = strlen($numStr);
+                                if (preg_match('/^([A-Z]+)/i', $rowCode, $matches)) {
+                                    $prefix = strtoupper($matches[1]);
+                                } else {
+                                    $prefix = 'JRN';
+                                }
+
+                                if ($numLen >= $journalDigits) {
+                                    $tempCode = substr($numStr, -$journalDigits);
+                                } else {
+                                    $maxPrefixLen = $journalDigits - $numLen;
+                                    $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                                    $tempCode = $actualPrefix . str_pad($numStr, $journalDigits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                                }
+                                if ($counter > 500) break;
+                            }
+
+                            $rowCode = $tempCode;
+                            $row['code_journal'] = $rowCode;
+                            $batchJournalMap[$upperOrig] = $rowCode;
+                            $localMaxJournals[strtoupper($rowCode)] = $rowCode;
+                            $row['info'] = "Nouveau journal suggéré (" . $rowCode . ") car le libellé diffère de l'existant.";
+                            $row['is_duplicate'] = false;
+                        }
                     } else {
                         // Si pas doublon en DB, on vérifie si collision avec un autre du lot (localMaxJournals)
                         $tempCode = $rowCode;
@@ -2596,9 +2657,9 @@ class AdminConfigController extends Controller
                             $numStr = (string)$counter;
                             $numLen = strlen($numStr);
                             if (preg_match('/^([A-Z]+)/i', $rowCode, $matches)) {
-                                $prefix = strtoupper($matches[1]);
+                                    $prefix = strtoupper($matches[1]);
                             } else {
-                                $prefix = 'JRN';
+                                    $prefix = 'JRN';
                             }
 
                             if ($numLen >= $journalDigits) {
@@ -2612,6 +2673,7 @@ class AdminConfigController extends Controller
                         }
 
                         $rowCode = $tempCode;
+                        $row['code_journal'] = $rowCode;
                         $batchJournalMap[$upperOrig] = $rowCode;
                         $localMaxJournals[strtoupper($rowCode)] = $rowCode;
                     }
@@ -2921,13 +2983,52 @@ class AdminConfigController extends Controller
                         }
                     }
 
+                    $existingLabel = $existingMatch ? $existingMatch->intitule : null;
+                    if (!$existingLabel) {
+                        foreach ($rowsWithStatus as $prevRow) {
+                            if (($prevRow['status'] ?? '') === 'valid') {
+                                $prevOrig = $prevRow['data']['numero_original'] ?? '';
+                                $prevTiers = $prevRow['data']['numero_de_tiers'] ?? '';
+                                if ((!empty($upperOrigNum) && strtoupper($prevOrig) === strtoupper($upperOrigNum)) || 
+                                    (!empty($importedNum) && strtoupper($prevTiers) === strtoupper($importedNum))) {
+                                    $existingLabel = $prevRow['data']['intitule'] ?? null;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     if ($isDuplicateInDb || $isDuplicateInBatch) {
-                        // VRAI DOUBLON
-                        $row['is_duplicate'] = true;
-                        $row['existing_label'] = $existingMatch ? $existingMatch->intitule : ($row['intitule'] ?? null);
-                        $row['info'] = "Doublon (Tiers déjà présent). Cette ligne sera ignorée.";
-                        $duplicateCount++;
-                        $row['numero_de_tiers'] = $existingMatch ? $existingMatch->numero_de_tiers : ($batchTierMap[$upperOrigNum] ?? $importedNum);
+                        $currentLabelUpper = trim(strtoupper($row['intitule'] ?? ''));
+                        $existingLabelUpper = trim(strtoupper($existingLabel ?? ''));
+
+                        if ($currentLabelUpper === $existingLabelUpper) {
+                            $row['is_duplicate'] = true;
+                            $row['existing_label'] = $existingLabel;
+                            $row['info'] = "Doublon (Tiers déjà présent). Cette ligne sera ignorée.";
+                            $duplicateCount++;
+                            $row['numero_de_tiers'] = $existingMatch ? $existingMatch->numero_de_tiers : ($batchTierMap[$upperOrigNum] ?? $importedNum);
+                            unset($row['info_renum']);
+                        } else {
+                            $isNumberTakenInDb = $tierDetails->has($finalNum);
+                            $isNumberTakenInBatch = in_array($finalNum, array_values($batchTierMap));
+
+                            if ($isNumberTakenInDb || $isNumberTakenInBatch || $finalNum === $importedNum) {
+                                $nextId = \App\Services\NumberingService::findNextAvailable(
+                                    'tier',
+                                    $targetCompanyId,
+                                    $finalNum,
+                                    $tierDigits,
+                                    array_values($batchTierMap)
+                                );
+                                $finalNum = $nextId;
+                            }
+                            $row['numero_de_tiers'] = $finalNum;
+                            $batchTierMap[$upperOrigNum] = $finalNum;
+                            $row['info'] = "Nouveau tiers suggéré (" . $finalNum . ") car le libellé diffère de l'existant.";
+                            $row['info_renum'] = "Sera généré en : " . $finalNum;
+                            $row['is_duplicate'] = false;
+                        }
                     } else {
                         // VARIATION OU NOUVEAU TIERS - On vérifie si la séquence générée est libre
                         $isNumberTakenInDb = $tierDetails->has($finalNum);
