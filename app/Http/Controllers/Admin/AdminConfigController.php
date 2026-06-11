@@ -3445,13 +3445,18 @@ class AdminConfigController extends Controller
 
         // IMPORTANT: les contrôles d'équilibre peuvent requalifier des lignes (valid -> error).
         // On recalcule donc les compteurs sur les statuts finaux pour que l'UI (cartes + filtres) soit cohérente.
+        // Recalcul final des compteurs sur les statuts définitifs.
+        // IMPORTANT : 'duplicate' n'est PAS une erreur bloquante — les doublons sont ignorés à l'import.
         $errorCount = 0;
         $validCount = 0;
+        $duplicateCount = 0;
         foreach ($rowsWithStatus as $r) {
-            if (($r['status'] ?? null) === 'error' || ($r['status'] ?? null) === 'duplicate') {
+            if (($r['status'] ?? null) === 'error') {
                 $errorCount++;
             } elseif (($r['status'] ?? null) === 'valid') {
                 $validCount++;
+            } elseif (($r['status'] ?? null) === 'duplicate') {
+                $duplicateCount++;
             }
         }
 
@@ -3479,7 +3484,8 @@ class AdminConfigController extends Controller
         elseif ($import->type == 'tiers') $viewName = 'admin.config.import_staging_tiers';
         elseif ($import->type == 'journals') $viewName = 'admin.config.import_staging_journals';
 
-        // On marque l'import comme "Bloqué" si des erreurs subsistent
+        // On marque l'import comme "Bloqué" uniquement s'il y a de vraies erreurs.
+        // Les doublons (status='duplicate') sont ignorés et ne bloquent PAS l'import.
         $import->update([
             'status' => ($errorCount > 0) ? 'error' : 'processing'
         ]);
