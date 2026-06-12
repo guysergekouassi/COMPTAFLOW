@@ -1831,52 +1831,29 @@ class AdminConfigController extends Controller
 
         $ignoredEmptyLines = count($rawRows) - count($data);
 
-        $existingAccounts = PlanComptable::where('company_id', $targetCompanyId)
-            ->pluck('numero_de_compte')
+        $allAccounts = PlanComptable::where('company_id', $targetCompanyId)
+            ->select('id', 'numero_de_compte', 'intitule', 'numero_original')
+            ->get();
+
+        $existingAccounts = $allAccounts->pluck('numero_de_compte')
             ->map(fn($v) => strtoupper(trim($v)))
             ->toArray();
 
-        // Clé UPPERCASE pour que ->get() fonctionne quelle que soit la casse en base
-        $accountDetails = PlanComptable::where('company_id', $targetCompanyId)
-            ->select('id', 'numero_de_compte', 'intitule', 'numero_original')
-            ->get()
-            ->keyBy(fn($item) => strtoupper(trim($item->numero_de_compte)));
-
-        // Index secondaire : numero_original → objet, pour retrouver les comptes importés depuis leur code d'origine
-        $accountDetailsByOriginal = PlanComptable::where('company_id', $targetCompanyId)
-            ->whereNotNull('numero_original')
-            ->where('numero_original', '!=', '')
-            ->select('id', 'numero_de_compte', 'intitule', 'numero_original')
-            ->get()
-            ->keyBy(fn($item) => strtoupper(trim($item->numero_original)));
-
-        $journalDetails = CodeJournal::where('company_id', $targetCompanyId)
+        $allJournals = CodeJournal::where('company_id', $targetCompanyId)
             ->select('id', 'code_journal', 'intitule', 'numero_original')
-            ->get()
-            ->keyBy(fn($item) => strtoupper($item->code_journal));
+            ->get();
 
-        $existingJournalsArr = $journalDetails->keys()->toArray();
-        $journalMapping = [];
-        foreach($journalDetails as $j) {
-            if ($j->numero_original) {
-                $journalMapping[strtoupper(trim($j->numero_original))] = trim($j->code_journal);
-            }
-        }
+        $existingJournalsArr = $allJournals->pluck('code_journal')
+            ->map(fn($v) => strtoupper(trim($v)))
+            ->toArray();
 
-        $tierDetails = PlanTiers::where('company_id', $targetCompanyId)
+        $allTiers = PlanTiers::where('company_id', $targetCompanyId)
             ->select('id', 'numero_de_tiers', 'intitule', 'numero_original')
-            ->get()
-            ->keyBy(fn($item) => strtoupper(trim($item->numero_de_tiers)));
+            ->get();
 
-        // Index secondaire tiers : numero_original → objet
-        $tierDetailsByOriginal = PlanTiers::where('company_id', $targetCompanyId)
-            ->whereNotNull('numero_original')
-            ->where('numero_original', '!=', '')
-            ->select('id', 'numero_de_tiers', 'intitule', 'numero_original')
-            ->get()
-            ->keyBy(fn($item) => strtoupper(trim($item->numero_original)));
-
-        $existingTiers = $tierDetails->keys()->toArray();
+        $existingTiers = $allTiers->pluck('numero_de_tiers')
+            ->map(fn($v) => strtoupper(trim($v)))
+            ->toArray();
 
         // --- DICTIONNAIRES DE CORRESPONDANCE (AUTO-LOOKUP) ---
         $accountMapping = [];
@@ -2094,6 +2071,103 @@ class AdminConfigController extends Controller
                 Log::info("DYNAMIC GROUPING PRE-DECISION: $groupingKeyStrategy selected for import $id");
             }
 
+        $batchOriginalCounts = [];
+        if ($import->type === 'initial') {
+            foreach ($data as $rowRawTemp) {
+                $rowTemp = array_pad($rowRawTemp, $maxMappingIndex + 1, null);
+                $valTemp = null;
+                if (array_key_exists('numero_de_compte', $rowRawTemp)) {
+                    $valTemp = $rowRawTemp['numero_de_compte'];
+                } elseif (is_string($mapping['numero_de_compte'] ?? null) && str_starts_with($mapping['numero_de_compte'], 'FIXED:')) {
+                    $valTemp = substr($mapping['numero_de_compte'], 6);
+                } else {
+                    $idxTemp = isset($mapping['numero_de_compte']) ? (int)$mapping['numero_de_compte'] : null;
+                    $valTemp = ($idxTemp !== null) ? ($rowTemp[$idxTemp] ?? null) : null;
+                }
+                $rowCompteTemp = is_string($valTemp) ? trim($valTemp) : $valTemp;
+
+                if (empty($rowCompteTemp) || (isset($mapping['numero_de_compte']) && $mapping['numero_de_compte'] === 'AUTO')) {
+                    foreach ($rowRawTemp as $tempVal) {
+                        $tempVal = trim($tempVal ?? '');
+                        if (preg_match('/^\d{3,12}$/', $tempVal)) {
+                            $rowCompteTemp = $tempVal;
+                            break;
+                        }
+                    }
+                }
+                if (!empty($rowCompteTemp)) {
+                    $origNormTemp = strtoupper(trim($rowCompteTemp));
+                    $batchOriginalCounts[$origNormTemp] = ($batchOriginalCounts[$origNormTemp] ?? 0) + 1;
+                }
+            }
+        } elseif ($import->type === 'journals') {
+            foreach ($data as $rowRawTemp) {
+                $rowTemp = array_pad($rowRawTemp, $maxMappingIndex + 1, null);
+                $typeOverrideIndex = $maxMappingIndex + 1;
+                $codeJournalOverrideIndex = $maxMappingIndex + 6;
+                $manualCodeOrig = $rowRawTemp[$codeJournalOverrideIndex] ?? null;
+
+                $rowCodeTemp = null;
+                if (!empty($manualCodeOrig)) {
+                    $rowCodeTemp = trim($manualCodeOrig);
+                } else {
+                    $valTemp = null;
+                    if (array_key_exists('code_journal', $rowRawTemp)) {
+                        $valTemp = $rowRawTemp['code_journal'];
+                    } elseif (is_string($mapping['code_journal'] ?? null) && str_starts_with($mapping['code_journal'], 'FIXED:')) {
+                        $valTemp = substr($mapping['code_journal'], 6);
+                    } else {
+                        $idxTemp = isset($mapping['code_journal']) ? (int)$mapping['code_journal'] : null;
+                        $valTemp = ($idxTemp !== null) ? ($rowTemp[$idxTemp] ?? null) : null;
+                    }
+                    $rowCodeTemp = is_string($valTemp) ? trim($valTemp) : $valTemp;
+
+                    if (empty($rowCodeTemp) || (isset($mapping['code_journal']) && $mapping['code_journal'] === 'AUTO')) {
+                        foreach ($rowRawTemp as $tempVal) {
+                            $tempVal = trim($tempVal ?? '');
+                            if (preg_match('/^[A-Z0-9]{2,5}$/i', $tempVal)) {
+                                $rowCodeTemp = $tempVal;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!empty($rowCodeTemp)) {
+                    $origNormTemp = strtoupper(trim($rowCodeTemp));
+                    $batchOriginalCounts[$origNormTemp] = ($batchOriginalCounts[$origNormTemp] ?? 0) + 1;
+                }
+            }
+        } elseif ($import->type === 'tiers') {
+            foreach ($data as $rowRawTemp) {
+                $rowTemp = array_pad($rowRawTemp, $maxMappingIndex + 1, null);
+                $valTemp = null;
+                if (array_key_exists('numero_de_tiers', $rowRawTemp)) {
+                    $valTemp = $rowRawTemp['numero_de_tiers'];
+                } elseif (is_string($mapping['numero_de_tiers'] ?? null) && str_starts_with($mapping['numero_de_tiers'], 'FIXED:')) {
+                    $valTemp = substr($mapping['numero_de_tiers'], 6);
+                } else {
+                    $idxTemp = isset($mapping['numero_de_tiers']) ? (int)$mapping['numero_de_tiers'] : null;
+                    $valTemp = ($idxTemp !== null) ? ($rowTemp[$idxTemp] ?? null) : null;
+                }
+                $importedNumTemp = is_string($valTemp) ? trim($valTemp) : $valTemp;
+
+                if (empty($importedNumTemp) || (isset($mapping['numero_de_tiers']) && $mapping['numero_de_tiers'] === 'AUTO')) {
+                    foreach ($rowRawTemp as $tempVal) {
+                        $tempVal = trim($tempVal ?? '');
+                        if (preg_match('/^[4]\d{2,19}$/', $tempVal)) {
+                            $importedNumTemp = $tempVal;
+                            break;
+                        }
+                    }
+                }
+                if (!empty($importedNumTemp)) {
+                    $origNormTemp = strtoupper(trim($importedNumTemp));
+                    $batchOriginalCounts[$origNormTemp] = ($batchOriginalCounts[$origNormTemp] ?? 0) + 1;
+                }
+            }
+        }
+
         $lastJour = null;
         $lastJournal = null;
         $lastNSaisie = null;
@@ -2211,56 +2285,67 @@ class AdminConfigController extends Controller
                     }
                 }
 
-                // GESTION DES DOUBLONS
-                // Règle simple : si le numéro original (code du fichier) existe déjà en base → DOUBLON.
-                // Le libellé ne conditionne PAS la détection : même numéro = même compte = ignorer.
-                if (!empty($rowCompte) && empty($errors)) {
-                    $upperOrigRaw   = strtoupper(trim($originalRawValue));
+                // GESTION DES DOUBLONS ET COLLISIONS
+                if (!empty($rowCompte)) {
+                    $upperOrigRaw = strtoupper(trim($row['numero_original'] ?? ''));
                     $upperRowCompte = strtoupper(trim($rowCompte));
 
-                    // Recherche en base — 3 niveaux pour couvrir tous les cas d'import précédents
-                    $existing = null;
-                    // Niveau 1 : numero_original stocké en base = code brut du fichier
-                    if (!$existing && isset($accountDetailsByOriginal[$upperOrigRaw])) {
-                        $existing = $accountDetailsByOriginal[$upperOrigRaw];
-                    }
-                    // Niveau 2 : via le mapping numero_original → numero_de_compte (si renommé au 1er import)
-                    if (!$existing && isset($accountMapping[$upperOrigRaw])) {
-                        $mappedAcc = strtoupper(trim($accountMapping[$upperOrigRaw]));
-                        $existing  = $accountDetails->get($mappedAcc);
-                    }
-                    // Niveau 3 : numero_de_compte standardisé correspond directement
-                    if (!$existing) {
-                        $existing = $accountDetails->get($upperRowCompte);
+                    // ── Règle 2 : Doublon interne au fichier (Bloquant) ──
+                    if (!empty($upperOrigRaw) && ($batchOriginalCounts[$upperOrigRaw] ?? 0) > 1) {
+                        $errors[] = "Doublon interne dans le fichier : le numéro original apparaît à plusieurs reprises. Veuillez supprimer une ligne ou modifier les numéros originaux.";
                     }
 
-                    $isDuplicateInDb = ($existing !== null);
+                    if (empty($errors)) {
+                        // ── Règle 1 : Doublon par rapport à la base de données (Ignoré) ──
+                        $existingDuplicate = $allAccounts->first(function($acc) use ($upperOrigRaw) {
+                            $dbOrig = strtoupper(trim($acc->numero_original ?? ''));
+                            $dbNum = strtoupper(trim($acc->numero_de_compte ?? ''));
+                            return $dbOrig === $upperOrigRaw || $dbNum === $upperOrigRaw;
+                        });
 
-                    // Vérification dans le lot courant (évite les doublons internes au fichier)
-                    $isDuplicateInBatch = false;
-                    foreach ($rowsWithStatus as $prevRow) {
-                        if (($prevRow['status'] ?? '') !== 'duplicate') {
-                            $prevOrig   = strtoupper(trim($prevRow['data']['numero_original'] ?? ''));
-                            $prevCompte = strtoupper(trim($prevRow['data']['numero_de_compte'] ?? ''));
-                            if (($upperOrigRaw !== '' && $prevOrig === $upperOrigRaw) ||
-                                ($upperRowCompte !== '' && $prevCompte === $upperRowCompte)) {
-                                $isDuplicateInBatch = true;
-                                break;
+                        if ($existingDuplicate !== null) {
+                            $row['is_duplicate']   = true;
+                            $row['existing_label'] = $existingDuplicate->intitule;
+                            $row['info']           = 'Doublon (compte déjà présent en base de données). Cette ligne sera ignorée.';
+                            $row['numero_de_compte'] = $existingDuplicate->numero_de_compte;
+                            unset($row['suggested_account']);
+                            unset($row['info_renum']);
+                            $duplicateCount++;
+                        } else {
+                            // ── Règle 3 : Collision de numéros standardisés (Renumérotation) ──
+                            $existingByNum = $allAccounts->first(function($acc) use ($upperRowCompte) {
+                                return strtoupper(trim($acc->numero_de_compte ?? '')) === $upperRowCompte;
+                            });
+
+                            $isNumberTakenInBatch = isset($batchAccounts[$upperRowCompte]);
+
+                            if ($existingByNum !== null || $isNumberTakenInBatch) {
+                                $seq       = 1;
+                                $candidate = $upperRowCompte;
+                                $baseLen   = strlen($upperRowCompte);
+
+                                while (
+                                    $allAccounts->contains(fn($acc) => strtoupper(trim($acc->numero_de_compte ?? '')) === $candidate) ||
+                                    isset($batchAccounts[$candidate]) ||
+                                    in_array($candidate, array_map(fn($r) => strtoupper(trim($r['data']['numero_de_compte'] ?? '')), $rowsWithStatus))
+                                ) {
+                                    $seqStr    = (string)$seq;
+                                    $candidate = substr($upperRowCompte, 0, $baseLen - strlen($seqStr)) . $seqStr;
+                                    $seq++;
+                                    if ($seq > 999) break;
+                                }
+
+                                $row['numero_de_compte'] = $candidate;
+                                $row['suggested_account'] = $candidate;
+                                $row['info'] = "Collision : numéro séquentiel attribué ({$candidate}) car {$upperRowCompte} existe déjà.";
+                                $row['is_duplicate'] = false;
+                                $rowCompte = $candidate;
+                                $batchAccounts[$candidate] = $originalRawValue;
+                            } else {
+                                $row['is_duplicate'] = false;
+                                $batchAccounts[$upperRowCompte] = $originalRawValue;
                             }
                         }
-                    }
-
-                    if ($isDuplicateInDb || $isDuplicateInBatch) {
-                        $row['is_duplicate']   = true;
-                        $row['existing_label'] = $existing ? $existing->intitule : null;
-                        $row['info']           = 'Doublon (déjà présent en base). Cette ligne sera ignorée.';
-                        unset($row['suggested_account']);
-                        unset($row['info_renum']);
-                        $duplicateCount++;
-                    }
-
-                    if (!($row['is_duplicate'] ?? false)) {
-                        $batchAccounts[$rowCompte] = $originalRawValue;
                     }
                 }
 
@@ -2525,43 +2610,56 @@ class AdminConfigController extends Controller
                 }
 
                 // --- DÉDUPLICATION DES CODES JOURNAUX ---
-                // Règle simple : si le code journal (ou son original) existe déjà en base → DOUBLON.
                 if (!empty($rowCode)) {
                     $upperOrig = strtoupper(trim($row['numero_original'] ?? $rowCode));
                     $upperCode = strtoupper($rowCode);
 
-                    // Doublon en base : par code direct OU par numero_original mappé
-                    $isDuplicateInDb = in_array($upperCode, $existingJournalsArr) || isset($journalMapping[$upperOrig]);
-
-                    // Doublon dans le lot courant
-                    $isDuplicateInBatch = false;
-                    foreach ($rowsWithStatus as $prevRow) {
-                        if (($prevRow['status'] ?? '') !== 'duplicate') {
-                            $prevOrig    = strtoupper(trim($prevRow['data']['numero_original'] ?? ''));
-                            $prevJournal = strtoupper(trim($prevRow['data']['code_journal'] ?? ''));
-                            if (($upperOrig !== '' && $prevOrig === $upperOrig) ||
-                                ($upperCode !== '' && $prevJournal === $upperCode)) {
-                                $isDuplicateInBatch = true;
-                                break;
-                            }
-                        }
+                    // ── Règle 2 : Doublon interne au fichier (Bloquant) ──
+                    if (!empty($upperOrig) && ($batchOriginalCounts[$upperOrig] ?? 0) > 1) {
+                        $errors[] = "Doublon interne dans le fichier : le numéro original apparaît à plusieurs reprises. Veuillez supprimer une ligne ou modifier les numéros originaux.";
                     }
 
-                    if ($isDuplicateInDb || $isDuplicateInBatch) {
-                        $existing = $journalDetails->get($upperCode)
-                            ?? $journalDetails->first(fn($j) => strtoupper($j->numero_original ?? '') === $upperOrig);
-                        $row['is_duplicate']   = true;
-                        $row['existing_label'] = $existing ? $existing->intitule : null;
-                        $row['info']           = 'Doublon (journal déjà présent en base). Il sera ignoré.';
-                        $duplicateCount++;
-                        $batchJournalMap[$upperOrig] = $rowCode;
-                    } else {
-                        // Pas un doublon — s'assurer qu'il n'y a pas de collision dans le lot
-                        if (isset($localMaxJournals[$upperCode])) {
+                    if (empty($errors)) {
+                        // ── Règle 1 : Doublon par rapport à la base de données (Ignoré) ──
+                        $existingDuplicate = $allJournals->first(function($j) use ($upperOrig) {
+                            $dbOrig = strtoupper(trim($j->numero_original ?? ''));
+                            $dbCode = strtoupper(trim($j->code_journal ?? ''));
+                            return $dbOrig === $upperOrig || $dbCode === $upperOrig;
+                        });
+
+                        if ($existingDuplicate !== null) {
+                            $row['is_duplicate']   = true;
+                            $row['existing_label'] = $existingDuplicate->intitule;
+                            $row['info']           = 'Doublon (journal déjà présent en base de données). Il sera ignoré.';
+                            $row['code_journal']   = $existingDuplicate->code_journal;
+                            $duplicateCount++;
+                            $batchJournalMap[$upperOrig] = $row['code_journal'];
+                        } else {
+                            // ── Règle 3 : Collision de numéros standardisés (Renumérotation) ──
+                            $row['is_duplicate'] = false;
+                            $isNumberTakenInDb    = $allJournals->contains(fn($j) => strtoupper(trim($j->code_journal ?? '')) === $upperCode);
+                            $isNumberTakenInBatch = in_array($upperCode, array_values($batchJournalMap));
+
+                            if ($isNumberTakenInDb || $isNumberTakenInBatch) {
+                                $prefix = substr($upperCode, 0, max(1, $journalDigits - 1));
+                                $seq = 1;
+                                $candidate = $upperCode;
+                                while (
+                                    $allJournals->contains(fn($j) => strtoupper(trim($j->code_journal ?? '')) === $candidate) ||
+                                    in_array($candidate, array_values($batchJournalMap))
+                                ) {
+                                    $seqStr = (string)$seq;
+                                    $candidate = substr($prefix, 0, $journalDigits - strlen($seqStr)) . $seqStr;
+                                    $seq++;
+                                    if ($seq > 99) break;
+                                }
+                                $row['code_journal'] = $candidate;
+                                $rowCode = $candidate;
+                            }
+
                             $batchJournalMap[$upperOrig] = $rowCode;
+                            $localMaxJournals[$upperCode] = $rowCode;
                         }
-                        $localMaxJournals[$upperCode] = $rowCode;
-                        $batchJournalMap[$upperOrig]  = $rowCode;
                     }
                 }
 
@@ -2743,8 +2841,8 @@ class AdminConfigController extends Controller
                          for ($len = strlen($rowCompte); $len >= 2; $len--) {
                             $searchVal = substr($rowCompte, 0, $len);
                             // Recherche dans le dictionnaire pré-chargé au lieu d'une requête N+1
-                            $match = $accountDetails->filter(function($item, $key) use ($searchVal) {
-                                return str_starts_with($key, $searchVal);
+                            $match = $allAccounts->filter(function($item) use ($searchVal) {
+                                return str_starts_with(strtoupper(trim($item->numero_de_compte)), $searchVal);
                             })->sortBy('numero_de_compte')->first();
 
                             if ($match) {
@@ -2853,60 +2951,45 @@ class AdminConfigController extends Controller
                     $finalNum = $numeroGenere;
 
                     // --- DÉDUPLICATION TIERS ---
-                    // Règle simple : si le numero_original existe déjà en base → DOUBLON, ignorer.
                     $upperOrigNum2 = strtoupper(trim($upperOrigNum ?? ''));
-                    $existingMatch = null;
-                    // Priorité 1 : index numero_original
-                    if (!$existingMatch && isset($tierDetailsByOriginal[$upperOrigNum2])) {
-                        $existingMatch = $tierDetailsByOriginal[$upperOrigNum2];
-                    }
-                    // Priorité 2 : via tierMapping (numero_original → numero généré)
-                    if (!$existingMatch && isset($tierMapping[$upperOrigNum2])) {
-                        $existingMatch = $tierDetails->get(strtoupper($tierMapping[$upperOrigNum2]));
-                    }
-                    // Priorité 3 : numero_de_tiers directement (cas où importedNum = code généré)
-                    if (!$existingMatch) {
-                        $existingMatch = $tierDetails->get(strtoupper($importedNum));
+
+                    // ── Règle 2 : Doublon interne au fichier (Bloquant) ──
+                    if (!empty($upperOrigNum2) && ($batchOriginalCounts[$upperOrigNum2] ?? 0) > 1) {
+                        $errors[] = "Doublon interne dans le fichier : le numéro original apparaît à plusieurs reprises. Veuillez supprimer une ligne ou modifier les numéros originaux.";
                     }
 
-                    $isDuplicateInDb = ($existingMatch !== null);
+                    if (empty($errors)) {
+                        // ── Règle 1 : Doublon par rapport à la base de données (Ignoré) ──
+                        $existingDuplicate = $allTiers->first(function($t) use ($upperOrigNum2) {
+                            $dbOrig = strtoupper(trim($t->numero_original ?? ''));
+                            $dbNum = strtoupper(trim($t->numero_de_tiers ?? ''));
+                            return $dbOrig === $upperOrigNum2 || $dbNum === $upperOrigNum2;
+                        });
 
-                    // Doublon dans le lot courant
-                    $isDuplicateInBatch = false;
-                    foreach ($rowsWithStatus as $prevRow) {
-                        if (($prevRow['status'] ?? '') !== 'duplicate') {
-                            $prevOrig  = strtoupper(trim($prevRow['data']['numero_original'] ?? ''));
-                            $prevTiers = strtoupper(trim($prevRow['data']['numero_de_tiers'] ?? ''));
-                            if (($upperOrigNum2 !== '' && $prevOrig === $upperOrigNum2) ||
-                                ($importedNum !== '' && $prevTiers === strtoupper($importedNum))) {
-                                $isDuplicateInBatch = true;
-                                break;
+                        if ($existingDuplicate !== null) {
+                            $row['is_duplicate']   = true;
+                            $row['existing_label'] = $existingDuplicate->intitule;
+                            $row['info']           = 'Doublon (tiers déjà présent en base de données). Cette ligne sera ignorée.';
+                            $row['numero_de_tiers'] = $existingDuplicate->numero_de_tiers;
+                            $duplicateCount++;
+                            unset($row['info_renum']);
+                            $batchTierMap[$upperOrigNum] = $row['numero_de_tiers'];
+                        } else {
+                            // ── Règle 3 : Collision de numéros standardisés (Renumérotation) ──
+                            $row['is_duplicate'] = false;
+                            $isNumberTakenInDb    = $allTiers->contains(fn($t) => strtoupper(trim($t->numero_de_tiers ?? '')) === $finalNum);
+                            $isNumberTakenInBatch = in_array($finalNum, array_values($batchTierMap));
+
+                            if ($isNumberTakenInDb || $isNumberTakenInBatch) {
+                                $nextId = \App\Services\NumberingService::findNextAvailable(
+                                    'tier', $targetCompanyId, $finalNum, $tierDigits, array_values($batchTierMap)
+                                );
+                                $finalNum = $nextId;
                             }
+                            $row['numero_de_tiers'] = $finalNum;
+                            $batchTierMap[$upperOrigNum] = $finalNum;
+                            $row['info_renum'] = "Sera généré en : " . $finalNum;
                         }
-                    }
-
-                    if ($isDuplicateInDb || $isDuplicateInBatch) {
-                        // → DOUBLON : ignorer, peu importe le libellé
-                        $row['is_duplicate']   = true;
-                        $row['existing_label'] = $existingMatch ? $existingMatch->intitule : null;
-                        $row['info']           = 'Doublon (tiers déjà présent en base). Cette ligne sera ignorée.';
-                        $row['numero_de_tiers'] = $existingMatch ? $existingMatch->numero_de_tiers : ($batchTierMap[$upperOrigNum] ?? $importedNum);
-                        $duplicateCount++;
-                        unset($row['info_renum']);
-                    } else {
-                        // Nouveau tiers ou variation : on utilise le numéro généré
-                        $isNumberTakenInDb    = $tierDetails->has($finalNum);
-                        $isNumberTakenInBatch = in_array($finalNum, array_values($batchTierMap));
-
-                        if ($isNumberTakenInDb || $isNumberTakenInBatch) {
-                            $nextId = \App\Services\NumberingService::findNextAvailable(
-                                'tier', $targetCompanyId, $finalNum, $tierDigits, array_values($batchTierMap)
-                            );
-                            $finalNum = $nextId;
-                        }
-                        $row['numero_de_tiers'] = $finalNum;
-                        $batchTierMap[$upperOrigNum] = $finalNum;
-                        $row['info_renum'] = "Sera généré en : " . $finalNum;
                     }
 
                     if (empty($row['numero_de_tiers'])) {
@@ -3149,9 +3232,9 @@ class AdminConfigController extends Controller
 
                 // --- DÉTECTION DE DOUBLON EN BASE DE DONNÉES (ÉCRITURES) ---
                 if (empty($errors) && $isValidDate && $parsedDate) {
-                    $compteObj = $accountDetails->get($rowCompte);
-                    $journalObj = $journalDetails->get(strtoupper($rowJournal));
-                    $tiersObj = !empty($rowTiers) ? $tierDetails->get(strtoupper($rowTiers)) : null;
+                    $compteObj = $allAccounts->first(fn($a) => strtoupper(trim($a->numero_de_compte)) === strtoupper(trim($rowCompte)));
+                    $journalObj = $allJournals->first(fn($j) => strtoupper(trim($j->code_journal)) === strtoupper(trim($rowJournal)));
+                    $tiersObj = !empty($rowTiers) ? $allTiers->first(fn($t) => strtoupper(trim($t->numero_de_tiers)) === strtoupper(trim($rowTiers))) : null;
 
                     $compteId = $compteObj ? $compteObj->id : null;
                     $journalId = $journalObj ? $journalObj->id : null;

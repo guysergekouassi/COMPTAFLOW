@@ -388,7 +388,7 @@
                                                                title="{{ implode(', ', $row['errors']) }}"></span>
                                                      </td>
                                                      
-                                                     <td class="@if($row['status'] == 'error' && empty($row['data']['numero_de_tiers'])) cell-error @endif search-target">
+                                                     <td class="@if($row['status'] == 'error' && (empty($row['data']['numero_de_tiers']) || $row['data']['numero_de_tiers'] === 'NON GÉNÉRÉ' || str_contains(implode(' ', $row['errors']), 'Doublon') || str_contains(implode(' ', $row['errors']), 'interne') || str_contains(implode(' ', $row['errors']), 'original') || str_contains(implode(' ', $row['errors']), 'tiers'))) cell-error @endif search-target">
                                                          <div class="d-flex flex-column">
                                                               @if(!empty($row['data']['numero_de_tiers']) && $row['data']['numero_de_tiers'] !== 'NON GÉNÉRÉ')
                                                                    <div class="d-flex align-items-center gap-2">
@@ -423,7 +423,7 @@
                                                             <span class="text-[9px] text-slate-400 mt-1 italic text-center">Auto-détecté</span>
                                                          </div>
                                                      </td>
-                                                     <td class="font-mono text-xs @if(($row['data']['is_virtual'] ?? false) || !empty($row['data']['suggested_account'])) text-danger @endif">
+                                                     <td class="font-mono text-xs @if($row['status'] == 'error' && str_contains(implode(' ', $row['errors']), 'compte')) cell-error @elseif(($row['data']['is_virtual'] ?? false) || !empty($row['data']['suggested_account'])) text-danger @endif">
                                                          <div class="d-flex flex-column">
                                                              <span class="fw-bold">{{ $row['data']['compte_general'] ?? '-' }}</span>
                                                              @if(!empty($row['data']['numero_original_compte']))

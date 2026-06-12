@@ -461,7 +461,7 @@
                                                         </td>
                                                         <td class="search-target">{{ $row['data']['intitule'] ?? '-' }}</td>
                                                     @elseif($import->type == 'journals')
-                                                        <td class="@if($row['status'] == 'error' && (str_contains(implode(' ', $row['errors']), 'Code') || str_contains(implode(' ', $row['errors']), 'long'))) cell-error @endif search-target">
+                                                        <td class="@if($row['status'] == 'error' && (str_contains(implode(' ', $row['errors']), 'Code') || str_contains(implode(' ', $row['errors']), 'long') || str_contains(implode(' ', $row['errors']), 'Doublon') || str_contains(implode(' ', $row['errors']), 'interne') || str_contains(implode(' ', $row['errors']), 'original'))) cell-error @endif search-target">
                                                             <div class="d-flex flex-column">
                                                                 <div class="d-flex align-items-center gap-2">
                                                                     <span class="fw-black">{{ $row['data']['code_journal'] ?? '-' }}</span>
