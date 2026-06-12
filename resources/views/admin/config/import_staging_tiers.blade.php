@@ -288,9 +288,12 @@
                                 </div>
                             </div>
                             <div class="col-md-2">
-                                <div class="bg-warning/10 p-4 rounded-2xl border {{ $statusFilter == 'duplicate' ? 'border-warning active' : 'border-warning/20' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'duplicate', 'page' => 1]) }}'">
-                                    <div class="text-xs font-bold text-warning uppercase mb-1">Doublons détectés</div>
-                                    <div class="h4 font-black text-warning mb-0">{{ $duplicateCount }}</div>
+                                <div class="bg-blue-50 p-4 rounded-2xl border {{ $statusFilter == 'duplicate' ? 'border-blue-500 active' : 'border-blue-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'duplicate', 'page' => 1]) }}'">
+                                    <div class="text-xs font-bold text-blue-600 uppercase mb-1">Existants (ignorés)</div>
+                                    <div class="h4 font-black text-blue-700 mb-0">{{ $duplicateCount }}</div>
+                                    @if($duplicateCount > 0)
+                                    <div class="text-[10px] text-blue-400 mt-1"><i class="fa-solid fa-circle-info me-1"></i>Seront ignorés à l'import</div>
+                                    @endif
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -334,6 +337,11 @@
                             <button type="button" class="btn btn-label-success btn-sm rounded-xl px-4" onclick="exportErrorsToCSV()" title="Exporter en Excel">
                                 <i class="fa-solid fa-file-excel me-1"></i> Exporter Erreurs
                             </button>
+                            @if($duplicateCount > 0)
+                            <button type="button" class="btn btn-info btn-sm rounded-xl px-4" onclick="exportExistingToExcel()" title="Télécharger la liste des tiers déjà présents en base">
+                                <i class="fa-solid fa-file-arrow-down me-1"></i> Exporter existants
+                            </button>
+                            @endif
                         </div>
 
                         <div class="staging-card p-0 mb-6">
@@ -978,6 +986,10 @@
 
         function exportErrorsToCSV() {
             window.location.href = "{{ route('admin.import.export_errors', $import->id) }}";
+        }
+
+        function exportExistingToExcel() {
+            window.location.href = "{{ route('admin.import.export_existing', $import->id) }}";
         }
 
         function selectAndBulkDeleteErrors() {

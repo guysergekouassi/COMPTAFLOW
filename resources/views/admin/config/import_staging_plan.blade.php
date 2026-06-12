@@ -271,9 +271,12 @@
                                  </div>
                             </div>
                             <div class="col-md-2">
-                                <div class="bg-warning/10 p-4 rounded-2xl border {{ $statusFilter == 'duplicate' ? 'border-warning active' : 'border-warning/20' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'duplicate', 'page' => 1]) }}'">
-                                    <div class="text-xs font-bold text-warning uppercase mb-1">Doublons détectés</div>
-                                    <div class="h4 font-black text-warning mb-0">{{ $duplicateCount }}</div>
+                                <div class="bg-blue-50 p-4 rounded-2xl border {{ $statusFilter == 'duplicate' ? 'border-blue-500 active' : 'border-blue-100' }} cursor-pointer card-filter" onclick="window.location.href='{{ request()->fullUrlWithQuery(['status' => 'duplicate', 'page' => 1]) }}'">
+                                    <div class="text-xs font-bold text-blue-600 uppercase mb-1">Existants (ignorés)</div>
+                                    <div class="h4 font-black text-blue-700 mb-0">{{ $duplicateCount }}</div>
+                                    @if($duplicateCount > 0)
+                                    <div class="text-[10px] text-blue-400 mt-1"><i class="fa-solid fa-circle-info me-1"></i>Seront ignorés à l'import</div>
+                                    @endif
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -503,6 +506,11 @@
                                 @if($errorCount > 0)
                                 <button type="button" class="btn btn-warning rounded-xl px-6 py-3 font-bold" onclick="exportErrorsToCSV()">
                                     <i class="fa-solid fa-file-excel me-2"></i> Exporter erreurs
+                                </button>
+                                @endif
+                                @if($duplicateCount > 0)
+                                <button type="button" class="btn btn-info rounded-xl px-6 py-3 font-bold" onclick="exportExistingToExcel()" title="Télécharger la liste des comptes déjà présents en base">
+                                    <i class="fa-solid fa-file-arrow-down me-2"></i> Exporter existants
                                 </button>
                                 @endif
                                  <form id="commitForm" action="{{ route('admin.import.commit', $import->id) }}" method="POST">
@@ -839,6 +847,10 @@
 
         function exportErrorsToCSV() {
             window.location.href = "{{ route('admin.import.export_errors', $import->id) }}";
+        }
+
+        function exportExistingToExcel() {
+            window.location.href = "{{ route('admin.import.export_existing', $import->id) }}";
         }
 
         function selectAndBulkDeleteErrors() {

@@ -4560,6 +4560,113 @@ class AdminConfigController extends Controller
 
 
     /**
+     * Exportation des existants (Règle 1 — déjà présents en base) en Excel
+     */
+    public function exportExisting($id)
+    {
+        $import = ImportStaging::findOrFail($id);
+        $data   = $this->importStaging($import->id, true);
+        $rowsWithStatus = $data['rowsWithStatus'] ?? [];
+
+        // On ne garde que les lignes de statut 'duplicate' (Règle 1 : déjà en BD)
+        $existingRows = array_filter($rowsWithStatus, fn($r) => ($r['status'] ?? '') === 'duplicate');
+
+        if (empty($existingRows)) {
+            return back()->with('error', "Aucune ligne existante à exporter.");
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Existants');
+
+        // Colonnes selon le type d'import
+        $type = $import->type;
+
+        if ($type === 'initial') {
+            // Plan Comptable
+            $headers = ['Ligne', 'N° Original', 'N° Standardisé', 'Intitulé / Libellé', 'Information'];
+            $sheet->fromArray($headers, NULL, 'A1');
+            $rowNum = 2;
+            foreach ($existingRows as $r) {
+                $d = $r['data'];
+                $sheet->setCellValue('A'.$rowNum, $r['index']);
+                $sheet->setCellValue('B'.$rowNum, $d['numero_original'] ?? '');
+                $sheet->setCellValue('C'.$rowNum, $d['numero_de_compte'] ?? '');
+                $sheet->setCellValue('D'.$rowNum, $d['intitule'] ?? '');
+                $sheet->setCellValue('E'.$rowNum, $d['info'] ?? 'Déjà présent en base de données.');
+                $rowNum++;
+            }
+        } elseif ($type === 'tiers') {
+            // Plan Tiers
+            $headers = ['Ligne', 'N° Original', 'N° Standardisé', 'Intitulé / Nom', 'Type de Tiers', 'Compte Général', 'Information'];
+            $sheet->fromArray($headers, NULL, 'A1');
+            $rowNum = 2;
+            foreach ($existingRows as $r) {
+                $d = $r['data'];
+                $sheet->setCellValue('A'.$rowNum, $r['index']);
+                $sheet->setCellValue('B'.$rowNum, $d['numero_original'] ?? '');
+                $sheet->setCellValue('C'.$rowNum, $d['numero_de_tiers'] ?? '');
+                $sheet->setCellValue('D'.$rowNum, $d['intitule'] ?? '');
+                $sheet->setCellValue('E'.$rowNum, $d['type_de_tiers'] ?? '');
+                $sheet->setCellValue('F'.$rowNum, $d['compte_general_raw'] ?? '');
+                $sheet->setCellValue('G'.$rowNum, $d['info'] ?? 'Déjà présent en base de données.');
+                $rowNum++;
+            }
+        } elseif ($type === 'journals') {
+            // Codes Journaux
+            $headers = ['Ligne', 'Code Original', 'Code Standardisé', 'Intitulé', 'Type', 'Compte Trésorerie', 'Information'];
+            $sheet->fromArray($headers, NULL, 'A1');
+            $rowNum = 2;
+            foreach ($existingRows as $r) {
+                $d = $r['data'];
+                $sheet->setCellValue('A'.$rowNum, $r['index']);
+                $sheet->setCellValue('B'.$rowNum, $d['numero_original'] ?? '');
+                $sheet->setCellValue('C'.$rowNum, $d['code_journal'] ?? '');
+                $sheet->setCellValue('D'.$rowNum, $d['intitule'] ?? '');
+                $sheet->setCellValue('E'.$rowNum, $d['type'] ?? '');
+                $sheet->setCellValue('F'.$rowNum, $d['compte_de_tresorerie_raw'] ?? ($d['compte_de_tresorerie'] ?? ''));
+                $sheet->setCellValue('G'.$rowNum, $d['info'] ?? 'Déjà présent en base de données.');
+                $rowNum++;
+            }
+        } else {
+            // Fallback générique
+            $headers = ['Ligne', 'N° Original', 'Libellé', 'Information'];
+            $sheet->fromArray($headers, NULL, 'A1');
+            $rowNum = 2;
+            foreach ($existingRows as $r) {
+                $d = $r['data'];
+                $sheet->setCellValue('A'.$rowNum, $r['index']);
+                $sheet->setCellValue('B'.$rowNum, $d['numero_original'] ?? '');
+                $sheet->setCellValue('C'.$rowNum, $d['intitule'] ?? $d['libelle'] ?? '');
+                $sheet->setCellValue('D'.$rowNum, $d['info'] ?? 'Déjà présent en base de données.');
+                $rowNum++;
+            }
+        }
+
+        // Style en-tête : fond bleu-gris, texte blanc, gras
+        $headerStyle = [
+            'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+            'fill'      => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                            'startColor' => ['argb' => 'FF4A6FA5']],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+        ];
+        $lastCol = $sheet->getHighestColumn();
+        $sheet->getStyle('A1:'.$lastCol.'1')->applyFromArray($headerStyle);
+
+        // Auto-largeur colonnes
+        foreach (range('A', $lastCol) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer   = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $fileName = 'existants_import_' . $id . '.xlsx';
+        $tempPath = storage_path('app/' . $fileName);
+        $writer->save($tempPath);
+
+        return response()->download($tempPath)->deleteFileAfterSend(true);
+    }
+
+    /**
      * Suppression de TOUTES les erreurs du staging
      */
     public function bulkDeleteErrors($id)

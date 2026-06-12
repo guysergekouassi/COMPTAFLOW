@@ -548,6 +548,7 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
         Route::post('/import/delete-rows/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'deleteMultipleRows'])->name('import.delete_rows');
         Route::post('/import/delete-errors/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'bulkDeleteErrors'])->name('import.delete_errors');
         Route::get('/import/export-errors/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportErrors'])->name('import.export_errors');
+        Route::get('/import/export-existing/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportExisting'])->name('import.export_existing');
         Route::post('/import/standardize/{id}', [App\Http\Controllers\Admin\AdminConfigController::class, 'standardizeImportAccounts'])->name('import.standardize');
     });
 
