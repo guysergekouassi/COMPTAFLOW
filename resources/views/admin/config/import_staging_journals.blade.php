@@ -474,7 +474,7 @@
                                                                 <div class="d-flex align-items-center gap-2">
                                                                     <span class="fw-black">{{ $row['data']['code_journal'] ?? '-' }}</span>
                                                                     @if(!empty($row['data']['is_duplicate']))
-                                                                        <span class="badge bg-label-warning text-[8px] px-1 py-0" title="Ce journal existe déjà et sera ignoré">DOUBLON</span>
+                                                                        <span class="badge bg-label-warning text-[8px] px-1 py-0" title="Ce journal existe déjà et sera ignoré">EXISTE DÉJÀ</span>
                                                                     @endif
                                                                 </div>
                                                                  @if(!empty($row['data']['numero_original']))

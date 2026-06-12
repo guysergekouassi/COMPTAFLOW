@@ -421,7 +421,7 @@
                                                          </div>
                                                      </td>
                                                      <td class="fw-bold search-target">
-                                                         @if(!empty($row['data']['is_duplicate'])) <span class="badge bg-label-warning text-[8px] px-1 py-0">DOUBLON</span> @endif {{ $row['data']['intitule'] ?? 'Sans nom' }} @if(!empty($row['data']['is_duplicate']) && !empty($row['data']['existing_label'])) <div class="text-[9px] text-orange-500 font-medium italic mt-1">Existant: {{ $row['data']['existing_label'] }}</div> @endif
+                                                         @if(!empty($row['data']['is_duplicate'])) <span class="badge bg-label-warning text-[8px] px-1 py-0">EXISTE DÉJÀ</span> @endif {{ $row['data']['intitule'] ?? 'Sans nom' }} @if(!empty($row['data']['is_duplicate']) && !empty($row['data']['existing_label'])) <div class="text-[9px] text-orange-500 font-medium italic mt-1">Existant: {{ $row['data']['existing_label'] }}</div> @endif
                                                      </td>
                                                      <td>
                                                          <div class="d-flex flex-column">

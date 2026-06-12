@@ -2306,7 +2306,7 @@ class AdminConfigController extends Controller
                         if ($existingDuplicate !== null) {
                             $row['is_duplicate']   = true;
                             $row['existing_label'] = $existingDuplicate->intitule;
-                            $row['info']           = 'Doublon (compte déjà présent en base de données). Cette ligne sera ignorée.';
+                            $row['info']           = 'Existe déjà (compte déjà présent en base de données). Cette ligne sera ignorée.';
                             $row['numero_de_compte'] = $existingDuplicate->numero_de_compte;
                             unset($row['suggested_account']);
                             unset($row['info_renum']);
@@ -2630,7 +2630,7 @@ class AdminConfigController extends Controller
                         if ($existingDuplicate !== null) {
                             $row['is_duplicate']   = true;
                             $row['existing_label'] = $existingDuplicate->intitule;
-                            $row['info']           = 'Doublon (journal déjà présent en base de données). Il sera ignoré.';
+                            $row['info']           = 'Existe déjà (journal déjà présent en base de données). Il sera ignoré.';
                             $row['code_journal']   = $existingDuplicate->code_journal;
                             $duplicateCount++;
                             $batchJournalMap[$upperOrig] = $row['code_journal'];
@@ -2969,7 +2969,7 @@ class AdminConfigController extends Controller
                         if ($existingDuplicate !== null) {
                             $row['is_duplicate']   = true;
                             $row['existing_label'] = $existingDuplicate->intitule;
-                            $row['info']           = 'Doublon (tiers déjà présent en base de données). Cette ligne sera ignorée.';
+                            $row['info']           = 'Existe déjà (tiers déjà présent en base de données). Cette ligne sera ignorée.';
                             $row['numero_de_tiers'] = $existingDuplicate->numero_de_tiers;
                             $duplicateCount++;
                             unset($row['info_renum']);
