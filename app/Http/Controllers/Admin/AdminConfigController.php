@@ -3769,7 +3769,7 @@ class AdminConfigController extends Controller
     }
 
     /**
-     * Tunnel d'Importation - Injection Finale (ASYNC via Queue Job)
+     * Tunnel d'Importation - Injection Finale (Synchrone)
      */
     public function commitImport(Request $request, $id)
     {
@@ -3794,15 +3794,33 @@ class AdminConfigController extends Controller
             ]),
         ]);
 
-        // Dispatcher le Job de traitement
-        // (async si QUEUE_CONNECTION != sync ; sinon exécution immédiate et on redirige après)
-        \App\Jobs\ImportCommitJob::dispatch($import->id, $user->id);
+        // Exécuter le Job de traitement de façon synchrone
+        try {
+            $job = new \App\Jobs\ImportCommitJob($import->id, $user->id);
+            $job->handle();
+            
+            // Rafraîchir le modèle pour récupérer le statut mis à jour
+            $import->refresh();
+        } catch (\Throwable $e) {
+            Log::error("Erreur critique commitImport : " . $e->getMessage(), ['exception' => $e]);
+            $import->update([
+                'status'    => 'error',
+                'error_log' => 'Erreur critique : ' . $e->getMessage(),
+                'metadata'  => array_merge($import->metadata ?? [], [
+                    'commit_status'   => 'error',
+                    'commit_progress' => 100,
+                ]),
+            ]);
+        }
 
-        return view('admin.import.processing', [
-            'import'    => $import,
-            'statusUrl' => route('admin.import.job.status', $id),
-            'reportUrl' => route('admin.import.report.view', $id),
-        ]);
+        // Rediriger selon le résultat final de la migration
+        if ($import->status === 'committed') {
+            $report = ($import->metadata ?? [])['commit_report']
+                   ?? ['status' => 'success', 'processed_g' => 0, 'errors' => []];
+            return view('admin.import.report', ['report' => $report, 'batch_id' => $id]);
+        } else {
+            return redirect()->route('import.staging', $id)->with('error', $import->error_log ?? "Erreur lors de la migration.");
+        }
     }
 
     /**
