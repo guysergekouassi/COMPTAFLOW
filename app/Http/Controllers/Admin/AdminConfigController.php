@@ -3332,14 +3332,8 @@ class AdminConfigController extends Controller
                 $ns = trim((string)($row['n_saisie'] ?? ''));
                 $ref = trim((string)($row['reference'] ?? ''));
 
-                if ($groupingKeyStrategy === 'reference') {
-                    if ($ref === '') {
-                        $errors[] = "Numéro de facture / référence manquant";
-                    }
-                } else {
-                    if ($ns === '') {
-                        $errors[] = "Numéro de saisie manquant";
-                    }
+                if ($ref === '' && $ns === '') {
+                    $errors[] = "Numéro de facture / référence ou numéro de saisie manquant";
                 }
 
                 // 2. Validation des montants (Non nul)
@@ -3477,6 +3471,35 @@ class AdminConfigController extends Controller
 
         // --- VALIDATION GLOBALE & PAR GROUPE (Équilibre) ---
         if ($import->type == 'courant') {
+            // 1. Contrôle de l'équilibre par Journal
+            $journalBalances = [];
+            foreach ($rowsWithStatus as &$r) {
+                if ($r['status'] === 'duplicate') {
+                    continue;
+                }
+                $journal = trim((string)($r['data']['journal'] ?? ''));
+                if ($journal === '') {
+                    $journal = 'INCONNU';
+                }
+                if (!isset($journalBalances[$journal])) {
+                    $journalBalances[$journal] = ['d' => 0.0, 'c' => 0.0, 'rows' => []];
+                }
+                $journalBalances[$journal]['d'] += round((float)($r['debit'] ?? 0.0), 2);
+                $journalBalances[$journal]['c'] += round((float)($r['credit'] ?? 0.0), 2);
+                $journalBalances[$journal]['rows'][] = &$r;
+            }
+
+            foreach ($journalBalances as $j => $totals) {
+                if (abs($totals['d'] - $totals['c']) > 0.01) {
+                    $diff = round(abs($totals['d'] - $totals['c']), 2);
+                    foreach ($totals['rows'] as &$rowError) {
+                        $rowError['status'] = 'error';
+                        $rowError['errors'][] = "DÉSÉQUILIBRE JOURNAL '{$j}' : Différence $diff (Débit: {$totals['d']}, Crédit: {$totals['c']})";
+                    }
+                }
+            }
+
+            // 2. Contrôle de l'équilibre par Pièce (Groupe Journal + Référence / N° Saisie + Date)
             $balances = [];
             foreach ($rowsWithStatus as &$r) {
                 if ($r['status'] === 'duplicate') {
@@ -3499,26 +3522,21 @@ class AdminConfigController extends Controller
                     $r['data']['reference'] = $cachedRanNumberForStaging;
                 }
                 
-                if ($groupingKeyStrategy === 'reference') {
-                    $keyPart = $reference;
+                if ($reference !== '' && $reference !== 'IMPORT') {
+                    $keyPart = 'REF_' . $reference;
                 } else {
-                    $keyPart = $nSaisie;
+                    $keyPart = 'NS_' . ($nSaisie !== '' ? $nSaisie : 'IMPORT');
                 }
                 
-                if ($keyPart === '') {
-                    $keyPart = 'row_' . $r['index']; // fallback
-                }
-                
-                // Group by date + keyPart only (NOT journal) to ensure all lines of the same
-                // saisie/reference are in the same group even if journal values differ slightly
-                $ref = $jour . '|' . $keyPart;
+                $ref = $journal . '|' . $keyPart . '|' . $jour;
 
-                if (!isset($balances[$ref])) $balances[$ref] = ['d' => 0, 'c' => 0, 'rows' => []];
+                if (!isset($balances[$ref])) {
+                    $balances[$ref] = ['d' => 0, 'c' => 0, 'rows' => []];
+                }
                 $balances[$ref]['d'] += round((float)$r['debit'], 2);
                 $balances[$ref]['c'] += round((float)$r['credit'], 2);
                 $balances[$ref]['rows'][] = &$r;
             }
-
 
             // Résumé par groupe pour affichage (débit/crédit/diff par n_saisie)
             $groupSummary = [];
@@ -3533,9 +3551,11 @@ class AdminConfigController extends Controller
             foreach ($balances as $ref => $b) {
                 if (abs($b['d'] - $b['c']) > 0.01) {
                     $diff = round(abs($b['d'] - $b['c']), 2);
+                    $parts = explode('|', $ref);
+                    $refLabel = isset($parts[1]) ? str_replace(['REF_', 'NS_'], '', $parts[1]) : $ref;
                     foreach ($b['rows'] as &$rowError) {
                         $rowError['status'] = 'error';
-                        $rowError['errors'][] = "DÉSÉQUILIBRE Groupe '$ref' : Différence $diff";
+                        $rowError['errors'][] = "DÉSÉQUILIBRE PIÈCE '$refLabel' : Différence $diff";
                     }
                 }
             }
@@ -3560,17 +3580,13 @@ class AdminConfigController extends Controller
                     $reference = $cachedRanNumberForStaging;
                 }
                 
-                if ($groupingKeyStrategy === 'reference') {
-                    $keyPart = $reference;
+                if ($reference !== '' && $reference !== 'IMPORT') {
+                    $keyPart = 'REF_' . $reference;
                 } else {
-                    $keyPart = $nSaisie;
+                    $keyPart = 'NS_' . ($nSaisie !== '' ? $nSaisie : 'IMPORT');
                 }
                 
-                if ($keyPart === '') {
-                    $keyPart = 'row_' . $r['index']; // fallback
-                }
-                
-                $ref = $jour . '|' . $keyPart;
+                $ref = $journal . '|' . $keyPart . '|' . $jour;
 
                 $r['group_key'] = $ref;
                 $r['group_debit'] = $groupSummary[$ref]['debit'] ?? null;
