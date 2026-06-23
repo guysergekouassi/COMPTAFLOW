@@ -75,10 +75,9 @@
                                     
                                     <div class="row g-4">
                                         @php
-                                            $rowsForTotals = collect($rowsWithStatus)->filter(fn($r) => ($r['status'] ?? null) !== 'ignored');
-                                            $totalDebit = $rowsForTotals->sum('debit');
-                                            $totalCredit = $rowsForTotals->sum('credit');
-                                            $balance = abs($totalDebit - $totalCredit);
+                                            $totalDebit = $viewStats['general']['totalDebit'] ?? 0.0;
+                                            $totalCredit = $viewStats['general']['totalCredit'] ?? 0.0;
+                                            $balance = $viewStats['general']['balance'] ?? 0.0;
                                         @endphp
 
                                         @if($balance > 0.01)

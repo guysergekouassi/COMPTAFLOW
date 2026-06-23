@@ -124,23 +124,13 @@
                         @endif
 
                         @php
-                            $existingAccountsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'déjà présent') || str_contains(implode(' ', $r['errors']), 'existe déjà'))->count();
-                            $existingJournalsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'déjà existant') || str_contains(implode(' ', $r['errors']), 'existe déjà') || str_contains(implode(' ', $r['errors']), 'Doublon'))->count();
-                            $lengthErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'ne respecte pas la configuration') || str_contains(implode(' ', $r['errors']), 'invalide') || str_contains(implode(' ', $r['errors']), 'Max') || str_contains(implode(' ', $r['errors']), 'Erreur de formatage'))->count();
-                            $formatErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Longueur incorrecte') || str_contains(implode(' ', $r['errors']), 'inconnu'))->count();
-                            $missingTresoErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Compte Inconnu : Le compte'))->count();
-                            $missingErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'manquant') || str_contains(implode(' ', $r['errors']), 'Configuration'))->count();
-                            $otherErrors = collect($rowsWithStatus)->filter(fn($r) => !empty($r['errors']) && 
-                                !str_contains(implode(' ', $r['errors']), 'manquant') && 
-                                !str_contains(implode(' ', $r['errors']), 'Configuration') && 
-                                !str_contains(implode(' ', $r['errors']), 'Longueur') && 
-                                !str_contains(implode(' ', $r['errors']), 'invalide') && 
-                                !str_contains(implode(' ', $r['errors']), 'Max') && 
-                                 !str_contains(implode(' ', $r['errors']), 'inconnu') && 
-                                 !str_contains(implode(' ', $r['errors']), 'Erreur de formatage') && 
-                                 !str_contains(implode(' ', $r['errors']), 'Compte Inconnu') && 
-                                 !str_contains(implode(' ', $r['errors']), 'déjà') && 
-                                 !str_contains(implode(' ', $r['errors']), 'Doublon'))->count();
+                            $existingAccountsErrors = $viewStats['journals']['existingAccountsErrors'] ?? 0;
+                            $existingJournalsErrors = $viewStats['journals']['existingJournalsErrors'] ?? 0;
+                            $lengthErrors = $viewStats['journals']['lengthErrors'] ?? 0;
+                            $formatErrors = $viewStats['journals']['formatErrors'] ?? 0;
+                            $missingTresoErrors = $viewStats['journals']['missingTresoErrors'] ?? 0;
+                            $missingErrors = $viewStats['journals']['missingErrors'] ?? 0;
+                            $otherErrors = $viewStats['journals']['otherErrors'] ?? 0;
                         @endphp
 
                         @if(isset($ignoredEmptyLines) && $ignoredEmptyLines > 0)
@@ -213,18 +203,7 @@
                                                 <div>
                                                     <span class="text-[10px] fw-black text-emerald-500 uppercase tracking-widest">ACTION REQUISE</span>
                                                     @php
-                                                        $missingTresoNumbers = collect($rowsWithStatus)
-                                                            ->flatMap(function($r) {
-                                                                return collect($r['errors'])
-                                                                    ->filter(fn($e) => str_contains($e, "Compte Inconnu : Le compte"))
-                                                                    ->map(function($e) {
-                                                                        preg_match('/Le compte \'([^\']+)\'/', $e, $matches);
-                                                                        return $matches[1] ?? null;
-                                                                    });
-                                                            })
-                                                            ->filter()
-                                                            ->unique()
-                                                            ->values();
+                                                        $missingTresoNumbers = collect($viewStats['journals']['missingTresoNumbers'] ?? []);
                                                     @endphp
                                                     @if($missingTresoNumbers->count() > 0)
                                                         <div class="d-flex flex-wrap gap-2 mt-2">
@@ -291,20 +270,7 @@
                                                 
                                                 <div class="d-flex flex-column gap-2 mt-3">
                                                     @php
-                                                        $uniqueOtherErrors = collect($rowsWithStatus)
-                                                            ->flatMap(fn($r) => $r['errors'])
-                                                            ->unique()
-                                                            ->filter(fn($e) => 
-                                                                !str_contains($e, 'manquant') && 
-                                                                !str_contains($e, 'Configuration') &&
-                                                                !str_contains($e, 'Longueur') && 
-                                                                !str_contains($e, 'invalide') &&
-                                                                 !str_contains($e, 'Max') &&
-                                                                 !str_contains($e, 'inconnu') &&
-                                                                 !str_contains($e, 'déjà') &&
-                                                                 !str_contains($e, 'Doublon')
-                                                            )
-                                                            ->take(3);
+                                                        $uniqueOtherErrors = collect($viewStats['journals']['uniqueOtherErrors'] ?? []);
                                                     @endphp
                                                     
                                                     @foreach($uniqueOtherErrors as $err)

@@ -133,13 +133,10 @@
                                     
                                     <div class="row g-4">
                                         @php
-                                            $missingAccountErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Générale absente'))->count();
-                                            $missingPrefixErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'compte collectif'))->count();
-                                            $missingIdErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Numéro de tiers manquant'))->count();
-                                            $otherErrors = collect($rowsWithStatus)->filter(fn($r) => !empty($r['errors']) && 
-                                                !str_contains(implode(' ', $r['errors']), 'Générale absente') && 
-                                                !str_contains(implode(' ', $r['errors']), 'compte collectif') && 
-                                                !str_contains(implode(' ', $r['errors']), 'Numéro de tiers manquant'))->count();
+                                            $missingAccountErrors = $viewStats['tiers']['missingAccountErrors'] ?? 0;
+                                            $missingPrefixErrors = $viewStats['tiers']['missingPrefixErrors'] ?? 0;
+                                            $missingIdErrors = $viewStats['tiers']['missingIdErrors'] ?? 0;
+                                            $otherErrors = $viewStats['tiers']['otherErrors'] ?? 0;
                                         @endphp
 
                                         @if($missingAccountErrors > 0 || $missingPrefixErrors > 0)
@@ -158,18 +155,7 @@
                                                 <div>
                                                     <span class="text-[10px] fw-black text-emerald-500 uppercase tracking-widest">ACTION REQUISE</span>
                                                     @php
-                                                        $missingAccountNumbers = collect($rowsWithStatus)
-                                                            ->flatMap(function($r) {
-                                                                return collect($r['errors'])
-                                                                    ->filter(fn($e) => str_contains($e, "n'existe pas. Veuillez le créer au préalable."))
-                                                                    ->map(function($e) {
-                                                                        preg_match('/compte collectif ([0-9]+) n\'existe pas/', $e, $matches);
-                                                                        return $matches[1] ?? null;
-                                                                    });
-                                                            })
-                                                            ->filter()
-                                                            ->unique()
-                                                            ->values();
+                                                        $missingAccountNumbers = collect($viewStats['tiers']['missingAccountNumbers'] ?? []);
                                                     @endphp
                                                     @if($missingAccountNumbers->count() > 0)
                                                         <div class="d-flex flex-wrap gap-2 mt-2">
@@ -229,15 +215,7 @@
                                                 
                                                 <div class="d-flex flex-column gap-2 mt-3">
                                                     @php
-                                                        $uniqueOtherErrors = collect($rowsWithStatus)
-                                                            ->flatMap(fn($r) => $r['errors'])
-                                                            ->unique()
-                                                            ->filter(fn($e) => 
-                                                                !str_contains($e, 'Générale absente') && 
-                                                                !str_contains($e, 'collectif') && 
-                                                                !str_contains($e, 'Numéro de tiers manquant')
-                                                            )
-                                                            ->take(3);
+                                                        $uniqueOtherErrors = collect($viewStats['tiers']['uniqueOtherErrors'] ?? []);
                                                     @endphp
                                                     
                                                     @foreach($uniqueOtherErrors as $err)

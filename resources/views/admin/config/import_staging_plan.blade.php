@@ -133,13 +133,10 @@
                                     
                                     <div class="row g-4">
                                          @php
-                                             $existingAccountsErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'déjà présent'))->count();
-                                             $lengthErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'Longueur incorrecte'))->count();
-                                             $missingErrors = collect($rowsWithStatus)->filter(fn($r) => str_contains(implode(' ', $r['errors']), 'manquant'))->count();
-                                             $otherErrors = collect($rowsWithStatus)->filter(fn($r) => !empty($r['errors']) && 
-                                                 !str_contains(implode(' ', $r['errors']), 'déjà présent') && 
-                                                 !str_contains(implode(' ', $r['errors']), 'Longueur incorrecte') && 
-                                                 !str_contains(implode(' ', $r['errors']), 'manquant'))->count();
+                                             $existingAccountsErrors = $viewStats['plan']['existingAccountsErrors'] ?? 0;
+                                             $lengthErrors = $viewStats['plan']['lengthErrors'] ?? 0;
+                                             $missingErrors = $viewStats['plan']['missingErrors'] ?? 0;
+                                             $otherErrors = $viewStats['plan']['otherErrors'] ?? 0;
                                          @endphp
 
                                         @if($existingAccountsErrors > 0)
@@ -212,15 +209,7 @@
                                                 
                                                 <div class="d-flex flex-column gap-2 mt-3">
                                                     @php
-                                                        $uniqueOtherErrors = collect($rowsWithStatus)
-                                                            ->flatMap(fn($r) => $r['errors'])
-                                                            ->unique()
-                                                            ->filter(fn($e) => 
-                                                                !str_contains($e, 'existant') && 
-                                                                !str_contains($e, 'Longueur') && 
-                                                                !str_contains($e, 'manquant')
-                                                            )
-                                                            ->take(3);
+                                                        $uniqueOtherErrors = collect($viewStats['plan']['uniqueOtherErrors'] ?? []);
                                                     @endphp
                                                     
                                                     @foreach($uniqueOtherErrors as $err)

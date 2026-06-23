@@ -1953,6 +1953,158 @@ class AdminConfigController extends Controller
 
         $exercice = ExerciceComptable::find($import->exercice_id);
 
+        $computeStats = function($rowsWithStatus, $type, $errorCount) use ($accountDigits) {
+            $viewStats = [
+                'general' => [
+                    'totalDebit' => 0.0,
+                    'totalCredit' => 0.0,
+                    'balance' => 0.0,
+                ],
+                'plan' => [
+                    'existingAccountsErrors' => 0,
+                    'lengthErrors' => 0,
+                    'missingErrors' => 0,
+                    'otherErrors' => 0,
+                    'uniqueOtherErrors' => [],
+                ],
+                'journals' => [
+                    'existingAccountsErrors' => 0,
+                    'existingJournalsErrors' => 0,
+                    'lengthErrors' => 0,
+                    'formatErrors' => 0,
+                    'missingTresoErrors' => 0,
+                    'missingErrors' => 0,
+                    'otherErrors' => 0,
+                    'missingTresoNumbers' => [],
+                    'uniqueOtherErrors' => [],
+                ],
+                'tiers' => [
+                    'missingAccountErrors' => 0,
+                    'missingPrefixErrors' => 0,
+                    'missingIdErrors' => 0,
+                    'otherErrors' => 0,
+                    'missingAccountNumbers' => [],
+                    'uniqueOtherErrors' => [],
+                ]
+            ];
+
+            if ($type === 'courant') {
+                $totalDebit = 0.0;
+                $totalCredit = 0.0;
+                foreach ($rowsWithStatus as $r) {
+                    if (($r['status'] ?? null) !== 'ignored') {
+                        $totalDebit += (float)($r['debit'] ?? 0.0);
+                        $totalCredit += (float)($r['credit'] ?? 0.0);
+                    }
+                }
+                $viewStats['general']['totalDebit'] = $totalDebit;
+                $viewStats['general']['totalCredit'] = $totalCredit;
+                $viewStats['general']['balance'] = abs($totalDebit - $totalCredit);
+            }
+
+            if ($type === 'initial' && $errorCount > 0) {
+                $otherErrsList = [];
+                foreach ($rowsWithStatus as $r) {
+                    if (($r['status'] ?? null) === 'error' && !empty($r['errors'])) {
+                        $errStr = implode(' ', $r['errors']);
+                        $isExisting = str_contains($errStr, 'déjà présent');
+                        $isLength = str_contains($errStr, 'Longueur incorrecte');
+                        $isMissing = str_contains($errStr, 'manquant');
+
+                        if ($isExisting) $viewStats['plan']['existingAccountsErrors']++;
+                        if ($isLength) $viewStats['plan']['lengthErrors']++;
+                        if ($isMissing) $viewStats['plan']['missingErrors']++;
+
+                        if (!$isExisting && !$isLength && !$isMissing) {
+                            $viewStats['plan']['otherErrors']++;
+                            foreach ($r['errors'] as $e) {
+                                $otherErrsList[] = $e;
+                            }
+                        }
+                    }
+                }
+                $viewStats['plan']['uniqueOtherErrors'] = array_slice(array_unique($otherErrsList), 0, 3);
+            }
+
+            if ($type === 'journals' && $errorCount > 0) {
+                $otherErrsList = [];
+                $missingTresoNumbers = [];
+                foreach ($rowsWithStatus as $r) {
+                    if (($r['status'] ?? null) === 'error' && !empty($r['errors'])) {
+                        $errStr = implode(' ', $r['errors']);
+                        $isAccEx = str_contains($errStr, 'déjà présent') || str_contains($errStr, 'existe déjà');
+                        $isJrnEx = str_contains($errStr, 'déjà existant') || str_contains($errStr, 'existe déjà') || str_contains($errStr, 'Doublon');
+                        $isLen = str_contains($errStr, 'ne respecte pas la configuration') || str_contains($errStr, 'invalide') || str_contains($errStr, 'Max') || str_contains($errStr, 'Erreur de formatage');
+                        $isFmt = str_contains($errStr, 'Longueur incorrecte') || str_contains($errStr, 'inconnu');
+                        $isMissTreso = str_contains($errStr, 'Compte Inconnu : Le compte');
+                        $isMiss = str_contains($errStr, 'manquant') || str_contains($errStr, 'Configuration');
+
+                        if ($isAccEx) $viewStats['journals']['existingAccountsErrors']++;
+                        if ($isJrnEx) $viewStats['journals']['existingJournalsErrors']++;
+                        if ($isLen) $viewStats['journals']['lengthErrors']++;
+                        if ($isFmt) $viewStats['journals']['formatErrors']++;
+                        if ($isMissTreso) $viewStats['journals']['missingTresoErrors']++;
+                        if ($isMiss) $viewStats['journals']['missingErrors']++;
+
+                        if (!$isAccEx && !$isJrnEx && !$isLen && !$isFmt && !$isMissTreso && !$isMiss) {
+                            $viewStats['journals']['otherErrors']++;
+                            foreach ($r['errors'] as $e) {
+                                $otherErrsList[] = $e;
+                            }
+                        }
+
+                        foreach ($r['errors'] as $e) {
+                            if (str_contains($e, "n'existe pas. Veuillez le créer au préalable.")) {
+                                preg_match('/compte ([0-9]+) n\'existe pas/', $e, $matches);
+                                if (!empty($matches[1])) {
+                                    $missingTresoNumbers[] = $matches[1];
+                                }
+                            }
+                        }
+                    }
+                }
+                $viewStats['journals']['missingTresoNumbers'] = array_values(array_unique($missingTresoNumbers));
+                $viewStats['journals']['uniqueOtherErrors'] = array_slice(array_unique($otherErrsList), 0, 3);
+            }
+
+            if ($type === 'tiers' && $errorCount > 0) {
+                $otherErrsList = [];
+                $missingAccountNumbers = [];
+                foreach ($rowsWithStatus as $r) {
+                    if (($r['status'] ?? null) === 'error' && !empty($r['errors'])) {
+                        $errStr = implode(' ', $r['errors']);
+                        $isMissAcc = str_contains($errStr, 'Générale absente');
+                        $isMissPref = str_contains($errStr, 'compte collectif');
+                        $isMissId = str_contains($errStr, 'Numéro de tiers manquant');
+
+                        if ($isMissAcc) $viewStats['tiers']['missingAccountErrors']++;
+                        if ($isMissPref) $viewStats['tiers']['missingPrefixErrors']++;
+                        if ($isMissId) $viewStats['tiers']['missingIdErrors']++;
+
+                        if (!$isMissAcc && !$isMissPref && !$isMissId) {
+                            $viewStats['tiers']['otherErrors']++;
+                            foreach ($r['errors'] as $e) {
+                                $otherErrsList[] = $e;
+                            }
+                        }
+
+                        foreach ($r['errors'] as $e) {
+                            if (str_contains($e, "n'existe pas. Veuillez le créer au préalable.")) {
+                                preg_match('/compte collectif ([0-9]+) n\'existe pas/', $e, $matches);
+                                if (!empty($matches[1])) {
+                                    $missingAccountNumbers[] = $matches[1];
+                                }
+                            }
+                        }
+                    }
+                }
+                $viewStats['tiers']['missingAccountNumbers'] = array_values(array_unique($missingAccountNumbers));
+                $viewStats['tiers']['uniqueOtherErrors'] = array_slice(array_unique($otherErrsList), 0, 3);
+            }
+
+            return $viewStats;
+        };
+
         $cacheKey = 'import_staging_v4_' . $import->id . '_' . $import->updated_at->timestamp;
         $cachedData = \Illuminate\Support\Facades\Cache::get($cacheKey);
 
@@ -1964,6 +2116,7 @@ class AdminConfigController extends Controller
             $missingAccounts = $cachedData['missingAccounts'];
             $missingJournals = $cachedData['missingJournals'];
             $missingTiers = $cachedData['missingTiers'];
+            $viewStats = $cachedData['viewStats'] ?? $computeStats($rowsWithStatus, $import->type, $errorCount);
         } else {
             $existingEcrituresDbHashes = [];
             if ($import->type === 'courant') {
@@ -3425,15 +3578,8 @@ class AdminConfigController extends Controller
                 $r['group_diff'] = $groupSummary[$ref]['diff'] ?? null;
             }
 
-            $totalDebit = array_sum(array_map(fn($r) => ($r['status'] ?? null) === 'duplicate' ? 0 : (float)($r['debit'] ?? 0), $rowsWithStatus));
-            $totalCredit = array_sum(array_map(fn($r) => ($r['status'] ?? null) === 'duplicate' ? 0 : (float)($r['credit'] ?? 0), $rowsWithStatus));
-
-            if (abs($totalDebit - $totalCredit) > 0.01) {
-                $diff = round($totalDebit - $totalCredit, 2);
-                $import->update(['description' => "ATTENTION : Lot total déséquilibré de $diff"]);
-            } else {
-                $import->update(['description' => null]);
-            }
+            // $totalDebit and $totalCredit are already precomputed inside $viewStats.
+            // Description update is done quietly later.
         }
 
         // IMPORTANT: les contrôles d'équilibre peuvent requalifier des lignes (valid -> error).
@@ -3453,6 +3599,8 @@ class AdminConfigController extends Controller
             }
         }
 
+        $viewStats = $computeStats($rowsWithStatus, $import->type, $errorCount);
+
         \Illuminate\Support\Facades\Cache::put($cacheKey, [
             'rowsWithStatus' => $rowsWithStatus,
             'errorCount' => $errorCount,
@@ -3461,6 +3609,7 @@ class AdminConfigController extends Controller
             'missingAccounts' => $missingAccounts,
             'missingJournals' => $missingJournals,
             'missingTiers' => $missingTiers,
+            'viewStats' => $viewStats,
         ], 3600);
     }
 
@@ -3477,11 +3626,25 @@ class AdminConfigController extends Controller
         elseif ($import->type == 'tiers') $viewName = 'admin.config.import_staging_tiers';
         elseif ($import->type == 'journals') $viewName = 'admin.config.import_staging_journals';
 
-        // On marque l'import comme "Bloqué" uniquement s'il y a de vraies erreurs.
-        // Les doublons (status='duplicate') sont ignorés et ne bloquent PAS l'import.
-        $import->update([
-            'status' => ($errorCount > 0) ? 'error' : 'processing'
-        ]);
+        // --- UPDATE STATUS AND DESCRIPTION QUIETLY (PREVENTS CACHE KEY CHANGES ON SUBSEQUENT REQUESTS) ---
+        $targetDesc = null;
+        if ($import->type === 'courant') {
+            $totalDebit = $viewStats['general']['totalDebit'] ?? 0.0;
+            $totalCredit = $viewStats['general']['totalCredit'] ?? 0.0;
+            if (abs($totalDebit - $totalCredit) > 0.01) {
+                $diff = round($totalDebit - $totalCredit, 2);
+                $targetDesc = "ATTENTION : Lot total déséquilibré de $diff";
+            }
+        }
+
+        $targetStatus = ($errorCount > 0) ? 'error' : 'processing';
+
+        if ($import->status !== $targetStatus || $import->description !== $targetDesc) {
+            $import->timestamps = false; // Prevent updated_at update
+            $import->status = $targetStatus;
+            $import->description = $targetDesc;
+            $import->save();
+        }
 
         // Récupération des comptes de classe 5 pour les journaux de trésorerie dans le modal d'édition
         $plansComptables = PlanComptable::whereRaw('SUBSTRING(numero_de_compte, 1, 1) = "5"')
@@ -3528,7 +3691,8 @@ class AdminConfigController extends Controller
                 'validCount' => $validCount,
                 'duplicateCount' => $duplicateCount,
                 'user' => $user,
-                'accountDigits' => $accountDigits
+                'accountDigits' => $accountDigits,
+                'viewStats' => $viewStats
             ];
         }
 
@@ -3539,7 +3703,8 @@ class AdminConfigController extends Controller
                 'user', 'plansComptables', 'accountDigits',
                 'currentPage', 'totalPages', 'totalRows', 'perPage',
                 'statusFilter', 'searchFilter', 'mapping',
-                'missingAccounts', 'missingJournals', 'missingTiers'
+                'missingAccounts', 'missingJournals', 'missingTiers',
+                'viewStats'
             ));
         }
 
@@ -3549,7 +3714,8 @@ class AdminConfigController extends Controller
             'user', 'plansComptables', 'accountDigits',
             'currentPage', 'totalPages', 'totalRows', 'perPage',
             'statusFilter', 'searchFilter', 'mapping',
-            'missingAccounts', 'missingJournals', 'missingTiers'
+            'missingAccounts', 'missingJournals', 'missingTiers',
+            'viewStats'
         ));
     }
 
