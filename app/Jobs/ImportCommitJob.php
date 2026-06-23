@@ -124,6 +124,9 @@ class ImportCommitJob implements ShouldQueue
             ->pluck('id', 'numero_original')->toArray();
         $existingJournalsOriginal = array_change_key_case($existingJournalsOriginal, CASE_UPPER);
 
+        $journalIdToCode = CodeJournal::where('company_id', $targetCompanyId)
+            ->pluck('code_journal', 'id')->toArray();
+
         // ─────────────────────────────────────────────
         // OPTIMISATION CLÉ : Pré-calcul des compteurs ECR/RAN UNE SEULE FOIS
         // (élimine des milliers de requêtes en boucle)
@@ -391,6 +394,9 @@ class ImportCommitJob implements ShouldQueue
 
             if (!$compteId)  { $errors[] = "L{$index}: Compte '$rowCompte' introuvable."; continue; }
             if (!$journalId) { $errors[] = "L{$index}: Journal '$rowJournal' introuvable."; continue; }
+
+            // Ensure the journal code is standardized to the database value if resolved
+            $rowJournal = $journalIdToCode[$journalId] ?? $rowJournal;
 
             $tiersNum = trim($rowMapped['tiers'] ?? '');
             $tiersNumUpper = strtoupper($tiersNum);
