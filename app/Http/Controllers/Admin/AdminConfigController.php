@@ -3805,7 +3805,7 @@ class AdminConfigController extends Controller
             Log::error("Erreur critique commitImport : " . $e->getMessage(), ['exception' => $e]);
             $import->update([
                 'status'    => 'error',
-                'error_log' => 'Erreur critique : ' . $e->getMessage(),
+                'error_log' => 'Erreur critique : ' . substr($e->getMessage(), 0, 1000),
                 'metadata'  => array_merge($import->metadata ?? [], [
                     'commit_status'   => 'error',
                     'commit_progress' => 100,

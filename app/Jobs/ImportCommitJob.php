@@ -677,13 +677,14 @@ class ImportCommitJob implements ShouldQueue
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error("IMPORT_JOB [{$this->importId}]: " . $e->getMessage(), ['exception' => $e]);
+            $truncatedMsg = substr($e->getMessage(), 0, 1000);
             $import->update([
                 'status'    => 'error',
-                'error_log' => 'Erreur système : ' . $e->getMessage(),
+                'error_log' => 'Erreur système : ' . $truncatedMsg,
                 'metadata'  => array_merge($import->metadata ?? [], [
                     'commit_status'   => 'error',
                     'commit_progress' => 100,
-                    'commit_report'   => ['status' => 'error', 'errors' => [$e->getMessage()]],
+                    'commit_report'   => ['status' => 'error', 'errors' => [$truncatedMsg]],
                 ]),
             ]);
         }
@@ -692,10 +693,19 @@ class ImportCommitJob implements ShouldQueue
     private function failWithErrors(ImportStaging $import, array $errors, array $report): void
     {
         $report['status'] = 'error';
-        $report['errors'] = $errors;
+        // Limiter le nombre d'erreurs stockées en metadata JSON pour éviter le dépassement de taille de la colonne text (64 Ko)
+        $limit = 50;
+        if (count($errors) > $limit) {
+            $truncatedErrors = array_slice($errors, 0, $limit);
+            $truncatedErrors[] = "... et " . (count($errors) - $limit) . " autres erreurs.";
+            $report['errors'] = $truncatedErrors;
+        } else {
+            $report['errors'] = $errors;
+        }
+
         $import->update([
             'status'    => 'error',
-            'error_log' => implode("\n", array_slice($errors, 0, 20)),
+            'error_log' => substr(implode("\n", array_slice($errors, 0, 20)), 0, 1000),
             'metadata'  => array_merge($import->metadata ?? [], [
                 'commit_status'   => 'error',
                 'commit_progress' => 100,
@@ -948,6 +958,15 @@ class ImportCommitJob implements ShouldQueue
 
             if (!empty($errors)) {
                 DB::rollBack();
+                $limit = 50;
+                if (count($errors) > $limit) {
+                    $truncatedErrors = array_slice($errors, 0, $limit);
+                    $truncatedErrors[] = "... et " . (count($errors) - $limit) . " autres erreurs.";
+                    $reportErrors = $truncatedErrors;
+                } else {
+                    $reportErrors = $errors;
+                }
+
                 $report = [
                     'status'       => 'error',
                     'processed_g'  => $importedCount,
@@ -957,12 +976,12 @@ class ImportCommitJob implements ShouldQueue
                     'total_credit' => 0.0,
                     'new_accounts' => 0,
                     'new_tiers'    => 0,
-                    'errors'       => $errors,
+                    'errors'       => $reportErrors,
                     'warnings'     => [],
                 ];
                 $import->update([
                     'status'    => 'error',
-                    'error_log' => implode("\n", array_slice($errors, 0, 20)),
+                    'error_log' => substr(implode("\n", array_slice($errors, 0, 20)), 0, 1000),
                     'metadata'  => array_merge($import->metadata ?? [], [
                         'commit_status'   => 'error',
                         'commit_progress' => 100,
@@ -1000,9 +1019,10 @@ class ImportCommitJob implements ShouldQueue
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error("IMPORT_JOB_REF [{$this->importId}]: " . $e->getMessage(), ['exception' => $e]);
+            $truncatedMsg = substr($e->getMessage(), 0, 1000);
             $import->update([
                 'status'    => 'error',
-                'error_log' => 'Erreur système : ' . $e->getMessage(),
+                'error_log' => 'Erreur système : ' . $truncatedMsg,
                 'metadata'  => array_merge($import->metadata ?? [], [
                     'commit_status'   => 'error',
                     'commit_progress' => 100,
@@ -1015,7 +1035,7 @@ class ImportCommitJob implements ShouldQueue
                         'total_credit' => 0.0,
                         'new_accounts' => 0,
                         'new_tiers'    => 0,
-                        'errors'       => [$e->getMessage()],
+                        'errors'       => [$truncatedMsg],
                         'warnings'     => [],
                     ],
                 ]),
