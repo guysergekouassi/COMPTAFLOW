@@ -3349,11 +3349,25 @@ class AdminConfigController extends Controller
                 } else {
                     $isValidDate = false;
                     $parsedDate = null;
+                    $dateStrClean = preg_replace('/\s+/', '', $rowDateStr);
 
-                    // Cas 1: Excel stocke parfois une date sous forme de numéro de série (ex: 45672)
-                    if (is_numeric($rowDateStr) && (float)$rowDateStr > 59) {
+                    // Cas 0: Date sous format DDMMYY (longueur 6, purement numérique)
+                    if (is_numeric($dateStrClean) && strlen($dateStrClean) === 6) {
+                        $d2 = (int)substr($dateStrClean, 0, 2);
+                        $m2 = (int)substr($dateStrClean, 2, 2);
+                        $y2 = (int)substr($dateStrClean, 4, 2);
+                        $y4 = $y2 < 70 ? 2000 + $y2 : 1900 + $y2;
                         try {
-                            $dt = ExcelDate::excelToDateTimeObject((float)$rowDateStr);
+                            $parsedDate = \Carbon\Carbon::create($y4, $m2, $d2, 0, 0, 0);
+                            $isValidDate = true;
+                        } catch (\Exception $e) {
+                            $errors[] = "Date DDMMYY invalide : $rowDateStr";
+                        }
+                    }
+                    // Cas 1: Excel stocke parfois une date sous forme de numéro de série (ex: 45672)
+                    elseif (is_numeric($dateStrClean) && (float)$dateStrClean > 59 && (float)$dateStrClean < 100000) {
+                        try {
+                            $dt = ExcelDate::excelToDateTimeObject((float)$dateStrClean);
                             $parsedDate = \Carbon\Carbon::instance($dt);
                             $isValidDate = true;
                         } catch (\Exception $e) {
