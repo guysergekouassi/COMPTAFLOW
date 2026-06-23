@@ -1855,6 +1855,50 @@ class AdminConfigController extends Controller
             ->map(fn($v) => strtoupper(trim($v)))
             ->toArray();
 
+        // --- HIGH-PERFORMANCE HASH LOOKUPS FOR O(1) COMPLEXITY ---
+        $accountsByOrigOrNum = [];
+        $accountsByNum = [];
+        foreach ($allAccounts as $acc) {
+            $num = strtoupper(trim($acc->numero_de_compte));
+            $orig = strtoupper(trim($acc->numero_original ?? ''));
+            if ($num !== '') {
+                $accountsByOrigOrNum[$num] = $acc;
+                $accountsByNum[$num] = $acc;
+            }
+            if ($orig !== '') {
+                $accountsByOrigOrNum[$orig] = $acc;
+            }
+        }
+        $allAccountsSorted = $allAccounts->sortBy('numero_de_compte')->values();
+
+        $journalsByOrigOrCode = [];
+        $journalsByCode = [];
+        foreach ($allJournals as $j) {
+            $code = strtoupper(trim($j->code_journal));
+            $orig = strtoupper(trim($j->numero_original ?? ''));
+            if ($code !== '') {
+                $journalsByOrigOrCode[$code] = $j;
+                $journalsByCode[$code] = $j;
+            }
+            if ($orig !== '') {
+                $journalsByOrigOrCode[$orig] = $j;
+            }
+        }
+
+        $tiersByOrigOrNum = [];
+        $tiersByNum = [];
+        foreach ($allTiers as $t) {
+            $num = strtoupper(trim($t->numero_de_tiers));
+            $orig = strtoupper(trim($t->numero_original ?? ''));
+            if ($num !== '') {
+                $tiersByOrigOrNum[$num] = $t;
+                $tiersByNum[$num] = $t;
+            }
+            if ($orig !== '') {
+                $tiersByOrigOrNum[$orig] = $t;
+            }
+        }
+
         // --- DICTIONNAIRES DE CORRESPONDANCE (AUTO-LOOKUP) ---
         $accountMapping = [];
         PlanComptable::where('company_id', $targetCompanyId)
@@ -1897,6 +1941,8 @@ class AdminConfigController extends Controller
         // Mappage de lot pour assurer la cohérence (Ex: CAI -> CAIS001 pour toutes les lignes identiques)
         $batchJournalMap = [];
         $batchTierMap = [];
+        $batchTakenJournalCodes = [];
+        $batchTakenTiers = [];
 
         $maxMappingIndex = 0;
         foreach ($mapping as $mIdx) {
@@ -2297,11 +2343,7 @@ class AdminConfigController extends Controller
 
                     if (empty($errors)) {
                         // ── Règle 1 : Doublon par rapport à la base de données (Ignoré) ──
-                        $existingDuplicate = $allAccounts->first(function($acc) use ($upperOrigRaw) {
-                            $dbOrig = strtoupper(trim($acc->numero_original ?? ''));
-                            $dbNum = strtoupper(trim($acc->numero_de_compte ?? ''));
-                            return $dbOrig === $upperOrigRaw || $dbNum === $upperOrigRaw;
-                        });
+                        $existingDuplicate = $accountsByOrigOrNum[$upperOrigRaw] ?? null;
 
                         if ($existingDuplicate !== null) {
                             $row['is_duplicate']   = true;
@@ -2313,9 +2355,7 @@ class AdminConfigController extends Controller
                             $duplicateCount++;
                         } else {
                             // ── Règle 3 : Collision de numéros standardisés (Renumérotation) ──
-                            $existingByNum = $allAccounts->first(function($acc) use ($upperRowCompte) {
-                                return strtoupper(trim($acc->numero_de_compte ?? '')) === $upperRowCompte;
-                            });
+                            $existingByNum = $accountsByNum[$upperRowCompte] ?? null;
 
                             $isNumberTakenInBatch = isset($batchAccounts[$upperRowCompte]);
 
@@ -2325,9 +2365,8 @@ class AdminConfigController extends Controller
                                 $baseLen   = strlen($upperRowCompte);
 
                                 while (
-                                    $allAccounts->contains(fn($acc) => strtoupper(trim($acc->numero_de_compte ?? '')) === $candidate) ||
-                                    isset($batchAccounts[$candidate]) ||
-                                    in_array($candidate, array_map(fn($r) => strtoupper(trim($r['data']['numero_de_compte'] ?? '')), $rowsWithStatus))
+                                    isset($accountsByNum[$candidate]) ||
+                                    isset($batchAccounts[$candidate])
                                 ) {
                                     $seqStr    = (string)$seq;
                                     $candidate = substr($upperRowCompte, 0, $baseLen - strlen($seqStr)) . $seqStr;
@@ -2621,11 +2660,7 @@ class AdminConfigController extends Controller
 
                     if (empty($errors)) {
                         // ── Règle 1 : Doublon par rapport à la base de données (Ignoré) ──
-                        $existingDuplicate = $allJournals->first(function($j) use ($upperOrig) {
-                            $dbOrig = strtoupper(trim($j->numero_original ?? ''));
-                            $dbCode = strtoupper(trim($j->code_journal ?? ''));
-                            return $dbOrig === $upperOrig || $dbCode === $upperOrig;
-                        });
+                        $existingDuplicate = $journalsByOrigOrCode[$upperOrig] ?? null;
 
                         if ($existingDuplicate !== null) {
                             $row['is_duplicate']   = true;
@@ -2634,19 +2669,20 @@ class AdminConfigController extends Controller
                             $row['code_journal']   = $existingDuplicate->code_journal;
                             $duplicateCount++;
                             $batchJournalMap[$upperOrig] = $row['code_journal'];
+                            $batchTakenJournalCodes[$row['code_journal']] = true;
                         } else {
                             // ── Règle 3 : Collision de numéros standardisés (Renumérotation) ──
                             $row['is_duplicate'] = false;
-                            $isNumberTakenInDb    = $allJournals->contains(fn($j) => strtoupper(trim($j->code_journal ?? '')) === $upperCode);
-                            $isNumberTakenInBatch = in_array($upperCode, array_values($batchJournalMap));
+                            $isNumberTakenInDb    = isset($journalsByCode[$upperCode]);
+                            $isNumberTakenInBatch = isset($batchTakenJournalCodes[$upperCode]);
 
                             if ($isNumberTakenInDb || $isNumberTakenInBatch) {
                                 $prefix = substr($upperCode, 0, max(1, $journalDigits - 1));
                                 $seq = 1;
                                 $candidate = $upperCode;
                                 while (
-                                    $allJournals->contains(fn($j) => strtoupper(trim($j->code_journal ?? '')) === $candidate) ||
-                                    in_array($candidate, array_values($batchJournalMap))
+                                    isset($journalsByCode[$candidate]) ||
+                                    isset($batchTakenJournalCodes[$candidate])
                                 ) {
                                     $seqStr = (string)$seq;
                                     $candidate = substr($prefix, 0, $journalDigits - strlen($seqStr)) . $seqStr;
@@ -2658,6 +2694,7 @@ class AdminConfigController extends Controller
                             }
 
                             $batchJournalMap[$upperOrig] = $rowCode;
+                            $batchTakenJournalCodes[$rowCode] = true;
                             $localMaxJournals[$upperCode] = $rowCode;
                         }
                     }
@@ -2841,9 +2878,9 @@ class AdminConfigController extends Controller
                          for ($len = strlen($rowCompte); $len >= 2; $len--) {
                             $searchVal = substr($rowCompte, 0, $len);
                             // Recherche dans le dictionnaire pré-chargé au lieu d'une requête N+1
-                            $match = $allAccounts->filter(function($item) use ($searchVal) {
+                            $match = $allAccountsSorted->first(function($item) use ($searchVal) {
                                 return str_starts_with(strtoupper(trim($item->numero_de_compte)), $searchVal);
-                            })->sortBy('numero_de_compte')->first();
+                            });
 
                             if ($match) {
                                 $row['suggested_account'] = $match->numero_de_compte;
@@ -2923,14 +2960,22 @@ class AdminConfigController extends Controller
                         $numeroGenere = $cleanedNum;
                     } else {
                         if (!isset($localMaxTiers[$base])) {
-                            // Pour le staging, on peut estimer la séquence avec findNextAvailable
-                            $numeroGenere = \App\Services\NumberingService::findNextAvailable(
-                                'tier',
-                                $targetCompanyId,
-                                $base . str_pad('1', max(0, $tierDigits - strlen($base)), '0', STR_PAD_LEFT),
-                                $tierDigits,
-                                array_values($batchTierMap)
-                            );
+                            $cand = $base . str_pad('1', max(0, $tierDigits - strlen($base)), '0', STR_PAD_LEFT);
+                            if (!isset($tiersByNum[$cand]) && !isset($batchTakenTiers[$cand])) {
+                                $numeroGenere = $cand;
+                            } else {
+                                $currentCandidate = $cand;
+                                while (true) {
+                                    $val = (int)$currentCandidate;
+                                    $next = $val + 1;
+                                    $currentCandidate = str_pad((string)$next, $tierDigits, '0', STR_PAD_RIGHT);
+                                    if (!isset($tiersByNum[$currentCandidate]) && !isset($batchTakenTiers[$currentCandidate])) {
+                                        $numeroGenere = $currentCandidate;
+                                        break;
+                                    }
+                                    if (strlen($currentCandidate) > $tierDigits + 2) break;
+                                }
+                            }
                             $localMaxTiers[$base] = $numeroGenere;
                         } else {
                             $lastId = $localMaxTiers[$base];
@@ -2960,11 +3005,7 @@ class AdminConfigController extends Controller
 
                     if (empty($errors)) {
                         // ── Règle 1 : Doublon par rapport à la base de données (Ignoré) ──
-                        $existingDuplicate = $allTiers->first(function($t) use ($upperOrigNum2) {
-                            $dbOrig = strtoupper(trim($t->numero_original ?? ''));
-                            $dbNum = strtoupper(trim($t->numero_de_tiers ?? ''));
-                            return $dbOrig === $upperOrigNum2 || $dbNum === $upperOrigNum2;
-                        });
+                        $existingDuplicate = $tiersByOrigOrNum[$upperOrigNum2] ?? null;
 
                         if ($existingDuplicate !== null) {
                             $row['is_duplicate']   = true;
@@ -2974,20 +3015,29 @@ class AdminConfigController extends Controller
                             $duplicateCount++;
                             unset($row['info_renum']);
                             $batchTierMap[$upperOrigNum] = $row['numero_de_tiers'];
+                            $batchTakenTiers[$row['numero_de_tiers']] = true;
                         } else {
                             // ── Règle 3 : Collision de numéros standardisés (Renumérotation) ──
                             $row['is_duplicate'] = false;
-                            $isNumberTakenInDb    = $allTiers->contains(fn($t) => strtoupper(trim($t->numero_de_tiers ?? '')) === $finalNum);
-                            $isNumberTakenInBatch = in_array($finalNum, array_values($batchTierMap));
+                            $isNumberTakenInDb    = isset($tiersByNum[$finalNum]);
+                            $isNumberTakenInBatch = isset($batchTakenTiers[$finalNum]);
 
                             if ($isNumberTakenInDb || $isNumberTakenInBatch) {
-                                $nextId = \App\Services\NumberingService::findNextAvailable(
-                                    'tier', $targetCompanyId, $finalNum, $tierDigits, array_values($batchTierMap)
-                                );
-                                $finalNum = $nextId;
+                                $currentCandidate = $finalNum;
+                                while (true) {
+                                    $val = (int)$currentCandidate;
+                                    $next = $val + 1;
+                                    $currentCandidate = str_pad((string)$next, $tierDigits, '0', STR_PAD_RIGHT);
+                                    if (!isset($tiersByNum[$currentCandidate]) && !isset($batchTakenTiers[$currentCandidate])) {
+                                        $finalNum = $currentCandidate;
+                                        break;
+                                    }
+                                    if (strlen($currentCandidate) > $tierDigits + 2) break;
+                                }
                             }
                             $row['numero_de_tiers'] = $finalNum;
                             $batchTierMap[$upperOrigNum] = $finalNum;
+                            $batchTakenTiers[$finalNum] = true;
                             $row['info_renum'] = "Sera généré en : " . $finalNum;
                         }
                     }
@@ -3051,7 +3101,7 @@ class AdminConfigController extends Controller
                         $row['code_original_journal'] = $rowJournal;
                         $row['journal'] = $journalMapping[$rowJournalUpper];
                         $rowJournal = $row['journal'];
-                    } elseif (in_array($rowJournalUpper, array_map('strtoupper', $existingJournalsArr))) {
+                    } elseif (isset($journalsByCode[$rowJournalUpper])) {
                         // Déjà un code journal valide
                         $row['journal'] = $rowJournalUpper;
                         $rowJournal = $rowJournalUpper;
@@ -3093,11 +3143,11 @@ class AdminConfigController extends Controller
                         $row['numero_original_tiers'] = $rowTiers;
                         $row['tiers'] = $tierMapping[$standardizedTier];
                         $rowTiers = $row['tiers'];
-                    } elseif (in_array($rowTiersUpper, array_map('strtoupper', $existingTiers))) {
+                    } elseif (isset($tiersByNum[$rowTiersUpper])) {
                         // Déjà un code standardisé correct
                         $row['tiers'] = $rowTiersUpper;
                         $rowTiers = $rowTiersUpper;
-                    } elseif (in_array($standardizedTier, array_map('strtoupper', $existingTiers))) {
+                    } elseif (isset($tiersByNum[$standardizedTier])) {
                         // Déjà un code standardisé correct (version paddée)
                         $row['tiers'] = $standardizedTier;
                         $rowTiers = $standardizedTier;
@@ -3114,14 +3164,14 @@ class AdminConfigController extends Controller
                 // 1. Validation de l'existence minimale
                 if (empty($rowCompte)) {
                     $errors[] = "Compte manquant";
-                } elseif (!in_array($rowCompte, $existingAccounts)) {
+                } elseif (!isset($accountsByNum[$rowCompte])) {
                     $errors[] = "Compte inconnu : $rowCompte";
                     $missingAccounts[$rowCompte] = $row['intitule'] ?? 'Compte ' . $rowCompte;
                 }
 
                 if (empty($rowJournal)) {
                     $errors[] = "Journal manquant";
-                } elseif (!in_array(strtoupper($rowJournal), array_map('strtoupper', $existingJournalsArr))) {
+                } elseif (!isset($journalsByCode[strtoupper($rowJournal)])) {
                     $errors[] = "Journal inconnu : $rowJournal";
                     $missingJournals[$rowJournal] = $row['intitule'] ?? 'Journal ' . $rowJournal;
                 }
@@ -3220,7 +3270,7 @@ class AdminConfigController extends Controller
                 if (!empty($rowTiers)) {
                     // Use case-insensitive check since $existingTiers keys are uppercased
                     // but $rowTiers after tierMapping resolution may have original DB casing
-                    $tierExists = in_array(strtoupper($rowTiers), $existingTiers);
+                    $tierExists = isset($tiersByNum[strtoupper($rowTiers)]);
                     if (!$tierExists) {
                         $originalPart = !empty($row['numero_original_tiers']) ? " (L'original '{$row['numero_original_tiers']}' n'a pas pu être rattaché)" : "";
                         $errors[] = "Tiers inconnu : $rowTiers$originalPart";
@@ -3232,9 +3282,9 @@ class AdminConfigController extends Controller
 
                 // --- DÉTECTION DE DOUBLON EN BASE DE DONNÉES (ÉCRITURES) ---
                 if (empty($errors) && $isValidDate && $parsedDate) {
-                    $compteObj = $allAccounts->first(fn($a) => strtoupper(trim($a->numero_de_compte)) === strtoupper(trim($rowCompte)));
-                    $journalObj = $allJournals->first(fn($j) => strtoupper(trim($j->code_journal)) === strtoupper(trim($rowJournal)));
-                    $tiersObj = !empty($rowTiers) ? $allTiers->first(fn($t) => strtoupper(trim($t->numero_de_tiers)) === strtoupper(trim($rowTiers))) : null;
+                    $compteObj = $accountsByNum[strtoupper(trim($rowCompte))] ?? null;
+                    $journalObj = $journalsByCode[strtoupper(trim($rowJournal))] ?? null;
+                    $tiersObj = !empty($rowTiers) ? ($tiersByNum[strtoupper(trim($rowTiers))] ?? null) : null;
 
                     $compteId = $compteObj ? $compteObj->id : null;
                     $journalId = $journalObj ? $journalObj->id : null;
