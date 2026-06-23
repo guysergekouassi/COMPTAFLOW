@@ -50,16 +50,16 @@ class BilanExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $rows->push((object)[
                 'section' => '',
                 'libelle' => $title,
-                'montant' => $this->data['actif'][$key]['total']
+                'montant' => $this->data['actif'][$key]['total_net']
             ]);
 
             // Subcategories
             foreach ($this->data['actif'][$key]['subcategories'] as $subData) {
-                if ($subData['total'] != 0 || !empty($subData['details'])) {
+                if ($subData['net'] != 0 || !empty($subData['details'])) {
                      $rows->push((object)[
                         'section' => '',
                         'libelle' => '   ' . $subData['label'],
-                        'montant' => $subData['total']
+                        'montant' => $subData['net']
                     ]);
                     
                     // Details
@@ -79,7 +79,7 @@ class BilanExport implements FromCollection, WithHeadings, WithMapping, WithStyl
         $rows->push((object)[
             'section' => 'TOTAL ACTIF',
             'libelle' => '',
-            'montant' => $this->data['actif']['total']
+            'montant' => $this->data['actif']['total_net']
         ]);
         $rows->push((object)['section' => '', 'libelle' => '', 'montant' => '']);
 
