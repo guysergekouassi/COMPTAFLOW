@@ -3819,7 +3819,7 @@ class AdminConfigController extends Controller
                    ?? ['status' => 'success', 'processed_g' => 0, 'errors' => []];
             return view('admin.import.report', ['report' => $report, 'batch_id' => $id]);
         } else {
-            return redirect()->route('import.staging', $id)->with('error', $import->error_log ?? "Erreur lors de la migration.");
+            return redirect()->route('admin.import.staging', $id)->with('error', $import->error_log ?? "Erreur lors de la migration.");
         }
     }
 
