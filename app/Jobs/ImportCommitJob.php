@@ -116,6 +116,9 @@ class ImportCommitJob implements ShouldQueue
             ->pluck('id', 'code_journal')->toArray();
         $existingJournals = array_change_key_case($existingJournals, CASE_UPPER);
 
+        $journalTypes = CodeJournal::where('company_id', $targetCompanyId)
+            ->pluck('type', 'id')->toArray();
+
         $existingJournalsOriginal = CodeJournal::where('company_id', $targetCompanyId)
             ->whereNotNull('numero_original')->where('numero_original', '!=', '')
             ->pluck('id', 'numero_original')->toArray();
@@ -311,6 +314,7 @@ class ImportCommitJob implements ShouldQueue
         $mappedRows = [];
         $errors = [];
         $rowNum = 0;
+        $cachedRanNumber = null;
 
         // PHASE 1 : Mappage, standardisation et carry-over séquentiel
         foreach ($data as $index => $rowOrig) {
@@ -441,6 +445,24 @@ class ImportCommitJob implements ShouldQueue
                 $errors[] = "L{$index}: Date hors exercice (" . $date->format('d/m/Y') . ")."; continue;
             }
 
+            // Override original_n_saisie and reference for RAN (opening balance) lines
+            $refValue = strtoupper(trim($rowMapped['reference'] ?? ''));
+            $nsValue  = trim($rowMapped['n_saisie'] ?? '');
+
+            if ($this->isOpeningJournal($rowJournal, $rowJournalRaw, $journalId, $journalTypes)) {
+                if ($cachedRanNumber === null) {
+                    $lastRealSaisie = EcritureComptable::where('company_id', $targetCompanyId)
+                        ->where('n_saisie', 'like', 'RAN%')
+                        ->get(['n_saisie'])
+                        ->map(fn($e) => (int) substr($e->n_saisie, 3))
+                        ->max() ?? 0;
+                    $next = $lastRealSaisie + 1;
+                    $cachedRanNumber = 'RAN' . str_pad($next, $ranNumLength, '0', STR_PAD_LEFT);
+                }
+                $refValue = $cachedRanNumber;
+                $nsValue  = $cachedRanNumber;
+            }
+
             // Conserver la ligne mappée validée
             $mappedRows[] = [
                 'index'             => $index,
@@ -449,8 +471,8 @@ class ImportCommitJob implements ShouldQueue
                 'journal_id'        => $journalId,
                 'journal_code'      => $rowJournal,
                 'journal_code_raw'  => $rowJournalRaw,
-                'reference'         => strtoupper(trim($rowMapped['reference'] ?? '')),
-                'original_n_saisie' => trim($rowMapped['n_saisie'] ?? ''),
+                'reference'         => $refValue,
+                'original_n_saisie' => $nsValue,
                 'compte_id'         => $compteId,
                 'tiers_id'          => $tiersId,
                 'debit'             => $debit,
@@ -777,6 +799,31 @@ class ImportCommitJob implements ShouldQueue
         }
 
         return $normalized;
+    }
+
+    private function isOpeningJournal(string $jCode, string $jCodeRaw, ?int $journalId, array $journalTypes): bool
+    {
+        $jCodeUpper = strtoupper($jCode);
+        $jCodeRawUpper = strtoupper($jCodeRaw);
+        
+        if (in_array($jCodeUpper, ['RAN', 'AN', 'REPORT', 'REPORTS', 'BILA', 'BILAN_OUV', 'OUVERTURE'])
+            || in_array($jCodeRawUpper, ['RAN', 'AN', 'REPORT', 'REPORTS', 'BILA', 'BILAN_OUV', 'OUVERTURE'])
+            || str_starts_with($jCodeUpper, 'RAN')
+            || str_starts_with($jCodeUpper, 'AN')
+            || str_starts_with($jCodeRawUpper, 'RAN')
+            || str_starts_with($jCodeRawUpper, 'AN')
+        ) {
+            return true;
+        }
+        
+        if ($journalId && isset($journalTypes[$journalId])) {
+            $type = strtoupper(trim($journalTypes[$journalId]));
+            if ($type === 'REPORT A NOUVEAU' || $type === 'SITUATION' || $type === 'A NOUVEAU') {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     // ──────────────────────────────────────────────────────────────
