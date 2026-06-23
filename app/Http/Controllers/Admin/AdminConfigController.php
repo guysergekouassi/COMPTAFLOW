@@ -3639,10 +3639,14 @@ class AdminConfigController extends Controller
 
         $targetStatus = ($errorCount > 0) ? 'error' : 'processing';
 
-        if ($import->status !== $targetStatus || $import->description !== $targetDesc) {
+        $metadata = $import->metadata ?? [];
+        $currentDesc = $metadata['description'] ?? null;
+
+        if ($import->status !== $targetStatus || $currentDesc !== $targetDesc) {
+            $metadata['description'] = $targetDesc;
             $import->timestamps = false; // Prevent updated_at update
             $import->status = $targetStatus;
-            $import->description = $targetDesc;
+            $import->metadata = $metadata;
             $import->save();
         }
 
