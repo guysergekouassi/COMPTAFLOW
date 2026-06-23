@@ -121,16 +121,18 @@ class ReportingController extends Controller
             $detailed = $detail;
             $pdf = \PDF::loadView('reporting.pdf.bilan', compact('data', 'exercice', 'month', 'detail', 'detailed'));
             $filename = 'bilan_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.pdf';
-            return $pdf->download($filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = $pdf->download($filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         } elseif ($format === 'excel') {
             $filename = 'bilan_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.xlsx';
-            return \Excel::download(new \App\Exports\BilanExport($data, $exercice, $month, $detail), $filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = \Excel::download(new \App\Exports\BilanExport($data, $exercice, $month, $detail), $filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         }
 
         return back()->with('error', 'Format d\'exportation non supporté.');
@@ -165,16 +167,18 @@ class ReportingController extends Controller
             $detailed = $detail;
             $pdf = \PDF::loadView('reporting.pdf.resultat', compact('data', 'exercice', 'month', 'detail', 'detailed'));
             $filename = 'resultat_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.pdf';
-            return $pdf->download($filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = $pdf->download($filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         } elseif ($format === 'excel') {
             $filename = 'resultat_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.xlsx';
-            return \Excel::download(new \App\Exports\ResultatExport($data, $exercice, $month, $detail), $filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = \Excel::download(new \App\Exports\ResultatExport($data, $exercice, $month, $detail), $filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         }
 
         return back()->with('error', 'Format d\'exportation non supporté.');
@@ -209,16 +213,18 @@ class ReportingController extends Controller
             $detailed = $detail;
             $pdf = \PDF::loadView('reporting.pdf.tft', compact('data', 'exercice', 'month', 'detail', 'detailed'));
             $filename = 'TFT_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.pdf';
-            return $pdf->setPaper('a4', 'landscape')->download($filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = $pdf->setPaper('a4', 'landscape')->download($filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         } elseif ($format === 'excel') {
             $filename = 'TFT_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.xlsx';
-            return \Excel::download(new \App\Exports\TFTMatrixExport($data, $exercice, $detail), $filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = \Excel::download(new \App\Exports\TFTMatrixExport($data, $exercice, $detail), $filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         }
         
         return back()->with('error', 'Format d\'exportation non supporté.');
@@ -274,16 +280,18 @@ class ReportingController extends Controller
             $detailed = $detail;
             $pdf = \PDF::loadView('reporting.pdf.monthly_resultat', compact('data', 'exercice', 'detail', 'detailed'));
             $filename = 'resultat_mensuel_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.pdf';
-            return $pdf->setPaper('a4', 'landscape')->download($filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = $pdf->setPaper('a4', 'landscape')->download($filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         } elseif ($format === 'excel') {
             $filename = 'resultat_mensuel_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.xlsx';
-            return \Excel::download(new \App\Exports\MonthlyResultatExport($data, $exercice, $detail), $filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = \Excel::download(new \App\Exports\MonthlyResultatExport($data, $exercice, $detail), $filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         }
 
         return back()->with('error', 'Format d\'exportation non supporté.');
@@ -340,10 +348,11 @@ class ReportingController extends Controller
             $detailed = $detail;
             $pdf = \PDF::loadView('reporting.pdf.tft_personalized', compact('data', 'exercice', 'detail', 'detailed'));
             $filename = 'TFT_Personnalise_' . \Illuminate\Support\Str::slug($exercice->intitule) . '.pdf';
-            return $pdf->setPaper('a4', 'landscape')->download($filename)
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+            $response = $pdf->setPaper('a4', 'landscape')->download($filename);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            return $response;
         } elseif ($format === 'excel') {
             // If and when a specialized export is needed, it can be added here
             return back()->with('error', 'Export Excel non disponible pour ce format personnalisé actuellement.');
