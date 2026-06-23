@@ -719,11 +719,11 @@ class EcritureComptableController extends Controller
                 ->first();
         }
 
-        $baseQuery = EcritureComptable::where('company_id', $activeCompanyId);
+        $baseQuery = EcritureComptable::where('ecriture_comptables.company_id', $activeCompanyId);
 
         // FILTRE EXERCICE STRICT
         if ($exerciceActif) {
-            $baseQuery->where('exercices_comptables_id', $exerciceActif->id);
+            $baseQuery->where('ecriture_comptables.exercices_comptables_id', $exerciceActif->id);
         }
         else {
             // Si vraiment aucun exercice, on ne retourne rien (sécurité)
@@ -733,18 +733,18 @@ class EcritureComptableController extends Controller
         // Logique de filtrage par rôle/permission
         if (!$user->isAdmin() && !$user->hasPermission('admin.approvals')) {
             // Un collaborateur ne voit que ses propres écritures (tous statuts)
-            $baseQuery->where('user_id', $user->id);
+            $baseQuery->where('ecriture_comptables.user_id', $user->id);
         }
         else {
             // Un admin voit tout ce qui est validé + ses propres écritures en attente (s'il y en a)
             $baseQuery->where(function ($q) use ($user) {
-                $q->where('statut', 'approved')
-                    ->orWhere('user_id', $user->id);
+                $q->where('ecriture_comptables.statut', 'approved')
+                    ->orWhere('ecriture_comptables.user_id', $user->id);
             });
         }
 
         if (!empty($data['numero_saisie']))
-            $baseQuery->where('n_saisie', 'like', '%' . $data['numero_saisie'] . '%');
+            $baseQuery->where('ecriture_comptables.n_saisie', 'like', '%' . $data['numero_saisie'] . '%');
         if (!empty($data['code_journal']))
             $baseQuery->whereHas('codeJournal', function ($q) use ($data) {
                 $q->where('code_journal', 'like', '%' . $data['code_journal'] . '%');
@@ -752,7 +752,7 @@ class EcritureComptableController extends Controller
         if (!empty($data['recherche'])) {
             $search = $data['recherche'];
             $baseQuery->where(function ($q) use ($search) {
-                $q->where('description_operation', 'like', '%' . $search . '%')
+                $q->where('ecriture_comptables.description_operation', 'like', '%' . $search . '%')
                     ->orWhereHas('planComptable', function ($sq) use ($search) {
                     $sq->where('numero_de_compte', 'like', '%' . $search . '%');
                 }
@@ -764,9 +764,9 @@ class EcritureComptableController extends Controller
             });
         }
         if (!empty($data['mois']))
-            $baseQuery->whereMonth('date', $data['mois']);
+            $baseQuery->whereMonth('ecriture_comptables.date', $data['mois']);
         if (!empty($data['statut']))
-            $baseQuery->where('statut', $data['statut']);
+            $baseQuery->where('ecriture_comptables.statut', $data['statut']);
 
         if (!empty($data['etat_poste']) && $data['etat_poste'] !== '') {
             $baseQuery->whereHas('planComptable', function ($sq) {
@@ -774,16 +774,16 @@ class EcritureComptableController extends Controller
             });
 
             if ($data['etat_poste'] === 'defini') {
-                $baseQuery->whereNotNull('poste_tresorerie_id');
+                $baseQuery->whereNotNull('ecriture_comptables.poste_tresorerie_id');
             }
             elseif ($data['etat_poste'] === 'non_defini') {
-                $baseQuery->whereNull('poste_tresorerie_id');
+                $baseQuery->whereNull('ecriture_comptables.poste_tresorerie_id');
             }
         }
 
         // NOUVEAUX FILTRES
         if (!empty($data['journal_id'])) {
-            $baseQuery->where('code_journal_id', $data['journal_id']);
+            $baseQuery->where('ecriture_comptables.code_journal_id', $data['journal_id']);
         }
         if (!empty($data['journal_type'])) {
             $baseQuery->whereHas('codeJournal', function ($q) use ($data) {
@@ -791,7 +791,7 @@ class EcritureComptableController extends Controller
             });
         }
         if (!empty($data['plan_tiers_id'])) {
-            $baseQuery->where('plan_tiers_id', $data['plan_tiers_id']);
+            $baseQuery->where('ecriture_comptables.plan_tiers_id', $data['plan_tiers_id']);
         }
         if (!empty($data['tier_prefix'])) {
             $baseQuery->whereHas('planTiers', function ($q) use ($data) {
@@ -806,33 +806,42 @@ class EcritureComptableController extends Controller
 
         // CALCUL DES TOTAUX (sur toute la sélection filtrée)
         $totals = (clone $baseQuery)->select(
-            DB::raw('SUM(debit) as total_debit'),
-            DB::raw('SUM(credit) as total_credit')
+            DB::raw('SUM(ecriture_comptables.debit) as total_debit'),
+            DB::raw('SUM(ecriture_comptables.credit) as total_credit')
         )->first();
 
         $totalDebit = $totals->total_debit ?? 0;
         $totalCredit = $totals->total_credit ?? 0;
         $balance = $totalDebit - $totalCredit;
 
+        // Tri et pagination par Journal, Référence et Date de création
         $paginatedSaisies = (clone $baseQuery)
-            ->select('n_saisie', DB::raw('MAX(created_at) as latest_created_at'))
-            ->groupBy('n_saisie')
+            ->select('ecriture_comptables.n_saisie', DB::raw('MAX(ecriture_comptables.created_at) as latest_created_at'), DB::raw('MAX(code_journals.code_journal) as journal_code'), DB::raw('MAX(ecriture_comptables.reference_piece) as ref_piece'))
+            ->leftJoin('code_journals', 'ecriture_comptables.code_journal_id', '=', 'code_journals.id')
+            ->groupBy('ecriture_comptables.n_saisie')
+            ->orderBy('journal_code', 'asc')
+            ->orderBy('ref_piece', 'asc')
             ->orderBy('latest_created_at', 'desc')
             ->paginate(10);
 
         $saisieList = $paginatedSaisies->pluck('n_saisie')->toArray();
+        
         $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie.category', 'codeJournal', 'ventilations.section.axe'])
-            ->where('company_id', $activeCompanyId)
-            ->whereIn('n_saisie', $saisieList)
-            ->orderBy('created_at', 'desc')
-            ->orderBy('id', 'asc')
+            ->where('ecriture_comptables.company_id', $activeCompanyId)
+            ->whereIn('ecriture_comptables.n_saisie', $saisieList)
+            ->leftJoin('code_journals', 'ecriture_comptables.code_journal_id', '=', 'code_journals.id')
+            ->select('ecriture_comptables.*')
+            ->orderBy('code_journals.code_journal', 'asc')
+            ->orderBy('ecriture_comptables.reference_piece', 'asc')
+            ->orderBy('ecriture_comptables.created_at', 'desc')
+            ->orderBy('ecriture_comptables.id', 'asc')
             ->get();
 
         $code_journaux = CodeJournal::where('company_id', $activeCompanyId)->get();
         $treasury_categories = \App\Models\TreasuryCategory::where('company_id', $activeCompanyId)->get();
         $plansTiers = PlanTiers::where('company_id', $activeCompanyId)->orderBy('numero_de_tiers')->get();
 
-        $selectedJournal = !empty($data['journal_id']) ?CodeJournal::find($data['journal_id']) : null;
+        $selectedJournal = !empty($data['journal_id']) ? CodeJournal::find($data['journal_id']) : null;
 
         return view('accounting_entry_list', [
             'ecritures' => $ecritures,

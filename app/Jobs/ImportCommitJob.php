@@ -301,264 +301,357 @@ class ImportCommitJob implements ShouldQueue
             $groupingKeyStrategy = 'n_saisie';
         }
         
-        Log::info("COMMIT JOB DYNAMIC GROUPING DECISION: $groupingKeyStrategy selected for import " . $import->id);
+        Log::info("COMMIT JOB EXECUTING NEW IMPORT LOGIC FOR: " . $import->id);
 
         $lastJour = null;
         $lastJournal = null;
         $lastNSaisie = null;
         $lastReference = null;
 
+        $mappedRows = [];
+        $errors = [];
+        $rowNum = 0;
+
+        // PHASE 1 : Mappage, standardisation et carry-over séquentiel
+        foreach ($data as $index => $rowOrig) {
+            $rowNum++;
+
+            // Progression jusqu'à 30% pendant la phase de parsing
+            if ($rowNum % 500 === 0) {
+                $pct = (int) round(($rowNum / $totalRows) * 30);
+                $this->updateProgress($import, $pct, "Lecture et validation ligne {$rowNum}/{$totalRows}…");
+            }
+
+            // ── Mapping ──
+            $rowMapped = [];
+            foreach ($mapping as $field => $colIndex) {
+                if ($field === '_header_index') continue;
+                if (isset($rowOrig[$field]) && $rowOrig[$field] !== null && $rowOrig[$field] !== '') {
+                    $rowMapped[$field] = $rowOrig[$field];
+                } elseif (is_string($colIndex) && str_starts_with($colIndex, 'FIXED:')) {
+                    $rowMapped[$field] = substr($colIndex, 6);
+                } else {
+                    $rowMapped[$field] = $rowOrig[$colIndex] ?? null;
+                }
+            }
+
+            // Carry-over logic
+            if (empty($rowMapped['jour']) && $lastJour !== null) {
+                $rowMapped['jour'] = $lastJour;
+            }
+            if (empty($rowMapped['journal']) && $lastJournal !== null) {
+                $rowMapped['journal'] = $lastJournal;
+            }
+            if (empty($rowMapped['n_saisie']) && $lastNSaisie !== null) {
+                $rowMapped['n_saisie'] = $lastNSaisie;
+            }
+            if (empty($rowMapped['reference']) && $lastReference !== null) {
+                $rowMapped['reference'] = $lastReference;
+            }
+
+            if (!empty($rowMapped['jour'])) $lastJour = $rowMapped['jour'];
+            if (!empty($rowMapped['journal'])) $lastJournal = $rowMapped['journal'];
+            if (!empty($rowMapped['n_saisie'])) $lastNSaisie = $rowMapped['n_saisie'];
+            if (!empty($rowMapped['reference'])) $lastReference = $rowMapped['reference'];
+
+            // ── Type A (Analytique) → ignorer ──
+            if (isset($rowMapped['type_ecriture']) && strtoupper(trim($rowMapped['type_ecriture'])) === 'A') {
+                $report['filtered_a']++;
+                continue;
+            }
+
+            $rowCompte     = $this->standardizeAccountNumber(trim($rowMapped['compte'] ?? ''), $accountDigits);
+            $rowJournalRaw = trim($rowMapped['journal'] ?? '');
+            $rowJournal    = $this->standardizeJournalCode($rowJournalRaw, $journalDigits);
+
+            // ── Détection des lignes analytiques cachées (colonne hors mapping) ──
+            $isHiddenA        = false;
+            $mappedColIndexes = array_filter(array_values($mapping), fn($v) => is_numeric($v));
+            foreach ($rowOrig as $colIdx => $cellVal) {
+                if (in_array($colIdx, $mappedColIndexes)) continue;
+                $v = strtoupper(trim($cellVal ?? ''));
+                if ($v === 'A' || $v === 'ANALYTIQUE') { $isHiddenA = true; break; }
+            }
+            if ($isHiddenA) { $report['filtered_a']++; continue; }
+
+            // ── Validations basiques ──
+            if (empty($rowCompte))  { $errors[] = "L{$index}: Compte manquant."; continue; }
+            if (empty($rowJournal)) { $errors[] = "L{$index}: Journal manquant."; continue; }
+
+            $compteId  = $planComptableIds[$rowCompte]
+                      ?? $planComptableOriginalIds[strtoupper(trim($rowMapped['compte'] ?? ''))]
+                      ?? null;
+            $journalId = $existingJournals[strtoupper($rowJournal)]
+                      ?? $existingJournalsOriginal[strtoupper($rowJournalRaw)]
+                      ?? null;
+
+            if (!$compteId)  { $errors[] = "L{$index}: Compte '$rowCompte' introuvable."; continue; }
+            if (!$journalId) { $errors[] = "L{$index}: Journal '$rowJournal' introuvable."; continue; }
+
+            $tiersNum = trim($rowMapped['tiers'] ?? '');
+            $tiersNumUpper = strtoupper($tiersNum);
+            if (is_numeric($tiersNumUpper) && strlen($tiersNumUpper) < $tierDigits) {
+                $tiersNumUpper = str_pad($tiersNumUpper, $tierDigits, '0', STR_PAD_RIGHT);
+            }
+            $tiersId  = !empty($tiersNum)
+                ? ($planTiersIds[$tiersNumUpper] ?? $planTiersOriginalIds[strtoupper($tiersNum)] ?? null)
+                : null;
+
+            $debit  = $parseAmount($rowMapped['debit']  ?? 0);
+            $credit = $parseAmount($rowMapped['credit'] ?? 0);
+
+            if (abs($debit) < 0.01 && abs($credit) < 0.01) {
+                $errors[] = "L{$index}: Montant nul."; continue;
+            }
+
+            // ── Parsing de la date ──
+            $dateStr      = trim($rowMapped['jour'] ?? '');
+            $dateStrClean = preg_replace('/\s+/', '', $dateStr);
+            $date         = null;
+
+            if (is_numeric($dateStrClean) && strlen($dateStrClean) === 6) {
+                $d2 = (int)substr($dateStrClean, 0, 2);
+                $m2 = (int)substr($dateStrClean, 2, 2);
+                $y2 = (int)substr($dateStrClean, 4, 2);
+                $y4 = $y2 < 70 ? 2000 + $y2 : 1900 + $y2;
+                try { $date = Carbon::create($y4, $m2, $d2, 0, 0, 0); }
+                catch (\Exception $e) { $errors[] = "L{$index}: Date DDMMYY invalide."; continue; }
+            } elseif (is_numeric($dateStrClean) && (float)$dateStrClean > 59) {
+                try { $date = Carbon::instance(ExcelDate::excelToDateTimeObject((float)$dateStrClean)); }
+                catch (\Exception $e) { $errors[] = "L{$index}: Date Excel invalide."; continue; }
+            } else {
+                $norm = str_replace(['\\', '.', ' '], '/', trim($dateStr));
+                if (preg_match('/^(\d{1,2})[\\/\-](\d{1,2})[\\/\-](\d{2})$/', $norm, $m)) {
+                    $y2  = (int)$m[3];
+                    $norm = sprintf('%02d/%02d/%04d', $m[1], $m[2], $y2 < 70 ? 2000 + $y2 : 1900 + $y2);
+                }
+                foreach (['d/m/Y', 'd/m/y', 'j/n/Y', 'Y-m-d', 'd-m-Y'] as $fmt) {
+                    try {
+                        $d = Carbon::createFromFormat($fmt, $norm);
+                        if ($d) { $date = $d; break; }
+                    } catch (\Exception $e) {}
+                }
+                if (!$date) {
+                    try { $date = Carbon::parse($norm); }
+                    catch (\Exception $e) { $errors[] = "L{$index}: Date invalide '$dateStr'."; continue; }
+                }
+            }
+
+            if ($exercice && !$date->between($exercice->date_debut->startOfDay(), $exercice->date_fin->endOfDay())) {
+                $errors[] = "L{$index}: Date hors exercice (" . $date->format('d/m/Y') . ")."; continue;
+            }
+
+            // Conserver la ligne mappée validée
+            $mappedRows[] = [
+                'index'             => $index,
+                'date'              => $date,
+                'date_formatted'    => $date->format('Y-m-d'),
+                'journal_id'        => $journalId,
+                'journal_code'      => $rowJournal,
+                'journal_code_raw'  => $rowJournalRaw,
+                'reference'         => strtoupper(trim($rowMapped['reference'] ?? '')),
+                'original_n_saisie' => trim($rowMapped['n_saisie'] ?? ''),
+                'compte_id'         => $compteId,
+                'tiers_id'          => $tiersId,
+                'debit'             => $debit,
+                'credit'            => $credit,
+                'libelle'           => strtoupper(trim($rowMapped['libelle'] ?? 'IMPORTATION EXTERNE')),
+                'plan_analytique'   => (isset($rowMapped['plan_analytique']) && $rowMapped['plan_analytique'] == 1) ? 1 : 0,
+            ];
+        }
+
+        // Si des erreurs de base existent, on s'arrête
+        if (!empty($errors)) {
+            $this->failWithErrors($import, $errors, $report);
+            return;
+        }
+
+        $this->updateProgress($import, 40, 'Vérification de l\'équilibre des journaux et pièces…');
+
+        // PHASE 2 : Vérification de l'équilibre par Journal
+        $journalBalances = [];
+        foreach ($mappedRows as $row) {
+            $jCode = $row['journal_code'];
+            if (!isset($journalBalances[$jCode])) {
+                $journalBalances[$jCode] = ['debit' => 0.0, 'credit' => 0.0];
+            }
+            $journalBalances[$jCode]['debit']  += round($row['debit'], 2);
+            $journalBalances[$jCode]['credit'] += round($row['credit'], 2);
+        }
+
+        foreach ($journalBalances as $jCode => $totals) {
+            if (abs($totals['debit'] - $totals['credit']) > 0.01) {
+                $diff = number_format(abs($totals['debit'] - $totals['credit']), 2, ',', ' ');
+                $errors[] = "DÉSÉQUILIBRE JOURNAL : Le journal '{$jCode}' est déséquilibré de {$diff} (Total Débit: "
+                          . number_format($totals['debit'], 2, ',', ' ')
+                          . " / Total Crédit: " . number_format($totals['credit'], 2, ',', ' ') . ").";
+            }
+        }
+
+        // PHASE 3 : Groupement par Journal -> Référence (ou original N° Saisie si vide) -> Date
+        $groups = [];
+        foreach ($mappedRows as $row) {
+            $jCode   = $row['journal_code'];
+            $ref     = $row['reference'];
+            $origNS  = $row['original_n_saisie'];
+            $dateStr = $row['date_formatted'];
+
+            // Définir la clé : par référence si renseignée, sinon par numéro de saisie original
+            $key = ($ref !== '' && $ref !== 'IMPORT') ? 'REF_' . $ref : 'NS_' . ($origNS !== '' ? $origNS : 'IMPORT');
+
+            $groups[$jCode][$key][$dateStr][] = $row;
+        }
+
+        // PHASE 4 : Vérification de l'équilibre individuel de chaque groupe (pièce)
+        $groupBalances = [];
+        foreach ($groups as $jCode => $refGroups) {
+            foreach ($refGroups as $key => $dateGroups) {
+                foreach ($dateGroups as $dateStr => $rows) {
+                    $groupDebit  = 0.0;
+                    $groupCredit = 0.0;
+                    foreach ($rows as $r) {
+                        $groupDebit  += round($r['debit'], 2);
+                        $groupCredit += round($r['credit'], 2);
+                    }
+
+                    if (abs($groupDebit - $groupCredit) > 0.01) {
+                        $diff = number_format(abs($groupDebit - $groupCredit), 2, ',', ' ');
+                        $refLabel = str_replace(['REF_', 'NS_'], '', $key);
+                        $errors[] = "DÉSÉQUILIBRE PIÈCE : La pièce '{$refLabel}' du " . Carbon::parse($dateStr)->format('d/m/Y')
+                                  . " (Journal {$jCode}) est déséquilibrée de {$diff} (Débit: "
+                                  . number_format($groupDebit, 2, ',', ' ') . " / Crédit: "
+                                  . number_format($groupCredit, 2, ',', ' ') . ").";
+                    }
+
+                    // On enregistre les totaux pour le rapport final
+                    $groupKey = $dateStr . '_' . $jCode . '_' . $key;
+                    $groupBalances[$groupKey] = [
+                        'debit'  => $groupDebit,
+                        'credit' => $groupCredit
+                    ];
+                }
+            }
+        }
+
+        // Si des déséquilibres de journaux ou de pièces existent, on s'arrête
+        if (!empty($errors)) {
+            $this->failWithErrors($import, $errors, $report);
+            return;
+        }
+
+        $this->updateProgress($import, 60, 'Génération des écritures et enregistrement…');
+
+        // PHASE 5 : Insertion finale en base de données
         DB::beginTransaction();
         try {
-            $rowNum    = 0;
-            $batchSize = 2000; // 2× l'ancienne taille
-
-            foreach ($data as $index => $rowOrig) {
-                $rowNum++;
-
-                // Mise à jour de la progression toutes les 500 lignes
-                if ($rowNum % 500 === 0) {
-                    $pct = (int) round(($rowNum / $totalRows) * 90); // 0-90%
-                    $this->updateProgress($import, $pct, "Traitement ligne {$rowNum}/{$totalRows}…");
+            $importedCount  = 0;
+            $batchEcritures = [];
+            $batchSize      = 2000;
+            $totalGroups    = 0;
+            
+            // Compter le nombre total de groupes pour la progression
+            foreach ($groups as $jCode => $refGroups) {
+                foreach ($refGroups as $key => $dateGroups) {
+                    $totalGroups += count($dateGroups);
                 }
+            }
 
-                // ── Mapping ──
-                $rowMapped = [];
-                foreach ($mapping as $field => $colIndex) {
-                    if ($field === '_header_index') continue;
-                    if (isset($rowOrig[$field]) && $rowOrig[$field] !== null && $rowOrig[$field] !== '') {
-                        $rowMapped[$field] = $rowOrig[$field];
-                    } elseif (is_string($colIndex) && str_starts_with($colIndex, 'FIXED:')) {
-                        $rowMapped[$field] = substr($colIndex, 6);
-                    } else {
-                        $rowMapped[$field] = $rowOrig[$colIndex] ?? null;
+            $currentGroupIndex = 0;
+
+            foreach ($groups as $jCode => $refGroups) {
+                foreach ($refGroups as $key => $dateGroups) {
+                    foreach ($dateGroups as $dateStr => $rows) {
+                        $currentGroupIndex++;
+
+                        if ($currentGroupIndex % 100 === 0) {
+                            $pct = 60 + (int) round(($currentGroupIndex / $totalGroups) * 30); // 60-90%
+                            $this->updateProgress($import, $pct, "Enregistrement pièce {$currentGroupIndex}/{$totalGroups}…");
+                        }
+
+                        $firstRow = $rows[0];
+                        $date = $firstRow['date'];
+                        $journalId = $firstRow['journal_id'];
+
+                        // ── Numérotation global ECR/RAN ──
+                        $origNS = $firstRow['original_n_saisie'];
+                        if (strtoupper($jCode) === 'RAN' || strtoupper($firstRow['journal_code_raw']) === 'RAN') {
+                            $globalNSaisie = 'RAN' . str_pad(++$baseRanCounter, $ranNumLength, '0', STR_PAD_LEFT);
+                        } else {
+                            $globalNSaisie = 'ECR_' . str_pad(++$baseEcrCounter, 12, '0', STR_PAD_LEFT);
+                        }
+
+                        // ── Détermination de n_saisie_user (commun & correct) ──
+                        $firstNS = trim($firstRow['original_n_saisie']);
+                        $isCommon = ($firstNS !== '' && strtoupper($firstNS) !== 'IMPORT');
+                        if ($isCommon) {
+                            foreach ($rows as $r) {
+                                if (trim($r['original_n_saisie']) !== $firstNS) {
+                                    $isCommon = false;
+                                    break;
+                                }
+                            }
+                        }
+                        $nSaisieUser = $isCommon ? $firstNS : null;
+
+                        // ── Résolution JournalSaisi ──
+                        $journalSaisiId = null;
+                        if ($journalId) {
+                            $jsCacheKey = $date->year . '_' . $date->month . '_' . ($import->exercice_id ?? '') . '_' . $journalId;
+                            if (isset($jsCache[$jsCacheKey])) {
+                                $journalSaisiId = $jsCache[$jsCacheKey];
+                            } else {
+                                $js = JournalSaisi::firstOrCreate([
+                                    'annee'                     => $date->year,
+                                    'mois'                      => $date->month,
+                                    'exercices_comptables_id'   => $import->exercice_id ?? null,
+                                    'code_journals_id'          => $journalId,
+                                    'company_id'                => $targetCompanyId,
+                                ], ['user_id' => $user->id]);
+                                $journalSaisiId        = $js->id;
+                                $jsCache[$jsCacheKey]  = $js->id;
+                            }
+                        }
+
+                        // ── Accumuler les lignes du groupe ──
+                        foreach ($rows as $r) {
+                            $batchEcritures[] = [
+                                'date'                      => $r['date_formatted'],
+                                'n_saisie'                  => $globalNSaisie,
+                                'n_saisie_user'             => $nSaisieUser, // Garde l'original si commun, sinon null
+                                'reference_piece'           => ($r['reference'] !== '') ? $r['reference'] : 'IMPORT',
+                                'plan_comptable_id'         => $r['compte_id'],
+                                'plan_tiers_id'             => $r['tiers_id'],
+                                'plan_analytique'           => $r['plan_analytique'],
+                                'code_journal_id'           => $r['journal_id'],
+                                'journaux_saisis_id'        => $journalSaisiId,
+                                'description_operation'     => $r['libelle'],
+                                'debit'                     => $r['debit'],
+                                'credit'                    => $r['credit'],
+                                'exercices_comptables_id'   => $import->exercice_id ?? null,
+                                'company_id'                => $targetCompanyId,
+                                'user_id'                   => $user->id,
+                                'statut'                    => 'approved',
+                                'created_at'                => now(),
+                                'updated_at'                => now(),
+                            ];
+
+                            if (count($batchEcritures) >= $batchSize) {
+                                EcritureComptable::insert($batchEcritures);
+                                $importedCount += count($batchEcritures);
+                                $batchEcritures = [];
+                            }
+                        }
                     }
                 }
+            }
 
-                // Carry-over logic
-                if (empty($rowMapped['jour']) && $lastJour !== null) {
-                    $rowMapped['jour'] = $lastJour;
-                }
-                if (empty($rowMapped['journal']) && $lastJournal !== null) {
-                    $rowMapped['journal'] = $lastJournal;
-                }
-                if (empty($rowMapped['n_saisie']) && $lastNSaisie !== null) {
-                    $rowMapped['n_saisie'] = $lastNSaisie;
-                }
-                if (empty($rowMapped['reference']) && $lastReference !== null) {
-                    $rowMapped['reference'] = $lastReference;
-                }
-
-                if (!empty($rowMapped['jour'])) $lastJour = $rowMapped['jour'];
-                if (!empty($rowMapped['journal'])) $lastJournal = $rowMapped['journal'];
-                if (!empty($rowMapped['n_saisie'])) $lastNSaisie = $rowMapped['n_saisie'];
-                if (!empty($rowMapped['reference'])) $lastReference = $rowMapped['reference'];
-
-                // ── Type A (Analytique) → ignorer ──
-                if (isset($rowMapped['type_ecriture']) && strtoupper(trim($rowMapped['type_ecriture'])) === 'A') {
-                    $report['filtered_a']++;
-                    continue;
-                }
-
-                $rowCompte     = $this->standardizeAccountNumber(trim($rowMapped['compte'] ?? ''), $accountDigits);
-                $rowJournalRaw = trim($rowMapped['journal'] ?? '');
-                $rowJournal    = $this->standardizeJournalCode($rowJournalRaw, $journalDigits);
-
-                // ── Détection des lignes analytiques cachées (colonne hors mapping) ──
-                $isHiddenA        = false;
-                $mappedColIndexes = array_filter(array_values($mapping), fn($v) => is_numeric($v));
-                foreach ($rowOrig as $colIdx => $cellVal) {
-                    if (in_array($colIdx, $mappedColIndexes)) continue;
-                    $v = strtoupper(trim($cellVal ?? ''));
-                    if ($v === 'A' || $v === 'ANALYTIQUE') { $isHiddenA = true; break; }
-                }
-                if ($isHiddenA) { $report['filtered_a']++; continue; }
-
-                // ── Validations basiques ──
-                if (empty($rowCompte))  { $errors[] = "L{$index}: Compte manquant."; continue; }
-                if (empty($rowJournal)) { $errors[] = "L{$index}: Journal manquant."; continue; }
-
-                $compteId  = $planComptableIds[$rowCompte]
-                          ?? $planComptableOriginalIds[strtoupper(trim($rowMapped['compte'] ?? ''))]
-                          ?? null;
-                $journalId = $existingJournals[strtoupper($rowJournal)]
-                          ?? $existingJournalsOriginal[strtoupper($rowJournalRaw)]
-                          ?? null;
-
-                if (!$compteId)  { $errors[] = "L{$index}: Compte '$rowCompte' introuvable."; continue; }
-                if (!$journalId) { $errors[] = "L{$index}: Journal '$rowJournal' introuvable."; continue; }
-
-                $tiersNum = trim($rowMapped['tiers'] ?? '');
-                $tiersNumUpper = strtoupper($tiersNum);
-                if (is_numeric($tiersNumUpper) && strlen($tiersNumUpper) < $tierDigits) {
-                    $tiersNumUpper = str_pad($tiersNumUpper, $tierDigits, '0', STR_PAD_RIGHT);
-                }
-                $tiersId  = !empty($tiersNum)
-                    ? ($planTiersIds[$tiersNumUpper] ?? $planTiersOriginalIds[strtoupper($tiersNum)] ?? null)
-                    : null;
-
-                $debit  = $parseAmount($rowMapped['debit']  ?? 0);
-                $credit = $parseAmount($rowMapped['credit'] ?? 0);
-
-                if (abs($debit) < 0.01 && abs($credit) < 0.01) {
-                    $errors[] = "L{$index}: Montant nul."; continue;
-                }
-
-                // ── Parsing de la date ──
-                $dateStr      = trim($rowMapped['jour'] ?? '');
-                $dateStrClean = preg_replace('/\s+/', '', $dateStr);
-                $date         = null;
-
-                if (is_numeric($dateStrClean) && strlen($dateStrClean) === 6) {
-                    $d2 = (int)substr($dateStrClean, 0, 2);
-                    $m2 = (int)substr($dateStrClean, 2, 2);
-                    $y2 = (int)substr($dateStrClean, 4, 2);
-                    $y4 = $y2 < 70 ? 2000 + $y2 : 1900 + $y2;
-                    try { $date = Carbon::create($y4, $m2, $d2, 0, 0, 0); }
-                    catch (\Exception $e) { $errors[] = "L{$index}: Date DDMMYY invalide."; continue; }
-                } elseif (is_numeric($dateStrClean) && (float)$dateStrClean > 59) {
-                    try { $date = Carbon::instance(ExcelDate::excelToDateTimeObject((float)$dateStrClean)); }
-                    catch (\Exception $e) { $errors[] = "L{$index}: Date Excel invalide."; continue; }
-                } else {
-                    $norm = str_replace(['\\', '.', ' '], '/', trim($dateStr));
-                    if (preg_match('/^(\d{1,2})[\\/\-](\d{1,2})[\\/\-](\d{2})$/', $norm, $m)) {
-                        $y2  = (int)$m[3];
-                        $norm = sprintf('%02d/%02d/%04d', $m[1], $m[2], $y2 < 70 ? 2000 + $y2 : 1900 + $y2);
-                    }
-                    foreach (['d/m/Y', 'd/m/y', 'j/n/Y', 'Y-m-d', 'd-m-Y'] as $fmt) {
-                        try {
-                            $d = Carbon::createFromFormat($fmt, $norm);
-                            if ($d) { $date = $d; break; }
-                        } catch (\Exception $e) {}
-                    }
-                    if (!$date) {
-                        try { $date = Carbon::parse($norm); }
-                        catch (\Exception $e) { $errors[] = "L{$index}: Date invalide '$dateStr'."; continue; }
-                    }
-                }
-
-                if ($exercice && !$date->between($exercice->date_debut->startOfDay(), $exercice->date_fin->endOfDay())) {
-                    $errors[] = "L{$index}: Date hors exercice (" . $date->format('d/m/Y') . ")."; continue;
-                }
-
-                // ── Groupement / Numérotation ECR (OPTIMISÉ : 0 requête DB ici) ──
-                $nsVal = trim((string)($rowMapped['n_saisie'] ?? ''));
-                $refVal = trim((string)($rowMapped['reference'] ?? ''));
-
-                if ($groupingKeyStrategy === 'reference') {
-                    $origNSaisie = $refVal !== '' ? $refVal : 'IMPORT';
-                } else {
-                    $origNSaisie = $nsVal !== '' ? $nsVal : 'IMPORT';
-                }
-
-                if (strtoupper($rowJournal) === 'RAN' || strtoupper($rowJournalRaw) === 'RAN') {
-                    $origNSaisie = 'RAN';
-                }
-
-                $groupKey   = $date->format('Y-m-d') . '_' . $journalId . '_' . strtoupper($origNSaisie);
-
-                if (!isset($ecrMapping[$groupKey])) {
-                    // ✅ INCRÉMENTATION LOCALE — 0 requête DB
-                    if (str_starts_with(strtoupper($origNSaisie), 'RAN') || strtoupper($rowJournal) === 'RAN') {
-                        $ecrMapping[$groupKey] = 'RAN' . str_pad(++$baseRanCounter, $ranNumLength, '0', STR_PAD_LEFT);
-                    } else {
-                        $ecrMapping[$groupKey] = 'ECR_' . str_pad(++$baseEcrCounter, 12, '0', STR_PAD_LEFT);
-                    }
-                }
-                $globalNSaisie = $ecrMapping[$groupKey];
-
-                // Suivi équilibre : même clé que le groupKey (date + journalId + n_saisie)
-                // journalId est l'ID normalisé en DB — ACH et ACH1 résolvent au même ID
-                // donc toutes les lignes d'une même pièce sont bien groupées ensemble
-                if (!isset($groupBalances[$groupKey])) {
-                    $groupBalances[$groupKey] = ['debit' => 0, 'credit' => 0, 'ref' => $origNSaisie, 'journal' => $rowJournal, 'date' => $date->format('d/m/Y')];
-                }
-                $groupBalances[$groupKey]['debit']  += round($debit, 2);
-                $groupBalances[$groupKey]['credit'] += round($credit, 2);
-
-                // ── JournalSaisi (avec cache en mémoire) ──
-                $journalSaisiId = null;
-                if ($journalId) {
-                    $jsCacheKey = $date->year . '_' . $date->month . '_' . ($import->exercice_id ?? '') . '_' . $journalId;
-                    if (isset($jsCache[$jsCacheKey])) {
-                        $journalSaisiId = $jsCache[$jsCacheKey];
-                    } else {
-                        $js = JournalSaisi::firstOrCreate([
-                            'annee'                     => $date->year,
-                            'mois'                      => $date->month,
-                            'exercices_comptables_id'   => $import->exercice_id ?? null,
-                            'code_journals_id'          => $journalId,
-                            'company_id'                => $targetCompanyId,
-                        ], ['user_id' => $user->id]);
-                        $journalSaisiId        = $js->id;
-                        $jsCache[$jsCacheKey]  = $js->id;
-                    }
-                }
-
-                // ── Accumulation du batch ──
-                $batchEcritures[] = [
-                    'date'                      => $date->format('Y-m-d'),
-                    'n_saisie'                  => $globalNSaisie,
-                    'n_saisie_user'             => $origNSaisie,
-                    'reference_piece'           => strtoupper($rowMapped['reference'] ?? 'IMPORT'),
-                    'plan_comptable_id'         => $compteId,
-                    'plan_tiers_id'             => $tiersId,
-                    'plan_analytique'           => 0,
-                    'code_journal_id'           => $journalId,
-                    'journaux_saisis_id'        => $journalSaisiId,
-                    'description_operation'     => strtoupper($rowMapped['libelle'] ?? 'IMPORTATION EXTERNE'),
-                    'debit'                     => $debit,
-                    'credit'                    => $credit,
-                    'exercices_comptables_id'   => $import->exercice_id ?? null,
-                    'company_id'                => $targetCompanyId,
-                    'user_id'                   => $user->id,
-                    'statut'                    => 'approved',
-                    'created_at'                => now(),
-                    'updated_at'                => now(),
-                ];
-
-                // Insertion par lots de 2 000
-                if (count($batchEcritures) >= $batchSize) {
-                    EcritureComptable::insert($batchEcritures);
-                    $importedCount += count($batchEcritures);
-                    $batchEcritures = [];
-                }
-            } // fin foreach
-
-            // Insertion du reste
+            // Insérer le reste
             if (!empty($batchEcritures)) {
                 EcritureComptable::insert($batchEcritures);
                 $importedCount += count($batchEcritures);
             }
 
-            // ── Vérification équilibre BLOQUANTE (par pièce = date + n_saisie) ──
-            foreach ($groupBalances as $bk => $bal) {
-                if (abs($bal['debit'] - $bal['credit']) > 0.01) {
-                    $diff     = number_format(abs($bal['debit'] - $bal['credit']), 2, ',', ' ');
-                    $errors[] = "DÉSÉQUILIBRE : Pièce '{$bal['ref']}' du {$bal['date']} (Journal {$bal['journal']}) — Débit : "
-                              . number_format($bal['debit'], 2, ',', ' ')
-                              . " / Crédit : " . number_format($bal['credit'], 2, ',', ' ')
-                              . " / Écart : {$diff}.";
-                }
-            }
-
-            if (!empty($errors)) {
-                DB::rollBack();
-                $report['status'] = 'error';
-                $report['errors'] = $errors;
-                $import->update([
-                    'status'    => 'error',
-                    'error_log' => implode("\n", array_slice($errors, 0, 20)),
-                    'metadata'  => array_merge($import->metadata ?? [], [
-                        'commit_status'   => 'error',
-                        'commit_progress' => 100,
-                        'commit_report'   => $report,
-                    ]),
-                ]);
-                return;
-            }
-
-            // ── Commit ──
+            // ── Rapport Final ──
             $report['processed_g']  = $importedCount;
             $report['deduplicated'] = 0;
             $report['total_debit']  = array_sum(array_column($groupBalances, 'debit'));
@@ -589,6 +682,21 @@ class ImportCommitJob implements ShouldQueue
                 ]),
             ]);
         }
+    }
+
+    private function failWithErrors(ImportStaging $import, array $errors, array $report): void
+    {
+        $report['status'] = 'error';
+        $report['errors'] = $errors;
+        $import->update([
+            'status'    => 'error',
+            'error_log' => implode("\n", array_slice($errors, 0, 20)),
+            'metadata'  => array_merge($import->metadata ?? [], [
+                'commit_status'   => 'error',
+                'commit_progress' => 100,
+                'commit_report'   => $report,
+            ]),
+        ]);
     }
 
     // ─────────────────────────────────────────────
