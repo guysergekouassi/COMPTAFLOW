@@ -97,20 +97,46 @@ class ExcelParserService
     }
 
     /**
-     * Parse un fichier CSV.
+     * Parse un fichier CSV/TXT avec détection automatique du délimiteur (\t ; , |).
      */
     private function parseCsv(UploadedFile $file, string $nom): array
     {
         try {
-            $contenu    = file_get_contents($file->getPathname());
-            $lignes     = explode("\n", $contenu);
-            $separateur = str_contains($lignes[0] ?? '', ';') ? ';' : ',';
-            $donnees    = [];
+            $contenu = file_get_contents($file->getPathname());
 
+            // Détection et conversion d'encodage
+            $enc = mb_detect_encoding($contenu, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII']);
+            if ($enc && $enc !== 'UTF-8') {
+                $contenu = mb_convert_encoding($contenu, 'UTF-8', $enc);
+            }
+
+            $lignes = array_filter(
+                explode("\n", str_replace("\r", "", $contenu)),
+                fn($l) => trim($l) !== ''
+            );
+            $lignes = array_values($lignes);
+
+            // Détection automatique du délimiteur sur les 10 premières lignes
+            $sample     = array_slice($lignes, 0, 10);
+            $delimiters = ["\t", ";", "|", ","];
+            $scores     = ["\t" => 0, ";" => 0, "|" => 0, "," => 0];
+            foreach ($delimiters as $d) {
+                $counts = array_map(fn($l) => substr_count($l, $d), $sample);
+                // Score = minimum des occurrences sur l'échantillon (cohérence)
+                $scores[$d] = count($counts) > 0 ? min($counts) : 0;
+            }
+            arsort($scores);
+            $best = array_key_first($scores);
+            $separateur = ($scores[$best] > 0) ? $best : ';';
+
+            $donnees = [];
             foreach ($lignes as $ligne) {
-                $ligne = trim($ligne);
-                if (empty($ligne)) continue;
-                $donnees[] = str_getcsv($ligne, $separateur);
+                // explode pour tab/pipe/semi-colon (plus fiable), str_getcsv pour virgule
+                if (in_array($separateur, ["\t", "|", ";"])) {
+                    $donnees[] = array_map('trim', explode($separateur, $ligne));
+                } else {
+                    $donnees[] = str_getcsv($ligne, $separateur);
+                }
             }
 
             $texte = "=== FICHIER CSV : {$nom} ===\n";

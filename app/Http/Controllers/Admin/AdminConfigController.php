@@ -1261,21 +1261,34 @@ class AdminConfigController extends Controller
                 $content = array_filter($content, fn($l) => trim($l) !== '');
                 $sample = array_slice($content, 0, 50); // Scan plus large
 
-                // 2. ESSAI DÉLIMITÉ
-                $delimiters = [';', ',', "\t", '|'];
-                $bestDelim = null;
-                $maxCols = 0;
-                foreach($delimiters as $d) {
-                    $colsCount = array_map(fn($l) => count(explode($d, $l)), $sample);
-                    $avgCols = count($colsCount) > 0 ? array_sum($colsCount) / count($colsCount) : 0;
-                    if ($avgCols > $maxCols && $avgCols > 1.5) {
-                        $maxCols = $avgCols;
+                // 2. ESSAI DÉLIMITÉ - ordre: \t prioritaire car rarement dans les données
+                $delimiters = ["\t", ";", "|", ","];
+                $bestDelim  = null;
+                $bestScore  = 0;
+                $content    = array_values($content);
+                $sample     = array_slice($content, 0, 50);
+
+                foreach ($delimiters as $d) {
+                    $counts = array_map(fn($l) => substr_count($l, $d), $sample);
+                    // Score = minimum des occurrences sur l'échantillon (garantit consistance)
+                    $minCount = count($counts) > 0 ? min($counts) : 0;
+                    // Avg comme critère secondaire pour départager
+                    $avgCols  = count($counts) > 0 ? array_sum($counts) / count($counts) : 0;
+                    if ($minCount > 0 && $avgCols > $bestScore) {
+                        $bestScore = $avgCols;
                         $bestDelim = $d;
                     }
                 }
 
                 if ($bestDelim) {
-                    foreach($content as $l) $sheetData[] = str_getcsv($l, $bestDelim);
+                    // explode pour \t, | et ; (plus fiable), str_getcsv pour virgule CSV
+                    foreach ($content as $l) {
+                        if (in_array($bestDelim, ["\t", "|", ";"])) {
+                            $sheetData[] = array_map('trim', explode($bestDelim, $l));
+                        } else {
+                            $sheetData[] = str_getcsv($l, $bestDelim);
+                        }
+                    }
                 } else {
                     // 3. ESSAI LARGEUR FIXE (MAINFRAME / EXPORT ANCIEN)
                     // On cherche les "caniveaux" (colonnes de vides verticaux)
