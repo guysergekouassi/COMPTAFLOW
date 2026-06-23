@@ -488,25 +488,29 @@ class ImportCommitJob implements ShouldQueue
             }
         }
 
-        // PHASE 3 : Groupement par Journal -> Référence (ou original N° Saisie si vide) -> Date
+        // PHASE 3 : Groupement par Journal -> Référence (ou original N° Saisie si vide) -> Période (Mois/Année)
         $groups = [];
         foreach ($mappedRows as $row) {
             $jCode   = $row['journal_code'];
             $ref     = $row['reference'];
             $origNS  = $row['original_n_saisie'];
-            $dateStr = $row['date_formatted'];
+            $date    = $row['date']; // Carbon instance
+            $monthYear = $date->format('Y-m');
+
+            $normalizedRef = $this->normalizeReferenceForGrouping($ref);
+            $normalizedNS = $this->normalizeReferenceForGrouping($origNS);
 
             // Définir la clé : par référence si renseignée, sinon par numéro de saisie original
-            $key = ($ref !== '' && $ref !== 'IMPORT') ? 'REF_' . $ref : 'NS_' . ($origNS !== '' ? $origNS : 'IMPORT');
+            $key = ($normalizedRef !== '') ? 'REF_' . $normalizedRef : 'NS_' . ($normalizedNS !== '' ? $normalizedNS : 'IMPORT');
 
-            $groups[$jCode][$key][$dateStr][] = $row;
+            $groups[$jCode][$key][$monthYear][] = $row;
         }
 
         // PHASE 4 : Vérification de l'équilibre individuel de chaque groupe (pièce)
         $groupBalances = [];
         foreach ($groups as $jCode => $refGroups) {
-            foreach ($refGroups as $key => $dateGroups) {
-                foreach ($dateGroups as $dateStr => $rows) {
+            foreach ($refGroups as $key => $monthYearGroups) {
+                foreach ($monthYearGroups as $monthYear => $rows) {
                     $groupDebit  = 0.0;
                     $groupCredit = 0.0;
                     foreach ($rows as $r) {
@@ -517,14 +521,15 @@ class ImportCommitJob implements ShouldQueue
                     if (abs($groupDebit - $groupCredit) > 0.01) {
                         $diff = number_format(abs($groupDebit - $groupCredit), 2, ',', ' ');
                         $refLabel = str_replace(['REF_', 'NS_'], '', $key);
-                        $errors[] = "DÉSÉQUILIBRE PIÈCE : La pièce '{$refLabel}' du " . Carbon::parse($dateStr)->format('d/m/Y')
+                        $errorDate = $rows[0]['date']->format('d/m/Y');
+                        $errors[] = "DÉSÉQUILIBRE PIÈCE : La pièce '{$refLabel}' du {$errorDate}"
                                   . " (Journal {$jCode}) est déséquilibrée de {$diff} (Débit: "
                                   . number_format($groupDebit, 2, ',', ' ') . " / Crédit: "
                                   . number_format($groupCredit, 2, ',', ' ') . ").";
                     }
 
                     // On enregistre les totaux pour le rapport final
-                    $groupKey = $dateStr . '_' . $jCode . '_' . $key;
+                    $groupKey = $monthYear . '_' . $jCode . '_' . $key;
                     $groupBalances[$groupKey] = [
                         'debit'  => $groupDebit,
                         'credit' => $groupCredit
@@ -551,16 +556,16 @@ class ImportCommitJob implements ShouldQueue
             
             // Compter le nombre total de groupes pour la progression
             foreach ($groups as $jCode => $refGroups) {
-                foreach ($refGroups as $key => $dateGroups) {
-                    $totalGroups += count($dateGroups);
+                foreach ($refGroups as $key => $monthYearGroups) {
+                    $totalGroups += count($monthYearGroups);
                 }
             }
 
             $currentGroupIndex = 0;
 
             foreach ($groups as $jCode => $refGroups) {
-                foreach ($refGroups as $key => $dateGroups) {
-                    foreach ($dateGroups as $dateStr => $rows) {
+                foreach ($refGroups as $key => $monthYearGroups) {
+                    foreach ($monthYearGroups as $monthYear => $rows) {
                         $currentGroupIndex++;
 
                         if ($currentGroupIndex % 100 === 0) {
@@ -734,6 +739,34 @@ class ImportCommitJob implements ShouldQueue
             $code = substr($code, 0, $digits);
         }
         return $code;
+    }
+
+    private function normalizeReferenceForGrouping(string $ref): string
+    {
+        $ref = trim($ref);
+        if ($ref === '' || strtoupper($ref) === 'IMPORT') {
+            return '';
+        }
+
+        // Standardisation de base : minuscules, suppression des espaces et de la ponctuation
+        $normalized = mb_strtolower($ref);
+        $normalized = preg_replace('/[^a-z0-9]/', '', $normalized);
+
+        // Harmonisation des écritures récurrentes (paies, licenciements, provisions)
+        if (str_starts_with($normalized, 'constpaie')) {
+            return 'constpaie';
+        }
+        if (str_starts_with($normalized, 'constlicenci')) {
+            return 'constlicenci';
+        }
+        if (str_starts_with($normalized, 'constprov')) {
+            return 'constprov';
+        }
+        if (str_starts_with($normalized, 'constamort')) {
+            return 'constamort';
+        }
+
+        return $normalized;
     }
 
     // ──────────────────────────────────────────────────────────────

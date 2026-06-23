@@ -2376,6 +2376,8 @@ class AdminConfigController extends Controller
             // PADDING : Forcer la ligne à avoir au moins assez de colonnes pour couvrir le mapping
             $row = array_pad($rowRaw, $maxMappingIndex + 1, null);
 
+            $parsedDate = null;
+
             // INITIALISATION AVEC TOUTES LES CLÉS POSSIBLES (Évite le null / Sans nom)
             $processedRow = [
                 'intitule' => null,
@@ -3465,7 +3467,8 @@ class AdminConfigController extends Controller
                 'status' => $status,
                 'errors' => $errors,
                 'debit' => $row['debit_val'] ?? 0,
-                'credit' => $row['credit_val'] ?? 0
+                'credit' => $row['credit_val'] ?? 0,
+                'parsed_date' => $parsedDate
             ];
         }
 
@@ -3522,13 +3525,19 @@ class AdminConfigController extends Controller
                     $r['data']['reference'] = $cachedRanNumberForStaging;
                 }
                 
-                if ($reference !== '' && $reference !== 'IMPORT') {
-                    $keyPart = 'REF_' . $reference;
+                $normalizedRef = $this->normalizeReferenceForGrouping($reference);
+                $normalizedNS = $this->normalizeReferenceForGrouping($nSaisie);
+
+                if ($normalizedRef !== '') {
+                    $keyPart = 'REF_' . $normalizedRef;
                 } else {
-                    $keyPart = 'NS_' . ($nSaisie !== '' ? $nSaisie : 'IMPORT');
+                    $keyPart = 'NS_' . ($normalizedNS !== '' ? $normalizedNS : 'IMPORT');
                 }
                 
-                $ref = $journal . '|' . $keyPart . '|' . $jour;
+                $parsedDate = $r['parsed_date'] ?? null;
+                $monthYear = $parsedDate ? $parsedDate->format('Y-m') : $jour;
+
+                $ref = $journal . '|' . $keyPart . '|' . $monthYear;
 
                 if (!isset($balances[$ref])) {
                     $balances[$ref] = ['d' => 0, 'c' => 0, 'rows' => []];
@@ -3580,13 +3589,19 @@ class AdminConfigController extends Controller
                     $reference = $cachedRanNumberForStaging;
                 }
                 
-                if ($reference !== '' && $reference !== 'IMPORT') {
-                    $keyPart = 'REF_' . $reference;
+                $normalizedRef = $this->normalizeReferenceForGrouping($reference);
+                $normalizedNS = $this->normalizeReferenceForGrouping($nSaisie);
+
+                if ($normalizedRef !== '') {
+                    $keyPart = 'REF_' . $normalizedRef;
                 } else {
-                    $keyPart = 'NS_' . ($nSaisie !== '' ? $nSaisie : 'IMPORT');
+                    $keyPart = 'NS_' . ($normalizedNS !== '' ? $normalizedNS : 'IMPORT');
                 }
                 
-                $ref = $journal . '|' . $keyPart . '|' . $jour;
+                $parsedDate = $r['parsed_date'] ?? null;
+                $monthYear = $parsedDate ? $parsedDate->format('Y-m') : $jour;
+
+                $ref = $journal . '|' . $keyPart . '|' . $monthYear;
 
                 $r['group_key'] = $ref;
                 $r['group_debit'] = $groupSummary[$ref]['debit'] ?? null;
@@ -4556,6 +4571,34 @@ class AdminConfigController extends Controller
         }
 
         return $code;
+    }
+
+    private function normalizeReferenceForGrouping($ref)
+    {
+        $ref = trim($ref ?? '');
+        if ($ref === '' || strtoupper($ref) === 'IMPORT') {
+            return '';
+        }
+
+        // Standardisation de base : minuscules, suppression des espaces et de la ponctuation
+        $normalized = mb_strtolower($ref);
+        $normalized = preg_replace('/[^a-z0-9]/', '', $normalized);
+
+        // Harmonisation des écritures récurrentes (paies, licenciements, provisions)
+        if (str_starts_with($normalized, 'constpaie')) {
+            return 'constpaie';
+        }
+        if (str_starts_with($normalized, 'constlicenci')) {
+            return 'constlicenci';
+        }
+        if (str_starts_with($normalized, 'constprov')) {
+            return 'constprov';
+        }
+        if (str_starts_with($normalized, 'constamort')) {
+            return 'constamort';
+        }
+
+        return $normalized;
     }
 
     private function generateGlobalSaisieNumber($companyId)
