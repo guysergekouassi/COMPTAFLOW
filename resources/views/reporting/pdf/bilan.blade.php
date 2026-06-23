@@ -138,15 +138,15 @@
                             <!-- Section Header -->
                             <tr>
                                 <td style="font-weight:bold; background-color: #eee;">{{ $title }}</td>
-                                <td class="amount" style="font-weight:bold; background-color: #eee;">{{ number_format($data['actif'][$key]['total'], 0, ',', ' ') }} FCFA</td>
+                                <td class="amount" style="font-weight:bold; background-color: #eee;">{{ number_format($data['actif'][$key]['total_net'], 0, ',', ' ') }} FCFA</td>
                             </tr>
                             
                             <!-- Subcategories -->
                             @foreach($data['actif'][$key]['subcategories'] as $subKey => $subData)
-                                @if($subData['total'] != 0 || !empty($subData['details']))
+                                @if($subData['net'] != 0 || !empty($subData['details']))
                                 <tr>
                                     <td style="padding-left: 10px; font-weight:600;">{{ $subData['label'] }}</td>
-                                    <td class="amount" style="font-weight:600;">{{ number_format($subData['total'], 0, ',', ' ') }}</td>
+                                    <td class="amount" style="font-weight:600;">{{ number_format($subData['net'], 0, ',', ' ') }}</td>
                                 </tr>
                                 
                                     @if(isset($detailed) && $detailed && !empty($subData['details']))
@@ -168,7 +168,7 @@
                     <tfoot>
                         <tr class="total-row">
                             <th>TOTAL ACTIF</th>
-                            <th class="amount">{{ number_format($data['actif']['total'], 0, ',', ' ') }} FCFA</th>
+                            <th class="amount">{{ number_format($data['actif']['total_net'], 0, ',', ' ') }} FCFA</th>
                         </tr>
                     </tfoot>
                 </table>
