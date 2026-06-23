@@ -112,11 +112,14 @@ class ComptaDashboardController extends Controller
             ->whereYear('date', Carbon::now()->year)
             ->count();
 
-        // KPI 5: Solde Trésorerie (Somme des comptes classe 5 cumulés jusqu'à la fin de l'exercice)
+        // KPI 5: Solde Trésorerie (filtré sur l'exercice actif uniquement)
         $cashBalance = EcritureComptable::where('company_id', $companyId)
             ->where('statut', 'approved')
             ->when($currentExercice, function($query) use ($currentExercice) {
-                return $query->where('date', '<=', $currentExercice->date_fin);
+                return $query
+                    ->where('exercices_comptables_id', $currentExercice->id)
+                    ->where('date', '>=', $currentExercice->date_debut)
+                    ->where('date', '<=', $currentExercice->date_fin);
             })
             ->whereHas('planComptable', function($query) {
                 $query->where('numero_de_compte', 'like', '5%');
