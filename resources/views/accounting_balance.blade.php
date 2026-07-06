@@ -227,11 +227,6 @@
 
                             <!-- Right Group: Actions -->
                             <div class="flex flex-wrap items-center justify-end gap-3">
-                                <a href="{{ route('accounting_balance_tiers') }}"
-                                    class="btn-action flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm">
-                                    <i class="fa-solid fa-scale-balanced text-success"></i>
-                                    Balance des Tiers
-                                </a>
                                 <button type="button" data-bs-toggle="modal" data-bs-target="#modalCenterCreate"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
                                     <i class="fas fa-file-export"></i>

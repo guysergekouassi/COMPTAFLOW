@@ -3,51 +3,112 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Balance comptes</title>
+    <title>Balance des Tiers</title>
     <style>
-        /* Réserve de l’espace : top=100px, bottom=60px  */
         @page {
-            margin: 100px 20px 60px 20px;
+            margin: 15px 20px 40px 20px;
         }
 
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
+            font-size: 9px;
             margin: 0;
+            padding: 0;
         }
 
-        header {
-            /* position: fixed; */
-            top: -80px;
-            /* remonte dans la marge top réservée */
-            left: 0;
-            right: 0;
-            font-family: Arial, sans-serif;
-            font-size: 11px;
-            color: #000;
+        /* En-tête */
+        .header-container {
+            border: 1px solid #000;
+            padding: 8px;
+            margin-bottom: 5px;
         }
 
+        .header-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 3px;
+        }
 
+        .header-left {
+            display: table-cell;
+            width: 30%;
+            vertical-align: top;
+            font-size: 9px;
+        }
 
-        table {
+        .header-center {
+            display: table-cell;
+            width: 40%;
+            text-align: center;
+            vertical-align: top;
+        }
+
+        .header-right {
+            display: table-cell;
+            width: 30%;
+            text-align: right;
+            vertical-align: top;
+            font-size: 8px;
+        }
+
+        .main-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .sub-title {
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+
+        .meta-info {
+            font-size: 8px;
+            margin-top: 3px;
+            border-top: 1px solid #ccc;
+            padding-top: 3px;
+        }
+
+        /* Tableau principal */
+        table.balance-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 5px;
+            font-size: 8px;
         }
 
-        th,
-        td {
+        table.balance-table th {
             border: 1px solid #000;
-            padding: 3px 5px;
+            padding: 4px 3px;
+            background-color: #e8e8e8;
+            font-weight: bold;
+            text-align: center;
+            font-size: 8px;
+        }
+
+        table.balance-table td {
+            border: 1px solid #000;
+            padding: 2px 3px;
+            font-size: 8px;
+        }
+
+        .col-compte {
+            width: 12%;
             text-align: left;
         }
 
-        th {
-            background: #eee;
+        .col-intitule {
+            width: 38%;
+            text-align: left;
         }
 
-        .section-title {
-            background: #ddd;
+        .col-montant {
+            width: 12.5%;
+            text-align: right;
+        }
+
+        .total-row {
+            background-color: #f0f0f0;
             font-weight: bold;
         }
 
@@ -58,52 +119,23 @@
         .bold {
             font-weight: bold;
         }
-
+        
         .nowrap {
             white-space: nowrap;
         }
 
-        .header-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .header-table td {
-            padding: 2px 5px;
-        }
-
-        .center {
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 20px;
+            right: 20px;
+            font-size: 7px;
             text-align: center;
+            border-top: 1px solid #000;
+            padding-top: 3px;
         }
 
-        .left {
-            text-align: left;
-        }
-
-        .right {
-            text-align: right;
-        }
-    </style>
-
-    <style>
-        @page {
-            margin: 20px;
-            header: html_myHeader;
-        }
-
-        .page-number:after {
-            content: "Page " counter(page) " sur " counter(pages);
-        }
-
-        .header-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11px;
-        }
-
-        .header-table td {
-            padding: 2px 5px;
-        }
         .watermark {
             position: fixed;
             top: 35%;
@@ -125,76 +157,79 @@
 <body>
     <div class="watermark">COMPTAFLOW</div>
 
-    {{-- <div class="header">
-        <table>
-            <tr>
-                <td class="left bold">{{ $company_name }}</td>
-                <td class="right">
-                    <span class="bold">Période du</span> {{ \Carbon\Carbon::parse($date_debut)->format('d/m/y') }}<br>
-                    <span class="bold">au</span> {{ \Carbon\Carbon::parse($date_fin)->format('d/m/y') }}
-                </td>
-            </tr>
-            <tr>
-                <td class="left"></td>
-                <td class="right">Page : 1</td>
-            </tr>
-        </table>
-
-        <h2 class="center">Balance des comptes</h2>
-        <div class="center bold">Du {{ $compte }} au {{ $compte_2 }}</div>
-
-
-    </div> --}}
-
-    <header>
-        <table class="header-table">
-            <tr>
-                <td class="left bold">{{ $company_name }}</td>
-                <td class="right">
-                    <span class="bold">Période du</span> {{ \Carbon\Carbon::parse($date_debut)->format('d/m/y') }}<br>
-                    <span class="bold">au</span> {{ \Carbon\Carbon::parse($date_fin)->format('d/m/y') }}
-                </td>
-            </tr>
-        </table>
-        <h2 class="center" style="margin:8px 0 2px 0; text-transform:uppercase;">{{ $titre }}</h2>
-        <div class="center bold">Du {{ $compte }} au {{ $compte_2 }}</div>
-    </header>
-
-
+    <!-- En-tête -->
+    <div class="header-container">
+        <div class="header-row">
+            <div class="header-left">
+                <strong>{{ $company_name }}</strong><br>
+                <span style="font-size: 8px; color: #d97706; font-style: italic;">Impression définitive</span>
+            </div>
+            <div class="header-center">
+                <div class="main-title">Balance des Tiers</div>
+                <div class="sub-title">Complète</div>
+            </div>
+            <div class="header-right">
+                Période du {{ \Carbon\Carbon::parse($date_debut)->format('d/m/y') }}<br>
+                au {{ \Carbon\Carbon::parse($date_fin)->format('d/m/y') }}<br>
+                Tenue de compte : {{ $user->company->currency ?? 'FCFA' }}
+            </div>
+        </div>
+        <div class="meta-info">
+            <div class="header-row">
+                <div class="header-left">
+                    © ComptaFlow - Logiciel de comptabilité
+                </div>
+                <div class="header-center">
+                    Date de tirage : {{ \Carbon\Carbon::now()->format('d/m/y') }} à {{ \Carbon\Carbon::now()->format('H:i:s') }}
+                </div>
+                <div class="header-right">
+                    Tiers : {{ $compte }} → {{ $compte_2 }}
+                </div>
+            </div>
+        </div>
+    </div>
 
     @php
-        // Trier les écritures par numéro de compte
-        $ecritures = $ecritures->sortBy(function ($item) {
-            return $item->planTiers->numero_de_tiers ?? 0;
+        // Grouper par plan_tiers_id (le tiers concerné)
+        $grouped = $ecritures->groupBy('plan_tiers_id');
+        
+        // Trier les groupes par numero_de_tiers
+        $grouped = $grouped->sortBy(function ($operations) {
+            return $operations->first()->planTiers->numero_de_tiers ?? '';
         });
 
-        // Grouper ensuite par plan_comptable_id
-        $grouped = $ecritures->groupBy('plan_comptable_id');
         $totalMouvementDebit = 0;
         $totalMouvementCredit = 0;
         $totalSoldeDebit = 0;
         $totalSoldeCredit = 0;
     @endphp
 
-    <table>
+    <table class="balance-table">
         <thead>
             <tr>
-                <th style="width: 15%;">Tiers</th>
-                <th style="width: 35%;">Intitulé</th>
-                <th class="right" style="width: 12%;">Mouvement Débit</th>
-                <th class="right" style="width: 12%;">Mouvement Crédit</th>
-                <th class="right" style="width: 12%;">Solde Débit</th>
-                <th class="right" style="width: 12%;">Solde Crédit</th>
+                <th rowspan="2" class="col-compte">N° TIERS</th>
+                <th rowspan="2" class="col-intitule">INTITULÉ DE TIERS</th>
+                <th colspan="2">MOUVEMENTS</th>
+                <th colspan="2">SOLDES</th>
+            </tr>
+            <tr>
+                <th class="col-montant">DÉBIT</th>
+                <th class="col-montant">CRÉDIT</th>
+                <th class="col-montant">DÉBITEUR</th>
+                <th class="col-montant">CRÉDITEUR</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($grouped as $compte => $operations)
+            @foreach ($grouped as $tiersId => $operations)
                 @php
-                    $intituleComplet = $operations->first()->planTiers->intitule ?? 'Intitulé inconnu';
-                    $intitule =
-                        mb_strlen($intituleComplet) > 30
-                            ? mb_substr($intituleComplet, 0, 30) . '...'
-                            : $intituleComplet;
+                    $planTiers = $operations->first()->planTiers;
+                    if (!$planTiers) continue;
+                    $numeroTiers = $planTiers->numero_de_tiers;
+                    $intituleComplet = $planTiers->intitule ?? 'Intitulé inconnu';
+                    
+                    $intitule = mb_strlen($intituleComplet) > 40
+                        ? mb_substr($intituleComplet, 0, 40) . '...'
+                        : $intituleComplet;
 
                     $totalDebit = $operations->sum('debit');
                     $totalCredit = $operations->sum('credit');
@@ -209,57 +244,35 @@
                     $totalSoldeCredit += $soldeCredit;
                 @endphp
                 <tr>
-                    <td>{{ $operations->first()->planTiers->numero_de_tiers ?? 'N/A' }}</td>
-                    <td>{{ $intitule }}</td>
-                    <td class="right nowrap">{{ number_format($totalDebit, 0, ',', ' ') }}</td>
-                    <td class="right nowrap">{{ number_format($totalCredit, 0, ',', ' ') }}</td>
-                    <td class="right nowrap">{{ number_format($soldeDebit, 0, ',', ' ') }}</td>
-                    <td class="right nowrap">{{ number_format($soldeCredit, 0, ',', ' ') }}</td>
+                    <td class="col-compte">{{ $numeroTiers }}</td>
+                    <td class="col-intitule">{{ $intitule }}</td>
+                    <td class="col-montant nowrap">{{ number_format($totalDebit, 0, ',', ' ') }}</td>
+                    <td class="col-montant nowrap">{{ number_format($totalCredit, 0, ',', ' ') }}</td>
+                    <td class="col-montant nowrap">{{ number_format($soldeDebit, 0, ',', ' ') }}</td>
+                    <td class="col-montant nowrap">{{ number_format($soldeCredit, 0, ',', ' ') }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
-            <tr class="bold">
-                <td colspan="2" class="right">Totaux généraux</td>
-                <td class="right">{{ number_format($totalMouvementDebit, 0, ',', ' ') }}</td>
-                <td class="right">{{ number_format($totalMouvementCredit, 0, ',', ' ') }}</td>
-                <td class="right">{{ number_format($totalSoldeDebit, 0, ',', ' ') }}</td>
-                <td class="right">{{ number_format($totalSoldeCredit, 0, ',', ' ') }}</td>
+            <tr class="total-row">
+                <td colspan="2" class="right bold">Totaux généraux</td>
+                <td class="col-montant nowrap">{{ number_format($totalMouvementDebit, 0, ',', ' ') }}</td>
+                <td class="col-montant nowrap">{{ number_format($totalMouvementCredit, 0, ',', ' ') }}</td>
+                <td class="col-montant nowrap">{{ number_format($totalSoldeDebit, 0, ',', ' ') }}</td>
+                <td class="col-montant nowrap">{{ number_format($totalSoldeCredit, 0, ',', ' ') }}</td>
             </tr>
         </tfoot>
     </table>
 
-
-    <br>
-
-    <table>
-        <thead>
-            <tr class="bold">
-                <th colspan="2" class="right">Totaux généraux</th>
-                <th class="right">{{ number_format($totalMouvementDebit, 0, ',', ' ') }}</th>
-                <th class="right">{{ number_format($totalMouvementCredit, 0, ',', ' ') }}</th>
-                <th class="right">{{ number_format($totalSoldeDebit, 0, ',', ' ') }}</th>
-                <th class="right">{{ number_format($totalSoldeCredit, 0, ',', ' ') }}</th>
-            </tr>
-        </thead>
-    </table>
-
     <!-- Footer avec pagination -->
     <div class="footer">
-        <div
-            style="width: 100%; display: flex; justify-content: space-between; font-size: 10px; border-top: 1px solid #000; padding-top: 5px;">
-            <div style="text-align: center">
-                Impression générée par {{ $user->name ?? 'Utilisateur inconnu' }}
-                le {{ \Carbon\Carbon::now()->format('d/m/Y à H:i') }}
-            </div>
-            <div id="pagination" style="text-align: center"></div>
-        </div>
+        Impression générée par {{ $user->name ?? 'Utilisateur inconnu' }} le {{ \Carbon\Carbon::now()->format('d/m/Y à H:i:s') }}
     </div>
 
     <script type="text/php">
     if (isset($pdf)) {
         $font = $fontMetrics->get_font("DejaVu Sans", "normal");
-        $size = 8;
+        $size = 7;
 
         $w = $pdf->get_width();
         $h = $pdf->get_height();
@@ -268,13 +281,12 @@
         $textWidth = $fontMetrics->get_text_width($text, $font, $size);
 
         // Positionner à droite, aligné sur la même ligne que le footer
-        $x = $w - $textWidth - 0; // marge droite
-        $y = $h - 30;              // même hauteur que le footer
+        $x = $w - $textWidth - 20; 
+        $y = $h - 13;              
 
         $pdf->page_text($x, $y, $text, $font, $size, [0,0,0]);
     }
     </script>
 
 </body>
-
 </html>
