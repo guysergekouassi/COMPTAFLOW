@@ -337,12 +337,12 @@
 
     <!-- Modals moved to body end for better positioning -->
     <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-height: 90vh; margin: auto;">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="margin: auto;">
             <form method="POST" action="{{ route('accounting_balance_tiers.generateBalance') }}" id="grandLivreForm">
                 @csrf
-                <div class="modal-content premium-modal-content-wide" style="padding: 2rem; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem 2rem;">
                     <!-- Header -->
-                    <div class="text-center mb-5 position-relative">
+                    <div class="text-center mb-4 position-relative">
                         <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer" style="top: -0.5rem; right: -0.5rem;"></button>
                         <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 16px; box-shadow: 0 8px 16px rgba(30, 64, 175, 0.2);">
                             <i class="bx bx-bar-chart-alt-2" style="font-size: 28px; color: white;"></i>
@@ -353,7 +353,7 @@
                         <p class="text-muted mb-0" style="font-size: 0.9rem; color: #64748b;">Sélectionnez les paramètres pour générer votre rapport auxiliaire</p>
                     </div>
 
-                    <div class="modal-body" style="padding: 0;">
+                    <div class="modal-body" style="max-height: 50vh; overflow-y: auto; overflow-x: hidden; padding: 0.5rem; margin-bottom: 0.5rem;">
                         <div class="row g-4">
                             <!-- Période Card -->
                             <div class="col-12">
@@ -463,7 +463,7 @@
                     </div>
 
                     <!-- Footer Actions -->
-                    <div class="flex gap-4 mt-8 pt-6 border-t border-slate-100">
+                    <div class="flex gap-4 mt-4 pt-4 border-t border-slate-100">
                         <button type="button" class="btn-action flex-fill justify-center bg-slate-100 text-slate-600 hover:bg-slate-200" data-bs-dismiss="modal" id="btnCloseModal">
                             <i class="fas fa-times mr-2"></i>Annuler
                         </button>

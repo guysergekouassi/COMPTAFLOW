@@ -339,12 +339,12 @@
 
     <!-- Modals moved to body end for better positioning -->
     <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-height: 90vh; margin: auto;">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="margin: auto;">
             <form method="POST" action="{{ route('accounting_ledger_tiers.generateGrandLivre') }}" id="grandLivreForm">
                 @csrf
-                <div class="modal-content premium-modal-content-wide" style="padding: 2rem; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem 2rem;">
                     <!-- Header -->
-                    <div class="text-center mb-5 position-relative">
+                    <div class="text-center mb-4 position-relative">
                         <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer" style="top: -0.5rem; right: -0.5rem;"></button>
                         <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 16px; box-shadow: 0 8px 16px rgba(30, 64, 175, 0.2);">
                             <i class="bx bx-book-content" style="font-size: 28px; color: white;"></i>
@@ -355,7 +355,7 @@
                         <p class="text-muted mb-0" style="font-size: 0.9rem; color: #64748b;">Sélectionnez les paramètres pour générer votre état auxiliaire détaillé</p>
                     </div>
 
-                    <div class="modal-body" style="padding: 0;">
+                    <div class="modal-body" style="max-height: 50vh; overflow-y: auto; overflow-x: hidden; padding: 0.5rem; margin-bottom: 0.5rem;">
                         <div class="row g-4">
                             <!-- Période Card -->
                             <div class="col-12">
@@ -448,31 +448,27 @@
                                             <h6 class="mb-0" style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">Options de génération</h6>
                                         </div>
                                         <div class="row g-3">
-                                            <div class="col-12">
-                                                <div class="row g-3">
-                                                    <div class="col-md-6">
-                                                        <label for="format_fichier" class="input-label-premium">Format de sortie</label>
-                                                        <select id="format_fichier" name="format_fichier" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" required>
-                                                            <option value="pdf" selected>📄 PDF</option>
-                                                            <option value="excel">📊 EXCEL</option>
-                                                            <option value="csv">📋 CSV</option>
-                                                        </select>
-                                                        <div class="invalid-feedback">Veuillez sélectionner une option.</div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label for="display_mode" class="input-label-premium">Affichage des numéros de tiers</label>
-                                                        <select id="display_mode" name="display_mode" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" required>
-                                                            <option value="origine" selected>Compte d'origine</option>
-                                                            <option value="comptaflow">Compte ComptaFlow</option>
-                                                            <option value="both">Compte ComptaFlow et origine</option>
-                                                        </select>
-                                                        <small class="text-muted d-block mt-2" style="font-size: 0.65rem;">
-                                                            <strong>Origine :</strong> Numéros originaux importés<br>
-                                                            <strong>ComptaFlow :</strong> Numéros standardisés<br>
-                                                            <strong>Both :</strong> Les deux (origine en dessous)
-                                                        </small>
-                                                    </div>
-                                                </div>
+                                            <div class="col-md-6">
+                                                <label for="format_fichier" class="input-label-premium">Format de sortie</label>
+                                                <select id="format_fichier" name="format_fichier" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" required>
+                                                    <option value="pdf" selected>📄 PDF</option>
+                                                    <option value="excel">📊 EXCEL</option>
+                                                    <option value="csv">📋 CSV</option>
+                                                </select>
+                                                <div class="invalid-feedback">Veuillez sélectionner une option.</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="display_mode" class="input-label-premium">Affichage des numéros de tiers</label>
+                                                <select id="display_mode" name="display_mode" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" required>
+                                                    <option value="origine" selected>Compte d'origine</option>
+                                                    <option value="comptaflow">Compte ComptaFlow</option>
+                                                    <option value="both">Compte ComptaFlow et origine</option>
+                                                </select>
+                                                <small class="text-muted d-block mt-2" style="font-size: 0.65rem;">
+                                                    <strong>Origine :</strong> Numéros originaux importés<br>
+                                                    <strong>ComptaFlow :</strong> Numéros standardisés<br>
+                                                    <strong>Both :</strong> Les deux (origine en dessous)
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -482,7 +478,7 @@
                     </div>
 
                     <!-- Footer Actions -->
-                    <div class="flex gap-4 mt-8 pt-6 border-t border-slate-100">
+                    <div class="flex gap-4 mt-4 pt-4 border-t border-slate-100">
                         <button type="button" class="btn-action flex-fill justify-center bg-slate-100 text-slate-600 hover:bg-slate-200" data-bs-dismiss="modal" id="btnCloseModal" >
                             <i class="fas fa-times mr-2"></i>Annuler
                         </button>
