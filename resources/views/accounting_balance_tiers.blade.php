@@ -481,14 +481,14 @@
 
     {{-- previsualisation avant sauvegarde --}}
     <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content">
+        <div class="modal-dialog modal-xl" style="max-width: 95%; width: 95%; margin: 10px auto;">
+            <div class="modal-content" style="height: 95vh;">
                 <div class="modal-header">
                     <h5 class="modal-title">Prévisualisation du Grand Livre</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <div class="modal-body">
-                    <iframe id="pdfPreviewFrame" style="width:100%;height:80vh;" frameborder="0"></iframe>
+                <div class="modal-body" style="padding: 0; height: calc(95vh - 60px);">
+                    <iframe id="pdfPreviewFrame" style="width:100%;height:100%;" frameborder="0"></iframe>
                 </div>
             </div>
         </div>
@@ -496,13 +496,13 @@
 
     {{-- modal pdf --}}
     <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl" style="max-width:90%;">
-            <div class="modal-content">
+        <div class="modal-dialog modal-xl" style="max-width: 95%; width: 95%; margin: 10px auto;">
+            <div class="modal-content" style="height: 95vh;">
                 <div class="modal-header">
                     <h5 class="modal-title" id="pdfModalLabel">Prévisualisation du PDF</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <div class="modal-body" style="height: 80vh;">
+                <div class="modal-body" style="padding: 0; height: calc(95vh - 60px);">
                     <iframe id="pdfViewer" src="" frameborder="0" style="width: 100%; height: 100%;"></iframe>
                 </div>
             </div>

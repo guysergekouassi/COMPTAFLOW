@@ -41,8 +41,8 @@ class GrandLivrePdfService
     ];
 
     // Couleurs
-    const NAVY   = [27,  62, 110];   // Bleu marine — en-têtes colonnes + total général
-    const BLUE_M = [200, 215, 235];  // Bleu moyen  — total compte
+    const NAVY   = [232, 232, 232];   // Gris clair (remplace navy) — en-têtes colonnes + total général
+    const BLUE_M = [245, 245, 247];  // Gris très clair (remplace blue_m) — total compte
     const GREY_H = [210, 210, 210];  // Gris moyen  — en-tête compte (style balance)
     const GREY_L = [242, 242, 248];  // Gris clair  — sous-totaux saisie
     const YELLOW = [255, 252, 225];  // Jaune doux  — solde initial
@@ -202,7 +202,11 @@ class GrandLivrePdfService
         $this->mpdf->Cell($pw / 3, 4, $label . $this->compteMin . ' → ' . $this->compteMax, 0, 0, 'C');
         $this->mpdf->Cell($pw / 3, 4, 'au ' . $this->fmtDate($this->dateFin), 0, 1, 'R');
 
-        // ── Séparateur 1 ─────────────────────────────────────────────────
+        // ── Cadre extérieur de l'en-tête (style balance) ────────────────
+        $this->mpdf->SetDrawColor(0, 0, 0);
+        $this->mpdf->Rect($ml, $y - 1, $pw, 17);
+
+        // ── Séparateur intermédiaire ────────────────────────────────────
         $this->mpdf->SetDrawColor(150, 150, 150);
         $this->mpdf->Line($ml, $y + 10, $ml + $pw, $y + 10);
 
@@ -214,9 +218,6 @@ class GrandLivrePdfService
         $dateStr = 'Date de tirage : ' . now()->format('d/m/Y') . ' à ' . now()->format('H:i:s');
         $this->mpdf->Cell($pw / 3, 4, $dateStr, 0, 0, 'C');
         $this->mpdf->Cell($pw / 3, 4, 'Page : ' . $this->pageNum, 0, 1, 'R');
-
-        // ── Séparateur 2 ─────────────────────────────────────────────────
-        $this->mpdf->Line($ml, $y + 16, $ml + $pw, $y + 16);
 
         $this->Y = $y + 18;
         $this->mpdf->SetY($this->Y);
@@ -336,11 +337,11 @@ class GrandLivrePdfService
     private function renderColumnHeader(): void
     {
         $c = self::C;
-        // Identique au style balance : fond bleu marine foncé + texte blanc
+        // Identique au style balance : fond gris + texte noir
         $this->mpdf->SetFont('dejavusans', 'B', 7);
         $this->mpdf->SetFillColor(...self::NAVY);
-        $this->mpdf->SetTextColor(255, 255, 255);
-        $this->mpdf->SetDrawColor(...self::NAVY);
+        $this->mpdf->SetTextColor(0, 0, 0);
+        $this->mpdf->SetDrawColor(150, 150, 150);
         $this->mpdf->SetXY(self::ML, $this->Y);
         $this->mpdf->Cell($c['date'],    self::RH, 'Date',      1, 0, 'C', true);
         $this->mpdf->Cell($c['journal'], self::RH, 'Jnl',       1, 0, 'C', true);
@@ -444,13 +445,13 @@ class GrandLivrePdfService
                 + $cols['compte'] + $cols['tiers'] + $cols['libelle'] + $cols['lettr'];
         $this->mpdf->SetFont('dejavusans', 'B', 8.5);
         $this->mpdf->SetFillColor(...self::NAVY);
-        $this->mpdf->SetTextColor(255, 255, 255);
+        $this->mpdf->SetTextColor(0, 0, 0);
+        $this->mpdf->SetDrawColor(150, 150, 150);
         $this->mpdf->SetXY(self::ML, $this->Y);
         $this->mpdf->Cell($labelW,        7, 'TOTAL GÉNÉRAL', 1, 0, 'R', true);
         $this->mpdf->Cell($cols['debit'], 7, $this->fmt($d),         1, 0, 'R', true);
         $this->mpdf->Cell($cols['credit'],7, $this->fmt($c),         1, 0, 'R', true);
         $this->mpdf->Cell($cols['solde'], 7, $this->fmtSolde($d-$c), 1, 1, 'R', true);
-        $this->mpdf->SetTextColor(0, 0, 0);
     }
 
     // ═════════════════════════════════════════════════════════════════════
