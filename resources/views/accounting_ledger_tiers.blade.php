@@ -496,8 +496,8 @@
 
     {{-- previsualisation avant sauvegarde --}}
     <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen" style="max-width: 100% !important; width: 100% !important; height: 100% !important; margin: 0 !important; --bs-modal-width: 100% !important;">
-            <div class="modal-content" style="height: 100vh !important; border-radius: 0 !important;">
+        <div class="modal-dialog" style="position: fixed !important; margin: 0 !important; width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; top: 0 !important; left: 0 !important;">
+            <div class="modal-content" style="height: 100vh !important; min-height: 100vh !important; border-radius: 0 !important; border: none !important;">
                 <div class="modal-header">
                     <h5 class="modal-title">Prévisualisation du Grand Livre</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
@@ -549,8 +549,8 @@
 
     {{-- modal pdf --}}
     <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen" style="max-width: 100% !important; width: 100% !important; height: 100% !important; margin: 0 !important; --bs-modal-width: 100% !important;">
-            <div class="modal-content" style="height: 100vh !important; border-radius: 0 !important;">
+        <div class="modal-dialog" style="position: fixed !important; margin: 0 !important; width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; top: 0 !important; left: 0 !important;">
+            <div class="modal-content" style="height: 100vh !important; min-height: 100vh !important; border-radius: 0 !important; border: none !important;">
                 <div class="modal-header">
                     <h5 class="modal-title" id="pdfModalLabel">Prévisualisation du PDF</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
