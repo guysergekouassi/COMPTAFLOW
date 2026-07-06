@@ -481,14 +481,14 @@
 
     {{-- previsualisation avant sauvegarde --}}
     <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl" style="max-width: 98% !important; width: 98% !important; --bs-modal-width: 98% !important; margin: 10px auto;">
-            <div class="modal-content" style="height: 96vh;">
+        <div class="modal-dialog modal-fullscreen" style="max-width: 100% !important; width: 100% !important; height: 100% !important; margin: 0 !important; --bs-modal-width: 100% !important;">
+            <div class="modal-content" style="height: 100vh !important; border-radius: 0 !important;">
                 <div class="modal-header">
                     <h5 class="modal-title">Prévisualisation du Grand Livre</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <div class="modal-body" style="padding: 0; height: calc(96vh - 60px);">
-                    <iframe id="pdfPreviewFrame" style="width:100%;height:100%;" frameborder="0"></iframe>
+                <div class="modal-body" style="padding: 0 !important; height: calc(100vh - 60px) !important; overflow: hidden !important;">
+                    <iframe id="pdfPreviewFrame" style="width: 100% !important; height: 100% !important; border: 0 !important;" frameborder="0"></iframe>
                 </div>
             </div>
         </div>
@@ -496,14 +496,14 @@
 
     {{-- modal pdf --}}
     <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl" style="max-width: 98% !important; width: 98% !important; --bs-modal-width: 98% !important; margin: 10px auto;">
-            <div class="modal-content" style="height: 96vh;">
+        <div class="modal-dialog modal-fullscreen" style="max-width: 100% !important; width: 100% !important; height: 100% !important; margin: 0 !important; --bs-modal-width: 100% !important;">
+            <div class="modal-content" style="height: 100vh !important; border-radius: 0 !important;">
                 <div class="modal-header">
                     <h5 class="modal-title" id="pdfModalLabel">Prévisualisation du PDF</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <div class="modal-body" style="padding: 0; height: calc(96vh - 60px);">
-                    <iframe id="pdfViewer" src="" frameborder="0" style="width: 100%; height: 100%;"></iframe>
+                <div class="modal-body" style="padding: 0 !important; height: calc(100vh - 60px) !important; overflow: hidden !important;">
+                    <iframe id="pdfViewer" src="" frameborder="0" style="width: 100% !important; height: 100% !important; border: 0 !important;"></iframe>
                 </div>
             </div>
         </div>
