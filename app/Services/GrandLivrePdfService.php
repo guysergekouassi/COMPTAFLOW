@@ -198,7 +198,8 @@ class GrandLivrePdfService
         // Reset couleur
         $this->mpdf->SetTextColor(0, 0, 0);
         $this->mpdf->SetFont('dejavusans', '', 7.5);
-        $this->mpdf->Cell($pw / 3, 4, 'Comptes : ' . $this->compteMin . ' → ' . $this->compteMax, 0, 0, 'C');
+        $label = str_contains(strtolower($this->titre), 'tiers') ? 'Tiers : ' : 'Comptes : ';
+        $this->mpdf->Cell($pw / 3, 4, $label . $this->compteMin . ' → ' . $this->compteMax, 0, 0, 'C');
         $this->mpdf->Cell($pw / 3, 4, 'au ' . $this->fmtDate($this->dateFin), 0, 1, 'R');
 
         // ── Séparateur 1 ─────────────────────────────────────────────────

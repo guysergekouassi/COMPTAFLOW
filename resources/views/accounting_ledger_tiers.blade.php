@@ -263,28 +263,28 @@
                                                 </td>
 
                                                 <td>
-                                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium {{ $livre->format == 'pdf' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700' }} uppercase tracking-wider">
+                                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium {{ $livre->format == 'pdf' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700' }} uppercase tracking-wider">
                                                         {{ $livre->format }}
                                                     </span>
                                                 </td>
 
                                                 <td>
-                                                    <code class="text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded text-xs">
+                                                    <span class="text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-lg text-xs border border-blue-100">
                                                         {{ $livre->planTiers1->numero_de_tiers ?? 'N/A' }}
-                                                    </code>
+                                                    </span>
                                                 </td>
 
                                                 <td>
-                                                    <code class="text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded text-xs">
+                                                    <span class="text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-lg text-xs border border-blue-100">
                                                         {{ $livre->planTiers2->numero_de_tiers ?? 'N/A' }}
-                                                    </code>
+                                                    </span>
                                                 </td>
 
                                                 <td>
                                                     <button class="btn btn-sm btn-premium-outline d-flex align-items-center gap-2 btn-preview-pdf"
                                                         data-pdf-url="{{ asset('grand_livres_tiers/' . $livre->grand_livre_tiers) }}"
                                                         data-bs-toggle="modal" data-bs-target="#pdfPreviewModal">
-                                                        <i class="bx bxs-file-pdf text-red-500"></i>
+                                                        <i class="bx bxs-file-pdf text-blue-600"></i>
                                                         <span>Voir PDF</span>
                                                     </button>
                                                 </td>
