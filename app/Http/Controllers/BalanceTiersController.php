@@ -166,7 +166,7 @@ class BalanceTiersController extends Controller
                 ->whereBetween('numero_de_tiers', [$min, $max])
                 ->pluck('id');
 
-            $ecritures = EcritureComptable::with([
+            $query = EcritureComptable::with([
                 'planComptable',
                 'planTiers',
                 'codeJournal',
@@ -298,7 +298,7 @@ class BalanceTiersController extends Controller
                 ->whereBetween('numero_de_tiers', [$min, $max])
                 ->pluck('id');
 
-            $ecritures = EcritureComptable::with([
+            $query = EcritureComptable::with([
                 'planComptable',
                 'planTiers',
                 'codeJournal',

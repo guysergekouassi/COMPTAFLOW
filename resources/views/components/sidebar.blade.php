@@ -883,11 +883,19 @@
                     <i class="fa-solid fa-file-invoice"></i>
                     <span>Grand livre</span>
                 </a>
+                <a href="{{ route('accounting_ledger_tiers') }}" class="menu-link-new {{ request()->is('accounting_ledger_tiers') ? 'active' : '' }}">
+                    <i class="fa-solid fa-address-book"></i>
+                    <span>Grand livre des tiers</span>
+                </a>
                 @endif
                 @if(auth()->user()->hasPermission('accounting_balance'))
                 <a href="{{ route('accounting_balance') }}" class="menu-link-new {{ request()->is('accounting_balance') ? 'active' : '' }}">
                     <i class="fa-solid fa-scale-balanced"></i>
                     <span>Balance</span>
+                </a>
+                <a href="{{ route('accounting_balance_tiers') }}" class="menu-link-new {{ request()->is('accounting_balance_tiers') ? 'active' : '' }}">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    <span>Balance des tiers</span>
                 </a>
                 @endif
             </div>
