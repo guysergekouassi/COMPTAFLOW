@@ -132,10 +132,12 @@ class ImportCommitJob implements ShouldQueue
         // (élimine des milliers de requêtes en boucle)
         // ─────────────────────────────────────────────
         $baseEcrCounter = (int)(EcritureComptable::where('company_id', $targetCompanyId)
+            ->where('exercices_comptables_id', $import->exercice_id)
             ->where('n_saisie', 'like', 'ECR_%')
             ->max(DB::raw('CAST(SUBSTRING(n_saisie, 5) AS UNSIGNED)')) ?? 0);
 
         $baseRanCounter = (int)(EcritureComptable::where('company_id', $targetCompanyId)
+            ->where('exercices_comptables_id', $import->exercice_id)
             ->where('n_saisie', 'like', 'RAN%')
             ->max(DB::raw('CAST(SUBSTRING(n_saisie, 4) AS UNSIGNED)')) ?? 0);
 

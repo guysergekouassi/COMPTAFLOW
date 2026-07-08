@@ -134,14 +134,34 @@
         height: calc(100vh - 70px) !important;
         z-index: 1040 !important;
     }
-    /* Garder le header en deçà de la navbar */
-    .global-header-minimal {
-        z-index: 1030 !important;
+    /* Collapsed Sidebar Styles */
+    body.sidebar-collapsed .sidebar-new {
+        left: -288px !important;
+    }
+    body.sidebar-collapsed .layout-page {
+        margin-left: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+    /* Smooth transitions */
+    .sidebar-new {
+        transition: left 0.3s ease-in-out !important;
+    }
+    .layout-page {
+        transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out, max-width 0.3s ease-in-out !important;
+    }
+    #sidebarToggleBtn:hover {
+        background: #f1f5f9 !important;
+        transform: scale(1.05);
     }
 </style>
 
 <div class="navbar-horizontal">
     <div class="nav-h-brand">
+        <!-- Sidebar Toggle Button -->
+        <button id="sidebarToggleBtn" class="btn btn-icon btn-light rounded-circle me-3" style="border: 1px solid #e2e8f0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: white; transition: all 0.2s;">
+            <i class="fa-solid fa-bars" id="sidebarToggleIcon"></i>
+        </button>
         <div class="nav-h-logo">
             <i class="fa-solid fa-bolt"></i>
         </div>
@@ -199,6 +219,20 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Sidebar toggle logic
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const isSidebarCollapsed = localStorage.getItem('flowcompta_sidebar_collapsed') === 'true';
+    if (isSidebarCollapsed) {
+        document.body.classList.add('sidebar-collapsed');
+    }
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            document.body.classList.toggle('sidebar-collapsed');
+            const collapsed = document.body.classList.contains('sidebar-collapsed');
+            localStorage.setItem('flowcompta_sidebar_collapsed', collapsed);
+        });
+    }
+
     const navItems = document.querySelectorAll('.nav-h-item');
     const verticalSections = document.querySelectorAll('.sidebar-new .menu-section');
     
