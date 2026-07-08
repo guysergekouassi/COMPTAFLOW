@@ -224,6 +224,9 @@
                     <li><a href="#taches">10. Gestion des Tâches</a></li>
                 </ul>
                 <hr class="my-3">
+                <button onclick="window.print()" class="btn-print w-100 mb-2" style="background: #1e40af; color: white;">
+                    <i class="fa-solid fa-file-pdf me-2"></i>Télécharger en PDF
+                </button>
                 <button onclick="window.print()" class="btn-print w-100">
                     <i class="fa-solid fa-print me-2"></i>Imprimer
                 </button>
