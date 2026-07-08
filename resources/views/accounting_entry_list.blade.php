@@ -563,7 +563,7 @@
                                             @foreach ($group as $index => $ecriture)
                                                 <tr class="border-b border-slate-100 hover:bg-slate-50">
                                                     @if($index === 0)
-                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ $ecriture->date }}</td>
+                                                        <td class="px-4 py-3 text-sm text-slate-700" rowspan="{{ $rowCount }}">{{ \Carbon\Carbon::parse($ecriture->date)->format('d-m-Y') }}</td>
                                                         <td class="px-4 py-3 text-sm" rowspan="{{ $rowCount }}">
                                                             <div class="font-bold text-slate-900">{{ $ecriture->n_saisie }}</div>
                                                             <div class="text-[10px] text-slate-500 font-medium mt-1">{{ $ecriture->n_saisie_user }}</div>

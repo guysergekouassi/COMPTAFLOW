@@ -848,14 +848,12 @@ class EcritureComptableController extends Controller
         $totalCredit = $totals->total_credit ?? 0;
         $balance = $totalDebit - $totalCredit;
 
-        // Tri et pagination par Journal, Référence et Date de création
+        // Tri et pagination par Date d'écriture (récente en premier) et Numéro de saisie (récent en premier)
         $paginatedSaisies = (clone $baseQuery)
-            ->select('ecriture_comptables.n_saisie', DB::raw('MAX(ecriture_comptables.created_at) as latest_created_at'), DB::raw('MAX(code_journals.code_journal) as journal_code'), DB::raw('MAX(ecriture_comptables.reference_piece) as ref_piece'))
-            ->leftJoin('code_journals', 'ecriture_comptables.code_journal_id', '=', 'code_journals.id')
+            ->select('ecriture_comptables.n_saisie', DB::raw('MAX(ecriture_comptables.date) as max_date'))
             ->groupBy('ecriture_comptables.n_saisie')
-            ->orderBy('journal_code', 'asc')
-            ->orderBy('ref_piece', 'asc')
-            ->orderBy('latest_created_at', 'desc')
+            ->orderBy('max_date', 'desc')
+            ->orderBy('ecriture_comptables.n_saisie', 'desc')
             ->paginate(10);
 
         $saisieList = $paginatedSaisies->pluck('n_saisie')->toArray();
@@ -864,11 +862,9 @@ class EcritureComptableController extends Controller
             ->where('ecriture_comptables.company_id', $activeCompanyId)
             ->whereIn('ecriture_comptables.n_saisie', $saisieList)
             ->where('ecriture_comptables.exercices_comptables_id', $exerciceActif ? $exerciceActif->id : null)
-            ->leftJoin('code_journals', 'ecriture_comptables.code_journal_id', '=', 'code_journals.id')
             ->select('ecriture_comptables.*')
-            ->orderBy('code_journals.code_journal', 'asc')
-            ->orderBy('ecriture_comptables.reference_piece', 'asc')
-            ->orderBy('ecriture_comptables.created_at', 'desc')
+            ->orderBy('ecriture_comptables.date', 'desc')
+            ->orderBy('ecriture_comptables.n_saisie', 'desc')
             ->orderBy('ecriture_comptables.id', 'asc')
             ->get();
 
