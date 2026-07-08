@@ -545,12 +545,6 @@ class EcritureComptableController extends Controller
             }
 
             $activeCompanyId = session('current_company_id', $user->company_id);
-            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first() 
-                            ?? ExerciceComptable::where('company_id', $activeCompanyId)->where('cloturer', 0)->orderBy('date_debut', 'desc')->first();
-
-            if (!$exerciceActif || $exerciceActif->cloturer) {
-                return response()->json(['success' => false, 'error' => 'Impossible d\'enregistrer : L\'exercice est clôturé ou inexistant.'], 422);
-            }
 
             $ecrituresRaw = $request->input('ecritures');
             if (is_string($ecrituresRaw)) {
@@ -559,6 +553,23 @@ class EcritureComptableController extends Controller
 
             if (empty($ecrituresRaw) || !is_array($ecrituresRaw)) {
                 return response()->json(['success' => false, 'error' => 'Aucune écriture à enregistrer.'], 400);
+            }
+
+            $firstEcriture = reset($ecrituresRaw);
+            $exerciceIdFromInput = $firstEcriture['exercices_comptables_id'] 
+                ?? $firstEcriture['exercice_id'] 
+                ?? $firstEcriture['id_exercice'] 
+                ?? null;
+
+            if ($exerciceIdFromInput) {
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->find($exerciceIdFromInput);
+            } else {
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first() 
+                                ?? ExerciceComptable::where('company_id', $activeCompanyId)->where('cloturer', 0)->orderBy('date_debut', 'desc')->first();
+            }
+
+            if (!$exerciceActif || $exerciceActif->cloturer) {
+                return response()->json(['success' => false, 'error' => 'Impossible d\'enregistrer : L\'exercice est clôturé ou inexistant.'], 422);
             }
 
             // --- GROUP BY N_SAISIE ---
@@ -615,7 +626,7 @@ class EcritureComptableController extends Controller
 
                     $dateString = !empty($data['date']) ? $data['date'] : now()->format('Y-m-d');
                     $date = \Carbon\Carbon::parse($dateString);
-                    $exerciceId = $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? $exerciceActif->id;
+                    $exerciceId = $data['exercices_comptables_id'] ?? $data['exercice_id'] ?? $data['id_exercice'] ?? ($exerciceActif ? $exerciceActif->id : null);
 
                     $journalSaisi = \App\Models\JournalSaisi::firstOrCreate([
                         'annee' => $date->year,
@@ -1129,6 +1140,52 @@ class EcritureComptableController extends Controller
         catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function checkReference(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['error' => 'Non autorisé'], 401);
+            }
+
+            $reference = $request->query('reference');
+            if (empty($reference)) {
+                return response()->json(['is_duplicate' => false]);
+            }
+
+            $activeCompanyId = session('current_company_id', $user->company_id);
+
+            // Get exercise context: either passed as id_exercice, from session, or default active/latest
+            $exerciceId = $request->query('id_exercice') 
+                ?? session('current_exercice_id');
+
+            if (!$exerciceId) {
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                    ->where('is_active', 1)
+                    ->first() 
+                    ?? ExerciceComptable::where('company_id', $activeCompanyId)
+                    ->where('cloturer', 0)
+                    ->orderBy('date_debut', 'desc')
+                    ->first();
+                $exerciceId = $exerciceActif ? $exerciceActif->id : null;
+            }
+
+            if (!$exerciceId) {
+                return response()->json(['is_duplicate' => false]);
+            }
+
+            $exists = EcritureComptable::where('company_id', $activeCompanyId)
+                ->where('exercices_comptables_id', $exerciceId)
+                ->where('reference_piece', $reference)
+                ->exists();
+
+            return response()->json(['is_duplicate' => $exists]);
+        }
+        catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 }

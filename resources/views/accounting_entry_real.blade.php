@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 
 <html lang="fr" class="layout-menu-fixed layout-compact" data-assets-path="../assets/"
   data-template="vertical-menu-template-free" data-bs-theme="light">
@@ -2715,7 +2715,8 @@ async function ajouterEcriture() {
                 if (!ref || ref === '-') return;
 
                 try {
-                    const response = await fetch(`/ecritures/check-reference?reference=${encodeURIComponent(ref)}`);
+                    const idExercice = document.querySelector('input[name="id_exercice"]')?.value || '';
+                    const response = await fetch(`/ecritures/check-reference?reference=${encodeURIComponent(ref)}&id_exercice=${encodeURIComponent(idExercice)}`);
                     const data = await response.json();
                     
                     if (data.is_duplicate) {
