@@ -294,12 +294,22 @@ class EcritureComptableController extends Controller
             $user = Auth::user();
             $activeCompanyId = session('current_company_id', $user->company_id);
 
+            $exerciceId = session('current_exercice_id');
+            if (!$exerciceId) {
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first();
+                $exerciceId = $exerciceActif ? $exerciceActif->id : null;
+            }
+
             // Récupérer toutes les lignes d'écriture pour ce n_saisie
-            $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie.category', 'codeJournal'])
+            $query = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie.category', 'codeJournal'])
                 ->where('company_id', $activeCompanyId)
-                ->where('n_saisie', $n_saisie)
-                ->orderBy('id')
-                ->get();
+                ->where('n_saisie', $n_saisie);
+
+            if ($exerciceId) {
+                $query->where('exercices_comptables_id', $exerciceId);
+            }
+
+            $ecritures = $query->orderBy('id')->get();
 
             if ($ecritures->isEmpty()) {
                 return response()->json([
@@ -345,9 +355,20 @@ class EcritureComptableController extends Controller
                 return response()->json(['success' => false, 'message' => 'Utilisateur non authentifié.'], 401);
             }
 
-            $deleted = EcritureComptable::where('company_id', $activeCompanyId)
-                ->where('n_saisie', $n_saisie)
-                ->delete();
+            $exerciceId = session('current_exercice_id');
+            if (!$exerciceId) {
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first();
+                $exerciceId = $exerciceActif ? $exerciceActif->id : null;
+            }
+
+            $query = EcritureComptable::where('company_id', $activeCompanyId)
+                ->where('n_saisie', $n_saisie);
+
+            if ($exerciceId) {
+                $query->where('exercices_comptables_id', $exerciceId);
+            }
+
+            $deleted = $query->delete();
 
             if ($deleted > 0) {
                 return response()->json(['success' => true, 'message' => "$deleted lignes supprimées."]);
@@ -842,6 +863,7 @@ class EcritureComptableController extends Controller
         $ecritures = EcritureComptable::with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie.category', 'codeJournal', 'ventilations.section.axe'])
             ->where('ecriture_comptables.company_id', $activeCompanyId)
             ->whereIn('ecriture_comptables.n_saisie', $saisieList)
+            ->where('ecriture_comptables.exercices_comptables_id', $exerciceActif ? $exerciceActif->id : null)
             ->leftJoin('code_journals', 'ecriture_comptables.code_journal_id', '=', 'code_journals.id')
             ->select('ecriture_comptables.*')
             ->orderBy('code_journals.code_journal', 'asc')
