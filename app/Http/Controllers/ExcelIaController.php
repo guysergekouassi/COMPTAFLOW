@@ -305,7 +305,7 @@ class ExcelIaController extends Controller
 
         $exerciceId = session('exercice_id');
         $nSaisieUser = $this->generateUserSaisieNumber($companyId, $user);
-        $nSaisieGlobal = $this->generateGlobalSaisieNumber($companyId);
+        $nSaisieGlobal = $this->generateGlobalSaisieNumber($companyId, $exerciceId);
         $injected   = 0;
 
         // Si on a un analyse_id, on mettra à jour l'historique
@@ -519,13 +519,18 @@ class ExcelIaController extends Controller
     /**
      * Numérotation interne globale (ECR_000...)
      */
-    private function generateGlobalSaisieNumber(int $companyId): string
+    private function generateGlobalSaisieNumber(int $companyId, $exerciceId = null): string
     {
         $prefix = "ECR_";
 
-        $lastGlobalSaisie = EcritureComptable::where('company_id', $companyId)
-            ->whereNotNull('n_saisie')
-            ->orderBy('id', 'desc')
+        $query = EcritureComptable::where('company_id', $companyId)
+            ->where('n_saisie', 'like', 'ECR_%');
+
+        if ($exerciceId) {
+            $query->where('exercices_comptables_id', $exerciceId);
+        }
+
+        $lastGlobalSaisie = $query->orderBy('n_saisie', 'desc')
             ->first();
 
         $nextSequence = 1;

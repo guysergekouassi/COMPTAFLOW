@@ -436,7 +436,7 @@ class UniversalImportController extends Controller
                      }
                      
                      if (!isset($importBatchMax['ECR'][$mapKey])) {
-                         $importBatchMax['ECR'][$mapKey] = $this->generateGlobalSaisieNumber($companyId);
+                         $importBatchMax['ECR'][$mapKey] = $this->generateGlobalSaisieNumber($companyId, $p['exercices_comptables_id']);
                      }
                      
                      $p['n_saisie'] = $importBatchMax['ECR'][$mapKey];
@@ -533,12 +533,17 @@ class UniversalImportController extends Controller
         }
     }
 
-    private function generateGlobalSaisieNumber($companyId)
+    private function generateGlobalSaisieNumber($companyId, $exerciceId = null)
     {
         // On cherche le dernier numéro dans la table réelle
-        $lastRealSaisie = \App\Models\EcritureComptable::where('company_id', $companyId)
-            ->where('n_saisie', 'like', 'ECR_%')
-            ->orderBy('n_saisie', 'desc')
+        $query = \App\Models\EcritureComptable::where('company_id', $companyId)
+            ->where('n_saisie', 'like', 'ECR_%');
+
+        if ($exerciceId) {
+            $query->where('exercices_comptables_id', $exerciceId);
+        }
+
+        $lastRealSaisie = $query->orderBy('n_saisie', 'desc')
             ->first();
 
         $nextNumber = 1;

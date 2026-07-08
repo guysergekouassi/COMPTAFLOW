@@ -1226,7 +1226,12 @@
         document.getElementById('debitEcriture').style.backgroundColor = '';
         document.getElementById('debitEcriture').style.cursor = '';
 
-        alert('Écriture ajoutée avec succès !');
+        Swal.fire({
+            icon: 'success',
+            title: 'Écriture ajoutée avec succès !',
+            showConfirmButton: false,
+            timer: 1500
+        });
     }
 
     function updateTableTotals() {

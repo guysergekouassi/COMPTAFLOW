@@ -2473,7 +2473,12 @@ async function ajouterEcriture() {
         // Mise à jour des totaux
         updateTotals();
 
-        alert('Écriture ajoutée avec succès !');
+        Swal.fire({
+            icon: 'success',
+            title: 'Écriture ajoutée avec succès !',
+            showConfirmButton: false,
+            timer: 1500
+        });
 
     } catch (error) {
         console.error('Erreur lors de l\'ajout de l\'écriture:', error);

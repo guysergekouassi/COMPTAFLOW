@@ -280,6 +280,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // Naviguer vers le 1er lien réel de la section
             const section = document.querySelector(`.sidebar-new .menu-section[data-section-id="${sectionId}"]`);
             if (section) {
+                if (sectionId === 'traitement') {
+                    const listLink = Array.from(section.querySelectorAll('a[href]')).find(function(a) {
+                        const href = a.getAttribute('href');
+                        return href && href.includes('accounting_entry_list');
+                    });
+                    if (listLink) {
+                        window.location.href = listLink.getAttribute('href');
+                        return;
+                    }
+                }
                 // Chercher le premier <a> avec un vrai href (pas modal, pas #)
                 const firstLink = Array.from(section.querySelectorAll('a[href]')).find(function(a) {
                     const href = a.getAttribute('href');

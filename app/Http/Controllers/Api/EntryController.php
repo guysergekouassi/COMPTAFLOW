@@ -114,7 +114,7 @@ class EntryController extends Controller
         
         // Numérotation
         $nSaisie = ($status === 'approved') 
-            ? $this->generateGlobalSaisieNumber($companyId) 
+            ? $this->generateGlobalSaisieNumber($companyId, $exercice->id) 
             : ($request->n_saisie ?? 'TEMP_' . time());
 
         $ecriture = EcritureComptable::create([
@@ -172,8 +172,9 @@ class EntryController extends Controller
         ]);
 
         $status = $request->statut ?? (($user->isAdmin() || $user->hasPermission('admin.approvals')) ? 'approved' : 'pending');
-        $nSaisie = ($status === 'approved') ? $this->generateGlobalSaisieNumber($companyId) : 'TEMP_' . time();
         $exercice = $this->getActiveExercice($companyId);
+        $exerciceId = $exercice ? $exercice->id : null;
+        $nSaisie = ($status === 'approved') ? $this->generateGlobalSaisieNumber($companyId, $exerciceId) : 'TEMP_' . time();
 
         if (!$exercice) {
             return response()->json(['message' => 'Aucun exercice comptable actif trouvé pour cette entreprise.'], 422);
@@ -284,11 +285,16 @@ class EntryController extends Controller
             ->first();
     }
 
-    private function generateGlobalSaisieNumber($companyId)
+    private function generateGlobalSaisieNumber($companyId, $exerciceId = null)
     {
-        $last = EcritureComptable::where('company_id', $companyId)
-            ->where('n_saisie', 'like', 'ECR_%')
-            ->latest('id')
+        $query = EcritureComptable::where('company_id', $companyId)
+            ->where('n_saisie', 'like', 'ECR_%');
+
+        if ($exerciceId) {
+            $query->where('exercices_comptables_id', $exerciceId);
+        }
+
+        $last = $query->orderBy('n_saisie', 'desc')
             ->first();
 
         $nextNum = $last ? ((int)str_replace('ECR_', '', $last->n_saisie) + 1) : 1;

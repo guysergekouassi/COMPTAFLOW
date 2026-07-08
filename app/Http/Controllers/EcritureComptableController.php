@@ -463,7 +463,7 @@ class EcritureComptableController extends Controller
 
             if ($status === 'approved') {
                 // Pour les écritures approuvées: générer le numéro global ECR_
-                $nSaisie = $this->generateGlobalSaisieNumber($activeCompanyId);
+                $nSaisie = $this->generateGlobalSaisieNumber($activeCompanyId, $exerciceActif->id);
             }
             else {
                 // Pour les écritures en attente: utiliser le numéro utilisateur
@@ -612,7 +612,9 @@ class EcritureComptableController extends Controller
             foreach ($groups as $userNS => $groupEcritures) {
                 $currentGlobalNS = null;
                 if ($status === 'approved') {
-                    $currentGlobalNS = $this->generateGlobalSaisieNumber($activeCompanyId);
+                    $firstData = reset($groupEcritures);
+                    $exerciceId = $firstData['exercices_comptables_id'] ?? $firstData['exercice_id'] ?? $firstData['id_exercice'] ?? ($exerciceActif ? $exerciceActif->id : null);
+                    $currentGlobalNS = $this->generateGlobalSaisieNumber($activeCompanyId, $exerciceId);
                 }
 
                 $firstInGroup = null;
@@ -980,12 +982,17 @@ class EcritureComptableController extends Controller
     /**
      * Génère un numéro de saisie global séquentiel au format ECR_000000000001
      */
-    private function generateGlobalSaisieNumber($companyId)
+    private function generateGlobalSaisieNumber($companyId, $exerciceId = null)
     {
         // On cherche le max de n_saisie qui commence par ECR_
-        $lastEntry = EcritureComptable::where('company_id', $companyId)
-            ->where('n_saisie', 'like', 'ECR_%')
-            ->orderBy('n_saisie', 'desc')
+        $query = EcritureComptable::where('company_id', $companyId)
+            ->where('n_saisie', 'like', 'ECR_%');
+
+        if ($exerciceId) {
+            $query->where('exercices_comptables_id', $exerciceId);
+        }
+
+        $lastEntry = $query->orderBy('n_saisie', 'desc')
             ->first();
 
         $nextNumber = 1;
@@ -1082,13 +1089,16 @@ class EcritureComptableController extends Controller
                 ->where('n_saisie', $oldNSaisie)
                 ->delete();
 
-            // 2. Générer le NOUVEAU numéro global (Séquentiel)
-            $newGlobalNSaisie = $this->generateGlobalSaisieNumber($activeCompanyId);
-
             // 3. Créer les nouvelles lignes
             $ecritures = $request->input('ecritures');
             if (is_string($ecritures))
                 $ecritures = json_decode($ecritures, true);
+
+            $firstEcriture = is_array($ecritures) ? reset($ecritures) : null;
+            $exerciceId = $firstEcriture ? ($firstEcriture['exercices_comptables_id'] ?? $firstEcriture['exercice_id'] ?? $firstEcriture['id_exercice'] ?? null) : null;
+
+            // 2. Générer le NOUVEAU numéro global (Séquentiel)
+            $newGlobalNSaisie = $this->generateGlobalSaisieNumber($activeCompanyId, $exerciceId);
 
             // Fichier
             $pieceFilename = null;

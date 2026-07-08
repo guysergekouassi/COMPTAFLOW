@@ -171,8 +171,9 @@ class ScanController extends Controller
                 $status = ($user->isAdmin() || $user->hasPermission('admin.approvals')) ? 'approved' : 'pending';
                 
                 // Génération numéro si approuvé, sinon numéro utilisateur
+                $exerciceId = $this->getExerciceId($companyId, $entryData['date']);
                 $nSaisie = ($status === 'approved') 
-                    ? $this->generateGlobalSaisieNumber($companyId) 
+                    ? $this->generateGlobalSaisieNumber($companyId, $exerciceId) 
                     : $entryData['n_saisie_user'];
 
                 foreach ($entryData['lines'] as $line) {
@@ -227,11 +228,16 @@ class ScanController extends Controller
         return $ex ? $ex->id : null;
     }
 
-    private function generateGlobalSaisieNumber($companyId)
+    private function generateGlobalSaisieNumber($companyId, $exerciceId = null)
     {
-        $last = EcritureComptable::where('company_id', $companyId)
-            ->where('n_saisie', 'like', 'ECR_%')
-            ->latest('id')
+        $query = EcritureComptable::where('company_id', $companyId)
+            ->where('n_saisie', 'like', 'ECR_%');
+
+        if ($exerciceId) {
+            $query->where('exercices_comptables_id', $exerciceId);
+        }
+
+        $last = $query->orderBy('n_saisie', 'desc')
             ->first();
 
         $nextNum = $last ? ((int)str_replace('ECR_', '', $last->n_saisie) + 1) : 1;
