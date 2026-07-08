@@ -253,7 +253,7 @@
                     <li><a href="#glossaire">12. Glossaire</a></li>
                 </ul>
                 <hr class="my-3">
-                <button onclick="window.print()" class="btn-print w-100 mb-2" style="background: #1e40af; color: white;">
+                <button onclick="downloadGuidePDF()" class="btn-print w-100 mb-2" style="background: #1e40af; color: white;">
                     <i class="fa-solid fa-file-pdf me-2"></i>Télécharger en PDF
                 </button>
                 <button onclick="window.print()" class="btn-print w-100">
@@ -262,7 +262,7 @@
             </div>
         </div>
         
-        <div class="col-lg-9">
+        <div class="col-lg-9" id="guide-content">
             <!-- SECTION 1: PREMIÈRE CONNEXION -->
             <div class="guide-section" id="premiere-connexion">
                 <h2>1. Première Connexion</h2>
@@ -988,6 +988,7 @@
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 // Smooth scroll pour les liens d'ancrage
 document.querySelectorAll('.guide-nav a').forEach(anchor => {
@@ -999,6 +1000,44 @@ document.querySelectorAll('.guide-nav a').forEach(anchor => {
         }
     });
 });
+
+function downloadGuidePDF() {
+    const element = document.getElementById('guide-content');
+    const pageTitle = "{{ $page_title ?? 'Guide d\'utilisation' }}";
+    const filename = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '.pdf';
+    
+    const opt = {
+        margin:       15,
+        filename:     filename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, logging: false, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+    
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Génération du PDF...',
+            text: 'Votre guide est en cours de téléchargement.',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        if (typeof Swal !== 'undefined') {
+            Swal.close();
+        }
+    }).catch(err => {
+        console.error(err);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Erreur', 'Impossible de générer le PDF.', 'error');
+        }
+    });
+}
 </script>
 
                 </div>
