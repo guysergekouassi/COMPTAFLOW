@@ -110,6 +110,58 @@
                                         <i class="fa-solid fa-gears fa-10x"></i>
                                     </div>
                                 </div>
+                        </div>
+
+                        <!-- Liaison SELFLOW -->
+                        <div class="row mb-8">
+                            <div class="col-12">
+                                <div class="card p-6 border-blue-200" style="border: 2px solid #1e40af; border-radius: 24px; background: #fbfdff; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);">
+                                    <div class="flex justify-between items-center flex-wrap gap-4" style="display:flex; justify-content:space-between; align-items:center;">
+                                        <div>
+                                            <h5 class="font-black mb-1 flex items-center gap-2 text-premium-blue" style="font-weight:800; color:#1e40af; margin-bottom:4px;">
+                                                <i class="fa-solid fa-link"></i> Liaison SELFLOW (ERP Opérationnel)
+                                            </h5>
+                                            <p class="text-sm text-slate-600 mb-0" style="font-size:13px; color:#475569; margin-bottom:0;">
+                                                Connectez COMPTAFLOW avec SELFLOW pour déverser automatiquement les écritures de ventes, achats et règlements.
+                                            </p>
+                                        </div>
+                                        <div>
+                                            @if($mainCompany->selflow_sync_status === 'active' || $mainCompany->selflow_company_id)
+                                                <span class="badge bg-green-100 text-green-800 px-4 py-2 rounded-full font-bold flex items-center gap-2" style="background:#dcfce7; color:#166534; padding:6px 16px; border-radius:30px; font-weight:700; font-size:12px;">
+                                                    <i class="fa-solid fa-circle-check"></i> Liaison active (ID Selflow: #{{ $mainCompany->selflow_company_id }})
+                                                </span>
+                                            @else
+                                                <span class="badge bg-amber-100 text-amber-800 px-4 py-2 rounded-full font-bold flex items-center gap-2" style="background:#fef3c7; color:#92400e; padding:6px 16px; border-radius:30px; font-weight:700; font-size:12px;">
+                                                    <i class="fa-solid fa-circle-notch fa-spin"></i> Non connectée
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <hr class="my-4 text-slate-200" style="margin:16px 0; border:0; border-top:1px solid #e2e8f0;">
+                                    <div class="row g-4 items-center" style="display:flex; align-items:center; flex-wrap:wrap; gap:16px;">
+                                        <div style="flex:1; min-width:300px;">
+                                            @if(!$mainCompany->selflow_sync_key)
+                                                @php
+                                                    $mainCompany->update(['selflow_sync_key' => \Illuminate\Support\Str::random(40)]);
+                                                @endphp
+                                            @endif
+                                            <label class="form-label font-bold text-slate-700 mb-1" style="font-weight:700; color:#334155; display:block; margin-bottom:4px;">Clé de synchronisation COMPTAFLOW</label>
+                                            <div style="display:flex; gap:8px;">
+                                                <input type="text" id="selflow-sync-key" class="form-control font-monospace text-xs py-3 bg-white" readonly value="{{ $mainCompany->selflow_sync_key }}" style="font-family:monospace; font-size:12px; padding:10px; background:white; border:1px solid #cbd5e1; border-radius:8px; flex:1;">
+                                                <button class="btn btn-primary" type="button" onclick="copierCleSync()" style="background:#1e40af; border:0; color:white; padding:10px 16px; border-radius:8px; font-weight:700; cursor:pointer;">
+                                                    <i class="fa-regular fa-copy"></i> Copier la clé
+                                                </button>
+                                            </div>
+                                            <small class="text-slate-400 mt-1 block" style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">
+                                                Copiez cette clé et collez-la dans les Paramètres de votre entreprise sur SELFLOW pour établir la liaison.
+                                            </small>
+                                        </div>
+                                        <div style="text-align:right; font-size:11px; color:#64748b;">
+                                            <div>API COMPTAFLOW :</div>
+                                            <code class="bg-slate-100 px-2 py-1 rounded" style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-family:monospace;">{{ url('/') }}</code>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -214,5 +266,14 @@
             </div>
         </div>
     </div>
+<script>
+function copierCleSync() {
+    const input = document.getElementById('selflow-sync-key');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value);
+    alert('Clé de synchronisation copiée dans le presse-papiers !');
+}
+</script>
 </body>
 </html>

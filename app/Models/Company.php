@@ -18,6 +18,8 @@ class Company extends Model
         'journal_code_digits', 'journal_code_type',
         'ncc', 'rccm', 'cnps', 'siege_social', 'rattachement_dgi',
         'expert_comptable_nom', 'expert_comptable_ncc',
+        'compte_contribuable', 'regime',
+        'selflow_company_id', 'selflow_sync_key', 'selflow_sync_status',
     ];
 
     protected $casts = [

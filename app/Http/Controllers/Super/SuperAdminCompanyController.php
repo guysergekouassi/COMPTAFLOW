@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use App\Models\TreasuryCategory;
 
 class SuperAdminCompanyController extends Controller
@@ -31,56 +33,118 @@ class SuperAdminCompanyController extends Controller
         Log::info('Données reçues :', $request->all());
 
         $request->validate([
-            'company_name' => 'required|string|max:255|unique:companies,company_name',
-            'juridique_form' => 'required|string|max:255',
-            'activity' => 'required|string|max:255',
-            'social_capital' => 'required|numeric|min:0',
-            'adresse' => 'string|max:255',
-            'code_postal' => 'required|string|max:20',
-            'city' => 'required|string|max:255',
-            'country' => 'required|string|max:255',
-            'phone_number' => 'nullable|string|max:20',
-            'email_adresse' => 'nullable|email|max:255',
-            'identification_TVA' => 'nullable|string|max:50',
-            'parent_company_id' => 'nullable|exists:companies,id',
+            'company_name'        => 'required|string|max:255|unique:companies,company_name',
+            'juridique_form'      => 'required|string|max:50',
+            'activity'            => 'required|string|max:255',
+            'adresse'             => 'nullable|string|max:255',
+            'city'                => 'nullable|string|max:100',
+            'country'             => 'nullable|string|max:100',
+            'phone_number'        => 'nullable|string|max:30',
+            'email_adresse'       => 'required|email|max:255|unique:users,email_adresse',
+            'ncc'                 => 'nullable|string|max:50',
+            'rccm'                => 'nullable|string|max:100',
+            'compte_contribuable' => 'nullable|string|max:100',
+            'regime'              => 'nullable|string|max:80',
+            'cnps'                => 'nullable|string|max:50',
+            'admin_nom'           => 'required|string|max:100',
+            'admin_prenom'        => 'nullable|string|max:150',
+            'admin_password'      => 'required|string|min:8|confirmed',
+            // Champs Selflow conditionnels
+            'selflow_password'    => [$request->boolean('creer_compte_selflow') ? 'required' : 'nullable', 'string', 'min:8', 'confirmed'],
         ]);
         
         DB::beginTransaction();
         try {
+            // 1. Créer l'entreprise
             $company = Company::create([
-                'company_name' => $request->company_name,
-                'is_active' => $request->input('is_active', true),
-                'juridique_form' => $request->juridique_form,
-                'activity' => $request->activity,
-                'user_id' => 0, // Sera assigné plus tard lors de la création de l'admin
-                'social_capital' => $request->social_capital,
-                'adresse' => $request->adresse,
-                'code_postal' => $request->code_postal,
-                'city' => $request->city,
-                'country' => $request->country,
-                'phone_number' => $request->phone_number,
+                'company_name'        => $request->company_name,
+                'is_active'           => $request->input('is_active', true),
+                'juridique_form'      => $request->juridique_form,
+                'activity'            => $request->activity,
+                'user_id'             => 0, // sera mis à jour après
+                'social_capital'      => 0,
+                'adresse'             => $request->adresse,
+                'code_postal'         => '',
+                'city'                => $request->city ?? 'Abidjan',
+                'country'             => $request->country ?? "Côte d'Ivoire",
+                'phone_number'        => $request->phone_number,
+                'email_adresse'       => $request->email_adresse,
+                'ncc'                 => $request->ncc,
+                'rccm'                => $request->rccm,
+                'compte_contribuable' => $request->compte_contribuable,
+                'regime'              => $request->regime,
+                'cnps'                => $request->cnps,
+            ]);
+
+            // 2. Créer l'administrateur
+            $adminUser = User::create([
+                'name'          => $request->admin_nom,
+                'last_name'     => $request->admin_prenom ?? '',
                 'email_adresse' => $request->email_adresse,
-                'identification_TVA' => $request->identification_TVA,
-                'parent_company_id' => $request->parent_company_id,
-             ]);
-             
-            // Création automatique des trois catégories de flux indispensables pour le TFT
+                'password'      => Hash::make($request->admin_password),
+                'role'          => 'admin',
+                'company_id'    => $company->id,
+                'is_active'     => true,
+            ]);
+
+            // 3. Lier l'admin à l'entreprise
+            $company->update(['user_id' => $adminUser->id]);
+
+            // 4. Catégories TFT obligatoires
             $tftCategories = [
                 'I. Flux de trésorerie des activités opérationnelles',
                 'II. Flux de trésorerie des activités d\'investissement',
                 'III. Flux de trésorerie des activités de financement',
             ];
-
             foreach ($tftCategories as $catName) {
-                TreasuryCategory::create([
-                    'name' => $catName,
-                    'company_id' => $company->id,
-                ]);
+                TreasuryCategory::create(['name' => $catName, 'company_id' => $company->id]);
             }
              
             DB::commit();
 
-            return redirect()->route('superadmin.entities')->with('success', 'Entreprise créée avec succès.');
+            // ── Liaison SELFLOW (si case cochée) ──
+            $messageSupplement = '';
+            if ($request->boolean('creer_compte_selflow') && $request->filled('selflow_password')) {
+                try {
+                    $syncKey = Str::random(40);
+                    $selflowUrl = config('external_sync.selflow_api_url', 'http://127.0.0.1:8003');
+
+                    $response = Http::timeout(15)->post($selflowUrl . '/api/external/register-enterprise', [
+                        'secret'              => config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026'),
+                        'nom'                 => $company->company_name,
+                        'forme_juridique'     => $company->juridique_form,
+                        'email'               => $company->email_adresse,
+                        'telephone'           => $company->phone_number,
+                        'adresse'             => $company->adresse,
+                        'ncc'                 => $company->ncc,
+                        'rccm'                => $company->rccm,
+                        'compte_contribuable' => $company->compte_contribuable,
+                        'regime_imposition'   => $company->regime,
+                        'gerant_nom'          => $request->admin_nom,
+                        'gerant_prenom'       => $request->admin_prenom,
+                        'admin_password'      => $request->selflow_password,
+                        'comptaflow_company_id' => $company->id,
+                        'comptaflow_sync_key'   => $syncKey,
+                    ]);
+
+                    if ($response->successful() && $response->json('success')) {
+                        $company->update([
+                            'selflow_company_id'  => $response->json('company_id'),
+                            'selflow_sync_key'    => $syncKey,
+                            'selflow_sync_status' => 'active',
+                        ]);
+                        $messageSupplement = ' Le compte SELFLOW a été créé et lié avec succès.';
+                    } else {
+                        $messageSupplement = ' ⚠️ Avertissement : La création du compte SELFLOW a échoué (' . ($response->json('message') ?? 'Erreur inconnue') . ').';
+                        Log::warning('SELFLOW register-enterprise failed', ['response' => $response->json()]);
+                    }
+                } catch (\Exception $e) {
+                    $messageSupplement = ' ⚠️ Avertissement : Impossible de contacter SELFLOW (' . $e->getMessage() . ').';
+                    Log::error('SELFLOW register-enterprise exception', ['error' => $e->getMessage()]);
+                }
+            }
+
+            return redirect()->route('superadmin.entities')->with('success', 'Entreprise créée avec succès.' . $messageSupplement);
 
         } catch (\Exception $e) {
             DB::rollBack();

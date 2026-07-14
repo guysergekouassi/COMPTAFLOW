@@ -132,3 +132,18 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
     });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Routes de synchronisation externe (Selflow ↔ COMPTAFLOW)
+// Protégées par un secret partagé (pas d'auth JWT requise)
+// ═══════════════════════════════════════════════════════════════════════════
+Route::prefix('external')->group(function () {
+    Route::post('/register-enterprise', [\App\Http\Controllers\Api\ExternalSyncController::class, 'registerEnterprise'])
+        ->name('api.external.register-enterprise');
+    Route::get('/status', [\App\Http\Controllers\Api\ExternalSyncController::class, 'syncStatus'])
+        ->name('api.external.sync-status');
+    Route::post('/link-company', [\App\Http\Controllers\Api\ExternalSyncController::class, 'linkCompany'])
+        ->name('api.external.link-company');
+    Route::post('/ecritures/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserEcritures'])
+        ->name('api.external.ecritures.deverser');
+});
