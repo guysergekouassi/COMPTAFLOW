@@ -313,7 +313,7 @@
                                                                 <label for="plan_comptable_id_1" class="input-label-premium text-xs text-blue-600">Compte de Début</label>
                                                                 <select id="plan_comptable_id_1" name="plan_comptable_id_1"
                                                                     class="input-field-premium selectpicker w-100" data-width="100%"
-                                                                    data-live-search="true" required>
+                                                                    data-live-search="true" data-size="10" data-container="body" required>
                                                                     <option value="">-- Sélectionner --</option>
                                                                     @foreach ($PlanComptable as $plan)
                                                                         <option value="{{ $plan->id }}" data-subtext="{{ $plan->numero_de_compte }}">
@@ -328,7 +328,7 @@
                                                                 <label for="plan_comptable_id_2" class="input-label-premium text-xs text-blue-600">Compte de Fin</label>
                                                                 <select id="plan_comptable_id_2" name="plan_comptable_id_2"
                                                                     class="input-field-premium selectpicker w-100" data-width="100%"
-                                                                    data-live-search="true" required>
+                                                                    data-live-search="true" data-size="10" data-container="body" required>
                                                                     <option value="">-- Sélectionner --</option>
                                                                     @foreach ($PlanComptable as $plan)
                                                                         <option value="{{ $plan->id }}" data-subtext="{{ $plan->numero_de_compte }}">
@@ -393,7 +393,7 @@
                                                                 <label for="update_plan_comptable_id_1" class="input-label-premium text-xs text-blue-600">Compte de Début</label>
                                                                 <select id="update_plan_comptable_id_1"
                                                                     name="plan_comptable_id_1" class="input-field-premium selectpicker w-100"
-                                                                    data-width="100%" data-live-search="true" required>
+                                                                    data-width="100%" data-live-search="true" data-size="10" data-container="body" required>
                                                                     <option value="">-- Sélectionner --</option>
                                                                     @foreach ($PlanComptable as $plan)
                                                                         <option value="{{ $plan->id }}" data-subtext="{{ $plan->numero_de_compte }}">
@@ -408,7 +408,7 @@
                                                                 <label for="update_plan_comptable_id_2" class="input-label-premium text-xs text-blue-600">Compte de Fin</label>
                                                                 <select id="update_plan_comptable_id_2"
                                                                     name="plan_comptable_id_2" class="input-field-premium selectpicker w-100"
-                                                                    data-width="100%" data-live-search="true" required>
+                                                                    data-width="100%" data-live-search="true" data-size="10" data-container="body" required>
                                                                     <option value="">-- Sélectionner --</option>
                                                                     @foreach ($PlanComptable as $plan)
                                                                         <option value="{{ $plan->id }}" data-subtext="{{ $plan->numero_de_compte }}">

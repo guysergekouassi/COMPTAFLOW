@@ -450,7 +450,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label for="plan_comptable_id_1" class="input-label-premium">Compte de début ({{ count($PlanComptable) }})</label>
-                                                <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10" required>
+                                                <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10" data-container="body" required>
                                                     <option value="">-- Sélectionnez un compte --</option>
                                                     @foreach ($PlanComptable as $plan)
                                                         <option value="{{ $plan->id }}">
@@ -462,7 +462,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="plan_comptable_id_2" class="input-label-premium">Compte de fin ({{ count($PlanComptable) }})</label>
-                                                <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10"  required>
+                                                <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10" data-container="body" required>
                                                     <option value="">-- Sélectionnez un compte --</option>
                                                     @foreach ($PlanComptable as $plan)
                                                         <option value="{{ $plan->id }}">
