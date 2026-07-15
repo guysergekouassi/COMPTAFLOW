@@ -360,7 +360,7 @@
     @include('components.footer')
 
     <!-- Modals moved to body end for better positioning -->
-    <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalCenterCreate" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-height: 90vh; margin: auto;">
             <form method="POST" action="{{ route('accounting_balance.generateBalance') }}" id="grandLivreForm">
                 @csrf
@@ -431,39 +431,32 @@
                                             </div>
                                         </div>
 
-                                        <!-- Nouveau : Barre de recherche par classe -->
-                                        <div class="mb-4">
-                                            <div class="relative">
-                                                <input type="text" id="accountSearch" class="input-field-premium pl-10" placeholder="Rechercher par classe (ex: 6) ou par texte...">
-                                                <i class="bx bx-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                            </div>
-                                        </div>
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label for="plan_comptable_id_1" class="input-label-premium">Compte de début ({{ count($PlanComptable) }})</label>
-                                                <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10" required>
-                                                    <option value="">-- Sélectionnez un compte --</option>
-                                                    @foreach ($PlanComptable as $plan)
-                                                        <option value="{{ $plan->id }}">
-                                                            {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
+                                         <div class="row g-3">
+                                             <div class="col-md-6">
+                                                 <label for="plan_comptable_id_1" class="input-label-premium">Compte de début ({{ count($PlanComptable) }})</label>
+                                                 <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="select2-enable w-100 input-field-premium" required>
+                                                     <option value="">-- Sélectionnez un compte --</option>
+                                                     @foreach ($PlanComptable as $plan)
+                                                         <option value="{{ $plan->id }}">
+                                                             {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
+                                                         </option>
+                                                     @endforeach
+                                                 </select>
+                                                 <div class="invalid-feedback">Veuillez sélectionner un compte.</div>
+                                             </div>
+                                             <div class="col-md-6">
+                                                 <label for="plan_comptable_id_2" class="input-label-premium">Compte de fin ({{ count($PlanComptable) }})</label>
+                                                 <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="select2-enable w-100 input-field-premium" required>
+                                                     <option value="">-- Sélectionnez un compte --</option>
+                                                     @foreach ($PlanComptable as $plan)
+                                                         <option value="{{ $plan->id }}">
+                                                             {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
                                                         </option>
-                                                    @endforeach
-                                                </select>
-                                                <div class="invalid-feedback">Veuillez sélectionner un compte.</div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label for="plan_comptable_id_2" class="input-label-premium">Compte de fin ({{ count($PlanComptable) }})</label>
-                                                <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="false" data-size="10" required>
-                                                    <option value="">-- Sélectionnez un compte --</option>
-                                                    @foreach ($PlanComptable as $plan)
-                                                        <option value="{{ $plan->id }}">
-                                                            {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                                <div class="invalid-feedback" id="compte2-error">Veuillez sélectionner un compte.</div>
-                                            </div>
-                                        </div>
+                                                     @endforeach
+                                                 </select>
+                                                 <div class="invalid-feedback" id="compte2-error">Veuillez sélectionner un compte.</div>
+                                             </div>
+                                         </div>
                                     </div>
                                 </div>
                             </div>

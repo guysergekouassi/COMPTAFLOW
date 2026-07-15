@@ -22,10 +22,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const advancedFilterPanel = document.getElementById("advancedFilterPanel");
 
     // === INITIALISATION ===
-    if (window.jQuery && $.fn.selectpicker) {
-        console.log("AccLedger: Initialisation des selectpickers...");
-        $('.selectpicker').selectpicker('destroy'); // Nettoyage au cas où
-        $('.selectpicker').selectpicker();
+    if (window.jQuery && $.fn.select2) {
+        $('.select2-enable').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            language: 'fr',
+            dropdownParent: $('#modalCenterCreate')
+        });
     }
 
     // === GESTION DES FILTRES AVANCÉS (TABLEAU PRINCIPAL) ===
@@ -64,41 +67,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // === GESTION DU MODAL (PLAGE DE COMPTES) ===
     if (modalCreate) {
-        // Recherche par classe ou texte
+        // Recherche par classe ou texte (Select2 handles search, so we trigger refresh if needed)
         if (accountSearch) {
             accountSearch.addEventListener("input", function () {
                 const query = this.value.trim().toLowerCase();
-                console.log("Recherche lancée pour :", query);
-
                 accountSelects.forEach(select => {
                     if (!select) return;
                     const options = Array.from(select.querySelectorAll('option'));
-                    let visibleCount = 0;
-
                     options.forEach(option => {
                         const val = option.value;
                         if (val === "") return;
-
                         const text = option.text.toLowerCase();
-                        // Match si commence par (classe) OU contient (recherche textuelle)
                         const isMatch = !query || text.startsWith(query) || text.includes(query);
-
                         if (isMatch) {
                             option.disabled = false;
-                            option.hidden = false;
-                            option.style.display = "";
-                            visibleCount++;
                         } else {
                             option.disabled = true;
-                            option.hidden = true;
-                            option.style.display = "none";
                         }
                     });
-
-                    console.log(`Select ${select.id}: ${visibleCount} options visibles sur ${options.length - 1}`);
-
-                    if (window.jQuery && $.fn.selectpicker) {
-                        $(select).selectpicker('refresh');
+                    if (window.jQuery && $.fn.select2) {
+                        $(select).trigger('change');
                     }
                 });
             });
@@ -137,17 +125,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 const isChecked = this.checked;
                 accountSelects.forEach(select => {
                     if (!select) return;
-                    select.disabled = isChecked;
-                    if (window.jQuery && $.fn.selectpicker) $(select).selectpicker('refresh');
+                    if (window.jQuery && $.fn.select2) {
+                        $(select).prop('disabled', isChecked).trigger('change');
+                    } else {
+                        select.disabled = isChecked;
+                    }
                 });
                 if (isChecked && accountSelects[0] && accountSelects[1]) {
                     const validOptions = Array.from(accountSelects[0].options).filter(opt => opt.value !== "");
                     if (validOptions.length > 0) {
                         const vFirst = validOptions[0].value;
                         const vLast = validOptions[validOptions.length - 1].value;
-                        if (window.jQuery && $.fn.selectpicker) {
-                            $(accountSelects[0]).selectpicker('val', vFirst);
-                            $(accountSelects[1]).selectpicker('val', vLast);
+                        if (window.jQuery && $.fn.select2) {
+                            $(accountSelects[0]).val(vFirst).trigger('change');
+                            $(accountSelects[1]).val(vLast).trigger('change');
                         } else {
                             accountSelects[0].value = vFirst;
                             accountSelects[1].value = vLast;
@@ -247,7 +238,7 @@ document.addEventListener("DOMContentLoaded", function () {
             accountSelects.forEach(select => {
                 if (!select) return;
                 select.classList.remove("is-invalid");
-                if (window.jQuery && $.fn.selectpicker) $(select).selectpicker('val', '').selectpicker('refresh');
+                if (window.jQuery && $.fn.select2) $(select).val('').trigger('change');
             });
             const errorDiv = document.getElementById("compte2-error");
             if (errorDiv) errorDiv.style.display = "none";

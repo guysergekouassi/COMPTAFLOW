@@ -336,7 +336,7 @@
     <!-- / Layout wrapper -->
 
     <!-- Modals moved to body end for better positioning -->
-    <div class="modal fade" id="modalCenterCreate" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalCenterCreate" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="margin: auto;">
             <form method="POST" action="{{ route('accounting_balance_tiers.generateBalance') }}" id="grandLivreForm">
                 @csrf
@@ -408,7 +408,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label for="plan_tiers_id_1" class="input-label-premium">Tiers de début ({{ count($PlanTiers) }})</label>
-                                                <select id="plan_tiers_id_1" name="plan_tiers_id_1" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="true" data-size="10" data-container="body" required>
+                                                <select id="plan_tiers_id_1" name="plan_tiers_id_1" class="select2-enable w-100 input-field-premium" required>
                                                     <option value="">-- Sélectionnez un tiers --</option>
                                                     @foreach ($PlanTiers as $plan)
                                                         <option value="{{ $plan->id }}">
@@ -420,7 +420,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="plan_tiers_id_2" class="input-label-premium">Tiers de fin ({{ count($PlanTiers) }})</label>
-                                                <select id="plan_tiers_id_2" name="plan_tiers_id_2" class="selectpicker w-100 input-field-premium" data-width="100%" data-live-search="true" data-size="10" data-container="body" required>
+                                                <select id="plan_tiers_id_2" name="plan_tiers_id_2" class="select2-enable w-100 input-field-premium" required>
                                                     <option value="">-- Sélectionnez un tiers --</option>
                                                     @foreach ($PlanTiers as $plan)
                                                         <option value="{{ $plan->id }}">

@@ -1,4 +1,13 @@
 document.addEventListener("DOMContentLoaded", function () {
+    if (window.jQuery && $.fn.select2) {
+        $('.select2-enable').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            language: 'fr',
+            dropdownParent: $('#modalCenterCreate')
+        });
+    }
+
     const modal = document.getElementById("modalCenterCreate");
     const btnSave = document.getElementById("btnSaveModal");
     const btnClose = document.getElementById("btnCloseModal");
@@ -15,17 +24,20 @@ document.addEventListener("DOMContentLoaded", function () {
             const isChecked = this.checked;
             tiersSelects.forEach(select => {
                 if (!select) return;
-                select.disabled = isChecked;
-                if (window.jQuery && $.fn.selectpicker) $(select).selectpicker('refresh');
+                if (window.jQuery && $.fn.select2) {
+                    $(select).prop('disabled', isChecked).trigger('change');
+                } else {
+                    select.disabled = isChecked;
+                }
             });
             if (isChecked && tiersSelects[0] && tiersSelects[1]) {
                 const validOptions = Array.from(tiersSelects[0].options).filter(opt => opt.value !== "");
                 if (validOptions.length > 0) {
                     const vFirst = validOptions[0].value;
                     const vLast = validOptions[validOptions.length - 1].value;
-                    if (window.jQuery && $.fn.selectpicker) {
-                        $(tiersSelects[0]).selectpicker('val', vFirst);
-                        $(tiersSelects[1]).selectpicker('val', vLast);
+                    if (window.jQuery && $.fn.select2) {
+                        $(tiersSelects[0]).val(vFirst).trigger('change');
+                        $(tiersSelects[1]).val(vLast).trigger('change');
                     } else {
                         tiersSelects[0].value = vFirst;
                         tiersSelects[1].value = vLast;
@@ -59,9 +71,9 @@ document.addEventListener("DOMContentLoaded", function () {
         inputs.forEach((input) => {
             input.value = "";
             input.classList.remove("is-invalid");
-            if (window.jQuery && $.fn.selectpicker) {
-                $('#plan_tiers_id_1').selectpicker('val', '').selectpicker('refresh');
-                $('#plan_tiers_id_2').selectpicker('val', '').selectpicker('refresh');
+            if (window.jQuery && $.fn.select2) {
+                $('#plan_tiers_id_1').val('').trigger('change');
+                $('#plan_tiers_id_2').val('').trigger('change');
             } else {
                 if (document.getElementById('plan_tiers_id_1')) document.getElementById('plan_tiers_id_1').value = '';
                 if (document.getElementById('plan_tiers_id_2')) document.getElementById('plan_tiers_id_2').value = '';

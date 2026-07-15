@@ -22,10 +22,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const advancedFilterPanel = document.getElementById("advancedFilterPanel");
 
     // === INITIALISATION ===
-    if (window.jQuery && $.fn.selectpicker) {
-        console.log("AccBalance: Initialisation des selectpickers...");
-        $('.selectpicker').selectpicker('destroy');
-        $('.selectpicker').selectpicker();
+    if (window.jQuery && $.fn.select2) {
+        $('.select2-enable').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            language: 'fr',
+            dropdownParent: $('#modalCenterCreate')
+        });
     }
 
     // === GESTION DES FILTRES AVANCÉS (TABLEAU PRINCIPAL) ===
@@ -62,40 +65,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // === GESTION DU MODAL (PLAGE DE COMPTES) ===
     if (modalCreate) {
-        // Recherche par classe ou texte
+        // Recherche par classe ou texte (Select2 handles search, so we trigger refresh if needed)
         if (accountSearch) {
             accountSearch.addEventListener("input", function () {
                 const query = this.value.trim().toLowerCase();
-                console.log("AccBalance: Recherche lancée pour :", query);
-
                 accountSelects.forEach(select => {
                     if (!select) return;
                     const options = Array.from(select.querySelectorAll('option'));
-                    let visibleCount = 0;
-
                     options.forEach(option => {
                         const val = option.value;
                         if (val === "") return;
-
                         const text = option.text.toLowerCase();
                         const isMatch = !query || text.startsWith(query) || text.includes(query);
-
                         if (isMatch) {
                             option.disabled = false;
-                            option.hidden = false;
-                            option.style.display = "";
-                            visibleCount++;
                         } else {
                             option.disabled = true;
-                            option.hidden = true;
-                            option.style.display = "none";
                         }
                     });
-
-                    console.log(`Select ${select.id}: ${visibleCount} options visibles`);
-
-                    if (window.jQuery && $.fn.selectpicker) {
-                        $(select).selectpicker('refresh');
+                    if (window.jQuery && $.fn.select2) {
+                        $(select).trigger('change');
                     }
                 });
             });
@@ -134,16 +123,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 const isChecked = this.checked;
                 accountSelects.forEach(select => {
                     if (!select) return;
-                    select.disabled = isChecked;
+                    if (window.jQuery && $.fn.select2) {
+                        $(select).prop('disabled', isChecked).trigger('change');
+                    } else {
+                        select.disabled = isChecked;
+                    }
                     if (isChecked) {
                         const validOptions = Array.from(select.options).filter(opt => opt.value !== "");
                         if (validOptions.length > 0) {
                             const val = (select.id === "plan_comptable_id_1") ? validOptions[0].value : validOptions[validOptions.length - 1].value;
-                            if (window.jQuery && $.fn.selectpicker) $(select).selectpicker('val', val);
+                            if (window.jQuery && $.fn.select2) $(select).val(val).trigger('change');
                             else select.value = val;
                         }
                     }
-                    if (window.jQuery && $.fn.selectpicker) $(select).selectpicker('refresh');
                 });
 
                 if (accountSearch) {
@@ -241,7 +233,7 @@ document.addEventListener("DOMContentLoaded", function () {
             accountSelects.forEach(select => {
                 if (!select) return;
                 select.classList.remove("is-invalid");
-                if (window.jQuery && $.fn.selectpicker) $(select).selectpicker('val', '').selectpicker('refresh');
+                if (window.jQuery && $.fn.select2) $(select).val('').trigger('change');
             });
             const errorDiv = document.getElementById("compte2-error");
             if (errorDiv) errorDiv.style.display = "none";
