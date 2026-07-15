@@ -32,11 +32,11 @@ class AnalyticalReportController extends Controller
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
         
-        $exerciceId = $request->get('exercice_id') ?? session('current_exercice_id');
-        if (!$exerciceId) {
-            $exerciceActif = ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first();
-            $exerciceId = $exerciceActif?->id;
-        }
+        $exerciceId = session('current_exercice_id');
+        $exerciceActif = $exerciceId
+            ? ExerciceComptable::find($exerciceId)
+            : ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first();
+        $exerciceId = $exerciceActif?->id;
 
         $axes = AxeAnalytique::where('company_id', $companyId)->get();
         $selectedAxeId = $request->get('axe_id', $axes->first()?->id);
@@ -47,12 +47,11 @@ class AnalyticalReportController extends Controller
         }
 
         return view('analytique.reports.balance', [
-            'axes' => $axes,
+            'axes'          => $axes,
             'selectedAxeId' => $selectedAxeId,
-            'results' => $results,
-            'exerciceActif' => ExerciceComptable::find($exerciceId),
-            'exercices' => ExerciceComptable::where('company_id', $companyId)->orderBy('date_debut', 'desc')->get(),
-            'data' => $request->all()
+            'results'       => $results,
+            'exerciceActif' => $exerciceActif,
+            'data'          => $request->all()
         ]);
     }
 
@@ -64,36 +63,40 @@ class AnalyticalReportController extends Controller
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
         
-        $exerciceId = $request->get('exercice_id') ?? session('current_exercice_id');
-        if (!$exerciceId) {
-            $exerciceActif = ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first();
-            $exerciceId = $exerciceActif?->id;
-        }
+        $exerciceId = session('current_exercice_id');
+        $exerciceActif = $exerciceId
+            ? ExerciceComptable::find($exerciceId)
+            : ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first();
+        $exerciceId = $exerciceActif?->id;
 
         $axes = AxeAnalytique::where('company_id', $companyId)->get();
         $selectedAxeId = $request->get('axe_id', $axes->first()?->id);
         
-        $sections = [];
+        $sections = collect([]);
         if ($selectedAxeId) {
             $sections = SectionAnalytique::where('axe_id', $selectedAxeId)->get();
         }
         
-        $selectedSectionId = $request->get('section_id');
+        $selectedSectionId = $request->get('section_id', 'all');
 
         $results = collect([]);
-        if ($selectedSectionId) {
-            $results = $this->reportingService->getGrandLivreData($companyId, $selectedSectionId, $exerciceId, $request->all());
+        if ($selectedAxeId) {
+            $results = $this->reportingService->getGrandLivreData(
+                $companyId,
+                $selectedSectionId,
+                $exerciceId,
+                array_merge($request->all(), ['axe_id' => $selectedAxeId])
+            );
         }
 
         return view('analytique.reports.grand_livre', [
-            'axes' => $axes,
-            'selectedAxeId' => $selectedAxeId,
-            'sections' => $sections,
+            'axes'              => $axes,
+            'selectedAxeId'     => $selectedAxeId,
+            'sections'          => $sections,
             'selectedSectionId' => $selectedSectionId,
-            'results' => $results,
-            'exerciceActif' => ExerciceComptable::find($exerciceId),
-            'exercices' => ExerciceComptable::where('company_id', $companyId)->orderBy('date_debut', 'desc')->get(),
-            'data' => $request->all()
+            'results'           => $results,
+            'exerciceActif'     => $exerciceActif,
+            'data'              => $request->all()
         ]);
     }
 
@@ -104,12 +107,12 @@ class AnalyticalReportController extends Controller
     {
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
-        
-        $exerciceId = $request->get('exercice_id') ?? session('current_exercice_id');
-        if (!$exerciceId) {
-            $exerciceActif = ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first();
-            $exerciceId = $exerciceActif?->id;
-        }
+
+        $exerciceId = session('current_exercice_id');
+        $exerciceActif = $exerciceId
+            ? ExerciceComptable::find($exerciceId)
+            : ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first();
+        $exerciceId = $exerciceActif?->id;
 
         $axes = AxeAnalytique::where('company_id', $companyId)->get();
         $selectedAxeId = $request->get('axe_id', $axes->first()?->id);
@@ -120,12 +123,11 @@ class AnalyticalReportController extends Controller
         }
 
         return view('analytique.reports.resultat', [
-            'axes' => $axes,
+            'axes'          => $axes,
             'selectedAxeId' => $selectedAxeId,
-            'results' => $results,
-            'exerciceActif' => ExerciceComptable::find($exerciceId),
-            'exercices' => ExerciceComptable::where('company_id', $companyId)->orderBy('date_debut', 'desc')->get(),
-            'data' => $request->all()
+            'results'       => $results,
+            'exerciceActif' => $exerciceActif,
+            'data'          => $request->all()
         ]);
     }
 
@@ -168,34 +170,38 @@ class AnalyticalReportController extends Controller
     {
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
-        $exerciceId = $request->get('exercice_id') ?? session('current_exercice_id');
-        $selectedSectionId = $request->get('section_id');
+        $exerciceId = session('current_exercice_id') ?? ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first()?->id;
+        $selectedAxeId  = $request->get('axe_id');
+        $selectedSectionId = $request->get('section_id', 'all');
         
-        if (!$selectedSectionId) return back()->with('error', 'Veuillez sélectionner une section.');
+        $results = $this->reportingService->getGrandLivreData(
+            $companyId, $selectedSectionId, $exerciceId,
+            array_merge($request->all(), ['axe_id' => $selectedAxeId])
+        );
+        $label = $selectedSectionId !== 'all' ? SectionAnalytique::find($selectedSectionId)?->libelle : 'Toutes sections';
         
-        $results = $this->reportingService->getGrandLivreData($companyId, $selectedSectionId, $exerciceId, $request->all());
-        $section = SectionAnalytique::find($selectedSectionId);
-        
-        return Excel::download(new AnalyticalGrandLivreExport($results, $section?->libelle), 'grand_livre_analytique_' . date('Ymd') . '.xlsx');
+        return Excel::download(new AnalyticalGrandLivreExport($results, $label), 'grand_livre_analytique_' . date('Ymd') . '.xlsx');
     }
 
     public function exportGrandLivrePdf(Request $request)
     {
         $user = Auth::user();
         $companyId = session('current_company_id', $user->company_id);
-        $exerciceId = $request->get('exercice_id') ?? session('current_exercice_id');
-        $selectedSectionId = $request->get('section_id');
+        $exerciceId = session('current_exercice_id') ?? ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first()?->id;
+        $selectedAxeId  = $request->get('axe_id');
+        $selectedSectionId = $request->get('section_id', 'all');
         
-        if (!$selectedSectionId) return back()->with('error', 'Veuillez sélectionner une section.');
-        
-        $results = $this->reportingService->getGrandLivreData($companyId, $selectedSectionId, $exerciceId, $request->all());
-        $section = SectionAnalytique::find($selectedSectionId);
+        $results = $this->reportingService->getGrandLivreData(
+            $companyId, $selectedSectionId, $exerciceId,
+            array_merge($request->all(), ['axe_id' => $selectedAxeId])
+        );
+        $section = $selectedSectionId !== 'all' ? SectionAnalytique::find($selectedSectionId) : null;
         
         $pdf = Pdf::loadView('analytique.reports.pdf.grand_livre', [
-            'results' => $results,
-            'section' => $section,
+            'results'  => $results,
+            'section'  => $section,
             'exercice' => ExerciceComptable::find($exerciceId),
-            'company' => \App\Models\Company::find($companyId)
+            'company'  => \App\Models\Company::find($companyId)
         ]);
         
         return $pdf->download('grand_livre_analytique_' . date('Ymd') . '.pdf');

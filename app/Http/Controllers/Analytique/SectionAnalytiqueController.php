@@ -92,6 +92,13 @@ class SectionAnalytiqueController extends Controller
     public function destroy($id)
     {
         $section = SectionAnalytique::findOrFail($id);
+
+        $hasVentilations = \App\Models\VentilationAnalytique::where('section_id', $id)->exists();
+        $hasRules = \App\Models\RegleVentilation::where('section_id', $id)->exists();
+        if ($hasVentilations || $hasRules) {
+            return redirect()->back()->with('error', 'Cette section ne peut pas être supprimée car elle est utilisée dans des écritures analytiques ou des règles de ventilation.');
+        }
+
         $section->delete();
 
         return redirect()->route('analytique.sections.index')->with('success', 'Section analytique supprimée.');

@@ -119,13 +119,14 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <button type="submit" class="btn-action px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-semibold text-sm w-full">
+                                    <button type="submit" class="btn-action px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-700 font-semibold text-sm w-full">
                                         <i class="fas fa-filter text-blue-600 mr-2"></i>Filtrer
                                     </button>
                                 </div>
                                 <div class="text-right">
                                     <button type="button" data-bs-toggle="modal" data-bs-target="#modalCreateSection"
-                                        class="btn-action flex items-center justify-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200 w-full">
+                                        class="btn-action flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg font-semibold text-sm border-0 shadow-md hover:opacity-90 transition-all max-w-max ml-auto"
+                                        style="background-color: #1e40af !important; color: white !important;">
                                         <i class="fas fa-plus"></i>
                                         Nouvelle Section
                                     </button>
@@ -143,9 +144,10 @@
                                 <table class="w-full text-left border-collapse">
                                     <thead>
                                         <tr class="bg-slate-50/50 border-b border-slate-100">
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Axe</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Nom de l'Axe</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type d'Axe</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Code Section</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Libellé</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Nom de la Section</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -153,7 +155,10 @@
                                         @foreach ($sections as $section)
                                         <tr class="table-row">
                                             <td class="px-8 py-6">
-                                                <span class="badge bg-slate-100 text-slate-700">{{ $section->axe->libelle }}</span>
+                                                <span class="badge bg-blue-50 text-blue-700 border border-blue-100">{{ $section->axe->libelle }}</span>
+                                            </td>
+                                            <td class="px-8 py-6 text-sm text-slate-600 font-semibold">
+                                                {{ ucfirst($section->axe->type) }}
                                             </td>
                                             <td class="px-8 py-6">
                                                 <span class="font-mono font-bold text-blue-700">{{ $section->code }}</span>
@@ -175,7 +180,7 @@
                                         @endforeach
                                         @if($sections->isEmpty())
                                         <tr>
-                                            <td colspan="4" class="text-center py-12">
+                                            <td colspan="5" class="text-center py-12">
                                                 <div class="flex flex-col items-center">
                                                     <i class="fa-solid fa-folder-open text-slate-200 text-5xl mb-4"></i>
                                                     <p class="text-slate-400 font-medium">Aucune section trouvée.</p>
@@ -219,7 +224,7 @@
                             <input type="text" name="code" class="input-field-premium" placeholder="Ex: S01" required>
                         </div>
                         <div>
-                            <label class="input-label-premium">Libellé</label>
+                            <label class="input-label-premium">Nom de la Section</label>
                             <input type="text" name="libelle" class="input-field-premium" placeholder="Ex: Département Nord" required>
                         </div>
                     </div>
@@ -257,7 +262,7 @@
                             <input type="text" id="edit_code" name="code" class="input-field-premium" required>
                         </div>
                         <div>
-                            <label class="input-label-premium">Libellé</label>
+                            <label class="input-label-premium">Nom de la Section</label>
                             <input type="text" id="edit_libelle" name="libelle" class="input-field-premium" required>
                         </div>
                     </div>

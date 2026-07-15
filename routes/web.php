@@ -647,6 +647,7 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
         Route::post('/axes', [AxeAnalytiqueController::class, 'store'])->name('axes.store');
         Route::put('/axes/{id}', [AxeAnalytiqueController::class, 'update'])->name('axes.update');
         Route::delete('/axes/{id}', [AxeAnalytiqueController::class, 'destroy'])->name('axes.destroy');
+        Route::get('/axes/{id}/sections', [AxeAnalytiqueController::class, 'getSectionsByAxe'])->name('axes.sections');
 
         Route::get('/sections', [SectionAnalytiqueController::class, 'index'])->name('sections.index');
         Route::post('/sections', [SectionAnalytiqueController::class, 'store'])->name('sections.store');

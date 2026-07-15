@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\PlanComptable;
 use App\Models\SectionAnalytique;
+use App\Models\RegleVentilation;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 

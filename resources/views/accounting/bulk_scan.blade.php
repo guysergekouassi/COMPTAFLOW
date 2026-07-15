@@ -1107,19 +1107,17 @@
                  const montant = Math.abs(debit - credit);
                  
                  const display = document.getElementById('montant_a_ventiler_display');
-                 if (display) display.innerText = montant.toLocaleString();
-                 const tbody = document.querySelector('#tableVentilation tbody');
-                 if (tbody) tbody.innerHTML = '';
+                 if (display) display.innerText = montant.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
                  
-                 const existingData = tr.dataset.ventilations ? JSON.parse(tr.dataset.ventilations) : [];
-                 if (existingData.length > 0) {
-                     existingData.forEach(v => window.ajouterLigneVentilation(v.section_id, v.pourcentage, v.montant));
-                 } else {
-                     window.ajouterLigneVentilation();
+                 if (typeof window.initialiserTableauVentilation === 'function') {
+                     window.initialiserTableauVentilation(montant);
                  }
                  
                  const modalEl = document.getElementById('modalVentilationAnalytique');
-                 if (modalEl) new bootstrap.Modal(modalEl).show();
+                 if (modalEl) {
+                     const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                     modal.show();
+                 }
                  if (window.mettreAJourMontantsVentilation) window.mettreAJourMontantsVentilation();
             };
 

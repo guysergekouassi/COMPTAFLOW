@@ -12,12 +12,14 @@ class AnalyticalReportingService
 {
     /**
      * Get Analytical Balance data.
+     * Returns sections with their account details (like Sage balance analytique).
      */
     public function getBalanceData($companyId, $axeId, $exerciceId = null, $filters = [])
     {
         $query = DB::table('ventilations_analytiques as v')
             ->join('ecriture_comptables as e', 'v.ecriture_id', '=', 'e.id')
             ->join('sections_analytiques as s', 'v.section_id', '=', 's.id')
+            ->join('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
             ->where('s.company_id', $companyId)
             ->where('e.statut', 'approved');
 
@@ -37,29 +39,60 @@ class AnalyticalReportingService
             $query->where('e.date', '<=', $filters['date_fin']);
         }
 
-        return $query->select(
+        // Get rows grouped by section + account
+        $rows = $query->select(
             's.id as section_id',
-            's.code',
-            's.libelle',
+            's.code as section_code',
+            's.libelle as section_libelle',
+            'pc.numero_de_compte',
+            'pc.intitule as compte_libelle',
             DB::raw('SUM(CASE WHEN e.debit > 0 THEN v.montant ELSE 0 END) as total_debit'),
             DB::raw('SUM(CASE WHEN e.credit > 0 THEN v.montant ELSE 0 END) as total_credit')
         )
-        ->groupBy('s.id', 's.code', 's.libelle')
+        ->groupBy('s.id', 's.code', 's.libelle', 'pc.numero_de_compte', 'pc.intitule')
         ->orderBy('s.code')
+        ->orderBy('pc.numero_de_compte')
         ->get();
+
+        // Group by section
+        $grouped = [];
+        foreach ($rows as $row) {
+            $key = $row->section_id;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = (object)[
+                    'section_id'      => $row->section_id,
+                    'section_code'    => $row->section_code,
+                    'section_libelle' => $row->section_libelle,
+                    'total_debit'     => 0,
+                    'total_credit'    => 0,
+                    'lignes'          => [],
+                ];
+            }
+            $grouped[$key]->total_debit  += $row->total_debit;
+            $grouped[$key]->total_credit += $row->total_credit;
+            $grouped[$key]->lignes[] = $row;
+        }
+
+        return collect(array_values($grouped));
     }
 
     /**
-     * Get Analytical Grand Livre data for a specific section.
+     * Get Analytical Grand Livre data for a specific section or all sections of an axe.
      */
     public function getGrandLivreData($companyId, $sectionId, $exerciceId = null, $filters = [])
     {
         $query = DB::table('ventilations_analytiques as v')
             ->join('ecriture_comptables as e', 'v.ecriture_id', '=', 'e.id')
+            ->join('sections_analytiques as s', 'v.section_id', '=', 's.id')
             ->join('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
-            ->where('v.section_id', $sectionId)
             ->where('e.company_id', $companyId)
             ->where('e.statut', 'approved');
+
+        if ($sectionId && $sectionId !== 'all') {
+            $query->where('v.section_id', $sectionId);
+        } elseif (!empty($filters['axe_id'])) {
+            $query->where('s.axe_id', $filters['axe_id']);
+        }
 
         if ($exerciceId) {
             $query->where('e.exercices_comptables_id', $exerciceId);
@@ -72,12 +105,15 @@ class AnalyticalReportingService
             'e.date',
             'e.n_saisie',
             'e.description_operation',
+            's.code as section_code',
+            's.libelle as section_libelle',
             'pc.numero_de_compte',
             'pc.intitule as compte_libelle',
             'v.pourcentage',
             'v.montant',
             DB::raw('CASE WHEN e.debit > 0 THEN "D" ELSE "C" END as sens')
         )
+        ->orderBy('s.code')
         ->orderBy('e.date')
         ->orderBy('e.created_at')
         ->get();

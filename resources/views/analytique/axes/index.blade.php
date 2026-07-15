@@ -130,7 +130,8 @@
                         <div class="flex justify-between items-center mb-6">
                             <h4 class="text-slate-800 font-bold mb-0">Liste des axes</h4>
                             <button type="button" data-bs-toggle="modal" data-bs-target="#modalCreateAxe"
-                                class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
+                                class="btn-action flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg font-semibold text-sm border-0 shadow-md hover:opacity-90 transition-all max-w-max"
+                                style="background-color: #1e40af !important; color: white !important;">
                                 <i class="fas fa-plus"></i>
                                 Nouvel Axe
                             </button>
@@ -143,8 +144,8 @@
                                     <thead>
                                         <tr class="bg-slate-50/50 border-b border-slate-100">
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Code</th>
-                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Libellé</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Type</th>
+                                            <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Nom</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -154,11 +155,11 @@
                                             <td class="px-8 py-6">
                                                 <span class="font-mono font-bold text-blue-700">{{ $axe->code }}</span>
                                             </td>
+                                            <td class="px-8 py-6 text-sm text-slate-600 font-semibold">
+                                                {{ ucfirst($axe->type) }}
+                                            </td>
                                             <td class="px-8 py-6">
                                                 <span class="font-medium text-slate-800">{{ $axe->libelle }}</span>
-                                            </td>
-                                            <td class="px-8 py-6 text-sm text-slate-600">
-                                                {{ ucfirst($axe->type) }}
                                             </td>
                                             <td class="px-8 py-6 text-right">
                                                 <div class="flex justify-end gap-2">
@@ -199,17 +200,21 @@
                             <input type="text" name="code" class="input-field-premium" placeholder="Ex: PROJ" required>
                         </div>
                         <div>
-                            <label class="input-label-premium">Libellé</label>
+                            <label class="input-label-premium">Nom</label>
                             <input type="text" name="libelle" class="input-field-premium" placeholder="Ex: Par Projet" required>
                         </div>
                         <div>
                             <label class="input-label-premium">Type</label>
-                            <select name="type" class="input-field-premium">
-                                <option value="projet">Projet</option>
-                                <option value="departement">Département</option>
-                                <option value="agence">Agence</option>
-                                <option value="divers">Divers</option>
+                            <select name="type" id="create_type_select" class="input-field-premium" onchange="toggleCustomTypeInput(this, 'create_custom_type_container')">
+                                @foreach($types as $typeOpt)
+                                    <option value="{{ $typeOpt }}">{{ $typeOpt }}</option>
+                                @endforeach
+                                <option value="custom">+ Créer un nouveau type...</option>
                             </select>
+                        </div>
+                        <div id="create_custom_type_container" class="d-none mt-2">
+                            <label class="input-label-premium">Saisir le nouveau type</label>
+                            <input type="text" name="custom_type" class="input-field-premium" placeholder="Ex: Activité">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4 pt-8">
@@ -238,17 +243,21 @@
                             <input type="text" id="edit_code" name="code" class="input-field-premium" required>
                         </div>
                         <div>
-                            <label class="input-label-premium">Libellé</label>
+                            <label class="input-label-premium">Nom</label>
                             <input type="text" id="edit_libelle" name="libelle" class="input-field-premium" required>
                         </div>
                         <div>
                             <label class="input-label-premium">Type</label>
-                            <select id="edit_type" name="type" class="input-field-premium">
-                                <option value="projet">Projet</option>
-                                <option value="departement">Département</option>
-                                <option value="agence">Agence</option>
-                                <option value="divers">Divers</option>
+                            <select id="edit_type" name="type" class="input-field-premium" onchange="toggleCustomTypeInput(this, 'edit_custom_type_container')">
+                                @foreach($types as $typeOpt)
+                                    <option value="{{ $typeOpt }}">{{ $typeOpt }}</option>
+                                @endforeach
+                                <option value="custom">+ Créer un nouveau type...</option>
                             </select>
+                        </div>
+                        <div id="edit_custom_type_container" class="d-none mt-2">
+                            <label class="input-label-premium">Saisir le nouveau type</label>
+                            <input type="text" id="edit_custom_type" name="custom_type" class="input-field-premium" placeholder="Ex: Activité">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4 pt-8">
@@ -286,10 +295,43 @@
     @include('components.footer')
 
     <script>
+        window.toggleCustomTypeInput = function(selectEl, containerId) {
+            const container = document.getElementById(containerId);
+            if (selectEl.value === 'custom') {
+                container.classList.remove('d-none');
+                container.querySelector('input').setAttribute('required', 'required');
+            } else {
+                container.classList.add('d-none');
+                container.querySelector('input').removeAttribute('required');
+            }
+        };
+
         window.editAxe = function(axe) {
             $('#edit_code').val(axe.code);
             $('#edit_libelle').val(axe.libelle);
-            $('#edit_type').val(axe.type);
+            
+            const typeSelect = document.getElementById('edit_type');
+            let hasOption = false;
+            for (let i = 0; i < typeSelect.options.length; i++) {
+                if (typeSelect.options[i].value.toLowerCase() === (axe.type || '').toLowerCase()) {
+                    typeSelect.selectedIndex = i;
+                    hasOption = true;
+                    break;
+                }
+            }
+            
+            const customContainer = document.getElementById('edit_custom_type_container');
+            if (!hasOption && axe.type) {
+                typeSelect.value = 'custom';
+                $('#edit_custom_type').val(axe.type);
+                customContainer.classList.remove('d-none');
+                customContainer.querySelector('input').setAttribute('required', 'required');
+            } else {
+                $('#edit_custom_type').val('');
+                customContainer.classList.add('d-none');
+                customContainer.querySelector('input').removeAttribute('required');
+            }
+            
             $('#editForm').attr('action', `/analytique/axes/${axe.id}`);
             new bootstrap.Modal(document.getElementById('modalEditAxe')).show();
         };

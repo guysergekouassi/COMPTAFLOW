@@ -443,6 +443,17 @@ class EcritureComptableController extends Controller
                 'poste_tresorerie_id' => 'nullable|integer',
             ]);
 
+            if ($request->plan_analytique || $request->input('plan_analytique')) {
+                $ventilations = $request->input('ventilations', []);
+                $validationError = $this->validateVentilations($ventilations);
+                if ($validationError) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $validationError
+                    ], 422);
+                }
+            }
+
             // Gestion du fichier
             if ($request->hasFile('piece_justificatif')) {
                 $file = $request->file('piece_justificatif');
@@ -518,13 +529,19 @@ class EcritureComptableController extends Controller
             $ecriture = EcritureComptable::create($ecritureData);
 
             // Sauvegarder les ventilations si présentes
-            if ($request->has('ventilations') && is_array($request->ventilations)) {
-                foreach ($request->ventilations as $v) {
-                    $ecriture->ventilations()->create([
-                        'section_id' => $v['section_id'],
-                        'montant' => $v['montant'],
-                        'pourcentage' => $v['pourcentage'],
-                    ]);
+            if ($request->has('ventilations')) {
+                $vnts = $request->input('ventilations');
+                if (is_string($vnts)) {
+                    $vnts = json_decode($vnts, true) ?? [];
+                }
+                if (is_array($vnts) && !empty($vnts)) {
+                    foreach ($vnts as $v) {
+                        $ecriture->ventilations()->create([
+                            'section_id' => $v['section_id'],
+                            'montant' => $v['montant'],
+                            'pourcentage' => $v['pourcentage'],
+                        ]);
+                    }
                 }
             }
 
@@ -617,6 +634,26 @@ class EcritureComptableController extends Controller
                 }
             }
 
+            // Validations analytiques avant de commencer la transaction
+            foreach ($groups as $ns => $groupEcritures) {
+                foreach ($groupEcritures as $e) {
+                    $planAnalytique = (isset($e['plan_analytique']) && ($e['plan_analytique'] == 1 || $e['plan_analytique'] == true));
+                    if ($planAnalytique) {
+                        $ventilations = $e['ventilations'] ?? [];
+                        if (is_string($ventilations)) {
+                            $ventilations = json_decode($ventilations, true) ?? [];
+                        }
+                        $validationError = $this->validateVentilations($ventilations);
+                        if ($validationError) {
+                            return response()->json([
+                                'success' => false,
+                                'error' => "Erreur de ventilation pour la pièce {$ns} : " . $validationError
+                            ], 422);
+                        }
+                    }
+                }
+            }
+
             $hasApprovalPower = $user->isAdmin() || $user->hasPermission('admin.approvals');
             $status = $hasApprovalPower ? 'approved' : 'pending';
 
@@ -683,7 +720,11 @@ class EcritureComptableController extends Controller
                     if (!$firstInGroup) $firstInGroup = $ecriture;
 
                     if ($ecriture->plan_analytique && !empty($data['ventilations'])) {
-                        foreach ($data['ventilations'] as $v) {
+                        $vnts = $data['ventilations'];
+                        if (is_string($vnts)) {
+                            $vnts = json_decode($vnts, true) ?? [];
+                        }
+                        foreach ($vnts as $v) {
                             $ecriture->ventilations()->create([
                                 'section_id' => $v['section_id'],
                                 'montant' => $v['montant'],
@@ -1215,5 +1256,41 @@ class EcritureComptableController extends Controller
         catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
+    }
+
+    private function validateVentilations($ventilations)
+    {
+        if (empty($ventilations)) {
+            return "L'écriture analytique doit comporter au moins une ventilation.";
+        }
+
+        $sectionIds = collect($ventilations)->pluck('section_id')->all();
+        $sections = \App\Models\SectionAnalytique::whereIn('id', $sectionIds)->get()->keyBy('id');
+
+        // Group ventilations by axis
+        $groupedByAxe = [];
+        foreach ($ventilations as $v) {
+            $secId = $v['section_id'] ?? null;
+            if (!$secId || !$sections->has($secId)) {
+                return "Section analytique invalide ou introuvable.";
+            }
+            $axeId = $sections->get($secId)->axe_id;
+            $groupedByAxe[$axeId][] = floatval($v['pourcentage']);
+        }
+
+        if (empty($groupedByAxe)) {
+            return "Aucun axe analytique valide n'est défini.";
+        }
+
+        foreach ($groupedByAxe as $axeId => $percentages) {
+            $sum = array_sum($percentages);
+            if (abs($sum - 100) > 0.05) {
+                $axe = \App\Models\AxeAnalytique::find($axeId);
+                $axeName = $axe ? $axe->libelle : "inconnu";
+                return "Le total des pourcentages pour l'axe '{$axeName}' doit être égal à 100%. Actuellement : " . round($sum, 2) . "%.";
+            }
+        }
+
+        return null;
     }
 }

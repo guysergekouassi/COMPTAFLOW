@@ -1370,67 +1370,7 @@
 
       <!-- Core JS -->
 
-       <!-- Modal Ventilation Analytique -->
-      <div class="modal fade" id="modalVentilationAnalytique" data-bs-backdrop="static">
-          <div class="modal-dialog modal-dialog-centered" style="width: 800px !important; max-width: 800px !important;">
-              <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
-                  <div class="modal-body p-5 bg-white" style="position: relative;">
-                      <!-- Title Section (Image 2 style) -->
-                      <div class="text-center mb-5 position-relative">
-                          <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Close"></button>
-                          <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-0">
-                              Ventilation <span class="text-blue-gradient-premium">Analytique</span>
-                          </h1>
-                          <div class="h-1 w-8 bg-blue-700 mx-auto mt-2 rounded-full"></div>
-                      </div>
-
-                      <div class="mb-5 text-center p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                          <span class="text-secondary fw-semibold">Montant à ventiler:</span> 
-                          <span id="montant_a_ventiler_display" class="fs-4 fw-bold text-dark ms-1">0.00</span>
-                          <span class="text-dark fw-bold ms-1">FCFA</span>
-                      </div>
-
-                      <form id="formVentilation">
-                          <div class="table-responsive">
-                              <table class="table table-hover align-middle mb-0" id="tableVentilation">
-                                  <thead>
-                                      <tr class="text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 1px; border-bottom: 2px solid #f1f5f9;">
-                                          <th style="width: 50%;">Section Analytique</th>
-                                          <th style="width: 20%;">%</th>
-                                          <th style="width: 25%;">Montant</th>
-                                          <th style="width: 5%;"></th>
-                                      </tr>
-                                  </thead>
-                                  <tbody>
-                                      <!-- Lignes de ventilation ajoutées dynamiquement -->
-                                  </tbody>
-                                  <tfoot>
-                                      <tr class="fw-bold border-top" style="background: #f8fafc; font-size: 0.8rem;">
-                                          <td class="text-end" style="padding: 0.5rem;">Total:</td>
-                                          <td id="total_pourcentage" class="text-primary" style="padding: 0.5rem;">0.00 %</td>
-                                          <td id="total_montant_ventile" class="text-dark" style="padding: 0.5rem;">0.00</td>
-                                          <td></td>
-                                      </tr>
-                                  </tfoot>
-                              </table>
-                          </div>
-                          <div class="mt-3 text-center">
-                              <button type="button" class="btn btn-outline-primary btn-xs rounded-pill fw-bold px-3" onclick="ajouterLigneVentilation()" style="border-width: 2px; font-size: 0.7rem; padding: 0.4rem 1rem;">
-                                  <i class="bx bx-plus-circle me-1"></i> Ajouter une section
-                              </button>
-                          </div>
-                      </form>
-
-                      <div class="d-flex justify-content-center gap-3 pt-5">
-                          <button type="button" class="btn-cancel-premium px-5" data-bs-dismiss="modal">Annuler</button>
-                          <button type="button" class="btn-save-premium px-5" onclick="validerVentilation()">
-                                <i class="bx bx-check-circle me-1"></i> Valider
-                          </button>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      </div>
+       @include('accounting.partials.modal_ventilation_analytique')
 
        <!-- Modal Creation Poste Trésorerie -->
       <div class="modal fade" id="modalCreatePoste" tabindex="-1" aria-hidden="true">
@@ -1589,7 +1529,7 @@
 <script>
 // --- VARIABLES GLOBALES ANALYTIQUES ---
 let ventilations_temporaires = [];
-let sections_analytiques_cache = null;
+let sections_analytiques_cache = window.sections_analytiques_cache;
 
 // Helper function for text truncation
 const compasTextShortcut = (txt) => (txt && txt.length > 30) ? txt.substring(0, 27) + '...' : (txt || '');
@@ -3972,199 +3912,15 @@ async function ajouterEcriture() {
                 return;
             }
 
-            // Charger les sections si elles ne le sont pas déjà
-            if (!sections_analytiques_cache) {
-                try {
-                    const response = await fetch('/analytique/sections/api/list');
-                    sections_analytiques_cache = await response.json();
-                } catch (error) {
-                    console.error('Erreur chargement sections:', error);
-                    Swal.fire('Erreur', 'Impossible de charger les sections analytiques.', 'error');
-                    return;
-                }
-            }
-
             document.getElementById('montant_a_ventiler_display').innerText = montant.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
             initialiserTableauVentilation(montant);
-            const modal = new bootstrap.Modal(document.getElementById('modalVentilationAnalytique'));
-            modal.show();
-        };
-
-        function initialiserTableauVentilation(montantTotal) {
-            const tbody = document.querySelector('#tableVentilation tbody');
-            tbody.innerHTML = '';
             
-            if (ventilations_temporaires.length > 0) {
-                ventilations_temporaires.forEach((v, index) => {
-                    ajouterLigneVentilation(v.section_id, v.pourcentage, v.montant, index);
-                });
-            } else {
-                ajouterLigneVentilation();
-            }
-            calculerTotauxVentilation();
-        }
-
-        window.ajouterLigneVentilation = function(sectionId = '', pourcentage = '', montant = '', index = null) {
-            const tbody = document.querySelector('#tableVentilation tbody');
-            const tr = document.createElement('tr');
-            
-            tr.innerHTML = `
-                <td style="padding: 0.75rem 0.25rem;">
-                    <select class="form-select section-select select2-analytique" style="font-size: 0.85rem; border-radius: 12px; padding: 0.5rem;" required>
-                        <option value="">Chargement...</option>
-                    </select>
-                </td>
-                <td style="padding: 0.75rem 0.25rem;">
-                    <div class="input-group input-group-sm">
-                        <input type="number" class="form-control pct-input" step="0.01" min="0" max="100" value="${pourcentage}" oninput="recalculerLigneDepuisPourcentage(this)" style="font-size: 0.85rem; border-radius: 10px 0 0 10px;">
-                        <span class="input-group-text" style="font-size: 0.8rem; padding: 0.3rem 0.5rem;">%</span>
-                    </div>
-                </td>
-                <td style="padding: 0.75rem 0.25rem;">
-                    <div class="input-group input-group-sm">
-                        <input type="number" class="form-control amt-input" step="0.01" min="0" value="${montant}" oninput="recalculerLigneDepuisMontant(this)" style="font-size: 0.85rem; border-radius: 10px 0 0 10px;">
-                        <span class="input-group-text" style="font-size: 0.75rem; padding: 0.3rem 0.5rem;">FCFA</span>
-                    </div>
-                </td>
-                <td style="padding: 0.75rem 0.25rem;">
-                    <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); calculerTotauxVentilation();">
-                        <i class="bx bx-trash fs-4"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-            
-            const select = tr.querySelector('.section-select');
-            fetchSections(select, sectionId);
-        };
-
-        window.recalculerLigneDepuisPourcentage = function(input) {
-            const tr = input.closest('tr');
-            const pct = parseFloat(input.value) || 0;
-            const total = parseFloat(document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '').replace(',', '.')) || 0;
-            const amtInput = tr.querySelector('.amt-input');
-            amtInput.value = ((pct * total) / 100).toFixed(2);
-            calculerTotauxVentilation();
-        };
-
-        window.recalculerLigneDepuisMontant = function(input) {
-            const tr = input.closest('tr');
-            const amt = parseFloat(input.value) || 0;
-            const total = parseFloat(document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '').replace(',', '.')) || 0;
-            const pctInput = tr.querySelector('.pct-input');
-            if (total > 0) {
-                pctInput.value = ((amt / total) * 100).toFixed(2);
-            }
-            calculerTotauxVentilation();
-        };
-
-        window.calculerTotauxVentilation = function() {
-            let totalPct = 0;
-            let totalAmt = 0;
-            document.querySelectorAll('.pct-input').forEach(input => totalPct += parseFloat(input.value) || 0);
-            document.querySelectorAll('.amt-input').forEach(input => totalAmt += parseFloat(input.value) || 0);
-            
-            document.getElementById('total_pourcentage').innerText = totalPct.toFixed(2) + ' %';
-            document.getElementById('total_montant_ventile').innerText = totalAmt.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
-            
-            const totalPctEl = document.getElementById('total_pourcentage');
-            if (Math.abs(totalPct - 100) < 0.01) {
-                totalPctEl.classList.remove('text-danger');
-                totalPctEl.classList.add('text-success');
-            } else {
-                totalPctEl.classList.remove('text-success');
-                totalPctEl.classList.add('text-danger');
+            const modalEl = document.getElementById('modalVentilationAnalytique');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
             }
         };
-
-        window.validerVentilation = function() {
-            let totalPct = 0;
-            document.querySelectorAll('.pct-input').forEach(input => totalPct += parseFloat(input.value) || 0);
-
-            if (Math.abs(totalPct - 100) > 0.01) {
-                const diff = (100 - totalPct).toFixed(2);
-                let msg = `Le total doit être égal à 100%. Actuellement : <b>${totalPct.toFixed(2)}%</b>. `;
-                if (diff > 0) {
-                    msg += `<br>Il manque encore <b>${diff}%</b>.`;
-                } else {
-                    msg += `<br>Vous avez un surplus de <b>${Math.abs(diff)}%</b>.`;
-                }
-                Swal.fire({
-                    title: 'Équilibre requis',
-                    html: msg,
-                    icon: 'warning',
-                    confirmButtonColor: '#2563eb'
-                });
-                return;
-            }
-
-            const ventilations = [];
-            let isValid = true;
-            document.querySelectorAll('#tableVentilation tbody tr').forEach(tr => {
-                const sectionId = tr.querySelector('.section-select').value;
-                const pct = tr.querySelector('.pct-input').value;
-                const amt = tr.querySelector('.amt-input').value;
-                
-                if (!sectionId) {
-                    isValid = false;
-                    return;
-                }
-                ventilations.push({ section_id: sectionId, pourcentage: pct, montant: amt });
-            });
-
-            if (!isValid) {
-                Swal.fire('Erreur', 'Veuillez sélectionner une section pour chaque ligne.', 'error');
-                return;
-            }
-
-            ventilations_temporaires = ventilations;
-            bootstrap.Modal.getInstance(document.getElementById('modalVentilationAnalytique')).hide();
-            Swal.fire({
-                icon: 'success',
-                title: 'Ventilation enregistrée',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000
-            });
-        };
-
-        function fetchSections(selectElement, selectedId = '') {
-            if (!sections_analytiques_cache) {
-                selectElement.innerHTML = '<option value="">Erreur : sections non chargées</option>';
-                return;
-            }
-
-            let html = '<option value="">Sélectionner une section...</option>';
-            sections_analytiques_cache.forEach(axe => {
-                axe.sections.forEach(section => {
-                    const selected = section.id == selectedId ? 'selected' : '';
-                    html += `<option value="${section.id}" ${selected}>${section.code} - ${section.libelle} (${axe.libelle})</option>`;
-                });
-            });
-            selectElement.innerHTML = html;
-
-            // Petit délai pour assurer que le DOM est prêt
-            setTimeout(() => {
-                if ($(selectElement).data('select2')) {
-                    $(selectElement).select2('destroy');
-                }
-
-                $(selectElement).select2({
-                    width: '100%',
-                    placeholder: 'Sélectionner une section...',
-                    dropdownAutoWidth: true,
-                    closeOnSelect: true,
-                    language: {
-                        noResults: function() { return "Aucune section trouvée"; }
-                    }
-                });
-
-                if (selectedId) {
-                    $(selectElement).val(selectedId).trigger('change');
-                }
-            }, 100);
-        }
 
         // --- RÈGLES AUTOMATIQUES ---
         $('#compte_general').on('change', function() {
