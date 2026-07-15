@@ -437,9 +437,7 @@
                                                  <select id="plan_comptable_id_1" name="plan_comptable_id_1" class="select2-enable w-100 input-field-premium" required>
                                                      <option value="">-- Sélectionnez un compte --</option>
                                                      @foreach ($PlanComptable as $plan)
-                                                         <option value="{{ $plan->id }}">
-                                                             {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
-                                                         </option>
+                                                         <option value="{{ $plan->id }}">{{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}</option>
                                                      @endforeach
                                                  </select>
                                                  <div class="invalid-feedback">Veuillez sélectionner un compte.</div>
@@ -449,9 +447,7 @@
                                                  <select id="plan_comptable_id_2" name="plan_comptable_id_2" class="select2-enable w-100 input-field-premium" required>
                                                      <option value="">-- Sélectionnez un compte --</option>
                                                      @foreach ($PlanComptable as $plan)
-                                                         <option value="{{ $plan->id }}">
-                                                             {{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}
-                                                        </option>
+                                                         <option value="{{ $plan->id }}">{{ $plan->numero_de_compte }} - {{ trim($plan->intitule) }}</option>
                                                      @endforeach
                                                  </select>
                                                  <div class="invalid-feedback" id="compte2-error">Veuillez sélectionner un compte.</div>

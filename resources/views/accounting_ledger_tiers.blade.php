@@ -413,9 +413,7 @@
                                                 <select id="plan_tiers_id_1" name="plan_tiers_id_1" class="select2-enable w-100 input-field-premium" required>
                                                     <option value="">-- Sélectionnez un tiers --</option>
                                                     @foreach ($PlanTiers as $plan)
-                                                        <option value="{{ $plan->id }}">
-                                                            {{ $plan->numero_de_tiers }} - {{ trim($plan->intitule) }}
-                                                        </option>
+                                                        <option value="{{ $plan->id }}">{{ $plan->numero_de_tiers }} - {{ trim($plan->intitule) }}</option>
                                                     @endforeach
                                                 </select>
                                                 <div class="invalid-feedback">Veuillez sélectionner un tiers.</div>
@@ -425,9 +423,7 @@
                                                 <select id="plan_tiers_id_2" name="plan_tiers_id_2" class="select2-enable w-100 input-field-premium" required>
                                                     <option value="">-- Sélectionnez un tiers --</option>
                                                     @foreach ($PlanTiers as $plan)
-                                                        <option value="{{ $plan->id }}">
-                                                            {{ $plan->numero_de_tiers }} - {{ trim($plan->intitule) }}
-                                                        </option>
+                                                        <option value="{{ $plan->id }}">{{ $plan->numero_de_tiers }} - {{ trim($plan->intitule) }}</option>
                                                     @endforeach
                                                 </select>
                                                 <div class="invalid-feedback" id="compte2-error">Veuillez sélectionner un tiers.</div>
