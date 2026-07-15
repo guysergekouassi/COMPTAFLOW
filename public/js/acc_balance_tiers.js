@@ -1,28 +1,24 @@
 document.addEventListener("DOMContentLoaded", function () {
-    function customSelect2Matcher(params, data) {
-        if ($.trim(params.term) === '') {
-            return data;
-        }
-        if (typeof data.text === 'undefined') {
-            return null;
-        }
-        var term = $.trim(params.term).toLowerCase();
-        var parts = data.text.split(" - ");
-        var numberPart = parts[0] ? parts[0].trim().toLowerCase() : "";
-        var namePart = parts.slice(1).join(" - ").trim().toLowerCase();
-
-        var isNumericSearch = /^\d/.test(term);
-
-        if (isNumericSearch) {
-            if (numberPart.startsWith(term)) {
-                return data;
+    // === MATCHER SELECT2 GLOBAL ===
+    // Appliqué globalement pour toutes les instances Select2 de cette page
+    if (window.jQuery && $.fn.select2) {
+        $.fn.select2.defaults.set('matcher', function(params, data) {
+            if ($.trim(params.term) === '') return data;
+            if (typeof data.text === 'undefined') return null;
+            var term = $.trim(params.term).toLowerCase();
+            var text  = data.text.trim();
+            // Extrait le numéro : tout ce qui précède le premier " - "
+            var dashIdx = text.indexOf(' - ');
+            var numberPart = (dashIdx !== -1 ? text.substring(0, dashIdx) : text).trim().toLowerCase();
+            var namePart   = (dashIdx !== -1 ? text.substring(dashIdx + 3) : '').trim().toLowerCase();
+            if (/^\d/.test(term)) {
+                // Recherche numérique → commence par le terme
+                return numberPart.startsWith(term) ? data : null;
+            } else {
+                // Recherche texte → contient dans le libellé ou le numéro
+                return (namePart.includes(term) || numberPart.includes(term)) ? data : null;
             }
-        } else {
-            if (namePart.includes(term) || numberPart.includes(term)) {
-                return data;
-            }
-        }
-        return null;
+        });
     }
 
     const modal = document.getElementById("modalCenterCreate");
@@ -32,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (modal) {
         $(modal).on('shown.bs.modal', function () {
             if (window.jQuery && $.fn.select2) {
-                $('.select2-enable').each(function() {
+                $(modal).find('.select2-enable').each(function() {
                     if ($(this).data('select2')) {
                         $(this).select2('destroy');
                     }
@@ -40,8 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         theme: 'bootstrap4',
                         width: '100%',
                         language: 'fr',
-                        dropdownParent: $(modal),
-                        matcher: customSelect2Matcher
+                        dropdownParent: $(modal)
                     });
                 });
             }
@@ -49,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         $(modal).on('hide.bs.modal', function () {
             if (window.jQuery && $.fn.select2) {
-                $('.select2-enable').each(function() {
+                $(modal).find('.select2-enable').each(function() {
                     if ($(this).data('select2')) {
                         $(this).select2('close');
                     }
