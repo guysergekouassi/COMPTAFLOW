@@ -1,10 +1,37 @@
 document.addEventListener("DOMContentLoaded", function () {
+    function customSelect2Matcher(params, data) {
+        if ($.trim(params.term) === '') {
+            return data;
+        }
+        if (typeof data.text === 'undefined') {
+            return null;
+        }
+        var term = $.trim(params.term).toLowerCase();
+        var parts = data.text.split(" - ");
+        var numberPart = parts[0] ? parts[0].trim().toLowerCase() : "";
+        var namePart = parts.slice(1).join(" - ").trim().toLowerCase();
+
+        var isNumericSearch = /^\d/.test(term);
+
+        if (isNumericSearch) {
+            if (numberPart.startsWith(term)) {
+                return data;
+            }
+        } else {
+            if (namePart.includes(term) || numberPart.includes(term)) {
+                return data;
+            }
+        }
+        return null;
+    }
+
     if (window.jQuery && $.fn.select2) {
         $('.select2-enable').select2({
             theme: 'bootstrap4',
             width: '100%',
             language: 'fr',
-            dropdownParent: $('#modalCenterCreate')
+            dropdownParent: $('#modalCenterCreate'),
+            matcher: customSelect2Matcher
         });
     }
 
