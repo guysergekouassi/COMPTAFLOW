@@ -305,21 +305,16 @@ class GrandLivrePdfService
         // ── Écritures ─────────────────────────────────────────────────────
         $byEntry = $ops->groupBy('n_saisie');
         foreach ($byEntry as $nSaisie => $lines) {
-            $eD = 0.0;
-            $eC = 0.0;
             foreach ($lines as $e) {
                 $d   = (float)($e->debit  ?? 0);
                 $c   = (float)($e->credit ?? 0);
                 $sol += $d - $c;
-                $eD  += $d; $eC  += $c;
                 $aD  += $d; $aC  += $c;
                 $this->runD += $d;
                 $this->runC += $c;
                 $this->need(self::RH);
                 $this->renderEntry($e, $displayMode, $sol);
             }
-            $this->need(self::RH);
-            $this->renderSubtotal($nSaisie, $eD, $eC, $sol);
         }
 
         // ── Total compte ──────────────────────────────────────────────────

@@ -150,14 +150,6 @@ class GrandLivrePaginationService
                     ], $runningDebit, $runningCredit);
                 }
 
-                // Sous-total saisie
-                $this->addRow($pages, $currentPage, $lineCount, [
-                    'type'    => 'entry_subtotal',
-                    'n_saisie' => $nSaisie,
-                    'debit'   => $entryDebit,
-                    'credit'  => $entryCredit,
-                    'solde'   => $currentSolde,
-                ], $runningDebit, $runningCredit);
             }
 
             // ── Total compte ─────────────────────────────────────────────────

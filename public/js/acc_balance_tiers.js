@@ -25,19 +25,38 @@ document.addEventListener("DOMContentLoaded", function () {
         return null;
     }
 
-    if (window.jQuery && $.fn.select2) {
-        $('.select2-enable').select2({
-            theme: 'bootstrap4',
-            width: '100%',
-            language: 'fr',
-            dropdownParent: $('#modalCenterCreate'),
-            matcher: customSelect2Matcher
-        });
-    }
-
     const modal = document.getElementById("modalCenterCreate");
     const btnSave = document.getElementById("btnSaveModal");
     const btnClose = document.getElementById("btnCloseModal");
+
+    if (modal) {
+        $(modal).on('shown.bs.modal', function () {
+            if (window.jQuery && $.fn.select2) {
+                $('.select2-enable').each(function() {
+                    if ($(this).data('select2')) {
+                        $(this).select2('destroy');
+                    }
+                    $(this).select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        language: 'fr',
+                        dropdownParent: $(modal),
+                        matcher: customSelect2Matcher
+                    });
+                });
+            }
+        });
+
+        $(modal).on('hide.bs.modal', function () {
+            if (window.jQuery && $.fn.select2) {
+                $('.select2-enable').each(function() {
+                    if ($(this).data('select2')) {
+                        $(this).select2('close');
+                    }
+                });
+            }
+        });
+    }
     const selectAllTiersCheck = document.getElementById("selectAllTiers");
     const tiersSelects = [
         document.getElementById("plan_tiers_id_1"),

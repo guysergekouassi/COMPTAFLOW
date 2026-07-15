@@ -48,13 +48,32 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // === INITIALISATION ===
-    if (window.jQuery && $.fn.select2) {
-        $('.select2-enable').select2({
-            theme: 'bootstrap4',
-            width: '100%',
-            language: 'fr',
-            dropdownParent: $('#modalCenterCreate'),
-            matcher: customSelect2Matcher
+    if (modalCreate) {
+        $(modalCreate).on('shown.bs.modal', function () {
+            if (window.jQuery && $.fn.select2) {
+                $('.select2-enable').each(function() {
+                    if ($(this).data('select2')) {
+                        $(this).select2('destroy');
+                    }
+                    $(this).select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        language: 'fr',
+                        dropdownParent: $(modalCreate),
+                        matcher: customSelect2Matcher
+                    });
+                });
+            }
+        });
+
+        $(modalCreate).on('hide.bs.modal', function () {
+            if (window.jQuery && $.fn.select2) {
+                $('.select2-enable').each(function() {
+                    if ($(this).data('select2')) {
+                        $(this).select2('close');
+                    }
+                });
+            }
         });
     }
 
