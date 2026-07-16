@@ -36,6 +36,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 });
             }
+            if (window.jQuery && $.fn.selectpicker) {
+                $(modal).find('.selectpicker').selectpicker('refresh');
+            }
         });
 
         $(modal).on('hide.bs.modal', function () {

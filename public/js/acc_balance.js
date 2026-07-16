@@ -55,6 +55,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 });
             }
+            if (window.jQuery && $.fn.selectpicker) {
+                $(modalCreate).find('.selectpicker').selectpicker('refresh');
+            }
         });
 
         $(modalCreate).on('hide.bs.modal', function () {
