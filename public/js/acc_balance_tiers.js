@@ -267,12 +267,12 @@ if (btnPreview) {
                     let modal = new bootstrap.Modal(document.getElementById("modalPreviewPDF"));
                     modal.show();
                 } else {
-                    alert(data.error || "Erreur lors de la prévisualisation.");
+                    FlowToast.error(data.error || "Erreur lors de la prévisualisation.");
                 }
             })
             .catch(err => {
                 console.error("Erreur :", err);
-                alert("Impossible de générer la prévisualisation.");
+                FlowToast.error("Impossible de générer la prévisualisation.");
             });
     });
 }

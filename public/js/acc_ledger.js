@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const dateD = document.getElementById("date_debut")?.value;
                 const dateF = document.getElementById("date_fin")?.value;
                 if (!dateD || !dateF) {
-                    alert("Veuillez renseigner les dates de début et de fin.");
+                    FlowToast.warning("Veuillez renseigner les dates de début et de fin.");
                     return;
                 }
 
@@ -226,7 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // Vérifier si les comptes sont présents
                 if (!formData.get("plan_comptable_id_1") || !formData.get("plan_comptable_id_2")) {
-                    alert("Veuillez sélectionner une plage de comptes valide.");
+                    FlowToast.warning("Veuillez sélectionner une plage de comptes valide.");
                     return;
                 }
 
@@ -254,7 +254,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             if (frame) frame.src = data.url;
                             const modalEl = document.getElementById("modalPreviewPDF");
                             if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                        } else { alert(data.error || "Erreur lors de la prévisualisation."); }
+                        } else { FlowToast.error(data.error || "Erreur lors de la prévisualisation."); }
                     })
                     .catch(err => {
                         // Masquer le spinner
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         if (btnPreviewLabel) btnPreviewLabel.classList.remove("d-none");
                         if (btnPreview) btnPreview.disabled = false;
 
-                        console.error("Erreur :", err); alert("Impossible de générer la prévisualisation.");
+                        console.error("Erreur :", err); FlowToast.error("Impossible de générer la prévisualisation.");
                     });
             });
         }
