@@ -212,6 +212,27 @@
                             z-index: 2;
                             background: #f8fafc;
                         }
+
+                        /* ── Scrollbars formulaires / modales ── */
+                        .modal-content::-webkit-scrollbar,
+                        .modal-body::-webkit-scrollbar {
+                            width: 8px;
+                            height: 8px;
+                        }
+                        .modal-content::-webkit-scrollbar-track,
+                        .modal-body::-webkit-scrollbar-track {
+                            background: #f1f5f9;
+                            border-radius: 4px;
+                        }
+                        .modal-content::-webkit-scrollbar-thumb,
+                        .modal-body::-webkit-scrollbar-thumb {
+                            background: #cbd5e1;
+                            border-radius: 4px;
+                        }
+                        .modal-content::-webkit-scrollbar-thumb:hover,
+                        .modal-body::-webkit-scrollbar-thumb:hover {
+                            background: #94a3b8;
+                        }
                     </style>
 
                     <div class="container-fluid flex-grow-1 container-p-y">
