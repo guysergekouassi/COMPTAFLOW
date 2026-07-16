@@ -4,278 +4,424 @@
 @include('components.head')
 
 <style>
-    .text-gradient {
-        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .glass-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-    }
-    .table-row { transition: background-color 0.15s; }
-    .table-row:hover { background-color: #f8fafc; }
-    .input-field-premium {
-        transition: all 0.2s ease;
-        border: 1.5px solid #e2e8f0 !important;
-        background-color: #f8fafc !important;
-        border-radius: 10px !important;
-        padding: 0.6rem 1rem !important;
-        font-size: 0.82rem !important;
-        font-weight: 500 !important;
-        width: 100%;
-        color: #0f172a !important;
-    }
-    .input-field-premium:focus {
-        border-color: #1e40af !important;
-        background-color: #fff !important;
-        outline: none !important;
-    }
-    .input-label-premium {
-        font-size: 0.68rem !important;
-        font-weight: 800 !important;
-        color: #64748b !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.06em !important;
-        margin-bottom: 0.3rem !important;
-        display: block !important;
-    }
-    .btn-primary-action {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 1.4rem !important;
-        border-radius: 10px !important;
-        font-weight: 700 !important;
-        font-size: 0.78rem !important;
-        border: none !important;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .btn-blue { background-color: #1e40af !important; color: white !important; }
-    .btn-blue:hover { background-color: #1e3a8a !important; transform: translateY(-1px); }
-    .btn-ghost { background-color: #f1f5f9 !important; color: #475569 !important; }
-    .btn-ghost:hover { background-color: #e2e8f0 !important; }
-    .section-header-row { background: linear-gradient(90deg, #eff6ff 0%, #f0f9ff 100%); border-left: 3px solid #1e40af; }
-    .section-total-row { background-color: #f8fafc; }
-    .grand-total-row { background-color: #1e293b; }
-    .badge-dl {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 12px;
-        border-radius: 8px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-    }
+    .text-gradient { background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .glass-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
+    /* Modal */
+    .anl-modal .modal-content { border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.12); }
+    .anl-modal .modal-header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); border-radius: 20px 20px 0 0; padding: 1.2rem 1.5rem; }
+    .anl-modal .modal-title { color: #fff; font-weight: 800; font-size: 0.95rem; }
+    .anl-modal .modal-body { padding: 1.5rem; }
+    .anl-modal .modal-footer { background: #f8fafc; border-radius: 0 0 20px 20px; border-top: 1px solid #e2e8f0; padding: 1rem 1.5rem; }
+    /* Fields */
+    .field-label { font-size: 0.68rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; display: block; }
+    .field-input { width: 100%; padding: 0.6rem 1rem; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #f8fafc; font-size: 0.82rem; font-weight: 500; color: #0f172a; transition: all 0.2s; }
+    .field-input:focus { border-color: #1e40af; background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(30,64,175,0.08); }
+    .toggle-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.8rem; background: #eff6ff; border-radius: 10px; border: 1.5px solid #bfdbfe; cursor: pointer; user-select: none; }
+    .toggle-row input[type=checkbox] { accent-color: #1e40af; width: 16px; height: 16px; cursor: pointer; }
+    .toggle-row span { font-size: 0.78rem; font-weight: 700; color: #1e40af; }
+    /* Btns */
+    .btn-gen { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border: none; border-radius: 12px; padding: 0.7rem 1.6rem; font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px -3px rgba(30,64,175,0.3); }
+    .btn-gen:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -3px rgba(30,64,175,0.35); }
+    .btn-cancel { background: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 0.7rem 1.4rem; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+    .btn-cancel:hover { background: #e2e8f0; }
+    .btn-open { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border: none; border-radius: 14px; padding: 0.7rem 1.6rem; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 15px -3px rgba(30,64,175,0.3); }
+    .btn-open:hover { transform: translateY(-2px); }
+    /* Table */
+    .table-premium { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .table-premium thead th { padding: 1rem 1.5rem; background: #f8fafc; font-size: 0.68rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+    .table-premium tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+    .table-premium tbody tr:hover { background: #f8fafc; }
+    .table-premium tbody td { padding: 0.9rem 1.5rem; vertical-align: middle; color: #334155; }
+    /* Badges */
+    .badge-format { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; }
+    .badge-pdf   { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
     .badge-excel { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
-    .badge-excel:hover { background: #16a34a; color: white; }
-    .badge-pdf { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
-    .badge-pdf:hover { background: #dc2626; color: white; }
-    .exercice-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-        color: #1e40af;
-        padding: 6px 14px;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 700;
-    }
+    .badge-all   { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    /* Dl btns */
+    .btn-dl { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-decoration: none; border: none; }
+    .btn-dl-pdf   { background: #fee2e2; color: #dc2626; } .btn-dl-pdf:hover   { background: #dc2626; color: #fff; }
+    .btn-dl-excel { background: #dcfce7; color: #16a34a; } .btn-dl-excel:hover { background: #16a34a; color: #fff; }
+    .btn-dl-del   { background: #f1f5f9; color: #64748b; } .btn-dl-del:hover   { background: #ef4444; color: #fff; }
+    /* Scrollable */
+    .scrollable-table-wrap { overflow-x: auto; overflow-y: auto; max-height: 65vh; }
+    .scrollable-table-wrap::-webkit-scrollbar { width: 7px; height: 7px; }
+    .scrollable-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    .scrollable-table-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .scrollable-table-wrap::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    /* Exercice badge */
+    .exercice-badge { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 6px 14px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+    /* Alerts */
+    .alert-success-prem { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 14px; padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 0.7rem; font-weight: 600; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    .alert-error-prem   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 14px; padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 0.7rem; font-weight: 600; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    /* Empty */
+    .empty-state { padding: 3.5rem 2rem; text-align: center; }
+    .empty-state i { font-size: 2.5rem; color: #e2e8f0; margin-bottom: 1rem; display: block; }
+    .empty-state p { color: #94a3b8; font-weight: 600; font-size: 0.9rem; margin: 0; }
 </style>
 
 <body>
-    <div class="layout-wrapper layout-content-navbar">
-        <div class="layout-container">
-            @include('components.sidebar')
-            <div class="layout-page">
-                @include('components.header', ['page_title' => 'Balance <span class="text-gradient">Analytique</span>'])
+<div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+        @include('components.sidebar')
+        <div class="layout-page">
+            @include('components.header', ['page_title' => 'Balance <span class="text-gradient">Analytique</span>'])
 
-                <div class="content-wrapper">
-                    <div class="container-xxl flex-grow-1 container-p-y">
+            <div class="content-wrapper">
+                <div class="container-xxl flex-grow-1 container-p-y">
 
-                        {{-- Exercice badge --}}
-                        <div class="flex items-center gap-3 mb-5">
+                    {{-- Exercice badge + Btn open --}}
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
                             <span class="exercice-badge">
                                 <i class="fas fa-calendar-check"></i>
                                 Exercice : {{ $exerciceActif?->intitule ?? 'Non défini' }}
                             </span>
-                            <span class="text-xs text-slate-400 font-medium">
-                                @if($exerciceActif)
+                            @if($exerciceActif)
+                                <span class="text-xs text-slate-400 font-medium">
                                     {{ \Carbon\Carbon::parse($exerciceActif->date_debut)->format('d/m/Y') }}
                                     → {{ \Carbon\Carbon::parse($exerciceActif->date_fin)->format('d/m/Y') }}
-                                @endif
+                                </span>
+                            @endif
+                        </div>
+                        <button type="button" class="btn-open" data-bs-toggle="modal" data-bs-target="#modalGenerateBal">
+                            <i class="fas fa-balance-scale"></i>
+                            Générer la Balance Analytique
+                        </button>
+                    </div>
+
+                    {{-- Flash --}}
+                    @if(session('success'))
+                        <div class="alert-success-prem">
+                            <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                            {{ session('success') }}
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div class="alert-error-prem">
+                            <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    {{-- History Table --}}
+                    <div class="glass-card overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h5 class="text-slate-800 font-black mb-0 text-base">Rapports Générés</h5>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                                    Balance Analytique — Historique
+                                </p>
+                            </div>
+                            <span class="bg-blue-50 text-blue-700 text-xs font-black px-3 py-1 rounded-full border border-blue-100">
+                                {{ $rapports->count() }} rapport(s)
                             </span>
                         </div>
 
-                        {{-- Filter Card --}}
-                        <div class="glass-card p-6 mb-6">
-                            <form action="{{ route('analytique.balance') }}" method="GET">
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                    <div>
-                                        <label class="input-label-premium">Axe Analytique</label>
-                                        <select name="axe_id" class="input-field-premium">
-                                            @foreach($axes as $axe)
-                                                <option value="{{ $axe->id }}" {{ $selectedAxeId == $axe->id ? 'selected' : '' }}>
-                                                    {{ $axe->libelle }} ({{ $axe->code }})
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label-premium">Date Début</label>
-                                        <input type="date" name="date_debut" class="input-field-premium" value="{{ $data['date_debut'] ?? '' }}">
-                                    </div>
-                                    <div>
-                                        <label class="input-label-premium">Date Fin</label>
-                                        <input type="date" name="date_fin" class="input-field-premium" value="{{ $data['date_fin'] ?? '' }}">
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <a href="{{ route('analytique.balance') }}" class="btn-primary-action btn-ghost flex-1 justify-center">
-                                            <i class="fas fa-times"></i> Effacer
-                                        </a>
-                                        <button type="submit" class="btn-primary-action btn-blue flex-1 justify-center">
-                                            <i class="fas fa-search"></i> Afficher
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-
-                        {{-- Table Card --}}
-                        <div class="glass-card overflow-hidden">
-                            {{-- Table Header --}}
-                            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <div>
-                                    <h5 class="text-slate-800 font-black mb-0 text-base">Balance Analytique</h5>
-                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                                        Axe : {{ $axes->where('id', $selectedAxeId)->first()?->libelle ?? '—' }}
-                                        @if(!empty($data['date_debut']))
-                                            &nbsp;|&nbsp; Du {{ \Carbon\Carbon::parse($data['date_debut'])->format('d/m/Y') }}
-                                        @endif
-                                        @if(!empty($data['date_fin']))
-                                            au {{ \Carbon\Carbon::parse($data['date_fin'])->format('d/m/Y') }}
-                                        @endif
-                                    </p>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <a href="{{ route('analytique.balance.excel', request()->all()) }}" class="badge-dl badge-excel">
-                                        <i class="fas fa-file-excel"></i> Excel
-                                    </a>
-                                    <a href="{{ route('analytique.balance.pdf', request()->all()) }}" class="badge-dl badge-pdf">
-                                        <i class="fas fa-file-pdf"></i> PDF
-                                    </a>
-                                </div>
-                            </div>
-
-                            {{-- Table --}}
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse" style="font-size: 0.82rem;">
-                                    <thead>
-                                        <tr class="bg-slate-50 border-b-2 border-slate-200">
-                                            <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32">Code</th>
-                                            <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Intitulé Section / Compte</th>
-                                            <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right w-40">Débit</th>
-                                            <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right w-40">Crédit</th>
-                                            <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right w-40">Solde</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php
-                                            $grandTotalDebit = 0;
-                                            $grandTotalCredit = 0;
-                                        @endphp
-                                        @forelse ($results as $section)
-                                            @php
-                                                $grandTotalDebit  += $section->total_debit;
-                                                $grandTotalCredit += $section->total_credit;
-                                                $soldeSec = $section->total_debit - $section->total_credit;
-                                            @endphp
-
-                                            {{-- Section Header --}}
-                                            <tr class="section-header-row border-t border-blue-100">
-                                                <td class="px-5 py-2.5 font-black text-blue-800 text-xs uppercase tracking-wider" colspan="5">
-                                                    <i class="fas fa-folder text-blue-400 mr-2"></i>
-                                                    {{ $section->section_code }} — {{ $section->section_libelle }}
-                                                </td>
-                                            </tr>
-
-                                            {{-- Account Lines --}}
-                                            @foreach ($section->lignes as $ligne)
-                                                @php $solde = $ligne->total_debit - $ligne->total_credit; @endphp
-                                                <tr class="table-row border-b border-slate-50">
-                                                    <td class="px-5 py-2 pl-10">
-                                                        <span class="font-mono text-blue-700 text-xs font-bold">{{ $ligne->numero_de_compte }}</span>
-                                                    </td>
-                                                    <td class="px-5 py-2 text-slate-700">{{ $ligne->compte_libelle }}</td>
-                                                    <td class="px-5 py-2 text-right text-slate-700 font-medium">
-                                                        {{ $ligne->total_debit > 0 ? number_format($ligne->total_debit, 2, ',', ' ') : '—' }}
-                                                    </td>
-                                                    <td class="px-5 py-2 text-right text-slate-700 font-medium">
-                                                        {{ $ligne->total_credit > 0 ? number_format($ligne->total_credit, 2, ',', ' ') : '—' }}
-                                                    </td>
-                                                    <td class="px-5 py-2 text-right font-bold {{ $solde >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                                        {{ number_format(abs($solde), 2, ',', ' ') }}
-                                                        <span class="text-[9px] ml-0.5">{{ $solde >= 0 ? 'D' : 'C' }}</span>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-
-                                            {{-- Section Total --}}
-                                            <tr class="section-total-row border-t border-slate-200">
-                                                <td class="px-5 py-2 pl-10 text-xs font-black text-slate-600 uppercase" colspan="2">
-                                                    Total {{ $section->section_libelle }}
-                                                </td>
-                                                <td class="px-5 py-2 text-right font-black text-slate-800">{{ number_format($section->total_debit, 2, ',', ' ') }}</td>
-                                                <td class="px-5 py-2 text-right font-black text-slate-800">{{ number_format($section->total_credit, 2, ',', ' ') }}</td>
-                                                <td class="px-5 py-2 text-right font-black {{ $soldeSec >= 0 ? 'text-green-700' : 'text-red-700' }}">
-                                                    {{ number_format(abs($soldeSec), 2, ',', ' ') }}
-                                                    <span class="text-[9px] ml-0.5">{{ $soldeSec >= 0 ? 'D' : 'C' }}</span>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="5" class="px-8 py-14 text-center">
-                                                    <i class="fas fa-folder-open text-4xl text-slate-200 block mb-3"></i>
-                                                    <p class="text-slate-400 font-bold text-sm">Aucune donnée trouvée pour cet axe sur la période sélectionnée.</p>
-                                                    <p class="text-slate-300 text-xs mt-1">Vérifiez que des écritures ont été ventilées sur cet axe.</p>
-                                                </td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                    @if($results->count() > 0)
-                                    <tfoot>
-                                        <tr class="grand-total-row">
-                                            <td colspan="2" class="px-5 py-4 text-xs font-black text-white uppercase tracking-widest">
-                                                <i class="fas fa-sigma mr-2 text-blue-300"></i>Totaux Généraux de la Balance
+                        <div class="scrollable-table-wrap">
+                            <table class="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th>Date de génération</th>
+                                        <th>Axe Analytique</th>
+                                        <th>Section Analytique</th>
+                                        <th>Période</th>
+                                        <th>Format</th>
+                                        <th>Généré par</th>
+                                        <th class="text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($rapports as $rapport)
+                                        <tr>
+                                            <td class="font-medium text-slate-700 whitespace-nowrap">
+                                                {{ $rapport->created_at->format('d/m/Y H:i') }}
                                             </td>
-                                            <td class="px-5 py-4 text-right font-black text-white">{{ number_format($grandTotalDebit, 2, ',', ' ') }}</td>
-                                            <td class="px-5 py-4 text-right font-black text-white">{{ number_format($grandTotalCredit, 2, ',', ' ') }}</td>
-                                            @php $grandSolde = $grandTotalDebit - $grandTotalCredit; @endphp
-                                            <td class="px-5 py-4 text-right font-black text-white">
-                                                {{ number_format(abs($grandSolde), 2, ',', ' ') }}
-                                                <span class="text-[9px] ml-0.5 text-blue-200">{{ $grandSolde >= 0 ? 'D' : 'C' }}</span>
+                                            <td>
+                                                <span class="font-bold text-blue-700">{{ $rapport->axe_libelle ?? '—' }}</span>
+                                            </td>
+                                            <td>
+                                                @if($rapport->toutes_sections)
+                                                    <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">Toutes les sections</span>
+                                                @else
+                                                    <span class="text-slate-600 font-medium text-xs">{{ $rapport->section_libelle ?? '—' }}</span>
+                                                @endif
+                                            </td>
+                                            <td class="whitespace-nowrap text-slate-600 font-medium">
+                                                @if($rapport->toute_periode)
+                                                    <span class="badge-format badge-all"><i class="fas fa-infinity me-1"></i>Toute la période</span>
+                                                @else
+                                                    {{ $rapport->date_debut?->format('d/m/Y') }} → {{ $rapport->date_fin?->format('d/m/Y') }}
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($rapport->format === 'pdf')
+                                                    <span class="badge-format badge-pdf"><i class="fas fa-file-pdf"></i> PDF</span>
+                                                @else
+                                                    <span class="badge-format badge-excel"><i class="fas fa-file-excel"></i> Excel</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-slate-500 text-xs">
+                                                {{ $rapport->user?->name ?? '—' }}
+                                            </td>
+                                            <td class="text-right">
+                                                <div class="flex items-center justify-end gap-2">
+                                                    @if($rapport->fichier)
+                                                        <a href="{{ asset('rapports_analytiques/' . $rapport->fichier) }}"
+                                                           target="_blank"
+                                                           class="btn-dl {{ $rapport->format === 'pdf' ? 'btn-dl-pdf' : 'btn-dl-excel' }}">
+                                                            <i class="fas {{ $rapport->format === 'pdf' ? 'fa-file-pdf' : 'fa-file-excel' }}"></i>
+                                                            Télécharger
+                                                        </a>
+                                                    @endif
+                                                    <form action="{{ route('analytique.balance.destroy', $rapport->id) }}" method="POST"
+                                                          onsubmit="return confirm('Supprimer ce rapport ?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn-dl btn-dl-del">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
-                                    </tfoot>
-                                    @endif
-                                </table>
-                            </div>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7">
+                                                <div class="empty-state">
+                                                    <i class="fas fa-balance-scale"></i>
+                                                    <p>Aucun rapport généré pour l'instant.</p>
+                                                    <p class="text-slate-300 text-xs mt-1">Cliquez sur "Générer la Balance Analytique" pour créer votre premier rapport.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
-
                     </div>
+
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    @include('components.footer')
+{{-- ══════════════════════ MODAL Balance ══════════════════════ --}}
+<div class="modal fade anl-modal" id="modalGenerateBal" tabindex="-1" aria-labelledby="modalBalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div style="background:rgba(255,255,255,0.15); border-radius:10px; padding:8px 10px;">
+                        <i class="fas fa-balance-scale text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title" id="modalBalLabel">Générer la Balance Analytique</h5>
+                        <p class="text-[10px] text-blue-200 font-semibold mt-0.5 mb-0">Configurez les paramètres du rapport</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form action="{{ route('analytique.balance.generate') }}" method="POST" id="formGenerateBal">
+                @csrf
+                <div class="modal-body">
+
+                    {{-- Row 1: Axe + Format --}}
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="field-label mb-0">Axe Analytique *</label>
+                                <label class="toggle-row">
+                                    <input type="checkbox" name="tous_axes" id="bal_tous_axes" value="1"
+                                           onchange="toggleBalAxes(this.checked)">
+                                    <span>✓ Tous les axes</span>
+                                </label>
+                            </div>
+                            <select name="axe_id" id="bal_axe_id" class="field-input" required onchange="loadSectionsForBal(this.value)">
+                                <option value="">— Choisir un axe —</option>
+                                @foreach($axes as $axe)
+                                    <option value="{{ $axe->id }}">{{ $axe->libelle }} ({{ $axe->code }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">Format *</label>
+                            <select name="format" class="field-input" required>
+                                <option value="pdf">📄 PDF</option>
+                                <option value="excel">📊 Excel (.xlsx)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Row 2: Section Analytique --}}
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="field-label mb-0">Section Analytique *</label>
+                            <label class="toggle-row" id="toggleAllBalSections">
+                                <input type="checkbox" name="toutes_sections" id="bal_toutes_sections" value="1"
+                                       onchange="toggleBalSections(this.checked)">
+                                <span>✓ Toutes les sections</span>
+                            </label>
+                        </div>
+                        <select name="section_id" id="bal_section_id" class="field-input" required>
+                            <option value="">— Sélectionner une section —</option>
+                        </select>
+                    </div>
+
+                    {{-- Row 3: Période --}}
+                    <div class="mb-2">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="field-label mb-0">Période</label>
+                            <label class="toggle-row">
+                                <input type="checkbox" name="toute_periode" id="bal_toute_periode" value="1"
+                                       onchange="toggleBalPeriod(this.checked)">
+                                <span>✓ Toute la période de l'exercice</span>
+                            </label>
+                        </div>
+                        <div id="bal_dates_range" class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="field-label">Date Début</label>
+                                <input type="date" name="date_debut" id="bal_date_debut" class="field-input"
+                                       value="{{ $exerciceActif ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('Y-m-d') : '' }}">
+                            </div>
+                            <div>
+                                <label class="field-label">Date Fin</label>
+                                <input type="date" name="date_fin" id="bal_date_fin" class="field-input"
+                                       value="{{ $exerciceActif ? \Carbon\Carbon::parse($exerciceActif->date_fin)->format('Y-m-d') : '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer flex gap-3">
+                    <button type="button" class="btn-cancel flex-1" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-cancel flex-1 flex items-center justify-center gap-2" id="btnBalPreview" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe;">
+                        <span class="spinner-border spinner-border-sm d-none" id="spinnerPreview" role="status"></span>
+                        <i class="fas fa-eye" id="iconPreview"></i> Prévisualiser
+                    </button>
+                    <button type="submit" class="btn-gen flex-1">
+                        <i class="fas fa-cogs me-2"></i> Générer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ── Modale de Prévisualisation PDF ── --}}
+<div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content overflow-hidden" style="border-radius: 0;">
+            <div class="modal-header border-b border-slate-200 px-6 py-4" style="background:#1e293b;">
+                <h5 class="modal-title font-extrabold text-xl text-white">Prévisualisation de la Balance Analytique</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body p-0" style="background: #525659;">
+                <iframe id="pdfPreviewFrame" style="width:100%; height: calc(100vh - 70px);" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+@include('components.footer')
+
+<script>
+    // ── Axes toggle ───────────────────────────────────────────────────
+    function toggleBalAxes(checked) {
+        const axeSelect = document.getElementById('bal_axe_id');
+        axeSelect.disabled = checked;
+        axeSelect.required = !checked;
+        if (checked) {
+            axeSelect.value = '';
+            document.getElementById('bal_toutes_sections').checked = true;
+            toggleBalSections(true);
+            document.getElementById('toggleAllBalSections').style.opacity = '0.4';
+            document.getElementById('toggleAllBalSections').style.pointerEvents = 'none';
+        } else {
+            document.getElementById('toggleAllBalSections').style.opacity = '1';
+            document.getElementById('toggleAllBalSections').style.pointerEvents = 'auto';
+        }
+    }
+    // ── Sections toggle ───────────────────────────────────────────────
+    function toggleBalSections(checked) {
+        const select = document.getElementById('bal_section_id');
+        select.disabled = checked;
+        select.required = !checked;
+        if (checked) select.value = '';
+    }
+    // ── Period toggle ─────────────────────────────────────────────────
+    function toggleBalPeriod(checked) {
+        const range = document.getElementById('bal_dates_range');
+        range.style.opacity      = checked ? '0.4' : '1';
+        range.style.pointerEvents = checked ? 'none' : 'auto';
+        document.getElementById('bal_date_debut').required = !checked;
+        document.getElementById('bal_date_fin').required   = !checked;
+    }
+    // ── Load sections by axe ─────────────────────────────────────────
+    function loadSectionsForBal(axeId) {
+        if (!axeId) {
+            document.getElementById('bal_section_id').innerHTML = '<option value="">— Sélectionner une section —</option>';
+            return;
+        }
+        fetch(`/analytique/axes/${axeId}/sections`)
+            .then(r => r.json())
+            .then(data => {
+                const placeholder = '<option value="">— Sélectionner une section —</option>';
+                const options = data.map(s => `<option value="${s.id}">${s.code} - ${s.libelle}</option>`).join('');
+                document.getElementById('bal_section_id').innerHTML = placeholder + options;
+            })
+            .catch(() => {});
+    }
+    // ── Preview action ───────────────────────────────────────────────
+    document.getElementById('btnBalPreview').addEventListener('click', function() {
+        const form = document.getElementById('formGenerateBal');
+        if (!form.checkValidity() && !document.getElementById('bal_tous_axes').checked) {
+            form.reportValidity();
+            return;
+        }
+
+        const spin = document.getElementById('spinnerPreview');
+        const icon = document.getElementById('iconPreview');
+        spin.classList.remove('d-none');
+        icon.classList.add('d-none');
+        this.disabled = true;
+
+        const formData = new FormData(form);
+
+        fetch("{{ route('analytique.balance.preview') }}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            spin.classList.add('d-none');
+            icon.classList.remove('d-none');
+            this.disabled = false;
+
+            if (data.success) {
+                document.getElementById('pdfPreviewFrame').src = data.url;
+                const previewModal = new bootstrap.Modal(document.getElementById('modalPreviewPDF'));
+                previewModal.show();
+            } else {
+                alert('Erreur: ' + (data.error || 'Impossible de charger la prévisualisation.'));
+            }
+        })
+        .catch(err => {
+            spin.classList.add('d-none');
+            icon.classList.remove('d-none');
+            this.disabled = false;
+            alert('Une erreur réseau est survenue.');
+        });
+    });
+    // ── Dismiss alerts ───────────────────────────────────────────────
+    document.querySelectorAll('.alert-success-prem, .alert-error-prem').forEach(el => {
+        setTimeout(() => { el.style.opacity='0'; setTimeout(() => el.remove(), 400); }, 5000);
+        el.style.transition = 'opacity 0.4s';
+    });
+</script>
 </body>
 </html>

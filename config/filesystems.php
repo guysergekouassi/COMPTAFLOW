@@ -71,6 +71,12 @@ return [
             'visibility' => 'public',
         ],
 
+        'rapports_analytiques' => [
+            'driver' => 'local',
+            'root' => public_path('rapports_analytiques'),
+            'visibility' => 'public',
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

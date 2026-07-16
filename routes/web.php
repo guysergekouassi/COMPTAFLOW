@@ -660,17 +660,20 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
         Route::get('/regles/check/{accountId}', [VentilationController::class, 'getRules'])->name('regles.check');
         Route::get('/regles/get/{accountId}', [VentilationController::class, 'getRules'])->name('regles.get');
         Route::get('/balance', [AnalyticalReportController::class, 'balance'])->name('balance');
-        Route::get('/balance/excel', [AnalyticalReportController::class, 'exportBalanceExcel'])->name('balance.excel');
-        Route::get('/balance/pdf', [AnalyticalReportController::class, 'exportBalancePdf'])->name('balance.pdf');
-        
+        Route::post('/balance/generate', [AnalyticalReportController::class, 'generateBalance'])->name('balance.generate');
+        Route::post('/balance/preview', [AnalyticalReportController::class, 'previewBalance'])->name('balance.preview');
+        Route::delete('/balance/{id}', [AnalyticalReportController::class, 'destroyBalance'])->name('balance.destroy');
+
         Route::get('/grand-livre', [AnalyticalReportController::class, 'grandLivre'])->name('grand_livre');
-        Route::get('/grand-livre/excel', [AnalyticalReportController::class, 'exportGrandLivreExcel'])->name('grand_livre.excel');
-        Route::get('/grand-livre/pdf', [AnalyticalReportController::class, 'exportGrandLivrePdf'])->name('grand_livre.pdf');
-        
+        Route::post('/grand-livre/generate', [AnalyticalReportController::class, 'generateGrandLivre'])->name('grand_livre.generate');
+        Route::post('/grand-livre/preview', [AnalyticalReportController::class, 'previewGrandLivre'])->name('grand_livre.preview');
+        Route::delete('/grand-livre/{id}', [AnalyticalReportController::class, 'destroyGrandLivre'])->name('grand_livre.destroy');
+
         Route::get('/resultat', [AnalyticalReportController::class, 'resultat'])->name('resultat');
         Route::get('/resultat/excel', [AnalyticalReportController::class, 'exportResultatExcel'])->name('resultat.excel');
         Route::get('/resultat/pdf', [AnalyticalReportController::class, 'exportResultatPdf'])->name('resultat.pdf');
     });
+
 
     // ***************** ROUTES LIASSE FISCALE *****************
     Route::group(['prefix' => 'reporting/liasse', 'as' => 'reporting.liasse.'], function () {

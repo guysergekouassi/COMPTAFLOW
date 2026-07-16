@@ -13,312 +13,467 @@
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 16px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
     }
-    .table-row { transition: background-color 0.15s; }
-    .table-row:hover { background-color: #f8fafc; }
-    .input-field-premium {
-        transition: all 0.2s ease;
-        border: 1.5px solid #e2e8f0 !important;
-        background-color: #f8fafc !important;
-        border-radius: 10px !important;
-        padding: 0.6rem 1rem !important;
-        font-size: 0.82rem !important;
-        font-weight: 500 !important;
-        width: 100%;
-        color: #0f172a !important;
+    /* ── Modal Premium ── */
+    .anl-modal .modal-content {
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.12);
     }
-    .input-field-premium:focus {
-        border-color: #1e40af !important;
-        background-color: #fff !important;
-        outline: none !important;
+    .anl-modal .modal-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+        border-radius: 20px 20px 0 0;
+        padding: 1.2rem 1.5rem;
     }
-    .input-label-premium {
-        font-size: 0.68rem !important;
-        font-weight: 800 !important;
-        color: #64748b !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.06em !important;
-        margin-bottom: 0.3rem !important;
-        display: block !important;
-    }
-    .btn-primary-action {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 1.4rem !important;
-        border-radius: 10px !important;
-        font-weight: 700 !important;
-        font-size: 0.78rem !important;
-        border: none !important;
-        cursor: pointer;
+    .anl-modal .modal-title { color: #fff; font-weight: 800; font-size: 0.95rem; letter-spacing: 0.02em; }
+    .anl-modal .modal-body { padding: 1.5rem; }
+    .anl-modal .modal-footer { background: #f8fafc; border-radius: 0 0 20px 20px; border-top: 1px solid #e2e8f0; padding: 1rem 1.5rem; }
+    /* Fields */
+    .field-label { font-size: 0.68rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; display: block; }
+    .field-input {
+        width: 100%; padding: 0.6rem 1rem; border-radius: 10px;
+        border: 1.5px solid #e2e8f0; background: #f8fafc;
+        font-size: 0.82rem; font-weight: 500; color: #0f172a;
         transition: all 0.2s;
     }
-    .btn-blue { background-color: #1e40af !important; color: white !important; }
-    .btn-blue:hover { background-color: #1e3a8a !important; transform: translateY(-1px); }
-    .btn-ghost { background-color: #f1f5f9 !important; color: #475569 !important; }
-    .btn-ghost:hover { background-color: #e2e8f0 !important; }
-    .section-header-row { background: linear-gradient(90deg, #eff6ff 0%, #f0f9ff 100%); border-left: 3px solid #1e40af; }
-    .grand-total-row { background-color: #1e293b; }
-    .badge-dl {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 12px;
-        border-radius: 8px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-    }
+    .field-input:focus { border-color: #1e40af; background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(30,64,175,0.08); }
+    /* Checkbox toggle row */
+    .toggle-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.8rem; background: #eff6ff; border-radius: 10px; border: 1.5px solid #bfdbfe; cursor: pointer; user-select: none; }
+    .toggle-row input[type=checkbox] { accent-color: #1e40af; width: 16px; height: 16px; cursor: pointer; }
+    .toggle-row span { font-size: 0.78rem; font-weight: 700; color: #1e40af; }
+    /* Btn */
+    .btn-gen { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border: none; border-radius: 12px; padding: 0.7rem 1.6rem; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.04em; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px -3px rgba(30,64,175,0.3); }
+    .btn-gen:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -3px rgba(30,64,175,0.35); }
+    .btn-cancel { background: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 0.7rem 1.4rem; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+    .btn-cancel:hover { background: #e2e8f0; }
+    /* Table */
+    .table-premium { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .table-premium thead th { padding: 1rem 1.5rem; background: #f8fafc; font-size: 0.68rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+    .table-premium thead th:first-child { border-radius: 0; }
+    .table-premium tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+    .table-premium tbody tr:hover { background: #f8fafc; }
+    .table-premium tbody td { padding: 0.9rem 1.5rem; vertical-align: middle; color: #334155; }
+    /* Badges */
+    .badge-format { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; }
+    .badge-pdf  { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
     .badge-excel { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
-    .badge-excel:hover { background: #16a34a; color: white; }
-    .badge-pdf { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
-    .badge-pdf:hover { background: #dc2626; color: white; }
-    .exercice-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-        color: #1e40af;
-        padding: 6px 14px;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 700;
-    }
-    .sens-d { background: #fee2e2; color: #dc2626; padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 800; }
-    .sens-c { background: #dcfce7; color: #16a34a; padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 800; }
+    .badge-all { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    /* Action btns */
+    .btn-dl  { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-decoration: none; border: none; }
+    .btn-dl-pdf   { background: #fee2e2; color: #dc2626; } .btn-dl-pdf:hover   { background: #dc2626; color: #fff; }
+    .btn-dl-excel { background: #dcfce7; color: #16a34a; } .btn-dl-excel:hover { background: #16a34a; color: #fff; }
+    .btn-dl-del   { background: #f1f5f9; color: #64748b; } .btn-dl-del:hover   { background: #ef4444; color: #fff; }
+    /* Scrollable table */
+    .scrollable-table-wrap { overflow-x: auto; overflow-y: auto; max-height: 65vh; }
+    .scrollable-table-wrap::-webkit-scrollbar { width: 7px; height: 7px; }
+    .scrollable-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    .scrollable-table-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .scrollable-table-wrap::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .table-premium thead th { position: sticky; top: 0; z-index: 2; }
+    /* Exercice badge */
+    .exercice-badge { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 6px 14px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+    /* Open btn */
+    .btn-open { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border: none; border-radius: 14px; padding: 0.7rem 1.6rem; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 15px -3px rgba(30,64,175,0.3); }
+    .btn-open:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -3px rgba(30,64,175,0.35); }
+    /* Alerts */
+    .alert-success-prem { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 14px; padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 0.7rem; font-weight: 600; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    .alert-error-prem   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 14px; padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 0.7rem; font-weight: 600; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    /* Empty */
+    .empty-state { padding: 3.5rem 2rem; text-align: center; }
+    .empty-state i { font-size: 2.5rem; color: #e2e8f0; margin-bottom: 1rem; display: block; }
+    .empty-state p { color: #94a3b8; font-weight: 600; font-size: 0.9rem; margin: 0; }
+    /* Sections pills */
+    .sections-range { display: inline-flex; align-items: center; gap: 5px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 2px 10px; font-size: 0.72rem; font-weight: 700; color: #1e40af; }
 </style>
 
 <body>
-    <div class="layout-wrapper layout-content-navbar">
-        <div class="layout-container">
-            @include('components.sidebar')
-            <div class="layout-page">
-                @include('components.header', ['page_title' => 'Grand Livre <span class="text-gradient">Analytique</span>'])
+<div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+        @include('components.sidebar')
+        <div class="layout-page">
+            @include('components.header', ['page_title' => 'Grand Livre <span class="text-gradient">Analytique</span>'])
 
-                <div class="content-wrapper">
-                    <div class="container-xxl flex-grow-1 container-p-y">
+            <div class="content-wrapper">
+                <div class="container-xxl flex-grow-1 container-p-y">
 
-                        {{-- Exercice badge --}}
-                        <div class="flex items-center gap-3 mb-5">
+                    {{-- Exercice badge --}}
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
                             <span class="exercice-badge">
                                 <i class="fas fa-calendar-check"></i>
                                 Exercice : {{ $exerciceActif?->intitule ?? 'Non défini' }}
                             </span>
-                            <span class="text-xs text-slate-400 font-medium">
-                                @if($exerciceActif)
+                            @if($exerciceActif)
+                                <span class="text-xs text-slate-400 font-medium">
                                     {{ \Carbon\Carbon::parse($exerciceActif->date_debut)->format('d/m/Y') }}
                                     → {{ \Carbon\Carbon::parse($exerciceActif->date_fin)->format('d/m/Y') }}
-                                @endif
+                                </span>
+                            @endif
+                        </div>
+                        <button type="button" class="btn-open" data-bs-toggle="modal" data-bs-target="#modalGenerateGL">
+                            <i class="fas fa-file-export"></i>
+                            Générer le Grand Livre Analytique
+                        </button>
+                    </div>
+
+                    {{-- Flash messages --}}
+                    @if(session('success'))
+                        <div class="alert-success-prem">
+                            <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                            {{ session('success') }}
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div class="alert-error-prem">
+                            <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    {{-- History Table --}}
+                    <div class="glass-card overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h5 class="text-slate-800 font-black mb-0 text-base">Rapports Générés</h5>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                                    Grand Livre Analytique — Historique
+                                </p>
+                            </div>
+                            <span class="bg-blue-50 text-blue-700 text-xs font-black px-3 py-1 rounded-full border border-blue-100">
+                                {{ $rapports->count() }} rapport(s)
                             </span>
                         </div>
 
-                        {{-- Filter Card --}}
-                        <div class="glass-card p-6 mb-6">
-                            <form id="filterForm" action="{{ route('analytique.grand_livre') }}" method="GET">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                                    <div>
-                                        <label class="input-label-premium">Axe Analytique</label>
-                                        <select name="axe_id" class="input-field-premium" onchange="updateSections(this.value)">
-                                            @foreach($axes as $axe)
-                                                <option value="{{ $axe->id }}" {{ $selectedAxeId == $axe->id ? 'selected' : '' }}>
-                                                    {{ $axe->libelle }} ({{ $axe->code }})
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label-premium">Section Analytique</label>
-                                        <select name="section_id" id="sectionSelect" class="input-field-premium">
-                                            <option value="all" {{ ($selectedSectionId === 'all' || !$selectedSectionId) ? 'selected' : '' }}>
-                                                — Toutes les sections —
-                                            </option>
-                                            @foreach($sections as $section)
-                                                <option value="{{ $section->id }}" {{ $selectedSectionId == $section->id ? 'selected' : '' }}>
-                                                    {{ $section->code }} - {{ $section->libelle }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label-premium">Date Début</label>
-                                        <input type="date" name="date_debut" class="input-field-premium" value="{{ $data['date_debut'] ?? '' }}">
-                                    </div>
-                                    <div>
-                                        <label class="input-label-premium">Date Fin</label>
-                                        <input type="date" name="date_fin" class="input-field-premium" value="{{ $data['date_fin'] ?? '' }}">
-                                    </div>
-                                </div>
-                                <div class="flex justify-end gap-3">
-                                    <a href="{{ route('analytique.grand_livre') }}" class="btn-primary-action btn-ghost">
-                                        <i class="fas fa-undo"></i> Réinitialiser
-                                    </a>
-                                    <button type="submit" class="btn-primary-action btn-blue">
-                                        <i class="fas fa-search"></i> Afficher
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        {{-- Results Card --}}
-                        <div class="glass-card overflow-hidden">
-                            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <div>
-                                    <h5 class="text-slate-800 font-black mb-0 text-base">Mouvements Analytiques</h5>
-                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                                        Axe : {{ $axes->where('id', $selectedAxeId)->first()?->libelle ?? '—' }}
-                                        @if($selectedSectionId && $selectedSectionId !== 'all')
-                                            &nbsp;|&nbsp; Section :
-                                            {{ $sections->where('id', $selectedSectionId)->first()?->libelle ?? $selectedSectionId }}
-                                        @else
-                                            &nbsp;|&nbsp; Toutes les sections
-                                        @endif
-                                    </p>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <a href="{{ route('analytique.grand_livre.excel', request()->all()) }}" class="badge-dl badge-excel">
-                                        <i class="fas fa-file-excel"></i> Excel
-                                    </a>
-                                    <a href="{{ route('analytique.grand_livre.pdf', request()->all()) }}" class="badge-dl badge-pdf">
-                                        <i class="fas fa-file-pdf"></i> PDF
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse" style="font-size: 0.82rem;">
-                                    <thead>
-                                        <tr class="bg-slate-50 border-b-2 border-slate-200">
-                                            <th class="px-4 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24">Date</th>
-                                            <th class="px-4 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-28">N° Saisie</th>
-                                            <th class="px-4 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32">Compte</th>
-                                            <th class="px-4 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Libellé de l'opération</th>
-                                            <th class="px-4 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-16">Vent.%</th>
-                                            <th class="px-4 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right w-36">Montant Débit</th>
-                                            <th class="px-4 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right w-36">Montant Crédit</th>
-                                            <th class="px-4 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right w-36">Solde Progressif</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php
-                                            $totalDebit = 0;
-                                            $totalCredit = 0;
-                                            $currentSection = null;
-                                            $sectionDebit = 0;
-                                            $sectionCredit = 0;
-                                            $runningBalance = 0;
-                                        @endphp
-
-                                        @forelse ($results as $item)
-                                            @php
-                                                $montantDebit = $item->sens == 'D' ? $item->montant : 0;
-                                                $montantCredit = $item->sens == 'C' ? $item->montant : 0;
-                                                $totalDebit += $montantDebit;
-                                                $totalCredit += $montantCredit;
-                                                $runningBalance += ($montantDebit - $montantCredit);
-
-                                                // Section separator when showing all sections
-                                                $sectionChanged = ($selectedSectionId === 'all') && ($currentSection !== ($item->section_code ?? null));
-                                                if ($sectionChanged) {
-                                                    $currentSection = $item->section_code ?? null;
-                                                }
-                                            @endphp
-
-                                            @if($sectionChanged)
-                                                <tr class="section-header-row border-t border-blue-100">
-                                                    <td class="px-4 py-2.5 font-black text-blue-800 text-xs uppercase tracking-wider" colspan="8">
-                                                        <i class="fas fa-folder text-blue-400 mr-2"></i>
-                                                        {{ $item->section_code ?? '' }} — {{ $item->section_libelle ?? '' }}
-                                                    </td>
-                                                </tr>
-                                            @endif
-
-                                            <tr class="table-row border-b border-slate-50">
-                                                <td class="px-4 py-2.5 text-slate-600 whitespace-nowrap font-medium">
-                                                    {{ \Carbon\Carbon::parse($item->date)->format('d/m/Y') }}
-                                                </td>
-                                                <td class="px-4 py-2.5">
-                                                    <span class="font-bold text-slate-900 text-xs">{{ $item->n_saisie }}</span>
-                                                </td>
-                                                <td class="px-4 py-2.5">
-                                                    <div class="flex flex-col">
-                                                        <span class="font-black text-blue-700 text-xs">{{ $item->numero_de_compte }}</span>
-                                                        <span class="text-[10px] text-slate-500 truncate" style="max-width: 110px;" title="{{ $item->compte_libelle }}">{{ $item->compte_libelle }}</span>
-                                                    </div>
-                                                </td>
-                                                <td class="px-4 py-2.5 text-slate-700 font-medium">{{ $item->description_operation }}</td>
-                                                <td class="px-4 py-2.5 text-center">
-                                                    <span class="bg-blue-50 text-blue-700 rounded px-1.5 py-0.5 text-[10px] font-black">{{ number_format($item->pourcentage, 0) }}%</span>
-                                                </td>
-                                                <td class="px-4 py-2.5 text-right font-medium {{ $montantDebit > 0 ? 'text-slate-800' : 'text-slate-300' }}">
-                                                    {{ $montantDebit > 0 ? number_format($montantDebit, 2, ',', ' ') : '—' }}
-                                                </td>
-                                                <td class="px-4 py-2.5 text-right font-medium {{ $montantCredit > 0 ? 'text-slate-800' : 'text-slate-300' }}">
-                                                    {{ $montantCredit > 0 ? number_format($montantCredit, 2, ',', ' ') : '—' }}
-                                                </td>
-                                                <td class="px-4 py-2.5 text-right font-black {{ $runningBalance >= 0 ? 'text-slate-800' : 'text-red-600' }}">
-                                                    {{ number_format(abs($runningBalance), 2, ',', ' ') }}
-                                                    <span class="{{ $runningBalance >= 0 ? 'sens-d' : 'sens-c' }}">{{ $runningBalance >= 0 ? 'D' : 'C' }}</span>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="8" class="px-8 py-14 text-center">
-                                                    <i class="fas fa-search text-4xl text-slate-200 block mb-3"></i>
-                                                    <p class="text-slate-400 font-bold text-sm">Aucun mouvement trouvé.</p>
-                                                    <p class="text-slate-300 text-xs mt-1">Sélectionnez un axe et/ou une section pour afficher les mouvements.</p>
-                                                </td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                    @if($results->count() > 0)
-                                    <tfoot>
-                                        <tr class="grand-total-row">
-                                            <td colspan="4" class="px-4 py-4 text-xs font-black text-white uppercase tracking-widest">
-                                                <i class="fas fa-sigma mr-2 text-blue-300"></i>Totaux Période
+                        <div class="scrollable-table-wrap">
+                            <table class="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th>Date de génération</th>
+                                        <th>Axe Analytique</th>
+                                        <th>Sections</th>
+                                        <th>Période</th>
+                                        <th>Mouvements</th>
+                                        <th>Format</th>
+                                        <th class="text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($rapports as $rapport)
+                                        <tr>
+                                            <td class="font-medium text-slate-700 whitespace-nowrap">
+                                                {{ $rapport->created_at->format('d/m/Y H:i') }}
                                             </td>
-                                            <td class="px-4 py-4 text-center text-slate-400">—</td>
-                                            <td class="px-4 py-4 text-right font-black text-white">{{ number_format($totalDebit, 2, ',', ' ') }}</td>
-                                            <td class="px-4 py-4 text-right font-black text-white">{{ number_format($totalCredit, 2, ',', ' ') }}</td>
-                                            @php $soldeTotal = $totalDebit - $totalCredit; @endphp
-                                            <td class="px-4 py-4 text-right font-black text-white">
-                                                {{ number_format(abs($soldeTotal), 2, ',', ' ') }}
-                                                <span class="text-[9px] ml-0.5 text-blue-200">{{ $soldeTotal >= 0 ? 'D' : 'C' }}</span>
+                                            <td>
+                                                <span class="font-bold text-blue-700">{{ $rapport->axe_libelle ?? '—' }}</span>
+                                            </td>
+                                            <td>
+                                                @if($rapport->toutes_sections)
+                                                    <span class="sections-range"><i class="fas fa-layer-group me-1"></i>Toutes les sections</span>
+                                                @else
+                                                    <span class="sections-range">
+                                                        {{ $rapport->section_de_libelle ?? '—' }}
+                                                        <i class="fas fa-arrow-right text-blue-400 text-[9px]"></i>
+                                                        {{ $rapport->section_a_libelle ?? '—' }}
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="whitespace-nowrap text-slate-600 font-medium">
+                                                @if($rapport->toute_periode)
+                                                    <span class="badge-format badge-all"><i class="fas fa-infinity me-1"></i>Toute la période</span>
+                                                @else
+                                                    {{ $rapport->date_debut?->format('d/m/Y') }} → {{ $rapport->date_fin?->format('d/m/Y') }}
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <span class="font-black text-slate-800">{{ number_format($rapport->nb_mouvements) }}</span>
+                                            </td>
+                                            <td>
+                                                @if($rapport->format === 'pdf')
+                                                    <span class="badge-format badge-pdf"><i class="fas fa-file-pdf"></i> PDF</span>
+                                                @else
+                                                    <span class="badge-format badge-excel"><i class="fas fa-file-excel"></i> Excel</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-right">
+                                                <div class="flex items-center justify-end gap-2">
+                                                    @if($rapport->fichier)
+                                                        <a href="{{ asset('rapports_analytiques/' . $rapport->fichier) }}"
+                                                           target="_blank"
+                                                           class="btn-dl {{ $rapport->format === 'pdf' ? 'btn-dl-pdf' : 'btn-dl-excel' }}">
+                                                            <i class="fas {{ $rapport->format === 'pdf' ? 'fa-file-pdf' : 'fa-file-excel' }}"></i>
+                                                            Télécharger
+                                                        </a>
+                                                    @endif
+                                                    <form action="{{ route('analytique.grand_livre.destroy', $rapport->id) }}" method="POST"
+                                                          onsubmit="return confirm('Supprimer ce rapport ?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn-dl btn-dl-del">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
-                                    </tfoot>
-                                    @endif
-                                </table>
-                            </div>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7">
+                                                <div class="empty-state">
+                                                    <i class="fas fa-folder-open"></i>
+                                                    <p>Aucun rapport généré pour l'instant.</p>
+                                                    <p class="text-slate-300 text-xs mt-1">Cliquez sur "Générer le Grand Livre Analytique" pour créer votre premier rapport.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
-
                     </div>
+
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    @include('components.footer')
+{{-- ════════════════════════════════════════════════════════════════════
+     MODAL — Générer Grand Livre Analytique
+══════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade anl-modal" id="modalGenerateGL" tabindex="-1" aria-labelledby="modalGLLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div style="background:rgba(255,255,255,0.15); border-radius:10px; padding:8px 10px;">
+                        <i class="fas fa-book-open text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title" id="modalGLLabel">Générer le Grand Livre Analytique</h5>
+                        <p class="text-[10px] text-blue-200 font-semibold mt-0.5 mb-0">Configurez les paramètres du rapport</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
+            </div>
 
-    <script>
-        window.updateSections = function(axeId) {
-            fetch(`/analytique/axes/${axeId}/sections`)
-                .then(r => r.json())
-                .then(data => {
-                    const select = document.getElementById('sectionSelect');
-                    select.innerHTML = '<option value="all">— Toutes les sections —</option>';
-                    data.forEach(s => {
-                        const opt = document.createElement('option');
-                        opt.value = s.id;
-                        opt.textContent = `${s.code} - ${s.libelle}`;
-                        select.appendChild(opt);
-                    });
-                })
-                .catch(() => {});
-        };
-    </script>
+            <form action="{{ route('analytique.grand_livre.generate') }}" method="POST" id="formGenerateGL">
+                @csrf
+                <div class="modal-body">
+
+                    {{-- Row 1 : Axe + Format --}}
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="field-label mb-0">Axe Analytique *</label>
+                                <label class="toggle-row" id="toggleAllAxes">
+                                    <input type="checkbox" name="tous_axes" id="gl_tous_axes" value="1"
+                                           onchange="toggleGLAxes(this.checked)">
+                                    <span>✓ Tous les axes</span>
+                                </label>
+                            </div>
+                            <select name="axe_id" id="gl_axe_id" class="field-input" required onchange="loadSectionsForGL(this.value)">
+                                <option value="">— Choisir un axe —</option>
+                                @foreach($axes as $axe)
+                                    <option value="{{ $axe->id }}">{{ $axe->libelle }} ({{ $axe->code }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">Format *</label>
+                            <select name="format" class="field-input" required>
+                                <option value="pdf">📄 PDF</option>
+                                <option value="excel">📊 Excel (.xlsx)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Row 2 : Sections De → A + checkbox Toutes --}}
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="field-label mb-0">Sections Analytiques</label>
+                            <label class="toggle-row" id="toggleAllSections">
+                                <input type="checkbox" name="toutes_sections" id="gl_toutes_sections" value="1"
+                                       onchange="toggleGLSections(this.checked)">
+                                <span>✓ Toutes les sections</span>
+                            </label>
+                        </div>
+                        <div id="gl_sections_range" class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="field-label">De la section</label>
+                                <select name="section_de_id" id="gl_section_de" class="field-input">
+                                    <option value="">— Sélectionner —</option>
+                                    @foreach($sections as $sec)
+                                        <option value="{{ $sec->id }}">{{ $sec->code }} - {{ $sec->libelle }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">À la section</label>
+                                <select name="section_a_id" id="gl_section_a" class="field-input">
+                                    <option value="">— Sélectionner —</option>
+                                    @foreach($sections as $sec)
+                                        <option value="{{ $sec->id }}">{{ $sec->code }} - {{ $sec->libelle }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Row 3 : Dates + checkbox Toute la période --}}
+                    <div class="mb-2">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="field-label mb-0">Période</label>
+                            <label class="toggle-row" id="toggleAllPeriod">
+                                <input type="checkbox" name="toute_periode" id="gl_toute_periode" value="1"
+                                       onchange="toggleGLPeriod(this.checked)">
+                                <span>✓ Toute la période de l'exercice</span>
+                            </label>
+                        </div>
+                        <div id="gl_dates_range" class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="field-label">Date Début</label>
+                                <input type="date" name="date_debut" id="gl_date_debut" class="field-input"
+                                       value="{{ $exerciceActif ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('Y-m-d') : '' }}">
+                            </div>
+                            <div>
+                                <label class="field-label">Date Fin</label>
+                                <input type="date" name="date_fin" id="gl_date_fin" class="field-input"
+                                       value="{{ $exerciceActif ? \Carbon\Carbon::parse($exerciceActif->date_fin)->format('Y-m-d') : '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer flex gap-3">
+                    <button type="button" class="btn-cancel flex-1" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-cancel flex-1 flex items-center justify-center gap-2" id="btnGLPreview" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe;">
+                        <span class="spinner-border spinner-border-sm d-none" id="spinnerPreview" role="status"></span>
+                        <i class="fas fa-eye" id="iconPreview"></i> Prévisualiser
+                    </button>
+                    <button type="submit" class="btn-gen flex-1">
+                        <i class="fas fa-cogs me-2"></i> Générer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ── Modale de Prévisualisation PDF ── --}}
+<div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content overflow-hidden" style="border-radius: 0;">
+            <div class="modal-header border-b border-slate-200 px-6 py-4" style="background:#1e293b;">
+                <h5 class="modal-title font-extrabold text-xl text-white">Prévisualisation du Grand Livre Analytique</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body p-0" style="background: #525659;">
+                <iframe id="pdfPreviewFrame" style="width:100%; height: calc(100vh - 70px);" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+@include('components.footer')
+
+<script>
+    // ── Axes toggle ───────────────────────────────────────────────────
+    function toggleGLAxes(checked) {
+        const axeSelect = document.getElementById('gl_axe_id');
+        axeSelect.disabled = checked;
+        axeSelect.required = !checked;
+        if (checked) {
+            axeSelect.value = '';
+            // Force toutes sections
+            document.getElementById('gl_toutes_sections').checked = true;
+            toggleGLSections(true);
+            // Empêche de décocher "Toutes sections"
+            document.getElementById('toggleAllSections').style.opacity = '0.4';
+            document.getElementById('toggleAllSections').style.pointerEvents = 'none';
+        } else {
+            document.getElementById('toggleAllSections').style.opacity = '1';
+            document.getElementById('toggleAllSections').style.pointerEvents = 'auto';
+        }
+    }
+    // ── Sections toggle ───────────────────────────────────────────────
+    function toggleGLSections(checked) {
+        const range = document.getElementById('gl_sections_range');
+        range.style.opacity     = checked ? '0.4' : '1';
+        range.style.pointerEvents = checked ? 'none' : 'auto';
+        document.getElementById('gl_section_de').required = !checked;
+        document.getElementById('gl_section_a').required  = !checked;
+    }
+    // ── Period toggle ─────────────────────────────────────────────────
+    function toggleGLPeriod(checked) {
+        const range = document.getElementById('gl_dates_range');
+        range.style.opacity     = checked ? '0.4' : '1';
+        range.style.pointerEvents = checked ? 'none' : 'auto';
+        document.getElementById('gl_date_debut').required = !checked;
+        document.getElementById('gl_date_fin').required   = !checked;
+    }
+    // ── Load sections by axe ─────────────────────────────────────────
+    function loadSectionsForGL(axeId) {
+        if (!axeId) return;
+        fetch(`/analytique/axes/${axeId}/sections`)
+            .then(r => r.json())
+            .then(data => {
+                const placeholder = '<option value="">— Sélectionner —</option>';
+                const options = data.map(s => `<option value="${s.id}">${s.code} - ${s.libelle}</option>`).join('');
+                document.getElementById('gl_section_de').innerHTML = placeholder + options;
+                document.getElementById('gl_section_a').innerHTML  = placeholder + options;
+            })
+            .catch(() => {});
+    }
+    // ── Preview action ───────────────────────────────────────────────
+    document.getElementById('btnGLPreview').addEventListener('click', function() {
+        const form = document.getElementById('formGenerateGL');
+        if (!form.checkValidity() && !document.getElementById('gl_tous_axes').checked) {
+            form.reportValidity();
+            return;
+        }
+
+        const spin = document.getElementById('spinnerPreview');
+        const icon = document.getElementById('iconPreview');
+        spin.classList.remove('d-none');
+        icon.classList.add('d-none');
+        this.disabled = true;
+
+        const formData = new FormData(form);
+
+        fetch("{{ route('analytique.grand_livre.preview') }}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            spin.classList.add('d-none');
+            icon.classList.remove('d-none');
+            this.disabled = false;
+
+            if (data.success) {
+                document.getElementById('pdfPreviewFrame').src = data.url;
+                const previewModal = new bootstrap.Modal(document.getElementById('modalPreviewPDF'));
+                previewModal.show();
+            } else {
+                alert('Erreur: ' + (data.error || 'Impossible de charger la prévisualisation.'));
+            }
+        })
+        .catch(err => {
+            spin.classList.add('d-none');
+            icon.classList.remove('d-none');
+            this.disabled = false;
+            alert('Une erreur réseau est survenue.');
+        });
+    });
+    // ── Dismiss alerts ───────────────────────────────────────────────
+    document.querySelectorAll('.alert-success-prem, .alert-error-prem').forEach(el => {
+        setTimeout(() => { el.style.opacity='0'; setTimeout(() => el.remove(), 400); }, 5000);
+        el.style.transition = 'opacity 0.4s';
+    });
+</script>
 </body>
 </html>
