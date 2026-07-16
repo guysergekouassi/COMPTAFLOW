@@ -389,10 +389,10 @@
 
     <!-- Modals moved to body end for better positioning -->
     <div class="modal fade" id="modalCenterCreate" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="margin: auto;">
-            <form method="POST" action="{{ route('accounting_ledger_tiers.generateGrandLivre') }}" id="grandLivreForm">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl" role="document">
+            <form method="POST" action="{{ route('accounting_ledger_tiers.generateGrandLivre') }}" id="grandLivreForm" class="w-100">
                 @csrf
-                <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem 2rem;">
+                <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem 2rem; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
                     <!-- Header -->
                     <div class="text-center mb-4 position-relative">
                         <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer" style="top: -0.5rem; right: -0.5rem;"></button>
@@ -524,7 +524,7 @@
                     </div>
 
                     <!-- Footer Actions -->
-                    <div class="flex gap-4 mt-4 pt-4 border-t border-slate-100">
+                    <div class="flex gap-4 mt-4 pt-3 border-t border-slate-100" style="flex-shrink: 0;">
                         <button type="button" class="btn-action flex-fill justify-center bg-slate-100 text-slate-600 hover:bg-slate-200" data-bs-dismiss="modal" id="btnCloseModal" >
                             <i class="fas fa-times mr-2"></i>Annuler
                         </button>

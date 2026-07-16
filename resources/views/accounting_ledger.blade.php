@@ -420,10 +420,10 @@
 
     <!-- Modals moved to body end for better positioning -->
     <div class="modal fade" id="modalCenterCreate" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-height: 90vh; margin: auto;">
-            <form method="POST" action="{{ route('accounting_ledger.generateGrandLivre') }}" id="grandLivreForm">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl" role="document">
+            <form method="POST" action="{{ route('accounting_ledger.generateGrandLivre') }}" id="grandLivreForm" class="w-100">
                 @csrf
-                <div class="modal-content premium-modal-content-wide" style="padding: 2rem; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-content premium-modal-content-wide" style="padding: 1.5rem 2rem; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
                     <!-- Header -->
                     <div class="text-center mb-5 position-relative">
                         <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Fermer" style="top: -0.5rem; right: -0.5rem;"></button>
@@ -436,7 +436,7 @@
                         <p class="text-muted mb-0" style="font-size: 0.9rem; color: #64748b;">Sélectionnez les paramètres pour générer votre rapport</p>
                     </div>
 
-                    <div class="modal-body" style="padding: 0;">
+                    <div class="modal-body" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem; margin-bottom: 0.5rem;">
                         <div class="row g-4">
                             <!-- Période Card -->
                             <div class="col-12">
@@ -555,7 +555,7 @@
                     </div>
 
                     <!-- Footer Actions -->
-                    <div class="d-flex gap-3 mt-4 pt-4" style="border-top: 1px solid #e2e8f0;">
+                    <div class="d-flex gap-3 mt-4 pt-3" style="border-top: 1px solid #e2e8f0; flex-shrink: 0;">
                         <button type="button" class="btn btn-cancel-premium flex-fill" data-bs-dismiss="modal" id="btnCloseModal" style="padding: 0.875rem 1.5rem; font-size: 0.875rem;">
                             <i class="bx bx-x me-2"></i>Annuler
                         </button>
