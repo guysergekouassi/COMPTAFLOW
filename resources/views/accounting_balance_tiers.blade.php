@@ -125,6 +125,34 @@
             transform: translateY(-2px);
         }
 
+        /* ── Scrollbars tableau ── */
+        .scrollable-table-wrap {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 65vh;
+            border-radius: 0 0 16px 16px;
+        }
+        .scrollable-table-wrap::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .scrollable-table-wrap::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .scrollable-table-wrap::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .scrollable-table-wrap::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .scrollable-table-wrap thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #f8fafc;
+        }
     </style>
 </head>
 
@@ -230,7 +258,7 @@
                                 <h3 class="text-lg font-bold text-slate-800">Balance (Tiers)</h3>
                                 <p class="text-sm text-slate-500">Balances par tiers et périodes générées</p>
                             </div>
-                            <div class="table-responsive">
+                            <div class="scrollable-table-wrap">
                                 <table class="table table-premium mb-0">
                                     <thead>
                                         <tr>
