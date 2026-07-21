@@ -198,12 +198,12 @@
                                             <td class="text-right">
                                                 <div class="flex items-center justify-end gap-2">
                                                     @if($rapport->fichier)
-                                                        <a href="{{ asset('rapports_analytiques/' . $rapport->fichier) }}"
-                                                           target="_blank"
-                                                           class="btn-dl {{ $rapport->format === 'pdf' ? 'btn-dl-pdf' : 'btn-dl-excel' }}">
+                                                        <button type="button"
+                                                            onclick="dlFile('{{ asset('rapports_analytiques/' . $rapport->fichier) }}', '{{ $rapport->fichier }}')"
+                                                            class="btn-dl {{ $rapport->format === 'pdf' ? 'btn-dl-pdf' : 'btn-dl-excel' }}">
                                                             <i class="fas {{ $rapport->format === 'pdf' ? 'fa-file-pdf' : 'fa-file-excel' }}"></i>
                                                             Télécharger
-                                                        </a>
+                                                        </button>
                                                     @endif
                                                     <form action="{{ route('analytique.grand_livre.destroy', $rapport->id) }}" method="POST"
                                                           onsubmit="return confirm('Supprimer ce rapport ?')">
@@ -360,16 +360,21 @@
     </div>
 </div>
 
-{{-- ── Modale de Prévisualisation PDF ── --}}
+{{-- ── Modale de Prévisualisation PDF (plein écran sans barre) ── --}}
 <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen" role="document">
-        <div class="modal-content overflow-hidden" style="border-radius: 0;">
-            <div class="modal-header border-b border-slate-200 px-6 py-4" style="background:#1e293b;">
-                <h5 class="modal-title font-extrabold text-xl text-white">Prévisualisation du Grand Livre Analytique</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
-            </div>
-            <div class="modal-body p-0" style="background: #525659;">
-                <iframe id="pdfPreviewFrame" style="width:100%; height: calc(100vh - 70px);" frameborder="0"></iframe>
+        <div class="modal-content" style="border-radius:0; position:relative;">
+            {{-- Bouton fermer flottant --}}
+            <button type="button" data-bs-dismiss="modal" aria-label="Fermer"
+                    style="position:fixed; top:14px; right:18px; z-index:9999;
+                           background:#ef4444; border:none; border-radius:50%;
+                           width:36px; height:36px; cursor:pointer; color:#fff;
+                           font-size:18px; line-height:1; display:flex; align-items:center; justify-content:center;
+                           box-shadow:0 4px 12px rgba(0,0,0,0.35);">
+                &times;
+            </button>
+            <div class="modal-body p-0" style="background:#525659; height:100vh;">
+                <iframe id="pdfPreviewFrame" style="width:100%; height:100%; border:none; display:block;" frameborder="0"></iframe>
             </div>
         </div>
     </div>
@@ -455,7 +460,7 @@
             this.disabled = false;
 
             if (data.success) {
-                document.getElementById('pdfPreviewFrame').src = data.url;
+                document.getElementById('pdfPreviewFrame').src = data.url + '#toolbar=0&navpanes=0&view=FitH';
                 const previewModal = new bootstrap.Modal(document.getElementById('modalPreviewPDF'));
                 previewModal.show();
             } else {
@@ -469,6 +474,20 @@
             alert('Une erreur réseau est survenue.');
         });
     });
+    // ── Direct download (sans quitter la page) ───────────────────────
+    function dlFile(url, filename) {
+        fetch(url)
+            .then(r => r.blob())
+            .then(blob => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            })
+            .catch(() => { window.open(url, '_blank'); });
+    }
     // ── Dismiss alerts ───────────────────────────────────────────────
     document.querySelectorAll('.alert-success-prem, .alert-error-prem').forEach(el => {
         setTimeout(() => { el.style.opacity='0'; setTimeout(() => el.remove(), 400); }, 5000);

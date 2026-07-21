@@ -2228,6 +2228,13 @@ async function ajouterEcriture() {
             return;
         }
 
+        // Sync local var with window (updated by ventilation modal)
+        ventilations_temporaires = window.ventilations_temporaires || ventilations_temporaires;
+        if (planAnalytique && planAnalytique.value === '1' && (!ventilations_temporaires || ventilations_temporaires.length === 0)) {
+            alert("Veuillez configurer la ventilation analytique pour cette ligne car vous avez sélectionné 'Analytique: Oui'. Cliquez sur le bouton 'Ventiler' à côté pour configurer.");
+            return;
+        }
+
         if (tvaAmount && parseFloat(tvaAmount.value) > 0) {
             if (!compteTva || !compteTva.value) {
                 alert('Veuillez sélectionner un compte de TVA.');

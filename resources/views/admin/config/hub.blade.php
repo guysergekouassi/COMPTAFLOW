@@ -115,52 +115,105 @@
                         <!-- Liaison SELFLOW -->
                         <div class="row mb-8">
                             <div class="col-12">
-                                <div class="card p-6 border-blue-200" style="border: 2px solid #1e40af; border-radius: 24px; background: #fbfdff; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);">
-                                    <div class="flex justify-between items-center flex-wrap gap-4" style="display:flex; justify-content:space-between; align-items:center;">
+                                <div class="card p-6" style="border: 2px solid #1e40af; border-radius: 24px; background: linear-gradient(135deg, #fbfdff 0%, #eff6ff 100%); box-shadow: 0 10px 25px -5px rgba(30,64,175,0.1);">
+
+                                    {{-- En-tête : Titre + Badge --}}
+                                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
                                         <div>
-                                            <h5 class="font-black mb-1 flex items-center gap-2 text-premium-blue" style="font-weight:800; color:#1e40af; margin-bottom:4px;">
+                                            <h5 style="font-weight:800; color:#1e40af; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
                                                 <i class="fa-solid fa-link"></i> Liaison SELFLOW (ERP Opérationnel)
                                             </h5>
-                                            <p class="text-sm text-slate-600 mb-0" style="font-size:13px; color:#475569; margin-bottom:0;">
+                                            <p style="font-size:13px; color:#475569; margin-bottom:0;">
                                                 Connectez COMPTAFLOW avec SELFLOW pour déverser automatiquement les écritures de ventes, achats et règlements.
                                             </p>
                                         </div>
-                                        <div>
-                                            @if($mainCompany->selflow_sync_status === 'active' || $mainCompany->selflow_company_id)
-                                                <span class="badge bg-green-100 text-green-800 px-4 py-2 rounded-full font-bold flex items-center gap-2" style="background:#dcfce7; color:#166534; padding:6px 16px; border-radius:30px; font-weight:700; font-size:12px;">
-                                                    <i class="fa-solid fa-circle-check"></i> Liaison active (ID Selflow: #{{ $mainCompany->selflow_company_id }})
-                                                </span>
+                                        <div style="text-align:right;">
+                                            @if($mainCompany->selflow_sync_status === 'active' && $mainCompany->selflow_company_id)
+                                                <div style="background:#dcfce7; color:#166534; padding:8px 18px; border-radius:30px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+                                                    <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i>
+                                                    <span>Liaison active</span>
+                                                    <span style="color:#94a3b8; font-size:10px; font-weight:500; margin-left:4px;">comptaflow → selflow</span>
+                                                </div>
+                                                <div style="font-size:10px; color:#94a3b8; margin-top:4px; text-align:right;">
+                                                    ID Selflow : #{{ $mainCompany->selflow_company_id }}
+                                                    @if($mainCompany->selflow_last_sync_at)
+                                                        &nbsp;·&nbsp; Dernière sync : {{ \Carbon\Carbon::parse($mainCompany->selflow_last_sync_at)->format('d/m/Y H:i') }}
+                                                    @endif
+                                                </div>
                                             @else
-                                                <span class="badge bg-amber-100 text-amber-800 px-4 py-2 rounded-full font-bold flex items-center gap-2" style="background:#fef3c7; color:#92400e; padding:6px 16px; border-radius:30px; font-weight:700; font-size:12px;">
+                                                <span style="background:#fef3c7; color:#92400e; padding:8px 18px; border-radius:30px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
                                                     <i class="fa-solid fa-circle-notch fa-spin"></i> Non connectée
                                                 </span>
                                             @endif
                                         </div>
                                     </div>
-                                    <hr class="my-4 text-slate-200" style="margin:16px 0; border:0; border-top:1px solid #e2e8f0;">
-                                    <div class="row g-4 items-center" style="display:flex; align-items:center; flex-wrap:wrap; gap:16px;">
+
+                                    {{-- Card infos entreprise Selflow liée (si liaison active) --}}
+                                    @if($mainCompany->selflow_sync_status === 'active' && $mainCompany->selflow_company_id && isset($selflowCompanyInfo) && $selflowCompanyInfo)
+                                    <div style="margin-top:16px; background:white; border:1px solid #bfdbfe; border-radius:16px; padding:16px;">
+                                        <p style="font-size:11px; font-weight:700; color:#3b82f6; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">
+                                            <i class="fa-solid fa-building"></i>&nbsp; Entreprise Selflow liée
+                                        </p>
+                                        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
+                                            <div>
+                                                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Nom</div>
+                                                <div style="font-weight:700; color:#1e293b; font-size:13px;">{{ $selflowCompanyInfo['nom'] ?? '—' }}</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">RCCM</div>
+                                                <div style="font-weight:600; color:#334155; font-size:13px;">{{ $selflowCompanyInfo['rccm'] ?? '—' }}</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">NCC</div>
+                                                <div style="font-weight:600; color:#334155; font-size:13px;">{{ $selflowCompanyInfo['ncc'] ?? '—' }}</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Administrateur</div>
+                                                <div style="font-weight:600; color:#334155; font-size:13px;">{{ $selflowCompanyInfo['admin_nom'] ?? '—' }}</div>
+                                                <div style="font-size:11px; color:#64748b;">{{ $selflowCompanyInfo['admin_email'] ?? '' }}</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Date de création</div>
+                                                <div style="font-weight:600; color:#334155; font-size:13px;">{{ $selflowCompanyInfo['created_at'] ?? '—' }}</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Téléphone</div>
+                                                <div style="font-weight:600; color:#334155; font-size:13px;">{{ $selflowCompanyInfo['telephone'] ?? '—' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @elseif($mainCompany->selflow_sync_status === 'active' && $mainCompany->selflow_company_id)
+                                    <div style="margin-top:12px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; padding:12px; font-size:12px; color:#64748b; display:flex; align-items:center; gap:8px;">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        Les informations détaillées de l'entreprise Selflow ne sont pas disponibles (serveur Selflow hors ligne ou inaccessible).
+                                    </div>
+                                    @endif
+
+                                    <hr style="margin:16px 0; border:0; border-top:1px solid #e2e8f0;">
+                                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:16px;">
                                         <div style="flex:1; min-width:300px;">
                                             @if(!$mainCompany->selflow_sync_key)
                                                 @php
                                                     $mainCompany->update(['selflow_sync_key' => \Illuminate\Support\Str::random(40)]);
                                                 @endphp
                                             @endif
-                                            <label class="form-label font-bold text-slate-700 mb-1" style="font-weight:700; color:#334155; display:block; margin-bottom:4px;">Clé de synchronisation COMPTAFLOW</label>
+                                            <label style="font-weight:700; color:#334155; display:block; margin-bottom:4px; font-size:13px;">Clé de synchronisation COMPTAFLOW</label>
                                             <div style="display:flex; gap:8px;">
-                                                <input type="text" id="selflow-sync-key" class="form-control font-monospace text-xs py-3 bg-white" readonly value="{{ $mainCompany->selflow_sync_key }}" style="font-family:monospace; font-size:12px; padding:10px; background:white; border:1px solid #cbd5e1; border-radius:8px; flex:1;">
-                                                <button class="btn btn-primary" type="button" onclick="copierCleSync()" style="background:#1e40af; border:0; color:white; padding:10px 16px; border-radius:8px; font-weight:700; cursor:pointer;">
-                                                    <i class="fa-regular fa-copy"></i> Copier la clé
+                                                <input type="text" id="selflow-sync-key" class="form-control" readonly value="{{ $mainCompany->selflow_sync_key }}" style="font-family:monospace; font-size:12px; padding:10px; background:white; border:1px solid #cbd5e1; border-radius:8px; flex:1;">
+                                                <button class="btn btn-primary" type="button" onclick="copierCleSync()" style="background:#1e40af; border:0; color:white; padding:10px 16px; border-radius:8px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                                                    <i class="fa-regular fa-copy"></i> Copier
                                                 </button>
                                             </div>
-                                            <small class="text-slate-400 mt-1 block" style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">
+                                            <small style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">
                                                 Copiez cette clé et collez-la dans les Paramètres de votre entreprise sur SELFLOW pour établir la liaison.
                                             </small>
                                         </div>
                                         <div style="text-align:right; font-size:11px; color:#64748b;">
                                             <div>API COMPTAFLOW :</div>
-                                            <code class="bg-slate-100 px-2 py-1 rounded" style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-family:monospace;">{{ url('/') }}</code>
+                                            <code style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-family:monospace;">{{ url('/') }}</code>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>

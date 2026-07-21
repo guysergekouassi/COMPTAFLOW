@@ -9,6 +9,7 @@
             return [
                 'id' => $axe->id,
                 'libelle' => $axe->libelle,
+                'type' => $axe->type,
                 'sections' => $axe->sections->map(function($s) {
                     return [
                         'id' => $s->id,
@@ -20,12 +21,37 @@
         });
 @endphp
 
+<!-- Scoped Styles for Ventilation Cards to bypass global overrides -->
+<style>
+    .anl-card {
+        border: 1px solid #dbeafe !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+        background: #ffffff !important;
+        overflow: hidden !important;
+        margin-bottom: 1.5rem !important;
+    }
+    .anl-card-header {
+        background: #eff6ff !important; /* Soft light blue */
+        border-bottom: 1px solid #bfdbfe !important;
+        padding: 0.75rem 1.25rem !important; /* Compact padding */
+        color: #1e40af !important; /* Dark blue text */
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+    .anl-card-body {
+        padding: 1.25rem !important; /* Compact padding */
+        background: #ffffff !important;
+    }
+</style>
+
 <!-- Modal Ventilation Analytique -->
 <div class="modal fade" id="modalVentilationAnalytique" data-bs-backdrop="static" style="z-index: 10001;">
     <div class="modal-dialog modal-dialog-centered" style="width: 800px !important; max-width: 800px !important;">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
             <div class="modal-body p-5 bg-white" style="position: relative;">
-                <div class="text-center mb-5 position-relative">
+                <div class="text-center mb-4 position-relative">
                     <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Close"></button>
                     <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-0">
                         Ventilation <span class="text-primary">Analytique</span>
@@ -33,10 +59,31 @@
                     <div class="h-1 w-8 bg-primary mx-auto mt-2 rounded-full"></div>
                 </div>
                 
-                <div class="mb-5 text-center p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                <div class="mb-4 text-center p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
                     <span class="text-secondary fw-semibold">Montant à ventiler:</span> 
                     <span id="montant_a_ventiler_display" class="fs-4 fw-bold text-dark ms-1">0.00</span>
                     <span class="text-dark fw-bold ms-1">FCFA</span>
+                </div>
+
+                <!-- SELECTEUR D'AXE POUR AJOUT DYNAMIQUE -->
+                <div class="card mb-4 border border-light-subtle shadow-xs" style="border-radius: 15px; background: #f8fafc;">
+                    <div class="card-body p-3">
+                        <div class="row align-items-end g-3">
+                            <div class="col">
+                                <label class="form-label fw-bold text-slate-800 mb-1" style="font-size: 0.85rem;">
+                                    Choisir un Axe à ajouter
+                                </label>
+                                <select id="select_axe_analytique_add" class="form-select form-select-sm" style="border-radius: 12px;">
+                                    <!-- Dynamic options populated in JS -->
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-primary btn-sm px-3" style="border-radius: 10px; height: 38px;" onclick="window.ajouterAxeVentilationSelectionne()">
+                                    <i class="bx bx-plus me-1"></i> Ajouter un axe
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <form id="formVentilation">
@@ -46,7 +93,7 @@
                     </div>
                 </form>
 
-                <div class="d-flex justify-content-center gap-3 pt-5">
+                <div class="d-flex justify-content-center gap-3 pt-4">
                     <button type="button" class="btn btn-outline-secondary px-5" data-bs-dismiss="modal">Annuler</button>
                     <button type="button" class="btn btn-primary px-5" onclick="window.validerVentilation()">
                         <i class="bx bx-check-circle me-1"></i> Valider
@@ -59,14 +106,145 @@
 
 <script>
     window.sections_analytiques_cache = @json($axesAnalytiques);
+    window.activeAxeIds = []; // Track active axes IDs on the screen
 
     document.addEventListener('DOMContentLoaded', function() {
         
+        // Rebuild select options for adding axes
+        window.rebuildAxeSelectDropdown = function() {
+            // Remove focus to prevent aria-hidden/assistive tech warnings during select2 rebuild
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+
+            const selectEl = document.getElementById('select_axe_analytique_add');
+            if (!selectEl) return;
+            
+            // Destroy Select2 if exists
+            if ($.fn.select2 && $(selectEl).data('select2')) {
+                $(selectEl).select2('destroy');
+            }
+
+            selectEl.innerHTML = '';
+            
+            const availableAxes = window.sections_analytiques_cache.filter(axe => !window.activeAxeIds.includes(axe.id));
+            
+            if (availableAxes.length === 0) {
+                selectEl.innerHTML = '<option value="" disabled selected>— Tous les axes sont déjà ajoutés —</option>';
+                return;
+            }
+            
+            let html = '<option value="" disabled selected>— Sélectionner un axe (Recherche possible) —</option>';
+            availableAxes.forEach(axe => {
+                html += `<option value="${axe.id}">${axe.libelle} [Type: ${axe.type || 'N/A'}]</option>`;
+            });
+            selectEl.innerHTML = html;
+
+            // Re-init Select2
+            if ($.fn.select2) {
+                $(selectEl).select2({
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    dropdownParent: $('#modalVentilationAnalytique')
+                });
+            }
+        };
+
+        window.ajouterAxeVentilationSelectionne = function() {
+            // Remove focus to prevent aria-hidden/assistive tech warnings
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+
+            const selectEl = document.getElementById('select_axe_analytique_add');
+            if (!selectEl) return;
+            const axeId = parseInt($(selectEl).val());
+            if (!axeId) {
+                Swal.fire('Info', 'Veuillez sélectionner un axe à ajouter.', 'info');
+                return;
+            }
+            
+            if (window.activeAxeIds.includes(axeId)) return;
+            
+            window.activeAxeIds.push(axeId);
+            window.creerCarteAxe(axeId);
+            window.rebuildAxeSelectDropdown();
+            window.mettreAJourMontantsVentilation();
+        };
+
+        window.supprimerAxeVentilation = function(axeId) {
+            // Remove focus to prevent aria-hidden/assistive tech warnings
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+
+            const cardEl = document.getElementById(`card_axe_${axeId}`);
+            if (cardEl) cardEl.remove();
+            
+            window.activeAxeIds = window.activeAxeIds.filter(id => id !== axeId);
+            window.rebuildAxeSelectDropdown();
+            window.mettreAJourMontantsVentilation();
+        };
+
+        window.creerCarteAxe = function(axeId, hasDefaultLine = true) {
+            const container = document.getElementById('axes_ventilation_container');
+            if (!container) return;
+            
+            const axe = window.sections_analytiques_cache.find(a => a.id === axeId);
+            if (!axe) return;
+            
+            const card = document.createElement('div');
+            card.id = `card_axe_${axe.id}`;
+            card.className = 'anl-card';
+            card.innerHTML = `
+                <div class="anl-card-header">
+                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-1" style="font-size: 0.9rem; color: #1e40af !important;">
+                        <i class="bx bx-git-commit text-primary"></i> Axe : ${axe.libelle}
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary" id="total_pct_axe_${axe.id}" style="font-size: 0.8rem;">0.00 %</span>
+                        <span class="text-muted small fw-medium" id="total_mnt_axe_${axe.id}" style="font-size: 0.75rem; color: #1e40af !important;">0.00 FCFA</span>
+                        <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="window.supprimerAxeVentilation(${axe.id})" title="Retirer cet axe">
+                            <i class="bx bx-x-circle fs-4" style="color: #ef4444 !important;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="anl-card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-2" id="table_axe_${axe.id}">
+                            <thead>
+                                <tr class="text-secondary text-uppercase" style="font-size: 0.7rem; border-bottom: 1px solid #f1f5f9;">
+                                    <th style="width: 50%;">Section Analytique</th>
+                                    <th style="width: 20%;">%</th>
+                                    <th style="width: 25%;">Montant</th>
+                                    <th style="width: 5%;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_axe_${axe.id}">
+                                <!-- Ventilation lines -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-start mt-2">
+                        <button type="button" class="btn btn-outline-primary btn-xs rounded-pill fw-bold px-3 py-1" style="font-size: 0.75rem; border-width: 1.5px;" onclick="window.ajouterLigneVentilationAxe(${axe.id})">
+                            <i class="bx bx-plus-circle me-1"></i> Ajouter une section
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+            
+            if (hasDefaultLine) {
+                window.ajouterLigneVentilationAxe(axeId);
+            }
+        };
+
         window.initialiserTableauVentilation = function(montantTotal) {
             const container = document.getElementById('axes_ventilation_container');
             if (!container) return;
             container.innerHTML = '';
-
+            window.activeAxeIds = [];
+            
             if (!window.sections_analytiques_cache || window.sections_analytiques_cache.length === 0) {
                 container.innerHTML = '<div class="alert alert-warning text-center">Aucun axe analytique configuré. Veuillez créer des axes et sections analytiques dans le paramétrage.</div>';
                 return;
@@ -80,47 +258,6 @@
                 });
             });
 
-            // Create card structures for all active axes
-            window.sections_analytiques_cache.forEach(axe => {
-                const card = document.createElement('div');
-                card.className = 'card mb-4 border border-light-subtle shadow-xs';
-                card.style.borderRadius = '15px';
-                card.innerHTML = `
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3" style="border-radius: 15px 15px 0 0;">
-                        <h6 class="mb-0 fw-bold text-slate-800" style="font-size: 0.9rem;">
-                            <i class="bx bx-git-commit me-1 text-primary"></i> Axe : ${axe.libelle}
-                        </h6>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-secondary" id="total_pct_axe_${axe.id}" style="font-size: 0.8rem;">0.00 %</span>
-                            <span class="text-muted small fw-medium" id="total_mnt_axe_${axe.id}" style="font-size: 0.75rem;">0.00 FCFA</span>
-                        </div>
-                    </div>
-                    <div class="card-body p-3">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover align-middle mb-2" id="table_axe_${axe.id}">
-                                <thead>
-                                    <tr class="text-secondary text-uppercase" style="font-size: 0.7rem; border-bottom: 1px solid #f1f5f9;">
-                                        <th style="width: 50%;">Section Analytique</th>
-                                        <th style="width: 20%;">%</th>
-                                        <th style="width: 25%;">Montant</th>
-                                        <th style="width: 5%;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody_axe_${axe.id}">
-                                    <!-- Ventilation lines -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="text-start mt-2">
-                            <button type="button" class="btn btn-outline-primary btn-xs rounded-pill fw-bold px-3 py-1" style="font-size: 0.75rem; border-width: 1.5px;" onclick="window.ajouterLigneVentilationAxe(${axe.id})">
-                                <i class="bx bx-plus-circle me-1"></i> Ajouter une section
-                            </button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-
             // Populate existing ventilations
             const dataToLoad = window.currentRowForVentilation 
                 ? (window.currentRowForVentilation.dataset.ventilations ? JSON.parse(window.currentRowForVentilation.dataset.ventilations) : [])
@@ -130,11 +267,16 @@
                 dataToLoad.forEach(v => {
                     const axeId = sectionToAxe[v.section_id];
                     if (axeId) {
+                        if (!window.activeAxeIds.includes(axeId)) {
+                            window.activeAxeIds.push(axeId);
+                            window.creerCarteAxe(axeId, false); // false so we don't add default empty line
+                        }
                         window.ajouterLigneVentilationAxe(axeId, v.section_id, v.pourcentage, v.montant);
                     }
                 });
             }
 
+            window.rebuildAxeSelectDropdown();
             window.mettreAJourMontantsVentilation();
         };
 
@@ -211,7 +353,10 @@
         window.mettreAJourMontantsVentilation = function() {
             if (!window.sections_analytiques_cache) return;
             
-            window.sections_analytiques_cache.forEach(axe => {
+            window.activeAxeIds.forEach(axeId => {
+                const axe = window.sections_analytiques_cache.find(a => a.id === axeId);
+                if (!axe) return;
+                
                 let totalPct = 0;
                 let totalMnt = 0;
                 
@@ -247,7 +392,10 @@
 
             if (!window.sections_analytiques_cache) return;
 
-            window.sections_analytiques_cache.forEach(axe => {
+            window.activeAxeIds.forEach(axeId => {
+                const axe = window.sections_analytiques_cache.find(a => a.id === axeId);
+                if (!axe) return;
+                
                 let totalPct = 0;
                 const rows = document.querySelectorAll(`#tbody_axe_${axe.id} tr`);
                 
@@ -284,8 +432,8 @@
                 return;
             }
 
-            if (!hasAtLeastOneVentilation) {
-                Swal.fire('Attention', 'Veuillez ajouter au moins une ligne de ventilation sur un axe.', 'warning');
+            if (window.activeAxeIds.length > 0 && !hasAtLeastOneVentilation) {
+                Swal.fire('Attention', 'Veuillez ajouter au moins une ligne de ventilation sur un axe actif.', 'warning');
                 return;
             }
 

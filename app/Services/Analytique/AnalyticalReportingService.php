@@ -78,6 +78,7 @@ class AnalyticalReportingService
 
     /**
      * Get Analytical Grand Livre data for a specific section or all sections of an axe.
+     * Returns separate debit/credit columns + code_journal + reference_piece (Sage style).
      */
     public function getGrandLivreData($companyId, $sectionId, $exerciceId = null, $filters = [])
     {
@@ -85,6 +86,7 @@ class AnalyticalReportingService
             ->join('ecriture_comptables as e', 'v.ecriture_id', '=', 'e.id')
             ->join('sections_analytiques as s', 'v.section_id', '=', 's.id')
             ->join('plan_comptables as pc', 'e.plan_comptable_id', '=', 'pc.id')
+            ->leftJoin('code_journals as cj', 'e.code_journal_id', '=', 'cj.id')
             ->where('e.company_id', $companyId)
             ->where('e.statut', 'approved');
 
@@ -99,10 +101,12 @@ class AnalyticalReportingService
         }
 
         if (!empty($filters['date_debut'])) $query->where('e.date', '>=', $filters['date_debut']);
-        if (!empty($filters['date_fin'])) $query->where('e.date', '<=', $filters['date_fin']);
+        if (!empty($filters['date_fin']))   $query->where('e.date', '<=', $filters['date_fin']);
 
         return $query->select(
             'e.date',
+            DB::raw('COALESCE(cj.code_journal, "") as code_journal'),
+            'e.reference_piece',
             'e.n_saisie',
             'e.description_operation',
             's.code as section_code',
@@ -110,12 +114,12 @@ class AnalyticalReportingService
             'pc.numero_de_compte',
             'pc.intitule as compte_libelle',
             'v.pourcentage',
-            'v.montant',
-            DB::raw('CASE WHEN e.debit > 0 THEN "D" ELSE "C" END as sens')
+            DB::raw('CASE WHEN e.debit > 0 THEN v.montant ELSE 0 END as mouvement_debit'),
+            DB::raw('CASE WHEN e.credit > 0 THEN v.montant ELSE 0 END as mouvement_credit')
         )
         ->orderBy('s.code')
         ->orderBy('e.date')
-        ->orderBy('e.created_at')
+        ->orderBy('e.n_saisie')
         ->get();
     }
 

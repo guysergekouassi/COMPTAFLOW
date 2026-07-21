@@ -48,26 +48,8 @@ class AdminConfigController extends Controller
             ->where('is_active', 1)
             ->first();
 
-        // Récupérer les informations de l'entreprise Selflow liée (si liaison active)
-        $selflowCompanyInfo = null;
-        if ($mainCompany && $mainCompany->selflow_company_id && $mainCompany->selflow_sync_status === 'active') {
-            try {
-                $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
-                $secret = config('app.selflow_api_secret', 'selflow-comptaflow-secret-2026');
-                $response = \Illuminate\Support\Facades\Http::timeout(5)->post($selflowUrl . '/api/external/company-info', [
-                    'secret'             => $secret,
-                    'selflow_company_id' => $mainCompany->selflow_company_id,
-                ]);
-                if ($response->successful() && $response->json('success')) {
-                    $selflowCompanyInfo = $response->json('company');
-                }
-            } catch (\Exception $e) {
-                Log::warning('Impossible de récupérer les infos Selflow: ' . $e->getMessage());
-            }
-        }
-
         $user = auth()->user();
-        return view('admin.config.hub', compact('mainCompany', 'stats', 'exerciceActif', 'user', 'selflowCompanyInfo'));
+        return view('admin.config.hub', compact('mainCompany', 'stats', 'exerciceActif', 'user'));
     }
 
     /**

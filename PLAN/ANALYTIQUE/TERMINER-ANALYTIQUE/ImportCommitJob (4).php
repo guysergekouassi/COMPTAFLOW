@@ -667,7 +667,7 @@ class ImportCommitJob implements ShouldQueue
                                 $batchEcritures[] = [
                                     'date'                      => $r['date_formatted'],
                                     'n_saisie'                  => $globalNSaisie,
-                                    'n_saisie_user'             => $nSaisieUser, // Garde l'original si commun, sinon null
+                                    'n_saisie_user'             => $nSaisieUser,
                                     'reference_piece'           => ($r['reference'] !== '') ? $r['reference'] : 'IMPORT',
                                     'plan_comptable_id'         => $r['compte_id'],
                                     'plan_tiers_id'             => $r['tiers_id'],

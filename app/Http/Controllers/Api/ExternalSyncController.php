@@ -273,7 +273,7 @@ class ExternalSyncController extends Controller
 
             // Récupérer les données pour le retour de synchronisation
             $planComptable = \App\Models\PlanComptable::where('company_id', $company->id)
-                ->select('id', 'numero_de_compte', 'intitule')
+                ->select('id', 'numero_de_compte', 'intitule', 'numero_original')
                 ->get();
 
             $codesJournaux = \App\Models\CodeJournal::where('company_id', $company->id)
@@ -298,6 +298,7 @@ class ExternalSyncController extends Controller
                     return [
                         'id'                     => $cj->id,
                         'code_journal'           => $cj->code_journal,
+                        'numero_original'        => $cj->numero_original,
                         'intitule'               => $cj->intitule,
                         'type'                   => $cj->type,
                         'compte_de_tresorerie'   => $cj->compte_de_tresorerie,
