@@ -147,3 +147,24 @@ Route::prefix('external')->group(function () {
     Route::post('/ecritures/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserEcritures'])
         ->name('api.external.ecritures.deverser');
 });
+
+// --- Ajouté automatiquement pour le FlowHub ---
+use App\Http\Controllers\Api\DashboardApiController;
+
+Route::middleware(['api', 'verify.hub.token'])->prefix('dashboard')->group(function () {
+    Route::get('/kpis', [DashboardApiController::class, 'kpis'])->name('api.dashboard.kpis');
+});
+
+Route::middleware(['api', 'verify.hub.token'])->group(function () {
+    Route::get('/companies', [DashboardApiController::class, 'companies'])->name('api.companies');
+});
+
+Route::get('/ping', function () {
+    return response()->json(['status' => 'ok', 'service' => 'ComptaFlow API']);
+})->name('api.ping');
+// ----------------------------------------------
+
+
+
+
+require __DIR__ . '/api_hub.php';

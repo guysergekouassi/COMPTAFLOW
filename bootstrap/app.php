@@ -13,11 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'check.blocked' => \App\Http\Middleware\CheckBlockedStatus::class,
-            'company.session' => \App\Http\Middleware\CompanySession::class,
-            'exercice.context' => \App\Http\Middleware\ExerciceContextMiddleware::class,
+            'check.blocked'     => \App\Http\Middleware\CheckBlockedStatus::class,
+            'company.session'   => \App\Http\Middleware\CompanySession::class,
+            'exercice.context'  => \App\Http\Middleware\ExerciceContextMiddleware::class,
+            'verify.hub.token'  => \App\Http\Middleware\VerifyHubToken::class,
         ]);
-        
+
         $middleware->web(append: [
             \App\Http\Middleware\CheckBlockedStatus::class,
         ]);
@@ -25,3 +26,4 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+
