@@ -152,15 +152,6 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
         Route::post('/projets/{id}/instructions', [\App\Http\Controllers\ExcelIaProjetController::class, 'updateInstructions'])->name('projets.instructions.update');
     });
 
-    // *** ROUTES FACTURES PRODUITES ***
-    Route::prefix('factures-produites')->name('factures_produites.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\FactureProduiteController::class, 'index'])->name('index');
-        Route::post('/', [\App\Http\Controllers\FactureProduiteController::class, 'store'])->name('store');
-        Route::get('/{id}', [\App\Http\Controllers\FactureProduiteController::class, 'show'])->name('show');
-        Route::delete('/{id}', [\App\Http\Controllers\FactureProduiteController::class, 'destroy'])->name('destroy');
-        Route::get('/{id}/download', [\App\Http\Controllers\FactureProduiteController::class, 'download'])->name('download');
-    });
-
 
 
 
@@ -331,6 +322,16 @@ Route::get('/test-saisie-number', function() {
     Route::get('/accounting_entry_real_goupes', [EcritureComptableGroupesController::class, 'index'])->name('accounting_entry_real_goupes');
     Route::put('/accounting_entry_real_goupes/{id}', [EcritureComptableGroupesController::class, 'update'])->name('accounting_entry_real_goupes.update');
     Route::post('/accounting_entry_real_goupes', [EcritureComptableGroupesController::class, 'miseAJourMassive'])->name('accounting_entry_real_goupes.miseAJourMassive');
+    Route::delete('/accounting_entry_real_goupes/supprimer/{nSaisie}', [EcritureComptableGroupesController::class, 'supprimerGroupe'])
+        ->name('accounting_entry_real_goupes.supprimerGroupe')
+        ->where('nSaisie', '.*');
+
+    // *****************ROUTE GESTION DES MODÈLES DE SAISIE (récurrente, type "Appeler un modèle")
+    Route::prefix('ecriture-modeles')->name('ecriture_modeles.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\EcritureModeleController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\EcritureModeleController::class, 'store'])->name('store');
+        Route::delete('/{id}', [\App\Http\Controllers\EcritureModeleController::class, 'destroy'])->name('destroy');
+    });
 
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE GROUPES VIA PLAN COMPTABLES
     Route::get('/plan_comptable_ecritures_groupes', [PlanComptableEcritureGroupesController::class, 'index'])->name('plan_comptable_ecritures_groupes');
@@ -749,6 +750,13 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
 
     // Tableau de Bord Super Admin (Statistiques Globales)
     Route::get('/superadmin/dashboard', [SuperAdminDashboardController::class, 'index'])->name('superadmin.dashboard');
+
+    // Liaisons SELFLOW ↔ COMPTAFLOW
+    Route::get('/superadmin/liaisons', [\App\Http\Controllers\Super\SuperAdminLiaisonController::class, 'index'])->name('superadmin.liaisons.index');
+    Route::post('/superadmin/liaisons', [\App\Http\Controllers\Super\SuperAdminLiaisonController::class, 'store'])->name('superadmin.liaisons.store');
+    Route::post('/superadmin/liaisons/creer-sur-selflow', [\App\Http\Controllers\Super\SuperAdminLiaisonController::class, 'creerSurSelflow'])->name('superadmin.liaisons.creerSurSelflow');
+    Route::post('/superadmin/liaisons/lier', [\App\Http\Controllers\Super\SuperAdminLiaisonController::class, 'lierManuellement'])->name('superadmin.liaisons.lier');
+    Route::delete('/superadmin/liaisons/{id}', [\App\Http\Controllers\Super\SuperAdminLiaisonController::class, 'destroy'])->name('superadmin.liaisons.destroy');
 
     // Honoraires & Abonnements
     Route::get('/superadmin/honoraires', [\App\Http\Controllers\Super\HonorairesController::class, 'index'])->name('superadmin.honoraires');

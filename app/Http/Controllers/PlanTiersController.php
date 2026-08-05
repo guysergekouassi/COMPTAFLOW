@@ -210,12 +210,19 @@ class PlanTiersController extends Controller
             ]);
 
             $planTiers = PlanTiers::create([
-                'numero_de_tiers' => $request->numero_de_tiers,
-                'compte_general' => $request->compte_general,
-                'intitule' => $intitule_formate,
-                'type_de_tiers' => $request->type_de_tiers,
-                'user_id' => $user->id,
-                'company_id' => $currentCompanyId
+                'numero_de_tiers'     => $request->numero_de_tiers,
+                'compte_general'      => $request->compte_general,
+                'intitule'            => $intitule_formate,
+                'type_de_tiers'       => $request->type_de_tiers,
+                'user_id'             => $user->id,
+                'company_id'          => $currentCompanyId,
+                'ncc'                 => $request->ncc,
+                'rccm'                => $request->rccm,
+                'compte_contribuable' => $request->compte_contribuable,
+                'regime'              => $request->regime,
+                'email'               => $request->email,
+                'telephone'           => $request->telephone,
+                'adresse'             => $request->adresse,
             ]);
 
             Log::info('Plan tiers créé avec succès - ID: ' . $planTiers->id);
@@ -253,19 +260,36 @@ class PlanTiersController extends Controller
     {
         try {
             $request->validate([
-                'numero_de_tiers' => 'required|string|max:255',
-                'intitule' => 'required|string|max:255',
-                'type_de_tiers' => 'required|string',
-                'compte_general' => 'required|exists:plan_comptables,id'
+                'numero_de_tiers'     => 'nullable|string|max:255',
+                'intitule'            => 'required|string|max:255',
+                'type_de_tiers'       => 'required|string',
+                'compte_general'      => 'required|exists:plan_comptables,id',
+                'ncc'                 => 'nullable|string|max:100',
+                'rccm'                => 'nullable|string|max:100',
+                'compte_contribuable' => 'nullable|string|max:100',
+                'regime'              => 'nullable|string|max:100',
+                'email'               => 'nullable|email|max:191',
+                'telephone'           => 'nullable|string|max:50',
+                'adresse'             => 'nullable|string|max:255',
             ]);
 
             $user = Auth::user();
             $companyId = session('current_company_id', $user->company_id);
             $tiers = PlanTiers::where('company_id', $companyId)->findOrFail($id);
-            $tiers->numero_de_tiers = $request->numero_de_tiers;
-            $tiers->intitule = $request->intitule;
-            $tiers->type_de_tiers = $request->type_de_tiers;
-            $tiers->compte_general = $request->compte_general;
+            
+            if ($request->filled('numero_de_tiers')) {
+                $tiers->numero_de_tiers = $request->numero_de_tiers;
+            }
+            $tiers->intitule            = $request->intitule;
+            $tiers->type_de_tiers       = $request->type_de_tiers;
+            $tiers->compte_general      = $request->compte_general;
+            $tiers->ncc                 = $request->ncc;
+            $tiers->rccm                = $request->rccm;
+            $tiers->compte_contribuable = $request->compte_contribuable;
+            $tiers->regime              = $request->regime;
+            $tiers->email               = $request->email;
+            $tiers->telephone           = $request->telephone;
+            $tiers->adresse             = $request->adresse;
             $tiers->save();
 
             return redirect()->back()->with('success', 'Plan de tiers mis à jour avec succès.');
@@ -303,8 +327,43 @@ class PlanTiersController extends Controller
             ];
             
             $stats['solde'] = $stats['total_debit'] - $stats['total_credit'];
+
+            // Récupérer les informations Selflow si l'entreprise est liée
+            $selflowTierInfo = null;
+            $company = \App\Models\Company::find($currentCompanyId);
+            if ($company && $company->selflow_company_id && $company->selflow_sync_status === 'active') {
+                try {
+                    $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
+                    $secret     = config('app.selflow_api_secret', 'selflow-comptaflow-secret-2026');
+                    $response = \Illuminate\Support\Facades\Http::timeout(4)->post("{$selflowUrl}/api/external/tier-info", [
+                        'secret'             => $secret,
+                        'selflow_company_id' => $company->selflow_company_id,
+                        'numero_original'    => $tier->numero_original,
+                        'numero_de_tiers'    => $tier->numero_de_tiers,
+                        'intitule'           => $tier->intitule,
+                        'type'               => $tier->type_de_tiers,
+                    ]);
+                    if ($response->successful() && $response->json('success')) {
+                        $selflowTierInfo = $response->json('tier');
+
+                        // Synchroniser automatiquement vers COMPTAFLOW si vide localement
+                        $updated = false;
+                        foreach (['ncc', 'rccm', 'compte_contribuable', 'regime', 'email', 'telephone', 'adresse'] as $f) {
+                            if (empty($tier->$f) && !empty($selflowTierInfo[$f]) && $selflowTierInfo[$f] !== '—') {
+                                $tier->$f = $selflowTierInfo[$f];
+                                $updated = true;
+                            }
+                        }
+                        if ($updated) {
+                            $tier->save();
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Impossible de récupérer les infos tier Selflow: ' . $e->getMessage());
+                }
+            }
             
-            return view('plan_tiers_show', compact('tier', 'stats'));
+            return view('plan_tiers_show', compact('tier', 'stats', 'selflowTierInfo'));
             
         } catch (\Exception $e) {
             return redirect()->route('plan_tiers')->with('error', 'Tiers non trouvé : ' . $e->getMessage());

@@ -695,9 +695,6 @@
         <a href="{{ route('excel_ia.projets.index') }}" class="eia-tab">
             <i class="fas fa-folder-open"></i> <span>Projets</span>
         </a>
-        <a href="{{ route('factures_produites.index') }}" class="eia-tab">
-            <i class="fas fa-file-invoice"></i> <span>Factures Produites</span>
-        </a>
     </div>
 
     {{-- ─── MESSAGES ─────────────────────── --}}

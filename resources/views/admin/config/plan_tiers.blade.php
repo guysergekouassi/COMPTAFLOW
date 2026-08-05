@@ -215,6 +215,7 @@
                                             </td>
                                             <td class="pe-8 py-6 text-end">
                                                 <div class="btn-group">
+                                                    <a href="{{ route('plan_tiers.show', ['plan_tier' => $tier->id]) }}" class="btn btn-icon btn-sm btn-outline-info border-0 rounded-circle me-1" title="Voir (Détails & Infos)"><i class="fa-solid fa-eye"></i></a>
                                                     <button class="btn btn-icon btn-sm btn-outline-indigo border-0 rounded-circle" onclick="editTier({{ $tier->id }}, '{{ $tier->numero_de_tiers }}', '{{ addslashes($tier->intitule) }}', '{{ $tier->type_de_tiers }}', {{ $tier->compte_general ?? 'null' }})" title="Modifier"><i class="fa-solid fa-user-gear"></i></button>
                                                     <button type="button" class="btn btn-icon btn-sm btn-outline-danger border-0 rounded-circle" 
                                                         title="Supprimer"

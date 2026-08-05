@@ -436,6 +436,8 @@
                                                             data-numero="{{ $tier->numero_de_tiers }}"
                                                             data-intitule="{{ $tier->intitule }}"
                                                             data-type="{{ $tier->type_de_tiers }}"
+                                                            data-type_facturation="{{ $tier->type_facturation }}"
+                                                            data-ncc="{{ $tier->ncc }}"
                                                             data-compte="{{ $tier->compte_general }}">
                                                             <i class="fas fa-user-edit"></i>
                                                         </button>
@@ -452,7 +454,7 @@
                                                         <a href="{{ route('plan_tiers.show', ['plan_tier' => $tier->id]) }}?t={{ time() }}"
                                                             class="w-10 h-10 flex items-center justify-center rounded-xl border border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-view"
                                                             title="Voir">
-                                                            <i class='bx bx-eye fs-5'></i>
+                                                            <i class="fas fa-eye"></i>
                                                         </a>
                                                     </div>
                                                 </td>
@@ -499,7 +501,7 @@
                                                     
                                                     <!-- Catégorie (Type de tiers) -->
                                                     <div class="space-y-1">
-                                                        <label class="input-label-premium">Catégorie</label>
+                                                        <label class="input-label-premium">Catégorie <span style="color:#E53E3E">*</span></label>
                                                         <select id="type_de_tiers" name="type_de_tiers" class="input-field-premium" onchange="handleCategoryChange(this, 'create')" required>
                                                             <option value="" disabled selected>Sélectionner une catégorie</option>
                                                             <option value="Fournisseur" data-prefix="40">Fournisseur</option>
@@ -513,9 +515,21 @@
                                                         </select>
                                                     </div>
 
+                                                    <!-- Type de facturation FNE/DGI -->
+                                                    <div class="space-y-1">
+                                                        <label class="input-label-premium">Type de facturation <span style="color:#E53E3E">*</span></label>
+                                                        <select id="type_facturation_create" name="type_facturation" class="input-field-premium" onchange="handleTypeFacturationChange(this, 'create')" required>
+                                                            <option value="" disabled selected>Sélectionner le type</option>
+                                                            <option value="B2B">B2B — Entreprise à Entreprise</option>
+                                                            <option value="B2C">B2C — Entreprise à Particulier</option>
+                                                            <option value="B2G">B2G — Entreprise à État / Collectivité</option>
+                                                            <option value="B2F">B2F — Entreprise à International</option>
+                                                        </select>
+                                                    </div>
+
                                                     <!-- Numéro de tiers -->
                                                     <div class="space-y-1">
-                                                        <label class="input-label-premium">Numéro de tiers</label>
+                                                        <label class="input-label-premium">Numéro de tiers <span style="color:#E53E3E">*</span></label>
                                                         <input type="text" id="numero_de_tiers" name="numero_de_tiers" 
                                                             class="input-field-premium opacity-75" placeholder="Généré automatiquement" required readonly>
                                                     </div>
@@ -536,10 +550,20 @@
 
                                                     <!-- Nom / Raison Sociale (Intitulé) -->
                                                     <div class="space-y-1">
-                                                        <label class="input-label-premium">Nom / Raison Sociale</label>
+                                                        <label class="input-label-premium">Nom / Raison Sociale <span style="color:#E53E3E">*</span></label>
                                                         <input type="text" id="intitule" name="intitule" 
                                                             class="input-field-premium" placeholder="Entrez le nom de l'entité" required>
                                                     </div>
+
+                                                    <!-- NCC (affiché uniquement si B2B) -->
+                                                    <div class="space-y-1" id="ncc_create_wrapper" style="display:none">
+                                                        <label class="input-label-premium" id="ncc_create_label">NCC <span style="color:#E53E3E">*</span></label>
+                                                        <input type="text" id="ncc_create" name="ncc"
+                                                            class="input-field-premium" placeholder="Numéro de Compte Contribuable">
+                                                    </div>
+
+                                                    <!-- Légende -->
+                                                    <p class="text-xs text-slate-400 mt-1"><span style="color:#E53E3E">*</span> Champs obligatoires</p>
 
                                                 </div>
 
@@ -579,7 +603,7 @@
                                                 <div class="space-y-3">
                                                     <!-- Catégorie (Type de tiers) -->
                                                     <div class="space-y-1">
-                                                        <label class="input-label-premium">Catégorie</label>
+                                                        <label class="input-label-premium">Catégorie <span style="color:#E53E3E">*</span></label>
                                                         <select id="update_type_de_tiers" name="type_de_tiers" class="input-field-premium" onchange="handleCategoryChange(this, 'edit')" required>
                                                             <option value="" disabled selected>Sélectionner une catégorie</option>
                                                             <option value="Fournisseur" data-prefix="40">Fournisseur</option>
@@ -593,14 +617,26 @@
                                                         </select>
                                                     </div>
 
+                                                    <!-- Type de facturation FNE/DGI -->
+                                                    <div class="space-y-1">
+                                                        <label class="input-label-premium">Type de facturation <span style="color:#E53E3E">*</span></label>
+                                                        <select id="type_facturation_update" name="type_facturation" class="input-field-premium" onchange="handleTypeFacturationChange(this, 'update')" required>
+                                                            <option value="" disabled selected>Sélectionner le type</option>
+                                                            <option value="B2B">B2B — Entreprise à Entreprise</option>
+                                                            <option value="B2C">B2C — Entreprise à Particulier</option>
+                                                            <option value="B2G">B2G — Entreprise à État / Collectivité</option>
+                                                            <option value="B2F">B2F — Entreprise à International</option>
+                                                        </select>
+                                                    </div>
+
                                                     <!-- Numéro de tiers -->
                                                     <div class="space-y-1">
-                                                        <label class="input-label-premium">Numéro de tiers</label>
+                                                        <label class="input-label-premium">Numéro de tiers <span style="color:#E53E3E">*</span></label>
                                                         <input type="text" id="update_numero" name="numero_de_tiers" 
                                                             class="input-field-premium opacity-75" placeholder="Généré automatiquement" required readonly>
                                                     </div>
 
-                                                    <!-- Compte de Rattachement (Compte général associé) -->
+                                                    <!-- Compte de Rattachement -->
                                                     <div class="space-y-1">
                                                         <label class="input-label-premium">Compte de Rattachement (Optionnel)</label>
                                                         <div class="flex gap-2">
@@ -618,12 +654,22 @@
                                                         </div>
                                                     </div>
 
-                                                    <!-- Nom / Raison Sociale (Intitulé) -->
+                                                    <!-- Nom / Raison Sociale -->
                                                     <div class="space-y-1">
-                                                        <label class="input-label-premium">Nom / Raison Sociale</label>
+                                                        <label class="input-label-premium">Nom / Raison Sociale <span style="color:#E53E3E">*</span></label>
                                                         <input type="text" id="update_intitule" name="intitule" 
                                                             class="input-field-premium" required>
                                                     </div>
+
+                                                    <!-- NCC (affiché uniquement si B2B) -->
+                                                    <div class="space-y-1" id="ncc_update_wrapper" style="display:none">
+                                                        <label class="input-label-premium">NCC <span style="color:#E53E3E">*</span></label>
+                                                        <input type="text" id="ncc_update" name="ncc"
+                                                            class="input-field-premium" placeholder="Numéro de Compte Contribuable">
+                                                    </div>
+
+                                                    <!-- Légende -->
+                                                    <p class="text-xs text-slate-400 mt-1"><span style="color:#E53E3E">*</span> Champs obligatoires</p>
                                                 </div>
 
                                                 <!-- Actions -->
@@ -879,11 +925,14 @@
                                 const id = btn.data('id');
                                 const type = btn.data('type');
                                 const compteId = btn.data('compte');
+                                const typeFacturation = btn.data('type_facturation') || '';
+                                const nccVal = btn.data('ncc') || '';
 
                                 $('#update_id').val(id);
                                 $('#update_intitule').val(btn.data('intitule'));
                                 $('#update_numero').val(btn.data('numero'));
                                 
+                                // Pré-remplir catégorie
                                 const typeSelect = document.getElementById('update_type_de_tiers');
                                 for (let i = 0; i < typeSelect.options.length; i++) {
                                     if (typeSelect.options[i].value === type || typeSelect.options[i].text.includes(type)) {
@@ -894,9 +943,23 @@
 
                                 const prefix = typeSelect.options[typeSelect.selectedIndex] ? typeSelect.options[typeSelect.selectedIndex].getAttribute('data-prefix') : null;
                                 window.updateAccountOptions(typeSelect, document.getElementById('update_compte'), document.getElementById('update_numero'), prefix);
-                                
                                 $('#update_compte').val(compteId);
                                 $('#updateTiersForm').attr('action', plan_tiersUpdateBaseUrl.replace('__ID__', id));
+
+                                // Pré-remplir type_facturation et gérer la visibilité NCC
+                                const factSelect = document.getElementById('type_facturation_update');
+                                if (factSelect && typeFacturation) {
+                                    factSelect.value = typeFacturation;
+                                } else if (factSelect) {
+                                    factSelect.selectedIndex = 0;
+                                }
+                                // Simuler le changement pour afficher/masquer le NCC
+                                if (factSelect) {
+                                    window.handleTypeFacturationChange(factSelect, 'update');
+                                    if (typeFacturation === 'B2B') {
+                                        document.getElementById('ncc_update').value = nccVal;
+                                    }
+                                }
                             });
                         }
 
@@ -909,6 +972,30 @@
                             });
                         }
                     });
+
+                    // --- LOGIQUE TYPE DE FACTURATION (B2B/B2C/B2G/B2F) ---
+                    /**
+                     * Affiche/masque le champ NCC selon le type de facturation sélectionné.
+                     * B2B → NCC obligatoire et visible
+                     * B2C / B2G / B2F → NCC masqué et non requis
+                     */
+                    window.handleTypeFacturationChange = function(selectEl, mode) {
+                        const isB2B = selectEl.value === 'B2B';
+                        const wrapperId = mode === 'create' ? 'ncc_create_wrapper' : 'ncc_update_wrapper';
+                        const nccInputId = mode === 'create' ? 'ncc_create' : 'ncc_update';
+
+                        const wrapper = document.getElementById(wrapperId);
+                        const nccInput = document.getElementById(nccInputId);
+
+                        if (isB2B) {
+                            wrapper.style.display = 'block';
+                            nccInput.setAttribute('required', 'required');
+                        } else {
+                            wrapper.style.display = 'none';
+                            nccInput.removeAttribute('required');
+                            nccInput.value = ''; // Vider si on change de type
+                        }
+                    };
 
                 })(jQuery);
             </script>

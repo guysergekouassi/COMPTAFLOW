@@ -225,7 +225,7 @@ public function update(Request $request, Company $company)
         'admin_password' => 'nullable|string|min:8|confirmed',
         'juridique_form' => 'required|string|max:255',
         'activity' => 'required|string|max:255',
-        'social_capital' => 'required|numeric|min:0',
+        'social_capital' => 'nullable|numeric|min:0',
         'adresse' => 'required|string|max:255',
         'code_postal' => 'required|string|max:20',
         'city' => 'required|string|max:255',

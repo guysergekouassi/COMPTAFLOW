@@ -286,12 +286,12 @@
     }
 </style>
 
-@include('components.modal_saisie_direct', [
-    'exercices' => $exercices,
-    'code_journaux' => $code_journaux,
-    'companies' => $companies,
-    'exerciceActif' => $exerciceActif,
-])
+{{--
+    Modal "saisieRedirectModal" retiré : la page combinée (accounting_entry_real) gère
+    désormais elle-même Journal/Mois/Scanner directement dans son en-tête, sans passer
+    par ce modal intermédiaire. Fichier components/modal_saisie_direct.blade.php conservé
+    de côté (non supprimé) le temps de valider la nouvelle page en usage réel.
+--}}
 
 
 
@@ -740,7 +740,7 @@
             <div class="menu-section">
                 <div class="menu-section-header">Traitement</div>
                 @if(auth()->user()->hasPermission('modal_saisie_direct'))
-                <a href="#" class="menu-link-new" data-bs-toggle="modal" data-bs-target="#saisieRedirectModal">
+                <a href="{{ route('accounting_entry_real', ['open' => 1]) }}" class="menu-link-new {{ request()->routeIs('accounting_entry_real') ? 'active' : '' }}">
                     <i class="fa-solid fa-plus-circle"></i>
                     <span>Nouvelle saisie</span>
                 </a>
@@ -756,10 +756,6 @@
                 <a href="{{ route('admin.ia.chat') }}" class="menu-link-new {{ request()->routeIs('admin.ia.chat') ? 'active' : '' }}">
                     <i class="fa-solid fa-user-astronaut text-info"></i>
                     <span>Assistant IA Premium</span>
-                </a>
-                <a href="{{ route('factures_produites.index') }}" class="menu-link-new {{ request()->routeIs('factures_produites.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-file-invoice text-success"></i>
-                    <span>Factures Produites</span>
                 </a>
                 @if(auth()->user()->hasPermission('accounting_entry_list'))
                 <a href="{{ route('ecriture.hub') }}" class="menu-link-new {{ request()->routeIs('ecriture.hub') ? 'active' : '' }}">
@@ -999,7 +995,11 @@
             @if (auth()->user()->isSuperAdmin())
                 {{-- Garder l'existant pour Super Admin si non géré par superadmin_sidebar --}}
                 <div class="menu-section">
-                    <div class="menu-section-header">Paramétrage</div>
+                    <div class="menu-section-header">Paramétrage SuperAdmin</div>
+                    <a href="{{ route('superadmin.liaisons.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.liaisons.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-link"></i>
+                        <span>Liaisons SELFLOW</span>
+                    </a>
                     <a href="{{ route('plan_comptable') }}" class="menu-link-new">
                         <i class="fa-solid fa-book"></i>
                         <span>Plan comptable</span>

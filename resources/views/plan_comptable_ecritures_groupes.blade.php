@@ -296,8 +296,15 @@
                                                 <tr>
 
                                                     <td>{{ $ecriture->date }}</td>
-                                                    <td>{{ $ecriture->n_saisie }}</td>
-                                                    <td>{{ $ecriture->reference_piece }}</td>
+                                                     <td>
+                                                         {{ $ecriture->n_saisie }}
+                                                         @if(str_starts_with($ecriture->n_saisie, 'VTE-') || str_starts_with($ecriture->n_saisie, 'ACH-') || str_starts_with($ecriture->n_saisie, 'AVO-') || str_starts_with($ecriture->n_saisie, 'OD-') || str_starts_with($ecriture->n_saisie, 'BC-') || str_starts_with($ecriture->n_saisie, 'DEV-') || str_starts_with($ecriture->n_saisie, 'SELF_'))
+                                                             <div style="font-size:10px; color:#1d4ed8; font-weight:700; margin-top:2px; display:flex; align-items:center; gap:3px;">
+                                                                 <i class="fa-solid fa-arrow-turn-down-right" style="font-size:9px;"></i> ↙ Importé depuis SELFLOW
+                                                             </div>
+                                                         @endif
+                                                     </td>
+                                                     <td>{{ $ecriture->reference_piece }}</td>
                                                     <td>{{ $ecriture->description_operation }}</td>
 
 

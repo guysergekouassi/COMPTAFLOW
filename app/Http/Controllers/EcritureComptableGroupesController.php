@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\PlanComptable;
 use App\Models\CompteTresorerie;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class EcritureComptableGroupesController extends Controller
 {
@@ -131,29 +132,98 @@ class EcritureComptableGroupesController extends Controller
     public function miseAJourMassive(Request $request)
     {
         try {
-            $lignes = $request->input('lignes');
+            $user = Auth::user();
+            $activeCompanyId = session('current_company_id', $user->company_id);
+            $lignes = $request->input('lignes', []);
 
-            foreach ($lignes as $ligne) {
-                $ecriture = EcritureComptable::find($ligne['id']);
-                if ($ecriture) {
-                    $ecriture->update([
-                        'date' => $ligne['date'],
-                        'n_saisie' => $ligne['n_saisie'],
-                        'reference_piece' => $ligne['reference'],
-                        'description_operation' => $ligne['description'],
-                        'plan_comptable_id' => $ligne['compte_general'],
-                        'plan_tiers_id' => $ligne['compte_tiers'] ?: null,
-                        'plan_analytique' => $ligne['plan_analytique'],
-                        'debit' => $ligne['debit'],
-                        'credit' => $ligne['credit'],
-                    ]);
-                }
+            if (empty($lignes) || !is_array($lignes)) {
+                return response()->json(['success' => false, 'message' => 'Aucune ligne à mettre à jour.'], 400);
             }
 
-            return response()->json(['message' => 'Mise à jour réussie']);
+            // ── Sécurité 1 : toutes les écritures doivent appartenir à la company courante ──
+            $ids = array_column($lignes, 'id');
+            $ecrituresExistantes = EcritureComptable::where('company_id', $activeCompanyId)
+                ->whereIn('id', $ids)
+                ->get()
+                ->keyBy('id');
+
+            if ($ecrituresExistantes->count() !== count(array_unique($ids))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Une ou plusieurs écritures sont introuvables ou n\'appartiennent pas à votre société.'
+                ], 403);
+            }
+
+            // ── Sécurité 2 : l'exercice des écritures ne doit pas être clôturé ──
+            $premiere = $ecrituresExistantes->first();
+            $exercice = ExerciceComptable::find($premiere->exercices_comptables_id);
+            if (!$exercice || $exercice->cloturer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible de modifier : l\'exercice comptable est clôturé ou introuvable.'
+                ], 422);
+            }
+
+            // ── Sécurité 3 : le groupe doit rester équilibré (même règle que storeMultiple) ──
+            $totalDebit = 0;
+            $totalCredit = 0;
+            foreach ($lignes as $ligne) {
+                $totalDebit += floatval($ligne['debit'] ?? 0);
+                $totalCredit += floatval($ligne['credit'] ?? 0);
+            }
+            $diff = abs($totalDebit - $totalCredit);
+            if ($diff > 0.1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Écriture déséquilibrée (Débit: $totalDebit / Crédit: $totalCredit). Écart: $diff"
+                ], 422);
+            }
+
+            DB::beginTransaction();
+            foreach ($lignes as $ligne) {
+                $ecrituresExistantes[$ligne['id']]->update([
+                    'date' => $ligne['date'],
+                    'n_saisie' => $ligne['n_saisie'],
+                    'reference_piece' => $ligne['reference'],
+                    'description_operation' => $ligne['description'],
+                    'plan_comptable_id' => $ligne['compte_general'],
+                    'plan_tiers_id' => $ligne['compte_tiers'] ?: null,
+                    'poste_tresorerie_id' => $ligne['poste_tresorerie_id'] ?? $ecrituresExistantes[$ligne['id']]->poste_tresorerie_id,
+                    'plan_analytique' => $ligne['plan_analytique'],
+                    'debit' => $ligne['debit'],
+                    'credit' => $ligne['credit'],
+                ]);
+            }
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Mise à jour réussie']);
         } catch (\Throwable $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
             Log::error('Erreur dans miseAJourMassive : ' . $e->getMessage());
-            return response()->json(['message' => 'Erreur lors de la mise à jour massive.'], 500);
+            return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour massive.'], 500);
+        }
+    }
+
+    public function supprimerGroupe($nSaisie)
+    {
+        try {
+            $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+
+            $deletedCount = EcritureComptable::where('company_id', $companyId)
+                ->where('n_saisie', $nSaisie)
+                ->delete();
+
+            if ($deletedCount > 0) {
+                return response()->json(['success' => true, 'message' => "Écriture $nSaisie supprimée avec succès."]);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Aucune écriture trouvée pour ce numéro.'], 404);
+        } catch (\Throwable $e) {
+            Log::error("Erreur lors de la suppression de l'écriture groupe $nSaisie: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erreur serveur lors de la suppression.'], 500);
         }
     }
 }

@@ -146,6 +146,10 @@ Route::prefix('external')->group(function () {
         ->name('api.external.link-company');
     Route::post('/ecritures/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserEcritures'])
         ->name('api.external.ecritures.deverser');
+    Route::post('/list-companies', [\App\Http\Controllers\Api\ExternalSyncController::class, 'listCompanies'])
+        ->name('api.external.list-companies');
+    Route::post('/company-info', [\App\Http\Controllers\Api\ExternalSyncController::class, 'companyInfo'])
+        ->name('api.external.company-info');
 });
 
 // --- Ajouté automatiquement pour le FlowHub ---

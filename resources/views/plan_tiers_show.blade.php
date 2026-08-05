@@ -324,6 +324,76 @@
                             </div>
                         </div>
 
+                        <!-- Card d'informations Fiscale, Contact & Rattachement (Synchronisées / COMPTAFLOW) -->
+                        <div class="glass-card p-6 mb-8 border-l-4 {{ !empty($selflowTierInfo) ? 'border-l-blue-600' : 'border-l-indigo-600' }}">
+                            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                <h4 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                                    @if(!empty($selflowTierInfo))
+                                        <i class="fa-solid fa-sync text-blue-600"></i> Informations synchronisées avec SELFLOW
+                                    @else
+                                        <i class="fa-solid fa-id-card text-indigo-600"></i> Fiche d'identification Fiscale & Contact
+                                    @endif
+                                </h4>
+                                @if(!empty($selflowTierInfo))
+                                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase">
+                                        <i class="fa-solid fa-link me-1"></i> {{ $selflowTierInfo['type'] ?? 'Tiers' }} Selflow
+                                    </span>
+                                @else
+                                    <span class="bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1 rounded-full uppercase">
+                                        COMPTAFLOW
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">Compte Général de Rattachement</span>
+                                    <strong class="font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded inline-block">
+                                        {{ !empty($selflowTierInfo['compte_comptable']) && $selflowTierInfo['compte_comptable'] !== '—' ? $selflowTierInfo['compte_comptable'] : ($tier->compte ? $tier->compte->numero_de_compte : '—') }}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">Origine / Numéro Initial</span>
+                                    <strong class="font-mono text-slate-700">
+                                        {{ !empty($selflowTierInfo['numero_original']) && $selflowTierInfo['numero_original'] !== '—' ? $selflowTierInfo['numero_original'] : ($tier->numero_original ?: ($tier->compte ? $tier->compte->numero_de_compte : '—')) }}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">NCC (N° Contribuable)</span>
+                                    <strong class="font-mono text-slate-700">{{ !empty($selflowTierInfo['ncc']) && $selflowTierInfo['ncc'] !== '—' ? $selflowTierInfo['ncc'] : ($tier->ncc ?: '—') }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">RCCM</span>
+                                    <strong class="font-mono text-slate-700">{{ !empty($selflowTierInfo['rccm']) && $selflowTierInfo['rccm'] !== '—' ? $selflowTierInfo['rccm'] : ($tier->rccm ?: '—') }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">Compte Contribuable</span>
+                                    <strong class="font-mono text-slate-700">{{ !empty($selflowTierInfo['compte_contribuable']) && $selflowTierInfo['compte_contribuable'] !== '—' ? $selflowTierInfo['compte_contribuable'] : ($tier->compte_contribuable ?: '—') }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">Régime d'imposition</span>
+                                    <strong class="text-slate-700">{{ !empty($selflowTierInfo['regime']) && $selflowTierInfo['regime'] !== '—' ? $selflowTierInfo['regime'] : ($tier->regime ?: '—') }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">Téléphone</span>
+                                    <strong class="text-slate-700">{{ !empty($selflowTierInfo['telephone']) && $selflowTierInfo['telephone'] !== '—' ? $selflowTierInfo['telephone'] : ($tier->telephone ?: '—') }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">E-mail</span>
+                                    <strong class="text-slate-700">{{ !empty($selflowTierInfo['email']) && $selflowTierInfo['email'] !== '—' ? $selflowTierInfo['email'] : ($tier->email ?: '—') }}</strong>
+                                </div>
+                                <div class="col-span-2">
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">Adresse</span>
+                                    <strong class="text-slate-700">{{ !empty($selflowTierInfo['adresse']) && $selflowTierInfo['adresse'] !== '—' ? $selflowTierInfo['adresse'] : ($tier->adresse ?: '—') }}</strong>
+                                </div>
+                                @if(!empty($selflowTierInfo))
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block">Transactions Selflow</span>
+                                    <strong class="text-blue-600 font-extrabold">{{ $selflowTierInfo['nombre_achats'] ?? 0 }} {{ ($selflowTierInfo['type'] ?? '') === 'Fournisseur' ? "achat(s)" : "vente(s)" }}</strong>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                             <!-- Left: Details -->
                             <div class="lg:col-span-4 space-y-8">
@@ -343,15 +413,30 @@
                                         <div class="group">
                                             <label class="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest block mb-1">Identifiant Tiers</label>
                                             <p class="font-mono text-slate-700 font-bold bg-slate-50 px-2 py-1 rounded inline-block">{{ $tier->numero_de_tiers }}</p>
+                                            @php
+                                                $orig = !empty($selflowTierInfo['numero_original']) && $selflowTierInfo['numero_original'] !== '—' 
+                                                    ? $selflowTierInfo['numero_original'] 
+                                                    : ($tier->numero_original ?: ($tier->compte ? $tier->compte->numero_de_compte : null));
+                                            @endphp
+                                            @if($orig)
+                                                <div class="text-xs text-slate-500 font-mono mt-1"><i class="fa-solid fa-code-branch me-1"></i> Origine : <strong>{{ $orig }}</strong></div>
+                                            @endif
                                         </div>
                                         <div class="group">
                                             <label class="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest block mb-1">Rattachement Comptable</label>
                                             @if($tier->compte)
                                                 <div class="flex items-center gap-3 mt-1">
-                                                    <div class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-xl font-black text-xs">
+                                                    <div class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-xl font-black text-xs font-mono">
                                                         {{ $tier->compte->numero_de_compte }}
                                                     </div>
                                                     <p class="text-xs font-bold text-slate-600 truncate">{{ $tier->compte->intitule }}</p>
+                                                </div>
+                                            @elseif(!empty($selflowTierInfo['compte_comptable']) && $selflowTierInfo['compte_comptable'] !== '—')
+                                                <div class="flex items-center gap-3 mt-1">
+                                                    <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-xl font-black text-xs font-mono">
+                                                        {{ $selflowTierInfo['compte_comptable'] }}
+                                                    </div>
+                                                    <p class="text-xs font-bold text-slate-600 truncate">Rattaché au compte (Selflow)</p>
                                                 </div>
                                             @else
                                                 <p class="text-slate-400 italic text-sm">Non rattaché</p>
@@ -487,24 +572,24 @@
 
     <!-- Modal Modification (Standardisé Premium) -->
     <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <form method="POST" action="{{ route('plan_tiers.update', ['id' => $tier->id]) }}" id="updateTiersForm" class="w-full">
                 @csrf
                 @method('PUT')
                 <input type="hidden" id="update_id" name="id" value="{{ $tier->id }}">
                 
                 <div class="modal-content premium-modal-content">
-                    <div class="text-center mb-8 relative">
+                    <div class="text-center mb-6 relative">
                         <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal"></button>
                         <h1 class="text-2xl font-black tracking-tighter text-slate-900">
                             Profil <span class="text-indigo-600">Tiers</span>
                         </h1>
-                        <p class="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Édition des informations de base</p>
-                        <div class="h-1.5 w-12 bg-indigo-600 mx-auto mt-4 rounded-full"></div>
+                        <p class="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Édition des informations de base & fiscales</p>
+                        <div class="h-1.5 w-12 bg-indigo-600 mx-auto mt-3 rounded-full"></div>
                     </div>
 
-                    <div class="space-y-5">
-                        <div class="space-y-1">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
                             <label class="input-label-premium">Catégorie d'entité</label>
                             <select id="update_type_de_tiers" name="type_de_tiers" class="form-select input-premium w-full" required>
                                 @foreach (['Fournisseur', 'Client', 'Personnel', 'Impots', 'CNPS', 'Associé', 'Divers Tiers'] as $type)
@@ -513,7 +598,7 @@
                             </select>
                         </div>
 
-                        <div class="space-y-1">
+                        <div>
                             <label class="input-label-premium">Compte de Rattachement</label>
                             <select name="compte_general" class="form-select input-premium w-full" required>
                                 @foreach (\App\Models\PlanComptable::where('numero_de_compte', 'LIKE', '4%')->orderByRaw("LPAD(numero_de_compte, 20, '0')")->get() as $compte)
@@ -524,13 +609,48 @@
                             </select>
                         </div>
 
-                        <div class="space-y-1">
-                            <label class="input-label-premium">Désignation Officielle</label>
+                        <div class="md:col-span-2">
+                            <label class="input-label-premium">Désignation Officielle / Nom</label>
                             <input type="text" name="intitule" class="form-control input-premium" value="{{ $tier->intitule }}" required>
+                        </div>
+
+                        <div>
+                            <label class="input-label-premium">NCC (N° Contribuable)</label>
+                            <input type="text" name="ncc" class="form-control input-premium" value="{{ $tier->ncc }}" placeholder="Ex: 1234567 B">
+                        </div>
+
+                        <div>
+                            <label class="input-label-premium">RCCM</label>
+                            <input type="text" name="rccm" class="form-control input-premium" value="{{ $tier->rccm }}" placeholder="Ex: CI-ABJ-2024-B-1234">
+                        </div>
+
+                        <div>
+                            <label class="input-label-premium">Compte Contribuable</label>
+                            <input type="text" name="compte_contribuable" class="form-control input-premium" value="{{ $tier->compte_contribuable }}" placeholder="N° compte contribuable">
+                        </div>
+
+                        <div>
+                            <label class="input-label-premium">Régime d'imposition</label>
+                            <input type="text" name="regime" class="form-control input-premium" value="{{ $tier->regime }}" placeholder="Ex: Reel Normal / Simplifie">
+                        </div>
+
+                        <div>
+                            <label class="input-label-premium">Téléphone</label>
+                            <input type="text" name="telephone" class="form-control input-premium" value="{{ $tier->telephone }}" placeholder="Ex: +225 0700000000">
+                        </div>
+
+                        <div>
+                            <label class="input-label-premium">E-mail</label>
+                            <input type="email" name="email" class="form-control input-premium" value="{{ $tier->email }}" placeholder="contact@domaine.ci">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="input-label-premium">Adresse complète</label>
+                            <input type="text" name="adresse" class="form-control input-premium" value="{{ $tier->adresse }}" placeholder="Commune, Rue, Porte...">
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mt-10">
+                    <div class="grid grid-cols-2 gap-4 mt-8">
                         <button type="button" class="py-3 font-bold text-slate-400 hover:text-slate-600 transition" data-bs-dismiss="modal">
                             Ignorer
                         </button>

@@ -28,7 +28,8 @@ class BrouillonController extends Controller
 
             $user = Auth::user();
             $batchId = (string) Str::uuid();
-            $ecritures = json_decode($request->input('ecritures'), true);
+            $ecrituresInput = $request->input('ecritures');
+            $ecritures = is_array($ecrituresInput) ? $ecrituresInput : json_decode($ecrituresInput, true);
             $source = $request->input('source', 'manuel');
 
             if (empty($ecritures)) {

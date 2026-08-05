@@ -16,6 +16,7 @@ class Company extends Model
         'is_blocked', 'block_reason', 'blocked_at', 'blocked_by',
         'account_digits', 'tier_digits', 'tier_id_type', 'accounting_system',
         'journal_code_digits', 'journal_code_type',
+        // Champs DGI de base
         'ncc', 'rccm', 'cnps', 'siege_social', 'rattachement_dgi',
         'expert_comptable_nom', 'expert_comptable_ncc',
         'compte_contribuable', 'regime',

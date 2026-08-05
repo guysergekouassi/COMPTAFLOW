@@ -85,6 +85,7 @@ class ExternalSyncController extends Controller
                 'company_name'        => $request->company_name,
                 'activity'            => $request->activity ?? 'Commercial',
                 'juridique_form'      => $request->juridique_form ?? 'SARL',
+                'social_capital'      => $request->social_capital ?? 0,
                 'adresse'             => $request->adresse,
                 'code_postal'         => '',
                 'city'                => $request->city ?? 'Abidjan',
@@ -308,8 +309,20 @@ class ExternalSyncController extends Controller
 
 
             $tiers = \App\Models\PlanTiers::where('company_id', $company->id)
-                ->select('id', 'numero_de_tiers', 'intitule', 'type_de_tiers', 'numero_original')
-                ->get();
+                ->with('compte')
+                ->get()
+                ->map(function($t) {
+                    return [
+                        'id'              => $t->id,
+                        'numero_de_tiers' => $t->numero_de_tiers,
+                        'intitule'        => $t->intitule,
+                        'type_de_tiers'   => $t->type_de_tiers,
+                        'numero_original' => $t->numero_original,
+                        'compte_general'  => $t->compte ? $t->compte->numero_de_compte : null,
+                        'compte_numero'   => $t->compte ? $t->compte->numero_de_compte : null,
+                        'compte_original' => $t->compte ? $t->compte->numero_original : null,
+                    ];
+                });
 
             return response()->json([
                 'success'        => true,
@@ -483,6 +496,85 @@ class ExternalSyncController extends Controller
             Log::error('ExternalSync deverserEcritures error', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Erreur lors du déversement : ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Liste toutes les entreprises COMPTAFLOW (pour le module Liaison SuperAdmin de SELFLOW).
+     * POST /api/external/list-companies
+     */
+    public function listCompanies(Request $request)
+    {
+        $expectedSecret = config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026');
+        $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+
+        if ($providedSecret !== $expectedSecret) {
+            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+        }
+
+        $companies = Company::all()->map(function ($c) {
+            $admin = User::where('company_id', $c->id)->where('role', 'admin')->first();
+            return [
+                'id'                   => $c->id,
+                'nom'                  => $c->company_name,
+                'email'                => $c->email_adresse,
+                'telephone'            => $c->phone_number,
+                'adresse'              => $c->adresse,
+                'rccm'                 => $c->rccm,
+                'ncc'                  => $c->ncc,
+                'regime'               => $c->regime,
+                'forme_juridique'      => $c->juridique_form,
+                'gerant_nom'           => $admin ? $admin->name : null,
+                'gerant_prenom'        => $admin ? $admin->last_name : null,
+                'created_at'           => $c->created_at ? $c->created_at->format('d/m/Y') : null,
+                'admin_email'          => $admin ? $admin->email_adresse : null,
+                'is_linked'            => !empty($c->selflow_company_id),
+                'selflow_status'       => $c->selflow_sync_status ?? 'inactive',
+            ];
+        });
+
+        return response()->json([
+            'success'   => true,
+            'companies' => $companies,
+        ]);
+    }
+
+    /**
+     * Retourne les informations d'une entreprise COMPTAFLOW.
+     * POST /api/external/company-info
+     */
+    public function companyInfo(Request $request)
+    {
+        $expectedSecret = config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026');
+        $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+
+        if ($providedSecret !== $expectedSecret) {
+            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+        }
+
+        $company = Company::find($request->comptaflow_company_id);
+        if (!$company) {
+            return response()->json(['success' => false, 'message' => 'Entreprise introuvable.'], 404);
+        }
+
+        $admin = User::where('company_id', $company->id)->where('role', 'admin')->first();
+
+        return response()->json([
+            'success' => true,
+            'company' => [
+                'id'             => $company->id,
+                'nom'            => $company->company_name,
+                'rccm'           => $company->rccm,
+                'ncc'            => $company->ncc,
+                'email'          => $company->email_adresse,
+                'telephone'      => $company->phone_number,
+                'adresse'        => $company->adresse,
+                'regime'         => $company->regime,
+                'created_at'     => $company->created_at ? $company->created_at->format('d/m/Y') : null,
+                'admin_nom'      => $admin ? ($admin->name . ' ' . $admin->last_name) : null,
+                'admin_email'    => $admin ? $admin->email_adresse : null,
+                'selflow_status' => $company->selflow_sync_status ?? 'inactive',
+            ],
+        ]);
     }
 }
 

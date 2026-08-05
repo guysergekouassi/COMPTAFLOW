@@ -47,22 +47,38 @@ class EcritureComptableController extends Controller
         $data['annee'] = $data['annee'] ?? date('Y');
         $data['mois'] = $data['mois'] ?? date('n');
 
-        if (empty($data['id_exercice'])) {
+        // ─────────────────────────────────────────────
+        // RÉSOLUTION DE L'EXERCICE ACTIF (objet complet, toujours verrouillé sur le contexte de session)
+        // Même ordre de priorité que EcritureComptableController::list() pour rester cohérent :
+        // 1) exercice sélectionné en session (contexte utilisateur, sidebar)
+        // 2) exercice actif par défaut
+        // 3) dernier exercice non clôturé
+        // ─────────────────────────────────────────────
+        $exerciceContextId = session('current_exercice_id');
+        $exerciceActif = null;
+
+        if ($exerciceContextId) {
+            $exerciceActif = ExerciceComptable::where('id', $exerciceContextId)
+                ->where('company_id', $activeCompanyId)
+                ->first();
+        }
+
+        if (!$exerciceActif) {
             $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
                 ->where('is_active', 1)
                 ->first();
+        }
 
-            if (!$exerciceActif) {
-                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
-                    ->where('cloturer', 0)
-                    ->orderBy('date_debut', 'desc')
-                    ->first();
-            }
+        if (!$exerciceActif) {
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
 
-            if ($exerciceActif) {
-                $data['id_exercice'] = $exerciceActif->id;
-                $data['annee'] = date('Y', strtotime($exerciceActif->date_debut));
-            }
+        if ($exerciceActif) {
+            $data['id_exercice'] = $exerciceActif->id;
+            $data['annee'] = date('Y', strtotime($exerciceActif->date_debut));
         }
 
         // LISTER UNIQUEMENT L'EXERCICE ACTIF (ou tous si aucun actif n'est défini pour permettre la sélection)
@@ -84,6 +100,14 @@ class EcritureComptableController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Journaux de la company, nécessaires à la grille de saisie combinée (sélecteur Journal + résolution contrepartie)
+        $codeJournaux = CodeJournal::where('company_id', $activeCompanyId)->orderBy('code_journal')->get();
+
+        // Modèles de saisie réutilisables (voir EcritureModele) — support serveur pour "Appeler un modèle"
+        $modelesSaisie = class_exists(\App\Models\EcritureModele::class)
+            ? \App\Models\EcritureModele::where('company_id', $activeCompanyId)->orderBy('nom')->get()
+            : collect();
+
         // Générer le numéro utilisateur au format CPT-XX_000000000001
         $initials = $user->initiales;
         $prefix = "CPT-" . $initials . "_";
@@ -98,12 +122,12 @@ class EcritureComptableController extends Controller
 
         $query = EcritureComptable::where('company_id', $activeCompanyId);
 
-        // Filtrer par exercice si présent
+        // Filtrer par exercice si présent (toujours résolu ci-dessus depuis le contexte verrouillé)
         if (!empty($data['id_exercice'])) {
             $query->where('exercices_comptables_id', $data['id_exercice']);
         }
 
-        $ecritures = $query->with(['planComptable', 'planTiers', 'compteTresorerie', 'posteTresorerie'])
+        $ecritures = $query->with(['planComptable', 'planTiers', 'codeJournal', 'compteTresorerie', 'posteTresorerie'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -145,7 +169,8 @@ class EcritureComptableController extends Controller
         return view('accounting_entry_real', compact(
             'plansComptables', 'plansTiers', 'data', 'ecritures',
             'nextSaisieNumber', 'comptesTresorerie', 'exercicesVisibles',
-            'approvalEditingData', 'categories', 'axes', 'sections'
+            'approvalEditingData', 'categories', 'axes', 'sections',
+            'codeJournaux', 'exerciceActif', 'modelesSaisie'
         ));
     }
 
@@ -154,10 +179,45 @@ class EcritureComptableController extends Controller
         $user = Auth::user();
         $data = $request->all();
 
+        $activeCompanyId = session('current_company_id', $user->company_id);
+
+        // ─────────────────────────────────────────────
+        // VERROU D'EXERCICE : un scan de facture doit toujours rester dans l'exercice
+        // sélectionné dans le contexte de session (sidebar), jamais en dehors.
+        // Même règle que JournauxSaisisController::find().
+        // ─────────────────────────────────────────────
+        $exerciceContextId = session('current_exercice_id');
+        if ($exerciceContextId && $request->filled('id_exercice') && $request->input('id_exercice') != $exerciceContextId) {
+            abort(403, "Vous ne pouvez pas scanner une facture pour un exercice différent de celui sélectionné dans le contexte.");
+        }
+
+        // Si aucun id_exercice n'est fourni (ou pour fiabiliser la valeur), on la résout nous-mêmes
+        // depuis le contexte verrouillé plutôt que de faire confiance uniquement à la requête.
+        $exerciceActifScan = null;
+        if ($exerciceContextId) {
+            $exerciceActifScan = ExerciceComptable::where('id', $exerciceContextId)
+                ->where('company_id', $activeCompanyId)
+                ->first();
+        }
+        if (!$exerciceActifScan) {
+            $exerciceActifScan = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('is_active', 1)
+                ->first();
+        }
+        if (!$exerciceActifScan) {
+            $exerciceActifScan = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('cloturer', 0)
+                ->orderBy('date_debut', 'desc')
+                ->first();
+        }
+        if ($exerciceActifScan) {
+            $data['id_exercice'] = $exerciceActifScan->id;
+            $data['annee'] = date('Y', strtotime($exerciceActifScan->date_debut));
+        }
+
         $plansComptables = PlanComptable::select('id', 'numero_de_compte', 'intitule')->orderBy('numero_de_compte')->get();
         $plansTiers = PlanTiers::select('id', 'numero_de_tiers', 'intitule', 'compte_general')->with('compte')->get();
 
-        $activeCompanyId = session('current_company_id', $user->company_id);
         $initials = $user->initiales;
         $prefix = "CPT-" . $initials . "_";
 
@@ -203,9 +263,24 @@ class EcritureComptableController extends Controller
 
         $codeJournaux = CodeJournal::where('company_id', $activeCompanyId)->get();
 
-        $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
-            ->where('is_active', 1)
-            ->first();
+        // ─────────────────────────────────────────────
+        // VERROU D'EXERCICE : le Centre de Scan doit lui aussi rester dans l'exercice
+        // sélectionné dans le contexte de session (même règle que scanIndex()).
+        // ─────────────────────────────────────────────
+        $exerciceContextId = session('current_exercice_id');
+        $exerciceActif = null;
+
+        if ($exerciceContextId) {
+            $exerciceActif = ExerciceComptable::where('id', $exerciceContextId)
+                ->where('company_id', $activeCompanyId)
+                ->first();
+        }
+
+        if (!$exerciceActif) {
+            $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                ->where('is_active', 1)
+                ->first();
+        }
 
         if (!$exerciceActif) {
             $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
@@ -584,7 +659,7 @@ class EcritureComptableController extends Controller
 
             $activeCompanyId = session('current_company_id', $user->company_id);
 
-            $ecrituresRaw = $request->input('ecritures');
+            $ecrituresRaw = $request->input('ecritures') ?? $request->input('lignes');
             if (is_string($ecrituresRaw)) {
                 $ecrituresRaw = json_decode($ecrituresRaw, true);
             }
@@ -666,8 +741,12 @@ class EcritureComptableController extends Controller
 
             DB::beginTransaction();
             $globalNSaisieMap = []; // Cache for global sequence numbers (status=approved)
+            $createdIds = [];
+
+            $rootUserNS = $request->input('n_saisie') ?? 'DEFAULT';
 
             foreach ($groups as $userNS => $groupEcritures) {
+                $resolvedUserNS = ($userNS === 'DEFAULT' || empty($userNS)) ? $rootUserNS : $userNS;
                 $currentGlobalNS = null;
                 if ($status === 'approved') {
                     $firstData = reset($groupEcritures);
@@ -679,10 +758,10 @@ class EcritureComptableController extends Controller
 
                 foreach ($groupEcritures as $data) {
                     $planComptableId = !empty($data['plan_comptable_id']) ? $data['plan_comptable_id'] : ($data['compte_general'] ?? null);
-                    if (!$planComptableId) throw new \Exception("Un compte général est requis pour l'opération $userNS.");
+                    if (!$planComptableId) throw new \Exception("Un compte général est requis pour l'opération $resolvedUserNS.");
 
                     $codeJournalId = !empty($data['code_journal_id']) ? $data['code_journal_id'] : ($data['journal_id'] ?? null);
-                    if (!$codeJournalId) throw new \Exception("Un code journal est requis pour l'opération $userNS.");
+                    if (!$codeJournalId) throw new \Exception("Un code journal est requis pour l'opération $resolvedUserNS.");
 
                     $dateString = !empty($data['date']) ? $data['date'] : now()->format('Y-m-d');
                     $date = \Carbon\Carbon::parse($dateString);
@@ -698,8 +777,8 @@ class EcritureComptableController extends Controller
 
                     $ecriture = new EcritureComptable();
                     $ecriture->date = $dateString;
-                    $ecriture->n_saisie = ($status === 'approved') ? $currentGlobalNS : $userNS;
-                    $ecriture->n_saisie_user = $userNS;
+                    $ecriture->n_saisie = ($status === 'approved') ? $currentGlobalNS : $resolvedUserNS;
+                    $ecriture->n_saisie_user = $resolvedUserNS;
                     $ecriture->description_operation = $data['description_operation'] ?? $data['libelle'] ?? '';
                     $ecriture->reference_piece = $data['reference_piece'] ?? $data['reference'] ?? null;
                     $ecriture->plan_comptable_id = $planComptableId;
@@ -717,6 +796,7 @@ class EcritureComptableController extends Controller
                     $ecriture->poste_tresorerie_id = $this->resolveTreasuryPost($activeCompanyId, $planComptableId) ?? ($data['poste_tresorerie_id'] ?? null);
                     $ecriture->save();
 
+                    $createdIds[] = $ecriture->id;
                     if (!$firstInGroup) $firstInGroup = $ecriture;
 
                     if ($ecriture->plan_analytique && !empty($data['ventilations'])) {
@@ -753,7 +833,42 @@ class EcritureComptableController extends Controller
                 \App\Models\Brouillon::where('batch_id', $batchId)->where('company_id', $activeCompanyId)->delete();
             }
 
-            return response()->json(['success' => true, 'message' => $status === 'approved' ? 'Opérations validées avec succès.' : 'Opérations Duo enregistrées (en attente).']);
+            $createdEcritures = EcritureComptable::with(['codeJournal', 'planComptable', 'planTiers', 'posteTresorerie'])
+                ->whereIn('id', $createdIds)
+                ->get()
+                ->map(function ($e) {
+                    return [
+                        'id' => $e->id,
+                        'date' => $e->date,
+                        'n_saisie' => $e->n_saisie,
+                        'n_saisie_user' => $e->n_saisie_user,
+                        'statut' => $e->statut,
+                        'code_journal_id' => $e->code_journal_id,
+                        'code_journal' => $e->codeJournal->code_journal ?? '',
+                        'code_journal_original' => $e->codeJournal->numero_original ?? null,
+                        'description_operation' => $e->description_operation,
+                        'reference_piece' => $e->reference_piece,
+                        'compte_general' => $e->planComptable->numero_de_compte ?? '',
+                        'compte_general_intitule' => $e->planComptable->intitule ?? '',
+                        'compte_general_original' => $e->planComptable->numero_original ?? null,
+                        'compte_tiers' => $e->planTiers->numero_de_tiers ?? '',
+                        'compte_tiers_intitule' => $e->planTiers->intitule ?? '',
+                        'compte_tiers_original' => $e->planTiers->numero_original ?? null,
+                        'analytique' => (bool) $e->plan_analytique,
+                        'debit' => $e->debit,
+                        'credit' => $e->credit,
+                        'poste_tresorerie' => $e->posteTresorerie->name ?? '',
+                        'poste_tresorerie_id' => $e->poste_tresorerie_id ?? null,
+                        'piece' => (bool) $e->piece_justificatif,
+                        'piece_url' => $e->piece_justificatif ? asset('justificatifs/' . $e->piece_justificatif) : null,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true, 
+                'message' => $status === 'approved' ? 'Opérations validées avec succès.' : 'Opérations Duo enregistrées (en attente).',
+                'ecritures' => $createdEcritures
+            ]);
         }
         catch (\Throwable $e) {
             DB::rollBack();

@@ -47,7 +47,7 @@
 </style>
 
 <!-- Modal Ventilation Analytique -->
-<div class="modal fade" id="modalVentilationAnalytique" data-bs-backdrop="static" style="z-index: 10001;">
+<div class="modal fade" id="modalVentilationAnalytique" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="width: 800px !important; max-width: 800px !important;">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
             <div class="modal-body p-5 bg-white" style="position: relative;">
@@ -240,6 +240,13 @@
         };
 
         window.initialiserTableauVentilation = function(montantTotal) {
+            const displayEl = document.getElementById('montant_a_ventiler_display');
+            const numMontant = Number(montantTotal || 0);
+            if (displayEl) {
+                displayEl.innerText = numMontant.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+                displayEl.dataset.rawAmount = numMontant;
+            }
+
             const container = document.getElementById('axes_ventilation_container');
             if (!container) return;
             container.innerHTML = '';
@@ -334,17 +341,23 @@
             window.mettreAJourMontantsVentilation();
         };
 
+        const getBaseMontantVentilation = () => {
+            const displayEl = document.getElementById('montant_a_ventiler_display');
+            if (!displayEl) return 0;
+            if (displayEl.dataset.rawAmount) return parseFloat(displayEl.dataset.rawAmount) || 0;
+            const text = displayEl.innerText.replace(/\s/g, '').replace(/\u202f/g, '').replace(',', '.');
+            return parseFloat(text) || 0;
+        };
+
         const calculerDepuisPct = (tr) => {
-            const totalStr = document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '').replace(',', '.');
-            const total = parseFloat(totalStr) || 0;
+            const total = getBaseMontantVentilation();
             const pct = parseFloat(tr.querySelector('.vent-pct').value) || 0;
             tr.querySelector('.vent-mnt').value = (total * pct / 100).toFixed(2);
             window.mettreAJourMontantsVentilation();
         };
 
         const calculerDepuisMnt = (tr) => {
-            const totalStr = document.getElementById('montant_a_ventiler_display').innerText.replace(/\s/g, '').replace(',', '.');
-            const total = parseFloat(totalStr) || 0;
+            const total = getBaseMontantVentilation();
             const mnt = parseFloat(tr.querySelector('.vent-mnt').value) || 0;
             tr.querySelector('.vent-pct').value = total > 0 ? (mnt / total * 100).toFixed(2) : 0;
             window.mettreAJourMontantsVentilation();
