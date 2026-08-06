@@ -20,6 +20,7 @@ return [
         'Gouvernance (Super Admin)' => [
             'superadmin.entities' => 'Gestion des Entités',
             'superadmin.companies.create' => 'Créer Entreprise',
+            'superadmin.accounting.index' => 'Gestion des Comptabilités',
             'superadmin.accounting.create' => 'Créer Comptabilité',
             'superadmin.users' => 'Gestion Utilisateurs',
             'superadmin.users.create' => 'Créer Comptable',
@@ -28,7 +29,7 @@ return [
         ],
         'Opérations (Super Admin)' => [
             'superadmin.activities' => 'Suivi des Activités',
-            'admin.tasks.index' => 'Assigner Tâche',
+            'superadmin.tasks.index' => 'Assigner Tâche (Super Admin)',
             'superadmin.access' => 'Contrôle d\'Accès',
         ],
         'Analyses (Super Admin)' => [

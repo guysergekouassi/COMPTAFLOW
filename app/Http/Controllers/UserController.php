@@ -371,6 +371,9 @@ User::create($validated);
             'role' => 'admin',
             'is_active' => true,
             'habilitations' => $habilitations,
+            // Sans created_by_id, User::isPrincipalAdmin() renvoyait true par défaut :
+            // tout admin créé ici devenait "administrateur principal".
+            'created_by_id' => $admin->id,
         ]);
 
         return redirect()->route('user_management')
@@ -411,6 +414,10 @@ User::create($validated);
             'role' => 'admin',
             'is_active' => true,
             'habilitations' => $habilitations,
+            // Indispensable : sans created_by_id, isPrincipalAdmin() renvoie true et
+            // l'admin "secondaire" récupérait toutes les habilitations au lieu de
+            // celles choisies dans le formulaire.
+            'created_by_id' => $admin->id,
         ]);
 
         return redirect()->route('user_management')
@@ -441,6 +448,53 @@ User::create($validated);
         return array_unique($allowedCompanyIds);
     }
 
+    /**
+     * Vérifie que l'utilisateur connecté a le droit d'administrer $target.
+     *
+     * Les actions update()/destroy() étaient totalement ouvertes : n'importe quel
+     * compte authentifié (y compris un comptable) pouvait appeler PUT /users/{id}
+     * pour se promouvoir "admin" avec toutes les habilitations, ou DELETE /users/{id}
+     * pour supprimer un utilisateur d'une AUTRE entreprise. Ce garde-fou centralise
+     * les règles.
+     */
+    private function assertCanManageUser(User $target, string $action = 'modifier'): void
+    {
+        $actor = Auth::user();
+
+        // 1. Seuls un admin ou un super admin peuvent administrer des comptes.
+        if (!$actor->isAdmin()) {
+            abort(403, "Vous n'êtes pas autorisé à {$action} un utilisateur.");
+        }
+
+        // 2. Un super admin primaire n'est jamais administrable depuis cet écran.
+        if ($target->isPrimarySuperAdmin()) {
+            abort(403, "Le compte Super Administrateur principal ne peut pas être {$action}.");
+        }
+
+        // 3. Le super admin travaille sur l'ensemble du périmètre qu'il supervise.
+        if ($actor->isSuperAdmin()) {
+            if ($actor->isPrimarySuperAdmin() || $target->company_id === null) {
+                return;
+            }
+
+            if (!$actor->canManageCompany((int) $target->company_id)) {
+                abort(403, "Cette entreprise ne fait pas partie de votre périmètre.");
+            }
+
+            return;
+        }
+
+        // 4. Un admin d'entreprise ne sort pas de son entreprise ni de ses sous-entreprises.
+        if (!in_array($target->company_id, $this->getManagedCompanyIds($actor), true)) {
+            abort(403, "Cet utilisateur n'appartient pas à votre entreprise.");
+        }
+
+        // 5. Un admin ne peut pas administrer un super admin.
+        if ($target->isSuperAdmin()) {
+            abort(403, "Vous n'êtes pas autorisé à {$action} un Super Administrateur.");
+        }
+    }
+
 
 
     public function show(string $id)
@@ -456,6 +510,17 @@ User::create($validated);
 
     public function update(Request $request, $id)
     {
+        $user = User::findOrFail($id);
+
+        $this->assertCanManageUser($user, 'modifier');
+
+        // Un utilisateur ne modifie pas son propre rôle / ses propres habilitations
+        // depuis cet écran (sinon élévation de privilèges).
+        if ($user->id === Auth::id()) {
+            return redirect()->back()
+                ->with('error', "Vous ne pouvez pas modifier votre propre rôle ni vos propres habilitations.");
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -465,12 +530,14 @@ User::create($validated);
             'habilitations.*' => 'string', // Accept any string value
         ]);
 
-        $user = User::findOrFail($id);
-
         // Traitement des habilitations (Utilise le même helper que pour store)
+        // On passe la company de la CIBLE : les règles dépendantes du contexte
+        // (Fusion réservée aux sous-entreprises) étaient auparavant évaluées sans
+        // company_id, donc systématiquement désactivées.
         $validated['habilitations'] = $this->processHabilitations(
             $validated['role'],
-            $request->input('habilitations', [])
+            $request->input('habilitations', []),
+            $user->company_id
         );
 
         $user->update($validated);
@@ -485,6 +552,13 @@ User::create($validated);
     public function destroy($id)
     {
         $user = User::findOrFail($id);
+
+        $this->assertCanManageUser($user, 'supprimer');
+
+        if ($user->id === Auth::id()) {
+            return redirect()->back()->with('error', "Vous ne pouvez pas supprimer votre propre compte.");
+        }
+
         $user->delete();
 
         return redirect()->back()->with('success', 'Utilisateur supprimé avec succès.');
@@ -553,10 +627,10 @@ User::create($validated);
 
 public function impersonate(User $user)
     {
-        // Optionnel : Vérifiez que seul un Admin peut le faire
-        if (!Auth::user()->isAdmin()) {
-            abort(403, 'Accès non autorisé.');
-        }
+        // Seul un Admin / Super Admin peut le faire, ET uniquement sur un compte
+        // de son propre périmètre : sans ce contrôle, un admin de l'entreprise A
+        // pouvait se connecter en tant qu'utilisateur de l'entreprise B.
+        $this->assertCanManageUser($user, 'impersonnaliser');
 
         // 1. Stocker l'ID de l'administrateur original dans la session
         session()->put('original_admin_id', Auth::id());

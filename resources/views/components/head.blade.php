@@ -73,9 +73,38 @@
             background: #f9fafb;
         }
 
-        /* Masquer la barre de défilement */
+        /*
+         * Barre de défilement globale.
+         * NE PAS remettre `::-webkit-scrollbar { display: none }` ici : cette règle
+         * s'appliquait à TOUS les éléments et annulait les barres de défilement
+         * personnalisées définies ailleurs (sidebar, modales, tableaux Balance /
+         * Grand Livre, chat IA...). Les `width` déclarés localement s'appliquaient
+         * bien, mais le `display: none` global n'était jamais surchargé : les
+         * barres restaient donc invisibles et les tableaux paraissaient tronqués.
+         * On garde ici une barre discrète, surchargeable par les vues.
+         */
         ::-webkit-scrollbar {
-            display: none;
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+
+        /* Le body garde un défilement sans barre visible (comportement d'origine). */
+        body::-webkit-scrollbar {
+            width: 0;
+            height: 0;
         }
 
         /* Bouton principal (le select visible) */
@@ -171,37 +200,43 @@
             margin: 0 0 0.5rem 0;
         }
 
-        /* FORCER LES COULEURS DE FOND */
+        /*
+         * Couleurs de repli (si le build Vite/Tailwind n'est pas déployé).
+         * Le `!important` a été retiré : il empêchait les variantes Tailwind
+         * (hover:, focus:, md:...) et les couleurs sémantiques de Bootstrap de
+         * s'appliquer. Ce bloc étant déclaré APRÈS Bootstrap et après @vite,
+         * il reste prioritaire à spécificité égale, sans bloquer les variantes.
+         */
         .bg-blue-100 {
-            background-color: #dbeafe !important;
+            background-color: #dbeafe;
         }
 
         .bg-purple-100 {
-            background-color: #f3e8ff !important;
+            background-color: #f3e8ff;
         }
 
         .bg-green-100 {
-            background-color: #d1fae5 !important;
+            background-color: #d1fae5;
         }
 
         .bg-orange-100 {
-            background-color: #fed7aa !important;
+            background-color: #fed7aa;
         }
 
         .text-primary {
-            color: #3b82f6 !important;
+            color: #3b82f6;
         }
 
         .text-purple-600 {
-            color: #9333ea !important;
+            color: #9333ea;
         }
 
         .text-success {
-            color: #10b981 !important;
+            color: #10b981;
         }
 
         .text-orange-600 {
-            color: #ea580c !important;
+            color: #ea580c;
         }
 
         /* Stabilisation du layout */

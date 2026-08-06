@@ -36,15 +36,33 @@ class HabilitationController extends Controller
         $targetUser = User::findOrFail($id);
         $currentUser = Auth::user();
         $currentCompanyId = session('current_company_id', $currentUser->company_id);
-        
+
         // Sécurité : Un utilisateur ne peut pas modifier ses propres habilitations
         if ($targetUser->id === $currentUser->id) {
             return back()->with('error', 'Vous ne pouvez pas modifier vos propres habilitations.');
         }
 
-        // Sécurité : Seul le créateur peut modifier un admin secondaire ou un comptable
-        if (!$targetUser->isPrincipalAdmin() && $targetUser->created_by_id !== $currentUser->id && !$currentUser->isSuperAdmin()) {
-            return back()->with('error', 'Seul le créateur de ce compte peut modifier ses habilitations.');
+        // Sécurité : la cible doit appartenir à l'entreprise en cours de gestion.
+        // Sans ce contrôle, l'ID passé dans l'URL permettait d'atteindre
+        // n'importe quel utilisateur d'une AUTRE entreprise.
+        if (!$currentUser->isSuperAdmin() && (int) $targetUser->company_id !== (int) $currentCompanyId) {
+            return back()->with('error', "Cet utilisateur n'appartient pas à votre entreprise.");
+        }
+
+        // Sécurité : on ne touche jamais aux habilitations d'un Super Admin ici.
+        if ($targetUser->isSuperAdmin()) {
+            return back()->with('error', "Les habilitations d'un Super Administrateur ne se modifient pas depuis cet écran.");
+        }
+
+        // Sécurité : seul le créateur (ou un Super Admin) peut modifier un admin
+        // secondaire ou un comptable.
+        // NB : la condition précédente commençait par `!$targetUser->isPrincipalAdmin()`,
+        // ce qui court-circuitait tout le contrôle dès que la cible était un admin
+        // principal — n'importe qui pouvait alors éditer un administrateur principal.
+        if (!$currentUser->isSuperAdmin()
+            && $targetUser->created_by_id !== $currentUser->id
+            && !$currentUser->isPrincipalAdmin()) {
+            return back()->with('error', 'Seul le créateur de ce compte (ou l\'administrateur principal) peut modifier ses habilitations.');
         }
 
         $data = $request->validate([

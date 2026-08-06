@@ -1,6 +1,44 @@
-@import 'tailwindcss';
+/*
+| ---------------------------------------------------------------------------
+| ComptaFlow — Feuille de style Tailwind (v4)
+| ---------------------------------------------------------------------------
+| IMPORTANT : Tailwind v4 n'utilise PAS `tailwind.config.js`. La configuration
+| se fait ici, en CSS.
+|
+| On importe volontairement Tailwind SANS le "preflight" (le reset CSS de
+| Tailwind). Ce fichier est chargé APRÈS Bootstrap 5 et le thème `core.css`
+| dans components/head.blade.php : si le preflight était actif, il écrasait
+| le Reboot de Bootstrap et cassait l'affichage global —
+|   * `a { color: inherit; text-decoration: inherit }`  -> liens sans couleur
+|   * `h1..h6 { font-size: inherit; font-weight: inherit }` -> titres à plat
+|   * `*, ::before, ::after { border: 0; margin: 0; padding: 0 }`
+|   * `ol, ul { list-style: none }`
+| C'est ce qui produisait les "couleurs qui ne sortent pas" et les éléments
+| mal affichés. On garde donc uniquement le thème et les utilitaires.
+|
+| Équivalent v4 de l'ancien `corePlugins: { preflight: false }`.
+*/
 
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Sources scannées pour la génération des classes utilitaires. */
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
+
+/*
+| Palette et police du projet (ex-`theme.extend` de tailwind.config.js).
+| Utilisable via bg-primary-dark, text-navy-900, font-sans, ...
+*/
+@theme {
+    --font-sans: 'Inter', sans-serif;
+
+    --color-primary-dark: #1e3a8a;
+    --color-primary-light: #3b82f6;
+    --color-navy-800: #1e40af;
+    --color-navy-900: #1e3a8a;
+}

@@ -5,7 +5,6 @@
 //     Artisan::call('cache:clear');
 //     return "Configuration videe !";
 // });
-use App\Http\Middleware\authSuperAdminMiddleware;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\BalanceController;
@@ -124,17 +123,19 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     // *** NOUVELLE INTERFACE AGENTS IA PREMIUM ***
     Route::get('/admin/ia/chat', [App\Http\Controllers\AgentChatController::class, 'index'])->name('admin.ia.chat');
     Route::post('/admin/ia/chat/send', [App\Http\Controllers\AgentChatController::class, 'sendMessage'])->name('admin.ia.chat.send');
+    // Vidage du cache applicatif : réservé au Super Admin (tout utilisateur
+    // connecté pouvait auparavant déclencher un config:clear + cache:clear).
     Route::get('/clear-config', function() {
         \Illuminate\Support\Facades\Artisan::call('config:clear');
         \Illuminate\Support\Facades\Artisan::call('cache:clear');
         return "Configuration et Cache nettoyés !";
-    })->name('ia.clear-config');
+    })->name('ia.clear-config')->middleware('superadmin');
 
     // *** ROUTES MODULE ANALYSE COMPTABLE IA (Multi-fichiers Excel/PDF/CSV + Chat + Projets) ***
     Route::prefix('excel-ia')->name('excel_ia.')->group(function () {
         Route::get('/', [\App\Http\Controllers\ExcelIaController::class, 'index'])->name('index');
-        Route::post('/analyser', [\App\Http\Controllers\ExcelIaController::class, 'analyser'])->name('analyser')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-        Route::post('/chat', [\App\Http\Controllers\ExcelIaController::class, 'chat'])->name('chat')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+        Route::post('/analyser', [\App\Http\Controllers\ExcelIaController::class, 'analyser'])->name('analyser');
+        Route::post('/chat', [\App\Http\Controllers\ExcelIaController::class, 'chat'])->name('chat');
         Route::post('/export-txt', [\App\Http\Controllers\ExcelIaController::class, 'exportTxt'])->name('export_txt');
         Route::post('/injecter-bdd', [\App\Http\Controllers\ExcelIaController::class, 'injecterBdd'])->name('injecter_bdd');
         Route::post('/injecter-et-telecharger', [\App\Http\Controllers\ExcelIaController::class, 'injecterEtTelecharger'])->name('injecter_et_telecharger');
@@ -158,7 +159,11 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     // Pages principales
     Route::get('/app', function () { return redirect()->route('app.dashboard'); })->name('index');
     Route::get('/index', function () { return redirect()->route('app.dashboard'); })->name('index_page');
-    Route::get('/accounting_balance', function () { return view('accounting_balance'); })->name('accounting_balance');
+    // NB : la route GET /accounting_balance déclarée ici renvoyait directement la
+    // vue, sans passer par BalanceController@index. Comme Laravel retient la
+    // PREMIÈRE route enregistrée pour une même URI, elle masquait la vraie route
+    // (plus bas, section "GESTION DE LA BALANCE") : la page s'affichait vide,
+    // sans balances ni comptes. Supprimée.
     Route::get('/accounting_entry', function () { return view('accounting_entry'); })->name('accounting_entry');
     Route::get('/file_management', function () { return view('file_management'); })->name('file_management');
     Route::get('/financial_statements', function () { return view('financial_statements'); })->name('financial_statements');
@@ -204,11 +209,16 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     Route::put('/compagny_information/{company}', [CompanyController::class, 'update'])->name('compagny_information.update');
 
     // *****************ROUTE GESTION DES USERS
-    Route::post('/users', [UserController::class, 'store'])->name('users.store');
-    Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
-    Route::get('/user_management', [UserController::class, 'stat_online'])->name('user_management');
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    // Réservé aux admins : ces routes créent, modifient (rôle + habilitations) et
+    // suppriment des comptes. Elles n'étaient protégées que par 'auth'.
+    Route::middleware('admin')->group(function () {
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    });
+    Route::get('/user_management', [UserController::class, 'stat_online'])
+        ->name('user_management')->middleware('permission:user_management');
 
 
     //api route gemini 
@@ -272,7 +282,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
 
     // Brouillons
     Route::get('/brouillons', [App\Http\Controllers\BrouillonController::class, 'index'])->name('brouillons.index');
-    Route::post('/api/brouillons', [App\Http\Controllers\BrouillonController::class, 'store'])->name('api.brouillons.store')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/api/brouillons', [App\Http\Controllers\BrouillonController::class, 'store'])->name('api.brouillons.store');
     Route::get('/api/brouillons/{batchId}', [App\Http\Controllers\BrouillonController::class, 'load'])->name('api.brouillons.load');
     Route::delete('/brouillons/{batchId}', [App\Http\Controllers\BrouillonController::class, 'destroy'])->name('brouillons.destroy');
     
@@ -281,7 +291,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
         Route::post('/superadmin/switch/return', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'returnToSuperAdmin'])->name('superadmin.switch.return');
     });
     
-    Route::post('/api/ecritures', [EcritureComptableController::class, 'store'])->name('api.ecriture.store')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/api/ecritures', [EcritureComptableController::class, 'store'])->name('api.ecriture.store');
     Route::delete('/ecriture-delete-by-saisie/{n_saisie?}', [EcritureComptableController::class, 'deleteBySaisie'])->name('ecriture.delete-by-saisie');
     Route::post('/ecriture', [EcritureComptableController::class, 'store'])->name('ecriture.store');
     Route::get('/ecriture-scan', [EcritureComptableController::class, 'scanIndex'])->name('ecriture.scan');
@@ -303,7 +313,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
 
     Route::post('/api/ecritures/multiple', [EcritureComptableController::class, 'storeMultiple'])
         ->name('api.ecriture.storeMultiple')
-        ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+        ;
 
 // Route de test pour vérifier que le contrôleur fonctionne
 Route::get('/test-saisie-number', function() {
@@ -435,49 +445,68 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
     Route::get('/flux_tresorerie', [FluxTresorerieController::class, 'index'])->name('flux_tresorerie');
 
     // Dashboard Admin (Performance par défaut)
-    Route::get('/admin/dashboard', [App\Http\Controllers\Admin\PerformanceController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/dashboard', [App\Http\Controllers\Admin\PerformanceController::class, 'index'])
+        ->name('admin.dashboard')
+        ->middleware('permission:admin.performance');
 
     // Administration Avancée
+    // NB : chaque route porte l'habilitation correspondante (config/accounting_permissions.php),
+    // afin que le contrôle serveur soit identique au filtrage affiché dans la sidebar.
     Route::prefix('admin')->name('admin.')->group(function() {
         // Approbations
-        Route::get('/approvals', [App\Http\Controllers\Admin\ApprovalController::class, 'index'])->name('approvals');
-        Route::post('/approvals/{id}/approve', [App\Http\Controllers\Admin\ApprovalController::class, 'approve'])->name('approvals.approve');
-        Route::post('/approvals/{id}/reject', [App\Http\Controllers\Admin\ApprovalController::class, 'reject'])->name('approvals.reject');
-        Route::get('/approvals/{id}/details', [App\Http\Controllers\Admin\ApprovalController::class, 'getDetails'])->name('approvals.details');
+        Route::middleware('permission:admin.approvals')->group(function () {
+            Route::get('/approvals', [App\Http\Controllers\Admin\ApprovalController::class, 'index'])->name('approvals');
+            Route::post('/approvals/{id}/approve', [App\Http\Controllers\Admin\ApprovalController::class, 'approve'])->name('approvals.approve');
+            Route::post('/approvals/{id}/reject', [App\Http\Controllers\Admin\ApprovalController::class, 'reject'])->name('approvals.reject');
+            Route::get('/approvals/{id}/details', [App\Http\Controllers\Admin\ApprovalController::class, 'getDetails'])->name('approvals.details');
+        });
 
         // Audit & Suivi
-        Route::get('/audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit');
-        Route::get('/audit/export', [App\Http\Controllers\Admin\AuditController::class, 'export'])->name('audit.export');
-        Route::get('/ia-dashboard', [App\Http\Controllers\IaController::class, 'dashboard'])->name('ia.dashboard');
-        
+        Route::middleware('permission:admin.audit')->group(function () {
+            Route::get('/audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit');
+            Route::get('/audit/export', [App\Http\Controllers\Admin\AuditController::class, 'export'])->name('audit.export');
+        });
+        Route::get('/ia-dashboard', [App\Http\Controllers\IaController::class, 'dashboard'])
+            ->name('ia.dashboard')
+            ->middleware('admin');
+
         // Contrôle d'Accès
-        Route::get('/access-control', [App\Http\Controllers\Admin\AccessController::class, 'index'])->name('access');
-        Route::post('/access/toggle-user/{id}', [App\Http\Controllers\Admin\AccessController::class, 'toggleUser'])->name('access.toggle_user');
+        Route::middleware('permission:admin.access')->group(function () {
+            Route::get('/access-control', [App\Http\Controllers\Admin\AccessController::class, 'index'])->name('access');
+            Route::post('/access/toggle-user/{id}', [App\Http\Controllers\Admin\AccessController::class, 'toggleUser'])->name('access.toggle_user');
+        });
 
         // Performance (Tableau de bord Admin)
-        Route::get('/performance', [App\Http\Controllers\Admin\PerformanceController::class, 'index'])->name('performance');
-
-        // Assignation de Tâches
-        Route::get('/tasks', [App\Http\Controllers\Admin\TaskController::class, 'index'])->name('tasks');
-        Route::post('/tasks', [App\Http\Controllers\Admin\TaskController::class, 'store'])->name('tasks.store');
+        Route::get('/performance', [App\Http\Controllers\Admin\PerformanceController::class, 'index'])
+            ->name('performance')
+            ->middleware('permission:admin.performance');
 
         // Switch Comptabilité (Nouvelle Route)
-        Route::get('/switch', [App\Http\Controllers\Admin\SwitchController::class, 'index'])->name('switch');
+        Route::get('/switch', [App\Http\Controllers\Admin\SwitchController::class, 'index'])
+            ->name('switch')
+            ->middleware('permission:admin.switch');
 
         // Configuration Entreprise (Modèles & Hub)
-        Route::prefix('config')->group(function() {
+        // Règle NB4 : la configuration d'entreprise est réservée à l'administrateur
+        // (principal ou habilité) — jamais accessible à un comptable par URL directe.
+        Route::prefix('config')->middleware('permission:admin.config.hub')->group(function() {
             // Routes avec préfixe de nom 'admin.' (déjà préfixé par le groupe parent)
             Route::post('/import-accounts', [App\Http\Controllers\Admin\AdminConfigController::class, 'importAccounts'])->name('import_accounts');
             Route::post('/import-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'importTiers'])->name('import_tiers');
             Route::post('/import-journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'importJournals'])->name('import_journals');
         });
 
-        Route::prefix('config')->name('config.')->group(function() {
-            Route::get('/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'hub'])->name('hub');
-            Route::get('/plan-comptable', [App\Http\Controllers\Admin\AdminConfigController::class, 'planComptable'])->name('plan_comptable');
-            Route::get('/plan-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'planTiers'])->name('plan_tiers');
-            Route::get('/journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'journals'])->name('journals');
-            Route::get('/external-import', [App\Http\Controllers\Admin\AdminConfigController::class, 'externalImport'])->name('external_import');
+        Route::prefix('config')->name('config.')->middleware('admin')->group(function() {
+            Route::get('/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'hub'])
+                ->name('hub')->middleware('permission:admin.config.hub');
+            Route::get('/plan-comptable', [App\Http\Controllers\Admin\AdminConfigController::class, 'planComptable'])
+                ->name('plan_comptable')->middleware('permission:admin.config.plan_comptable');
+            Route::get('/plan-tiers', [App\Http\Controllers\Admin\AdminConfigController::class, 'planTiers'])
+                ->name('plan_tiers')->middleware('permission:admin.config.plan_tiers');
+            Route::get('/journals', [App\Http\Controllers\Admin\AdminConfigController::class, 'journals'])
+                ->name('journals')->middleware('permission:admin.config.journals');
+            Route::get('/external-import', [App\Http\Controllers\Admin\AdminConfigController::class, 'externalImport'])
+                ->name('external_import')->middleware('permission:admin.config.external_import');
             
             Route::post('/charge-imports', [App\Http\Controllers\Admin\AdminConfigController::class, 'chargeImports'])->name('charge_imports');
             Route::post('/update-settings', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateSettings'])->name('update_settings');
@@ -522,12 +551,15 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
 
         });
 
-    // Route de secours pour compatibilité (Evite Erreur 500)
-    Route::get('/admin/export/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportHub'])->name('export.hub')->middleware(['auth']);
-
         // --- MODULE EXPORTATION (DÉPLACÉ HORS CONFIG) ---
-        Route::get('/export/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportHub'])->name('export.hub');
-        Route::post('/export/process', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportProcess'])->name('export.process');
+        // NB : l'ancienne "route de secours" déclarée ici pointait sur
+        // /admin/admin/export/hub (double préfixe) tout en réutilisant le nom
+        // 'admin.export.hub'. Elle écrasait/dupliquait le nom sans jamais être
+        // atteignable : supprimée.
+        Route::middleware('permission:admin.export.hub')->group(function () {
+            Route::get('/export/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportHub'])->name('export.hub');
+            Route::post('/export/process', [App\Http\Controllers\Admin\AdminConfigController::class, 'exportProcess'])->name('export.process');
+        });
 
         // --- NOUVEAUX TUNNEL D'IMPORTATION (DÉPLACÉ HORS CONFIG) ---
         Route::get('/import/hub', [App\Http\Controllers\Admin\AdminConfigController::class, 'importHub'])->name('import.hub');
@@ -554,11 +586,10 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
     });
 
     // Dashboard Comptable
-    Route::get('/comptable/dashboard', function () {
-        return view('comptable.comptdashboard');
-    })->name('comptable.comptdashboard');
-
-
+    // NB : une closure `return view('comptable.comptdashboard')` était déclarée
+    // juste avant celle-ci sur la MÊME URI. Laravel servant la première route
+    // enregistrée, le tableau de bord comptable s'affichait sans aucune des
+    // données calculées par ComptaDashboardController@index. Closure supprimée.
     Route::get('/comptable/dashboard', [ComptaDashboardController::class, 'index'])->name('comptable.comptdashboard');
 
 
@@ -698,55 +729,71 @@ Route::get('/plan-comptable/datatable', [PlanComptableController::class, 'datata
 Route::middleware(['auth'])->group(function () {
     // Tâches
     Route::prefix('admin')->name('admin.')->group(function () {
-        // Tâches
-        Route::get('/tasks/assign', [App\Http\Controllers\Admin\TaskController::class, 'index'])->name('tasks.index'); // Assigner Tâche
-        Route::post('/tasks/store', [App\Http\Controllers\Admin\TaskController::class, 'store'])->name('tasks.store');
-        Route::get('/tasks/daily', [App\Http\Controllers\Admin\TaskController::class, 'dailyTasks'])->name('tasks.daily'); // Tâche Quotidienne
+        // Tâches — l'assignation est réservée aux habilités ; la consultation
+        // des tâches reçues reste ouverte aux comptables (tasks.view_daily).
+        Route::get('/tasks/assign', [App\Http\Controllers\Admin\TaskController::class, 'index'])
+            ->name('tasks.index')->middleware('permission:tasks.assign,admin.tasks.index'); // Assigner Tâche
+        Route::post('/tasks/store', [App\Http\Controllers\Admin\TaskController::class, 'store'])
+            ->name('tasks.store')->middleware('permission:tasks.assign,admin.tasks.index');
+        Route::get('/tasks/daily', [App\Http\Controllers\Admin\TaskController::class, 'dailyTasks'])
+            ->name('tasks.daily')->middleware('permission:tasks.view_daily'); // Tâche Quotidienne
         Route::patch('/tasks/{task}/complete', [App\Http\Controllers\Admin\TaskController::class, 'markAsCompleted'])->name('tasks.complete');
         Route::delete('/tasks/{task}', [App\Http\Controllers\Admin\TaskController::class, 'destroy'])->name('tasks.destroy');
 
         // Fusion (Sous-compagnies)
-        Route::get('/fusion', [App\Http\Controllers\Admin\FusionController::class, 'index'])->name('fusion.index');
-        Route::post('/fusion/run', [App\Http\Controllers\Admin\FusionController::class, 'run'])->name('fusion.run');
-        Route::post('/fusion/reset', [App\Http\Controllers\Admin\FusionController::class, 'reset'])->name('fusion.reset');
+        Route::middleware('permission:admin.fusion.index')->group(function () {
+            Route::get('/fusion', [App\Http\Controllers\Admin\FusionController::class, 'index'])->name('fusion.index');
+            Route::post('/fusion/run', [App\Http\Controllers\Admin\FusionController::class, 'run'])->name('fusion.run');
+            Route::post('/fusion/reset', [App\Http\Controllers\Admin\FusionController::class, 'reset'])->name('fusion.reset');
+        });
 
-        // Habilitations (Gouvernance)
-        Route::get('/habilitations', [App\Http\Controllers\Admin\HabilitationController::class, 'index'])->name('habilitations.index');
-        Route::put('/habilitations/{user}', [App\Http\Controllers\Admin\HabilitationController::class, 'update'])->name('habilitations.update');
+        // Habilitations (Gouvernance) — écran le plus sensible de l'application :
+        // il permet d'accorder des droits. Double verrou rôle + habilitation.
+        Route::middleware(['admin', 'permission:admin.habilitations.index'])->group(function () {
+            Route::get('/habilitations', [App\Http\Controllers\Admin\HabilitationController::class, 'index'])->name('habilitations.index');
+            Route::put('/habilitations/{user}', [App\Http\Controllers\Admin\HabilitationController::class, 'update'])->name('habilitations.update');
+        });
     });
 
     // Routes de context switching pour l'Admin
     Route::get('/admin/context/reset', [UserController::class, 'resetContext'])->name('admin.context.reset');
 
-    // Laissez votre route d'impersonation ici (avec son nom existant)
+    // Sortie d'impersonation : accessible au compte impersonné (donc pas de
+    // middleware 'admin' ici — c'est la session qui porte l'admin d'origine).
     Route::get('/impersonate/leave', [UserController::class, 'leaveImpersonation'])->name('admin.leave_impersonation');
-    Route::get('/impersonate/{user}', [UserController::class, 'impersonate'])->name('admin.impersonate');
 
-    // Routes de création d'utilisateurs pour l'Admin
-    Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
-    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    // --- Création de comptes, d'entités et d'exercices : ADMIN uniquement ---
+    // (NB : `POST /users` était déclaré une seconde fois ici, à l'identique de la
+    //  déclaration de la section "GESTION DES USERS". Doublon supprimé.)
+    Route::middleware('admin')->group(function () {
+        // Routes de création d'utilisateurs pour l'Admin
+        Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
 
-    // Routes de création d'administrateurs pour l'Admin (Style SuperAdmin)
-    Route::get('/admin/admins/create', [UserController::class, 'createAdmin'])->name('admin.admins.create');
-    Route::post('/admin/admins', [UserController::class, 'storeAdmin'])->name('admin.admins.store');
+        // Routes de création d'administrateurs pour l'Admin (Style SuperAdmin)
+        Route::get('/admin/admins/create', [UserController::class, 'createAdmin'])->name('admin.admins.create');
+        Route::post('/admin/admins', [UserController::class, 'storeAdmin'])->name('admin.admins.store');
 
-    Route::get('/admin/secondary-admins/create', [UserController::class, 'createSecondaryAdmin'])->name('admin.secondary_admins.create');
-    Route::post('/admin/secondary-admins/store', [UserController::class, 'storeSecondaryAdmin'])->name('admin.secondary_admins.store');
-    
-    // Routes de création de sous-entreprises pour l'Admin
-    Route::get('/admin/companies/create-entity', [CompanyController::class, 'adminCreateCompany'])->name('admin.companies.create');
-    Route::post('/admin/companies/store-entity', [CompanyController::class, 'adminStoreCompany'])->name('admin.companies.store');
+        Route::get('/admin/secondary-admins/create', [UserController::class, 'createSecondaryAdmin'])->name('admin.secondary_admins.create');
+        Route::post('/admin/secondary-admins/store', [UserController::class, 'storeSecondaryAdmin'])->name('admin.secondary_admins.store');
 
-    // Routes de création de comptabilité (Style SuperAdmin) - Exercices
-    Route::get('/admin/companies/create', [ComptaAccountController::class, 'create'])->name('compta.create');
-    Route::post('/admin/companies', [ComptaAccountController::class, 'storeExercice'])->name('compta.store');
+        // Routes de création de sous-entreprises pour l'Admin
+        Route::get('/admin/companies/create-entity', [CompanyController::class, 'adminCreateCompany'])->name('admin.companies.create');
+        Route::post('/admin/companies/store-entity', [CompanyController::class, 'adminStoreCompany'])->name('admin.companies.store');
+
+        // Routes de création de comptabilité (Style SuperAdmin) - Exercices
+        Route::get('/admin/companies/create', [ComptaAccountController::class, 'create'])->name('compta.create');
+        Route::post('/admin/companies', [ComptaAccountController::class, 'storeExercice'])->name('compta.store');
+
+        // Impersonation : entrer dans le compte d'un collaborateur.
+        Route::get('/impersonate/{user}', [UserController::class, 'impersonate'])->name('admin.impersonate');
+    });
 });
 
 // **********************************************
 // ROUTES SUPER ADMIN (MIDDLEWARE 'superadmin')
 // **********************************************
 
-Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
+Route::middleware(['auth', 'superadmin'])->group(function () {
 
     // Tableau de Bord Super Admin (Statistiques Globales)
     Route::get('/superadmin/dashboard', [SuperAdminDashboardController::class, 'index'])->name('superadmin.dashboard');
