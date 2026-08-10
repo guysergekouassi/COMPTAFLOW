@@ -187,7 +187,7 @@
                                                                             </div>
                                                                         </div>
                                                                         <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
-                                                                            <button type="button" class="btn btn-label-secondary w-100" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $approval->id }}">Annuler</button>
+                                                                            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">Annuler</button>
                                                                             <button type="button" onclick="submitRejection('{{$approval->id}}')" class="btn btn-danger w-100 shadow-sm py-2">
                                                                                 <i class="fa-solid fa-check me-1"></i> Confirmer le rejet
                                                                             </button>

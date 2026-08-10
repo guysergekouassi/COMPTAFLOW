@@ -172,47 +172,32 @@
         <div class="nav-h-item" data-target="pilotage">
             <i class="fa-solid fa-rocket"></i> Pilotage
         </div>
-        <div class="nav-h-item" data-target="configuration">
-            <i class="fa-solid fa-gears"></i> Configuration Entreprise
-        </div>
-        <div class="nav-h-item" data-target="importation">
-            <i class="fa-solid fa-file-import"></i> Importation
-        </div>
-        <div class="nav-h-item" data-target="fusion">
-            <i class="fa-solid fa-bolt"></i> Fusion & Démarrage
-        </div>
-        <div class="nav-h-item" data-target="exportation">
-            <i class="fa-solid fa-file-export"></i> Exportation
-        </div>
-        <div class="nav-h-item" data-target="gouvernance">
-            <i class="fa-solid fa-sitemap"></i> Gouvernance
-        </div>
-        <div class="nav-h-item" data-target="creation_rapide">
-            <i class="fa-solid fa-plus-circle"></i> Création Rapide
-        </div>
-        <div class="nav-h-item" data-target="operations">
-            <i class="fa-solid fa-shield-halved"></i> Opérations
-        </div>
-        <div class="nav-h-item" data-target="tasks">
-            <i class="fa-solid fa-list-check"></i> Gestion des Tâches
-        </div>
-        <div class="nav-h-item" data-target="validation">
-            <i class="fa-solid fa-stamp"></i> Validation
-        </div>
-        <div class="nav-h-item" data-target="parametrage">
-            <i class="fa-solid fa-sliders"></i> Paramétrage
-        </div>
         <div class="nav-h-item" data-target="traitement">
             <i class="fa-solid fa-layer-group"></i> Traitement
         </div>
         <div class="nav-h-item" data-target="analytique">
             <i class="fa-solid fa-chart-line"></i> Analytique
         </div>
-        <div class="nav-h-item" data-target="admin_interne">
-            <i class="fa-solid fa-user-tie"></i> Administration Interne
+        <div class="nav-h-item" data-target="configuration">
+            <i class="fa-solid fa-gears"></i> Configuration Entreprise
+        </div>
+        <div class="nav-h-item" data-target="import_export">
+            <i class="fa-solid fa-right-left"></i> Import / Export
+        </div>
+        <div class="nav-h-item" data-target="gouvernance">
+            <i class="fa-solid fa-sitemap"></i> Gouvernance
+        </div>
+        <div class="nav-h-item" data-target="tasks">
+            <i class="fa-solid fa-list-check"></i> Gestion des Tâches
+        </div>
+        <div class="nav-h-item" data-target="fusion">
+            <i class="fa-solid fa-bolt"></i> Fusion & Démarrage
         </div>
         <div class="nav-h-item" data-target="correction_ecriture">
             <i class="fa-solid fa-screwdriver-wrench"></i> Correction Écriture
+        </div>
+        <div class="nav-h-item" data-target="admin_interne">
+            <i class="fa-solid fa-user-tie"></i> Administration Interne
         </div>
     </div>
 </div>
@@ -245,15 +230,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (text.includes('pilotage')) sectionId = 'pilotage';
             else if (text.includes('configuration entreprise')) sectionId = 'configuration';
-            else if (text.includes('importation')) sectionId = 'importation';
+            else if (text.includes('import / export') || text.includes('importation') || text.includes('exportation')) sectionId = 'import_export';
             else if (text.includes('fusion & démarrage') || text.includes('fusion')) sectionId = 'fusion';
-            else if (text.includes('exportation')) sectionId = 'exportation';
             else if (text.includes('gouvernance') && !text.includes('rapide')) sectionId = 'gouvernance';
             else if (text.includes('création rapide')) sectionId = 'creation_rapide';
-            else if (text.includes('opération') || text === 'opérations') sectionId = 'operations';
-            else if (text.includes('gestion des tâches')) sectionId = 'tasks';
-            else if (text.includes('validation')) sectionId = 'validation';
-            else if (text.includes('paramétrage')) sectionId = 'parametrage';
+            else if (text.includes('gestion des tâches') || text.includes('validation')) sectionId = 'tasks';
             else if (text.includes('traitement')) sectionId = 'traitement';
             else if (text.includes('analytique')) sectionId = 'analytique';
             else if (text.includes('administration interne')) sectionId = 'admin_interne';

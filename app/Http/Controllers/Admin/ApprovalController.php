@@ -13,22 +13,36 @@ class ApprovalController extends Controller
 {
     public function index()
     {
+        $companyId = session('current_company_id') ?? auth()->user()->company_id;
+        $sessionExerciseId = session('current_exercice_id');
+
         $query = Approval::with('requester')
             ->where('status', 'pending');
 
-        // FILTRE CONTEXTUEL PAR EXERCICE (SESSION)
-        $sessionExerciseId = session('current_exercice_id');
-        if ($sessionExerciseId) {
-            $query->whereHasMorph('approvable', [\App\Models\EcritureComptable::class], function ($q) use ($sessionExerciseId) {
-                $q->where('exercices_comptables_id', $sessionExerciseId);
+        if ($companyId) {
+            $query->whereHasMorph('approvable', [\App\Models\EcritureComptable::class], function ($q) use ($companyId, $sessionExerciseId) {
+                $q->where('company_id', $companyId);
+                if ($sessionExerciseId) {
+                    $q->where('exercices_comptables_id', $sessionExerciseId);
+                }
             });
         }
 
         $pendingApprovals = $query->orderBy('created_at', 'desc')->get();
 
-        $history = Approval::with(['requester', 'handler'])
-            ->where('status', '!=', 'pending')
-            ->orderBy('updated_at', 'desc')
+        $historyQuery = Approval::with(['requester', 'handler'])
+            ->where('status', '!=', 'pending');
+
+        if ($companyId) {
+            $historyQuery->whereHasMorph('approvable', [\App\Models\EcritureComptable::class], function ($q) use ($companyId, $sessionExerciseId) {
+                $q->where('company_id', $companyId);
+                if ($sessionExerciseId) {
+                    $q->where('exercices_comptables_id', $sessionExerciseId);
+                }
+            });
+        }
+
+        $history = $historyQuery->orderBy('updated_at', 'desc')
             ->limit(20)
             ->get();
 
@@ -56,7 +70,7 @@ class ApprovalController extends Controller
                     throw new \Exception('Numéro de saisie introuvable dans les données d\'approbation');
                 }
                 
-                $companyId = auth()->user()->company_id;
+                $companyId = session('current_company_id') ?? auth()->user()->company_id;
                 
                 // Trouver les écritures avec le numéro utilisateur
                 $ecritures = EcritureComptable::where(function($query) use ($nSaisieUser) {
@@ -144,18 +158,20 @@ class ApprovalController extends Controller
                     throw new \Exception('Numéro de saisie introuvable dans les données d\'approbation');
                 }
                 
+                $companyId = session('current_company_id') ?? auth()->user()->company_id;
+
                 // Trouver toutes les écritures avec ce numéro utilisateur
                 $ecritures = EcritureComptable::where(function($query) use ($nSaisieUser) {
                         $query->where('n_saisie_user', $nSaisieUser)
                               ->orWhere('n_saisie', $nSaisieUser);
                     })
-                    ->where('company_id', auth()->user()->company_id)
+                    ->where('company_id', $companyId)
                     ->get();
                 
                 if ($ecritures->isEmpty()) {
                     Log::warning('No entries found for rejection', [
                         'n_saisie_user' => $nSaisieUser,
-                        'company_id' => auth()->user()->company_id
+                        'company_id' => $companyId
                     ]);
                     throw new \Exception('Aucune écriture trouvée pour ce numéro de saisie');
                 }

@@ -47,28 +47,21 @@ return [
             'admin.config.tresorerie_posts' => 'Postes de Trésorerie',
             'admin.config.treasury_categories' => 'Catégories de Trésorerie',
         ],
-        'Importation' => [
+        'Import / Export' => [
             'admin.config.external_import' => 'Importation de données',
             'admin.import.hub' => 'Tunnel d\'Importation',
+            'admin.export.hub' => 'Exportation de données',
         ],
         'Fusion & Démarrage' => [
             'admin.fusion.index' => 'Fusion Données Mère',
         ],
-        'Exportation' => [
-            'admin.export.hub' => 'Exportation de données',
-        ],
         'Gouvernance' => [
-            'compta_accounts.index' => 'Gestion des Entités',
-            'admin.companies.create' => 'Créer Entreprise',
             'user_management' => 'Équipe & Permissions',
             'admin.habilitations.index' => 'Modification Habilitation',
             'admin.switch' => 'Switch Comptabilité',
-            'compta.create' => 'Créer Comptabilité',
+            'admin.companies.create' => 'Créer Entreprise',
             'admin.admins.create' => 'Créer Administrateur',
             'admin.secondary_admins.create' => 'Créer Admin Sécondaire',
-            'admin.users.create' => 'Créer Comptable',
-        ],
-        'Opérations' => [
             'admin.audit' => 'Traçabilité & Activités',
             'admin.access' => 'Contrôle d\'Accès',
         ],
@@ -76,15 +69,7 @@ return [
             'admin.tasks.index' => 'Assigner Tâche',
             'tasks.assign' => 'Assigner Tâche (Alternatif)',
             'tasks.view_daily' => 'Tâches Quotidiennes',
-        ],
-        'Validation' => [
             'admin.approvals' => 'Approbations',
-        ],
-        'Paramétrage' => [
-            'plan_comptable' => 'Plan comptable',
-            'plan_tiers' => 'Plan tiers',
-            'accounting_journals' => 'Journaux',
-            'postetresorerie.index' => 'Poste Trésorerie',
         ],
         'Traitement' => [
             'modal_saisie_direct' => 'Nouvelle saisie',

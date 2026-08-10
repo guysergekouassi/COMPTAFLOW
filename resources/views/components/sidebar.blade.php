@@ -132,6 +132,7 @@
         transition: all 0.2s;
         font-family: 'Inter', sans-serif;
         font-weight: 500;
+        font-size: 13px;
     }
 
     .menu-link-quick:hover {
@@ -141,8 +142,7 @@
 
     .menu-link-quick.active {
         background: #1e40af;
-        color: white !important;
-        box-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
+        color: white;
     }
 
     .menu-link-new i {
@@ -250,7 +250,6 @@
         color: #6b7280;
     }
 
-    /* Conserver les styles existants pour la compatibilité */
     .menu-param a { color:#0d6efd !important; }
     .menu-param a:hover { background:#e7f1ff !important; border-radius:8px; }
     .menu-trait a { color:#fd7e14 !important; }
@@ -280,7 +279,6 @@
         margin-top: 4px;
     }
 
-    /* Cacher l'ancien design */
     .layout-menu {
         display: none;
     }
@@ -298,9 +296,6 @@
 
 
 <!-- Nouveau Sidebar Design -->
-@php
-    $isSwitched = session('switched_company_id') || session('is_super_admin_bypassing');
-@endphp
 
 @if (auth()->check() && auth()->user()->isSuperAdmin() && !$isSwitched)
     @include('components.superadmin_sidebar')
@@ -473,7 +468,7 @@
             @endphp
 
             @if($showConfig && !session('sidebar_admin_hidden', false))
-            <div class="menu-section">
+            <div class="menu-section" data-section-id="configuration">
                 <div class="menu-section-header">Configuration Entreprise</div>
                 @if(auth()->user()->hasPermission('admin.config.hub'))
                 <a href="{{ route('admin.config.hub') }}" class="menu-link-new {{ request()->routeIs('admin.config.hub') ? 'active' : '' }}">
@@ -514,19 +509,28 @@
             </div>
             @endif
 
-            @if(auth()->user()->hasPermission('admin.config.external_import') && !session('sidebar_admin_hidden', false))
-            <div class="menu-section">
-                <div class="menu-section-header">IMPORTATION</div>
+            {{-- SECTION IMPORT / EXPORT (Combiné) --}}
+            @if((auth()->user()->hasPermission('admin.config.external_import') || $showExport) && !session('sidebar_admin_hidden', false))
+            <div class="menu-section" data-section-id="import_export">
+                <div class="menu-section-header">Import / Export</div>
+                @if(auth()->user()->hasPermission('admin.config.external_import'))
                 <a href="{{ route('admin.config.external_import') }}" class="menu-link-new {{ request()->routeIs('admin.config.external_import') ? 'active' : '' }}">
                     <i class="fa-solid fa-file-import"></i>
                     <span>Importation de données</span>
                 </a>
+                @endif
+                @if($showExport)
+                <a href="{{ route('admin.export.hub') }}" class="menu-link-new {{ request()->routeIs('admin.export.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-file-export"></i>
+                    <span>Exportation de données</span>
+                </a>
+                @endif
             </div>
             @endif
 
             {{-- SECTION FUSION (Sous-entreprises uniquement) --}}
             @if(isset($currentCompany) && $currentCompany->parent_company_id && !session('sidebar_admin_hidden', false) && (auth()->user()->isAdmin() || auth()->user()->hasPermission('admin.fusion.index')))
-            <div class="menu-section">
+            <div class="menu-section" data-section-id="fusion">
                 <div class="menu-section-header">Fusion & Démarrage</div>
                 <a href="{{ route('admin.fusion.index') }}" class="menu-link-new {{ request()->routeIs('admin.fusion.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-bolt text-warning"></i>
@@ -535,34 +539,18 @@
             </div>
             @endif
 
-            @if($showExport && !session('sidebar_admin_hidden', false))
-            <div class="menu-section">
-                <div class="menu-section-header">Exportation</div>
-                <a href="{{ route('admin.export.hub') }}" class="menu-link-new {{ request()->routeIs('admin.export.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-file-export"></i>
-                    <span>Exportation de données</span>
-                </a>
-            </div>
-            @endif
-
-            {{-- SECTION 3 : GOUVERNANCE --}}
+            {{-- SECTION 3 : GOUVERNANCE (Avec Opérations intégrées) --}}
             @php
-                $hasGouvernance = auth()->user()->hasPermission('compta_accounts.index') || 
-                                  auth()->user()->hasPermission('admin.companies.create') || 
-                                  auth()->user()->hasPermission('user_management') || 
+                $hasGouvernance = auth()->user()->hasPermission('user_management') || 
                                   auth()->user()->hasPermission('admin.habilitations.index') ||
                                   auth()->user()->hasPermission('admin.switch') ||
+                                  auth()->user()->hasPermission('admin.audit') ||
+                                  auth()->user()->hasPermission('admin.access') ||
                                   auth()->user()->isAdmin();
             @endphp
             @if($hasGouvernance && !session('sidebar_admin_hidden', false))
-            <div class="menu-section">
+            <div class="menu-section" data-section-id="gouvernance">
                 <div class="menu-section-header">Gouvernance</div>
-                @if(auth()->user()->hasPermission('compta_accounts.index'))
-                <a href="{{ route('compta_accounts.index') }}" class="menu-link-new {{ request()->routeIs('compta_accounts.index') ? 'active' : '' }}">
-                    <i class="fa-solid fa-sitemap"></i>
-                    <span>Gestion des Entités</span>
-                </a>
-                @endif
                 @if(auth()->user()->hasPermission('user_management'))
                 <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
                     <i class="fa-solid fa-user-shield"></i>
@@ -582,61 +570,7 @@
                 </a>
                 @endif
 
-                {{-- Quick Actions Sub-Section --}}
-                @php
-                    $hasQuickActions = auth()->user()->hasPermission('compta.create') || 
-                                      auth()->user()->hasPermission('admin.admins.create') || 
-                                      auth()->user()->hasPermission('admin.secondary_admins.create') || 
-                                      auth()->user()->hasPermission('admin.users.create');
-                @endphp
-                @if($hasQuickActions)
-                <div class="mt-2 pt-2 border-top border-light">
-                    <small class="text-muted text-uppercase px-3 mb-2 d-block" style="font-size: 0.65rem;">Création Rapide</small>
-                    @if(auth()->user()->hasPermission('admin.companies.create'))
-                    <a href="{{ route('admin.companies.create') }}" class="menu-link-quick {{ request()->routeIs('admin.companies.create') ? 'active' : '' }}">
-                        <i class="fa-solid fa-plus-circle"></i>
-                        <span>Créer Entreprise</span>
-                    </a>
-                    @endif
-                    @if(auth()->user()->hasPermission('compta.create'))
-                    <a href="{{ route('compta.create') }}" class="menu-link-quick {{ request()->routeIs('compta.create') ? 'active' : '' }}">
-                        <i class="fa-solid fa-plus-circle"></i>
-                        <span>Créer Comptabilité</span>
-                    </a>
-                    @endif
-                    @if(auth()->user()->hasPermission('admin.admins.create'))
-                    <a href="{{ route('admin.admins.create') }}" class="menu-link-quick {{ request()->routeIs('admin.admins.create') ? 'active' : '' }}">
-                        <i class="fa-solid fa-user-plus"></i>
-                        <span>Créer Administrateur</span>
-                    </a>
-                    @endif
-                    @if(auth()->user()->hasPermission('admin.secondary_admins.create'))
-                    <a href="{{ route('admin.secondary_admins.create') }}" class="menu-link-quick {{ request()->routeIs('admin.secondary_admins.create') ? 'active' : '' }}">
-                        <i class="fa-solid fa-user-gear"></i>
-                        <span>Créer Admin Sécondaire</span>
-                    </a>
-                    @endif
-                    @if(auth()->user()->hasPermission('admin.users.create'))
-                    <a href="{{ route('admin.users.create') }}" class="menu-link-quick {{ request()->routeIs('admin.users.create') ? 'active' : '' }}">
-                        <i class="fa-solid fa-users"></i>
-                        <span>Créer Comptable</span>
-                    </a>
-                    @endif
-                </div>
-                @endif
-            </div>
-            @endif
-
-            {{-- SECTION 3 : OPÉRATIONS --}}
-            @php
-                $hasOperations = auth()->user()->hasPermission('admin.audit') || 
-                                 auth()->user()->hasPermission('admin.access') || 
-                                 auth()->user()->hasPermission('tasks.assign') ||
-                                 auth()->user()->isAdmin();
-            @endphp
-            @if($hasOperations && !session('sidebar_admin_hidden', false))
-            <div class="menu-section">
-                <div class="menu-section-header">Opérations</div>
+                {{-- Intégration des Opérations --}}
                 @if(auth()->user()->hasPermission('admin.audit'))
                 <a href="{{ route('admin.audit') }}" class="menu-link-new {{ request()->routeIs('admin.audit') ? 'active' : '' }}">
                     <i class="fa-solid fa-history"></i>
@@ -654,17 +588,49 @@
                 </a>
                 @endif
 
+                {{-- Quick Actions Sub-Section (Épurée) --}}
+                @php
+                    $hasQuickActions = auth()->user()->hasPermission('admin.companies.create') ||
+                                      auth()->user()->hasPermission('admin.admins.create') || 
+                                      auth()->user()->hasPermission('admin.secondary_admins.create');
+                @endphp
+                @if($hasQuickActions)
+                <div class="mt-2 pt-2 border-top border-light">
+                    <small class="text-muted text-uppercase px-3 mb-2 d-block" style="font-size: 0.65rem;">Création Rapide</small>
+                    @if(auth()->user()->hasPermission('admin.companies.create'))
+                    <a href="{{ route('admin.companies.create') }}" class="menu-link-quick {{ request()->routeIs('admin.companies.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Créer Entreprise</span>
+                    </a>
+                    @endif
+                    @if(auth()->user()->hasPermission('admin.admins.create'))
+                    <a href="{{ route('admin.admins.create') }}" class="menu-link-quick {{ request()->routeIs('admin.admins.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Créer Administrateur</span>
+                    </a>
+                    @endif
+                    @if(auth()->user()->hasPermission('admin.secondary_admins.create'))
+                    <a href="{{ route('admin.secondary_admins.create') }}" class="menu-link-quick {{ request()->routeIs('admin.secondary_admins.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>Créer Admin Sécondaire</span>
+                    </a>
+                    @endif
+                </div>
+                @endif
             </div>
             @endif
 
-            {{-- SECTION 3 BIS : GESTION DES TÂCHES (Demande spécifique User) --}}
+            {{-- Section Opérations fusionnée dans Gouvernance --}}
+
+            {{-- SECTION 3 BIS : GESTION DES TÂCHES --}}
             @php
                 $hasTasks = auth()->user()->hasPermission('tasks.assign') || 
                             auth()->user()->hasPermission('tasks.view_daily') ||
-                            auth()->user()->hasPermission('admin.tasks.index'); // Legacy check just in case
+                            auth()->user()->hasPermission('admin.approvals') ||
+                            auth()->user()->hasPermission('admin.tasks.index');
             @endphp
             @if($hasTasks)
-            <div class="menu-section">
+            <div class="menu-section" data-section-id="tasks">
                 <div class="menu-section-header">Gestion des Tâches</div>
                 
                 @if(auth()->user()->hasPermission('tasks.assign') || auth()->user()->isAdmin())
@@ -686,66 +652,25 @@
                     @endif
                 </a>
                 @endif
-            </div>
-            @endif
 
-            {{-- SECTION 4 : VALIDATION --}}
-            @if(auth()->user()->hasPermission('admin.approvals'))
-            <div class="menu-section">
-                <div class="menu-section-header">Validation</div>
+                @if(auth()->user()->hasPermission('admin.approvals'))
                 <a href="{{ route('admin.approvals') }}" class="menu-link-new {{ request()->routeIs('admin.approvals') ? 'active' : '' }}">
                     <i class="fa-solid fa-stamp"></i>
                     <span>Approbations</span>
-                    <span class="badge bg-soft-warning text-warning ms-auto">
-                        {{ $pendingApprovalsCount }}
-                    </span>
+                    @if(isset($pendingApprovalsCount) && $pendingApprovalsCount > 0)
+                        <span class="badge bg-soft-warning text-warning ms-auto">
+                            {{ $pendingApprovalsCount }}
+                        </span>
+                    @endif
                 </a>
+                @endif
             </div>
             @endif
 
         @if ($isComptaAccountActive && (!auth()->user()->isSuperAdmin() || $isSwitched))
             {{-- MODE COMPTABILITÉ ACTIVE --}}
 
-            {{-- Paramétrage --}}
-            @php
-                $showParametrage = auth()->user()->hasPermission('plan_comptable') || 
-                                   auth()->user()->hasPermission('plan_tiers') || 
-                                   auth()->user()->hasPermission('accounting_journals') || 
-                                   auth()->user()->hasPermission('postetresorerie.index');
-            @endphp
-            @if ($showParametrage)
-            <div class="menu-section">
-                <div class="menu-section-header">Paramétrage</div>
-                @if(auth()->user()->hasPermission('plan_comptable'))
-                <a href="{{ route('plan_comptable') }}" class="menu-link-new {{ request()->routeIs('plan_comptable*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-book"></i>
-                    <span>Plan comptable</span>
-                </a>
-                @endif
-                @if(auth()->user()->hasPermission('plan_tiers'))
-                <a href="{{ route('plan_tiers') }}" class="menu-link-new {{ request()->routeIs('plan_tiers*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-users"></i>
-                    <span>Plan tiers</span>
-                </a>
-                @endif
-                @if(auth()->user()->hasPermission('accounting_journals'))
-                <a href="{{ route('accounting_journals') }}" class="menu-link-new {{ request()->routeIs('accounting_journals') ? 'active' : '' }}">
-                    <i class="fa-solid fa-book-open"></i>
-                    <span>Journaux</span>
-                </a>
-                @endif
-                @if(auth()->user()->hasPermission('postetresorerie.index'))
-                <a href="{{ route('postetresorerie.index') }}" class="menu-link-new {{ request()->routeIs('postetresorerie.index') ? 'active' : '' }}">
-                    <i class="fa-solid fa-wallet"></i>
-                    <span>Poste Trésorerie</span>
-                </a>
-                @endif
-                <a href="{{ route('rapprochement.index') }}" class="menu-link-new {{ request()->routeIs('rapprochement.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-balance-scale text-emerald-600"></i>
-                    <span>Rapprochement Bancaire</span>
-                </a>
-            </div>
-            @endif
+            {{-- Paramétrage masqué car doublon de Configuration Entreprise --}}
 
             {{-- Traitement --}}
             @php
@@ -756,7 +681,7 @@
                                   auth()->user()->hasPermission('exercice_comptable');
             @endphp
             @if ($showTraitement)
-            <div class="menu-section">
+            <div class="menu-section" data-section-id="traitement">
                 <div class="menu-section-header">Traitement</div>
                 @if(auth()->user()->hasPermission('modal_saisie_direct'))
                 <a href="{{ route('accounting_entry_real', ['open' => 1]) }}" class="menu-link-new {{ request()->routeIs('accounting_entry_real') ? 'active' : '' }}">
@@ -820,6 +745,12 @@
                     <span>Immobilisations</span>
                 </a>
                 @endif
+
+                {{-- Rapprochement Bancaire déplacé dans Traitement --}}
+                <a href="{{ route('rapprochement.index') }}" class="menu-link-new {{ request()->routeIs('rapprochement.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-balance-scale text-emerald-600"></i>
+                    <span>Rapprochement Bancaire</span>
+                </a>
             </div>
             @endif
 
@@ -1025,6 +956,7 @@
                     </a>
                 </div>
             @endif
+        @endif
         @endif
     </nav>
 
