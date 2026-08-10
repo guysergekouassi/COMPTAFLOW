@@ -377,7 +377,7 @@ class GrandLivrePdfService
     {
         $c   = self::C;
         $jl  = $this->disp($e->codeJournal?->code_journal ?? '-',   $e->codeJournal?->numero_original ?? '', $dm);
-        $ns  = $this->disp($this->cleanNSaisie($e->n_saisie ?? '-'), $this->cleanNSaisie($e->n_saisie_user ?? ''), $dm);
+        $ns  = $this->cleanNSaisie($e->n_saisie ?? '-'); // Toujours le numéro système ECR_/RAN_, jamais CPT-ID_
         $cpt = $this->disp($e->planComptable?->numero_de_compte ?? '',$e->planComptable?->numero_original ?? '',$dm);
         $ti  = $this->disp($e->planTiers?->numero_de_tiers ?? '',   $e->planTiers?->numero_original ?? '',    $dm);
         $d   = (float)($e->debit  ?? 0);

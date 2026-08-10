@@ -265,10 +265,8 @@ class GrandLivrePaginationService
         $jl_orig = $ecriture->codeJournal?->numero_original ?? '';
         $aff_jl  = $this->resolveDisplay($jl_sys, $jl_orig, $displayMode);
 
-        // N° saisie
-        $n_sys  = $this->cleanNSaisie($ecriture->n_saisie ?? '-');
-        $n_orig = $this->cleanNSaisie($ecriture->n_saisie_user ?? '');
-        $aff_n  = $this->resolveDisplay($n_sys, $n_orig, $displayMode);
+        // N° saisie - TOUJOURS le numéro système ECR_/RAN_, jamais le CPT-ID_ utilisateur
+        $aff_n  = $this->cleanNSaisie($ecriture->n_saisie ?? '-');
 
         // Compte
         $cpt_sys  = $ecriture->planComptable?->numero_de_compte ?? '';
