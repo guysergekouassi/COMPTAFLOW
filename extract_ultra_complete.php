@@ -47,8 +47,8 @@ try {
         }
         
         // EXTRACTION ULTRA-ROBUSTE
-        // Pattern universel : chercher un numéro de 1 à 4 chiffres suivi d'un espace et d'un texte
-        if (preg_match('/^[\s\-]*(\d{1,4})\s+(.+)$/u', $line, $matches)) {
+        // Pattern universel : chercher un numéro de 1 à 4 chiffres précédé d'éventuels caractères non-lettres/non-chiffres et suivi d'un libellé
+        if (preg_match('/^[^\p{L}\d]*(\d{1,4})\s+(.+)$/u', $line, $matches)) {
             $numero = $matches[1];
             $libelle = trim($matches[2]);
             

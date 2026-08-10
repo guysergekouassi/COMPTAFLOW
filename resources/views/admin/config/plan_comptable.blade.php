@@ -140,17 +140,7 @@
 
                                     <div class="d-flex flex-column gap-2 mt-2">
                                         <div class="row g-2">
-                                            <div class="col-4">
-                                                <form action="{{ route('admin.config.load_syscohada4') }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-outline-light w-100 border-2 font-bold text-[9px] px-1 py-2" 
-                                                        {{ $hasAccounts ? 'disabled' : '' }} 
-                                                        title="Plan SYSCOHADA Standard">
-                                                       SYSCOHADA
-                                                    </button>
-                                                </form>
-                                            </div>
-                                            <div class="col-4">
+                                            <div class="col-6">
                                                 <form action="{{ route('admin.config.load_syscohada6') }}" method="POST">
                                                     @csrf
                                                     <button type="submit" class="btn btn-outline-light w-100 border-2 font-bold text-[9px] px-1 py-2" 
@@ -160,7 +150,7 @@
                                                     </button>
                                                 </form>
                                             </div>
-                                            <div class="col-4">
+                                            <div class="col-6">
                                                 <form action="{{ route('admin.config.load_syscohada8') }}" method="POST">
                                                     @csrf
                                                     <button type="submit" class="btn btn-outline-light w-100 border-2 font-bold text-[9px] px-1 py-2" 
@@ -280,7 +270,7 @@
                             <div class="col-12">
                                 <label class="form-label font-black text-slate-700 uppercase text-xs">Longueur des Comptes</label>
                                 <select name="account_digits" class="form-select border-slate-200 py-3 rounded-xl focus:border-primary shadow-none font-bold">
-                                    @foreach([4,6,8,10,12] as $digit)
+                                    @foreach([6,8,10,12] as $digit)
                                         <option value="{{ $digit }}" {{ ($mainCompany->account_digits ?? 8) == $digit ? 'selected' : '' }}>{{ $digit }} chiffres</option>
                                     @endforeach
                                 </select>

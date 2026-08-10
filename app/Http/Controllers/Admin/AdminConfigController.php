@@ -245,8 +245,8 @@ class AdminConfigController extends Controller
                 if ($mode === 'sage_6') {
                     $numero = str_pad($prefix, 6, '0', STR_PAD_RIGHT);
                 } elseif ($mode === 'dc_knowing_8') {
-                    // Règle DC-KNOWING : [Préfixe SYSCOHADA] + '1' + '0' (padding à 8)
-                    $numero = str_pad($prefix . '1', 8, '0', STR_PAD_RIGHT);
+                    // Règle DC-KNOWING : padding à 8 chiffres avec des zéros
+                    $numero = str_pad($prefix, 8, '0', STR_PAD_RIGHT);
                 } else {
                     // Mode SYSCOHADA (2-4) : on garde le numéro tel quel (longueur 2, 3 ou 4)
                     $numero = $prefix;
@@ -567,30 +567,85 @@ class AdminConfigController extends Controller
     {
         try {
             $user = Auth::user();
+            $companyId = session('current_company_id', $user->company_id);
+            $company = Company::findOrFail($companyId);
+            $digits = $company->journal_code_digits ?? 4;
 
             $templates = [
-                ['code' => 'ACH', 'intitule' => 'JOURNAL DES ACHATS', 'type' => 'Achats'],
-                ['code' => 'VEN', 'intitule' => 'JOURNAL DES VENTES', 'type' => 'Ventes'],
-                ['code' => 'BQ',  'intitule' => 'JOURNAL DE BANQUE', 'type' => 'Banque'],
-                ['code' => 'CSH', 'intitule' => 'JOURNAL DE CAISSE', 'type' => 'Caisse'],
-                ['code' => 'OD',  'intitule' => 'OPERATIONS DIVERSES', 'type' => 'Opérations Diverses'],
+                ['prefix' => 'ACH', 'intitule' => 'ACHAT', 'type' => 'Achats', 'base_compte' => null],
+                ['prefix' => 'VEN', 'intitule' => 'VENTE', 'type' => 'Ventes', 'base_compte' => null],
+                ['prefix' => 'BQ',  'intitule' => 'BANQUE', 'type' => 'Tresorerie', 'base_compte' => '52'],
+                ['prefix' => 'CAI', 'intitule' => 'CAISSE', 'type' => 'Tresorerie', 'base_compte' => '57'],
+                ['prefix' => 'OD',  'intitule' => 'OPERATION DIVERSE', 'type' => 'Opérations Diverses', 'base_compte' => null],
+                ['prefix' => 'RAN', 'intitule' => 'REPORT A NOUVEAU', 'type' => 'REPORT A NOUVEAU', 'base_compte' => null],
             ];
 
             DB::beginTransaction();
             $count = 0;
             foreach ($templates as $tpl) {
-                $exists = CodeJournal::where('company_id', session('current_company_id', $user->company_id))
-                    ->where('code_journal', $tpl['code'])
+                // Formater le code journal en fonction de la longueur configurée
+                $prefix = $tpl['prefix'];
+                $nextNum = 1;
+                $numStr = (string)$nextNum;
+                $numLen = strlen($numStr);
+                
+                if ($numLen >= $digits) {
+                    $code = substr($numStr, -$digits);
+                } else {
+                    $maxPrefixLen = $digits - $numLen;
+                    $actualPrefix = substr($prefix, 0, $maxPrefixLen);
+                    $code = $actualPrefix . str_pad($numStr, $digits - strlen($actualPrefix), '0', STR_PAD_LEFT);
+                }
+
+                $exists = CodeJournal::where('company_id', $companyId)
+                    ->where('code_journal', $code)
                     ->exists();
 
                 if (!$exists) {
+                    // Trouver le compte de trésorerie si applicable
+                    $compteId = null;
+                    $compteNumero = null;
+                    if (!empty($tpl['base_compte'])) {
+                        $targetNumero = str_pad($tpl['base_compte'], $company->account_digits ?? 8, '0', STR_PAD_RIGHT);
+                        $compte = PlanComptable::where('company_id', $companyId)
+                            ->where('numero_de_compte', $targetNumero)
+                            ->first();
+
+                        if (!$compte) {
+                            $compte = PlanComptable::where('company_id', $companyId)
+                                ->where('numero_de_compte', 'LIKE', $tpl['base_compte'] . '%')
+                                ->orderBy('numero_de_compte')
+                                ->first();
+                        }
+
+                        if ($compte) {
+                            $compteId = $compte->id;
+                            $compteNumero = $compte->numero_de_compte;
+                        }
+                    }
+
                     CodeJournal::create([
-                        'code_journal' => $tpl['code'],
+                        'code_journal' => $code,
                         'intitule' => $tpl['intitule'],
                         'type' => $tpl['type'],
+                        'compte_de_tresorerie' => $compteId,
+                        'compte_de_contrepartie' => $compteNumero,
+                        'traitement_analytique' => 0,
                         'user_id' => $user->id,
-                        'company_id' => session('current_company_id', $user->company_id),
+                        'company_id' => $companyId,
                     ]);
+
+                    if ($tpl['type'] === 'Tresorerie') {
+                        \App\Models\tresoreries\Tresoreries::updateOrCreate([
+                            'code_journal' => $code,
+                            'company_id' => $companyId,
+                        ], [
+                            'intitule' => $tpl['intitule'],
+                            'compte_de_contrepartie' => $compteId,
+                            'user_id' => $user->id,
+                        ]);
+                    }
+
                     $count++;
                 }
             }

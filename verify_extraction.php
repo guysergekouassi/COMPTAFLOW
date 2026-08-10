@@ -48,27 +48,8 @@ try {
         
         $matched = false;
         
-        // Pattern 1: Ligne commençant par un numéro de compte (sans tiret, sans espace initial)
-        // Ex: "10 Capital", "101 Capital social", "1011 Capital souscrit, non appelé"
-        if (preg_match('/^(\d{1,4})\s+(.+)$/u', $line, $matches)) {
-            $numero = $matches[1];
-            $libelle = trim($matches[2]);
-            $accounts[$numero] = mb_strtoupper($libelle);
-            $matched = true;
-        }
-        
-        // Pattern 2: Ligne avec tiret (sous-compte)
-        // Ex: "- 1011 Capital souscrit, non appelé"
-        elseif (preg_match('/^-\s+(\d{1,4})\s+(.+)$/u', $line, $matches)) {
-            $numero = $matches[1];
-            $libelle = trim($matches[2]);
-            $accounts[$numero] = mb_strtoupper($libelle);
-            $matched = true;
-        }
-        
-        // Pattern 3: Ligne avec espace puis numéro (autre format de sous-compte)
-        // Ex: " 101 Capital social"
-        elseif (preg_match('/^\s+(\d{1,4})\s+(.+)$/u', $line, $matches)) {
+        // Pattern universel : chercher un numéro de 1 à 4 chiffres précédé d'éventuels caractères non-lettres/non-chiffres et suivi d'un libellé
+        if (preg_match('/^[^\p{L}\d]*(\d{1,4})\s+(.+)$/u', $line, $matches)) {
             $numero = $matches[1];
             $libelle = trim($matches[2]);
             $accounts[$numero] = mb_strtoupper($libelle);

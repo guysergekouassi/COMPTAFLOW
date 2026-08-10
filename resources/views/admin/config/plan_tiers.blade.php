@@ -358,7 +358,7 @@
                                 <label class="form-label font-black text-slate-400 text-xs uppercase tracking-wider mb-2">Longueur des Numéros</label>
                                 <p class="text-[10px] text-slate-400 mb-3">Nombre total de caractères pour l'identifiant tiers.</p>
                                 <select name="tier_digits" class="form-select border-slate-100 py-3 rounded-xl bg-slate-50 focus:bg-white transition-all font-bold">
-                                    @for($i = 4; $i <= 15; $i++)
+                                    @for($i = 5; $i <= 15; $i++)
                                         <option value="{{ $i }}" {{ ($mainCompany->tier_digits ?? 8) == $i ? 'selected' : '' }}>{{ $i }} caractères</option>
                                     @endfor
                                 </select>
