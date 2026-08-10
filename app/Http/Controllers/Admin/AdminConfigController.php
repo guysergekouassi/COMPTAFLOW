@@ -4426,7 +4426,7 @@ class AdminConfigController extends Controller
                             str_replace('"', '', $row->intitule),
                             str_replace('"', '', $row->type_de_tiers ?? ''),
                             // Numéro de compte (pas l'ID FK) pour permettre la réimportation
-                            str_replace('"', '', $row->compte->numero_de_compte ?? ''),
+                            str_replace('"', '', $row->compte?->numero_de_compte ?? ''),
                         ]) . "\r\n");
                     }
                 };
@@ -4441,7 +4441,7 @@ class AdminConfigController extends Controller
                             str_replace('"', '', $row->code_journal),
                             str_replace('"', '', $row->intitule),
                             str_replace('"', '', $row->type ?? ''),
-                            str_replace('"', '', $row->account->numero_de_compte ?? ''),
+                            str_replace('"', '', $row->account?->numero_de_compte ?? ''),
                         ]) . "\r\n");
                     }
                 };
@@ -4466,21 +4466,21 @@ class AdminConfigController extends Controller
                     $callback = function($file) use ($data) {
                         foreach ($data as $row) {
                             fputcsv($file, [
-                                $row->codeJournal->code_journal ?? '',
-                                $row->codeJournal->intitule ?? '',
+                                $row->codeJournal?->code_journal ?? '',
+                                $row->codeJournal?->intitule ?? '',
                                 $row->id,
-                                Carbon::parse($row->date)->format('Ymd'),
-                                $row->planComptable->numero_de_compte ?? '',
-                                $row->planComptable->intitule ?? '',
-                                $row->planTiers->numero_de_tiers ?? '',
-                                $row->planTiers->intitule ?? '',
+                                $row->date ? Carbon::parse($row->date)->format('Ymd') : '',
+                                $row->planComptable?->numero_de_compte ?? '',
+                                $row->planComptable?->intitule ?? '',
+                                $row->planTiers?->numero_de_tiers ?? '',
+                                $row->planTiers?->intitule ?? '',
                                 $row->reference_piece ?? '',
-                                Carbon::parse($row->date)->format('Ymd'),
+                                $row->date ? Carbon::parse($row->date)->format('Ymd') : '',
                                 $row->description_operation,
                                 number_format($row->debit, 2, ',', ''),
                                 number_format($row->credit, 2, ',', ''),
                                 '', '',
-                                $row->updated_at->format('Ymd'),
+                                $row->updated_at?->format('Ymd') ?? '',
                                 '', ''
                             ], "\t");
                         }
@@ -4492,9 +4492,9 @@ class AdminConfigController extends Controller
                     $callback = function($file) use ($data) {
                         foreach ($data as $row) {
                             $line = implode("\t", [
-                                Carbon::parse($row->date)->format('dmy'),
-                                $row->codeJournal->code_journal ?? '',
-                                $row->planComptable->numero_de_compte ?? '',
+                                $row->date ? Carbon::parse($row->date)->format('dmy') : '',
+                                $row->codeJournal?->code_journal ?? '',
+                                $row->planComptable?->numero_de_compte ?? '',
                                 '',
                                 $row->reference_piece ?? '',
                                 $row->description_operation,
@@ -4525,10 +4525,10 @@ class AdminConfigController extends Controller
                         foreach ($data as $row) {
                             fwrite($file, implode(';', [
                                 str_replace('"', '', $row->n_saisie_user ?? $row->n_saisie ?? ''),
-                                str_replace('"', '', $row->codeJournal->code_journal ?? ''),
-                                Carbon::parse($row->date)->format('dmy'),
-                                str_replace('"', '', $row->planComptable->numero_de_compte ?? ''),
-                                str_replace('"', '', $row->planTiers->numero_de_tiers ?? ''),
+                                str_replace('"', '', $row->codeJournal?->code_journal ?? ''),
+                                $row->date ? Carbon::parse($row->date)->format('dmy') : '',
+                                str_replace('"', '', $row->planComptable?->numero_de_compte ?? ''),
+                                str_replace('"', '', $row->planTiers?->numero_de_tiers ?? ''),
                                 str_replace('"', '', $row->reference_piece ?? ''),
                                 str_replace('"', '', $row->description_operation ?? ''),
                                 str_replace('"', '', $row->debit ?? 0),
