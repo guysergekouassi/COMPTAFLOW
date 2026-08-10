@@ -54,6 +54,38 @@ class AccountantSpaceController extends Controller
                 ->select('users.id', 'users.name', 'users.last_name', 'users.email_adresse', 'company_user.role')
                 ->get();
 
+            // KPIs Financiers SYSCOHADA
+            // CA = SUM(credit) comptes 7x
+            $ca = DB::table('ecriture_comptables')
+                ->where('company_id', $comp->id)
+                ->where('numero_de_compte', 'like', '7%')
+                ->sum('credit');
+
+            // Trésorerie = SUM(debit) - SUM(credit) comptes 5x
+            $tresoDebit = DB::table('ecriture_comptables')
+                ->where('company_id', $comp->id)
+                ->where('numero_de_compte', 'like', '5%')
+                ->sum('debit');
+            $tresoCredit = DB::table('ecriture_comptables')
+                ->where('company_id', $comp->id)
+                ->where('numero_de_compte', 'like', '5%')
+                ->sum('credit');
+            $tresorerie = $tresoDebit - $tresoCredit;
+
+            // Résultat Net = SUM(credit 7x) - SUM(debit 6x)
+            $charges = DB::table('ecriture_comptables')
+                ->where('company_id', $comp->id)
+                ->where('numero_de_compte', 'like', '6%')
+                ->sum('debit');
+            $resultatNet = $ca - $charges;
+
+            // Nombre d'écritures de vente (journaux de type VT ou JV)
+            $ventesCount = DB::table('ecriture_comptables')
+                ->where('company_id', $comp->id)
+                ->whereIn('code_journal', ['VT', 'JV', 'VNT', 'VENTE', 'FAC'])
+                ->distinct('n_saisie')
+                ->count('n_saisie');
+
             return [
                 'model' => $comp,
                 'is_owner' => $isOwner,
@@ -62,7 +94,11 @@ class AccountantSpaceController extends Controller
                 'tiers_count' => $tiersCount,
                 'journals_count' => $journalsCount,
                 'exercice_actif' => $exerciceActif ? date('Y', strtotime($exerciceActif->date_debut)) : 'Aucun',
-                'assigned_users' => $assignedUsers
+                'assigned_users' => $assignedUsers,
+                'ca' => $ca,
+                'tresorerie' => $tresorerie,
+                'resultat_net' => $resultatNet,
+                'ventes_count' => $ventesCount,
             ];
         });
 
@@ -397,5 +433,83 @@ class AccountantSpaceController extends Controller
             DB::rollBack();
             return back()->with('error', 'Erreur lors de la fusion : ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Générer (ou régénérer) le code alphanumérique d'une entreprise.
+     * L'ancien code est écrasé — toute session basée sur l'ancien code devient invalide.
+     */
+    public function generateCode($id)
+    {
+        $user = Auth::user();
+        $company = Company::findOrFail($id);
+
+        // Sécurité : seul le propriétaire ou un admin de l'entreprise peut régénérer
+        $isOwner = $company->user_id === $user->id;
+        $isAdmin = DB::table('company_user')
+            ->where('company_id', $id)
+            ->where('user_id', $user->id)
+            ->where('role', 'admin')
+            ->exists();
+
+        if (!$isOwner && !$isAdmin) {
+            return back()->with('error', 'Action non autorisée.');
+        }
+
+        // Génération alphanumérique : PREFIX-XXXXXX (ex: SPL-A3K8X2)
+        $cleanName = preg_replace('/[^A-Za-z]/', '', $company->company_name);
+        $prefix = strtoupper(substr($cleanName, 0, 3));
+        if (strlen($prefix) < 3) {
+            $prefix = str_pad($prefix, 3, 'X');
+        }
+
+        do {
+            $code = $prefix . '-' . strtoupper(Str::random(6));
+            $exists = Company::where('company_code', $code)->where('id', '!=', $id)->exists();
+        } while ($exists);
+
+        $company->company_code = $code;
+        $company->save();
+
+        return back()->with('success', 'Code généré avec succès : ' . $code);
+    }
+
+    /**
+     * Générer automatiquement les codes pour toutes les entreprises qui n'en ont pas.
+     */
+    public function bulkGenerateCodes()
+    {
+        $user = Auth::user();
+
+        // Récupérer les entreprises du gérant sans code
+        $companies = Company::where('user_id', $user->id)
+            ->whereNull('company_code')
+            ->orWhere(function($q) use ($user) {
+                $q->where('user_id', $user->id)->where('company_code', '');
+            })
+            ->get();
+
+        $generated = 0;
+        foreach ($companies as $company) {
+            $cleanName = preg_replace('/[^A-Za-z]/', '', $company->company_name);
+            $prefix = strtoupper(substr($cleanName, 0, 3));
+            if (strlen($prefix) < 3) {
+                $prefix = str_pad($prefix, 3, 'X');
+            }
+            do {
+                $code = $prefix . '-' . strtoupper(Str::random(6));
+                $exists = Company::where('company_code', $code)->where('id', '!=', $company->id)->exists();
+            } while ($exists);
+
+            $company->company_code = $code;
+            $company->save();
+            $generated++;
+        }
+
+        if ($generated === 0) {
+            return back()->with('info', 'Toutes vos entreprises ont déjà un code d\'accès.');
+        }
+
+        return back()->with('success', $generated . ' code(s) généré(s) avec succès.');
     }
 }

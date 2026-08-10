@@ -112,6 +112,49 @@
                                 </div>
                         </div>
 
+                        <!-- ═══ CODE D'ACCÈS ENTREPRISE ═══ -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div style="background:white; border:1px solid rgba(226,232,240,0.8); border-radius:20px; padding:1.75rem; box-shadow:0 4px 6px -1px rgba(0,0,0,0.02);">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#1e40af,#3b82f6);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(30,64,175,0.2);">
+                                                <i class="fas fa-key" style="color:white;font-size:1.1rem;"></i>
+                                            </div>
+                                            <div>
+                                                <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;margin-bottom:2px;">Code d'accès entreprise</div>
+                                                <div style="font-size:0.8rem;color:#475569;font-weight:500;">Partagez ce code avec vos collaborateurs pour les associer à ce dossier</div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-3">
+                                            @if($mainCompany->company_code)
+                                                <div style="background:#f0fdf4;border:2px dashed #86efac;border-radius:12px;padding:0.6rem 1.2rem;font-family:'Courier New',monospace;font-size:1.1rem;font-weight:800;color:#16a34a;letter-spacing:0.1em;">
+                                                    {{ $mainCompany->company_code }}
+                                                </div>
+                                                <button onclick="navigator.clipboard.writeText('{{ $mainCompany->company_code }}'); this.innerHTML='<i class=\'fas fa-check\'></i> Copié'; setTimeout(()=>this.innerHTML='<i class=\'fas fa-copy\'></i> Copier',2000);"
+                                                    style="background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;border-radius:10px;padding:0.5rem 1rem;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                                                    <i class="fas fa-copy"></i> Copier
+                                                </button>
+                                            @else
+                                                <div style="background:#fef2f2;border:2px dashed #fca5a5;border-radius:12px;padding:0.6rem 1.2rem;font-size:0.82rem;font-weight:700;color:#ef4444;">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Aucun code généré
+                                                </div>
+                                            @endif
+                                            <form method="POST" action="{{ route('accountant.space.generate_code', $mainCompany->id) }}"
+                                                  onsubmit="return {{ $mainCompany->company_code ? 'confirm(\'Régénérer le code ? L\\\'ancien code deviendra immédiatement invalide.\')' : 'true' }};">
+                                                @csrf
+                                                <button type="submit" style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;border:none;border-radius:12px;padding:0.6rem 1.2rem;font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 4px 10px rgba(30,64,175,0.2);transition:all 0.2s;"
+                                                    onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 18px rgba(30,64,175,0.3)'"
+                                                    onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 10px rgba(30,64,175,0.2)'">
+                                                    <i class="fas fa-sync-alt me-1"></i>{{ $mainCompany->company_code ? 'Régénérer' : 'Générer le code' }}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Liaison SELFLOW -->
                         <div class="row mb-8">
                             <div class="col-12">

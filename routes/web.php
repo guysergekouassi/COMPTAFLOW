@@ -103,6 +103,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/mon-espace/member', [App\Http\Controllers\AccountantSpaceController::class, 'createMember'])->name('accountant.space.member.store');
     Route::get('/mon-espace/switch/{id}', [App\Http\Controllers\AccountantSpaceController::class, 'switchCompany'])->name('accountant.space.switch');
     Route::post('/mon-espace/fusion', [App\Http\Controllers\AccountantSpaceController::class, 'fusionData'])->name('accountant.space.fusion');
+    Route::post('/mon-espace/company/{id}/generate-code', [App\Http\Controllers\AccountantSpaceController::class, 'generateCode'])->name('accountant.space.generate_code');
+    Route::post('/mon-espace/bulk-generate-codes', [App\Http\Controllers\AccountantSpaceController::class, 'bulkGenerateCodes'])->name('accountant.space.bulk_generate');
     
     // Chat & Discussions
     Route::post('/mon-espace/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('accountant.space.chat.send');
