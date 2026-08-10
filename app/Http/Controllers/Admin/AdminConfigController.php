@@ -4403,8 +4403,8 @@ class AdminConfigController extends Controller
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
                         fwrite($file, implode(';', [
-                            $row->numero_de_compte,
-                            $row->intitule,
+                            str_replace('"', '', $row->numero_de_compte),
+                            str_replace('"', '', $row->intitule),
                         ]) . "\r\n");
                     }
                 };
@@ -4422,11 +4422,11 @@ class AdminConfigController extends Controller
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
                         fwrite($file, implode(';', [
-                            $row->numero_de_tiers,
-                            $row->intitule,
-                            $row->type_de_tiers ?? '',
+                            str_replace('"', '', $row->numero_de_tiers),
+                            str_replace('"', '', $row->intitule),
+                            str_replace('"', '', $row->type_de_tiers ?? ''),
                             // Numéro de compte (pas l'ID FK) pour permettre la réimportation
-                            $row->compte->numero_de_compte ?? '',
+                            str_replace('"', '', $row->compte->numero_de_compte ?? ''),
                         ]) . "\r\n");
                     }
                 };
@@ -4438,10 +4438,10 @@ class AdminConfigController extends Controller
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
                         fwrite($file, implode(';', [
-                            $row->code_journal,
-                            $row->intitule,
-                            $row->type ?? '',
-                            $row->account->numero_de_compte ?? '',
+                            str_replace('"', '', $row->code_journal),
+                            str_replace('"', '', $row->intitule),
+                            str_replace('"', '', $row->type ?? ''),
+                            str_replace('"', '', $row->account->numero_de_compte ?? ''),
                         ]) . "\r\n");
                     }
                 };
@@ -4524,15 +4524,15 @@ class AdminConfigController extends Controller
                     $callback = function($file) use ($data) {
                         foreach ($data as $row) {
                             fwrite($file, implode(';', [
-                                $row->n_saisie_user ?? $row->n_saisie ?? '',
-                                $row->codeJournal->code_journal ?? '',
+                                str_replace('"', '', $row->n_saisie_user ?? $row->n_saisie ?? ''),
+                                str_replace('"', '', $row->codeJournal->code_journal ?? ''),
                                 Carbon::parse($row->date)->format('dmy'),
-                                $row->planComptable->numero_de_compte ?? '',
-                                $row->planTiers->numero_de_tiers ?? '',
-                                $row->reference_piece ?? '',
-                                $row->description_operation ?? '',
-                                $row->debit ?? 0,
-                                $row->credit ?? 0,
+                                str_replace('"', '', $row->planComptable->numero_de_compte ?? ''),
+                                str_replace('"', '', $row->planTiers->numero_de_tiers ?? ''),
+                                str_replace('"', '', $row->reference_piece ?? ''),
+                                str_replace('"', '', $row->description_operation ?? ''),
+                                str_replace('"', '', $row->debit ?? 0),
+                                str_replace('"', '', $row->credit ?? 0),
                             ]) . "\r\n");
                         }
                     };
