@@ -4402,10 +4402,10 @@ class AdminConfigController extends Controller
                 $headers = ['numero_de_compte', 'intitule'];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
-                        fputcsv($file, [
+                        fwrite($file, implode(';', [
                             $row->numero_de_compte,
                             $row->intitule,
-                        ], ';');
+                        ]) . "\r\n");
                     }
                 };
                 break;
@@ -4421,13 +4421,13 @@ class AdminConfigController extends Controller
                 ];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
-                        fputcsv($file, [
+                        fwrite($file, implode(';', [
                             $row->numero_de_tiers,
                             $row->intitule,
                             $row->type_de_tiers ?? '',
                             // Numéro de compte (pas l'ID FK) pour permettre la réimportation
                             $row->compte->numero_de_compte ?? '',
-                        ], ';');
+                        ]) . "\r\n");
                     }
                 };
                 break;
@@ -4437,12 +4437,12 @@ class AdminConfigController extends Controller
                 $headers = ['code_journal', 'intitule', 'type', 'compte_de_tresorerie'];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
-                        fputcsv($file, [
+                        fwrite($file, implode(';', [
                             $row->code_journal,
                             $row->intitule,
                             $row->type ?? '',
                             $row->account->numero_de_compte ?? '',
-                        ], ';');
+                        ]) . "\r\n");
                     }
                 };
                 break;
@@ -4523,7 +4523,7 @@ class AdminConfigController extends Controller
                     ];
                     $callback = function($file) use ($data) {
                         foreach ($data as $row) {
-                            fputcsv($file, [
+                            fwrite($file, implode(';', [
                                 $row->n_saisie_user ?? $row->n_saisie ?? '',
                                 $row->codeJournal->code_journal ?? '',
                                 Carbon::parse($row->date)->format('dmy'),
@@ -4533,7 +4533,7 @@ class AdminConfigController extends Controller
                                 $row->description_operation ?? '',
                                 $row->debit ?? 0,
                                 $row->credit ?? 0,
-                            ], ';');
+                            ]) . "\r\n");
                         }
                     };
                 }
@@ -4562,7 +4562,11 @@ class AdminConfigController extends Controller
 
             if (!empty($headers)) {
                 $separator = ($format == 'fec') ? "\t" : ';';
-                fputcsv($file, $headers, $separator);
+                if ($format == 'fec') {
+                    fputcsv($file, $headers, $separator);
+                } else {
+                    fwrite($file, implode($separator, $headers) . "\r\n");
+                }
             }
 
             $callback($file);
