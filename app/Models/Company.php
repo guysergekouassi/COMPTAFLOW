@@ -10,7 +10,7 @@ class Company extends Model
     use HasFactory, LogsActivity;
 
     protected $fillable = [
-        'company_name', 'activity', 'juridique_form', 'social_capital',
+        'company_name', 'company_code', 'activity', 'juridique_form', 'social_capital',
         'adresse', 'code_postal', 'city', 'country', 'phone_number',
         'email_adresse', 'identification_TVA', 'is_active', 'user_id', 'parent_company_id',
         'is_blocked', 'block_reason', 'blocked_at', 'blocked_by',
@@ -32,6 +32,13 @@ class Company extends Model
     public function users()
     {
         return $this->hasMany(User::class, 'company_id');
+    }
+
+    public function associatedUsers()
+    {
+        return $this->belongsToMany(User::class, 'company_user', 'company_id', 'user_id')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
      public function admin()

@@ -60,6 +60,13 @@ class User extends Authenticatable
         return $this->belongsTo(Company::class, 'company_id');
     }
 
+    public function companies()
+    {
+        return $this->belongsToMany(Company::class, 'company_user', 'user_id', 'company_id')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
 
     public function getInitialesAttribute()
     {

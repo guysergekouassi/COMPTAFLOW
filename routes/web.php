@@ -90,6 +90,24 @@ Route::get('/login', function () {
     return view('login');
 })->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::post('/login/company', [AuthController::class, 'loginCompany'])->name('login.company');
+
+// **********************************************
+// ROUTES DE L'ESPACE COMPTABLE (MIDDLEWARE 'auth' uniquement)
+// **********************************************
+Route::middleware(['auth'])->group(function () {
+    Route::get('/mon-espace', [App\Http\Controllers\AccountantSpaceController::class, 'index'])->name('accountant.space');
+    Route::post('/mon-espace/company', [App\Http\Controllers\AccountantSpaceController::class, 'storeCompany'])->name('accountant.space.company.store');
+    Route::post('/mon-espace/assign', [App\Http\Controllers\AccountantSpaceController::class, 'assignUser'])->name('accountant.space.assign');
+    Route::post('/mon-espace/remove-user', [App\Http\Controllers\AccountantSpaceController::class, 'removeUser'])->name('accountant.space.remove_user');
+    Route::post('/mon-espace/member', [App\Http\Controllers\AccountantSpaceController::class, 'createMember'])->name('accountant.space.member.store');
+    Route::get('/mon-espace/switch/{id}', [App\Http\Controllers\AccountantSpaceController::class, 'switchCompany'])->name('accountant.space.switch');
+    Route::post('/mon-espace/fusion', [App\Http\Controllers\AccountantSpaceController::class, 'fusionData'])->name('accountant.space.fusion');
+    
+    // Chat & Discussions
+    Route::post('/mon-espace/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('accountant.space.chat.send');
+    Route::get('/mon-espace/chat/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('accountant.space.chat.messages');
+});
 
     // Redirection vers le dashboard selon rôle après login
     Route::get('/dashboard', function () {

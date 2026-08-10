@@ -331,6 +331,25 @@
         </div>
     </div>
 
+    {{-- Bouton "Mon Espace" – visible pour admin et comptable non-superadmin --}}
+    @if(!auth()->user()->isSuperAdmin())
+    <div style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">
+        <a href="{{ route('accountant.space') }}" class="d-flex align-items-center gap-2 text-decoration-none"
+           style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe; border-radius: 10px; padding: 9px 12px; transition: all 0.2s;"
+           onmouseover="this.style.boxShadow='0 4px 12px -4px rgba(99,102,241,0.3)'"
+           onmouseout="this.style.boxShadow='none'">
+            <div style="width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <i class="fa-solid fa-grid-2" style="color:white; font-size:0.8rem;"></i>
+            </div>
+            <div>
+                <div style="font-size:0.78rem; font-weight:700; color:#3730a3; line-height:1.1;">Mon Espace</div>
+                <div style="font-size:0.62rem; color:#6366f1; font-weight:600;">Gérer mes entreprises</div>
+            </div>
+            <i class="fa-solid fa-chevron-right ms-auto" style="color:#a5b4fc; font-size:0.65rem;"></i>
+        </a>
+    </div>
+    @endif
+
     <nav class="sidebar-nav">
         {{-- SÉLECTEUR D'EXERCICE (NOUVEAU) --}}
         @if(isset($exercices) && $exercices->count() > 0 && $isComptaAccountActive)

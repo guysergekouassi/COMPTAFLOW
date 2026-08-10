@@ -132,48 +132,68 @@
                         <h4 class="mb-1">Bienvenue sur Flow Compta!</h4>
                         {{-- <p class="mb-6">Connectez-vous à votre compte et commencez l'aventure</p> --}}
 
-                        <form method="POST" action="{{ route('login') }}" id="formAuthentication" class="mb-6">
+                        <!-- Onglets de Connexion -->
+                        <div class="d-flex mb-6 bg-light p-1 rounded-3" style="background-color: #f1f5f9; border-radius: 12px; padding: 4px;">
+                            <button type="button" class="btn btn-sm w-50 fw-bold py-2.5 transition-all text-xs border-0 rounded-3 text-dark bg-white shadow-sm" id="btnTabEspace" onclick="switchLoginTab('espace')">
+                                <i class="bx bx-briefcase me-1"></i>MON ESPACE COMPTABLE
+                            </button>
+                            <button type="button" class="btn btn-sm w-50 fw-bold py-2.5 transition-all text-xs border-0 rounded-3 text-muted" id="btnTabEntreprise" onclick="switchLoginTab('entreprise')">
+                                <i class="bx bx-building me-1"></i>MON ENTREPRISE
+                            </button>
+                        </div>
+
+                        <!-- Formulaire MON ESPACE COMPTABLE -->
+                        <form method="POST" action="{{ route('login.post') }}" id="formAuthenticationEspace" class="mb-6">
                             @csrf
                             <div class="mb-6">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="text" class="form-control" id="email" name="email_adresse"
-                                    placeholder="Entrez votre email" autofocus **autocomplete="username" ** />
+                                <label for="email_espace" class="form-label">Email</label>
+                                <input type="text" class="form-control" id="email_espace" name="email_adresse"
+                                    placeholder="Entrez votre email" autofocus autocomplete="username" value="{{ old('email_adresse') }}" />
                                 @error('email_adresse')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
 
                             <div class="mb-6 form-password-toggle">
-                                <label class="form-label" for="password">Mot de passe</label>
+                                <label class="form-label" for="password_espace">Mot de passe</label>
                                 <div class="input-group input-group-merge">
-                                    <input type="password" id="password" class="form-control" name="password"
-                                        placeholder="*********" aria-describedby="password"
-                                        **autocomplete="current-password" ** />
-                                    <span class="input-group-text cursor-pointer"><i
-                                            class="icon-base bx bx-hide"></i></span>
+                                    <input type="password" id="password_espace" class="form-control" name="password"
+                                        placeholder="*********" aria-describedby="password" autocomplete="current-password" />
+                                    <span class="input-group-text cursor-pointer"><i class="icon-base bx bx-hide"></i></span>
                                 </div>
                                 @error('password')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
 
-                            {{-- changement de mot de passe --}}
+                            <div class="mb-6">
+                                <button class="btn btn-primary d-grid w-100" type="submit">Se connecter à mon espace</button>
+                            </div>
+                        </form>
 
-                            {{-- <div class="mb-6 form-password-toggle">
-                                <label class="form-label" for="password">Changer de mot de passe</label>
-                                <div class="input-group input-group-merge">
-                                    <input type="password" id="password" class="form-control" name="password"
-                                        placeholder="*********" aria-describedby="password" />
-                                    <span class="input-group-text cursor-pointer"><i
-                                            class="icon-base bx bx-hide"></i></span>
-                                </div>
-                                @error('password')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
+                        <!-- Formulaire MON ENTREPRISE -->
+                        <form method="POST" action="{{ route('login.company') }}" id="formAuthenticationEntreprise" class="mb-6" style="display: none;">
+                            @csrf
+                            <div class="mb-6">
+                                <label for="email_entreprise" class="form-label">Email</label>
+                                <input type="text" class="form-control" id="email_entreprise" name="email_adresse"
+                                    placeholder="Entrez votre email" autocomplete="username" value="{{ old('email_adresse') }}" />
+                                @error('email_adresse')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
-                            </div> --}}
+                            </div>
 
                             <div class="mb-6">
-                                <button class="btn btn-primary d-grid w-100" type="submit">Se connecter</button>
+                                <label for="company_code" class="form-label">Code unique de l'entreprise</label>
+                                <input type="text" class="form-control" id="company_code" name="company_code"
+                                    placeholder="Ex: ENT-XYZ-1234" value="{{ old('company_code') }}" />
+                                @error('company_code')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-6">
+                                <button class="btn btn-success d-grid w-100" type="submit">Accéder à la comptabilité</button>
                             </div>
                         </form>
 
@@ -229,6 +249,40 @@
                 }
             });
         }
+    </script>
+    <script>
+        function switchLoginTab(type) {
+            const btnEspace = document.getElementById('btnTabEspace');
+            const btnEntreprise = document.getElementById('btnTabEntreprise');
+            const formEspace = document.getElementById('formAuthenticationEspace');
+            const formEntreprise = document.getElementById('formAuthenticationEntreprise');
+
+            if (type === 'espace') {
+                btnEspace.classList.add('bg-white', 'shadow-sm', 'text-dark');
+                btnEspace.classList.remove('text-muted');
+                btnEntreprise.classList.remove('bg-white', 'shadow-sm', 'text-dark');
+                btnEntreprise.classList.add('text-muted');
+
+                formEspace.style.display = 'block';
+                formEntreprise.style.display = 'none';
+            } else {
+                btnEntreprise.classList.add('bg-white', 'shadow-sm', 'text-dark');
+                btnEntreprise.classList.remove('text-muted');
+                btnEspace.classList.remove('bg-white', 'shadow-sm', 'text-dark');
+                btnEspace.classList.add('text-muted');
+
+                formEspace.style.display = 'none';
+                formEntreprise.style.display = 'block';
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            @if($errors->has('company_code') || session('active_tab') == 'entreprise')
+                switchLoginTab('entreprise');
+            @else
+                switchLoginTab('espace');
+            @endif
+        });
     </script>
 </body>
 
