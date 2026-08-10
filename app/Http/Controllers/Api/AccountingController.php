@@ -45,7 +45,12 @@ class AccountingController extends Controller
             'intitule' => 'required|string',
         ]);
 
-        $numero = str_pad($request->numero_de_compte, 8, '0', STR_PAD_RIGHT);
+        $company = \App\Models\Company::find($companyId);
+        $digits = $company->account_digits ?? 8;
+        $numero = str_pad($request->numero_de_compte, $digits, '0', STR_PAD_RIGHT);
+        if (strlen($numero) > $digits) {
+            $numero = substr($numero, 0, $digits);
+        }
 
         if (PlanComptable::where('company_id', $companyId)->where('numero_de_compte', $numero)->exists()) {
             return response()->json(['message' => 'Ce numéro de compte existe déjà.'], 422);

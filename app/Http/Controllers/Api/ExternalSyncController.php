@@ -452,14 +452,20 @@ class ExternalSyncController extends Controller
                     $planComptableId = $planTiers->compte_general;
                 } else {
                     // 2. Chercher dans PlanComptable
+                    $digits = $company->account_digits ?? 8;
+                    $formattedAccountCode = str_pad($accountCode, $digits, '0', STR_PAD_RIGHT);
+                    if (strlen($formattedAccountCode) > $digits) {
+                        $formattedAccountCode = substr($formattedAccountCode, 0, $digits);
+                    }
+
                     $planComptable = PlanComptable::where('company_id', $company->id)
-                        ->where('numero_de_compte', $accountCode)
+                        ->where('numero_de_compte', $formattedAccountCode)
                         ->first();
 
                     if (!$planComptable) {
                         $planComptable = PlanComptable::create([
-                            'numero_de_compte' => $accountCode,
-                            'intitule'         => $libelle ?: 'Compte ' . $accountCode,
+                            'numero_de_compte' => $formattedAccountCode,
+                            'intitule'         => $libelle ?: 'Compte ' . $formattedAccountCode,
                             'company_id'       => $company->id,
                             'user_id'          => $company->user_id,
                             'type_de_compte'   => 'actif',

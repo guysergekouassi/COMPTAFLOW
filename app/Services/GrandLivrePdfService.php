@@ -377,7 +377,7 @@ class GrandLivrePdfService
     {
         $c   = self::C;
         $jl  = $this->disp($e->codeJournal?->code_journal ?? '-',   $e->codeJournal?->numero_original ?? '', $dm);
-        $ns  = $this->disp($e->n_saisie ?? '-',                     $e->n_saisie_user ?? '',                  $dm);
+        $ns  = $this->disp($this->cleanNSaisie($e->n_saisie ?? '-'), $this->cleanNSaisie($e->n_saisie_user ?? ''), $dm);
         $cpt = $this->disp($e->planComptable?->numero_de_compte ?? '',$e->planComptable?->numero_original ?? '',$dm);
         $ti  = $this->disp($e->planTiers?->numero_de_tiers ?? '',   $e->planTiers?->numero_original ?? '',    $dm);
         $d   = (float)($e->debit  ?? 0);
@@ -409,7 +409,7 @@ class GrandLivrePdfService
         $this->mpdf->SetFont('dejavusans', 'B', 7);
         $this->mpdf->SetFillColor(...self::GREY_L);
         $this->mpdf->SetXY(self::ML, $this->Y);
-        $this->mpdf->Cell($labelW,         self::RH, 'Sous-total saisie ' . $nSaisie, 1, 0, 'R', true);
+        $this->mpdf->Cell($labelW,         self::RH, 'Sous-total saisie ' . $this->cleanNSaisie($nSaisie), 1, 0, 'R', true);
         $this->mpdf->Cell($cols['debit'],  self::RH, $this->fmt($d),         1, 0, 'R', true);
         $this->mpdf->Cell($cols['credit'], self::RH, $this->fmt($c),         1, 0, 'R', true);
         $this->mpdf->Cell($cols['solde'],  self::RH, $this->fmtSolde($sol),  1, 1, 'R', true);
@@ -491,5 +491,19 @@ class GrandLivrePdfService
             'both'    => !empty($orig) && $orig !== $sys ? $sys . '(' . $orig . ')' : $sys,
             default   => $sys,
         };
+    }
+
+    private function cleanNSaisie(string $ns): string
+    {
+        if (str_starts_with($ns, 'ECR_')) {
+            $num = ltrim(substr($ns, 4), '0');
+            return 'ECR_' . ($num === '' ? '0' : $num);
+        }
+        if (str_contains($ns, '_')) {
+            $parts = explode('_', $ns, 2);
+            $num = ltrim($parts[1], '0');
+            return $parts[0] . '_' . ($num === '' ? '0' : $num);
+        }
+        return $ns;
     }
 }

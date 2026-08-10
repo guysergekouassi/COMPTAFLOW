@@ -4019,13 +4019,21 @@ class AdminConfigController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ce compte existe déjà.']);
             }
 
+            $companyId = session('current_company_id', $user->company_id);
+            $company = Company::find($companyId);
+            $digits = $company->account_digits ?? 8;
+            $numero = str_pad($request->numero_compte, $digits, '0', STR_PAD_RIGHT);
+            if (strlen($numero) > $digits) {
+                $numero = substr($numero, 0, $digits);
+            }
+
             PlanComptable::create([
-                'numero_de_compte' => $request->numero_compte,
+                'numero_de_compte' => $numero,
                 'intitule' => strtoupper($request->intitule),
                 'type_de_compte' => $request->type_de_compte ?? 'Bilan',
-                'classe' => substr($request->numero_compte, 0, 1),
+                'classe' => substr($numero, 0, 1),
                 'user_id' => $user->id,
-                'company_id' => session('current_company_id', $user->company_id),
+                'company_id' => $companyId,
                 'adding_strategy' => 'manuel'
             ]);
 

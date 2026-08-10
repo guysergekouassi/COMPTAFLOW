@@ -155,11 +155,16 @@ class PlanComptableController extends Controller
             'intitule' => 'required',
         ]);
 
-        $numero_formate = str_pad($request->numero_de_compte, 8, '0', STR_PAD_RIGHT);
-        $intitule_formate = ucfirst(strtolower($request->intitule));
-
         // 1. RÉCUPÉRER L'ID DE LA SOCIÉTÉ EN SESSION (Switch)
         $companyId = session('current_company_id', Auth::user()->company_id);
+        $company = \App\Models\Company::find($companyId);
+        $digits = $company->account_digits ?? 8;
+
+        $numero_formate = str_pad($request->numero_de_compte, $digits, '0', STR_PAD_RIGHT);
+        if (strlen($numero_formate) > $digits) {
+            $numero_formate = substr($numero_formate, 0, $digits);
+        }
+        $intitule_formate = ucfirst(strtolower($request->intitule));
 
         // 2. Vérifier l'existence au sein de CETTE société uniquement
         $exists = PlanComptable::where('company_id', $companyId)
@@ -223,16 +228,25 @@ class PlanComptableController extends Controller
                 }
 
                 $companyId = session('current_company_id', $user->company_id);
+                $company = \App\Models\Company::find($companyId);
+                $digits = $company->account_digits ?? 8;
+
                 foreach ($data as $numero => $intitule) {
-                    $existe = PlanComptable::where('numero_de_compte', $numero)
+                    if (strlen($numero) < $digits) {
+                        $numero_formate = str_pad($numero, $digits, '0', STR_PAD_RIGHT);
+                    } else {
+                        $numero_formate = substr($numero, 0, $digits);
+                    }
+
+                    $existe = PlanComptable::where('numero_de_compte', $numero_formate)
                         ->where('company_id', $companyId)
                         ->exists();
 
                     if (!$existe) {
                         PlanComptable::create([
-                            'numero_de_compte' => $numero,
+                            'numero_de_compte' => $numero_formate,
                             'intitule' => $intitule,
-                            'classe' => $this->determinerClasse($numero),
+                            'classe' => $this->determinerClasse($numero_formate),
                             'adding_strategy' => 'auto',
                             'user_id' => $user->id,
                             'company_id' => $companyId,
@@ -268,11 +282,15 @@ class PlanComptableController extends Controller
 
             $user = Auth::user();
             $companyId = session('current_company_id', $user->company_id);
+            $company = \App\Models\Company::find($companyId);
+            $digits = $company->account_digits ?? 8;
             $plan = PlanComptable::where('company_id', $companyId)->findOrFail($id);
 
             $numero = $request->input('numero_de_compte');
-            if (strlen($numero) < 8) {
-                $numero = str_pad($numero, 8, "0");
+            if (strlen($numero) < $digits) {
+                $numero = str_pad($numero, $digits, "0", STR_PAD_RIGHT);
+            } elseif (strlen($numero) > $digits) {
+                $numero = substr($numero, 0, $digits);
             }
 
             $intitule_formate = ucfirst(strtolower($request->intitule));

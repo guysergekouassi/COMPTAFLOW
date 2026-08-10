@@ -239,6 +239,23 @@ class GrandLivrePaginationService
     }
 
     /**
+     * Nettoie les zéros inutiles dans le numéro de saisie.
+     */
+    private function cleanNSaisie(string $ns): string
+    {
+        if (str_starts_with($ns, 'ECR_')) {
+            $num = ltrim(substr($ns, 4), '0');
+            return 'ECR_' . ($num === '' ? '0' : $num);
+        }
+        if (str_contains($ns, '_')) {
+            $parts = explode('_', $ns, 2);
+            $num = ltrim($parts[1], '0');
+            return $parts[0] . '_' . ($num === '' ? '0' : $num);
+        }
+        return $ns;
+    }
+
+    /**
      * Formate les données d'une ligne d'écriture pour l'affichage.
      */
     private function formatEntry($ecriture, string $displayMode, float $soldeCourant): array
@@ -249,8 +266,8 @@ class GrandLivrePaginationService
         $aff_jl  = $this->resolveDisplay($jl_sys, $jl_orig, $displayMode);
 
         // N° saisie
-        $n_sys  = $ecriture->n_saisie ?? '-';
-        $n_orig = $ecriture->n_saisie_user ?? '';
+        $n_sys  = $this->cleanNSaisie($ecriture->n_saisie ?? '-');
+        $n_orig = $this->cleanNSaisie($ecriture->n_saisie_user ?? '');
         $aff_n  = $this->resolveDisplay($n_sys, $n_orig, $displayMode);
 
         // Compte
