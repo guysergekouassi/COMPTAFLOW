@@ -1037,7 +1037,6 @@
                 </button>
             </div>
         @endif
-        @endif
     </nav>
 
     @auth
