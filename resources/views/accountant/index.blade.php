@@ -2,6 +2,9 @@
 <html lang="fr">
 @include('components.head')
 
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+
 :root {
     --space-bg: #f8fafc;
     --space-surface: #ffffff;
