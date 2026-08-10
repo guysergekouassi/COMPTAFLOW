@@ -346,6 +346,7 @@
     @endif
 
     <nav class="sidebar-nav">
+        @if(!$isInAccountantSpace)
         {{-- SÉLECTEUR D'EXERCICE (NOUVEAU) --}}
         @if(isset($exercices) && $exercices->count() > 0 && $isComptaAccountActive)
             <div class="px-3 mb-4">
