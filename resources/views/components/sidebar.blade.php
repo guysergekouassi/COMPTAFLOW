@@ -333,7 +333,9 @@
                         @endif
                     </div>
                 @else
-                    <div class="role-badge-sidebar mt-1">Super Admin</div>
+                    <div class="role-badge-sidebar mt-1">
+                        {{ auth()->user()->role === 'comptable' ? 'Comptable' : (auth()->user()->role === 'super_admin' ? 'Super Admin' : (auth()->user()->role === 'admin' ? 'Gérant' : auth()->user()->role)) }}
+                    </div>
                 @endif
             </div>
         </div>
