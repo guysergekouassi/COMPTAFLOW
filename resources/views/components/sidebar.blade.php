@@ -972,6 +972,69 @@
                     </a>
                 </div>
             @endif
+        @else
+            {{-- MENU POUR MON ESPACE (GÉRANT / COMPTABLE) --}}
+            <div class="menu-section">
+                <div class="menu-section-header">Mon Espace</div>
+                
+                <a href="{{ route('accountant.space') }}?page=dashboard" 
+                   class="menu-link-new {{ (!request('page') || request('page') === 'dashboard') ? 'active' : '' }}"
+                   data-page-link="dashboard"
+                   onclick="if(window.showSection) { showSection('dashboard'); return false; }">
+                    <i class="fa-solid fa-th-large"></i>
+                    <span>Tableau de bord</span>
+                </a>
+
+                <a href="{{ route('accountant.space') }}?page=companies" 
+                   class="menu-link-new {{ (request('page') === 'companies') ? 'active' : '' }}"
+                   data-page-link="companies"
+                   onclick="if(window.showSection) { showSection('companies'); return false; }">
+                    <i class="fa-solid fa-building"></i>
+                    <span>Mes Sociétés</span>
+                </a>
+
+                <a href="{{ route('accountant.space') }}?page=collaborators" 
+                   class="menu-link-new {{ (request('page') === 'collaborators') ? 'active' : '' }}"
+                   data-page-link="collaborators"
+                   onclick="if(window.showSection) { showSection('collaborators'); return false; }">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Collaborateurs</span>
+                </a>
+
+                <a href="{{ route('accountant.space') }}?page=fusion" 
+                   class="menu-link-new {{ (request('page') === 'fusion') ? 'active' : '' }}"
+                   data-page-link="fusion"
+                   onclick="if(window.showSection) { showSection('fusion'); return false; }">
+                    <i class="fa-solid fa-code-branch"></i>
+                    <span>Fusion & Déversement</span>
+                </a>
+
+                <a href="{{ route('accountant.space') }}?page=chat" 
+                   class="menu-link-new {{ (request('page') === 'chat') ? 'active' : '' }}"
+                   data-page-link="chat"
+                   onclick="if(window.showSection) { showSection('chat'); return false; }">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Messagerie</span>
+                </a>
+            </div>
+
+            <div class="menu-section" style="margin-top: auto; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+                <form method="POST" action="{{ route('accountant.space.bulk_generate') }}" onsubmit="return confirm('Générer automatiquement les codes pour toutes les entreprises sans code ?');">
+                    @csrf
+                    <button type="submit" class="menu-link-new text-success w-100 border-0 bg-transparent text-start py-2" style="font-size: 13px; color: #10b981;">
+                        <i class="fa-solid fa-magic"></i>
+                        <span>Auto-générer codes</span>
+                    </button>
+                </form>
+                <button onclick="document.getElementById('modal-new-company').classList.add('show')" class="menu-link-new text-primary w-100 border-0 bg-transparent text-start py-2" style="font-size: 13px; color: #1e40af;">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Nouvelle société</span>
+                </button>
+                <button onclick="document.getElementById('modal-new-member').classList.add('show')" class="menu-link-new text-violet w-100 border-0 bg-transparent text-start py-2" style="font-size: 13px; color: #8b5cf6;">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Nouveau membre</span>
+                </button>
+            </div>
         @endif
         @endif
     </nav>

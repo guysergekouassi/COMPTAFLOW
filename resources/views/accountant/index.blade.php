@@ -35,28 +35,10 @@ body {
 }
 
 /* ── LAYOUT ── */
-.espace-wrapper { display: flex; min-height: 100vh; margin-left: 288px; }
-
-.espace-sidebar {
-    width: 240px;
-    flex-shrink: 0;
-    background: var(--space-surface);
-    border-right: 1px solid var(--space-border);
-    padding: 1.75rem 1rem;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
+.espace-wrapper { min-height: 100vh; }
 
 .espace-content {
-    flex: 1;
     padding: 2rem;
-    overflow-y: auto;
-    min-height: 100vh;
     background: #f8fafc;
 }
 
@@ -431,57 +413,7 @@ body {
 
         <div class="content-wrapper p-0">
         <div class="espace-wrapper">
-
-            <!-- ══════════ SIDEBAR ESPACE ══════════ -->
-            <aside class="espace-sidebar">
-                <div class="space-nav-section-title">Navigation</div>
-
-                <button class="space-nav-link active" id="nav-dashboard" onclick="showSection('dashboard')">
-                    <div class="nav-icon"><i class="fas fa-th-large"></i></div>
-                    Tableau de bord
-                </button>
-
-                <button class="space-nav-link" id="nav-companies" onclick="showSection('companies')">
-                    <div class="nav-icon"><i class="fas fa-building"></i></div>
-                    Mes Sociétés
-                </button>
-
-                <button class="space-nav-link" id="nav-collaborators" onclick="showSection('collaborators')">
-                    <div class="nav-icon"><i class="fas fa-users"></i></div>
-                    Collaborateurs
-                </button>
-
-                <button class="space-nav-link" id="nav-fusion" onclick="showSection('fusion')">
-                    <div class="nav-icon"><i class="fas fa-code-branch"></i></div>
-                    Fusion & Déversement
-                </button>
-
-                <button class="space-nav-link" id="nav-chat" onclick="showSection('chat')">
-                    <div class="nav-icon"><i class="fas fa-comments"></i></div>
-                    Messagerie
-                </button>
-
-                <div style="margin-top:auto; padding-top:1.5rem; border-top:1px solid var(--space-border);">
-                    <form method="POST" action="{{ route('accountant.space.bulk_generate') }}" onsubmit="return confirm('Générer automatiquement les codes pour toutes les entreprises sans code ?');">
-                        @csrf
-                        <button type="submit" class="space-nav-link" style="color:#34d399; width:100%;">
-                            <div class="nav-icon" style="background:rgba(16,185,129,0.1); color:#34d399;"><i class="fas fa-magic"></i></div>
-                            Auto-générer codes
-                        </button>
-                    </form>
-                    <button class="space-nav-link" onclick="document.getElementById('modal-new-company').classList.add('show')">
-                        <div class="nav-icon" style="background:rgba(59,130,246,0.1);color:var(--blue);"><i class="fas fa-plus"></i></div>
-                        Nouvelle société
-                    </button>
-                    <button class="space-nav-link" onclick="document.getElementById('modal-new-member').classList.add('show')">
-                        <div class="nav-icon" style="background:rgba(139,92,246,0.1);color:var(--violet);"><i class="fas fa-user-plus"></i></div>
-                        Nouveau membre
-                    </button>
-                </div>
-            </aside>
-
-            <!-- ══════════ CONTENU PRINCIPAL ══════════ -->
-            <main class="espace-content">
+            <div class="espace-content">
 
                 @if(session('success'))
                 <div class="space-alert success"><i class="fas fa-check-circle"></i>{{ session('success') }}</div>
@@ -898,7 +830,7 @@ body {
                     </div>
                 </div>
 
-            </main>
+            </div>
         </div>
         </div>
     </div>
@@ -974,9 +906,20 @@ body {
 // ── NAVIGATION ──
 function showSection(section) {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.space-nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelectorAll('.menu-link-new').forEach(l => {
+        if (l.getAttribute('data-page-link')) {
+            l.classList.remove('active');
+        }
+    });
+
     document.getElementById('section-' + section).classList.add('active');
-    document.getElementById('nav-' + section)?.classList.add('active');
+    
+    // Activer l'élément dans la sidebar principale
+    const activeLink = document.querySelector(`.menu-link-new[data-page-link="${section}"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
+    }
+
     if (section === 'chat') {
         const first = document.querySelector('.chat-contact-item');
         if (first) first.click();
