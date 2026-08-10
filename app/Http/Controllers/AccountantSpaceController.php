@@ -55,36 +55,43 @@ class AccountantSpaceController extends Controller
                 ->get();
 
             // KPIs Financiers SYSCOHADA
+            // numero_de_compte est dans plan_comptables (JOIN nécessaire)
+
             // CA = SUM(credit) comptes 7x
             $ca = DB::table('ecriture_comptables')
-                ->where('company_id', $comp->id)
-                ->where('numero_de_compte', 'like', '7%')
-                ->sum('credit');
+                ->join('plan_comptables', 'ecriture_comptables.plan_comptable_id', '=', 'plan_comptables.id')
+                ->where('ecriture_comptables.company_id', $comp->id)
+                ->where('plan_comptables.numero_de_compte', 'like', '7%')
+                ->sum('ecriture_comptables.credit');
 
             // Trésorerie = SUM(debit) - SUM(credit) comptes 5x
             $tresoDebit = DB::table('ecriture_comptables')
-                ->where('company_id', $comp->id)
-                ->where('numero_de_compte', 'like', '5%')
-                ->sum('debit');
+                ->join('plan_comptables', 'ecriture_comptables.plan_comptable_id', '=', 'plan_comptables.id')
+                ->where('ecriture_comptables.company_id', $comp->id)
+                ->where('plan_comptables.numero_de_compte', 'like', '5%')
+                ->sum('ecriture_comptables.debit');
             $tresoCredit = DB::table('ecriture_comptables')
-                ->where('company_id', $comp->id)
-                ->where('numero_de_compte', 'like', '5%')
-                ->sum('credit');
+                ->join('plan_comptables', 'ecriture_comptables.plan_comptable_id', '=', 'plan_comptables.id')
+                ->where('ecriture_comptables.company_id', $comp->id)
+                ->where('plan_comptables.numero_de_compte', 'like', '5%')
+                ->sum('ecriture_comptables.credit');
             $tresorerie = $tresoDebit - $tresoCredit;
 
             // Résultat Net = SUM(credit 7x) - SUM(debit 6x)
             $charges = DB::table('ecriture_comptables')
-                ->where('company_id', $comp->id)
-                ->where('numero_de_compte', 'like', '6%')
-                ->sum('debit');
+                ->join('plan_comptables', 'ecriture_comptables.plan_comptable_id', '=', 'plan_comptables.id')
+                ->where('ecriture_comptables.company_id', $comp->id)
+                ->where('plan_comptables.numero_de_compte', 'like', '6%')
+                ->sum('ecriture_comptables.debit');
             $resultatNet = $ca - $charges;
 
-            // Nombre d'écritures de vente (journaux de type VT ou JV)
+            // Nombre de pièces de vente (code_journal dans code_journals)
             $ventesCount = DB::table('ecriture_comptables')
-                ->where('company_id', $comp->id)
-                ->whereIn('code_journal', ['VT', 'JV', 'VNT', 'VENTE', 'FAC'])
-                ->distinct('n_saisie')
-                ->count('n_saisie');
+                ->join('code_journals', 'ecriture_comptables.code_journal_id', '=', 'code_journals.id')
+                ->where('ecriture_comptables.company_id', $comp->id)
+                ->whereIn(DB::raw('UPPER(code_journals.code_journal)'), ['VT', 'JV', 'VNT', 'VENTE', 'FAC'])
+                ->distinct('ecriture_comptables.n_saisie')
+                ->count('ecriture_comptables.n_saisie');
 
             return [
                 'model' => $comp,
