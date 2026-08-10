@@ -13,18 +13,48 @@ class SuperAdminUserController extends Controller
     /**
      * Affiche la liste de tous les utilisateurs
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with(['company.parent'])->paginate(20);
-        $companies = Company::all();
-        
+        $query = User::with(['company.parent']);
+
+        // Filtre : recherche nom / email
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('email_adresse', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtre : rôle
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        // Filtre : entreprise
+        if ($request->filled('company_id')) {
+            $query->where('company_id', $request->company_id);
+        }
+
+        // Filtre : statut
+        if ($request->filled('is_active') && $request->is_active !== '') {
+            $query->where('is_active', $request->is_active);
+        }
+
+        $users = $query->paginate(20)->appends($request->query());
+        $companies = Company::orderBy('company_name')->get();
+
         // Totaux globaux pour les KPIs (hors pagination)
-        $totalUsers = User::count();
-        $totalAdmins = User::where('role', 'admin')->count();
+        $totalUsers     = User::count();
+        $totalAdmins    = User::where('role', 'admin')->count();
         $totalComptables = User::where('role', 'comptable')->count();
-        $totalActive = User::where('is_active', 1)->count();
-        
-        return view('superadmin.users', compact('users', 'companies', 'totalUsers', 'totalAdmins', 'totalComptables', 'totalActive'));
+        $totalActive    = User::where('is_active', 1)->count();
+
+        return view('superadmin.users', compact(
+            'users', 'companies',
+            'totalUsers', 'totalAdmins', 'totalComptables', 'totalActive'
+        ));
     }
 
     /**

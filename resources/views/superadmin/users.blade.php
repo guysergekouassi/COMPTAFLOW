@@ -128,11 +128,92 @@
                         </div>
                     </div>
 
+                    <!-- Filtres -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+                        <form method="GET" action="{{ route('superadmin.users') }}" id="filterForm">
+                            <div class="row g-3 align-items-end">
+
+                                {{-- Recherche --}}
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small text-muted mb-1">
+                                        <i class="fa-solid fa-magnifying-glass me-1"></i>Recherche
+                                    </label>
+                                    <input type="text" name="search" id="filter_search"
+                                           class="form-control form-control-sm"
+                                           placeholder="Nom, prénom, email…"
+                                           value="{{ request('search') }}">
+                                </div>
+
+                                {{-- Rôle --}}
+                                <div class="col-md-2">
+                                    <label class="form-label fw-semibold small text-muted mb-1">
+                                        <i class="fa-solid fa-user-tag me-1"></i>Rôle
+                                    </label>
+                                    <select name="role" id="filter_role" class="form-select form-select-sm">
+                                        <option value="">Tous les rôles</option>
+                                        <option value="admin"       {{ request('role') === 'admin'       ? 'selected' : '' }}>Admin</option>
+                                        <option value="comptable"   {{ request('role') === 'comptable'   ? 'selected' : '' }}>Comptable</option>
+                                        <option value="user"        {{ request('role') === 'user'        ? 'selected' : '' }}>Utilisateur</option>
+                                    </select>
+                                </div>
+
+                                {{-- Entreprise --}}
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold small text-muted mb-1">
+                                        <i class="fa-solid fa-building me-1"></i>Entreprise
+                                    </label>
+                                    <select name="company_id" id="filter_company" class="form-select form-select-sm">
+                                        <option value="">Toutes les entreprises</option>
+                                        @foreach($companies as $company)
+                                            <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
+                                                {{ $company->company_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Statut --}}
+                                <div class="col-md-2">
+                                    <label class="form-label fw-semibold small text-muted mb-1">
+                                        <i class="fa-solid fa-toggle-on me-1"></i>Statut
+                                    </label>
+                                    <select name="is_active" id="filter_status" class="form-select form-select-sm">
+                                        <option value="">Tous</option>
+                                        <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Actif</option>
+                                        <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>Bloqué</option>
+                                    </select>
+                                </div>
+
+                                {{-- Boutons --}}
+                                <div class="col-md-1 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100" title="Filtrer">
+                                        <i class="fa-solid fa-filter"></i>
+                                    </button>
+                                    @if(request()->hasAny(['search','role','company_id','is_active']))
+                                        <a href="{{ route('superadmin.users') }}" class="btn btn-outline-secondary btn-sm" title="Réinitialiser">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </a>
+                                    @endif
+                                </div>
+
+                            </div>
+
+                            {{-- Badge résultats --}}
+                            @if(request()->hasAny(['search','role','company_id','is_active']))
+                                <div class="mt-2 pt-2 border-top d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-pill">{{ $users->total() }} résultat(s)</span>
+                                    <span class="text-muted small">filtre(s) actif(s)</span>
+                                </div>
+                            @endif
+                        </form>
+                    </div>
+
                     <!-- Tableau des utilisateurs -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                         <div class="p-4 border-bottom">
                             <h5 class="fw-semibold mb-0">Liste des utilisateurs</h5>
                         </div>
+
                         
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
@@ -142,6 +223,7 @@
                                         <th class="fw-semibold">Email</th>
                                         <th class="fw-semibold">Entreprise</th>
                                         <th class="fw-semibold">Rôle</th>
+                                        <th class="fw-semibold">Statut</th>
                                         <th class="fw-semibold">Créé le</th>
                                         <th class="fw-semibold text-end">Actions</th>
                                     </tr>
@@ -157,7 +239,7 @@
                                                     <span class="fw-medium">{{ $user->name }}</span>
                                                 </div>
                                             </td>
-                                            <td>{{ $user->email }}</td>
+                                            <td class="text-muted small">{{ $user->email_adresse }}</td>
                                             <td>
                                                 <div>
                                                     <div class="fw-medium text-slate-700">{{ $user->company->company_name ?? 'N/A' }}</div>
@@ -179,7 +261,18 @@
                                                     <span class="badge bg-secondary">Utilisateur</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $user->created_at->format('d/m/Y') }}</td>
+                                            <td>
+                                                @if($user->is_active)
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                        <i class="fa-solid fa-circle-check me-1"></i>Actif
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                        <i class="fa-solid fa-ban me-1"></i>Bloqué
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="text-muted small">{{ $user->created_at->format('d/m/Y') }}</td>
                                             <td class="text-end">
                                                 @if($user->role !== 'super_admin')
                                                     <div class="btn-group btn-group-sm">
@@ -204,7 +297,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="text-center py-4 text-muted">
+                                            <td colspan="7" class="text-center py-4 text-muted">
                                                 <i class="fa-solid fa-users fa-2x mb-2"></i>
                                                 <p class="mb-0">Aucun utilisateur trouvé</p>
                                             </td>
