@@ -4399,30 +4399,48 @@ class AdminConfigController extends Controller
         switch ($type) {
             case 'plan_comptable':
                 $data = PlanComptable::where('company_id', session('current_company_id', $user->company_id))->orderBy('numero_de_compte')->get();
-                $headers = ['Compte', 'Intitule', 'Type', 'Classe'];
+                $headers = ['numero_de_compte', 'intitule'];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
-                        fputcsv($file, [$row->numero_de_compte, $row->intitule, $row->type_de_compte, $row->classe], ';');
+                        fputcsv($file, [
+                            $row->numero_de_compte,
+                            $row->intitule,
+                        ], ';');
                     }
                 };
                 break;
 
             case 'plan_tiers':
+                // Colonnes identiques à l'import : numero_de_tiers, intitule, compte_general
                 $data = PlanTiers::with('compte')->where('company_id', session('current_company_id', $user->company_id))->orderBy('numero_de_tiers')->get();
-                $headers = ['Numero Tiers', 'Intitule', 'Type', 'Compte Collectif'];
+                $headers = [
+                    'numero_de_tiers',
+                    'intitule',
+                    'compte_general',
+                ];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
-                        fputcsv($file, [$row->numero_de_tiers, $row->intitule, $row->type_de_tiers, $row->compte->numero_de_compte ?? ''], ';');
+                        fputcsv($file, [
+                            $row->numero_de_tiers,
+                            $row->intitule,
+                            // Numéro de compte (pas l'ID FK) pour permettre la réimportation
+                            $row->compte->numero_de_compte ?? '',
+                        ], ';');
                     }
                 };
                 break;
 
             case 'journals':
-                $data = CodeJournal::where('company_id', session('current_company_id', $user->company_id))->orderBy('code_journal')->get();
-                $headers = ['Code', 'Intitule', 'Type'];
+                $data = CodeJournal::with('account')->where('company_id', session('current_company_id', $user->company_id))->orderBy('code_journal')->get();
+                $headers = ['code_journal', 'intitule', 'type', 'compte_de_tresorerie'];
                 $callback = function($file) use ($data) {
                     foreach ($data as $row) {
-                        fputcsv($file, [$row->code_journal, $row->intitule, $row->type], ';');
+                        fputcsv($file, [
+                            $row->code_journal,
+                            $row->intitule,
+                            $row->type ?? '',
+                            $row->account->numero_de_compte ?? '',
+                        ], ';');
                     }
                 };
                 break;
@@ -4439,7 +4457,7 @@ class AdminConfigController extends Controller
                     $query->where('code_journal_id', $request->input('journal'));
                 }
 
-                $data = $query->orderBy('date')->orderBy('created_at')->get();
+                $data = $query->orderBy('date')->orderBy('n_saisie')->get();
 
                 if ($format == 'fec') {
                     $headers = ['JournalCode', 'JournalLib', 'EcritureNum', 'EcritureDate', 'CompteNum', 'CompteLib', 'CompAuxNum', 'CompAuxLib', 'PieceRef', 'PieceDate', 'EcritureLib', 'Debit', 'Credit', 'EcritureLet', 'DateLet', 'ValidDate', 'Montantdevise', 'Idevise'];
@@ -4487,18 +4505,32 @@ class AdminConfigController extends Controller
                     $filename .= ".txt";
                     $contentType = 'text/plain';
                 } else {
-                    $headers = ['Journal', 'Date', 'Compte', 'Tier', 'Piece', 'Libelle', 'Debit', 'Credit'];
+                    // Colonnes dans l'ordre exact de l'import écritures :
+                    // n_saisie_user (numéro de saisie utilisateur), code_journal, date_ecriture,
+                    // numero_de_compte, numero_de_tiers, piece_ref, libelle, debit, credit
+                    $headers = [
+                        'n_saisie',
+                        'code_journal',
+                        'date_ecriture',
+                        'numero_de_compte',
+                        'numero_de_tiers',
+                        'piece_ref',
+                        'libelle',
+                        'debit',
+                        'credit',
+                    ];
                     $callback = function($file) use ($data) {
                         foreach ($data as $row) {
                             fputcsv($file, [
+                                $row->n_saisie_user ?? $row->n_saisie ?? '',
                                 $row->codeJournal->code_journal ?? '',
-                                $row->date,
+                                Carbon::parse($row->date)->format('dmy'),
                                 $row->planComptable->numero_de_compte ?? '',
                                 $row->planTiers->numero_de_tiers ?? '',
                                 $row->reference_piece ?? '',
-                                $row->description_operation,
-                                $row->debit,
-                                $row->credit
+                                $row->description_operation ?? '',
+                                $row->debit ?? 0,
+                                $row->credit ?? 0,
                             ], ';');
                         }
                     };
