@@ -94,7 +94,7 @@ Route::post('/login/company', [AuthController::class, 'loginCompany'])->name('lo
 
 // Routes Google OAuth (Socialite)
 Route::get('/auth/google', [App\Http\Controllers\GoogleAuthController::class, 'redirect'])->name('auth.google');
-Route::get('/auth/google/callback', [App\Http\Controllers\GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+Route::get('/auth/callback', [App\Http\Controllers\GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
 // **********************************************
 // ROUTES DE L'ESPACE COMPTABLE (MIDDLEWARE 'auth' uniquement)
