@@ -4411,11 +4411,12 @@ class AdminConfigController extends Controller
                 break;
 
             case 'plan_tiers':
-                // Colonnes identiques à l'import : numero_de_tiers, intitule, compte_general
+                // Colonnes identiques à l'import : numero_de_tiers, intitule, type_de_tiers, compte_general
                 $data = PlanTiers::with('compte')->where('company_id', session('current_company_id', $user->company_id))->orderBy('numero_de_tiers')->get();
                 $headers = [
                     'numero_de_tiers',
                     'intitule',
+                    'type_de_tiers',
                     'compte_general',
                 ];
                 $callback = function($file) use ($data) {
@@ -4423,6 +4424,7 @@ class AdminConfigController extends Controller
                         fputcsv($file, [
                             $row->numero_de_tiers,
                             $row->intitule,
+                            $row->type_de_tiers ?? '',
                             // Numéro de compte (pas l'ID FK) pour permettre la réimportation
                             $row->compte->numero_de_compte ?? '',
                         ], ';');
