@@ -333,9 +333,17 @@
                         @endif
                     </div>
                 @else
-                    <div class="role-badge-sidebar mt-1">
-                        {{ auth()->user()->role === 'comptable' ? 'Comptable' : (auth()->user()->role === 'super_admin' ? 'Super Admin' : (auth()->user()->role === 'admin' ? 'Gérant' : auth()->user()->role)) }}
-                    </div>
+                    @php
+                        $roleLabel = match(auth()->user()->role) {
+                            'admin'       => 'Gérant',
+                            'comptable'   => 'Comptable',
+                            'super_admin' => '',   // Ne jamais afficher "Super Admin" ici
+                            default       => auth()->user()->role,
+                        };
+                    @endphp
+                    @if($roleLabel)
+                        <div class="role-badge-sidebar mt-1">{{ $roleLabel }}</div>
+                    @endif
                 @endif
             </div>
         </div>
