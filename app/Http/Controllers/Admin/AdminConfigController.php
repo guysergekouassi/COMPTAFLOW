@@ -574,8 +574,8 @@ class AdminConfigController extends Controller
             $templates = [
                 ['prefix' => 'ACH', 'intitule' => 'ACHAT', 'type' => 'Achats', 'base_compte' => null],
                 ['prefix' => 'VEN', 'intitule' => 'VENTE', 'type' => 'Ventes', 'base_compte' => null],
-                ['prefix' => 'BQ',  'intitule' => 'BANQUE', 'type' => 'Tresorerie', 'base_compte' => '52'],
-                ['prefix' => 'CAI', 'intitule' => 'CAISSE', 'type' => 'Tresorerie', 'base_compte' => '57'],
+                ['prefix' => 'BQ',  'intitule' => 'BANQUE', 'type' => 'Tresorerie', 'base_compte' => '521'],
+                ['prefix' => 'CAI', 'intitule' => 'CAISSE', 'type' => 'Tresorerie', 'base_compte' => '571'],
                 ['prefix' => 'OD',  'intitule' => 'OPERATION DIVERSE', 'type' => 'Opérations Diverses', 'base_compte' => null],
                 ['prefix' => 'RAN', 'intitule' => 'REPORT A NOUVEAU', 'type' => 'REPORT A NOUVEAU', 'base_compte' => null],
             ];
