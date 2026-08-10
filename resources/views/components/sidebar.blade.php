@@ -972,6 +972,7 @@
                     </a>
                 </div>
             @endif
+        @endif
         @else
             {{-- MENU POUR MON ESPACE (GÉRANT / COMPTABLE) --}}
             <div class="menu-section">
