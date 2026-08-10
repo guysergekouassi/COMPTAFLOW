@@ -152,18 +152,21 @@ class SuperAdminUserController extends Controller
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            'name'          => 'required|string|max:255',
+            'last_name'     => 'required|string|max:255',
             'email_adresse' => 'required|email|max:191|unique:users,email_adresse,' . $id,
-            'company_id' => 'required|exists:companies,id',
-            'role' => 'required|in:admin,comptable,user',
-            'is_active' => 'required|boolean',
-            'pack_id' => 'nullable|exists:pack,id',
+            'password'      => 'nullable|string|min:5',
+            'company_id'    => 'required|exists:companies,id',
+            'role'          => 'required|in:admin,comptable,user',
+            'is_active'     => 'required|boolean',
+            'pack_id'       => 'nullable|exists:pack,id',
             'habilitations' => 'nullable|array',
         ]);
 
-        if ($request->filled('password')) {
-            $validated['password'] = Hash::make($request->password);
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
         }
 
         $user->update($validated);

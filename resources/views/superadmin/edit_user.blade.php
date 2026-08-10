@@ -69,16 +69,25 @@
                                         </div>
 
                                         <div class="col-md-12">
-                                            <label for="password" class="form-label fw-semibold">Mot de Passe (Laisser vide pour ne pas modifier)</label>
-                                            <div class="input-group">
-                                                <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password">
-                                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                                    <i class="fa-solid fa-eye"></i>
-                                                </button>
+                                            <div class="p-3 rounded-lg border border-warning bg-warning bg-opacity-10 mt-2">
+                                                <label for="password" class="form-label fw-bold text-warning-emphasis d-flex align-items-center gap-2">
+                                                    <i class="fa-solid fa-key"></i>
+                                                    Réinitialisation du mot de passe
+                                                </label>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Nouveau mot de passe...">
+                                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword" title="Voir / Cacher">
+                                                        <i class="fa-solid fa-eye"></i>
+                                                    </button>
+                                                </div>
+                                                <small class="text-muted mt-1 d-block">
+                                                    <i class="fa-solid fa-circle-info me-1 text-warning"></i>
+                                                    Laissez vide pour conserver le mot de passe actuel. Minimum 5 caractères.
+                                                </small>
+                                                @error('password') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                                             </div>
-                                            <small class="text-muted">Min. 5 caractères si spécifié.</small>
-                                            @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
+
                                     </div>
                                 </div>
 
