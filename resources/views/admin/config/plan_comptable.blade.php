@@ -199,7 +199,8 @@
                                     </thead>
                                     <tbody class="bg-white">
                                         @foreach($plansComptables as $plan)
-                                        <tr>
+                                        @php $numStr = $plan->numero_de_compte; $labelStr = strtolower($plan->intitule); @endphp
+                                        <tr data-account-num="{{ $numStr }}" data-account-label="{{ $labelStr }}">
                                             <td class="ps-8 py-6">
                                                 <div class="d-flex flex-column">
                                                     <div class="d-flex align-items-center gap-2 mb-1">
@@ -496,20 +497,33 @@
                 });
             }
         });
-        // Filtre de recherche amélioré - filtre automatiquement lors de la saisie
+        // Filtre de recherche précis + rapide (debounce 120ms)
+        let _searchTimer = null;
         document.getElementById('masterSearch')?.addEventListener('input', function() {
-            const searchValue = this.value.toLowerCase().trim();
-            const rows = document.querySelectorAll('tbody tr');
-            
-            rows.forEach(row => {
-                // Récupérer le numéro de compte (classe) et l'intitulé
-                const accountNumber = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() || '';
-                const accountLabel = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
-                
-                // Afficher la ligne si la recherche correspond au numéro OU à l'intitulé
-                const matches = accountNumber.includes(searchValue) || accountLabel.includes(searchValue);
-                row.style.display = matches ? '' : 'none';
-            });
+            clearTimeout(_searchTimer);
+            const val = this.value.trim();
+            _searchTimer = setTimeout(function() {
+                const rows = document.querySelectorAll('tbody tr');
+                if (val === '') {
+                    rows.forEach(r => r.style.display = '');
+                    return;
+                }
+                const isNumericSearch = /^[0-9]/.test(val);
+                const valLow = val.toLowerCase();
+                rows.forEach(row => {
+                    const num   = row.dataset.accountNum   || '';
+                    const label = row.dataset.accountLabel || '';
+                    let matches;
+                    if (isNumericSearch) {
+                        // Filtre précis : le numéro doit COMMENCER par la valeur saisie
+                        matches = num.startsWith(val);
+                    } else {
+                        // Filtre sur le libellé : contient la valeur saisie
+                        matches = label.includes(valLow) || num.startsWith(valLow);
+                    }
+                    row.style.display = matches ? '' : 'none';
+                });
+            }, 120);
         });
 
         // Fonction pour éditer un compte
