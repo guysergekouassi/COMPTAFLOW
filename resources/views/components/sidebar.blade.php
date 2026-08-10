@@ -1,4 +1,17 @@
-@include('components.navbar_horizontal')
+@php
+    $isInAccountantSpace = request()->routeIs('accountant.space');
+    $isSwitched = session('switched_company_id') || session('is_super_admin_bypassing');
+
+    if ($isInAccountantSpace) {
+        $currentCompany = null;
+        $isComptaAccountActive = false;
+    }
+@endphp
+
+@if(!$isInAccountantSpace)
+    @include('components.navbar_horizontal')
+@endif
+
 
 <style>
     /* Styles pour le nouveau design */
