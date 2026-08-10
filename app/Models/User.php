@@ -32,6 +32,8 @@ class User extends Authenticatable
         'is_active',
         'pack_id',
         'created_by_id',
+        'google_id',
+        'avatar',
     ];
 
     protected $casts = [

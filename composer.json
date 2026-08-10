@@ -16,6 +16,7 @@
         "laravel/cashier": "^16.1",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.3",
+        "laravel/socialite": "^5.29",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "*",
         "mpdf/mpdf": "^8.3",
