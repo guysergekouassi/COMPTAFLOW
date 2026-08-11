@@ -306,6 +306,30 @@
                                                 {{ number_format($company->social_capital ?? 0, 0, ',', ' ') }} FCFA
                                             </span>
                                         </div>
+                                        <div class="info-row">
+                                            <span class="info-label">Code d'accès de l'entreprise</span>
+                                            <div class="d-flex align-items-center gap-2 mt-1">
+                                                @if($company->company_code)
+                                                    <span class="status-badge bg-primary text-white font-mono" style="font-size:0.85rem;padding:0.25rem 0.6rem;">
+                                                        <i class="fas fa-key"></i> {{ $company->company_code }}
+                                                    </span>
+                                                    <button onclick="navigator.clipboard.writeText('{{ $company->company_code }}');Swal.fire({toast:true,position:'top-end',icon:'success',title:'Code copié',showConfirmButton:false,timer:1500});"
+                                                            class="btn btn-xs btn-outline-secondary" type="button" title="Copier le code">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                @else
+                                                    <span class="text-muted italic">Aucun code généré</span>
+                                                @endif
+
+                                                <form method="POST" action="{{ route('accountant.space.generate_code', $company->id) }}" style="display:inline;"
+                                                      onsubmit="return {{ $company->company_code ? 'confirm(\'Régénérer ? L\\\'ancien code sera invalidé.\')' : 'true' }};">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-xs btn-primary">
+                                                        <i class="fas fa-sync-alt me-1"></i> {{ $company->company_code ? 'Régénérer' : 'Générer' }}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="info-row">
@@ -531,19 +555,19 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <div class="form-field-group">
-                                                            <label class="form-label-premium">Téléphone</label>
-                                                            <input type="text" name="phone_number" class="form-control-premium"
-                                                                   value="{{ old('phone_number', $company->phone_number) }}" placeholder="+225 07 00 00 00">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="form-field-group">
-                                                            <label class="form-label-premium">Adresse e-mail</label>
-                                                            <input type="email" name="email_adresse" class="form-control-premium"
-                                                                   value="{{ old('email_adresse', $company->email_adresse) }}">
-                                                        </div>
-                                                    </div>
+                                                         <div class="form-field-group">
+                                                             <label class="form-label-premium">Téléphone <span class="req">*</span></label>
+                                                             <input type="text" name="phone_number" class="form-control-premium"
+                                                                    value="{{ old('phone_number', $company->phone_number) }}" placeholder="+225 07 00 00 00" required>
+                                                         </div>
+                                                     </div>
+                                                     <div class="col-md-6">
+                                                         <div class="form-field-group">
+                                                             <label class="form-label-premium">Adresse e-mail <span class="text-muted" style="font-size:0.75rem;">(Non modifiable)</span></label>
+                                                             <input type="email" class="form-control-premium bg-light"
+                                                                    value="{{ $company->email_adresse }}" readonly style="cursor: not-allowed; opacity: 0.85;">
+                                                         </div>
+                                                     </div>
                                                 </div>
                                             </div>
 
@@ -552,9 +576,9 @@
                                                 <div class="row g-3">
                                                     <div class="col-md-12">
                                                         <div class="form-field-group">
-                                                            <label class="form-label-premium">Adresse complète</label>
+                                                            <label class="form-label-premium">Adresse complète <span class="req">*</span></label>
                                                             <input type="text" name="adresse" class="form-control-premium"
-                                                                   value="{{ old('adresse', $company->adresse) }}" placeholder="Rue, numéro...">
+                                                                   value="{{ old('adresse', $company->adresse) }}" placeholder="Rue, numéro..." required>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-12">
@@ -580,23 +604,23 @@
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-field-group">
-                                                            <label class="form-label-premium">Ville</label>
+                                                            <label class="form-label-premium">Ville <span class="req">*</span></label>
                                                             <input type="text" name="city" class="form-control-premium"
-                                                                   value="{{ old('city', $company->city) }}">
+                                                                   value="{{ old('city', $company->city) }}" required>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-field-group">
-                                                            <label class="form-label-premium">Code Postal</label>
+                                                            <label class="form-label-premium">Boîte Postale <span class="req">*</span></label>
                                                             <input type="text" name="code_postal" class="form-control-premium"
-                                                                   value="{{ old('code_postal', $company->code_postal) }}">
+                                                                   value="{{ old('code_postal', $company->code_postal) }}" placeholder="ex: 01 BP 0000 Abidjan 01" required>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-field-group">
-                                                            <label class="form-label-premium">Pays</label>
+                                                            <label class="form-label-premium">Pays <span class="req">*</span></label>
                                                             <input type="text" name="country" class="form-control-premium"
-                                                                   value="{{ old('country', $company->country) }}" placeholder="Côte d'Ivoire">
+                                                                   value="{{ old('country', $company->country) }}" placeholder="Côte d'Ivoire" required>
                                                         </div>
                                                     </div>
                                                 </div>

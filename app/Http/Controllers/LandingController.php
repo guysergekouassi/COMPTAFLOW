@@ -39,7 +39,14 @@ class LandingController extends Controller
             return redirect()->route('landing.pricing')->with('error', 'Type de pack invalide.');
         }
 
-        return view('landing.register', compact('type'));
+        // Générer un code d'accès par défaut pour l'inscription
+        $prefix = ($type === 'comptable') ? 'CAB' : 'ENT';
+        do {
+            $generatedCode = $prefix . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+            $exists = Company::where('company_code', $generatedCode)->exists();
+        } while ($exists);
+
+        return view('landing.register', compact('type', 'generatedCode'));
     }
 
     /**
@@ -57,12 +64,13 @@ class LandingController extends Controller
             'company_name' => 'required|string|max:255',
             'juridique_form' => 'required|string|max:100',
             'activity' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
-            'phone_number' => 'required|string|max:50',
-            'adresse' => 'required|string|max:255',
-            'code_postal' => 'required|string|max:50',
-            'country' => 'required|string|max:100',
+            'city' => 'nullable|string|max:100',
+            'phone_number' => 'nullable|string|max:50',
+            'adresse' => 'nullable|string|max:255',
+            'code_postal' => 'nullable|string|max:50',
+            'country' => 'nullable|string|max:100',
             'company_email' => 'nullable|email|max:255|unique:companies,email_adresse',
+            'company_code' => 'required|string|max:100|unique:companies,company_code',
             // Infos Admin
             'admin_name' => 'required|string|max:255',
             'admin_last_name' => 'required|string|max:255',
@@ -98,6 +106,7 @@ class LandingController extends Controller
                 'email_adresse' => $companyEmail,
                 'identification_TVA' => $request->identification_TVA,
                 'parent_company_id' => null, // Racine
+                'company_code' => $request->company_code,
             ]);
 
             // 3. Déterminer les habilitations

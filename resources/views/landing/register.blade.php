@@ -297,33 +297,47 @@
                                 class="form-control" placeholder="contact@entreprise.com">
                         </div>
 
+                        <div class="col-12">
+                            <label class="form-label">Code d'accès de l'entreprise <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-key text-primary"></i></span>
+                                <input type="text" name="company_code" id="company_code_input" 
+                                       value="{{ old('company_code', $generatedCode ?? '') }}" required readonly
+                                       class="form-control font-mono fw-bold" style="background-color: #f8fafc; letter-spacing: 0.05em;" placeholder="Génération automatique...">
+                                <button class="btn btn-outline-primary" type="button" onclick="generateRandomCompanyCode()">
+                                    <i class="fa-solid fa-sync-alt me-1"></i> Régénérer
+                                </button>
+                            </div>
+                            <div class="form-text text-muted small mt-1">Ce code unique servira d'identifiant pour rattacher vos comptables et collaborateurs.</div>
+                        </div>
+
                         <div class="col-6">
-                            <label class="form-label">Téléphone <span class="text-danger">*</span></label>
-                            <input type="text" name="phone_number" value="{{ old('phone_number') }}" required
+                            <label class="form-label">Téléphone</label>
+                            <input type="text" name="phone_number" value="{{ old('phone_number') }}"
                                 class="form-control" placeholder="+225 0000000000">
                         </div>
 
                         <div class="col-6">
-                            <label class="form-label">Ville <span class="text-danger">*</span></label>
-                            <input type="text" name="city" value="{{ old('city') }}" required class="form-control"
+                            <label class="form-label">Ville</label>
+                            <input type="text" name="city" value="{{ old('city') }}" class="form-control"
                                 placeholder="Abidjan">
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label">Adresse complète <span class="text-danger">*</span></label>
-                            <input type="text" name="adresse" value="{{ old('adresse') }}" required class="form-control"
+                            <label class="form-label">Adresse complète</label>
+                            <input type="text" name="adresse" value="{{ old('adresse') }}" class="form-control"
                                 placeholder="Cocody Riviera...">
                         </div>
 
                         <div class="col-6">
-                            <label class="form-label">Boîte Postale <span class="text-danger">*</span></label>
-                            <input type="text" name="code_postal" value="{{ old('code_postal') }}" required
+                            <label class="form-label">Boîte Postale</label>
+                            <input type="text" name="code_postal" value="{{ old('code_postal') }}"
                                 class="form-control" placeholder="01 BP 0000 Abidjan 01">
                         </div>
 
                         <div class="col-6">
-                            <label class="form-label">Pays <span class="text-danger">*</span></label>
-                            <input type="text" name="country" value="{{ old('country') ?? 'Côte d\'Ivoire' }}" required
+                            <label class="form-label">Pays</label>
+                            <input type="text" name="country" value="{{ old('country') ?? 'Côte d\'Ivoire' }}"
                                 class="form-control">
                         </div>
                     </div>
@@ -419,6 +433,17 @@
                 setTimeout(function () { showToast(msg, 'error'); }, i * 250);
             });
         })();
+
+        function generateRandomCompanyCode() {
+            const type = "{{ $type }}";
+            const prefix = type === 'comptable' ? 'CAB' : 'ENT';
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let randomStr = '';
+            for (let i = 0; i < 6; i++) {
+                randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('company_code_input').value = prefix + '-' + randomStr;
+        }
     </script>
 </body>
 

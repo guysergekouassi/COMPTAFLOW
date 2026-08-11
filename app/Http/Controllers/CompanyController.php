@@ -131,14 +131,16 @@ class CompanyController extends Controller
             'juridique_form' => 'nullable|string',
             'activity' => 'nullable|string',
             'social_capital' => 'nullable|numeric',
-            'adresse' => 'nullable|string',
-            'code_postal' => 'nullable|string',
-            'city' => 'nullable|string',
-            'country' => 'nullable|string',
-            'phone_number' => 'nullable|string',
-            'email_adresse' => 'nullable|email',
+            'adresse' => 'required|string|max:255',
+            'code_postal' => 'required|string|max:50',
+            'city' => 'required|string|max:100',
+            'country' => 'required|string|max:100',
+            'phone_number' => 'required|string|max:50',
             'identification_TVA' => 'nullable|string',
         ]);
+
+        // Retirer explicitement email_adresse pour qu'elle ne soit pas modifiée
+        unset($validated['email_adresse']);
 
         $company->update($validated);
 

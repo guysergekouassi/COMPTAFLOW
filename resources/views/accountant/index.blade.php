@@ -603,18 +603,9 @@ body {
                                 @endif
 
                                 <div class="company-actions">
-                                    <a href="{{ route('accountant.space.switch', $comp->id) }}" class="btn-work">
+                                    <a href="{{ route('accountant.space.switch', $comp->id) }}" class="btn-work" style="width:100%; text-align:center; justify-content:center;">
                                         <i class="fas fa-arrow-right"></i> Travailler
                                     </a>
-                                    @if($data['is_owner'])
-                                    <form method="POST" action="{{ route('accountant.space.generate_code', $comp->id) }}"
-                                          onsubmit="return {{ $comp->company_code ? 'confirm(\'Régénérer ? L\\\'ancien code sera invalidé.\')' : 'true' }};">
-                                        @csrf
-                                        <button type="submit" class="btn-generate" title="{{ $comp->company_code ? 'Régénérer le code' : 'Générer le code' }}">
-                                            <i class="fas fa-sync-alt"></i> {{ $comp->company_code ? 'Régénérer' : 'Générer' }}
-                                        </button>
-                                    </form>
-                                    @endif
                                 </div>
                             </div>
                         </div>
