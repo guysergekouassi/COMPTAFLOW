@@ -158,7 +158,11 @@ public function index(Request $request)
         ]);
 
         try {
-            $existing = CodeJournal::where('code_journal', strtoupper($request->code_journal))
+            $user             = Auth::user();
+            $currentCompanyId = session('current_company_id', $user->company_id);
+
+            $existing = CodeJournal::where('company_id', $currentCompanyId)
+                ->where('code_journal', strtoupper($request->code_journal))
                 ->first();
 
             if ($existing) {
@@ -169,8 +173,6 @@ public function index(Request $request)
             }
 
             $intitule_formate = ucfirst(strtolower($request->intitule));
-            $user = Auth::user();
-            $currentCompanyId = session('current_company_id', $user->company_id);
 
             $compteId = null;
             if ($request->compte_de_contrepartie) {
@@ -194,21 +196,23 @@ public function index(Request $request)
                 'company_id' => $currentCompanyId,
             ]);
 
-            // Si c'est un journal de trésorerie, créer une entrée dans la table tresoreries
+            // Si c'est un journal de trésorerie, créer/mettre à jour l'entrée dans la table tresoreries
             if ($request->type === 'Tresorerie') {
                 $categorie = Tresoreries::where('poste_tresorerie', $posteTresorerie)
                     ->whereNotNull('categorie')
                     ->value('categorie');
 
-                Tresoreries::create([
-                    'code_journal' => strtoupper($request->code_journal),
-                    'intitule' => $intitule_formate,
-                    'compte_de_contrepartie' => $compteId,
-                    'poste_tresorerie' => $posteTresorerie,
-                    'categorie' => $categorie,
-                    'user_id' => $user->id,
-                    'company_id' => $currentCompanyId,
-                ]);
+                Tresoreries::updateOrCreate(
+                    ['code_journal' => strtoupper($request->code_journal)],
+                    [
+                        'intitule'               => $intitule_formate,
+                        'compte_de_contrepartie' => $compteId,
+                        'poste_tresorerie'       => $posteTresorerie,
+                        'categorie'              => $categorie,
+                        'user_id'                => $user->id,
+                        'company_id'             => $currentCompanyId,
+                    ]
+                );
             }
 
             // Pour l'affichage AJAX sans rechargement
@@ -376,11 +380,18 @@ public function index(Request $request)
             $company = \App\Models\Company::findOrFail($companyId);
             $digits = $company->journal_code_digits ?? 4;
 
-            // Chercher les codes existants qui commencent par le préfixe pour CETTE entreprise
-            $codes = CodeJournal::where('company_id', $companyId)
+            // Chercher les codes existants qui commencent par le préfixe dans les deux tables
+            $codesInJournals = CodeJournal::where('company_id', $companyId)
                 ->where('code_journal', 'LIKE', $prefix . '%')
                 ->pluck('code_journal')
                 ->toArray();
+
+            $codesInTresorerie = Tresoreries::where('company_id', $companyId)
+                ->where('code_journal', 'LIKE', $prefix . '%')
+                ->pluck('code_journal')
+                ->toArray();
+
+            $codes = array_unique(array_merge($codesInJournals, $codesInTresorerie));
 
             $maxNum = 0;
             foreach ($codes as $code) {

@@ -102,9 +102,6 @@
 
 
             {{-- SECTION : CRÉATION RAPIDE --}}
-        </div>
-
-        <div class="menu-section">
             <div class="menu-section-header mt-4">Création Rapide</div>
 
             <a href="{{ route('superadmin.companies.create') }}" class="menu-link-new {{ request()->routeIs('superadmin.companies.create') ? 'active' : '' }}">
@@ -153,9 +150,9 @@
             @endif
         </div>
 
-        {{-- SECTION 3 : OPÉRATIONS --}}
+        {{-- SECTION 3 : GESTION DES TÂCHES --}}
         <div class="menu-section">
-            <div class="menu-section-header">Opérations</div>
+            <div class="menu-section-header">Gestion des Tâches</div>
             
             {{-- Tâches Administratives --}}
             @if(auth()->user()->hasPermission('superadmin.tasks.index'))

@@ -181,22 +181,66 @@ class EcritureComptableGroupesController extends Controller
 
             DB::beginTransaction();
             foreach ($lignes as $ligne) {
+                $tiersBrut = $ligne['plan_tiers_id'] ?? $ligne['compte_tiers'] ?? null;
+                $tiersId   = ($tiersBrut !== '' && $tiersBrut !== '0' && $tiersBrut !== 0) ? $tiersBrut : null;
+
+                // Résoudre le nouveau journal (peut avoir changé dans l'en-tête)
+                $newJournalId = isset($ligne['code_journal_id']) && $ligne['code_journal_id'] !== '' && $ligne['code_journal_id'] !== null
+                    ? (int) $ligne['code_journal_id']
+                    : $ecrituresExistantes[$ligne['id']]->code_journal_id;
+
                 $ecrituresExistantes[$ligne['id']]->update([
-                    'date' => $ligne['date'],
-                    'n_saisie' => $ligne['n_saisie'],
-                    'reference_piece' => $ligne['reference'],
-                    'description_operation' => $ligne['description'],
-                    'plan_comptable_id' => $ligne['compte_general'],
-                    'plan_tiers_id' => $ligne['compte_tiers'] ?: null,
-                    'poste_tresorerie_id' => $ligne['poste_tresorerie_id'] ?? $ecrituresExistantes[$ligne['id']]->poste_tresorerie_id,
-                    'plan_analytique' => $ligne['plan_analytique'],
-                    'debit' => $ligne['debit'],
-                    'credit' => $ligne['credit'],
+                    'date'                  => $ligne['date'],
+                    'n_saisie'              => $ligne['n_saisie'],
+                    'code_journal_id'       => $newJournalId,
+                    'reference_piece'       => $ligne['reference_piece'] ?? $ligne['reference'] ?? null,
+                    'description_operation' => $ligne['description_operation'] ?? $ligne['description'] ?? '',
+                    'plan_comptable_id'     => $ligne['plan_comptable_id'] ?? $ligne['compte_general'] ?? null,
+                    'plan_tiers_id'         => $tiersId,
+                    'poste_tresorerie_id'   => $ligne['poste_tresorerie_id'] ?? $ecrituresExistantes[$ligne['id']]->poste_tresorerie_id,
+                    'plan_analytique'       => $ligne['plan_analytique'] ?? 0,
+                    'debit'                 => $ligne['debit'] ?? 0,
+                    'credit'                => $ligne['credit'] ?? 0,
                 ]);
             }
             DB::commit();
 
-            return response()->json(['success' => true, 'message' => 'Mise à jour réussie']);
+            $updatedEcritures = EcritureComptable::with(['codeJournal', 'planComptable', 'planTiers', 'posteTresorerie'])
+                ->whereIn('id', $ids)
+                ->get()
+                ->map(function ($e) {
+                    return [
+                        'id' => $e->id,
+                        'date' => $e->date,
+                        'n_saisie' => $e->n_saisie,
+                        'n_saisie_user' => $e->n_saisie_user,
+                        'statut' => $e->statut,
+                        'code_journal_id' => $e->code_journal_id,
+                        'code_journal' => $e->codeJournal->code_journal ?? '',
+                        'code_journal_original' => $e->codeJournal->numero_original ?? null,
+                        'description_operation' => $e->description_operation,
+                        'reference_piece' => $e->reference_piece,
+                        'compte_general' => $e->planComptable->numero_de_compte ?? '',
+                        'compte_general_intitule' => $e->planComptable->intitule ?? '',
+                        'compte_general_original' => $e->planComptable->numero_original ?? null,
+                        'compte_tiers' => $e->planTiers->numero_de_tiers ?? '',
+                        'compte_tiers_intitule' => $e->planTiers->intitule ?? '',
+                        'compte_tiers_original' => $e->planTiers->numero_original ?? null,
+                        'analytique' => (bool) $e->plan_analytique,
+                        'debit' => $e->debit,
+                        'credit' => $e->credit,
+                        'poste_tresorerie' => $e->posteTresorerie->name ?? '',
+                        'poste_tresorerie_id' => $e->poste_tresorerie_id ?? null,
+                        'piece' => (bool) $e->piece_justificatif,
+                        'piece_url' => $e->piece_justificatif ? asset('justificatifs/' . $e->piece_justificatif) : null,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mise à jour réussie',
+                'ecritures' => $updatedEcritures
+            ]);
         } catch (\Throwable $e) {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();

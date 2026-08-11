@@ -234,7 +234,69 @@
         }
 
         .select2-container {
+            width: 260px !important;
             max-width: 260px !important;
+        }
+
+        #panelSaisie .select2-container .select2-selection--single {
+            height: 30px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+        }
+        #panelSaisie .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 28px !important;
+            font-size: 12px !important;
+            color: #1e293b !important;
+            padding-left: 8px !important;
+        }
+        #panelSaisie .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 28px !important;
+        }
+
+        #panelSaisie .form-control-sm,
+        #panelSaisie .form-select-sm,
+        #panelSaisie .btn-sm {
+            height: 30px !important;
+            padding-top: 2px !important;
+            padding-bottom: 2px !important;
+            font-size: 12px !important;
+        }
+        #panelSaisie table td,
+        #panelSaisie table th {
+            padding: 4px 6px !important;
+        }
+
+        /* Enlever les flèches directionnelles sur les inputs Débit/Crédit */
+        input.debit-input::-webkit-outer-spin-button,
+        input.debit-input::-webkit-inner-spin-button,
+        input.credit-input::-webkit-outer-spin-button,
+        input.credit-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input.debit-input[type=number],
+        input.credit-input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Style dynamique pour le bouton Valider lorsque l'écriture est équilibrée */
+        .btn-balanced-active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            border: none !important;
+            color: white !important;
+            transform: scale(1.12) !important;
+            font-size: 14px !important;
+            padding: 8px 20px !important;
+            font-weight: 800 !important;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4) !important;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            animation: pulse-button 2s infinite;
+        }
+
+        @keyframes pulse-button {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
     </style>
 </head>
@@ -266,16 +328,19 @@
 
                                 <div class="field-group">
                                     <label>JOURNAL <span class="text-danger fw-bold">*</span></label>
-                                    <select id="code_journal_id" class="custom-select" style="min-width:180px">
-                                        <option value="">— Tous les journaux —</option>
-                                        @foreach ($codeJournaux as $j)
-                                            <option value="{{ $j->id }}" data-code_journal_j="{{ $j->code_journal }}"
-                                                data-intitule_j="{{ $j->intitule }}" data-type_j="{{ $j->type }}"
-                                                data-contrepartie="{{ $j->compte_de_contrepartie }}" {{ (isset($data['id_journal_code']) && $data['id_journal_code'] == $j->id) ? 'selected' : '' }}>
-                                                {{ $j->code_journal }} - {{ $j->intitule }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <div class="select-with-btn">
+                                        <select id="code_journal_id" class="custom-select" style="min-width:180px">
+                                            <option value="">— Tous les journaux —</option>
+                                            @foreach ($codeJournaux as $j)
+                                                <option value="{{ $j->id }}" data-code_journal_j="{{ $j->code_journal }}"
+                                                    data-intitule_j="{{ $j->intitule }}" data-type_j="{{ $j->type }}"
+                                                    data-contrepartie="{{ $j->compte_de_contrepartie }}" {{ (isset($data['id_journal_code']) && $data['id_journal_code'] == $j->id) ? 'selected' : '' }}>
+                                                    {{ $j->code_journal }} - {{ $j->intitule }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <button type="button" class="btn-add" id="btnOpenCreateJournalModal" title="Créer un journal" data-bs-toggle="modal" data-bs-target="#modalCreateJournalInline">+</button>
+                                    </div>
                                 </div>
 
                                 <div class="field-group">
@@ -327,7 +392,7 @@
                                 <div class="d-flex gap-2 ms-auto align-items-end">
                                     <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3"
                                         style="height:38px;border-radius:8px" id="btnScannerFacture"
-                                        onclick="saisieGrille.ouvrirScanner()">
+                                        onclick="saisieGrille.scannerFacture()">
                                         <i class="bx bx-scan me-1"></i> Scanner facture
                                     </button>
                                     <button type="button" class="btn btn-primary btn-sm fw-bold px-3"
@@ -361,64 +426,117 @@
 
                         {{-- ===================== BLOC SAISIE (masqué tant qu'on ne clique pas "Nouvelle saisie")
                         ===================== --}}
-                        <div class="fc-card p-3 mb-3" id="panelSaisie"
-                            style="display:none;background:#fff;border-radius:20px;box-shadow:0 10px 25px -5px rgba(0,0,0,.05)">
+                        <div class="fc-card p-2 mb-2" id="panelSaisie"
+                            style="display:none;background:#fff;border-radius:12px;box-shadow:0 3px 10px -2px rgba(0,0,0,.07)">
 
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="fw-bold text-primary" id="saisieTitre" style="font-size:15px"><i
-                                        class="bx bx-edit me-1"></i>Nouvelle saisie d'écriture</div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="fw-bold text-primary" id="saisieTitre" style="font-size:12px"><i
+                                        class="bx bx-edit me-1"></i>Libellé de l'opération</div>
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size:11px"
                                         onclick="saisieGrille.enregistrerCommeModele()">
-                                        <i class="bx bx-bookmark me-1"></i> Enregistrer comme modèle
+                                        <i class="bx bx-bookmark me-1"></i> Modèle
                                     </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnFermerSaisie"
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" id="btnFermerSaisie" style="font-size:11px"
                                         onclick="saisieGrille.fermer()">
-                                        <i class="bx bx-x me-1"></i> Fermer la saisie
+                                        <i class="bx bx-x me-1"></i> Fermer
                                     </button>
                                 </div>
                             </div>
 
                             {{-- Carte d'avertissement : visible uniquement si le groupe en cours est déséquilibré --}}
-                            <div id="carteDesequilibre" class="d-flex align-items-start gap-2 p-3 mb-3"
-                                style="display:none !important;background:#fff7ed;border:1px solid #fdba74;border-radius:12px;color:#c2410c">
-                                <i class="bx bx-error-circle" style="font-size:20px"></i>
+                            <div id="carteDesequilibre" class="d-flex align-items-start gap-2 p-2 mb-2"
+                                style="display:none !important;background:#fff7ed;border:1px solid #fdba74;border-radius:10px;color:#c2410c">
+                                <i class="bx bx-error-circle" style="font-size:17px"></i>
                                 <div>
-                                    <div class="fw-semibold" id="carteDesequilibreTitre">Écriture non équilibrée</div>
+                                    <div class="fw-semibold small" id="carteDesequilibreTitre">Écriture non équilibrée</div>
                                     <div class="small" id="carteDesequilibreTexte"></div>
                                 </div>
                             </div>
 
-                            <div class="d-flex gap-2 mb-2">
+                            <div class="d-flex gap-2 mb-1">
                                 <input id="description_operation" class="form-control form-control-sm"
                                     placeholder="Libellé de l'opération *">
-                                <input id="reference_piece" class="form-control form-control-sm" style="width:150px"
+                                <input id="reference_piece" class="form-control form-control-sm" style="width:140px"
                                     placeholder="Réf. pièce">
                                 <label class="btn btn-outline-secondary btn-sm mb-0 d-flex align-items-center gap-1"
-                                    style="width:180px;cursor:pointer">
+                                    style="width:150px;cursor:pointer;font-size:11px">
                                     <i class="bx bx-paperclip"></i>
-                                    <span id="pieceLabel">Pièce jointe (facultatif)</span>
+                                    <span id="pieceLabel">Pièce jointe</span>
                                     <input type="file" id="piece_justificatif" class="d-none"
                                         onchange="saisieGrille.onFichierChoisi(this)">
                                 </label>
                             </div>
 
-                            <div class="table-responsive-clean mb-2">
-                                <table class="table table-sm align-middle">
+                            <div class="table-responsive-clean mb-1">
+                                <table class="table table-sm align-middle mb-0" style="font-size:12px">
                                     <thead>
                                         <tr class="small text-muted text-uppercase">
-                                            <th style="min-width:210px">Compte général <span
+                                            <th style="min-width:220px">Compte général <span
                                                     class="text-danger fw-bold">*</span></th>
                                             <th style="min-width:190px">Compte tiers</th>
-                                            <th style="width:110px" class="text-end">Débit</th>
-                                            <th style="width:110px" class="text-end">Crédit</th>
-                                            <th style="min-width:170px">Poste trésorerie</th>
-                                            <th style="width:50px" class="text-center">TVA</th>
-                                            <th style="width:50px" class="text-center">Analyt.</th>
-                                            <th style="width:40px"></th>
+                                            <th style="width:105px" class="text-end">Débit</th>
+                                            <th style="width:105px" class="text-end">Crédit</th>
+                                            <th style="min-width:190px">Poste trésorerie</th>
+                                            <th style="width:44px" class="text-center">TVA</th>
+                                            <th style="width:44px" class="text-center">Analyt.</th>
+                                            <th style="width:80px" class="text-center">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="grilleBody"></tbody>
+                                    <!-- Ligne de saisie unique (Style SAGE) -->
+                                    <tbody id="inputRowContainer">
+                                        <tr id="inputRow" data-ventilations="[]">
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <select id="input_compte_general" class="form-select form-select-sm cpte-general">
+                                                         <option value="">— Choisir —</option>
+                                                         @foreach ($plansComptables as $p)
+                                                             <option value="{{ $p->id }}" data-numero="{{ $p->numero_de_compte }}">
+                                                                 {{ $p->numero_de_compte }} - {{ $p->intitule }}
+                                                             </option>
+                                                         @endforeach
+                                                    </select>
+                                                    <button type="button" class="btn btn-sm btn-plus" title="Créer un compte" style="background:linear-gradient(135deg,#2563eb,#1e3a8a);color:#fff;border:none;width:28px">+</button>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <select id="input_compte_tiers" class="form-select form-select-sm cpte-tiers"></select>
+                                                    <button type="button" class="btn btn-sm btn-plus-tiers" title="Créer un tiers" style="background:linear-gradient(135deg,#2563eb,#1e3a8a);color:#fff;border:none;width:28px">+</button>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" id="input_debit" class="form-control form-control-sm text-end debit-input" placeholder="0.00">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" id="input_credit" class="form-control form-control-sm text-end credit-input" placeholder="0.00">
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <select id="input_poste_treso" class="form-select form-select-sm poste-treso" disabled>
+                                                         <option value="">— Sélectionner poste —</option>
+                                                         @foreach ($comptesTresorerie as $c)
+                                                             <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                                         @endforeach
+                                                    </select>
+                                                    <button type="button" id="input_btn_plus_poste" class="btn btn-sm btn-plus-poste" title="Créer un poste" style="background:linear-gradient(135deg,#2563eb,#1e3a8a);color:#fff;border:none;width:28px" disabled>+</button>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" id="input_btn_tva" class="btn btn-sm btn-tva" title="Assistant TVA" style="background:#eff6ff;color:#2563eb;border:none;width:28px">
+                                                    <i class="bx bx-receipt"></i>
+                                                </button>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" id="input_btn_analytique" class="btn btn-sm btn-analytique" title="Ventiler sur les sections analytiques" style="background:#eff6ff;color:#2563eb;border:none;width:28px">
+                                                    <i class="bx bx-pie-chart-alt"></i>
+                                                </button>
+                                            </td>
+                                            <td class="text-center"></td>
+                                        </tr>
+                                    </tbody>
+                                    <!-- Tableau des lignes déjà ajoutées au groupe -->
+                                    <tbody id="addedLinesBody" style="border-top: 2px solid #e2e8f0;"></tbody>
                                 </table>
                             </div>
 
@@ -435,14 +553,16 @@
                                     équilibré</span>
                             </div>
 
-                            <div class="d-flex justify-content-end gap-2 mt-3">
-                                <button type="button" class="btn btn-outline-secondary btn-sm"
-                                    onclick="saisieGrille.ajouterLigne()">
-                                    <i class="bx bx-plus"></i> Ajouter une ligne
-                                </button>
+                            <div class="d-flex justify-content-end gap-2 mt-2">
                                 <button type="button" class="btn btn-outline-warning btn-sm fw-bold"
                                     id="btnBrouillonGrille" onclick="saisieGrille.enregistrerBrouillon()">
                                     <i class="bx bx-file me-1"></i> Enregistrer comme brouillon
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm fw-bold px-4"
+                                    id="input_btn_ajouter"
+                                    style="background:linear-gradient(135deg,#4f46e5,#3730a3);border:none"
+                                    onclick="saisieGrille.ajouterLigneEnCours()">
+                                    <i class="bx bx-plus me-1"></i> Ajouter la ligne
                                 </button>
                                 <button type="button" class="btn btn-success btn-sm" id="btnValiderGrille" disabled
                                     style="background:linear-gradient(135deg,#10b981,#059669);border:none"
@@ -769,6 +889,108 @@
                                             <button type="button" id="btnSaveModeleInline"
                                                 onclick="saisieGrille.enregistrerNouveauModeleInline()"
                                                 class="btn-save-premium flex-fill">Enregistrer le modèle</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal Nouveau Journal (Inline depuis la saisie d'écriture) -->
+                        <div class="modal fade" id="modalCreateJournalInline" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+                                <div class="modal-content premium-modal-content">
+                                    <div class="text-center mb-4 position-relative">
+                                        <button type="button" class="btn-close position-absolute end-0 top-0 m-3"
+                                            data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900"
+                                            style="font-size: 1.3rem; font-weight: 800; margin-bottom: 0.5rem;">
+                                            Nouveau <span class="text-blue-gradient-premium">Journal</span>
+                                        </h1>
+                                        <div class="h-1 w-8 bg-blue-700 mx-auto rounded-full"
+                                            style="height: 4px; width: 32px;"></div>
+                                    </div>
+                                    <div class="modal-body px-4 pb-4">
+                                        <div class="row g-3">
+                                            <div class="col-md-6 text-start">
+                                                <label class="input-label-premium">Code Journal *</label>
+                                                <input type="text" id="inline_journal_code" name="code_journal"
+                                                    class="input-field-premium"
+                                                    maxlength="{{ auth()->user()->company->journal_code_digits ?? 4 }}"
+                                                    placeholder="ex: VT"
+                                                    readonly
+                                                    style="background-color:#f8fafc;cursor:not-allowed;text-transform:uppercase;">
+                                            </div>
+                                            <div class="col-md-6 text-start">
+                                                <label class="input-label-premium">Type *</label>
+                                                <select id="inline_journal_type" class="input-field-premium" required>
+                                                    <option value="" disabled selected>-- Choisir un type --</option>
+                                                    <option value="Achats">Achats</option>
+                                                    <option value="Ventes">Ventes</option>
+                                                    <option value="Tresorerie">Trésorerie</option>
+                                                    <option value="Opérations Diverses">Opérations Diverses</option>
+                                                    <option value="Standard">Standard</option>
+                                                    <option value="REPORT A NOUVEAU">REPORT A NOUVEAU</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 text-start">
+                                                <label class="input-label-premium">Intitulé *</label>
+                                                <input type="text" id="inline_journal_intitule" class="input-field-premium"
+                                                    placeholder="ex: Journal des Ventes" required>
+                                            </div>
+                                            <div class="col-md-6 text-start">
+                                                <label class="input-label-premium">Traitement analytique</label>
+                                                <select id="inline_journal_analytique" class="input-field-premium">
+                                                    <option value="non">Non</option>
+                                                    <option value="oui">Oui</option>
+                                                </select>
+                                            </div>
+                                            <!-- Options Trésorerie (conditionnelles) -->
+                                            <div class="col-12 text-start d-none" id="inline_tresorerie_options">
+                                                <label class="input-label-premium">Type de Trésorerie</label>
+                                                <div class="d-flex gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-100 mb-2">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="inline_poste_tresorerie"
+                                                            id="inline_treso_caisse" value="Caisse" onchange="window.handleTresoChangeInline()">
+                                                        <label class="form-check-label fw-bold text-slate-700" for="inline_treso_caisse">Caisse</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="inline_poste_tresorerie"
+                                                            id="inline_treso_banque" value="Banque" onchange="window.handleTresoChangeInline()">
+                                                        <label class="form-check-label fw-bold text-slate-700" for="inline_treso_banque">Banque</label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <label class="input-label-premium">Autre libellé</label>
+                                                    <input type="text" id="inline_treso_autre" class="input-field-premium"
+                                                        placeholder="Saisir un autre libellé..." oninput="window.handleOtherInputInline()">
+                                                </div>
+                                                <div class="mb-2">
+                                                    <label class="input-label-premium">Compte de contrepartie</label>
+                                                    <select id="inline_compte_contrepartie" class="input-field-premium">
+                                                        <option value="">-- Sélectionner --</option>
+                                                        @foreach($plansComptables->filter(fn($p) => str_starts_with($p->numero_de_compte, '5')) as $compte)
+                                                            <option value="{{ $compte->numero_de_compte }}">
+                                                                {{ $compte->numero_de_compte }} - {{ $compte->intitule }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="input-label-premium">État de rapprochement bancaire</label>
+                                                    <select id="inline_rapprochement" class="input-field-premium">
+                                                        <option value="">-- Sélectionner --</option>
+                                                        <option value="Manuel">Manuel</option>
+                                                        <option value="Automatique">Automatique</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between gap-3 mt-3">
+                                            <button type="button" class="btn-cancel-premium flex-fill"
+                                                data-bs-dismiss="modal">Annuler</button>
+                                            <button type="button" id="btnSaveJournalInline"
+                                                onclick="window.createJournalInline()"
+                                                class="btn-save-premium flex-fill">Enregistrer le journal</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1106,6 +1328,220 @@
                             });
                     };
                 }
+
+                // --- GESTION DE LA CRÉATION DE JOURNAL INLINE ---
+                window.handleTresoChangeInline = function() {
+                    const caisse = document.getElementById('inline_treso_caisse');
+                    const banque = document.getElementById('inline_treso_banque');
+                    const autre = document.getElementById('inline_treso_autre');
+                    
+                    if (caisse && banque && autre) {
+                        if (caisse.checked || banque.checked) {
+                            autre.value = '';
+                            autre.disabled = true;
+                            autre.classList.add('bg-slate-50');
+                        } else {
+                            autre.disabled = false;
+                            autre.classList.remove('bg-slate-50');
+                        }
+                    }
+                    window.fetchNextJournalCode();
+                };
+
+                window.handleOtherInputInline = function() {
+                    const caisse = document.getElementById('inline_treso_caisse');
+                    const banque = document.getElementById('inline_treso_banque');
+                    const autre = document.getElementById('inline_treso_autre');
+                    
+                    if (caisse && banque && autre) {
+                        if (autre.value.trim() !== '') {
+                            caisse.checked = false;
+                            banque.checked = false;
+                            caisse.disabled = true;
+                            banque.disabled = true;
+                        } else {
+                            caisse.disabled = false;
+                            banque.disabled = false;
+                        }
+                    }
+                    window.fetchNextJournalCode();
+                };
+
+                // Définir fetchNextJournalCode pour qu'il soit disponible dans tous les listeners
+                window.fetchNextJournalCode = function () {
+                    const type = document.getElementById('inline_journal_type')?.value;
+                    const codeInput = document.getElementById('inline_journal_code');
+                    if (!type || !codeInput) return;
+
+                    const prefixMap = {
+                        'Achats': 'ACH', 'Ventes': 'VEN', 'Opérations Diverses': 'OD',
+                        'Standard': 'STD', 'REPORT A NOUVEAU': 'RAN'
+                    };
+                    let prefix = prefixMap[type] || null;
+
+                    if (type === 'Tresorerie') {
+                        const caisse = document.getElementById('inline_treso_caisse');
+                        const banque = document.getElementById('inline_treso_banque');
+                        const autre = document.getElementById('inline_treso_autre');
+                        if (caisse?.checked) prefix = 'CAI';
+                        else if (banque?.checked) prefix = 'BQ';
+                        else if (autre?.value.trim()) prefix = autre.value.trim().substring(0, 3).toUpperCase();
+                        else return; // Attendre la sélection Caisse/Banque/Autre
+                    }
+
+                    if (!prefix) return;
+
+                    fetch(`/admin/config/get-next-journal-code?prefix=${prefix}`)
+                        .then(r => r.json())
+                        .then(data => { if (data.success) codeInput.value = data.code; })
+                        .catch(() => {
+                            const digits = {{ auth()->user()->company->journal_code_digits ?? 4 }};
+                            codeInput.value = prefix.padEnd(digits, '0').substring(0, digits);
+                        });
+                };
+
+                const modalCreateJournalEl = document.getElementById('modalCreateJournalInline');
+                if (modalCreateJournalEl) {
+                    const inlineJournalType = document.getElementById('inline_journal_type');
+                    const inlineTresoOptions = document.getElementById('inline_tresorerie_options');
+
+                    // Afficher/masquer les options trésorerie selon le type
+                    inlineJournalType.addEventListener('change', function () {
+                        const isTreso = ['Banque', 'Caisse', 'Tresorerie'].includes(this.value);
+                        if (isTreso) {
+                            inlineTresoOptions.classList.remove('d-none');
+                            // Ne pas générer le code tout de suite — attendre Caisse/Banque/Autre
+                            document.getElementById('inline_journal_code').value = '';
+                        } else {
+                            inlineTresoOptions.classList.add('d-none');
+                            document.getElementById('inline_treso_caisse').checked = false;
+                            document.getElementById('inline_treso_banque').checked = false;
+                            document.getElementById('inline_treso_autre').value = '';
+                            // Pour les autres types, générer le code immédiatement
+                            window.fetchNextJournalCode();
+                        }
+                    });
+
+                    // Réinitialiser le modal à sa fermeture
+                    modalCreateJournalEl.addEventListener('hidden.bs.modal', function () {
+                        document.getElementById('inline_journal_type').value = '';
+                        document.getElementById('inline_journal_code').value = '';
+                        document.getElementById('inline_journal_intitule').value = '';
+                        document.getElementById('inline_journal_analytique').value = 'non';
+                        document.getElementById('inline_treso_caisse').checked = false;
+                        document.getElementById('inline_treso_banque').checked = false;
+                        document.getElementById('inline_treso_autre').value = '';
+                        document.getElementById('inline_compte_contrepartie').value = '';
+                        document.getElementById('inline_rapprochement').value = '';
+                        inlineTresoOptions.classList.add('d-none');
+                    });
+                }
+
+
+                // Crée le journal via AJAX et l'injecte dans le select JOURNAL
+                window.createJournalInline = function () {
+                    const type = document.getElementById('inline_journal_type')?.value;
+                    const code_journal = document.getElementById('inline_journal_code')?.value.trim();
+                    const intitule = document.getElementById('inline_journal_intitule')?.value.trim();
+                    const traitement_analytique = document.getElementById('inline_journal_analytique')?.value;
+
+                    if (!type || !intitule) {
+                        Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir le type et l\'intitulé du journal.' });
+                        return;
+                    }
+
+                    if (!code_journal) {
+                        Swal.fire({ icon: 'warning', title: 'Code non généré', text: 'Veuillez sélectionner un type pour générer le code journal automatiquement.' });
+                        return;
+                    }
+
+                    // Construire les données trésorerie si applicable
+                    let poste_tresorerie = null;
+                    let poste_tresorerie_autre = null;
+                    if (['Banque', 'Caisse', 'Tresorerie'].includes(type)) {
+                        const caisse = document.getElementById('inline_treso_caisse');
+                        const banque = document.getElementById('inline_treso_banque');
+                        const autre = document.getElementById('inline_treso_autre');
+                        if (caisse?.checked) poste_tresorerie = 'Caisse';
+                        else if (banque?.checked) poste_tresorerie = 'Banque';
+                        else if (autre?.value.trim()) poste_tresorerie_autre = autre.value.trim();
+                    }
+
+                    const compte_de_contrepartie = document.getElementById('inline_compte_contrepartie')?.value || '';
+                    const rapprochement_sur = document.getElementById('inline_rapprochement')?.value || '';
+
+                    const btn = document.getElementById('btnSaveJournalInline');
+                    const originalHtml = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
+
+                    // Utiliser FormData pour être compatible avec le contrôleur existant
+                    const formData = new FormData();
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+                    formData.append('type', type);
+                    formData.append('intitule', intitule);
+                    formData.append('traitement_analytique', traitement_analytique);
+                    if (code_journal) formData.append('code_journal', code_journal);
+                    if (poste_tresorerie) formData.append('poste_tresorerie', poste_tresorerie);
+                    if (poste_tresorerie_autre) formData.append('poste_tresorerie_autre', poste_tresorerie_autre);
+                    if (compte_de_contrepartie) formData.append('compte_de_contrepartie', compte_de_contrepartie);
+                    if (rapprochement_sur) formData.append('rapprochement_sur', rapprochement_sur);
+
+                    fetch('{{ route("accounting_journals.store") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.success || result.id) {
+                            // Fermer le modal
+                            const bsModal = bootstrap.Modal.getInstance(document.getElementById('modalCreateJournalInline'));
+                            if (bsModal) bsModal.hide();
+
+                            // Injecter la nouvelle option dans le select JOURNAL et la sélectionner
+                            const select = document.getElementById('code_journal_id');
+                            const newId = result.id || result.journal?.id;
+                            const newCode = result.code_journal || result.journal?.code_journal || code_journal;
+                            const newIntitule = result.intitule || result.journal?.intitule || intitule;
+                            const newType = result.type || result.journal?.type || type;
+                            const newContrepartie = result.compte_de_contrepartie || result.journal?.compte_de_contrepartie || '';
+
+                            if (select && newId) {
+                                const opt = new Option(`${newCode} - ${newIntitule}`, newId, true, true);
+                                opt.dataset.code_journal_j = newCode;
+                                opt.dataset.intitule_j = newIntitule;
+                                opt.dataset.type_j = newType;
+                                opt.dataset.contrepartie = newContrepartie;
+                                select.appendChild(opt);
+                                select.value = newId;
+                                // Déclencher l'événement change pour que saisieGrille puisse réagir
+                                select.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Journal créé !',
+                                text: `Le journal ${newCode} - ${newIntitule} a été créé et sélectionné.`,
+                                timer: 2500,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            throw new Error(result.message || result.error || 'Erreur lors de la création du journal.');
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: err.message });
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                    });
+                };
             </script>
 </body>
 
