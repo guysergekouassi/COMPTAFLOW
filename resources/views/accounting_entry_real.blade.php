@@ -316,77 +316,79 @@
                         {{-- ===================== CARTE "NOUVELLE ÉCRITURE" MODERNISÉE ===================== --}}
                         <div class="card-header-saisie mb-3" id="headerCard">
                             <div class="d-flex flex-wrap align-items-end gap-3 w-100" id="headerCardContent">
+                                <div class="d-flex flex-wrap align-items-end gap-3 flex-grow-1" id="headerFiltersContainer">
 
-                                <div class="field-group">
-                                    <label>EXERCICE</label>
-                                    <div class="badge-exercice">
-                                        <i class="bx bx-lock-alt text-primary me-1"></i>
-                                        EXERCICE {{ $exerciceActif->intitule ?? ($exerciceActif->id ?? '—') }}
+                                    <div class="field-group">
+                                        <label>EXERCICE</label>
+                                        <div class="badge-exercice">
+                                            <i class="bx bx-lock-alt text-primary me-1"></i>
+                                            EXERCICE {{ $exerciceActif->intitule ?? ($exerciceActif->id ?? '—') }}
+                                        </div>
+                                        <input type="hidden" id="id_exercice" value="{{ $exerciceActif->id ?? '' }}">
                                     </div>
-                                    <input type="hidden" id="id_exercice" value="{{ $exerciceActif->id ?? '' }}">
-                                </div>
 
-                                <div class="field-group">
-                                    <label>JOURNAL <span class="text-danger fw-bold">*</span></label>
-                                    <div class="select-with-btn">
-                                        <select id="code_journal_id" class="custom-select" style="min-width:180px">
-                                            <option value="">— Tous les journaux —</option>
-                                            @foreach ($codeJournaux as $j)
-                                                <option value="{{ $j->id }}" data-code_journal_j="{{ $j->code_journal }}"
-                                                    data-intitule_j="{{ $j->intitule }}" data-type_j="{{ $j->type }}"
-                                                    data-contrepartie="{{ $j->compte_de_contrepartie }}" {{ (isset($data['id_journal_code']) && $data['id_journal_code'] == $j->id) ? 'selected' : '' }}>
-                                                    {{ $j->code_journal }} - {{ $j->intitule }}
+                                    <div class="field-group">
+                                        <label>JOURNAL <span class="text-danger fw-bold">*</span></label>
+                                        <div class="select-with-btn">
+                                            <select id="code_journal_id" class="custom-select" style="min-width:180px">
+                                                <option value="">— Tous les journaux —</option>
+                                                @foreach ($codeJournaux as $j)
+                                                    <option value="{{ $j->id }}" data-code_journal_j="{{ $j->code_journal }}"
+                                                        data-intitule_j="{{ $j->intitule }}" data-type_j="{{ $j->type }}"
+                                                        data-contrepartie="{{ $j->compte_de_contrepartie }}" {{ (isset($data['id_journal_code']) && $data['id_journal_code'] == $j->id) ? 'selected' : '' }}>
+                                                        {{ $j->code_journal }} - {{ $j->intitule }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <button type="button" class="btn-add" id="btnOpenCreateJournalModal" title="Créer un journal" data-bs-toggle="modal" data-bs-target="#modalCreateJournalInline">+</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="field-group">
+                                        <label>MODÈLE DE SAISIE</label>
+                                        <div class="select-with-btn">
+                                            <select id="modele_saisie" class="custom-select" style="min-width:160px">
+                                                <option value="">— Aucun —</option>
+                                                @foreach ($modelesSaisie ?? [] as $m)
+                                                    <option value="{{ $m->id }}">{{ $m->nom }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button type="button" class="btn-add" title="Créer un modèle"
+                                                onclick="saisieGrille.ouvrirModalCreerModele()">+</button>
+                                        </div>
+                                    </div>
+
+                                    <input type="hidden" id="annee_exercice"
+                                        value="{{ $exerciceActif ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('Y') : date('Y') }}">
+
+                                    <div class="field-group">
+                                        <label>MOIS <span class="text-danger fw-bold">*</span></label>
+                                        <select id="mois_ecriture" class="custom-select" style="min-width:145px">
+                                            <option value="">— Tous les mois —</option>
+                                            @php $moisNoms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']; @endphp
+                                            @foreach ($moisNoms as $i => $nom)
+                                                <option value="{{ $i + 1 }}" {{ now()->month == $i + 1 ? 'selected' : '' }}>
+                                                    {{ $nom }}
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <button type="button" class="btn-add" id="btnOpenCreateJournalModal" title="Créer un journal" data-bs-toggle="modal" data-bs-target="#modalCreateJournalInline">+</button>
                                     </div>
-                                </div>
 
-                                <div class="field-group">
-                                    <label>MODÈLE DE SAISIE</label>
-                                    <div class="select-with-btn">
-                                        <select id="modele_saisie" class="custom-select" style="min-width:160px">
-                                            <option value="">— Aucun —</option>
-                                            @foreach ($modelesSaisie ?? [] as $m)
-                                                <option value="{{ $m->id }}">{{ $m->nom }}</option>
-                                            @endforeach
+                                    <div class="field-group">
+                                        <label>JOUR <span class="text-danger fw-bold">*</span></label>
+                                        <select id="jour_ecriture" class="custom-select" style="min-width:145px">
+                                            <option value="">— Tous les jours —</option>
+                                            @for ($j = 1; $j <= 31; $j++)
+                                                <option value="{{ $j }}">{{ $j }}</option>
+                                            @endfor
                                         </select>
-                                        <button type="button" class="btn-add" title="Créer un modèle"
-                                            onclick="saisieGrille.ouvrirModalCreerModele()">+</button>
                                     </div>
-                                </div>
 
-                                <input type="hidden" id="annee_exercice"
-                                    value="{{ $exerciceActif ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('Y') : date('Y') }}">
-
-                                <div class="field-group">
-                                    <label>MOIS <span class="text-danger fw-bold">*</span></label>
-                                    <select id="mois_ecriture" class="custom-select" style="min-width:145px">
-                                        <option value="">— Tous les mois —</option>
-                                        @php $moisNoms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']; @endphp
-                                        @foreach ($moisNoms as $i => $nom)
-                                            <option value="{{ $i + 1 }}" {{ now()->month == $i + 1 ? 'selected' : '' }}>
-                                                {{ $nom }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="field-group">
-                                    <label>JOUR <span class="text-danger fw-bold">*</span></label>
-                                    <select id="jour_ecriture" class="custom-select" style="min-width:145px">
-                                        <option value="">— Tous les jours —</option>
-                                        @for ($j = 1; $j <= 31; $j++)
-                                            <option value="{{ $j }}">{{ $j }}</option>
-                                        @endfor
-                                    </select>
-                                </div>
-
-                                <div class="field-group">
-                                    <label>N° DE SAISIE</label>
-                                    <input type="text" id="n_saisie_user" class="custom-input"
-                                        value="{{ $nextSaisieNumber }}" readonly style="min-width:180px">
+                                    <div class="field-group">
+                                        <label>N° DE SAISIE</label>
+                                        <input type="text" id="n_saisie_user" class="custom-input"
+                                            value="{{ $nextSaisieNumber }}" readonly style="min-width:180px">
+                                    </div>
                                 </div>
 
                                 <div class="d-flex gap-2 ms-auto align-items-end">
@@ -1107,7 +1109,7 @@
                     ecritures: @json($fcEcritures),
                 };
             </script>
-            <script src="{{ asset('js/saisie-grille.js') }}"></script>
+            <script src="{{ asset('js/saisie-grille.js') }}?v={{ time() }}"></script>
 
             <script>
                 // --- GESTION DES TIERS (réutilisation du contrat JSON existant plan_tiers.store) ---

@@ -53,15 +53,17 @@ const saisieGrille = (() => {
 
   // ---------- Toggle Header Card (Ouvrir / Fermer En-tête) ----------
   function toggleHeaderCard() {
-    const content = document.getElementById('headerCardContent');
+    const content = document.getElementById('headerFiltersContainer');
     const icon = document.getElementById('iconToggleHeader');
     if (!content) return;
 
-    if (content.style.display === 'none') {
-      content.style.display = 'flex';
+    if (content.classList.contains('d-none')) {
+      content.classList.remove('d-none');
+      content.classList.add('d-flex');
       if (icon) icon.className = 'bx bx-chevron-up';
     } else {
-      content.style.display = 'none';
+      content.classList.add('d-none');
+      content.classList.remove('d-flex');
       if (icon) icon.className = 'bx bx-chevron-down';
     }
   }
@@ -597,7 +599,7 @@ const saisieGrille = (() => {
       nSaisieEnEdition = null;
       currentBatchId = null;
       panel.style.display = 'block';
-      document.getElementById('saisieTitre').textContent = 'Nouvelle saisie d\'écriture';
+      document.getElementById('saisieTitre').textContent = 'Libellé de l\'opération';
       const btnValider = document.getElementById('btnValiderGrille');
       if (btnValider) {
         btnValider.textContent = 'Valider & enregistrer';
