@@ -706,7 +706,7 @@ const saisieGrille = (() => {
     if (!result.isConfirmed) return;
 
     try {
-      const res = await fetch(`/ecritures/supprimer-groupe/${encodeURIComponent(nSaisie)}`, {
+      const res = await fetch(`/ecritures/saisie/${encodeURIComponent(nSaisie)}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
       });
