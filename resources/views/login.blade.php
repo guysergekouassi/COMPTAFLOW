@@ -20,9 +20,9 @@
     <style>
         :root {
             --primary-color: #0f172a;
-            --brand-blue: #1e40af;
+            --brand-blue: #696cff;
             --brand-yellow: #facc15;
-            --bg-dark-gradient: radial-gradient(circle at 10% 20%, #0b1a30 0%, #1e40af 90%);
+            --bg-dark-gradient: radial-gradient(circle at 10% 20%, #0f113a 0%, #696cff 95%);
         }
 
         body {
@@ -60,7 +60,7 @@
             position: absolute;
             width: 300px;
             height: 300px;
-            background: rgba(30, 64, 175, 0.2);
+            background: rgba(105, 108, 255, 0.2);
             border-radius: 50%;
             filter: blur(100px);
             top: 10%;
