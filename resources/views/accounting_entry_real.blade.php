@@ -101,6 +101,7 @@
             padding: 0.75rem 1.5rem;
             font-weight: 700;
         }
+
         /* Carte "Nouvelle Écriture" modernisée */
         .card-header-saisie {
             background-color: #f8fafc;
@@ -129,7 +130,8 @@
             text-transform: uppercase;
         }
 
-        .custom-select, .custom-input {
+        .custom-select,
+        .custom-input {
             background-color: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
@@ -141,7 +143,8 @@
             transition: all 0.2s ease;
         }
 
-        .custom-select:focus, .custom-input:focus {
+        .custom-select:focus,
+        .custom-input:focus {
             border-color: #4f46e5;
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
         }
@@ -174,13 +177,15 @@
             height: 38px;
             transition: all 0.2s ease;
         }
+
         .btn-add:hover {
             background-color: #4f46e5;
             color: #ffffff;
         }
 
         /* Correctif de débordement et scroll des tableaux */
-        .table-responsive-clean, .fc-table-responsive {
+        .table-responsive-clean,
+        .fc-table-responsive {
             width: 100% !important;
             display: block !important;
             overflow-x: scroll !important;
@@ -188,34 +193,46 @@
             max-height: 520px !important;
             border-radius: 12px;
         }
-        .table-responsive-clean table, .fc-table-responsive table {
+
+        .table-responsive-clean table,
+        .fc-table-responsive table {
             min-width: 1450px !important;
             width: 100% !important;
             white-space: nowrap !important;
         }
-        .table-responsive-clean th, .table-responsive-clean td,
-        .fc-table-responsive th, .fc-table-responsive td {
+
+        .table-responsive-clean th,
+        .table-responsive-clean td,
+        .fc-table-responsive th,
+        .fc-table-responsive td {
             white-space: nowrap !important;
             vertical-align: middle !important;
         }
+
         .fc-table-responsive::-webkit-scrollbar {
             width: 10px !important;
             height: 12px !important;
         }
+
         .fc-table-responsive::-webkit-scrollbar-thumb {
             background-color: #2563eb !important;
             border-radius: 6px !important;
             border: 2px solid #eff6ff !important;
         }
+
         .fc-table-responsive::-webkit-scrollbar-track {
             background: #e2e8f0 !important;
             border-radius: 6px !important;
         }
+
         /* Contrainte de largeur des listes déroulantes de la grille (Image 3) */
-        .cpte-general, .cpte-tiers, .poste-treso {
+        .cpte-general,
+        .cpte-tiers,
+        .poste-treso {
             max-width: 260px !important;
             width: 260px !important;
         }
+
         .select2-container {
             max-width: 260px !important;
         }
@@ -237,7 +254,7 @@
                         {{-- ===================== CARTE "NOUVELLE ÉCRITURE" MODERNISÉE ===================== --}}
                         <div class="card-header-saisie mb-3" id="headerCard">
                             <div class="d-flex flex-wrap align-items-end gap-3 w-100" id="headerCardContent">
-                                
+
                                 <div class="field-group">
                                     <label>EXERCICE</label>
                                     <div class="badge-exercice">
@@ -270,11 +287,13 @@
                                                 <option value="{{ $m->id }}">{{ $m->nom }}</option>
                                             @endforeach
                                         </select>
-                                        <button type="button" class="btn-add" title="Créer un modèle" onclick="saisieGrille.ouvrirModalCreerModele()">+</button>
+                                        <button type="button" class="btn-add" title="Créer un modèle"
+                                            onclick="saisieGrille.ouvrirModalCreerModele()">+</button>
                                     </div>
                                 </div>
 
-                                <input type="hidden" id="annee_exercice" value="{{ $exerciceActif ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('Y') : date('Y') }}">
+                                <input type="hidden" id="annee_exercice"
+                                    value="{{ $exerciceActif ? \Carbon\Carbon::parse($exerciceActif->date_debut)->format('Y') : date('Y') }}">
 
                                 <div class="field-group">
                                     <label>MOIS <span class="text-danger fw-bold">*</span></label>
@@ -301,17 +320,24 @@
 
                                 <div class="field-group">
                                     <label>N° DE SAISIE</label>
-                                    <input type="text" id="n_saisie_user" class="custom-input" value="{{ $nextSaisieNumber }}" readonly style="min-width:180px">
+                                    <input type="text" id="n_saisie_user" class="custom-input"
+                                        value="{{ $nextSaisieNumber }}" readonly style="min-width:180px">
                                 </div>
 
                                 <div class="d-flex gap-2 ms-auto align-items-end">
-                                    <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3" style="height:38px;border-radius:8px" id="btnScannerFacture" onclick="saisieGrille.ouvrirScanner()">
+                                    <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3"
+                                        style="height:38px;border-radius:8px" id="btnScannerFacture"
+                                        onclick="saisieGrille.ouvrirScanner()">
                                         <i class="bx bx-scan me-1"></i> Scanner facture
                                     </button>
-                                    <button type="button" class="btn btn-primary btn-sm fw-bold px-3" style="height:38px;border-radius:8px;background-color:#4f46e5;border-color:#4f46e5" id="btnNouvelleSaisie" onclick="saisieGrille.toggle()">
+                                    <button type="button" class="btn btn-primary btn-sm fw-bold px-3"
+                                        style="height:38px;border-radius:8px;background-color:#4f46e5;border-color:#4f46e5"
+                                        id="btnNouvelleSaisie" onclick="saisieGrille.toggle()">
                                         <i class="bx bx-plus me-1"></i> Nouvelle saisie
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-light border" style="height:38px;border-radius:8px" id="btnToggleHeaderCard" title="Ouvrir / Masquer l'en-tête" onclick="saisieGrille.toggleHeaderCard()">
+                                    <button type="button" class="btn btn-sm btn-light border"
+                                        style="height:38px;border-radius:8px" id="btnToggleHeaderCard"
+                                        title="Ouvrir / Masquer l'en-tête" onclick="saisieGrille.toggleHeaderCard()">
                                         <i class="bx bx-chevron-up" id="iconToggleHeader"></i>
                                     </button>
                                 </div>
@@ -381,7 +407,8 @@
                                 <table class="table table-sm align-middle">
                                     <thead>
                                         <tr class="small text-muted text-uppercase">
-                                            <th style="min-width:210px">Compte général <span class="text-danger fw-bold">*</span></th>
+                                            <th style="min-width:210px">Compte général <span
+                                                    class="text-danger fw-bold">*</span></th>
                                             <th style="min-width:190px">Compte tiers</th>
                                             <th style="width:110px" class="text-end">Débit</th>
                                             <th style="width:110px" class="text-end">Crédit</th>
@@ -413,8 +440,8 @@
                                     onclick="saisieGrille.ajouterLigne()">
                                     <i class="bx bx-plus"></i> Ajouter une ligne
                                 </button>
-                                <button type="button" class="btn btn-outline-warning btn-sm fw-bold" id="btnBrouillonGrille"
-                                    onclick="saisieGrille.enregistrerBrouillon()">
+                                <button type="button" class="btn btn-outline-warning btn-sm fw-bold"
+                                    id="btnBrouillonGrille" onclick="saisieGrille.enregistrerBrouillon()">
                                     <i class="bx bx-file me-1"></i> Enregistrer comme brouillon
                                 </button>
                                 <button type="button" class="btn btn-success btn-sm" id="btnValiderGrille" disabled
@@ -432,7 +459,7 @@
                                     <div class="fw-bold" style="font-size:14px"><i
                                             class="bx bx-table text-primary me-1"></i>Écritures du journal
                                     </div>
-                                    <div class="small text-muted">Conteneur dynamique Sage : le dernier élément saisi se
+                                    <div class="small text-muted">Conteneur dynamique : le dernier élément saisi se
                                         met en bas, défilement vers le haut pour voir l'historique sans rechargement.
                                     </div>
                                 </div>
@@ -727,15 +754,18 @@
                                     </div>
                                     <div class="modal-body px-4 pb-4">
                                         <div class="mb-3">
-                                            <label for="nom_modele_saisie_input" class="input-label-premium">Nom du modèle *</label>
+                                            <label for="nom_modele_saisie_input" class="input-label-premium">Nom du
+                                                modèle *</label>
                                             <input type="text" class="input-field-premium" id="nom_modele_saisie_input"
                                                 placeholder="Ex: ACHAT FOURNISSEUR TVA 18%">
                                         </div>
                                         <div class="small text-muted mb-3">
-                                            <i class="bx bx-info-circle me-1"></i> Ce modèle enregistrera les lignes actuellement saisies dans la grille ci-dessous.
+                                            <i class="bx bx-info-circle me-1"></i> Ce modèle enregistrera les lignes
+                                            actuellement saisies dans la grille ci-dessous.
                                         </div>
                                         <div class="d-flex justify-content-between gap-3">
-                                            <button type="button" class="btn-cancel-premium flex-fill" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="button" class="btn-cancel-premium flex-fill"
+                                                data-bs-dismiss="modal">Annuler</button>
                                             <button type="button" id="btnSaveModeleInline"
                                                 onclick="saisieGrille.enregistrerNouveauModeleInline()"
                                                 class="btn-save-premium flex-fill">Enregistrer le modèle</button>
@@ -748,28 +778,46 @@
                         <!-- Modal Nouveau Poste de Trésorerie (selon Images 1 et 2) -->
                         <div class="modal fade" id="modalCreatePoste" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
-                                <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
+                                <div class="modal-content"
+                                    style="border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
                                     <div class="modal-body p-4 text-center">
-                                        <h3 class="fw-bold mb-4" style="color: #1e293b; font-size: 1.5rem;">Nouveau poste de trésorerie</h3>
-                                        
+                                        <h3 class="fw-bold mb-4" style="color: #1e293b; font-size: 1.5rem;">Nouveau
+                                            poste de trésorerie</h3>
+
                                         <div class="text-start mb-3">
-                                            <label class="form-label fw-medium text-secondary small">Nom du poste <span class="text-danger fw-bold">*</span></label>
-                                            <input type="text" id="nom_poste_tresorerie_input" class="form-control form-control-lg" style="border-radius: 12px; font-size: 14px;" placeholder="Ex: Caisse Menue Dépense">
+                                            <label class="form-label fw-medium text-secondary small">Nom du poste <span
+                                                    class="text-danger fw-bold">*</span></label>
+                                            <input type="text" id="nom_poste_tresorerie_input"
+                                                class="form-control form-control-lg"
+                                                style="border-radius: 12px; font-size: 14px;"
+                                                placeholder="Ex: Caisse Menue Dépense">
                                         </div>
 
                                         <div class="text-start mb-4">
-                                            <label class="form-label fw-medium text-secondary small">Catégorie <span class="text-danger fw-bold">*</span></label>
-                                            <select id="categorie_poste_tresorerie_select" class="form-select form-select-lg" style="border-radius: 12px; font-size: 14px;">
-                                                <option value="" disabled selected>Sélectionner une catégorie...</option>
-                                                <option value="Flux de trésorerie des activités opérationnelles">I. Flux de trésorerie des activités opérationnelles</option>
-                                                <option value="Flux de trésorerie des activités d'investissement">II. Flux de trésorerie des activités d'investissement</option>
-                                                <option value="Flux de trésorerie des activités de financement">III. Flux de trésorerie des activités de financement</option>
+                                            <label class="form-label fw-medium text-secondary small">Catégorie <span
+                                                    class="text-danger fw-bold">*</span></label>
+                                            <select id="categorie_poste_tresorerie_select"
+                                                class="form-select form-select-lg"
+                                                style="border-radius: 12px; font-size: 14px;">
+                                                <option value="" disabled selected>Sélectionner une catégorie...
+                                                </option>
+                                                <option value="Flux de trésorerie des activités opérationnelles">I. Flux
+                                                    de trésorerie des activités opérationnelles</option>
+                                                <option value="Flux de trésorerie des activités d'investissement">II.
+                                                    Flux de trésorerie des activités d'investissement</option>
+                                                <option value="Flux de trésorerie des activités de financement">III.
+                                                    Flux de trésorerie des activités de financement</option>
                                             </select>
                                         </div>
 
                                         <div class="d-flex justify-content-center gap-3">
-                                            <button type="button" onclick="saisieGrille.creerEtAssignerPosteTresorerie()" class="btn btn-primary px-4 py-2 fw-bold" style="background: #6366f1; border: none; border-radius: 10px;">Créer et Assigner</button>
-                                            <button type="button" class="btn btn-secondary px-4 py-2 fw-bold" data-bs-dismiss="modal" style="border-radius: 10px;">Annuler</button>
+                                            <button type="button"
+                                                onclick="saisieGrille.creerEtAssignerPosteTresorerie()"
+                                                class="btn btn-primary px-4 py-2 fw-bold"
+                                                style="background: #6366f1; border: none; border-radius: 10px;">Créer et
+                                                Assigner</button>
+                                            <button type="button" class="btn btn-secondary px-4 py-2 fw-bold"
+                                                data-bs-dismiss="modal" style="border-radius: 10px;">Annuler</button>
                                         </div>
                                     </div>
                                 </div>
@@ -779,286 +827,286 @@
                         {{-- Include Modal Ventilation Analytique --}}
                         @include('accounting.partials.modal_ventilation_analytique')
 
-                            @include('components.footer')
-                            <div class="content-backdrop fade"></div>
-                        </div>
+                        @include('components.footer')
+                        <div class="content-backdrop fade"></div>
                     </div>
                 </div>
+            </div>
 
-                @php
-                    $fcModelesSaisie = ($modelesSaisie ?? collect())->map(function ($m) {
-                        return ['id' => $m->id, 'nom' => $m->nom, 'lignes' => $m->lignes];
-                    })->values();
+            @php
+                $fcModelesSaisie = ($modelesSaisie ?? collect())->map(function ($m) {
+                    return ['id' => $m->id, 'nom' => $m->nom, 'lignes' => $m->lignes];
+                })->values();
 
-                    $fcEcritures = $ecritures->map(function ($e) {
-                        return [
-                            'id' => $e->id,
-                            'date' => $e->date,
-                            'n_saisie' => $e->n_saisie,
-                            'n_saisie_user' => $e->n_saisie_user ?? null,
-                            'n_saisie_original' => $e->n_saisie_original ?? null,
-                            'statut' => $e->statut,
-                            'code_journal_id' => $e->code_journal_id,
-                            'code_journal' => $e->codeJournal->code_journal ?? '',
-                            'code_journal_original' => $e->codeJournal->numero_original ?? null,
-                            'description_operation' => $e->description_operation,
-                            'reference_piece' => $e->reference_piece,
-                            'compte_general' => $e->planComptable->numero_de_compte ?? '',
-                            'compte_general_intitule' => $e->planComptable->intitule ?? '',
-                            'compte_general_original' => $e->planComptable->numero_original ?? null,
-                            'compte_tiers' => $e->planTiers->numero_de_tiers ?? '',
-                            'compte_tiers_intitule' => $e->planTiers->intitule ?? '',
-                            'compte_tiers_original' => $e->planTiers->numero_original ?? null,
-                            'analytique' => (bool) $e->plan_analytique,
-                            'debit' => $e->debit,
-                            'credit' => $e->credit,
-                            'poste_tresorerie' => $e->posteTresorerie->name ?? '',
-                            'poste_tresorerie_id' => $e->poste_tresorerie_id ?? null,
-                            'piece' => (bool) $e->piece_justificatif,
-                            'piece_url' => $e->piece_justificatif ? (str_starts_with($e->piece_justificatif, 'http') ? $e->piece_justificatif : asset(file_exists(public_path('justificatifs/' . $e->piece_justificatif)) ? 'justificatifs/' . $e->piece_justificatif : (str_contains($e->piece_justificatif, '/') ? $e->piece_justificatif : 'justificatifs/' . $e->piece_justificatif))) : null,
-                        ];
-                    })->values();
-                  @endphp
-                <script>
-                    window.SAISIE_DATA = {
-                        plansComptables: @json($plansComptables),
-                        plansTiers: @json($plansTiers),
-                        comptesTresorerie: @json($comptesTresorerie),
-                        idExercice: {{ $exerciceActif->id ?? 'null' }},
-                        csrfToken: '{{ csrf_token() }}',
-                        storeMultipleUrl: '{{ route('api.ecriture.storeMultiple') }}',
-                        miseAJourMassiveUrl: '{{ route('accounting_entry_real_goupes.miseAJourMassive') }}',
-                        ecritureModelesStoreUrl: '{{ route('ecriture_modeles.store') }}',
-                        journauxSaisisFindUrl: '{{ route('journaux_saisis.find') }}',
-                        ecritureScanUrl: '{{ route('ecriture.scan') }}',
-                        // Modèles de saisie déjà enregistrés (support serveur), utilisés pour "Appeler un modèle"
-                        modelesSaisie: @json($fcModelesSaisie),
-                        // Écritures déjà chargées par le contrôleur -> filtrage journal 100% côté client, aucun aller-retour serveur
-                        ecritures: @json($fcEcritures),
-                    };
-                </script>
-                <script src="{{ asset('js/saisie-grille.js') }}"></script>
+                $fcEcritures = $ecritures->map(function ($e) {
+                    return [
+                        'id' => $e->id,
+                        'date' => $e->date,
+                        'n_saisie' => $e->n_saisie,
+                        'n_saisie_user' => $e->n_saisie_user ?? null,
+                        'n_saisie_original' => $e->n_saisie_original ?? null,
+                        'statut' => $e->statut,
+                        'code_journal_id' => $e->code_journal_id,
+                        'code_journal' => $e->codeJournal->code_journal ?? '',
+                        'code_journal_original' => $e->codeJournal->numero_original ?? null,
+                        'description_operation' => $e->description_operation,
+                        'reference_piece' => $e->reference_piece,
+                        'compte_general' => $e->planComptable->numero_de_compte ?? '',
+                        'compte_general_intitule' => $e->planComptable->intitule ?? '',
+                        'compte_general_original' => $e->planComptable->numero_original ?? null,
+                        'compte_tiers' => $e->planTiers->numero_de_tiers ?? '',
+                        'compte_tiers_intitule' => $e->planTiers->intitule ?? '',
+                        'compte_tiers_original' => $e->planTiers->numero_original ?? null,
+                        'analytique' => (bool) $e->plan_analytique,
+                        'debit' => $e->debit,
+                        'credit' => $e->credit,
+                        'poste_tresorerie' => $e->posteTresorerie->name ?? '',
+                        'poste_tresorerie_id' => $e->poste_tresorerie_id ?? null,
+                        'piece' => (bool) $e->piece_justificatif,
+                        'piece_url' => $e->piece_justificatif ? (str_starts_with($e->piece_justificatif, 'http') ? $e->piece_justificatif : asset(file_exists(public_path('justificatifs/' . $e->piece_justificatif)) ? 'justificatifs/' . $e->piece_justificatif : (str_contains($e->piece_justificatif, '/') ? $e->piece_justificatif : 'justificatifs/' . $e->piece_justificatif))) : null,
+                    ];
+                })->values();
+              @endphp
+            <script>
+                window.SAISIE_DATA = {
+                    plansComptables: @json($plansComptables),
+                    plansTiers: @json($plansTiers),
+                    comptesTresorerie: @json($comptesTresorerie),
+                    idExercice: {{ $exerciceActif->id ?? 'null' }},
+                    csrfToken: '{{ csrf_token() }}',
+                    storeMultipleUrl: '{{ route('api.ecriture.storeMultiple') }}',
+                    miseAJourMassiveUrl: '{{ route('accounting_entry_real_goupes.miseAJourMassive') }}',
+                    ecritureModelesStoreUrl: '{{ route('ecriture_modeles.store') }}',
+                    journauxSaisisFindUrl: '{{ route('journaux_saisis.find') }}',
+                    ecritureScanUrl: '{{ route('ecriture.scan') }}',
+                    // Modèles de saisie déjà enregistrés (support serveur), utilisés pour "Appeler un modèle"
+                    modelesSaisie: @json($fcModelesSaisie),
+                    // Écritures déjà chargées par le contrôleur -> filtrage journal 100% côté client, aucun aller-retour serveur
+                    ecritures: @json($fcEcritures),
+                };
+            </script>
+            <script src="{{ asset('js/saisie-grille.js') }}"></script>
 
-                <script>
-                    // --- GESTION DES TIERS (réutilisation du contrat JSON existant plan_tiers.store) ---
-                    const createTiersModalEl = document.getElementById('createTiersModal');
-                    if (createTiersModalEl) {
-                        const tiersModal = new bootstrap.Modal(createTiersModalEl);
-                        const typeTiersSelect = document.getElementById('type_tiers');
-                        const numeroTiersInput = document.getElementById('numero_tiers');
-                        const compteGeneralTiers = document.getElementById('compte_general_tiers');
-                        const intituleTiersInput = document.getElementById('intitule_tiers');
-                        const btnCreateTiers = document.getElementById('btnCreateTiers');
+            <script>
+                // --- GESTION DES TIERS (réutilisation du contrat JSON existant plan_tiers.store) ---
+                const createTiersModalEl = document.getElementById('createTiersModal');
+                if (createTiersModalEl) {
+                    const tiersModal = new bootstrap.Modal(createTiersModalEl);
+                    const typeTiersSelect = document.getElementById('type_tiers');
+                    const numeroTiersInput = document.getElementById('numero_tiers');
+                    const compteGeneralTiers = document.getElementById('compte_general_tiers');
+                    const intituleTiersInput = document.getElementById('intitule_tiers');
+                    const btnCreateTiers = document.getElementById('btnCreateTiers');
 
-                        createTiersModalEl.addEventListener('show.bs.modal', function () {
-                            typeTiersSelect.value = '';
-                            numeroTiersInput.value = '';
-                            intituleTiersInput.value = '';
-                        });
+                    createTiersModalEl.addEventListener('show.bs.modal', function () {
+                        typeTiersSelect.value = '';
+                        numeroTiersInput.value = '';
+                        intituleTiersInput.value = '';
+                    });
 
-                        // Changement de type -> filtre les comptes rattachables + génère le numéro via getDernierNumero
-                        typeTiersSelect.addEventListener('change', function () {
-                            const type = this.value;
-                            numeroTiersInput.value = '';
-                            numeroTiersInput.placeholder = 'Calcul...';
+                    // Changement de type -> filtre les comptes rattachables + génère le numéro via getDernierNumero
+                    typeTiersSelect.addEventListener('change', function () {
+                        const type = this.value;
+                        numeroTiersInput.value = '';
+                        numeroTiersInput.placeholder = 'Calcul...';
 
-                            const prefixes = {
-                                'Fournisseur': '40', 'Client': '41', 'Personnel': '42', 'CNPS': '43',
-                                'Impots': '44', 'Associé': '46', 'Organisme international': '45', 'Divers Tiers': '47'
-                            };
-                            const prefix = prefixes[type];
-                            const allComptes = window.SAISIE_DATA.plansComptables;
-                            let filtered = allComptes;
-                            if (type === 'Divers Tiers') {
-                                const allPrefixes = ['40', '41', '42', '43', '44', '45', '46'];
-                                filtered = allComptes.filter(p => !allPrefixes.some(pf => p.numero_de_compte.startsWith(pf)));
-                            } else if (prefix) {
-                                filtered = allComptes.filter(p => p.numero_de_compte.startsWith(prefix));
-                            }
+                        const prefixes = {
+                            'Fournisseur': '40', 'Client': '41', 'Personnel': '42', 'CNPS': '43',
+                            'Impots': '44', 'Associé': '46', 'Organisme international': '45', 'Divers Tiers': '47'
+                        };
+                        const prefix = prefixes[type];
+                        const allComptes = window.SAISIE_DATA.plansComptables;
+                        let filtered = allComptes;
+                        if (type === 'Divers Tiers') {
+                            const allPrefixes = ['40', '41', '42', '43', '44', '45', '46'];
+                            filtered = allComptes.filter(p => !allPrefixes.some(pf => p.numero_de_compte.startsWith(pf)));
+                        } else if (prefix) {
+                            filtered = allComptes.filter(p => p.numero_de_compte.startsWith(prefix));
+                        }
 
-                            compteGeneralTiers.innerHTML = '<option value="" selected disabled>Sélectionner un compte rattaché</option>' +
-                                filtered.map(p => `<option value="${p.id}" data-numero="${p.numero_de_compte}">${p.numero_de_compte} - ${p.intitule}</option>`).join('');
+                        compteGeneralTiers.innerHTML = '<option value="" selected disabled>Sélectionner un compte rattaché</option>' +
+                            filtered.map(p => `<option value="${p.id}" data-numero="${p.numero_de_compte}">${p.numero_de_compte} - ${p.intitule}</option>`).join('');
 
-                            if (type !== 'Divers Tiers' && prefix) {
-                                fetch(`/plan_tiers/${prefix}`)
-                                    .then(r => r.json())
-                                    .then(data => {
-                                        numeroTiersInput.value = data.numero || (prefix + Math.floor(Math.random() * 89999 + 10000));
-                                    })
-                                    .catch(() => {
-                                        numeroTiersInput.value = prefix + Math.floor(Math.random() * 89999 + 10000);
+                        if (type !== 'Divers Tiers' && prefix) {
+                            fetch(`/plan_tiers/${prefix}`)
+                                .then(r => r.json())
+                                .then(data => {
+                                    numeroTiersInput.value = data.numero || (prefix + Math.floor(Math.random() * 89999 + 10000));
+                                })
+                                .catch(() => {
+                                    numeroTiersInput.value = prefix + Math.floor(Math.random() * 89999 + 10000);
+                                });
+                        } else {
+                            numeroTiersInput.placeholder = 'Saisir manuellement';
+                            numeroTiersInput.readOnly = false;
+                        }
+                    });
+
+                    window.createTiersSimple = function (event) {
+                        if (event) event.preventDefault();
+
+                        const data = {
+                            type_de_tiers: typeTiersSelect.value,
+                            compte_general: compteGeneralTiers.value,
+                            numero_de_tiers: numeroTiersInput.value,
+                            intitule: intituleTiersInput.value.trim()
+                        };
+
+                        if (!data.type_de_tiers || !data.compte_general || !data.intitule) {
+                            Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
+                            return;
+                        }
+
+                        const originalBtnHtml = btnCreateTiers.innerHTML;
+                        btnCreateTiers.disabled = true;
+                        btnCreateTiers.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
+
+                        fetch('{{ route("plan_tiers.store") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify(data)
+                        })
+                            .then(res => res.json())
+                            .then(result => {
+                                if (result.success) {
+                                    tiersModal.hide();
+                                    // Injection directe dans la ligne de la grille ciblée par le bouton "+"
+                                    window.fcInjecterElementCree('tiers', {
+                                        id: result.id,
+                                        numero_de_tiers: result.numero_de_tiers,
+                                        intitule: result.intitule,
+                                        compte_general: data.compte_general,
                                     });
-                            } else {
-                                numeroTiersInput.placeholder = 'Saisir manuellement';
-                                numeroTiersInput.readOnly = false;
-                            }
-                        });
-
-                        window.createTiersSimple = function (event) {
-                            if (event) event.preventDefault();
-
-                            const data = {
-                                type_de_tiers: typeTiersSelect.value,
-                                compte_general: compteGeneralTiers.value,
-                                numero_de_tiers: numeroTiersInput.value,
-                                intitule: intituleTiersInput.value.trim()
-                            };
-
-                            if (!data.type_de_tiers || !data.compte_general || !data.intitule) {
-                                Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
-                                return;
-                            }
-
-                            const originalBtnHtml = btnCreateTiers.innerHTML;
-                            btnCreateTiers.disabled = true;
-                            btnCreateTiers.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
-
-                            fetch('{{ route("plan_tiers.store") }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: JSON.stringify(data)
+                                    Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le compte tiers a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
+                                } else {
+                                    throw new Error(result.error || 'Erreur lors de la création');
+                                }
                             })
-                                .then(res => res.json())
-                                .then(result => {
-                                    if (result.success) {
-                                        tiersModal.hide();
-                                        // Injection directe dans la ligne de la grille ciblée par le bouton "+"
-                                        window.fcInjecterElementCree('tiers', {
-                                            id: result.id,
-                                            numero_de_tiers: result.numero_de_tiers,
-                                            intitule: result.intitule,
-                                            compte_general: data.compte_general,
-                                        });
-                                        Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le compte tiers a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
-                                    } else {
-                                        throw new Error(result.error || 'Erreur lors de la création');
-                                    }
-                                })
-                                .catch(err => {
-                                    Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
-                                })
-                                .finally(() => {
-                                    btnCreateTiers.disabled = false;
-                                    btnCreateTiers.innerHTML = originalBtnHtml;
-                                });
-                        };
-                    }
-
-                    // --- GESTION DES POSTES TRÉSORERIE (réutilisation du contrat JSON existant postetresorerie.store_poste) ---
-                    const modalCreatePosteEl = document.getElementById('modalCreatePoste');
-                    if (modalCreatePosteEl) {
-                        const posteModal = new bootstrap.Modal(modalCreatePosteEl);
-
-                        window.createPosteSimple = function (event) {
-                            if (event) event.preventDefault();
-
-                            const btn = document.getElementById('btnSavePoste');
-                            const name = document.getElementById('poste_name').value.trim();
-                            const category_id = document.getElementById('poste_category_id').value;
-
-                            if (!name || !category_id) {
-                                Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
-                                return;
-                            }
-
-                            const originalBtnHtml = btn.innerHTML;
-                            btn.disabled = true;
-                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
-
-                            fetch('{{ route("postetresorerie.store_poste") }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({ name, category_id })
+                            .catch(err => {
+                                Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
                             })
-                                .then(res => res.json())
-                                .then(result => {
-                                    if (result.success) {
-                                        posteModal.hide();
-                                        document.getElementById('createPosteForm').reset();
-                                        window.fcInjecterElementCree('poste', { id: result.id, name: result.name });
-                                        Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le poste de trésorerie a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
-                                    } else {
-                                        throw new Error(result.error || 'Erreur lors de la création');
-                                    }
-                                })
-                                .catch(err => {
-                                    Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
-                                })
-                                .finally(() => {
-                                    btn.disabled = false;
-                                    btn.innerHTML = originalBtnHtml;
-                                });
-                        };
-                    }
+                            .finally(() => {
+                                btnCreateTiers.disabled = false;
+                                btnCreateTiers.innerHTML = originalBtnHtml;
+                            });
+                    };
+                }
 
-                    // --- GESTION DES COMPTES GÉNÉRAUX (réutilisation du contrat JSON existant plan_comptable.store) ---
-                    const modalCenterCreateEl = document.getElementById('modalCenterCreate');
-                    if (modalCenterCreateEl) {
-                        const compteModal = new bootstrap.Modal(modalCenterCreateEl);
-                        const numeroCompteInput = document.getElementById('numero_de_compte');
-                        const intituleCompteInput = document.getElementById('intitule');
-                        const btnCreateCompte = document.getElementById('btnCreateCompte');
+                // --- GESTION DES POSTES TRÉSORERIE (réutilisation du contrat JSON existant postetresorerie.store_poste) ---
+                const modalCreatePosteEl = document.getElementById('modalCreatePoste');
+                if (modalCreatePosteEl) {
+                    const posteModal = new bootstrap.Modal(modalCreatePosteEl);
 
-                        window.createCompteSimple = function (event) {
-                            if (event) event.preventDefault();
+                    window.createPosteSimple = function (event) {
+                        if (event) event.preventDefault();
 
-                            const numero_de_compte = numeroCompteInput.value.trim();
-                            const intitule = intituleCompteInput.value.trim();
+                        const btn = document.getElementById('btnSavePoste');
+                        const name = document.getElementById('poste_name').value.trim();
+                        const category_id = document.getElementById('poste_category_id').value;
 
-                            if (!numero_de_compte || !intitule) {
-                                Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
-                                return;
-                            }
+                        if (!name || !category_id) {
+                            Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
+                            return;
+                        }
 
-                            const originalBtnHtml = btnCreateCompte.innerHTML;
-                            btnCreateCompte.disabled = true;
-                            btnCreateCompte.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
+                        const originalBtnHtml = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
 
-                            fetch('{{ route("plan_comptable.store") }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: JSON.stringify({ numero_de_compte, intitule })
+                        fetch('{{ route("postetresorerie.store_poste") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ name, category_id })
+                        })
+                            .then(res => res.json())
+                            .then(result => {
+                                if (result.success) {
+                                    posteModal.hide();
+                                    document.getElementById('createPosteForm').reset();
+                                    window.fcInjecterElementCree('poste', { id: result.id, name: result.name });
+                                    Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le poste de trésorerie a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
+                                } else {
+                                    throw new Error(result.error || 'Erreur lors de la création');
+                                }
                             })
-                                .then(res => res.json())
-                                .then(result => {
-                                    if (result.success) {
-                                        compteModal.hide();
-                                        window.fcInjecterElementCree('compte', {
-                                            id: result.id,
-                                            numero_de_compte: result.numero_de_compte,
-                                            intitule: result.intitule,
-                                        });
-                                        numeroCompteInput.value = '';
-                                        intituleCompteInput.value = '';
-                                        Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le compte général a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
-                                    } else {
-                                        throw new Error(result.error || 'Erreur lors de la création');
-                                    }
-                                })
-                                .catch(err => {
-                                    Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
-                                })
-                                .finally(() => {
-                                    btnCreateCompte.disabled = false;
-                                    btnCreateCompte.innerHTML = originalBtnHtml;
-                                });
-                        };
-                    }
-                </script>
+                            .catch(err => {
+                                Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
+                            })
+                            .finally(() => {
+                                btn.disabled = false;
+                                btn.innerHTML = originalBtnHtml;
+                            });
+                    };
+                }
+
+                // --- GESTION DES COMPTES GÉNÉRAUX (réutilisation du contrat JSON existant plan_comptable.store) ---
+                const modalCenterCreateEl = document.getElementById('modalCenterCreate');
+                if (modalCenterCreateEl) {
+                    const compteModal = new bootstrap.Modal(modalCenterCreateEl);
+                    const numeroCompteInput = document.getElementById('numero_de_compte');
+                    const intituleCompteInput = document.getElementById('intitule');
+                    const btnCreateCompte = document.getElementById('btnCreateCompte');
+
+                    window.createCompteSimple = function (event) {
+                        if (event) event.preventDefault();
+
+                        const numero_de_compte = numeroCompteInput.value.trim();
+                        const intitule = intituleCompteInput.value.trim();
+
+                        if (!numero_de_compte || !intitule) {
+                            Swal.fire({ icon: 'warning', title: 'Champs manquants', text: 'Veuillez remplir toutes les informations obligatoires.' });
+                            return;
+                        }
+
+                        const originalBtnHtml = btnCreateCompte.innerHTML;
+                        btnCreateCompte.disabled = true;
+                        btnCreateCompte.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création...';
+
+                        fetch('{{ route("plan_comptable.store") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({ numero_de_compte, intitule })
+                        })
+                            .then(res => res.json())
+                            .then(result => {
+                                if (result.success) {
+                                    compteModal.hide();
+                                    window.fcInjecterElementCree('compte', {
+                                        id: result.id,
+                                        numero_de_compte: result.numero_de_compte,
+                                        intitule: result.intitule,
+                                    });
+                                    numeroCompteInput.value = '';
+                                    intituleCompteInput.value = '';
+                                    Swal.fire({ icon: 'success', title: 'Succès !', text: 'Le compte général a été créé et sélectionné.', timer: 2000, showConfirmButton: false });
+                                } else {
+                                    throw new Error(result.error || 'Erreur lors de la création');
+                                }
+                            })
+                            .catch(err => {
+                                Swal.fire({ icon: 'error', title: 'Oups...', text: 'Une erreur est survenue : ' + err.message });
+                            })
+                            .finally(() => {
+                                btnCreateCompte.disabled = false;
+                                btnCreateCompte.innerHTML = originalBtnHtml;
+                            });
+                    };
+                }
+            </script>
 </body>
 
 </html>

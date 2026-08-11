@@ -858,12 +858,12 @@ body {
                         <option>SARL</option><option>SA</option><option>SAS</option><option>SASU</option><option>SNC</option><option>EI</option><option>Association</option><option>ONG</option>
                     </select>
                 </div>
-                <div class="col-md-6"><label class="dark-label">Capital social</label><input type="number" name="social_capital" class="dark-input" placeholder="1000000"></div>
-                <div class="col-md-6"><label class="dark-label">Téléphone *</label><input type="text" name="phone_number" class="dark-input" required placeholder="+225 XX XX XX XX"></div>
-                <div class="col-md-8"><label class="dark-label">Adresse *</label><input type="text" name="adresse" class="dark-input" required placeholder="Rue, Quartier..."></div>
-                <div class="col-md-4"><label class="dark-label">Code postal *</label><input type="text" name="code_postal" class="dark-input" required placeholder="01 BP..."></div>
-                <div class="col-md-6"><label class="dark-label">Ville *</label><input type="text" name="city" class="dark-input" required placeholder="Abidjan"></div>
-                <div class="col-md-6"><label class="dark-label">Pays *</label><input type="text" name="country" class="dark-input" required value="Côte d'Ivoire"></div>
+                <div class="col-md-6"><label class="dark-label">Capital social <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="number" name="social_capital" class="dark-input" placeholder="1000000"></div>
+                <div class="col-md-6"><label class="dark-label">Téléphone <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="phone_number" class="dark-input" placeholder="+225 XX XX XX XX"></div>
+                <div class="col-md-8"><label class="dark-label">Adresse <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="adresse" class="dark-input" placeholder="Rue, Quartier..."></div>
+                <div class="col-md-4"><label class="dark-label">Code postal <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="code_postal" class="dark-input" placeholder="01 BP..."></div>
+                <div class="col-md-6"><label class="dark-label">Ville <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="city" class="dark-input" placeholder="Abidjan"></div>
+                <div class="col-md-6"><label class="dark-label">Pays <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="country" class="dark-input" placeholder="Côte d'Ivoire"></div>
             </div>
             <div class="d-flex gap-2 mt-4 justify-content-end">
                 <button type="button" class="btn-secondary-dark" onclick="document.getElementById('modal-new-company').classList.remove('show')">Annuler</button>

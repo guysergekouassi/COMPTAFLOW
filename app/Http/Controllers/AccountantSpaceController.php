@@ -141,16 +141,16 @@ class AccountantSpaceController extends Controller
     public function storeCompany(Request $request)
     {
         $request->validate([
-            'company_name' => 'required|string|max:255|unique:companies,company_name',
-            'activity' => 'required|string|max:255',
-            'juridique_form' => 'required|string|max:255',
-            'social_capital' => 'nullable|numeric|min:0',
-            'adresse' => 'required|string|max:255',
-            'code_postal' => 'required|string|max:20',
-            'city' => 'required|string|max:50',
-            'country' => 'required|string|max:255',
-            'phone_number' => 'required|string|min:10',
-            'email_adresse' => 'required|email|max:191|unique:companies,email_adresse',
+            'company_name'     => 'required|string|max:255|unique:companies,company_name',
+            'activity'         => 'required|string|max:255',
+            'juridique_form'   => 'required|string|max:255',
+            'social_capital'   => 'nullable|numeric|min:0',
+            'adresse'          => 'nullable|string|max:255',
+            'code_postal'      => 'nullable|string|max:20',
+            'city'             => 'nullable|string|max:50',
+            'country'          => 'nullable|string|max:255',
+            'phone_number'     => 'nullable|string|min:8|max:30',
+            'email_adresse'    => 'required|email|max:191|unique:companies,email_adresse',
             'identification_TVA' => 'nullable|string|max:50',
         ]);
 
