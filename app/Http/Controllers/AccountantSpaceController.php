@@ -28,7 +28,7 @@ class AccountantSpaceController extends Controller
         $assignedCompanyIds = DB::table('company_user')->where('user_id', $user->id)->pluck('company_id')->toArray();
         $allCompanyIds = array_unique(array_merge($myCompanyIds, $assignedCompanyIds));
 
-        $companies = Company::whereIn('id', $allCompanyIds)->get();
+        $companies = Company::with('admin')->whereIn('id', $allCompanyIds)->get();
 
         // Charger les KPIs pour chaque entreprise
         $companiesData = $companies->map(function ($comp) use ($user) {
@@ -96,6 +96,8 @@ class AccountantSpaceController extends Controller
             return [
                 'model' => $comp,
                 'is_owner' => $isOwner,
+                'assigned_status' => $isOwner ? 'created' : 'assigned',
+                'assigned_by_name' => $isOwner ? null : ($comp->admin?->name . ' ' . $comp->admin?->last_name),
                 'entries_count' => $entriesCount,
                 'accounts_count' => $accountsCount,
                 'tiers_count' => $tiersCount,
@@ -109,10 +111,35 @@ class AccountantSpaceController extends Controller
             ];
         });
 
-        // 2. Collaborateurs gérés (créés par cet utilisateur)
-        $collaborators = User::where('created_by_id', $user->id)->get();
+        // 2. Collaborateurs assignés à mes entreprises (tableau)
+        $assignedCollaboratorIds = DB::table('company_user')
+            ->whereIn('company_id', $allCompanyIds)
+            ->pluck('user_id')
+            ->toArray();
+        $assignedCollaboratorIds = array_values(array_diff($assignedCollaboratorIds, [$user->id]));
+        $collaborators = User::with(['companies', 'creator:id,name,last_name'])
+            ->whereIn('id', $assignedCollaboratorIds)
+            ->get();
 
-        // 3. Utilisateurs pour le Chat
+        // 3. Collaborateurs assignables ou créés par moi (liste déroulante)
+        $createdCollaboratorIds = User::where('created_by_id', $user->id)->pluck('id')->toArray();
+        $assignableCollaboratorIds = array_unique(array_merge($createdCollaboratorIds, $assignedCollaboratorIds));
+        $assignableCollaboratorIds = array_values(array_diff($assignableCollaboratorIds, [$user->id]));
+        $assignableCollaborators = User::with(['companies', 'creator:id,name,last_name'])
+            ->whereIn('id', $assignableCollaboratorIds)
+            ->get();
+
+        $selectedCollaboratorId = session('selected_user_id');
+        if ($selectedCollaboratorId) {
+            $selectedUser = User::with(['companies', 'creator:id,name,last_name'])->find($selectedCollaboratorId);
+            if ($selectedUser) {
+                if (!$assignableCollaborators->contains('id', $selectedCollaboratorId)) {
+                    $assignableCollaborators->push($selectedUser);
+                }
+            }
+        }
+
+        // 4. Utilisateurs pour le Chat
         // Tout utilisateur connecté à une de mes entreprises, ou mes collaborateurs, ou les créateurs des entreprises auxquelles je suis affecté
         $chatUserIds = DB::table('company_user')->whereIn('company_id', $allCompanyIds)->where('user_id', '!=', $user->id)->pluck('user_id')->toArray();
         $myCreatedUserIds = User::where('created_by_id', $user->id)->pluck('id')->toArray();
@@ -132,7 +159,7 @@ class AccountantSpaceController extends Controller
             'total_entries' => DB::table('ecriture_comptables')->whereIn('company_id', $allCompanyIds)->count()
         ];
 
-        return view('accountant.index', compact('companiesData', 'collaborators', 'chatUsers', 'stats'));
+        return view('accountant.index', compact('companiesData', 'collaborators', 'assignableCollaborators', 'chatUsers', 'stats', 'selectedCollaboratorId'));
     }
 
     /**
@@ -225,11 +252,17 @@ class AccountantSpaceController extends Controller
      */
     public function createMember(Request $request)
     {
-        // If the email already exists in the users table, we don't create a new user here.
-        // The UI will surface existing user details in read-only mode and the admin can assign later.
+        $mode = $request->input('mode', 'invite');
         $existing = User::where('email_adresse', $request->input('email_adresse'))->first();
-        if ($existing) {
-            return redirect()->route('accountant.space')->with('info', 'Utilisateur existant : ' . $existing->name . ' ' . $existing->last_name . '. Vous pouvez l\'affecter depuis "Affecter un collaborateur".');
+
+        if ($mode === 'invite') {
+            if ($existing) {
+                return redirect()->route('accountant.space', ['page' => 'collaborators'])
+                    ->with('selected_user_id', $existing->id)
+                    ->with('info', 'Utilisateur existant : ' . $existing->name . ' ' . $existing->last_name . '. Vous pouvez l\'affecter depuis "Affecter un collaborateur".');
+            }
+
+            return back()->with('error', 'Aucun utilisateur trouvé pour cet email. Passez en mode Créer pour ajouter ce collaborateur.')->withInput();
         }
 
         $request->validate([
@@ -237,7 +270,6 @@ class AccountantSpaceController extends Controller
             'last_name' => 'required|string|max:255',
             'email_adresse' => 'required|email|max:191|unique:users,email_adresse',
             'password' => 'required|string|min:6',
-            'role' => 'required|in:admin,comptable',
         ]);
 
         User::create([
@@ -245,7 +277,7 @@ class AccountantSpaceController extends Controller
             'last_name' => $request->last_name,
             'email_adresse' => $request->email_adresse,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'role' => 'comptable',
             'is_active' => true,
             'created_by_id' => Auth::id(),
         ]);
@@ -263,7 +295,7 @@ class AccountantSpaceController extends Controller
             return response()->json(['found' => false]);
         }
 
-        $user = User::where('email_adresse', $email)->select('id', 'name', 'last_name', 'email_adresse')->first();
+        $user = User::where('email_adresse', $email)->select('id', 'name', 'last_name', 'email_adresse', 'role')->first();
         if ($user) {
             return response()->json(['found' => true, 'user' => $user]);
         }
@@ -300,7 +332,7 @@ class AccountantSpaceController extends Controller
             'sender_id' => $user->id,
             'receiver_id' => $request->user_id,
             'title' => 'Affectation à une entreprise',
-            'content' => 'Vous avez été affecté à l\'entreprise ' . $company->company_name . ' en tant que ' . $request->role,
+            'message' => 'Vous avez été affecté à l\'entreprise ' . $company->company_name . ' en tant que ' . $request->role,
             'type' => 'info',
             'is_read' => false,
         ]);
@@ -314,13 +346,19 @@ class AccountantSpaceController extends Controller
     public function removeUser(Request $request)
     {
         $request->validate([
-            'company_id' => 'required|exists:companies,id',
+            'company_id' => 'required',
+            'company_id.*' => 'sometimes|exists:companies,id',
             'user_id' => 'required|exists:users,id',
         ]);
 
         $user = Auth::user();
-        $company = Company::findOrFail($request->company_id);
-        if ($company->user_id !== $user->id) {
+        $companyIds = is_array($request->company_id) ? $request->company_id : [$request->company_id];
+
+        $authorizedCount = Company::whereIn('id', $companyIds)
+            ->where('user_id', $user->id)
+            ->count();
+
+        if ($authorizedCount !== count($companyIds)) {
             return back()->with('error', 'Action non autorisée.');
         }
 
@@ -330,7 +368,7 @@ class AccountantSpaceController extends Controller
         }
 
         DB::table('company_user')
-            ->where('company_id', $request->company_id)
+            ->whereIn('company_id', $companyIds)
             ->where('user_id', $request->user_id)
             ->delete();
 

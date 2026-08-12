@@ -189,6 +189,30 @@ body {
 .section-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
 .section-divider { flex: 1; height: 1px; background: var(--space-border); }
 
+.company-filter-group {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.filter-pill {
+    background: rgba(15,23,42,0.05);
+    color: var(--text-secondary);
+    border: 1px solid rgba(226,232,240,0.9);
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-pill.active,
+.filter-pill:hover {
+    background: rgba(59,130,246,0.12);
+    color: var(--blue);
+    border-color: rgba(59,130,246,0.25);
+}
+
 /* ── COMPANY CARDS ── */
 .companies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; }
 
@@ -270,6 +294,22 @@ body {
     display: flex; align-items: center; gap: 0.4rem;
 }
 .btn-secondary-dark:hover { background: rgba(0,0,0,0.06); color: var(--text-primary); border-color: rgba(0,0,0,0.1); }
+
+.btn-secondary-sm {
+    background: rgba(15,23,42,0.06);
+    border: 1px solid rgba(148,163,184,0.25);
+    color: var(--text-secondary);
+    border-radius: 7px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-secondary-sm:hover { background: rgba(148,163,184,0.12); color: var(--text-primary); border-color: rgba(148,163,184,0.35); }
 
 .btn-generate {
     background: rgba(16,185,129,0.08);
@@ -526,15 +566,20 @@ body {
                     <div class="section-header">
                         <div class="section-title">Mon portefeuille sociétés</div>
                         <div class="section-divider"></div>
+                        <div class="company-filter-group">
+                            <button type="button" class="filter-pill active" data-filter="all">Toutes</button>
+                            <button type="button" class="filter-pill" data-filter="created">Créées</button>
+                            <button type="button" class="filter-pill" data-filter="assigned">Affectées</button>
+                        </div>
                         <button class="btn-work" onclick="document.getElementById('modal-new-company').classList.add('show')" style="flex:0;white-space:nowrap;padding:0.5rem 1rem;font-size:0.75rem;">
                             <i class="fas fa-plus"></i> Nouvelle
                         </button>
                     </div>
 
-                    <div class="companies-grid">
+                    <div class="companies-grid" id="company-cards-grid">
                         @forelse($companiesData as $data)
                         @php $comp = $data['model']; @endphp
-                        <div class="company-card">
+                        <div class="company-card" data-company-status="{{ $data['assigned_status'] }}">
                             <div class="company-card-header">
                                 <div class="company-logo">{{ strtoupper(substr($comp->company_name,0,2)) }}</div>
                                 <div style="flex:1; min-width:0;">
@@ -554,6 +599,15 @@ body {
                             </div>
 
                             <div class="company-body">
+                                <!-- Attribution -->
+                                <div class="mb-3">
+                                    @if($data['assigned_status'] === 'created')
+                                        <div style="font-size:0.78rem;color:#047857;font-weight:700;">Créée par vous</div>
+                                    @else
+                                        <div style="font-size:0.78rem;color:#1d4ed8;font-weight:700;">Affectée par {{ $data['assigned_by_name'] ?? 'un administrateur' }}</div>
+                                    @endif
+                                </div>
+
                                 <!-- Code d'accès -->
                                 @if($comp->company_code)
                                 <div class="d-flex align-items-center gap-2 mb-3">
@@ -620,6 +674,11 @@ body {
                         </div>
                         @endforelse
                     </div>
+                    <div id="company-filter-empty" class="dark-card text-center" style="grid-column:1/-1;padding:3rem;display:none;">
+                        <i class="fas fa-building" style="font-size:2.5rem;color:var(--text-muted);display:block;margin-bottom:1rem;"></i>
+                        <div style="font-weight:700;color:var(--text-primary);margin-bottom:0.5rem;">Aucune société trouvée</div>
+                        <div style="color:var(--text-muted);font-size:0.82rem;margin-bottom:1.5rem;">Changez le filtre pour afficher d'autres sociétés.</div>
+                    </div>
                 </div>
 
                 <!-- ──────────────── COLLABORATEURS ──────────────── -->
@@ -633,7 +692,8 @@ body {
                                     @csrf
                                     <div class="mb-3">
                                         <label class="dark-label">Entreprise cible</label>
-                                        <select name="company_id" class="dark-input">
+                                        <select name="company_id" class="dark-input" required>
+                                            <option value="" disabled selected>Choisir une entreprise</option>
                                             @foreach($companiesData as $d)
                                             <option value="{{ $d['model']->id }}">{{ $d['model']->company_name }}</option>
                                             @endforeach
@@ -641,15 +701,17 @@ body {
                                     </div>
                                     <div class="mb-3">
                                         <label class="dark-label">Collaborateur</label>
-                                        <select name="user_id" class="dark-input">
-                                            @foreach($collaborators as $c)
-                                            <option value="{{ $c->id }}">{{ $c->name }} {{ $c->last_name }} ({{ $c->role }})</option>
+                                        <select id="assign_collaborator_select" name="user_id" class="dark-input" required>
+                                            <option value="" disabled selected>Choisir un collaborateur</option>
+                                            @foreach($assignableCollaborators as $c)
+                                            <option value="{{ $c->id }}">{{ $c->name }} {{ $c->last_name }} ({{ $c->role }})@if($c->companies->count()) - {{ $c->companies->pluck('company_name')->join(', ') }}@endif</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="mb-4">
+                                    <div class="mb-3">
                                         <label class="dark-label">Rôle</label>
-                                        <select name="role" class="dark-input">
+                                        <select name="role" class="dark-input" required>
+                                            <option value="" disabled selected>Choisir un rôle</option>
                                             <option value="admin">Admin</option>
                                             <option value="comptable">Comptable</option>
                                         </select>
@@ -670,6 +732,7 @@ body {
                                             <tr>
                                                 <th>Collaborateur</th>
                                                 <th>Email</th>
+                                                <th>Entreprise(s)</th>
                                                 <th>Rôle</th>
                                                 <th>Statut</th>
                                                 <th>Actions</th>
@@ -683,8 +746,22 @@ body {
                                                         <div class="avatar-sm">{{ strtoupper(substr($collab->name,0,1).substr($collab->last_name??'',0,1)) }}</div>
                                                         <span style="color:var(--text-primary);font-weight:600;">{{ $collab->name }} {{ $collab->last_name }}</span>
                                                     </div>
+                                                    @if($collab->creator)
+                                                    <div style="font-size:0.7rem;color:var(--text-muted);">Invité par {{ $collab->creator->name }} {{ $collab->creator->last_name }}</div>
+                                                    @endif
                                                 </td>
                                                 <td>{{ $collab->email_adresse }}</td>
+                                                <td>
+                                                    @if($collab->companies->count() > 0)
+                                                        @foreach($collab->companies as $company)
+                                                            <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.25rem;">
+                                                                <span style="font-size:0.75rem;font-weight:700;color:var(--text-primary);">{{ Str::limit($company->company_name, 18) }}</span>
+                                                                            </div>
+                                                        @endforeach
+                                                    @else
+                                                        <span style="color:var(--text-muted);font-size:0.8rem;">Aucune entreprise</span>
+                                                    @endif
+                                                </td>
                                                 <td><span class="badge-role badge-{{ $collab->role }}">{{ $collab->role }}</span></td>
                                                 <td>
                                                     @if($collab->is_active)
@@ -694,23 +771,23 @@ body {
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <!-- Retirer accès par société -->
-                                                    @foreach($companiesData as $d)
-                                                        @if($d['assigned_users']->contains('id', $collab->id))
-                                                        <form method="POST" action="{{ route('accountant.space.remove_user') }}" onsubmit="return confirm('Retirer l\'accès de {{ $collab->name }} à {{ $d['model']->company_name }} ?');" style="display:inline;">
-                                                            @csrf
-                                                            <input type="hidden" name="company_id" value="{{ $d['model']->id }}">
-                                                            <input type="hidden" name="user_id" value="{{ $collab->id }}">
-                                                            <button type="submit" class="btn-danger-sm" title="Retirer de {{ $d['model']->company_name }}">
-                                                                <i class="fas fa-unlink"></i> {{ Str::limit($d['model']->company_name, 12) }}
-                                                            </button>
-                                                        </form>
+                                                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                                                        @if($collab->companies->count() > 0)
+                                                        <button type="button" class="btn-danger-sm" onclick="openDetachCollaboratorModal({{ $collab->id }}, this)" title="Retirer {{ $collab->name }} d'une ou plusieurs entreprises"
+                                                            data-companies='@json($collab->companies->map(fn($company) => ['id' => $company->id, 'name' => $company->company_name]))'>
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                        @else
+                                                        <span style="color:var(--text-muted);font-size:0.8rem;">Aucune entreprise assignée</span>
                                                         @endif
-                                                    @endforeach
+                                                        <button type="button" class="btn-secondary-sm" onclick="selectCollaboratorForAssign({{ $collab->id }})" title="Affecter à une autre société">
+                                                            <i class="fas fa-link"></i>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             @empty
-                                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem;">Aucun collaborateur</td></tr>
+                                            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem;">Aucun collaborateur</td></tr>
                                             @endforelse
                                         </tbody>
                                     </table>
@@ -883,15 +960,13 @@ body {
             <div class="row g-3">
                 <div class="col-6 member-name-fields"><label class="dark-label">Prénom *</label><input type="text" id="member_name" name="name" class="dark-input" required placeholder="Jean"></div>
                 <div class="col-6 member-name-fields"><label class="dark-label">Nom *</label><input type="text" id="member_last_name" name="last_name" class="dark-input" required placeholder="DUPONT"></div>
-                <div class="col-12"><label class="dark-label">Email *</label><input type="email" id="member_email_adresse" name="email_adresse" class="dark-input" required placeholder="jean@email.com"></div>
+                <div class="col-12">
+                    <label class="dark-label">Email *</label>
+                    <input type="email" id="member_email_adresse" name="email_adresse" class="dark-input" required placeholder="jean@email.com">
+                    <div id="member_email_status" style="margin-top:0.45rem;font-size:0.82rem;color:var(--text-muted);min-height:1.2rem;"></div>
+                </div>
                 <div class="col-12" id="member_password_field"><label class="dark-label">Mot de passe *</label><input type="password" id="member_password" name="password" class="dark-input" placeholder="Minimum 6 caractères"></div>
                 <input type="hidden" id="member_mode" name="mode" value="invite">
-                <div class="col-12"><label class="dark-label">Rôle *</label>
-                    <select name="role" class="dark-input" required>
-                        <option value="admin">Admin</option>
-                        <option value="comptable">Comptable</option>
-                    </select>
-                </div>
             </div>
             <div class="d-flex gap-2 mt-4 justify-content-end">
                 <button type="button" class="btn-secondary-dark" onclick="document.getElementById('modal-new-member').classList.remove('show')">Annuler</button>
@@ -901,9 +976,31 @@ body {
     </div>
 </div>
 
+<!-- Modal de désaffectation -->
+<div class="dark-modal-backdrop" id="modal-detach-collaborator" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="dark-modal">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h5 style="font-weight:800;color:var(--text-primary);margin:0;"><i class="fas fa-trash me-2" style="color:#ef4444;"></i>Désaffecter un collaborateur</h5>
+            <button class="modal-close" onclick="document.getElementById('modal-detach-collaborator').classList.remove('show')">✕</button>
+        </div>
+        <form id="detachCollaboratorForm" method="POST" action="{{ route('accountant.space.remove_user') }}">
+            @csrf
+            <input type="hidden" name="user_id" id="detach_user_id">
+            <div style="margin-bottom:1rem;color:var(--text-muted);font-size:0.92rem;">Choisissez les sociétés à supprimer pour ce collaborateur. Cochez au moins une société puis validez.</div>
+            <div id="detach_companies_list" style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1rem;"></div>
+            <button type="button" id="detach_select_all_btn" class="btn-secondary-sm" style="margin-bottom:1rem;" onclick="toggleDetachAll(true)">Tout sélectionner</button>
+            <div class="d-flex gap-2 mt-4 justify-content-end">
+                <button type="button" class="btn-secondary-dark" onclick="document.getElementById('modal-detach-collaborator').classList.remove('show')">Annuler</button>
+                <button type="button" class="btn-work" onclick="submitDetachCollaborator()" style="flex:0;padding:0.6rem 1.5rem;">Valider</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const emailInput = document.getElementById('member_email_adresse');
+    const emailStatus = document.getElementById('member_email_status');
     const nameInput = document.getElementById('member_name');
     const lastNameInput = document.getElementById('member_last_name');
     const passwordField = document.getElementById('member_password_field');
@@ -912,11 +1009,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const modeCreateBtn = document.getElementById('mode_create');
     const memberModeInput = document.getElementById('member_mode');
     const nameFieldCols = document.querySelectorAll('.member-name-fields');
+    const selectedCollaboratorId = '{{ $selectedCollaboratorId ?? '' }}';
+    let currentFoundUser = null;
 
     if (!emailInput) return;
 
     // initialize default mode: invite
     setMode('invite');
+    if (selectedCollaboratorId) {
+        const assignSelect = document.getElementById('assign_collaborator_select');
+        if (assignSelect) {
+            assignSelect.value = selectedCollaboratorId;
+        }
+    }
 
     modeInviteBtn.addEventListener('click', function () { setMode('invite'); });
     modeCreateBtn.addEventListener('click', function () { setMode('create'); });
@@ -930,13 +1035,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function setMode(mode) {
         memberModeInput.value = mode;
         if (mode === 'invite') {
-            // show only email (and role). hide name fields unless filled by lookup
             nameFieldCols.forEach(n => n.style.display = 'none');
             passwordField.style.display = 'none';
             modeInviteBtn.style.color = 'var(--text-primary)';
             modeCreateBtn.style.color = 'var(--text-muted)';
             submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Inviter';
-            // clear readonly
+            submitBtn.disabled = !currentFoundUser;
+            if (!currentFoundUser) {
+                updateEmailStatus('Saisissez l’email existant pour inviter ou passez en mode Créer.', 'var(--text-muted)');
+            }
             nameInput.readOnly = false;
             lastNameInput.readOnly = false;
         } else {
@@ -945,14 +1052,31 @@ document.addEventListener('DOMContentLoaded', function () {
             modeInviteBtn.style.color = 'var(--text-muted)';
             modeCreateBtn.style.color = 'var(--text-primary)';
             submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Créer';
+            submitBtn.disabled = false;
+            if (currentFoundUser) {
+                updateEmailStatus('Cet email existe déjà. Passez en mode Inviter pour sélectionner ce collaborateur.', 'var(--rose)');
+            } else {
+                updateEmailStatus('', 'var(--text-muted)');
+            }
             nameInput.readOnly = false;
             lastNameInput.readOnly = false;
         }
     }
 
+    function updateEmailStatus(message, color) {
+        if (!emailStatus) return;
+        emailStatus.textContent = message;
+        emailStatus.style.color = color;
+    }
+
     function checkEmailExists() {
         const email = emailInput.value.trim();
-        if (!email) return;
+        if (!email) {
+            currentFoundUser = null;
+            submitBtn.disabled = memberModeInput.value === 'invite';
+            updateEmailStatus('', 'var(--text-muted)');
+            return;
+        }
 
         fetch('{{ route('accountant.space.user.by_email') }}?email=' + encodeURIComponent(email), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -960,21 +1084,57 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(resp => resp.json())
         .then(data => {
             if (data && data.found) {
-                // populate and show name fields in readonly mode
+                currentFoundUser = data.user;
                 nameInput.value = data.user.name || '';
                 lastNameInput.value = data.user.last_name || '';
                 nameFieldCols.forEach(n => n.style.display = 'block');
                 nameInput.readOnly = true;
                 lastNameInput.readOnly = true;
                 passwordField.style.display = 'none';
-                submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Sélectionner';
-                memberModeInput.value = 'invite';
                 modeInviteBtn.style.color = 'var(--text-primary)';
                 modeCreateBtn.style.color = 'var(--text-muted)';
-            } else {
-                // if user chose invite but email not found, switch to create mode to allow creation
+                const assignSelect = document.getElementById('assign_collaborator_select');
+                const alreadyInDropdown = assignSelect && assignSelect.querySelector(`option[value="${data.user.id}"]`);
+                if (alreadyInDropdown) {
+                    if (assignSelect) {
+                        assignSelect.value = data.user.id;
+                    }
+                    submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Inviter';
+                    submitBtn.disabled = true;
+                    updateEmailStatus('Cet utilisateur est déjà présent dans la liste déroulante. Rendez-vous dans Mes collaborateurs pour l’affecter.', 'var(--text-primary)');
+                    return;
+                }
+
                 if (memberModeInput.value === 'invite') {
-                    setMode('create');
+                    submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Sélectionner';
+                    submitBtn.disabled = false;
+                    updateEmailStatus('Utilisateur existant trouvé. Cliquez sur Inviter pour sélectionner.', 'var(--green)');
+                } else {
+                    submitBtn.disabled = true;
+                    updateEmailStatus('Cet email existe déjà. Passez en mode Inviter pour sélectionner ce collaborateur.', 'var(--rose)');
+                }
+
+                if (assignSelect) {
+                    let option = assignSelect.querySelector(`option[value="${data.user.id}"]`);
+                    if (!option) {
+                        option = document.createElement('option');
+                        option.value = data.user.id;
+                        option.text = `${data.user.name} ${data.user.last_name} (${data.user.role || 'collaborateur'})`;
+                        assignSelect.appendChild(option);
+                    }
+                    assignSelect.value = data.user.id;
+                }
+            } else {
+                currentFoundUser = null;
+                if (memberModeInput.value === 'invite') {
+                    updateEmailStatus('Email incorrect ou inexistant. Passez en mode Créer pour ajouter ce collaborateur.', 'var(--rose)');
+                    submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Inviter';
+                    submitBtn.disabled = true;
+                    nameInput.readOnly = false;
+                    lastNameInput.readOnly = false;
+                } else {
+                    submitBtn.disabled = false;
+                    updateEmailStatus('Email libre : vous pouvez créer ce collaborateur.', 'var(--green)');
                 }
             }
         })
@@ -1012,6 +1172,95 @@ function showSection(section) {
     }
     history.replaceState(null, '', '?page=' + section);
 }
+
+function selectCollaboratorForAssign(userId) {
+    const select = document.getElementById('assign_collaborator_select');
+    if (!select) return;
+    select.value = userId;
+    // Jump to the affectation card to let the user pick company and role
+    const section = document.getElementById('section-collaborators');
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function filterCompanyCards(filter) {
+    const cards = document.querySelectorAll('.company-card[data-company-status]');
+    const emptyMessage = document.getElementById('company-filter-empty');
+    let shown = 0;
+
+    cards.forEach(card => {
+        const status = card.dataset.companyStatus;
+        if (filter === 'all' || status === filter) {
+            card.style.display = 'block';
+            shown += 1;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    if (emptyMessage) {
+        emptyMessage.style.display = shown === 0 ? 'block' : 'none';
+    }
+}
+
+function setupCompanyFilters() {
+    const buttons = document.querySelectorAll('.filter-pill');
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            filterCompanyCards(button.dataset.filter);
+        });
+    });
+}
+
+function openDetachCollaboratorModal(userId, button) {
+    const companiesData = button?.dataset?.companies ? JSON.parse(button.dataset.companies) : [];
+    const modal = document.getElementById('modal-detach-collaborator');
+    const list = document.getElementById('detach_companies_list');
+    const userInput = document.getElementById('detach_user_id');
+    const selectAllBtn = document.getElementById('detach_select_all_btn');
+    if (!modal || !list || !userInput || !selectAllBtn) return;
+
+    userInput.value = userId;
+    list.innerHTML = '';
+
+    if (companiesData.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted);">Aucune entreprise à détacher.</div>';
+        selectAllBtn.style.display = 'none';
+    } else {
+        companiesData.forEach(company => {
+            const html = `
+                <label style="display:flex;align-items:center;gap:0.65rem;cursor:pointer;color:var(--text-secondary);font-size:0.92rem;">
+                    <input type="checkbox" name="company_id[]" value="${company.id}" checked style="accent-color:var(--blue);">
+                    <span>${company.name}</span>
+                </label>`;
+            list.insertAdjacentHTML('beforeend', html);
+        });
+        selectAllBtn.style.display = companiesData.length > 1 ? 'inline-flex' : 'none';
+    }
+
+    modal.classList.add('show');
+}
+
+function toggleDetachAll(selectAll) {
+    const checkboxes = document.querySelectorAll('#detach_companies_list input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = selectAll);
+}
+
+function submitDetachCollaborator() {
+    const form = document.getElementById('detachCollaboratorForm');
+    if (!form) return;
+    const checked = form.querySelectorAll('input[name="company_id[]"]:checked');
+    if (checked.length === 0) {
+        alert('Veuillez sélectionner au moins une entreprise.');
+        return;
+    }
+    form.submit();
+}
+
+setupCompanyFilters();
 
 // Lire la page depuis l'URL
 const urlPage = new URLSearchParams(window.location.search).get('page');
