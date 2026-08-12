@@ -297,20 +297,6 @@
                                 class="form-control" placeholder="contact@entreprise.com">
                         </div>
 
-                        <div class="col-12">
-                            <label class="form-label">Code d'accès de l'entreprise <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fa-solid fa-key text-primary"></i></span>
-                                <input type="text" name="company_code" id="company_code_input" 
-                                       value="{{ old('company_code', $generatedCode ?? '') }}" required readonly
-                                       class="form-control font-mono fw-bold" style="background-color: #f8fafc; letter-spacing: 0.05em;" placeholder="Génération automatique...">
-                                <button class="btn btn-outline-primary" type="button" onclick="generateRandomCompanyCode()">
-                                    <i class="fa-solid fa-sync-alt me-1"></i> Régénérer
-                                </button>
-                            </div>
-                            <div class="form-text text-muted small mt-1">Ce code unique servira d'identifiant pour rattacher vos comptables et collaborateurs.</div>
-                        </div>
-
                         <div class="col-6">
                             <label class="form-label">Téléphone</label>
                             <input type="text" name="phone_number" value="{{ old('phone_number') }}"
@@ -339,6 +325,20 @@
                             <label class="form-label">Pays</label>
                             <input type="text" name="country" value="{{ old('country') ?? 'Côte d\'Ivoire' }}"
                                 class="form-control">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Code d'accès de l'entreprise</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-key text-primary"></i></span>
+                                <input type="text" name="company_code" id="company_code_input"
+                                       value="{{ old('company_code', $generatedCode ?? '') }}" required readonly
+                                       class="form-control font-mono fw-bold" style="background-color: #f8fafc; letter-spacing: 0.05em;" placeholder="Génération automatique...">
+                                <button class="btn btn-outline-primary" type="button" onclick="generateRandomCompanyCode()">
+                                    <i class="fa-solid fa-sync-alt me-1"></i> Régénérer
+                                </button>
+                            </div>
+                            <div class="form-text text-muted small mt-1">Ce code unique servira d'identifiant pour rattacher vos comptables et collaborateurs.</div>
                         </div>
                     </div>
                 </div>

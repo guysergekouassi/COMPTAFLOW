@@ -570,6 +570,10 @@
                                   auth()->user()->hasPermission('admin.switch') ||
                                   auth()->user()->hasPermission('admin.audit') ||
                                   auth()->user()->hasPermission('admin.access') ||
+                                  auth()->user()->hasPermission('tasks.assign') ||
+                                  auth()->user()->hasPermission('tasks.view_daily') ||
+                                  auth()->user()->hasPermission('admin.approvals') ||
+                                  auth()->user()->hasPermission('admin.tasks.index') ||
                                   auth()->user()->isAdmin();
             @endphp
             @if($hasGouvernance && !session('sidebar_admin_hidden', false))
@@ -641,55 +645,51 @@
                     @endif
                 </div>
                 @endif
-            </div>
-            @endif
 
-            {{-- Section Opérations fusionnée dans Gouvernance --}}
-
-            {{-- SECTION 3 BIS : GESTION DES TÂCHES --}}
-            @php
-                $hasTasks = auth()->user()->hasPermission('tasks.assign') || 
-                            auth()->user()->hasPermission('tasks.view_daily') ||
-                            auth()->user()->hasPermission('admin.approvals') ||
-                            auth()->user()->hasPermission('admin.tasks.index');
-            @endphp
-            @if($hasTasks)
-            <div class="menu-section" data-section-id="tasks">
-                <div class="menu-section-header">Gestion des Tâches</div>
-                
-                @if(auth()->user()->hasPermission('tasks.assign') || auth()->user()->isAdmin())
-                <a href="{{ route('admin.tasks.index') }}" class="menu-link-new {{ request()->routeIs('admin.tasks.index') ? 'active' : '' }}">
-                    <i class="fa-solid fa-file-pen"></i>
-                    <span>Assigner Tâche</span>
-                    @if(isset($tasksSentCount) && $tasksSentCount > 0)
-                        <span class="badge bg-soft-primary text-primary rounded-pill ms-auto">{{ $tasksSentCount }}</span>
+                {{-- Gestion des Tâches (intégrée dans Gouvernance) --}}
+                @php
+                    $hasTasks = auth()->user()->hasPermission('tasks.assign') || 
+                                auth()->user()->hasPermission('tasks.view_daily') ||
+                                auth()->user()->hasPermission('admin.approvals') ||
+                                auth()->user()->hasPermission('admin.tasks.index');
+                @endphp
+                @if($hasTasks)
+                <div class="mt-2 pt-2 border-top border-light">
+                    <small class="text-muted text-uppercase px-3 mb-2 d-block" style="font-size: 0.65rem;">Gestion des Tâches</small>
+                    @if(auth()->user()->hasPermission('tasks.assign') || auth()->user()->isAdmin())
+                    <a href="{{ route('admin.tasks.index') }}" class="menu-link-new {{ request()->routeIs('admin.tasks.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-file-pen"></i>
+                        <span>Assigner Tâche</span>
+                        @if(isset($tasksSentCount) && $tasksSentCount > 0)
+                            <span class="badge bg-soft-primary text-primary rounded-pill ms-auto">{{ $tasksSentCount }}</span>
+                        @endif
+                    </a>
                     @endif
-                </a>
-                @endif
-                
-                @if(auth()->user()->hasPermission('tasks.view_daily'))
-                <a href="{{ route('admin.tasks.daily') }}" class="menu-link-new {{ request()->routeIs('admin.tasks.daily') ? 'active' : '' }}">
-                    <i class="fa-solid fa-list-check"></i>
-                    <span>Tâches Quotidiennes</span>
-                    @if(isset($tasksReceivedCompletedCount) && $tasksReceivedCompletedCount > 0)
-                        <span class="badge bg-soft-success text-success rounded-pill ms-auto">{{ $tasksReceivedCompletedCount }}</span>
+                    @if(auth()->user()->hasPermission('tasks.view_daily'))
+                    <a href="{{ route('admin.tasks.daily') }}" class="menu-link-new {{ request()->routeIs('admin.tasks.daily') ? 'active' : '' }}">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Tâches Quotidiennes</span>
+                        @if(isset($tasksReceivedCompletedCount) && $tasksReceivedCompletedCount > 0)
+                            <span class="badge bg-soft-success text-success rounded-pill ms-auto">{{ $tasksReceivedCompletedCount }}</span>
+                        @endif
+                    </a>
                     @endif
-                </a>
-                @endif
-
-                @if(auth()->user()->hasPermission('admin.approvals'))
-                <a href="{{ route('admin.approvals') }}" class="menu-link-new {{ request()->routeIs('admin.approvals') ? 'active' : '' }}">
-                    <i class="fa-solid fa-stamp"></i>
-                    <span>Approbations</span>
-                    @if(isset($pendingApprovalsCount) && $pendingApprovalsCount > 0)
-                        <span class="badge bg-soft-warning text-warning ms-auto">
-                            {{ $pendingApprovalsCount }}
-                        </span>
+                    @if(auth()->user()->hasPermission('admin.approvals'))
+                    <a href="{{ route('admin.approvals') }}" class="menu-link-new {{ request()->routeIs('admin.approvals') ? 'active' : '' }}">
+                        <i class="fa-solid fa-stamp"></i>
+                        <span>Approbations</span>
+                        @if(isset($pendingApprovalsCount) && $pendingApprovalsCount > 0)
+                            <span class="badge bg-soft-warning text-warning ms-auto">
+                                {{ $pendingApprovalsCount }}
+                            </span>
+                        @endif
+                    </a>
                     @endif
-                </a>
+                </div>
                 @endif
             </div>
             @endif
+
 
         @if ($isComptaAccountActive && (!auth()->user()->isSuperAdmin() || $isSwitched))
             {{-- MODE COMPTABILITÉ ACTIVE --}}

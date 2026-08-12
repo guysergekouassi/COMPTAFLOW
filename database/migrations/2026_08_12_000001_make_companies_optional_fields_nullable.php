@@ -16,10 +16,10 @@ return new class extends Migration
             DB::statement(
                 'ALTER TABLE `companies`
                     MODIFY `adresse` VARCHAR(255) NULL,
-                    MODIFY `code_postal` VARCHAR(20) NULL,
-                    MODIFY `city` VARCHAR(50) NULL,
+                    MODIFY `code_postal` VARCHAR(255) NULL,
+                    MODIFY `city` VARCHAR(255) NULL,
                     MODIFY `country` VARCHAR(255) NULL,
-                    MODIFY `phone_number` VARCHAR(30) NULL'
+                    MODIFY `phone_number` VARCHAR(255) NULL'
             );
         }
     }
@@ -33,10 +33,10 @@ return new class extends Migration
             DB::statement(
                 'ALTER TABLE `companies`
                     MODIFY `adresse` VARCHAR(255) NOT NULL,
-                    MODIFY `code_postal` VARCHAR(20) NOT NULL,
-                    MODIFY `city` VARCHAR(50) NOT NULL,
+                    MODIFY `code_postal` VARCHAR(255) NOT NULL,
+                    MODIFY `city` VARCHAR(255) NOT NULL,
                     MODIFY `country` VARCHAR(255) NOT NULL,
-                    MODIFY `phone_number` VARCHAR(30) NOT NULL'
+                    MODIFY `phone_number` VARCHAR(255) NOT NULL'
             );
         }
     }

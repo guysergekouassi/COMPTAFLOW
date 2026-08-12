@@ -28,7 +28,6 @@ return [
         ],
         'Opérations (Super Admin)' => [
             'superadmin.activities' => 'Suivi des Activités',
-            'admin.tasks.index' => 'Assigner Tâche',
             'superadmin.access' => 'Contrôle d\'Accès',
         ],
         'Analyses (Super Admin)' => [
@@ -64,8 +63,6 @@ return [
             'admin.secondary_admins.create' => 'Créer Admin Sécondaire',
             'admin.audit' => 'Traçabilité & Activités',
             'admin.access' => 'Contrôle d\'Accès',
-        ],
-        'Gestion des Tâches' => [
             'admin.tasks.index' => 'Assigner Tâche',
             'tasks.assign' => 'Assigner Tâche (Alternatif)',
             'tasks.view_daily' => 'Tâches Quotidiennes',

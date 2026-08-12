@@ -69,6 +69,10 @@
                                             
                                             <div class="accordion accordion-flush" id="accordionPermissions">
                                                 @foreach($modules as $groupName => $permissions)
+                                                    {{-- Masquer complètement les sections SuperAdmin pour l'interface Admin --}}
+                                                    @if(str_contains($groupName, 'Super Admin'))
+                                                        @continue
+                                                    @endif
                                                     <div class="accordion-item bg-transparent border-bottom-0 mb-2" data-section-name="{{ $groupName }}">
                                                         <h2 class="accordion-header" id="heading{{ \Illuminate\Support\Str::slug($groupName) }}">
                                                             <button class="accordion-button collapsed bg-white border rounded shadow-sm fw-bold text-dark" type="button" 
