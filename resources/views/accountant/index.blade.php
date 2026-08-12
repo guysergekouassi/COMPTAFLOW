@@ -604,7 +604,7 @@ body {
 
                                 <div class="company-actions">
                                     <a href="{{ route('accountant.space.switch', $comp->id) }}" class="btn-work" style="width:100%; text-align:center; justify-content:center;">
-                                        <i class="fas fa-arrow-right"></i> Travailler
+                                        <i class="fas fa-arrow-right"></i> Accéder
                                     </a>
                                 </div>
                             </div>
