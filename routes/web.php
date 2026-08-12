@@ -105,6 +105,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/mon-espace/assign', [App\Http\Controllers\AccountantSpaceController::class, 'assignUser'])->name('accountant.space.assign');
     Route::post('/mon-espace/remove-user', [App\Http\Controllers\AccountantSpaceController::class, 'removeUser'])->name('accountant.space.remove_user');
     Route::post('/mon-espace/member', [App\Http\Controllers\AccountantSpaceController::class, 'createMember'])->name('accountant.space.member.store');
+    // AJAX lookup: trouver un utilisateur par email (utilisé par la modal "Nouveau membre")
+    Route::get('/mon-espace/user-by-email', [App\Http\Controllers\AccountantSpaceController::class, 'findUserByEmail'])->name('accountant.space.user.by_email');
     Route::get('/mon-espace/switch/{id}', [App\Http\Controllers\AccountantSpaceController::class, 'switchCompany'])->name('accountant.space.switch');
     Route::post('/mon-espace/fusion', [App\Http\Controllers\AccountantSpaceController::class, 'fusionData'])->name('accountant.space.fusion');
     Route::post('/mon-espace/company/{id}/generate-code', [App\Http\Controllers\AccountantSpaceController::class, 'generateCode'])->name('accountant.space.generate_code');

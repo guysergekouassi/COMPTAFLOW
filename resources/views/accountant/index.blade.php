@@ -868,16 +868,24 @@ body {
 <div class="dark-modal-backdrop" id="modal-new-member" onclick="if(event.target===this)this.classList.remove('show')">
     <div class="dark-modal">
         <div class="d-flex align-items-center justify-content-between mb-4">
-            <h5 style="font-weight:800;color:var(--text-primary);margin:0;"><i class="fas fa-user-plus me-2" style="color:var(--green);"></i>Créer un collaborateur</h5>
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+                <i class="fas fa-user-plus me-2" style="color:var(--green);"></i>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <button type="button" id="mode_invite" class="mode-btn" style="background:none;border:none;font-weight:800;color:var(--text-primary);">Inviter</button>
+                    <span style="color:var(--text-muted);">/</span>
+                    <button type="button" id="mode_create" class="mode-btn" style="background:none;border:none;font-weight:800;color:var(--text-muted);">Créer</button>
+                </div>
+            </div>
             <button class="modal-close" onclick="document.getElementById('modal-new-member').classList.remove('show')">✕</button>
         </div>
-        <form method="POST" action="{{ route('accountant.space.member.store') }}">
+        <form method="POST" id="newMemberForm" action="{{ route('accountant.space.member.store') }}">
             @csrf
             <div class="row g-3">
-                <div class="col-6"><label class="dark-label">Prénom *</label><input type="text" name="name" class="dark-input" required placeholder="Jean"></div>
-                <div class="col-6"><label class="dark-label">Nom *</label><input type="text" name="last_name" class="dark-input" required placeholder="DUPONT"></div>
-                <div class="col-12"><label class="dark-label">Email *</label><input type="email" name="email_adresse" class="dark-input" required placeholder="jean@email.com"></div>
-                <div class="col-12"><label class="dark-label">Mot de passe *</label><input type="password" name="password" class="dark-input" required placeholder="Minimum 6 caractères"></div>
+                <div class="col-6 member-name-fields"><label class="dark-label">Prénom *</label><input type="text" id="member_name" name="name" class="dark-input" required placeholder="Jean"></div>
+                <div class="col-6 member-name-fields"><label class="dark-label">Nom *</label><input type="text" id="member_last_name" name="last_name" class="dark-input" required placeholder="DUPONT"></div>
+                <div class="col-12"><label class="dark-label">Email *</label><input type="email" id="member_email_adresse" name="email_adresse" class="dark-input" required placeholder="jean@email.com"></div>
+                <div class="col-12" id="member_password_field"><label class="dark-label">Mot de passe *</label><input type="password" id="member_password" name="password" class="dark-input" placeholder="Minimum 6 caractères"></div>
+                <input type="hidden" id="member_mode" name="mode" value="invite">
                 <div class="col-12"><label class="dark-label">Rôle *</label>
                     <select name="role" class="dark-input" required>
                         <option value="admin">Admin</option>
@@ -887,8 +895,95 @@ body {
             </div>
             <div class="d-flex gap-2 mt-4 justify-content-end">
                 <button type="button" class="btn-secondary-dark" onclick="document.getElementById('modal-new-member').classList.remove('show')">Annuler</button>
-                <button type="submit" class="btn-work" style="flex:0;padding:0.6rem 1.5rem;background:linear-gradient(135deg,#059669,#10b981);"><i class="fas fa-user-plus me-1"></i>Créer</button>
+                <button type="submit" id="newMemberSubmit" class="btn-work" style="flex:0;padding:0.6rem 1.5rem;background:linear-gradient(135deg,#059669,#10b981);"><i class="fas fa-user-plus me-1"></i>Créer</button>
             </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const emailInput = document.getElementById('member_email_adresse');
+    const nameInput = document.getElementById('member_name');
+    const lastNameInput = document.getElementById('member_last_name');
+    const passwordField = document.getElementById('member_password_field');
+    const submitBtn = document.getElementById('newMemberSubmit');
+    const modeInviteBtn = document.getElementById('mode_invite');
+    const modeCreateBtn = document.getElementById('mode_create');
+    const memberModeInput = document.getElementById('member_mode');
+    const nameFieldCols = document.querySelectorAll('.member-name-fields');
+
+    if (!emailInput) return;
+
+    // initialize default mode: invite
+    setMode('invite');
+
+    modeInviteBtn.addEventListener('click', function () { setMode('invite'); });
+    modeCreateBtn.addEventListener('click', function () { setMode('create'); });
+
+    let timeout;
+    emailInput.addEventListener('input', function () {
+        clearTimeout(timeout);
+        timeout = setTimeout(checkEmailExists, 600);
+    });
+
+    function setMode(mode) {
+        memberModeInput.value = mode;
+        if (mode === 'invite') {
+            // show only email (and role). hide name fields unless filled by lookup
+            nameFieldCols.forEach(n => n.style.display = 'none');
+            passwordField.style.display = 'none';
+            modeInviteBtn.style.color = 'var(--text-primary)';
+            modeCreateBtn.style.color = 'var(--text-muted)';
+            submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Inviter';
+            // clear readonly
+            nameInput.readOnly = false;
+            lastNameInput.readOnly = false;
+        } else {
+            nameFieldCols.forEach(n => n.style.display = 'block');
+            passwordField.style.display = '';
+            modeInviteBtn.style.color = 'var(--text-muted)';
+            modeCreateBtn.style.color = 'var(--text-primary)';
+            submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Créer';
+            nameInput.readOnly = false;
+            lastNameInput.readOnly = false;
+        }
+    }
+
+    function checkEmailExists() {
+        const email = emailInput.value.trim();
+        if (!email) return;
+
+        fetch('{{ route('accountant.space.user.by_email') }}?email=' + encodeURIComponent(email), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (data && data.found) {
+                // populate and show name fields in readonly mode
+                nameInput.value = data.user.name || '';
+                lastNameInput.value = data.user.last_name || '';
+                nameFieldCols.forEach(n => n.style.display = 'block');
+                nameInput.readOnly = true;
+                lastNameInput.readOnly = true;
+                passwordField.style.display = 'none';
+                submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Sélectionner';
+                memberModeInput.value = 'invite';
+                modeInviteBtn.style.color = 'var(--text-primary)';
+                modeCreateBtn.style.color = 'var(--text-muted)';
+            } else {
+                // if user chose invite but email not found, switch to create mode to allow creation
+                if (memberModeInput.value === 'invite') {
+                    setMode('create');
+                }
+            }
+        })
+        .catch(() => {
+            // on error, do nothing
+        });
+    }
+});
+</script>
         </form>
     </div>
 </div>

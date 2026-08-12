@@ -225,6 +225,13 @@ class AccountantSpaceController extends Controller
      */
     public function createMember(Request $request)
     {
+        // If the email already exists in the users table, we don't create a new user here.
+        // The UI will surface existing user details in read-only mode and the admin can assign later.
+        $existing = User::where('email_adresse', $request->input('email_adresse'))->first();
+        if ($existing) {
+            return redirect()->route('accountant.space')->with('info', 'Utilisateur existant : ' . $existing->name . ' ' . $existing->last_name . '. Vous pouvez l\'affecter depuis "Affecter un collaborateur".');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -244,6 +251,24 @@ class AccountantSpaceController extends Controller
         ]);
 
         return redirect()->route('accountant.space')->with('success', 'Collaborateur créé avec succès.');
+    }
+
+    /**
+     * Recherche d'un utilisateur par email (AJAX)
+     */
+    public function findUserByEmail(Request $request)
+    {
+        $email = $request->query('email');
+        if (! $email) {
+            return response()->json(['found' => false]);
+        }
+
+        $user = User::where('email_adresse', $email)->select('id', 'name', 'last_name', 'email_adresse')->first();
+        if ($user) {
+            return response()->json(['found' => true, 'user' => $user]);
+        }
+
+        return response()->json(['found' => false]);
     }
 
     /**
