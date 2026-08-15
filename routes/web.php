@@ -507,8 +507,10 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
             
             Route::post('/charge-imports', [App\Http\Controllers\Admin\AdminConfigController::class, 'chargeImports'])->name('charge_imports');
             Route::post('/update-settings', [App\Http\Controllers\Admin\AdminConfigController::class, 'updateSettings'])->name('update_settings');
-            Route::post('/load-syscohada', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohadaPlan'])->name('load_syscohada');
-            Route::post('/load-syscohada-4', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohada4'])->name('load_syscohada4');
+            // Pas de route vers loadSyscohadaPlan : la méthode est `private`,
+            // l'appeler donnait une 500. Les trois routes ci-dessous couvrent
+            // les trois formats en passant par des méthodes publiques.
+            Route::post('/load-syscohada-4',[App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohada4'])->name('load_syscohada4');
             Route::post('/load-syscohada-6', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohada6'])->name('load_syscohada6');
             Route::post('/load-syscohada-8', [App\Http\Controllers\Admin\AdminConfigController::class, 'loadSyscohada8'])->name('load_syscohada8');
             Route::post('/generate-custom-plan', [App\Http\Controllers\Admin\AdminConfigController::class, 'generateCustomPlan'])->name('generate_custom');

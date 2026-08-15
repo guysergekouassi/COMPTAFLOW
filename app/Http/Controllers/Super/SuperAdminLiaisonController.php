@@ -41,7 +41,7 @@ class SuperAdminLiaisonController extends Controller
         $adminUser = User::where('company_id', $company->id)->where('role', 'admin')->first();
 
         $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
-        $secret     = config('app.selflow_api_secret', 'selflow-comptaflow-secret-2026');
+        $secret     = config('external_sync.external_sync_secret');
         $syncKey    = 'sf_' . Str::random(32);
 
         try {
@@ -156,7 +156,7 @@ class SuperAdminLiaisonController extends Controller
 
             // 4. Notifier Selflow pour enregistrer la liaison
             $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
-            $secret     = config('app.selflow_api_secret', 'selflow-comptaflow-secret-2026');
+            $secret     = config('external_sync.external_sync_secret');
 
             try {
                 Http::timeout(10)->post("{$selflowUrl}/api/external/link-company", [
@@ -225,7 +225,7 @@ class SuperAdminLiaisonController extends Controller
     private function fetchSelflowCompanies(): array
     {
         $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
-        $secret     = config('app.selflow_api_secret', 'selflow-comptaflow-secret-2026');
+        $secret     = config('external_sync.external_sync_secret');
 
         try {
             $response = Http::timeout(5)->post("{$selflowUrl}/api/external/list-companies", [

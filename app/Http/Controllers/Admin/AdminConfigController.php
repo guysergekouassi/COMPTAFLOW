@@ -53,7 +53,7 @@ class AdminConfigController extends Controller
         if ($mainCompany && $mainCompany->selflow_company_id && $mainCompany->selflow_sync_status === 'active') {
             try {
                 $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
-                $secret = config('app.selflow_api_secret', 'selflow-comptaflow-secret-2026');
+                $secret = config('external_sync.external_sync_secret');
                 $response = \Illuminate\Support\Facades\Http::timeout(5)->post($selflowUrl . '/api/external/company-info', [
                     'secret'             => $secret,
                     'selflow_company_id' => $mainCompany->selflow_company_id,

@@ -307,7 +307,12 @@ class ExternalSyncController extends Controller
      */
     public function syncStatus(Request $request)
     {
-        $expectedSecret = config('app.external_sync_secret', 'selflow-local-secret');
+        // `app.external_sync_secret` n'existe pas dans config/app.php : c'était
+        // donc toujours la valeur de repli — « selflow-local-secret », en clair
+        // dans le dépôt — qui faisait foi ici, quoi qu'on mette dans le .env.
+        // Ce point d'entrée restait ouvert sur une clé publique pendant que les
+        // cinq autres étaient refermés. Même source que partout ailleurs.
+        $expectedSecret = config('external_sync.external_sync_secret');
         $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
         if (!self::secretValide($providedSecret, $expectedSecret)) {
             return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
