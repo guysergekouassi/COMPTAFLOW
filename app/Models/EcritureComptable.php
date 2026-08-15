@@ -38,6 +38,10 @@ class EcritureComptable extends Model
         'user_id',
         'company_id',
         'statut',
+        // Cle d'idempotence du deversement Selflow : SELFLOW-{entreprise}-{ecriture}.
+        // Elle distingue un renvoi d'une ecriture nouvelle ; sans elle, rejouer
+        // une synchronisation dupliquait tout et la balance doublait.
+        'cle_selflow',
     ];
 
     // Si tu utilises des dates dans ce format et veux les cast automatiquement

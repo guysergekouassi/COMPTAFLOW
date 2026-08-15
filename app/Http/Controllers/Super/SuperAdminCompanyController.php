@@ -110,7 +110,7 @@ class SuperAdminCompanyController extends Controller
                     $selflowUrl = config('external_sync.selflow_api_url', 'http://127.0.0.1:8003');
 
                     $response = Http::timeout(15)->post($selflowUrl . '/api/external/register-enterprise', [
-                        'secret'              => config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026'),
+                        'secret'              => config('external_sync.external_sync_secret'),
                         'nom'                 => $company->company_name,
                         'forme_juridique'     => $company->juridique_form,
                         'email'               => $company->email_adresse,
