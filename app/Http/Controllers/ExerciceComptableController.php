@@ -51,11 +51,7 @@ public function index()
         ->orderBy('date_debut', 'desc')
         ->get()
         ->map(function ($exercice) {
-            $dateDebut = \Carbon\Carbon::parse($exercice->date_debut);
-            $dateFin   = \Carbon\Carbon::parse($exercice->date_fin);
-            // Calcul plus précis : si c'est exactement un an (01/01 au 01/01 ou au 31/12), on veut 12 mois.
-            $exercice->nb_mois = (int) round($dateDebut->diffInMonths($dateFin));
-            if ($exercice->nb_mois == 0) $exercice->nb_mois = 1; // Minimum 1 mois
+            $exercice->nb_mois = $this->calculerNbMois($exercice->date_debut, $exercice->date_fin);
             return $exercice;
         });
 
@@ -113,10 +109,15 @@ public function index()
 
                 return [
                     'id' => $exercice->id,
-                    'date_debut' => $exercice->date_debut,
-                    'date_fin' => $exercice->date_fin,
-                    'intitule' => $exercice->intitule,
-                    'nb_mois' => (int) round($dateDebut->diffInMonths($dateFin)),
+                    // Chaînes "Y-m-d" pures : pas d'horodatage UTC, donc pas de décalage
+                    // d'un jour à l'affichage selon le fuseau du navigateur.
+                    'date_debut' => $dateDebut->format('Y-m-d'),
+                    'date_fin' => $dateFin->format('Y-m-d'),
+                    'date_debut_fr' => $dateDebut->format('d/m/Y'),
+                    'date_fin_fr' => $dateFin->format('d/m/Y'),
+                    // Repli pour les anciens exercices enregistrés sans intitulé
+                    'intitule' => $exercice->intitule ?: $this->genererIntitule($dateDebut),
+                    'nb_mois' => $this->calculerNbMois($exercice->date_debut, $exercice->date_fin),
                     'is_active' => (bool) $exercice->is_active,
                     'nombre_journaux_saisis' => $exercice->nombre_journaux_saisis ?? 0,
                     'cloturer' => (bool) $exercice->cloturer
@@ -135,12 +136,23 @@ public function index()
             $user = Auth::user();
             $companyId = session('current_company_id', $user->company_id);
 
-            $request->validate(ExerciceComptable::$rules);
+            $request->validate([
+                'date_debut' => 'required|date',
+                'date_fin' => 'required|date|after:date_debut',
+            ], [
+                'date_debut.required' => 'La date de début est obligatoire.',
+                'date_fin.required' => 'La date de fin est obligatoire.',
+                'date_fin.after' => 'La date de fin doit être postérieure à la date de début.',
+            ]);
+
+            // Dates normalisées : on ne garde que la partie calendaire (aucune heure,
+            // donc aucun risque de glissement d'un jour au stockage ou à l'affichage).
+            $dateDebut = Carbon::parse($request->date_debut)->startOfDay();
+            $dateFin = Carbon::parse($request->date_fin)->startOfDay();
 
             // LOGIQUE DE RESTRICTION : On ne peut pas créer un exercice de plus que celui dans lequel nous sommes (+1 an max)
-            $dateDebut = Carbon::parse($request->date_debut);
             $limitYear = Carbon::now()->year + 1;
-            
+
             if ($dateDebut->year > $limitYear) {
                 return response()->json([
                     'success' => false, 
@@ -152,9 +164,9 @@ public function index()
             // VÉRIFICATION DES CHEVAUCHEMENTS DE DATES
             // Logique : (DebutNEW <= FinEXISTING) ET (FinNEW >= DebutEXISTING)
             $overlap = ExerciceComptable::where('company_id', $companyId)
-                ->where(function ($query) use ($request) {
-                    $query->where('date_debut', '<=', $request->date_fin)
-                          ->where('date_fin', '>=', $request->date_debut);
+                ->where(function ($query) use ($dateDebut, $dateFin) {
+                    $query->where('date_debut', '<=', $dateFin->format('Y-m-d'))
+                          ->where('date_fin', '>=', $dateDebut->format('Y-m-d'));
                 })
                 ->first();
 
@@ -169,12 +181,12 @@ public function index()
 
             // Création de l'exercice
             $exercice = new ExerciceComptable();
-            $exercice->date_debut = $request->date_debut;
-            $exercice->date_fin = $request->date_fin;
-            
-            // Génération automatique de l'intitulé
-            $year = Carbon::parse($request->date_debut)->year;
-            $exercice->intitule = "EXERCICE $year";
+            $exercice->date_debut = $dateDebut->format('Y-m-d');
+            $exercice->date_fin = $dateFin->format('Y-m-d');
+
+            // Génération automatique de l'intitulé (l'intitulé posté par le formulaire
+            // est ignoré : seule l'année de la date de début fait foi)
+            $exercice->intitule = $this->genererIntitule($dateDebut);
             $exercice->user_id = $user->id;
             $exercice->company_id = $companyId;
             $exercice->nombre_journaux_saisis = 0;
@@ -196,8 +208,14 @@ public function index()
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Exercice créé avec succès',
-                    'exercice' => $exercice
+                    'message' => 'Exercice « ' . $exercice->intitule . ' » créé du '
+                        . $dateDebut->format('d/m/Y') . ' au ' . $dateFin->format('d/m/Y') . '.',
+                    'exercice' => [
+                        'id' => $exercice->id,
+                        'intitule' => $exercice->intitule,
+                        'date_debut' => $dateDebut->format('Y-m-d'),
+                        'date_fin' => $dateFin->format('Y-m-d'),
+                    ]
                 ]);
             }
 
@@ -484,11 +502,13 @@ public function index()
 
             DB::commit();
             
-            // Notification de réouverture
+            // Notification de réouverture (sender_id est obligatoire en base :
+            // sans lui l'insertion échoue en mode SQL strict et casse la page)
             InternalNotification::create([
                 'title' => 'Réouverture d\'exercice',
                 'message' => "L'exercice " . $exercice->intitule . " a été réouvert par " . Auth::user()->name,
                 'type' => 'warning',
+                'sender_id' => Auth::id(),
                 'receiver_id' => Auth::id(), // À adapter selon qui doit recevoir
                 'company_id' => $companyId
             ]);
@@ -568,17 +588,47 @@ public function index()
         $request->validate([
             'date_debut' => 'required|date',
             'date_fin' => 'required|date|after:date_debut',
-            'intitule' => 'required|string|max:255'
+        ], [
+            'date_fin.after' => 'La date de fin doit être postérieure à la date de début.',
         ]);
 
-        $data = $request->all();
-        $year = Carbon::parse($request->date_debut)->year;
-        $data['intitule'] = "EXERCICE $year";
+        $dateDebut = Carbon::parse($request->date_debut)->startOfDay();
+        $dateFin = Carbon::parse($request->date_fin)->startOfDay();
 
-        $exercice->update($data);
+        // On ne met à jour que les colonnes maîtrisées ici : l'intitulé reste dérivé
+        // de l'année de début, comme à la création.
+        $exercice->update([
+            'date_debut' => $dateDebut->format('Y-m-d'),
+            'date_fin' => $dateFin->format('Y-m-d'),
+            'intitule' => $this->genererIntitule($dateDebut),
+        ]);
 
         return redirect()->route('exercice_comptable')
             ->with('success', 'Exercice mis à jour avec succès.');
+    }
+
+    /**
+     * Durée de l'exercice en mois, bornes incluses.
+     * Ex : 01/01/2026 -> 31/12/2026 = 12 mois (et non 11).
+     */
+    private function calculerNbMois($dateDebut, $dateFin)
+    {
+        $debut = Carbon::parse($dateDebut)->startOfDay();
+        $fin = Carbon::parse($dateFin)->startOfDay()->addDay();
+
+        $mois = (int) $debut->diffInMonths($fin);
+
+        return $mois > 0 ? $mois : 1; // Minimum 1 mois
+    }
+
+    /**
+     * Intitulé normalisé d'un exercice, toujours basé sur l'année de la date de début.
+     * Le calcul est fait ici (côté serveur) et non dans le navigateur, afin qu'aucun
+     * fuseau horaire client ne puisse décaler l'année.
+     */
+    private function genererIntitule($dateDebut)
+    {
+        return 'EXERCICE ' . Carbon::parse($dateDebut)->year;
     }
 
     private function checkUpcomingDeadlines($companyId)
@@ -605,13 +655,22 @@ public function index()
                     if ($daysRemaining <= 7) $type = 'danger';
                     if ($daysRemaining < 0) $msg = "L'exercice '{$activeExercice->intitule}' est arrivé à échéance le " . $dateFin->format('d/m/Y') . ".";
 
-                    InternalNotification::create([
-                        'title' => 'Échéance d\'exercice',
-                        'message' => $msg,
-                        'type' => $type,
-                        'receiver_id' => Auth::id(),
-                        'company_id' => $companyId
-                    ]);
+                    // sender_id est obligatoire en base : une notification d'échéance
+                    // sans expéditeur faisait planter l'affichage de la page.
+                    // Un incident sur la notification ne doit jamais empêcher
+                    // la consultation des exercices.
+                    try {
+                        InternalNotification::create([
+                            'title' => 'Échéance d\'exercice',
+                            'message' => $msg,
+                            'type' => $type,
+                            'sender_id' => Auth::id(),
+                            'receiver_id' => Auth::id(),
+                            'company_id' => $companyId
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::warning('Notification échéance exercice non créée : ' . $e->getMessage());
+                    }
                 }
             }
         }

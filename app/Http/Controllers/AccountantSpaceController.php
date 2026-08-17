@@ -12,6 +12,7 @@ use App\Models\TreasuryCategory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AccountantSpaceController extends Controller
@@ -26,14 +27,24 @@ class AccountantSpaceController extends Controller
         // 1. Récupérer toutes les entreprises gérées ou associées
         $myCompanyIds = Company::where('user_id', $user->id)->pluck('id')->toArray();
         $assignedCompanyIds = DB::table('company_user')->where('user_id', $user->id)->pluck('company_id')->toArray();
-        $allCompanyIds = array_unique(array_merge($myCompanyIds, $assignedCompanyIds));
+
+        // Rattachement historique porté par users.company_id : un utilisateur créé
+        // depuis la gestion des utilisateurs n'a pas de ligne dans company_user.
+        // Sans cette prise en compte, son espace restait désespérément vide.
+        if ($user->company_id && !in_array($user->company_id, $assignedCompanyIds)) {
+            $assignedCompanyIds[] = $user->company_id;
+        }
+
+        $allCompanyIds = array_values(array_unique(array_merge($myCompanyIds, $assignedCompanyIds)));
 
         $companies = Company::with('admin')->whereIn('id', $allCompanyIds)->get();
 
         // Charger les KPIs pour chaque entreprise
         $companiesData = $companies->map(function ($comp) use ($user) {
-            $isOwner = $comp->user_id === $user->id;
-            
+            // Comparaison typée : selon le driver PDO, user_id peut remonter en chaîne
+            $isOwner = (int) $comp->user_id === (int) $user->id
+                || ($user->role === 'admin' && (int) $user->company_id === (int) $comp->id);
+
             // Calcul des KPIs
             $entriesCount = DB::table('ecriture_comptables')->where('company_id', $comp->id)->count();
             $accountsCount = DB::table('plan_comptables')->where('company_id', $comp->id)->count();
@@ -47,12 +58,20 @@ class AccountantSpaceController extends Controller
                 ->orderBy('date_debut', 'desc')
                 ->first();
 
-            // Utilisateurs affectés à cette entreprise
+            // Utilisateurs affectés à cette entreprise (pivot + rattachement historique)
             $assignedUsers = DB::table('company_user')
                 ->join('users', 'company_user.user_id', '=', 'users.id')
                 ->where('company_user.company_id', $comp->id)
                 ->select('users.id', 'users.name', 'users.last_name', 'users.email_adresse', 'company_user.role')
                 ->get();
+
+            $legacyUsers = DB::table('users')
+                ->where('company_id', $comp->id)
+                ->whereNotIn('id', $assignedUsers->pluck('id')->all() ?: [0])
+                ->select('users.id', 'users.name', 'users.last_name', 'users.email_adresse', 'users.role')
+                ->get();
+
+            $assignedUsers = $assignedUsers->concat($legacyUsers);
 
             // KPIs Financiers SYSCOHADA
             // numero_de_compte est dans plan_comptables (JOIN nécessaire)
@@ -112,10 +131,14 @@ class AccountantSpaceController extends Controller
         });
 
         // 2. Collaborateurs assignés à mes entreprises (tableau)
+        //    Deux rattachements possibles : la table pivot company_user, ou le
+        //    champ historique users.company_id.
         $assignedCollaboratorIds = DB::table('company_user')
             ->whereIn('company_id', $allCompanyIds)
             ->pluck('user_id')
             ->toArray();
+        $legacyCollaboratorIds = User::whereIn('company_id', $allCompanyIds)->pluck('id')->toArray();
+        $assignedCollaboratorIds = array_unique(array_merge($assignedCollaboratorIds, $legacyCollaboratorIds));
         $assignedCollaboratorIds = array_values(array_diff($assignedCollaboratorIds, [$user->id]));
         $collaborators = User::with(['companies', 'creator:id,name,last_name'])
             ->whereIn('id', $assignedCollaboratorIds)
@@ -143,9 +166,9 @@ class AccountantSpaceController extends Controller
         // Tout utilisateur connecté à une de mes entreprises, ou mes collaborateurs, ou les créateurs des entreprises auxquelles je suis affecté
         $chatUserIds = DB::table('company_user')->whereIn('company_id', $allCompanyIds)->where('user_id', '!=', $user->id)->pluck('user_id')->toArray();
         $myCreatedUserIds = User::where('created_by_id', $user->id)->pluck('id')->toArray();
-        $creatorsOfMyCompanies = Company::whereIn('id', $allCompanyIds)->pluck('user_id')->toArray();
+        $creatorsOfMyCompanies = Company::whereIn('id', $allCompanyIds)->pluck('user_id')->filter()->toArray();
 
-        $allChatUserIds = array_unique(array_merge($chatUserIds, $myCreatedUserIds, $creatorsOfMyCompanies));
+        $allChatUserIds = array_unique(array_merge($chatUserIds, $legacyCollaboratorIds, $myCreatedUserIds, $creatorsOfMyCompanies));
         $allChatUserIds = array_diff($allChatUserIds, [$user->id]);
 
         $chatUsers = User::whereIn('id', $allChatUserIds)->get();
@@ -154,7 +177,7 @@ class AccountantSpaceController extends Controller
         $stats = [
             'total_companies' => count($allCompanyIds),
             'owned_companies' => count($myCompanyIds),
-            'assigned_companies' => count($assignedCompanyIds),
+            'assigned_companies' => count(array_diff($allCompanyIds, $myCompanyIds)),
             'total_collaborators' => $collaborators->count(),
             'total_entries' => DB::table('ecriture_comptables')->whereIn('company_id', $allCompanyIds)->count()
         ];
@@ -179,6 +202,20 @@ class AccountantSpaceController extends Controller
             'phone_number'     => 'nullable|string|min:8|max:30',
             'email_adresse'    => 'required|email|max:191|unique:companies,email_adresse',
             'identification_TVA' => 'nullable|string|max:50',
+        ], [
+            'company_name.required' => 'Le nom de la société est obligatoire.',
+            'company_name.unique'   => 'Une société porte déjà le nom « ' . $request->company_name .' ». Choisissez un autre nom.',
+            'activity.required'     => 'L’activité est obligatoire.',
+            'juridique_form.required' => 'La forme juridique est obligatoire.',
+            'social_capital.numeric' => 'Le capital social doit être un nombre.',
+            'phone_number.min'      => 'Le numéro de téléphone doit contenir au moins 8 caractères.',
+            'email_adresse.required' => 'L’adresse email de la société est obligatoire.',
+            'email_adresse.email'   => 'Cette adresse email n’est pas valide (exemple : contact@societe.com).',
+            'email_adresse.unique'  => 'L’adresse email « ' . $request->email_adresse . ' » est déjà utilisée par une autre société. Veuillez saisir une adresse email différente.',
+        ], [
+            'company_name'  => 'nom de la société',
+            'email_adresse' => 'adresse email',
+            'juridique_form' => 'forme juridique',
         ]);
 
         // Génération du code unique sécurisé avec les 3 premières lettres
@@ -270,6 +307,15 @@ class AccountantSpaceController extends Controller
             'last_name' => 'required|string|max:255',
             'email_adresse' => 'required|email|max:191|unique:users,email_adresse',
             'password' => 'required|string|min:6',
+        ], [
+            'name.required' => 'Le prénom est obligatoire.',
+            'last_name.required' => 'Le nom est obligatoire.',
+            'email_adresse.required' => 'L’adresse email est obligatoire.',
+            'email_adresse.email' => 'Cette adresse email n’est pas valide (exemple : jean@email.com).',
+            'email_adresse.unique' => 'Un compte utilise déjà l’adresse email « ' . $request->email_adresse
+                . ' ». Utilisez le mode « Inviter » pour l’affecter, ou saisissez une autre adresse.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
         ]);
 
         User::create([
@@ -304,6 +350,30 @@ class AccountantSpaceController extends Controller
     }
 
     /**
+     * L'utilisateur courant peut-il gérer les collaborateurs de cette entreprise ?
+     * Trois titres possibles : propriétaire, admin rattaché à l'entreprise
+     * (users.company_id), ou admin dans la table pivot.
+     * Comparaisons typées : selon le driver PDO, les identifiants peuvent
+     * remonter sous forme de chaîne.
+     */
+    private function peutGererCollaborateurs(Company $company, $user)
+    {
+        if ((int) $company->user_id === (int) $user->id) {
+            return true;
+        }
+
+        if ($user->role === 'admin' && (int) $user->company_id === (int) $company->id) {
+            return true;
+        }
+
+        return DB::table('company_user')
+            ->where('company_id', $company->id)
+            ->where('user_id', $user->id)
+            ->where('role', 'admin')
+            ->exists();
+    }
+
+    /**
      * Associer un utilisateur à une entreprise
      */
     public function assignUser(Request $request)
@@ -315,29 +385,71 @@ class AccountantSpaceController extends Controller
         ]);
 
         $user = Auth::user();
-        
-        // Vérifier que le gérant possède l'entreprise
+
         $company = Company::findOrFail($request->company_id);
-        if ($company->user_id !== $user->id && !DB::table('company_user')->where('company_id', $company->id)->where('user_id', $user->id)->where('role', 'admin')->exists()) {
+
+        if (!$this->peutGererCollaborateurs($company, $user)) {
             return back()->with('error', 'Vous n’avez pas le droit d’affecter des collaborateurs à cette entreprise.');
         }
 
-        DB::table('company_user')->updateOrInsert(
-            ['company_id' => $request->company_id, 'user_id' => $request->user_id],
-            ['role' => $request->role, 'updated_at' => now(), 'created_at' => now()]
+        $collaborator = User::findOrFail($request->user_id);
+
+        DB::beginTransaction();
+        try {
+            $existing = DB::table('company_user')
+                ->where('company_id', $company->id)
+                ->where('user_id', $collaborator->id)
+                ->first();
+
+            if ($existing) {
+                DB::table('company_user')
+                    ->where('id', $existing->id)
+                    ->update(['role' => $request->role, 'updated_at' => now()]);
+            } else {
+                DB::table('company_user')->insert([
+                    'company_id' => $company->id,
+                    'user_id' => $collaborator->id,
+                    'role' => $request->role,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            // Sans entreprise de rattachement, le collaborateur n'a aucun contexte
+            // par défaut au moment de sa connexion : on lui donne celle-ci.
+            if (!$collaborator->company_id) {
+                $collaborator->company_id = $company->id;
+                $collaborator->save();
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erreur affectation collaborateur : ' . $e->getMessage());
+
+            return back()->with('error', 'L’affectation n’a pas pu être enregistrée : ' . $e->getMessage());
+        }
+
+        // Notification interne (la cloche) : ne doit jamais faire échouer l'affectation
+        try {
+            \App\Models\InternalNotification::create([
+                'sender_id' => $user->id,
+                'receiver_id' => $collaborator->id,
+                'title' => 'Affectation à une entreprise',
+                'message' => 'Vous avez été affecté à l\'entreprise ' . $company->company_name . ' en tant que ' . $request->role,
+                'type' => 'info',
+                'company_id' => $company->id,
+                'is_read' => false,
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Notification d\'affectation non envoyée : ' . $e->getMessage());
+        }
+
+        return redirect()->route('accountant.space')->with(
+            'success',
+            trim($collaborator->name . ' ' . $collaborator->last_name) . ' est désormais ' . $request->role
+                . ' de « ' . $company->company_name . ' ». L’entreprise apparaît dans son espace dès sa prochaine connexion.'
         );
-
-        // Envoyer une notification interne à la cloche
-        \App\Models\InternalNotification::create([
-            'sender_id' => $user->id,
-            'receiver_id' => $request->user_id,
-            'title' => 'Affectation à une entreprise',
-            'message' => 'Vous avez été affecté à l\'entreprise ' . $company->company_name . ' en tant que ' . $request->role,
-            'type' => 'info',
-            'is_read' => false,
-        ]);
-
-        return redirect()->route('accountant.space')->with('success', 'Collaborateur affecté à l’entreprise avec succès.');
     }
 
     /**
@@ -354,11 +466,11 @@ class AccountantSpaceController extends Controller
         $user = Auth::user();
         $companyIds = is_array($request->company_id) ? $request->company_id : [$request->company_id];
 
-        $authorizedCount = Company::whereIn('id', $companyIds)
-            ->where('user_id', $user->id)
-            ->count();
+        // Même règle que pour l'affectation : on doit gérer chacune des entreprises visées
+        $targetCompanies = Company::whereIn('id', $companyIds)->get();
 
-        if ($authorizedCount !== count($companyIds)) {
+        if ($targetCompanies->count() !== count(array_unique($companyIds))
+            || $targetCompanies->contains(fn ($company) => !$this->peutGererCollaborateurs($company, $user))) {
             return back()->with('error', 'Action non autorisée.');
         }
 
@@ -371,6 +483,16 @@ class AccountantSpaceController extends Controller
             ->whereIn('company_id', $companyIds)
             ->where('user_id', $request->user_id)
             ->delete();
+
+        // Le rattachement historique doit suivre : sinon l'entreprise resterait
+        // visible dans l'espace du collaborateur via users.company_id.
+        $collaborator = User::find($request->user_id);
+        if ($collaborator && in_array($collaborator->company_id, $companyIds)) {
+            $collaborator->company_id = DB::table('company_user')
+                ->where('user_id', $collaborator->id)
+                ->value('company_id');
+            $collaborator->save();
+        }
 
         return redirect()->route('accountant.space')->with('success', 'Collaborateur retiré de l’entreprise avec succès.');
     }

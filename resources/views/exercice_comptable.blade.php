@@ -618,9 +618,9 @@
                             {
                                 data: 'date_debut',
                                 render: function(data, type, row) {
+                                    // 'display' : jj/mm/aaaa ; tri/filtre : la chaîne ISO brute
                                     if (type === 'display' && data) {
-                                        const date = new Date(data);
-                                        return date.toLocaleDateString('fr-FR');
+                                        return formatDate(data);
                                     }
                                     return data;
                                 }
@@ -629,8 +629,7 @@
                                 data: 'date_fin',
                                 render: function(data, type, row) {
                                     if (type === 'display' && data) {
-                                        const date = new Date(data);
-                                        return date.toLocaleDateString('fr-FR');
+                                        return formatDate(data);
                                     }
                                     return data;
                                 }
@@ -756,11 +755,31 @@
                     return dataTable;
                 }
 
+                // Découpe une date "AAAA-MM-JJ" (éventuellement suivie d'une heure)
+                // sans jamais passer par new Date() : aucun décalage de fuseau possible.
+                function parseIsoDate(value) {
+                    if (!value) return null;
+                    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+                    if (!match) return null;
+
+                    const year = parseInt(match[1], 10);
+                    if (year < 1900) return null; // saisie année encore incomplète
+
+                    return { year: year, month: parseInt(match[2], 10), day: parseInt(match[3], 10) };
+                }
+
+                // Objet Date local -> chaîne "AAAA-MM-JJ" attendue par <input type="date">
+                function toIsoDate(date) {
+                    const mois = String(date.getMonth() + 1).padStart(2, '0');
+                    const jour = String(date.getDate()).padStart(2, '0');
+                    return `${date.getFullYear()}-${mois}-${jour}`;
+                }
+
                 // Formater une date au format jj/mm/aaaa
                 function formatDate(dateString) {
-                    if (!dateString) return '';
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('fr-FR');
+                    const parts = parseIsoDate(dateString);
+                    if (!parts) return '';
+                    return `${String(parts.day).padStart(2, '0')}/${String(parts.month).padStart(2, '0')}/${parts.year}`;
                 }
 
                 // Afficher une alerte
@@ -791,22 +810,32 @@
                     }
                 }
 
-                // Générer automatiquement l'intitulé à partir de la date de début
+                // Générer automatiquement l'intitulé à partir de la date de début.
+                // On lit l'année directement dans la chaîne "AAAA-MM-JJ" du champ :
+                // passer par new Date() interprétait la valeur en UTC et pouvait
+                // afficher l'année précédente selon le fuseau du poste.
                 function genererIntitule() {
                     if (!dateDebutInput || !intituleInput) return;
-                    
-                    const dateValue = dateDebutInput.value;
-                    if (dateValue) {
-                        try {
-                            const dateObj = new Date(dateValue);
-                            const annee = dateObj.getFullYear();
-                            intituleInput.value = `EXERCICE ${annee}`;
-                        } catch (e) {
-                            console.error("Erreur de formatage de la date:", e);
-                        }
-                    } else {
-                        intituleInput.value = '';
-                    }
+
+                    const parts = parseIsoDate(dateDebutInput.value);
+                    intituleInput.value = parts ? `EXERCICE ${parts.year}` : '';
+                }
+
+                // Proposer une date de fin cohérente (un an moins un jour) tant que
+                // l'utilisateur n'en a pas saisi une lui-même.
+                function suggererDateFin() {
+                    if (!dateDebutInput || !dateFinInput) return;
+                    if (dateFinInput.value && dateFinInput.dataset.autoFilled !== '1') return;
+
+                    const parts = parseIsoDate(dateDebutInput.value);
+                    if (!parts) return;
+
+                    // Date construite en heure locale pour éviter tout décalage UTC
+                    const fin = new Date(parts.year + 1, parts.month - 1, parts.day);
+                    fin.setDate(fin.getDate() - 1);
+
+                    dateFinInput.value = toIsoDate(fin);
+                    dateFinInput.dataset.autoFilled = '1';
                 }
 
                 // Gestion de la soumission du formulaire
@@ -817,6 +846,19 @@
                         console.log('Soumission AJAX du formulaire');
                             const submitButton = this.querySelector('button[type="submit"]');
                             const originalText = submitButton.innerHTML;
+
+                            // Contrôle de cohérence avant envoi (comparaison de chaînes
+                            // ISO : fiable et indépendante du fuseau)
+                            const debut = dateDebutInput ? dateDebutInput.value : '';
+                            const fin = dateFinInput ? dateFinInput.value : '';
+                            if (debut && fin && fin <= debut) {
+                                showAlert('danger', 'La date de fin doit être postérieure à la date de début.');
+                                return;
+                            }
+
+                            // L'intitulé est recalculé au dernier moment : il reflète
+                            // toujours l'année réellement saisie en date de début.
+                            genererIntitule();
 
                             // Créer un objet FormData pour le formulaire
                             const formData = new FormData(this);
@@ -952,8 +994,19 @@
 
                 // Gestion de la génération automatique de l'intitulé
                 if (dateDebutInput) {
-                    dateDebutInput.addEventListener('change', genererIntitule);
-                    dateDebutInput.addEventListener('input', genererIntitule);
+                    const onDateDebutChange = function() {
+                        genererIntitule();
+                        suggererDateFin();
+                    };
+                    dateDebutInput.addEventListener('change', onDateDebutChange);
+                    dateDebutInput.addEventListener('input', onDateDebutChange);
+                }
+
+                // Dès que l'utilisateur touche à la date de fin, on cesse de la proposer
+                if (dateFinInput) {
+                    dateFinInput.addEventListener('input', function() {
+                        this.dataset.autoFilled = '0';
+                    });
                 }
 
                 // Fonction pour initialiser les gestionnaires d'événements
@@ -1063,6 +1116,8 @@
                     modalCreate.addEventListener('hidden.bs.modal', function() {
                         if (formExercice) {
                             formExercice.reset();
+                            if (intituleInput) intituleInput.value = '';
+                            if (dateFinInput) dateFinInput.dataset.autoFilled = '0';
                             // Réinitialiser les messages d'erreur
                             document.querySelectorAll('.is-invalid').forEach(el => {
                                 el.classList.remove('is-invalid');

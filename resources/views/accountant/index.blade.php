@@ -391,6 +391,8 @@ body {
     display: flex; align-items: center; gap: 0.75rem;
     margin-bottom: 1.5rem;
 }
+.field-invalid { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.12) !important; }
+.field-error { color: #ef4444; font-size: 0.75rem; font-weight: 600; margin-top: 0.3rem; }
 .space-alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981; }
 .space-alert.error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.18); color: #ef4444; }
 .space-alert.info { background: rgba(30,64,175,0.08); border: 1px solid rgba(30,64,175,0.18); color: var(--blue); }
@@ -463,6 +465,21 @@ body {
                 @endif
                 @if(session('info'))
                 <div class="space-alert info"><i class="fas fa-info-circle"></i>{{ session('info') }}</div>
+                @endif
+                @if($errors->any())
+                <div class="space-alert error" id="validation-errors" style="align-items:flex-start;">
+                    <i class="fas fa-exclamation-circle" style="margin-top:2px;"></i>
+                    <div>
+                        <div style="font-weight:800;margin-bottom:0.25rem;">
+                            {{ $errors->count() > 1 ? 'Le formulaire contient ' . $errors->count() . ' erreurs :' : 'Le formulaire contient une erreur :' }}
+                        </div>
+                        <ul style="margin:0;padding-left:1.1rem;">
+                            @foreach($errors->all() as $message)
+                            <li>{{ $message }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
                 @endif
 
                 <!-- ──────────────── DASHBOARD ──────────────── -->
@@ -773,8 +790,16 @@ body {
                                                 <td>
                                                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
                                                         @if($collab->companies->count() > 0)
+                                                        @php
+                                                            // Construit hors de l'attribut : une virgule dans une expression @json
+                                                            // fait perdre à Blade ses options d'échappement, et une apostrophe
+                                                            // dans un nom de société cassait alors le JSON.
+                                                            $detachCompanies = $collab->companies
+                                                                ->map(fn($company) => ['id' => $company->id, 'name' => $company->company_name])
+                                                                ->values();
+                                                        @endphp
                                                         <button type="button" class="btn-danger-sm" onclick="openDetachCollaboratorModal({{ $collab->id }}, this)" title="Retirer {{ $collab->name }} d'une ou plusieurs entreprises"
-                                                            data-companies='@json($collab->companies->map(fn($company) => ['id' => $company->id, 'name' => $company->company_name]))'>
+                                                            data-companies="{{ json_encode($detachCompanies, JSON_UNESCAPED_UNICODE) }}">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                         @else
@@ -917,21 +942,47 @@ body {
         <div class="space-alert info mb-4"><i class="fas fa-key"></i>Un code d'accès unique sera généré automatiquement.</div>
         <form method="POST" action="{{ route('accountant.space.company.store') }}">
             @csrf
+            {{-- Permet de rouvrir la bonne modale après un échec de validation --}}
+            <input type="hidden" name="form_origin" value="company">
             <div class="row g-3">
-                <div class="col-md-6"><label class="dark-label">Nom de la société *</label><input type="text" name="company_name" class="dark-input" required placeholder="Ex: Groupe ABC SARL"></div>
-                <div class="col-md-6"><label class="dark-label">Email *</label><input type="email" name="email_adresse" class="dark-input" required placeholder="contact@société.com"></div>
-                <div class="col-md-6"><label class="dark-label">Activité *</label><input type="text" name="activity" class="dark-input" required placeholder="Commerce, BTP..."></div>
-                <div class="col-md-6"><label class="dark-label">Forme juridique *</label>
-                    <select name="juridique_form" class="dark-input" required>
-                        <option>SARL</option><option>SA</option><option>SAS</option><option>SASU</option><option>SNC</option><option>EI</option><option>Association</option><option>ONG</option>
-                    </select>
+                <div class="col-md-6">
+                    <label class="dark-label">Nom de la société *</label>
+                    <input type="text" name="company_name" class="dark-input @error('company_name') field-invalid @enderror" required placeholder="Ex: Groupe ABC SARL" value="{{ old('company_name') }}">
+                    @error('company_name')<div class="field-error">{{ $message }}</div>@enderror
                 </div>
-                <div class="col-md-6"><label class="dark-label">Capital social <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="number" name="social_capital" class="dark-input" placeholder="1000000"></div>
-                <div class="col-md-6"><label class="dark-label">Téléphone <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="phone_number" class="dark-input" placeholder="+225 XX XX XX XX"></div>
-                <div class="col-md-8"><label class="dark-label">Adresse <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="adresse" class="dark-input" placeholder="Rue, Quartier..."></div>
-                <div class="col-md-4"><label class="dark-label">Code postal <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="code_postal" class="dark-input" placeholder="01 BP..."></div>
-                <div class="col-md-6"><label class="dark-label">Ville <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="city" class="dark-input" placeholder="Abidjan"></div>
-                <div class="col-md-6"><label class="dark-label">Pays <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="country" class="dark-input" placeholder="Côte d'Ivoire"></div>
+                @php $companyFailed = old('form_origin') === 'company'; @endphp
+                <div class="col-md-6">
+                    <label class="dark-label">Email *</label>
+                    <input type="email" name="email_adresse" class="dark-input @if($companyFailed && $errors->has('email_adresse')) field-invalid @endif" required placeholder="contact@société.com" value="{{ $companyFailed ? old('email_adresse') : '' }}">
+                    @if($companyFailed && $errors->has('email_adresse'))
+                    <div class="field-error">{{ $errors->first('email_adresse') }}</div>
+                    @endif
+                </div>
+                <div class="col-md-6">
+                    <label class="dark-label">Activité *</label>
+                    <input type="text" name="activity" class="dark-input @error('activity') field-invalid @enderror" required placeholder="Commerce, BTP..." value="{{ old('activity') }}">
+                    @error('activity')<div class="field-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6"><label class="dark-label">Forme juridique *</label>
+                    <select name="juridique_form" class="dark-input @error('juridique_form') field-invalid @enderror" required>
+                        @foreach(['SARL','SA','SAS','SASU','SNC','EI','Association','ONG'] as $forme)
+                        <option value="{{ $forme }}" @selected(old('juridique_form') === $forme)>{{ $forme }}</option>
+                        @endforeach
+                    </select>
+                    @error('juridique_form')<div class="field-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6"><label class="dark-label">Capital social <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label>
+                    <input type="number" name="social_capital" class="dark-input @error('social_capital') field-invalid @enderror" placeholder="1000000" value="{{ old('social_capital') }}">
+                    @error('social_capital')<div class="field-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6"><label class="dark-label">Téléphone <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label>
+                    <input type="text" name="phone_number" class="dark-input @error('phone_number') field-invalid @enderror" placeholder="+225 XX XX XX XX" value="{{ old('phone_number') }}">
+                    @error('phone_number')<div class="field-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-8"><label class="dark-label">Adresse <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="adresse" class="dark-input" placeholder="Rue, Quartier..." value="{{ old('adresse') }}"></div>
+                <div class="col-md-4"><label class="dark-label">Code postal <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="code_postal" class="dark-input" placeholder="01 BP..." value="{{ old('code_postal') }}"></div>
+                <div class="col-md-6"><label class="dark-label">Ville <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="city" class="dark-input" placeholder="Abidjan" value="{{ old('city') }}"></div>
+                <div class="col-md-6"><label class="dark-label">Pays <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optionnel)</span></label><input type="text" name="country" class="dark-input" placeholder="Côte d'Ivoire" value="{{ old('country') }}"></div>
             </div>
             <div class="d-flex gap-2 mt-4 justify-content-end">
                 <button type="button" class="btn-secondary-dark" onclick="document.getElementById('modal-new-company').classList.remove('show')">Annuler</button>
@@ -957,12 +1008,18 @@ body {
         </div>
         <form method="POST" id="newMemberForm" action="{{ route('accountant.space.member.store') }}">
             @csrf
+            {{-- Permet de rouvrir la bonne modale après un échec de validation --}}
+            <input type="hidden" name="form_origin" value="member">
+            @php $memberFailed = old('form_origin') === 'member'; @endphp
             <div class="row g-3">
-                <div class="col-6 member-name-fields"><label class="dark-label">Prénom *</label><input type="text" id="member_name" name="name" class="dark-input" required placeholder="Jean"></div>
-                <div class="col-6 member-name-fields"><label class="dark-label">Nom *</label><input type="text" id="member_last_name" name="last_name" class="dark-input" required placeholder="DUPONT"></div>
+                <div class="col-6 member-name-fields"><label class="dark-label">Prénom *</label><input type="text" id="member_name" name="name" class="dark-input @error('name') field-invalid @enderror" required placeholder="Jean" value="{{ $memberFailed ? old('name') : '' }}"></div>
+                <div class="col-6 member-name-fields"><label class="dark-label">Nom *</label><input type="text" id="member_last_name" name="last_name" class="dark-input @error('last_name') field-invalid @enderror" required placeholder="DUPONT" value="{{ $memberFailed ? old('last_name') : '' }}"></div>
                 <div class="col-12">
                     <label class="dark-label">Email *</label>
-                    <input type="email" id="member_email_adresse" name="email_adresse" class="dark-input" required placeholder="jean@email.com">
+                    <input type="email" id="member_email_adresse" name="email_adresse" class="dark-input @if($memberFailed && $errors->has('email_adresse')) field-invalid @endif" required placeholder="jean@email.com" value="{{ $memberFailed ? old('email_adresse') : '' }}">
+                    @if($memberFailed && $errors->has('email_adresse'))
+                    <div class="field-error">{{ $errors->first('email_adresse') }}</div>
+                    @endif
                     <div id="member_email_status" style="margin-top:0.45rem;font-size:0.82rem;color:var(--text-muted);min-height:1.2rem;"></div>
                 </div>
                 <div class="col-12" id="member_password_field"><label class="dark-label">Mot de passe *</label><input type="password" id="member_password" name="password" class="dark-input" placeholder="Minimum 6 caractères"></div>
@@ -997,6 +1054,22 @@ body {
     </div>
 </div>
 
+@if($errors->any() && old('form_origin'))
+<script>
+// Après un échec de validation, on rouvre la modale concernée avec les valeurs
+// déjà saisies : l'utilisateur voit immédiatement le champ à corriger.
+document.addEventListener('DOMContentLoaded', function () {
+    const origin = @json(old('form_origin'));
+    const modalId = origin === 'company' ? 'modal-new-company' : 'modal-new-member';
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('show');
+
+    const alertBox = document.getElementById('validation-errors');
+    if (alertBox) alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+</script>
+@endif
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const emailInput = document.getElementById('member_email_adresse');
@@ -1014,8 +1087,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!emailInput) return;
 
-    // initialize default mode: invite
-    setMode('invite');
+    // Mode par défaut : invite — sauf après un échec de validation, où l'on
+    // restaure le mode utilisé lors de la tentative.
+    setMode(@json(old('form_origin') === 'member' ? (old('mode') ?: 'invite') : 'invite'));
     if (selectedCollaboratorId) {
         const assignSelect = document.getElementById('assign_collaborator_select');
         if (assignSelect) {
@@ -1216,7 +1290,13 @@ function setupCompanyFilters() {
 }
 
 function openDetachCollaboratorModal(userId, button) {
-    const companiesData = button?.dataset?.companies ? JSON.parse(button.dataset.companies) : [];
+    let companiesData = [];
+    try {
+        companiesData = button?.dataset?.companies ? JSON.parse(button.dataset.companies) : [];
+    } catch (e) {
+        console.error('Liste des sociétés illisible :', e, button?.dataset?.companies);
+        companiesData = [];
+    }
     const modal = document.getElementById('modal-detach-collaborator');
     const list = document.getElementById('detach_companies_list');
     const userInput = document.getElementById('detach_user_id');
@@ -1231,12 +1311,24 @@ function openDetachCollaboratorModal(userId, button) {
         selectAllBtn.style.display = 'none';
     } else {
         companiesData.forEach(company => {
-            const html = `
-                <label style="display:flex;align-items:center;gap:0.65rem;cursor:pointer;color:var(--text-secondary);font-size:0.92rem;">
-                    <input type="checkbox" name="company_id[]" value="${company.id}" checked style="accent-color:var(--blue);">
-                    <span>${company.name}</span>
-                </label>`;
-            list.insertAdjacentHTML('beforeend', html);
+            // Construction par le DOM : un nom de société contenant < ou &
+            // reste affiché tel quel au lieu d'être interprété comme du HTML.
+            const label = document.createElement('label');
+            label.setAttribute('style', 'display:flex;align-items:center;gap:0.65rem;cursor:pointer;color:var(--text-secondary);font-size:0.92rem;');
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = 'company_id[]';
+            checkbox.value = company.id;
+            checkbox.checked = true;
+            checkbox.setAttribute('style', 'accent-color:var(--blue);');
+
+            const span = document.createElement('span');
+            span.textContent = company.name;
+
+            label.appendChild(checkbox);
+            label.appendChild(span);
+            list.appendChild(label);
         });
         selectAllBtn.style.display = companiesData.length > 1 ? 'inline-flex' : 'none';
     }
