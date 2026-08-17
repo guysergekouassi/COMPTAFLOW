@@ -211,7 +211,7 @@ class AccountantSpaceController extends Controller
             'phone_number.min'      => 'Le numéro de téléphone doit contenir au moins 8 caractères.',
             'email_adresse.required' => 'L’adresse email de la société est obligatoire.',
             'email_adresse.email'   => 'Cette adresse email n’est pas valide (exemple : contact@societe.com).',
-            'email_adresse.unique'  => 'L’adresse email « ' . $request->email_adresse . ' » est déjà utilisée par une autre société. Veuillez saisir une adresse email différente.',
+            'email_adresse.unique'  => 'Adresse email existante. Veuillez saisir une adresse email différente.',
         ], [
             'company_name'  => 'nom de la société',
             'email_adresse' => 'adresse email',
