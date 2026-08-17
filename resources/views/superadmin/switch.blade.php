@@ -76,12 +76,67 @@
                         </div>
                     @endif
 
+                    <!-- Filtres -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+                        <form method="GET" action="{{ route('superadmin.switch') }}">
+                            <div class="row g-3 align-items-end">
+
+                                {{-- Recherche --}}
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold small text-muted mb-1">
+                                        <i class="fa-solid fa-magnifying-glass me-1"></i>Recherche
+                                    </label>
+                                    <input type="text" name="search"
+                                           class="form-control form-control-sm"
+                                           placeholder="Nom ou code entreprise…"
+                                           value="{{ request('search') }}">
+                                </div>
+
+                                {{-- Entreprise --}}
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold small text-muted mb-1">
+                                        <i class="fa-solid fa-building me-1"></i>Entreprise
+                                    </label>
+                                    <select name="company_id" class="form-select form-select-sm">
+                                        <option value="">Toutes les entreprises</option>
+                                        @foreach($allCompanies as $item)
+                                            <option value="{{ $item->id }}" {{ request('company_id') == $item->id ? 'selected' : '' }}>
+                                                {{ $item->company_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Boutons --}}
+                                <div class="col-md-2 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100" title="Filtrer">
+                                        <i class="fa-solid fa-filter"></i>
+                                    </button>
+                                    @if(request()->hasAny(['search', 'company_id']))
+                                        <a href="{{ route('superadmin.switch') }}" class="btn btn-outline-secondary btn-sm" title="Réinitialiser">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </a>
+                                    @endif
+                                </div>
+
+                            </div>
+
+                            @if(request()->hasAny(['search', 'company_id']))
+                                <div class="mt-2 pt-2 border-top d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-pill">{{ $companies->total() }} résultat(s)</span>
+                                    <span class="text-muted small">filtre(s) actif(s)</span>
+                                </div>
+                            @endif
+                        </form>
+                    </div>
+
                     <!-- Liste des entreprises -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                        <div class="p-4 border-bottom">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
                             <h5 class="fw-semibold mb-0">Liste des Entreprises</h5>
+                            <span class="text-muted small">{{ $companies->total() }} entreprise(s) · classées par ordre alphabétique</span>
                         </div>
-                        
+
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
                                 <thead class="bg-gray-50">
@@ -89,6 +144,7 @@
                                         <th class="fw-semibold">Entreprise</th>
                                         <th class="fw-semibold">Type</th>
                                         <th class="fw-semibold">Utilisateurs</th>
+                                        <th class="fw-semibold">Date de création</th>
                                         <th class="fw-semibold">Statut</th>
                                         <th class="fw-semibold text-end">Actions</th>
                                     </tr>
@@ -120,6 +176,13 @@
                                                 <span class="badge bg-secondary">{{ $company->users->count() }} utilisateurs</span>
                                             </td>
                                             <td>
+                                                @if($company->created_at)
+                                                    <span class="text-muted">{{ $company->created_at->format('d/m/y') }}</span>
+                                                @else
+                                                    <span class="text-muted">—</span>
+                                                @endif
+                                            </td>
+                                            <td>
                                                 @if($company->is_active)
                                                     <span class="badge bg-success">Active</span>
                                                 @else
@@ -145,7 +208,7 @@
                                         </tr>
                                         <!-- Ligne dépliable pour les utilisateurs -->
                                         <tr class="collapse" id="users-{{ $company->id }}">
-                                            <td colspan="4" class="bg-light">
+                                            <td colspan="6" class="bg-light">
                                                 <div class="p-3">
                                                     <h6 class="fw-semibold mb-3">Utilisateurs de {{ $company->company_name }}</h6>
                                                     <div class="row g-2">
@@ -181,15 +244,28 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="text-center py-4 text-muted">
+                                            <td colspan="6" class="text-center py-4 text-muted">
                                                 <i class="fa-solid fa-building fa-2x mb-2"></i>
-                                                <p class="mb-0">Aucune entreprise trouvée</p>
+                                                <p class="mb-0">
+                                                    @if(request()->hasAny(['search', 'company_id']))
+                                                        Aucune entreprise ne correspond à ce filtre
+                                                    @else
+                                                        Aucune entreprise trouvée
+                                                    @endif
+                                                </p>
                                             </td>
                                         </tr>
                                     @endforelse
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Pagination -->
+                        @if($companies->hasPages())
+                            <div class="p-4 border-top">
+                                {{ $companies->links() }}
+                            </div>
+                        @endif
                     </div>
 
                 </div>

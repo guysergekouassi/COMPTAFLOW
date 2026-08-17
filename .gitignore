@@ -88,6 +88,7 @@ tmp_*.php
 !package.json
 !composer.lock
 !package-lock.json
+!lang/*.json
 
 # --- Logs & Misc Outputs (ROOT) ---
 *.txt

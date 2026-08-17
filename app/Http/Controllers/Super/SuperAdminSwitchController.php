@@ -14,13 +14,35 @@ class SuperAdminSwitchController extends Controller
     /**
      * Affiche la page de switch
      */
-    public function index()
+    public function index(Request $request)
     {
-        $companies = Company::with('users')->get();
+        $query = Company::with('users');
+
+        // Filtre : recherche libre sur le nom ou le code entreprise
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('company_name', 'like', "%{$search}%")
+                  ->orWhere('company_code', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtre : une entreprise précise
+        if ($request->filled('company_id')) {
+            $query->where('id', $request->input('company_id'));
+        }
+
+        $companies = $query->orderBy('company_name', 'asc')
+            ->paginate(10)
+            ->appends($request->query());
+
+        // Liste complète pour le sélecteur du filtre
+        $allCompanies = Company::orderBy('company_name', 'asc')->get(['id', 'company_name']);
+
         $currentSwitchedCompany = Session::get('switched_company_id');
         $currentSwitchedUser = Session::get('switched_user_id');
-        
-        return view('superadmin.switch', compact('companies', 'currentSwitchedCompany', 'currentSwitchedUser'));
+
+        return view('superadmin.switch', compact('companies', 'allCompanies', 'currentSwitchedCompany', 'currentSwitchedUser'));
     }
 
     /**
