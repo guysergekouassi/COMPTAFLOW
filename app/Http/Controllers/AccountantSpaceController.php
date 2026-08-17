@@ -144,18 +144,50 @@ class AccountantSpaceController extends Controller
             ->whereIn('id', $assignedCollaboratorIds)
             ->get();
 
+        // 2 bis. Pour chaque collaborateur, uniquement les sociétés que MOI je gère
+        //        et auxquelles je l'ai lié. Les autres sociétés du collaborateur
+        //        (celles d'un autre gérant) ne me regardent pas : ni affichées,
+        //        ni proposées au détachement.
+        $manageableCompanies = $companies->filter(fn ($comp) => $this->peutGererCollaborateurs($comp, $user))->values();
+        $manageableCompanyIds = $manageableCompanies->pluck('id')->all();
+
+        $linksByUser = DB::table('company_user')
+            ->whereIn('company_id', $manageableCompanyIds ?: [0])
+            ->get()
+            ->groupBy('user_id');
+
+        $attacherSocietesLiees = function ($collab) use ($manageableCompanies, $linksByUser) {
+            $linkedIds = collect($linksByUser->get($collab->id, []))->pluck('company_id')->all();
+
+            // Rattachement historique (users.company_id), sans ligne pivot
+            if ($collab->company_id) {
+                $linkedIds[] = $collab->company_id;
+            }
+
+            $collab->linked_companies = $manageableCompanies
+                ->whereIn('id', $linkedIds)
+                ->map(fn ($comp) => ['id' => $comp->id, 'name' => $comp->company_name])
+                ->values();
+
+            return $collab;
+        };
+
+        $collaborators->each($attacherSocietesLiees);
+
         // 3. Collaborateurs assignables ou créés par moi (liste déroulante)
         $createdCollaboratorIds = User::where('created_by_id', $user->id)->pluck('id')->toArray();
         $assignableCollaboratorIds = array_unique(array_merge($createdCollaboratorIds, $assignedCollaboratorIds));
         $assignableCollaboratorIds = array_values(array_diff($assignableCollaboratorIds, [$user->id]));
         $assignableCollaborators = User::with(['companies', 'creator:id,name,last_name'])
             ->whereIn('id', $assignableCollaboratorIds)
-            ->get();
+            ->get()
+            ->each($attacherSocietesLiees);
 
         $selectedCollaboratorId = session('selected_user_id');
         if ($selectedCollaboratorId) {
             $selectedUser = User::with(['companies', 'creator:id,name,last_name'])->find($selectedCollaboratorId);
             if ($selectedUser) {
+                $attacherSocietesLiees($selectedUser);
                 if (!$assignableCollaborators->contains('id', $selectedCollaboratorId)) {
                     $assignableCollaborators->push($selectedUser);
                 }

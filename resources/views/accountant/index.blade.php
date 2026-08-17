@@ -721,7 +721,8 @@ body {
                                         <select id="assign_collaborator_select" name="user_id" class="dark-input" required>
                                             <option value="" disabled selected>Choisir un collaborateur</option>
                                             @foreach($assignableCollaborators as $c)
-                                            <option value="{{ $c->id }}">{{ $c->name }} {{ $c->last_name }} ({{ $c->role }})@if($c->companies->count()) - {{ $c->companies->pluck('company_name')->join(', ') }}@endif</option>
+                                            {{-- On ne cite que mes sociétés : celles des autres gérants ne sont pas affichées --}}
+                                            <option value="{{ $c->id }}">{{ $c->name }} {{ $c->last_name }} ({{ $c->role }})@if($c->linked_companies->count()) - {{ $c->linked_companies->pluck('name')->join(', ') }}@endif</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -769,10 +770,11 @@ body {
                                                 </td>
                                                 <td>{{ $collab->email_adresse }}</td>
                                                 <td>
-                                                    @if($collab->companies->count() > 0)
-                                                        @foreach($collab->companies as $company)
+                                                    {{-- Uniquement les sociétés que je gère : celles des autres gérants ne sont pas les miennes --}}
+                                                    @if($collab->linked_companies->count() > 0)
+                                                        @foreach($collab->linked_companies as $company)
                                                             <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.25rem;">
-                                                                <span style="font-size:0.75rem;font-weight:700;color:var(--text-primary);">{{ Str::limit($company->company_name, 18) }}</span>
+                                                                <span style="font-size:0.75rem;font-weight:700;color:var(--text-primary);">{{ Str::limit($company['name'], 18) }}</span>
                                                                             </div>
                                                         @endforeach
                                                     @else
@@ -789,17 +791,13 @@ body {
                                                 </td>
                                                 <td>
                                                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
-                                                        @if($collab->companies->count() > 0)
-                                                        @php
-                                                            // Construit hors de l'attribut : une virgule dans une expression @json
-                                                            // fait perdre à Blade ses options d'échappement, et une apostrophe
-                                                            // dans un nom de société cassait alors le JSON.
-                                                            $detachCompanies = $collab->companies
-                                                                ->map(fn($company) => ['id' => $company->id, 'name' => $company->company_name])
-                                                                ->values();
-                                                        @endphp
-                                                        <button type="button" class="btn-danger-sm" onclick="openDetachCollaboratorModal({{ $collab->id }}, this)" title="Retirer {{ $collab->name }} d'une ou plusieurs entreprises"
-                                                            data-companies="{{ json_encode($detachCompanies, JSON_UNESCAPED_UNICODE) }}">
+                                                        @if($collab->linked_companies->count() > 0)
+                                                        {{-- On ne propose au détachement que les sociétés que je gère et
+                                                             auxquelles je l'ai lié (liste préparée dans le contrôleur).
+                                                             json_encode hors directive @json : une virgule dans l'expression
+                                                             privait Blade de ses options d'échappement. --}}
+                                                        <button type="button" class="btn-danger-sm" onclick="openDetachCollaboratorModal({{ $collab->id }}, this)" title="Retirer {{ $collab->name }} d'une ou plusieurs de mes entreprises"
+                                                            data-companies="{{ json_encode($collab->linked_companies, JSON_UNESCAPED_UNICODE) }}">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                         @else
