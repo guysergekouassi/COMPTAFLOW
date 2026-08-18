@@ -224,17 +224,31 @@
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
 
-    <div class="container" style="max-width: 900px;">
+    <div class="container" style="max-width: {{ $type === 'cabinet' ? '750px' : '900px' }};">
 
         <div class="text-center mb-5">
-            <a href="{{ route('landing.pricing') }}" class="btn btn-label-secondary btn-sm mb-4 rounded-pill">
-                <i class="fa-solid fa-arrow-left me-2"></i> Changer de pack
-            </a>
+            <div class="d-flex justify-content-center gap-2 mb-4">
+                <a href="{{ route('landing.index') }}" class="btn btn-label-secondary btn-sm rounded-pill">
+                    <i class="fa-solid fa-house me-2"></i> Accueil
+                </a>
+                <a href="{{ route('landing.pricing') }}" class="btn btn-label-secondary btn-sm rounded-pill">
+                    <i class="fa-solid fa-arrow-left me-2"></i> Changer de pack
+                </a>
+            </div>
             <h1 class="display-6 fw-bolder text-dark">
-                Création de votre espace <span class="text-primary">{{ ucfirst($type) }}</span>
+                @if($type === 'cabinet')
+                    Création de votre <span class="text-primary">Espace Cabinet</span>
+                @else
+                    Création de votre espace <span class="text-primary">{{ ucfirst($type) }}</span>
+                @endif
             </h1>
-            <p class="text-muted mt-2">Remplissez les informations ci-dessous pour configurer votre environnement de
-                travail.</p>
+            <p class="text-muted mt-2">
+                @if($type === 'cabinet')
+                    Renseignez vos informations personnelles. Vous créerez vos entreprises depuis votre espace une fois connecté.
+                @else
+                    Remplissez les informations ci-dessous pour configurer votre environnement de travail.
+                @endif
+            </p>
         </div>
 
         {{-- TOAST CONTAINER --}}
@@ -256,6 +270,58 @@
             @csrf
             <input type="hidden" name="type" value="{{ $type }}">
 
+            @if($type === 'cabinet')
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-7">
+                    <h2 class="section-title">
+                        <i class="fa-solid fa-user-tie text-primary me-2"></i>
+                        Informations du Comptable
+                    </h2>
+
+                    <div class="alert alert-primary py-2 px-3 small border-0 bg-label-primary rounded-3 mb-4">
+                        Ce profil sera votre compte de cabinet. Dès votre première connexion, vous pourrez y créer et gérer librement toutes vos entreprises partenaires.
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Nom <span class="text-danger">*</span></label>
+                            <input type="text" name="admin_name" value="{{ old('admin_name') }}" required
+                                class="form-control" placeholder="AGNIMEL">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                            <input type="text" name="admin_last_name" value="{{ old('admin_last_name') }}" required
+                                class="form-control" placeholder="MELEDJE ABRAHAM">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Email de Connexion <span class="text-danger">*</span></label>
+                            <input type="email" name="admin_email" value="{{ old('admin_email') }}" required
+                                class="form-control" placeholder="john.doe@email.com">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
+                            <input type="password" name="admin_password" required class="form-control"
+                                placeholder="Minimum 8 caractères">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Confirmer mot de passe <span class="text-danger">*</span></label>
+                            <input type="password" name="admin_password_confirmation" required class="form-control"
+                                placeholder="Retapez le mot de passe">
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-top">
+                        <button type="submit"
+                            class="btn btn-primary w-100 py-3 fw-bold rounded-pill shadow-sm d-flex justify-content-center align-items-center gap-2">
+                            Créer mon espace Cabinet <i class="fa-solid fa-rocket"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @else
             <div class="row g-5">
 
                 <!-- Section 1 : Entreprise / Cabinet -->
@@ -395,6 +461,7 @@
                 </div>
 
             </div>
+            @endif
         </form>
 
         <!-- Sécurité -->

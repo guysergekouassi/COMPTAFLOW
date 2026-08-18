@@ -114,6 +114,26 @@
             box-shadow: 0 5px 15px rgba(105, 108, 255, 0.4);
         }
 
+        .icon-cabinet {
+            background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-cabinet {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            border: none;
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cabinet:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            transform: translateY(-1px);
+        }
+
         .feature-list {
             list-style: none;
             padding: 0;
@@ -150,13 +170,13 @@
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
 
-    <div class="container" style="max-width: 1000px;">
+    <div class="container" style="max-width: 1200px;">
 
         <div class="text-center mb-5">
             <a href="{{ route('landing.index') }}" class="btn btn-label-secondary btn-sm mb-4 rounded-pill">
                 <i class="fa-solid fa-arrow-left me-2"></i> Retour à l'accueil
             </a>
-            <h1 class="display-5 fw-bolder text-dark mb-3">Une solution, <span class="text-primary">deux profils.</span>
+            <h1 class="display-5 fw-bolder text-dark mb-3">Une solution, <span class="text-primary">trois profils.</span>
             </h1>
             <p class="lead text-muted mx-auto" style="max-width: 600px;">Choisissez le pack qui correspond parfaitement
                 à la nature de votre activité.</p>
@@ -165,7 +185,7 @@
         <div class="row g-4 px-3 px-md-0">
 
             <!-- Pack Entreprise (Premium/Recommended) -->
-            <div class="col-md-6 d-flex">
+            <div class="col-lg-4 col-md-6 d-flex">
                 <div class="pricing-card pricing-card-premium p-4 p-md-5 w-100 d-flex flex-column">
                     <div class="popular-badge">Recommandé</div>
 
@@ -197,15 +217,14 @@
             </div>
 
             <!-- Pack Comptable (Standard) -->
-            <div class="col-md-6 d-flex">
+            <div class="col-lg-4 col-md-6 d-flex">
                 <div class="pricing-card p-4 p-md-5 w-100 d-flex flex-column">
                     <div class="icon-box icon-standard">
                         <i class="fa-solid fa-calculator"></i>
                     </div>
 
                     <h2 class="h3 fw-bold text-dark mb-2">Pack Comptable</h2>
-                    <p class="text-muted mb-4 small">Idéal pour la gestion centralisée d'une seule entreprise ou entité
-                        avec des options de base.</p>
+                    <p class="text-muted mb-4 small">Idéal pour la gestion de base d'une entreprise ou entité.</p>
 
                     <div class="price-text">Standard</div>
 
@@ -218,6 +237,32 @@
                     <a href="{{ route('landing.register_form', 'comptable') }}"
                         class="btn btn-dark btn-lg rounded-pill w-100 mt-auto shadow-sm">
                         Sélectionner ce pack <i class="fa-solid fa-arrow-right ms-2 opacity-75"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Espace Cabinet Comptable (Cabinet) -->
+            <div class="col-lg-4 col-md-6 d-flex">
+                <div class="pricing-card p-4 p-md-5 w-100 d-flex flex-column">
+                    <div class="icon-box icon-cabinet">
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
+
+                    <h2 class="h3 fw-bold text-dark mb-2">Espace Cabinet</h2>
+                    <p class="text-muted mb-4 small">Créez votre espace comptable personnel et centralisé pour gérer librement vos dossiers clients.</p>
+
+                    <div class="price-text text-violet" style="color: #8b5cf6;">Multi-dossiers</div>
+
+                    <ul class="feature-list mb-5">
+                        <li><i class="fa-solid fa-check text-violet" style="color: #8b5cf6;"></i> Création de compte cabinet immédiate</li>
+                        <li><i class="fa-solid fa-check text-violet" style="color: #8b5cf6;"></i> Ajout illimité d'entreprises ultérieurement</li>
+                        <li><i class="fa-solid fa-check text-violet" style="color: #8b5cf6;"></i> Gestion centralisée multi-sociétés</li>
+                        <li><i class="fa-solid fa-check text-violet" style="color: #8b5cf6;"></i> Outils collaboratifs et de messagerie</li>
+                    </ul>
+
+                    <a href="{{ route('landing.register_form', 'cabinet') }}"
+                        class="btn btn-cabinet btn-lg rounded-pill w-100 mt-auto shadow-sm">
+                        Créer mon Espace <i class="fa-solid fa-arrow-right ms-2 opacity-75"></i>
                     </a>
                 </div>
             </div>

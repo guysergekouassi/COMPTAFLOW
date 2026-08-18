@@ -35,16 +35,19 @@ class LandingController extends Controller
     public function registerForm($type)
     {
         // Validation du type
-        if (!in_array($type, ['entreprise', 'comptable'])) {
+        if (!in_array($type, ['entreprise', 'comptable', 'cabinet'])) {
             return redirect()->route('landing.pricing')->with('error', 'Type de pack invalide.');
         }
 
-        // Générer un code d'accès par défaut pour l'inscription
-        $prefix = ($type === 'comptable') ? 'CAB' : 'ENT';
-        do {
-            $generatedCode = $prefix . '-' . strtoupper(\Illuminate\Support\Str::random(6));
-            $exists = Company::where('company_code', $generatedCode)->exists();
-        } while ($exists);
+        $generatedCode = null;
+        if ($type !== 'cabinet') {
+            // Générer un code d'accès par défaut pour l'inscription
+            $prefix = ($type === 'comptable') ? 'CAB' : 'ENT';
+            do {
+                $generatedCode = $prefix . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+                $exists = Company::where('company_code', $generatedCode)->exists();
+            } while ($exists);
+        }
 
         return view('landing.register', compact('type', 'generatedCode'));
     }
@@ -54,23 +57,27 @@ class LandingController extends Controller
      */
     public function registerSubmit(Request $request)
     {
+        $isCabinet = $request->type === 'cabinet';
+
         // Utiliser l'email admin comme email entreprise si non fourni ou identique
-        $companyEmail = $request->filled('company_email') ? $request->company_email : $request->admin_email;
-        $request->merge(['company_email' => $companyEmail]);
+        if (!$isCabinet) {
+            $companyEmail = $request->filled('company_email') ? $request->company_email : $request->admin_email;
+            $request->merge(['company_email' => $companyEmail]);
+        }
 
         $request->validate([
-            'type' => 'required|in:entreprise,comptable',
+            'type' => 'required|in:entreprise,comptable,cabinet',
             // Infos entreprise
-            'company_name' => 'required|string|max:255',
-            'juridique_form' => 'required|string|max:100',
-            'activity' => 'required|string|max:255',
+            'company_name' => 'required_unless:type,cabinet|nullable|string|max:255',
+            'juridique_form' => 'required_unless:type,cabinet|nullable|string|max:100',
+            'activity' => 'required_unless:type,cabinet|nullable|string|max:255',
             'city' => 'nullable|string|max:100',
             'phone_number' => 'nullable|string|max:50',
             'adresse' => 'nullable|string|max:255',
             'code_postal' => 'nullable|string|max:50',
             'country' => 'nullable|string|max:100',
-            'company_email' => 'nullable|email|max:255|unique:companies,email_adresse',
-            'company_code' => 'required|string|max:100|unique:companies,company_code',
+            'company_email' => 'required_unless:type,cabinet|nullable|email|max:255|unique:companies,email_adresse',
+            'company_code' => 'required_unless:type,cabinet|nullable|string|max:100|unique:companies,company_code',
             // Infos Admin
             'admin_name' => 'required|string|max:255',
             'admin_last_name' => 'required|string|max:255',
@@ -90,30 +97,33 @@ class LandingController extends Controller
             // 1. Déterminer le parent_company_id (0 si c'est la racine, ou via une logique spécifique)
             // Dans ce système, une entreprise principale a parent_company_id = null ou 0.
             
-            // 2. Créer l'entreprise
-            $company = Company::create([
-                'company_name' => $request->company_name,
-                'juridique_form' => $request->juridique_form,
-                'activity' => $request->activity,
-                'social_capital' => $request->social_capital ?? 0,
-                'status' => 'Actif',
-                'is_active' => 1,
-                'city' => $request->city,
-                'adresse' => $request->adresse,
-                'code_postal' => $request->code_postal,
-                'country' => $request->country,
-                'phone_number' => $request->phone_number,
-                'email_adresse' => $companyEmail,
-                'identification_TVA' => $request->identification_TVA,
-                'parent_company_id' => null, // Racine
-                'company_code' => $request->company_code,
-            ]);
+            // 2. Créer l'entreprise (si ce n'est pas un cabinet)
+            $company = null;
+            if (!$isCabinet) {
+                $company = Company::create([
+                    'company_name' => $request->company_name,
+                    'juridique_form' => $request->juridique_form,
+                    'activity' => $request->activity,
+                    'social_capital' => $request->social_capital ?? 0,
+                    'status' => 'Actif',
+                    'is_active' => 1,
+                    'city' => $request->city,
+                    'adresse' => $request->adresse,
+                    'code_postal' => $request->code_postal,
+                    'country' => $request->country,
+                    'phone_number' => $request->phone_number,
+                    'email_adresse' => $request->company_email,
+                    'identification_TVA' => $request->identification_TVA,
+                    'parent_company_id' => null, // Racine
+                    'company_code' => $request->company_code,
+                ]);
+            }
 
             // 3. Déterminer les habilitations
             // Si c'est un admin, on laisse vide [] pour qu'il ait TOUT par défaut (isPrincipalAdmin)
             // Si c'est un comptable, on lui donne les accès par défaut définis dans la config
             $habilitations = [];
-            if ($request->type === 'comptable') {
+            if ($request->type === 'comptable' || $isCabinet) {
                 $comptablePermissions = config('accounting_permissions.role_permissions_map.comptable', []);
                 foreach ($comptablePermissions as $perm) {
                     $habilitations[$perm] = "1";
@@ -122,7 +132,7 @@ class LandingController extends Controller
 
             // 4. Déterminer le rôle
             // Un administrateur métier ou un comptable
-            $role = ($request->type === 'comptable') ? 'comptable' : 'admin';
+            $role = ($request->type === 'comptable' || $isCabinet) ? 'comptable' : 'admin';
 
             // 5. Créer l'utilisateur Administrateur
             $user = User::create([
@@ -131,15 +141,19 @@ class LandingController extends Controller
                 'email_adresse' => $request->admin_email,
                 'password' => Hash::make($request->admin_password),
                 'role' => $role,
-                'company_id' => $company->id, // Lier à l'entreprise
+                'company_id' => $company ? $company->id : null, // Lier à l'entreprise
                 'phone_number' => $request->admin_phone ?? $request->phone_number,
                 'habilitations' => $habilitations,
                 'is_active' => 1
             ]);
 
             // Assigner l'administrateur à l'entreprise
-            $company->user_id = $user->id;
-            $company->save();
+            if ($company) {
+                $company->user_id = $user->id;
+                $company->save();
+            }
+
+            DB::commit();;
 
             DB::commit();
 

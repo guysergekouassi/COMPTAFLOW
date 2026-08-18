@@ -179,10 +179,12 @@
                                 <span style="background: #dbeafe; padding: 4px 10px; border-radius: 6px; font-family: monospace;">{{ $password }}</span>
                             </div>
                         </div>
+                        @if($company)
                         <div style="display: table-row;">
                             <div style="display: table-cell; padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; font-size: 14px;">Entreprise :</div>
                             <div style="display: table-cell; padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e40af; font-weight: 700; font-size: 14px; text-align: right;">{{ $company->company_name }}</div>
                         </div>
+                        @endif
                         <div style="display: table-row;">
                             <div style="display: table-cell; padding: 12px 0; color: #64748b; font-weight: 600; font-size: 14px;">Pack choisi :</div>
                             <div style="display: table-cell; padding: 12px 0; color: #1e40af; font-weight: 700; font-size: 14px; text-align: right;">{{ ucfirst($type) }}</div>

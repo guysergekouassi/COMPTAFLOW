@@ -23,7 +23,7 @@ class WelcomeEmail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(User $user, $type, Company $company, $password = null)
+    public function __construct(User $user, $type, ?Company $company = null, $password = null)
     {
         $this->user = $user;
         $this->type = $type;

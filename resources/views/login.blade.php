@@ -471,6 +471,14 @@
         <!-- Right Panel: Auth Forms -->
         <div class="split-right-panel">
             <div class="login-card">
+
+                <!-- Bouton retour accueil -->
+                <div class="mb-4">
+                    <a href="{{ route('landing.index') }}" class="btn btn-sm btn-label-secondary rounded-pill">
+                        <i class="bx bx-arrow-back me-1"></i> Retour à l'accueil
+                    </a>
+                </div>
+
                 <h2 class="card-header-title">Connexion</h2>
                 <p class="card-header-subtitle">Connectez-vous pour accéder à votre dashboard</p>
 
@@ -571,7 +579,7 @@
 
                 <!-- Footer elements -->
                 <p class="auth-footer-text">
-                    Pas encore de compte ? <a href="#">S'inscrire gratuitement</a>
+                    Pas encore de compte ? <a href="{{ route('landing.pricing') }}">S'inscrire gratuitement</a>
                 </p>
 
                 <a href="#" class="customer-support">Service client & Contact</a>

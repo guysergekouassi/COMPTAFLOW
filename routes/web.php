@@ -129,6 +129,9 @@ Route::middleware(['auth'])->group(function () {
         } elseif ($user->isAdmin()) {
             return redirect()->route('admin.dashboard');
         } elseif ($user->isComptable()) {
+            if (!$user->company_id && !session('current_company_id')) {
+                return redirect()->route('accountant.space');
+            }
             return redirect()->route('comptable.comptdashboard');
         }
         return redirect('/unauthorized');
