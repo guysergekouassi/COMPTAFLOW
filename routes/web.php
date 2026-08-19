@@ -93,8 +93,10 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/login/company', [AuthController::class, 'loginCompany'])->name('login.company');
 
 // Routes Google OAuth (Socialite)
-Route::get('/auth/google', [App\Http\Controllers\GoogleAuthController::class, 'redirect'])->name('auth.google');
-Route::get('/auth/callback', [App\Http\Controllers\GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+// ⚠️ IMPORTANT : le callback DOIT être déclaré AVANT la route dynamique {type}
+// pour éviter que Laravel ne capture 'callback' comme valeur de {type}
+Route::get('/auth/google/callback', [App\Http\Controllers\GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
+Route::get('/auth/google/{type}', [App\Http\Controllers\GoogleAuthController::class, 'redirectToGoogle'])->name('google.redirect');
 
 // **********************************************
 // ROUTES DE L'ESPACE COMPTABLE (MIDDLEWARE 'auth' uniquement)

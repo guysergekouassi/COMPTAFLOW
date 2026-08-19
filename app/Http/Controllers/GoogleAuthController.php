@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
@@ -11,83 +10,79 @@ use Illuminate\Support\Str;
 class GoogleAuthController extends Controller
 {
     /**
-     * Redirige l'utilisateur vers Google pour l'authentification.
+     * Redirect the user to Google OAuth.
+     * $type can be: login, cabinet, entreprise, comptable
      */
-    public function redirect()
+    public function redirectToGoogle(string $type = 'login')
     {
+        session(['google_register_type' => $type]);
+
         return Socialite::driver('google')
-            ->scopes(['openid', 'email', 'profile'])
+            ->with(['prompt' => 'select_account'])
             ->redirect();
     }
 
     /**
-     * Callback Google : connecte ou crée l'utilisateur puis redirige.
+     * Handle the Google OAuth callback.
      */
-    public function callback()
+    public function handleGoogleCallback()
     {
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
+            $googleUser = Socialite::driver('google')->user();
         } catch (\Exception $e) {
-            return redirect()->route('login')
-                ->withErrors(['email_adresse' => 'Échec de la connexion Google. Veuillez réessayer.']);
+            return redirect()->route('login')->withErrors(['google' => 'Echec de la connexion Google. Veuillez reessayer.']);
         }
 
-        // Chercher un utilisateur existant par email
-        $user = User::where('email_adresse', $googleUser->getEmail())->first();
+        $type = session('google_register_type', 'login');
+        session()->forget('google_register_type');
+
+        // Split Google name into name / last_name
+        $nameParts = explode(' ', trim($googleUser->getName()), 2);
+        $name      = strtoupper($nameParts[0] ?? '');
+        $lastName  = $nameParts[1] ?? '';
+
+        // Try to find an existing user by google_id or email
+        $user = User::where('google_id', $googleUser->getId())->first()
+             ?? User::where('email_adresse', $googleUser->getEmail())->first();
 
         if ($user) {
-            // --- Utilisateur existant ---
-
-            // Vérifier si le compte est actif
-            if (!$user->is_active) {
-                return redirect()->route('login')
-                    ->withErrors(['email_adresse' => 'Votre compte est désactivé.']);
-            }
-
-            // Vérifier si l'entreprise est bloquée (pour les non super-admin)
-            if ($user->company && $user->company->is_blocked) {
-                return redirect()->route('login')
-                    ->withErrors(['email_adresse' => 'Votre entreprise est actuellement bloquée pour cause d\'abonnement impayé.']);
-            }
-
-            // Mettre à jour le google_id si pas encore enregistré
-            if (!$user->google_id) {
-                $user->update([
-                    'google_id' => $googleUser->getId(),
-                    'avatar'    => $googleUser->getAvatar(),
-                ]);
-            }
-
+            $user->update([
+                'google_id' => $googleUser->getId(),
+                'avatar'    => $googleUser->getAvatar(),
+                'is_online' => 1,
+            ]);
         } else {
-            // --- Nouvel utilisateur → créer automatiquement un compte ---
-            $nameParts = explode(' ', trim($googleUser->getName()), 2);
-            $firstName = $nameParts[0] ?? $googleUser->getName();
-            $lastName  = $nameParts[1] ?? '';
+            $role = match ($type) {
+                'cabinet'    => 'comptable',
+                'comptable'  => 'comptable',
+                'entreprise' => 'admin',
+                default      => 'comptable',
+            };
 
             $user = User::create([
-                'name'          => $firstName,
+                'name'          => $name,
                 'last_name'     => $lastName,
                 'email_adresse' => $googleUser->getEmail(),
                 'google_id'     => $googleUser->getId(),
                 'avatar'        => $googleUser->getAvatar(),
-                'password'      => bcrypt(Str::random(24)), // Mot de passe aléatoire (connexion uniquement par Google)
-                'role'          => 'admin',
+                'password'      => bcrypt(Str::random(24)),
+                'role'          => $role,
+                'company_id'    => null,
                 'is_active'     => true,
-                'is_online'     => 0,
-                'company_id'    => null, // Pas encore d'entreprise assignée
+                'is_online'     => 1,
             ]);
         }
 
-        // Connecter l'utilisateur
-        Auth::login($user);
-        $user->update(['is_online' => 1]);
+        if (!$user->is_active) {
+            return redirect()->route('login')->withErrors(['google' => 'Votre compte est desactive.']);
+        }
 
-        // Redirection selon rôle
+        Auth::login($user);
+
         if ($user->role === 'super_admin') {
             return redirect()->route('superadmin.dashboard');
         }
 
-        // Admin, comptable ou nouvel utilisateur → Mon Espace
         return redirect()->route('accountant.space');
     }
 }
