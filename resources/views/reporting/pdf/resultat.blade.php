@@ -131,6 +131,10 @@
     </style>
 </head>
 <body>
+@php
+    $periode = $periode ?? app(\App\Services\AccountingReportingService::class)->resolvePeriode($exercice, $month ?? null);
+@endphp
+
     <div class="watermark">COMPTAFLOW</div>
     <header>
         <table class="header-table">
@@ -141,12 +145,12 @@
                 </td>
                 <td style="width: 40%; border-bottom: 1px solid #000; text-align: center;">
                     <div class="doc-title">COMPTE DE RÉSULTAT (SIG)</div>
-                    <div class="doc-subtitle">Comptes Annuels</div>
+                    <div class="doc-subtitle">{{ $periode['is_month'] ? $periode['label'] : 'Comptes Annuels' }}</div>
                 </td>
                 <td style="width: 30%; border-bottom: 1px solid #000; text-align: right;">
                     <div class="period">
-                        Période du {{ \Carbon\Carbon::parse($exercice->date_debut)->format('d/m/Y') }}<br>
-                        au {{ \Carbon\Carbon::parse($exercice->date_fin)->format('d/m/Y') }}<br>
+                        Période du {{ $periode['debut']->format('d/m/Y') }}<br>
+                        au {{ $periode['fin']->format('d/m/Y') }}<br>
                         Tenue de compte : {{ $exercice->company->currency ?? 'FCFA' }}
                     </div>
                 </td>

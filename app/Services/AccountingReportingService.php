@@ -31,6 +31,76 @@ class AccountingReportingService
         return $months;
     }
 
+    /**
+     * Détermine la période réellement couverte par un rapport en fonction
+     * du mois sélectionné et des bornes de l'exercice.
+     *
+     * Le filtre des écritures utilise whereMonth(), il faut donc retrouver
+     * l'année du mois choisi à l'intérieur de l'exercice (un exercice peut
+     * débuter en cours d'année, ex: 01/10/N au 30/09/N+1).
+     *
+     * @return array{debut: \Carbon\Carbon, fin: \Carbon\Carbon, label: string, is_month: bool}
+     */
+    public function resolvePeriode($exercice, $month = null)
+    {
+        $debutExercice = \Carbon\Carbon::parse($exercice->date_debut);
+        $finExercice = \Carbon\Carbon::parse($exercice->date_fin);
+
+        if ($month === null || $month === '' || $month === 'all' || !is_numeric($month)) {
+            return [
+                'debut' => $debutExercice,
+                'fin' => $finExercice,
+                'label' => 'Tout l\'exercice',
+                'is_month' => false,
+            ];
+        }
+
+        $month = (int) $month;
+        if ($month < 1 || $month > 12) {
+            return [
+                'debut' => $debutExercice,
+                'fin' => $finExercice,
+                'label' => 'Tout l\'exercice',
+                'is_month' => false,
+            ];
+        }
+
+        // Recherche du mois demandé à l'intérieur des bornes de l'exercice.
+        $annee = null;
+        $curseur = $debutExercice->copy()->startOfMonth();
+        $finMois = $finExercice->copy()->startOfMonth();
+        while ($curseur->lte($finMois)) {
+            if ($curseur->month === $month) {
+                $annee = $curseur->year;
+                break;
+            }
+            $curseur->addMonth();
+        }
+
+        // Mois hors exercice : on retombe sur l'année de début d'exercice.
+        if ($annee === null) {
+            $annee = $month >= $debutExercice->month ? $debutExercice->year : $finExercice->year;
+        }
+
+        $debut = \Carbon\Carbon::create($annee, $month, 1)->startOfDay();
+        $fin = $debut->copy()->endOfMonth()->startOfDay();
+
+        // On ne déborde jamais des bornes de l'exercice.
+        if ($debut->lt($debutExercice)) {
+            $debut = $debutExercice->copy();
+        }
+        if ($fin->gt($finExercice)) {
+            $fin = $finExercice->copy();
+        }
+
+        return [
+            'debut' => $debut,
+            'fin' => $fin,
+            'label' => ucfirst($debut->copy()->locale('fr')->isoFormat('MMMM YYYY')),
+            'is_month' => true,
+        ];
+    }
+
     public function getBalanceData($exerciceId, $companyId, $month = null)
     {
         $ecritures = $this->getFilteredEcritures($exerciceId, $companyId, $month);
