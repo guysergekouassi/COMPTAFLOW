@@ -146,6 +146,10 @@ Route::prefix('external')->group(function () {
         ->name('api.external.link-company');
     Route::post('/ecritures/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserEcritures'])
         ->name('api.external.ecritures.deverser');
+    // Selflow déverse son référentiel — plan comptable, journaux, tiers — dans
+    // l'entreprise Comptaflow qui lui est liée. Sens unique : rien ne repart.
+    Route::post('/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
+        ->name('api.external.referentiel.deverser');
     Route::post('/list-companies', [\App\Http\Controllers\Api\ExternalSyncController::class, 'listCompanies'])
         ->name('api.external.list-companies');
     Route::post('/company-info', [\App\Http\Controllers\Api\ExternalSyncController::class, 'companyInfo'])

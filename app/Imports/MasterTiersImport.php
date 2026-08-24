@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Models\PlanComptable;
 use App\Models\PlanTiers;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -19,6 +20,9 @@ class MasterTiersImport implements ToModel, WithCustomCsvSettings
     protected $userId;
     protected $companyId;
     protected $filePath;
+
+    /** Les comptes collectifs déjà résolus, par préfixe. */
+    protected $collectifs = [];
 
     public function __construct(?string $filePath = null)
     {
@@ -100,8 +104,54 @@ class MasterTiersImport implements ToModel, WithCustomCsvSettings
             'numero_original' => $num,
             'intitule'        => strtoupper($label),
             'type_de_tiers'   => $type,
+            'compte_general'  => $this->compteCollectif($numero, $type),
             'user_id'         => $this->userId,
             'company_id'      => $this->companyId,
         ]);
+    }
+
+    /**
+     * Le compte collectif de rattachement du tiers.
+     *
+     * `plan_tiers.compte_general` est `NOT NULL` avec une clé étrangère, et
+     * cette classe ne le renseignait pas : **l'import des tiers échouait sur
+     * une violation d'intégrité, même avec un fichier correct**. On le déduit
+     * du préfixe du numéro — `401…` fournisseurs, `410…`/`411…` clients — puis,
+     * à défaut, du type de tiers, comme le fait déjà `ExternalSyncController`
+     * pour les tiers venus de Selflow.
+     *
+     * La colonne est devenue `nullable` dans le même mouvement : un plan
+     * comptable qui ne porte pas encore son compte collectif ne doit pas faire
+     * échouer l'import entier.
+     */
+    private function compteCollectif(string $numero, string $type): ?int
+    {
+        $prefixe = null;
+
+        if (str_starts_with($numero, '401')) {
+            $prefixe = '401';
+        } elseif (str_starts_with($numero, '410') || str_starts_with($numero, '411')) {
+            $prefixe = '411';
+        } else {
+            $type = strtolower($type);
+            if (str_contains($type, 'fourn')) {
+                $prefixe = '401';
+            } elseif (str_contains($type, 'client')) {
+                $prefixe = '411';
+            }
+        }
+
+        if (!$prefixe) {
+            return null;
+        }
+
+        if (!array_key_exists($prefixe, $this->collectifs)) {
+            $this->collectifs[$prefixe] = PlanComptable::where('company_id', $this->companyId)
+                ->where('numero_de_compte', 'like', $prefixe . '%')
+                ->orderBy('numero_de_compte')
+                ->value('id');
+        }
+
+        return $this->collectifs[$prefixe];
     }
 }
