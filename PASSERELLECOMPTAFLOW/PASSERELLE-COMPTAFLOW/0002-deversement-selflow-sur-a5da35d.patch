@@ -1,0 +1,532 @@
+From 0423f0ca99bd8c8692fc8342c14ddb1992980f96 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 15 Aug 2026 00:15:17 +0000
+Subject: [PATCH] Deversement Selflow : idempotence, tiers, exercice compare,
+ secret non public
+
+Rejeu de la correction perdue par le force-push du 12 aout (b3bd59b),
+reportee sur a5da35d. Le conflit portait sur la resolution du compte :
+la version retenue est celle du correctif, qui deplace cette resolution
+dans compteGeneral()/tiers() et refuse un journal inconnu au lieu de
+retomber sur le premier de la liste.
+
+Cinq points :
+
+- Idempotence : cle_selflow, unique par entreprise. Rejouer une
+  synchronisation ne duplique plus les ecritures.
+- Compte de tiers : compte_tiers est lu et rattache a l'ecriture, ce qui
+  rend le releve par client possible.
+- Exercice : les bornes transmises sont comparees a l'exercice ouvert ;
+  une piece d'exercice clos est refusee au lieu d'etre rangee dans
+  l'exercice courant.
+- Journal inconnu : refuse et signale, au lieu de retomber sur le
+  premier journal de l'entreprise.
+- Secret partage : plus de valeur de repli en clair dans le depot, et
+  comparaison en temps constant (hash_equals).
+
+Le compte rendu de reponse distingue desormais les ecritures deversees,
+celles deja presentes, et celles refusees avec leur motif.
+---
+ .../Api/ExternalSyncController.php            | 297 ++++++++++++++----
+ .../Super/SuperAdminCompanyController.php     |   2 +-
+ app/Models/EcritureComptable.php              |   4 +
+ config/external_sync.php                      |  13 +-
+ ...01_cle_idempotence_deversement_selflow.php |  40 +++
+ 5 files changed, 297 insertions(+), 59 deletions(-)
+ create mode 100644 database/migrations/2026_08_12_000001_cle_idempotence_deversement_selflow.php
+
+diff --git a/app/Http/Controllers/Api/ExternalSyncController.php b/app/Http/Controllers/Api/ExternalSyncController.php
+index 727ac0a..e3cfbf4 100644
+--- a/app/Http/Controllers/Api/ExternalSyncController.php
++++ b/app/Http/Controllers/Api/ExternalSyncController.php
+@@ -26,6 +26,157 @@
+  */
+ class ExternalSyncController extends Controller
+ {
++
++    /**
++     * Les deux exercices se recouvrent-ils ?
++     *
++     * Selflow annonce l'exercice qu'il a ouvert ; on prenait le nôtre sans
++     * jamais comparer. Une pièce d'un exercice que Selflow vient de clore se
++     * serait rangée dans l'exercice courant de Comptaflow, et les deux balances
++     * auraient divergé sans qu'aucun écran ne le dise.
++     *
++     * On tolère un décalage de bornes — les deux applications n'ont pas
++     * forcément le même premier jour — mais pas deux exercices disjoints.
++     *
++     * @return string|null le motif du refus, ou `null` si tout va bien
++     */
++    private static function desaccordDExercice($exercice, ?string $debut, ?string $fin): ?string
++    {
++        // Selflow ne dit rien : on ne peut rien vérifier, et refuser sur ce
++        // seul motif bloquerait les versions antérieures du connecteur.
++        if (empty($debut) || empty($fin)) {
++            return null;
++        }
++
++        $notre = [$exercice->date_debut, $exercice->date_fin];
++
++        if (empty($notre[0]) || empty($notre[1])) {
++            return null;
++        }
++
++        $nDebut = \Carbon\Carbon::parse($notre[0]);
++        $nFin   = \Carbon\Carbon::parse($notre[1]);
++        $sDebut = \Carbon\Carbon::parse($debut);
++        $sFin   = \Carbon\Carbon::parse($fin);
++
++        if ($sFin->lt($nDebut) || $sDebut->gt($nFin)) {
++            return sprintf(
++                'Les exercices ne se recouvrent pas : Selflow travaille du %s au %s, '
++                . 'Comptaflow du %s au %s. Alignez les exercices avant de déverser.',
++                $sDebut->format('d/m/Y'), $sFin->format('d/m/Y'),
++                $nDebut->format('d/m/Y'), $nFin->format('d/m/Y')
++            );
++        }
++
++        return null;
++    }
++
++    /**
++     * Le compte général, créé s'il manque — avec le bon type.
++     *
++     * `type_de_compte` valait **`actif`** en dur, pour tous les comptes créés
++     * à la volée : un compte de vente `701000` arrivait donc au bilan, du côté
++     * de l'actif. Les états de Comptaflow devenaient faux, et l'erreur ne se
++     * voyait qu'au compte de résultat, vide.
++     *
++     * La classe du compte SYSCOHADA dit son type, et elle le dit sans
++     * ambiguïté — c'est le premier chiffre du numéro.
++     */
++    private static function compteGeneral($company, string $numero, string $libelle)
++    {
++        $existant = PlanComptable::where('company_id', $company->id)
++            ->where('numero_de_compte', $numero)
++            ->first();
++
++        // Le plan de Comptaflow fait foi : un compte déjà là n'est jamais
++        // réécrit, ni son intitulé ni son type. C'est sa configuration
++        // d'origine, et Selflow n'a pas à la corriger.
++        if ($existant) {
++            return $existant;
++        }
++
++        return PlanComptable::create([
++            'numero_de_compte' => $numero,
++            'intitule'         => $libelle ?: 'Compte ' . $numero,
++            'company_id'       => $company->id,
++            'user_id'          => $company->user_id,
++            'type_de_compte'   => self::typeDeCompte($numero),
++        ]);
++    }
++
++    /**
++     * Le type d'un compte, d'après sa classe SYSCOHADA.
++     *
++     * | Classe | Nature | Type |
++     * |---|---|---|
++     * | 1 | Ressources durables | passif |
++     * | 2 | Actif immobilisé | actif |
++     * | 3 | Stocks | actif |
++     * | 4 | Tiers | actif ou passif selon le compte — `actif` par défaut, l'utilisateur tranche |
++     * | 5 | Trésorerie | actif |
++     * | 6 | Charges | charge |
++     * | 7 | Produits | produit |
++     * | 8 | Autres charges et produits | charge |
++     * | 9 | Analytique | analytique |
++     */
++    private static function typeDeCompte(string $numero): string
++    {
++        return match (substr($numero, 0, 1)) {
++            '1'      => 'passif',
++            '2', '3', '5' => 'actif',
++            '4'      => 'actif',
++            '6', '8' => 'charge',
++            '7'      => 'produit',
++            '9'      => 'analytique',
++            default  => 'actif',
++        };
++    }
++
++    /**
++     * Le compte de tiers désigné par Selflow, s'il existe chez nous.
++     *
++     * **On ne le crée pas.** Le plan de tiers est la configuration d'origine de
++     * Comptaflow : y ajouter des fiches depuis Selflow ferait deux référentiels
++     * concurrents, et le comptable ne saurait plus lequel fait foi. Un tiers
++     * inconnu laisse l'écriture sur son seul compte collectif — ce qui est
++     * juste, quoique moins précis — et le comptable le rattachera lui-même.
++     */
++    private static function tiers($company, ?string $numeroTiers, $planComptableId): ?int
++    {
++        if (empty($numeroTiers)) {
++            return null;
++        }
++
++        return PlanTiers::where('company_id', $company->id)
++            ->where('numero_de_tiers', $numeroTiers)
++            ->value('id');
++    }
++
++    /**
++     * Le secret fourni est-il celui que l'on attend ?
++     *
++     * Deux corrections en une :
++     *
++     * - **un secret non configuré ne vaut pas « pas de contrôle ».** La valeur
++     *   de repli en dur — « selflow-comptaflow-secret-2026 » — était publiée
++     *   dans le dépôt : quiconque l'a lue pouvait déverser des écritures dans
++     *   la comptabilité de n'importe quelle entreprise liée, ou lire la liste
++     *   de toutes les entreprises de la plateforme. Sans variable
++     *   d'environnement, on refuse désormais tout ;
++     * - **`hash_equals` plutôt que `!==`.** Une comparaison de chaînes ordinaire
++     *   s'arrête au premier caractère différent : le temps de réponse révèle
++     *   alors combien de caractères sont justes, et le secret se devine
++     *   caractère par caractère. `hash_equals` compare en temps constant.
++     */
++    private static function secretValide(?string $fourni, ?string $attendu): bool
++    {
++        if (empty($attendu) || empty($fourni)) {
++            return false;
++        }
++
++        return hash_equals($attendu, $fourni);
++    }
++
+     /**
+      * Crée une entreprise + un administrateur depuis une requête externe (ex : Selflow).
+      * POST /api/external/register-enterprise
+@@ -33,10 +184,10 @@ class ExternalSyncController extends Controller
+     public function registerEnterprise(Request $request)
+     {
+         // ── Vérification du secret partagé ──
+-        $expectedSecret = config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026');
++        $expectedSecret = config('external_sync.external_sync_secret');
+         $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+ 
+-        if ($providedSecret !== $expectedSecret) {
++        if (!self::secretValide($providedSecret, $expectedSecret)) {
+             Log::warning('ExternalSync: secret invalide', ['ip' => $request->ip()]);
+             return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+         }
+@@ -158,7 +309,7 @@ public function syncStatus(Request $request)
+     {
+         $expectedSecret = config('app.external_sync_secret', 'selflow-local-secret');
+         $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+-        if ($providedSecret !== $expectedSecret) {
++        if (!self::secretValide($providedSecret, $expectedSecret)) {
+             return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+         }
+ 
+@@ -180,9 +331,9 @@ public function syncStatus(Request $request)
+      */
+     public function linkCompany(Request $request)
+     {
+-        $expectedSecret = config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026');
++        $expectedSecret = config('external_sync.external_sync_secret');
+         $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+-        if ($providedSecret !== $expectedSecret) {
++        if (!self::secretValide($providedSecret, $expectedSecret)) {
+             return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+         }
+ 
+@@ -392,9 +543,9 @@ private function generateNextTierNumber($company, $prefix, $intitule)
+      */
+     public function deverserEcritures(Request $request)
+     {
+-        $expectedSecret = config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026');
++        $expectedSecret = config('external_sync.external_sync_secret');
+         $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+-        if ($providedSecret !== $expectedSecret) {
++        if (!self::secretValide($providedSecret, $expectedSecret)) {
+             return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+         }
+ 
+@@ -416,7 +567,23 @@ public function deverserEcritures(Request $request)
+             return response()->json(['success' => false, 'message' => 'Aucun exercice comptable trouvé pour cette entreprise.'], 422);
+         }
+ 
++        // ── L'exercice des deux côtés doit être le même ──
++        //
++        // On prenait le nôtre, actif, sans jamais comparer : une pièce d'un
++        // exercice que Selflow vient de clore se serait rangée dans l'exercice
++        // courant de Comptaflow, et les deux balances auraient divergé sans
++        // qu'aucun écran ne le dise. Mieux vaut refuser franchement et laisser
++        // l'utilisateur aligner ses exercices.
++        $desaccord = self::desaccordDExercice($exercice, $request->input('exercice_debut'), $request->input('exercice_fin'));
++
++        if ($desaccord) {
++            return response()->json(['success' => false, 'message' => $desaccord], 409);
++        }
++
+         $count = 0;
++        $ignorees = 0;
++        $refus = [];
++
+         DB::beginTransaction();
+         try {
+             foreach ($request->ecritures as $ec) {
+@@ -425,56 +592,58 @@ public function deverserEcritures(Request $request)
+                 $debitVal = $ec['debit'] ?? 0;
+                 $creditVal = $ec['credit'] ?? 0;
+ 
+-                // Trouver le journal
+-                $cjCode = $ec['code_journal'] ?? 'VTE';
+-                $codeJournal = CodeJournal::where('company_id', $company->id)
+-                    ->where('code_journal', $cjCode)
+-                    ->first() ?? CodeJournal::where('company_id', $company->id)->first();
+-
+-                if (!$codeJournal) {
++                // ── Idempotence ──
++                //
++                // `n_saisie` recevait la référence de pièce, ou `SELF_ . time()`
++                // à défaut : ni l'une ni l'autre ne distingue un **renvoi**
++                // d'une écriture **nouvelle**. Rejouer une synchronisation —
++                // après une coupure réseau, après un retry — dupliquait tout,
++                // et la balance doublait sans que rien ne le signale.
++                $cleSelflow = $ec['cle_selflow'] ?? null;
++
++                if ($cleSelflow && EcritureComptable::where('company_id', $company->id)
++                        ->where('cle_selflow', $cleSelflow)->exists()) {
++                    $ignorees++;
+                     continue;
+                 }
+ 
+-                // Déterminer le compte à utiliser
+-                $accountCode = !empty($ec['compte_debit']) ? $ec['compte_debit'] : $ec['compte_credit'];
+-                if (empty($accountCode)) continue;
+-
+-                $planComptableId = null;
+-                $planTiersId = null;
++                // ── Le journal ──
++                //
++                // Un code inconnu retombait sur **le premier journal de la
++                // liste** : une vente pouvait ainsi atterrir au journal de
++                // caisse, et personne ne s'en apercevait avant la révision.
++                // Le journal de Comptaflow fait foi — c'est sa configuration
++                // d'origine — mais un code qu'il ne connaît pas est une erreur
++                // à signaler, pas à rattraper au hasard.
++                $cjCode = $ec['code_journal'] ?? null;
++                $codeJournal = $cjCode
++                    ? CodeJournal::where('company_id', $company->id)->where('code_journal', $cjCode)->first()
++                    : null;
+ 
+-                // 1. Chercher dans PlanTiers
+-                $planTiers = PlanTiers::where('company_id', $company->id)
+-                    ->where('numero_de_tiers', $accountCode)
+-                    ->first();
+-
+-                if ($planTiers) {
+-                    $planTiersId = $planTiers->id;
+-                    $planComptableId = $planTiers->compte_general;
+-                } else {
+-                    // 2. Chercher dans PlanComptable
+-                    $digits = $company->account_digits ?? 8;
+-                    $formattedAccountCode = str_pad($accountCode, $digits, '0', STR_PAD_RIGHT);
+-                    if (strlen($formattedAccountCode) > $digits) {
+-                        $formattedAccountCode = substr($formattedAccountCode, 0, $digits);
+-                    }
+-
+-                    $planComptable = PlanComptable::where('company_id', $company->id)
+-                        ->where('numero_de_compte', $formattedAccountCode)
+-                        ->first();
++                if (!$codeJournal) {
++                    $refus[] = ($refPiece ?: '?') . ' : journal « ' . ($cjCode ?? '—') . ' » inconnu';
++                    continue;
++                }
+ 
+-                    if (!$planComptable) {
+-                        $planComptable = PlanComptable::create([
+-                            'numero_de_compte' => $formattedAccountCode,
+-                            'intitule'         => $libelle ?: 'Compte ' . $formattedAccountCode,
+-                            'company_id'       => $company->id,
+-                            'user_id'          => $company->user_id,
+-                            'type_de_compte'   => 'actif',
+-                        ]);
+-                    }
+-                    $planComptableId = $planComptable->id;
++                // ── Le compte, et le tiers ──
++                //
++                // Une écriture de Selflow porte un compte général **et**, pour
++                // un client ou un fournisseur, un compte de tiers. Le tiers
++                // n'était pas transmis : on le cherchait dans `plan_tiers` à
++                // partir du compte général, on ne le trouvait pas, et
++                // l'écriture se rattachait au seul compte collectif. Le relevé
++                // d'un client particulier devenait impossible à établir.
++                $accountCode = !empty($ec['compte_debit']) ? $ec['compte_debit'] : ($ec['compte_credit'] ?? null);
++
++                if (empty($accountCode)) {
++                    $refus[] = ($refPiece ?: '?') . ' : aucun compte';
++                    continue;
+                 }
+ 
+-                // Créer l'écriture dans COMPTAFLOW
++                $planComptable = self::compteGeneral($company, $accountCode, $libelle);
++                $planTiersId = self::tiers($company, $ec['compte_tiers'] ?? null, $planComptable->id);
++
++                // ── L'écriture ──
+                 EcritureComptable::create([
+                     'company_id'              => $company->id,
+                     'user_id'                 => $company->user_id,
+@@ -483,8 +652,9 @@ public function deverserEcritures(Request $request)
+                     'date'                    => $ec['date_ecriture'],
+                     'description_operation'   => $libelle,
+                     'reference_piece'         => $refPiece,
+-                    'n_saisie'                => $refPiece ?: 'SELF_' . time() . '_' . $count,
+-                    'plan_comptable_id'       => $planComptableId,
++                    'n_saisie'                => $cleSelflow ?: ($refPiece ?: 'SELF_' . time() . '_' . $count),
++                    'cle_selflow'             => $cleSelflow,
++                    'plan_comptable_id'       => $planComptable->id,
+                     'plan_tiers_id'           => $planTiersId,
+                     'debit'                   => $debitVal,
+                     'credit'                  => $creditVal,
+@@ -495,7 +665,20 @@ public function deverserEcritures(Request $request)
+             }
+ 
+             DB::commit();
+-            return response()->json(['success' => true, 'count' => $count, 'message' => "$count écritures déversées avec succès."]);
++
++            // Le compte rendu dit ce qui est passé, ce qui était déjà là, et
++            // ce qui a été refusé. Une synchronisation qui annonce « succès »
++            // en ayant écarté la moitié des lignes est pire qu'un échec.
++            return response()->json([
++                'success'  => true,
++                'count'    => $count,
++                'ignorees' => $ignorees,
++                'refus'    => $refus,
++                'message'  => "$count écriture(s) déversée(s)"
++                    . ($ignorees ? ", $ignorees déjà présente(s)" : '')
++                    . ($refus ? ', ' . count($refus) . ' refusée(s)' : '')
++                    . '.',
++            ]);
+ 
+         } catch (\Exception $e) {
+             DB::rollBack();
+@@ -510,10 +693,10 @@ public function deverserEcritures(Request $request)
+      */
+     public function listCompanies(Request $request)
+     {
+-        $expectedSecret = config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026');
++        $expectedSecret = config('external_sync.external_sync_secret');
+         $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+ 
+-        if ($providedSecret !== $expectedSecret) {
++        if (!self::secretValide($providedSecret, $expectedSecret)) {
+             return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+         }
+ 
+@@ -550,10 +733,10 @@ public function listCompanies(Request $request)
+      */
+     public function companyInfo(Request $request)
+     {
+-        $expectedSecret = config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026');
++        $expectedSecret = config('external_sync.external_sync_secret');
+         $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+ 
+-        if ($providedSecret !== $expectedSecret) {
++        if (!self::secretValide($providedSecret, $expectedSecret)) {
+             return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+         }
+ 
+diff --git a/app/Http/Controllers/Super/SuperAdminCompanyController.php b/app/Http/Controllers/Super/SuperAdminCompanyController.php
+index 826ad58..5775125 100644
+--- a/app/Http/Controllers/Super/SuperAdminCompanyController.php
++++ b/app/Http/Controllers/Super/SuperAdminCompanyController.php
+@@ -110,7 +110,7 @@ public function store(Request $request)
+                     $selflowUrl = config('external_sync.selflow_api_url', 'http://127.0.0.1:8003');
+ 
+                     $response = Http::timeout(15)->post($selflowUrl . '/api/external/register-enterprise', [
+-                        'secret'              => config('external_sync.external_sync_secret', 'selflow-comptaflow-secret-2026'),
++                        'secret'              => config('external_sync.external_sync_secret'),
+                         'nom'                 => $company->company_name,
+                         'forme_juridique'     => $company->juridique_form,
+                         'email'               => $company->email_adresse,
+diff --git a/app/Models/EcritureComptable.php b/app/Models/EcritureComptable.php
+index 768a007..598a5a3 100644
+--- a/app/Models/EcritureComptable.php
++++ b/app/Models/EcritureComptable.php
+@@ -38,6 +38,10 @@ class EcritureComptable extends Model
+         'user_id',
+         'company_id',
+         'statut',
++        // Cle d'idempotence du deversement Selflow : SELFLOW-{entreprise}-{ecriture}.
++        // Elle distingue un renvoi d'une ecriture nouvelle ; sans elle, rejouer
++        // une synchronisation dupliquait tout et la balance doublait.
++        'cle_selflow',
+     ];
+ 
+     // Si tu utilises des dates dans ce format et veux les cast automatiquement
+diff --git a/config/external_sync.php b/config/external_sync.php
+index 08c3b4e..f95bb04 100644
+--- a/config/external_sync.php
++++ b/config/external_sync.php
+@@ -20,7 +20,18 @@
+     | Clé secrète partagée entre Selflow et COMPTAFLOW.
+     | Doit être identique dans les deux .env.
+     */
+-    'external_sync_secret' => env('EXTERNAL_SYNC_SECRET', 'selflow-comptaflow-secret-2026'),
++    /*
++    | Le secret partagé avec Selflow.
++    |
++    | **Aucune valeur de repli.** Elle valait « selflow-comptaflow-secret-2026 »,
++    | en clair dans un dépôt : quiconque l'a lu pouvait déverser des écritures
++    | dans la comptabilité de n'importe quelle entreprise liée, ou lire la liste
++    | de toutes les entreprises de la plateforme. Sans la variable
++    | d'environnement, les points d'entrée externes refusent désormais tout —
++    | ce qui est le bon comportement : mieux vaut une synchronisation qui ne
++    | démarre pas qu'une porte ouverte.
++    */
++    'external_sync_secret' => env('EXTERNAL_SYNC_SECRET'),
+ 
+     /*
+     |--------------------------------------------------------------------------
+diff --git a/database/migrations/2026_08_12_000001_cle_idempotence_deversement_selflow.php b/database/migrations/2026_08_12_000001_cle_idempotence_deversement_selflow.php
+new file mode 100644
+index 0000000..be799d6
+--- /dev/null
++++ b/database/migrations/2026_08_12_000001_cle_idempotence_deversement_selflow.php
+@@ -0,0 +1,40 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * La clé d'idempotence du déversement Selflow.
++ *
++ * `n_saisie` recevait la référence de pièce, ou `SELF_ . time() . _ . $count`
++ * à défaut. Ni l'une ni l'autre ne distingue un **renvoi** d'une écriture
++ * **nouvelle** : rejouer une synchronisation — après une coupure réseau, après
++ * un retry, ou simplement en relançant la commande — dupliquait tout, et la
++ * balance doublait sans que rien ne le signale.
++ *
++ * La clé porte l'identité de l'écriture chez Selflow :
++ * `SELFLOW-{entreprise}-{ecriture}`. Elle est unique par entreprise, et un
++ * second déversement de la même écriture est reconnu et ignoré.
++ */
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::table('ecriture_comptables', function (Blueprint $table) {
++            $table->string('cle_selflow', 64)->nullable()->after('lettrage_id');
++
++            // Unique par entreprise : deux entreprises peuvent porter la même
++            // écriture n° 12 chez Selflow, ce sont deux écritures distinctes.
++            $table->unique(['company_id', 'cle_selflow'], 'ecr_cle_selflow_unique');
++        });
++    }
++
++    public function down(): void
++    {
++        Schema::table('ecriture_comptables', function (Blueprint $table) {
++            $table->dropUnique('ecr_cle_selflow_unique');
++            $table->dropColumn('cle_selflow');
++        });
++    }
++};
+-- 
+2.43.0
+
