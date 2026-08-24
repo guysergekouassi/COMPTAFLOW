@@ -517,7 +517,12 @@ class AdminConfigController extends Controller
         ]);
 
         try {
-            Excel::import(new \App\Imports\MasterPlanImport, $request->file('file'));
+            // Le chemin du fichier est indispensable : sans lui,
+            // `detectDelimiter()` retombe toujours sur « ; » et un CSV séparé
+            // par des virgules est lu comme une colonne unique. Les imports
+            // des tiers et des journaux le passaient déjà.
+            $file = $request->file('file');
+            Excel::import(new \App\Imports\MasterPlanImport($file->getRealPath()), $file);
             return redirect()->back()->with('success', 'Importation terminée avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erreur lors de l\'importation : ' . $e->getMessage());

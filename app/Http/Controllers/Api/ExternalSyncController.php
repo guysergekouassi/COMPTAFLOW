@@ -82,7 +82,7 @@ class ExternalSyncController extends Controller
      * La classe du compte SYSCOHADA dit son type, et elle le dit sans
      * ambiguïté — c'est le premier chiffre du numéro.
      */
-    private static function compteGeneral($company, string $numero, string $libelle)
+    private static function compteGeneral($company, string $numero, string $libelle, ?string $strategie = null)
     {
         $existant = PlanComptable::where('company_id', $company->id)
             ->where('numero_de_compte', $numero)
@@ -95,13 +95,17 @@ class ExternalSyncController extends Controller
             return $existant;
         }
 
-        return PlanComptable::create([
+        return PlanComptable::create(array_filter([
             'numero_de_compte' => $numero,
             'intitule'         => $libelle ?: 'Compte ' . $numero,
             'company_id'       => $company->id,
             'user_id'          => $company->user_id,
             'type_de_compte'   => self::typeDeCompte($numero),
-        ]);
+            // La classe est le premier chiffre du numéro : la renseigner ici
+            // évite qu'un compte venu de Selflow reste hors de tout état.
+            'classe'           => is_numeric(substr($numero, 0, 1)) ? substr($numero, 0, 1) : null,
+            'adding_strategy'  => $strategie,
+        ], fn ($v) => $v !== null));
     }
 
     /**
@@ -690,6 +694,418 @@ class ExternalSyncController extends Controller
             Log::error('ExternalSync deverserEcritures error', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Erreur lors du déversement : ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Reçoit le référentiel d'une entreprise Selflow : plan comptable, codes
+     * journaux, plan de tiers.
+     * POST /api/external/referentiel/deverser
+     *
+     * **Selflow déverse ; Comptaflow reçoit.** Le code faisait exactement
+     * l'inverse : Selflow appelait `link-company`, recopiait chez lui le plan
+     * comptable de Comptaflow, puis supprimait ce qui n'y figurait pas — une
+     * entreprise dont le comptable n'avait pas encore rempli son plan chez
+     * Comptaflow se retrouvait dépouillée du sien. Cette méthode-là a été
+     * retirée de Selflow ; celle-ci la remplace, dans l'autre sens.
+     *
+     * Deux règles gouvernent tout ce qui suit :
+     *
+     * - **amorcer quand Comptaflow est vide.** Une entreprise qui arrive avec
+     *   ses 38 comptes, ses 10 journaux et ses tiers n'a pas à les ressaisir ;
+     * - **ne rien écraser quand il ne l'est pas.** Ce que le comptable a saisi
+     *   ou corrigé chez Comptaflow fait foi : une ligne déjà en place n'est
+     *   jamais réécrite, seuls ses champs restés vides sont complétés. Et
+     *   **rien n'est supprimé** — c'était la faute de l'ancien sens, à ne pas
+     *   reproduire en miroir : un compte absent du déversement peut avoir été
+     *   créé par le comptable, ou porter des écritures.
+     *
+     * L'ordre compte : le plan comptable, puis les journaux, puis les tiers —
+     * un tiers renvoie à son compte général par une clé étrangère, il doit
+     * exister avant lui.
+     */
+    public function deverserReferentiel(Request $request)
+    {
+        $expectedSecret = config('external_sync.external_sync_secret');
+        $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+
+        if (!self::secretValide($providedSecret, $expectedSecret)) {
+            Log::warning('ExternalSync: secret invalide', [
+                'ip'    => $request->ip(),
+                'route' => 'api/external/referentiel/deverser',
+            ]);
+            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+        }
+
+        $request->validate([
+            'selflow_company_id'    => 'required|integer',
+            'comptaflow_company_id' => 'required|integer',
+            'plan_comptable'        => 'nullable|array',
+            'codes_journaux'        => 'nullable|array',
+            'tiers'                 => 'nullable|array',
+        ]);
+
+        // ── La liaison doit exister ──
+        //
+        // On ne reçoit que d'une entreprise déjà liée, et on n'en crée pas une
+        // au passage : un `comptaflow_company_id` erroné déverserait le
+        // référentiel d'une entreprise dans la comptabilité d'une autre.
+        $company = Company::where('id', $request->comptaflow_company_id)
+            ->where('selflow_company_id', $request->selflow_company_id)
+            ->first();
+
+        if (!$company) {
+            return response()->json([
+                'success' => false,
+                'message' => "Aucune liaison entre l'entreprise Selflow n° {$request->selflow_company_id} "
+                    . "et l'entreprise Comptaflow n° {$request->comptaflow_company_id}. "
+                    . 'Établissez la liaison avant de déverser le référentiel.',
+            ], 404);
+        }
+
+        $comptes  = ['crees' => 0, 'completes' => 0, 'inchanges' => 0];
+        $journaux = ['crees' => 0, 'completes' => 0, 'inchanges' => 0];
+        $tiers    = ['crees' => 0, 'completes' => 0, 'inchanges' => 0];
+        $refus    = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ((array) $request->input('plan_comptable', []) as $ligne) {
+                self::recevoirUnCompte($company, (array) $ligne, $comptes, $refus);
+            }
+
+            foreach ((array) $request->input('codes_journaux', []) as $ligne) {
+                self::recevoirUnJournal($company, (array) $ligne, $journaux, $refus);
+            }
+
+            foreach ((array) $request->input('tiers', []) as $ligne) {
+                self::recevoirUnTiers($company, (array) $ligne, $tiers, $refus);
+            }
+
+            DB::commit();
+
+            // Le compte rendu dit ce qui a été créé, ce qui a été complété et
+            // ce qui a été écarté. Une synchronisation qui annonce « succès »
+            // en ayant laissé la moitié des lignes de côté est pire qu'un
+            // échec : elle installe une confiance fausse.
+            return response()->json([
+                'success'  => true,
+                'comptes'  => $comptes['crees'] + $comptes['completes'] + $comptes['inchanges'],
+                'journaux' => $journaux['crees'] + $journaux['completes'] + $journaux['inchanges'],
+                'tiers'    => $tiers['crees'] + $tiers['completes'] + $tiers['inchanges'],
+                'detail'   => [
+                    'plan_comptable' => $comptes,
+                    'codes_journaux' => $journaux,
+                    'tiers'          => $tiers,
+                ],
+                'refus'    => $refus,
+                'message'  => sprintf(
+                    '%d compte(s), %d journal(aux) et %d tiers reçus : %d créé(s), %d complété(s), %d déjà conforme(s)%s.',
+                    $comptes['crees'] + $comptes['completes'] + $comptes['inchanges'],
+                    $journaux['crees'] + $journaux['completes'] + $journaux['inchanges'],
+                    $tiers['crees'] + $tiers['completes'] + $tiers['inchanges'],
+                    $comptes['crees'] + $journaux['crees'] + $tiers['crees'],
+                    $comptes['completes'] + $journaux['completes'] + $tiers['completes'],
+                    $comptes['inchanges'] + $journaux['inchanges'] + $tiers['inchanges'],
+                    $refus ? ', ' . count($refus) . ' ligne(s) écartée(s)' : ''
+                ),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('ExternalSync deverserReferentiel error', [
+                'company_id' => $company->id,
+                'error'      => $e->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du déversement du référentiel : ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Un compte du plan de Selflow.
+     *
+     * Les champs reprennent les colonnes du modèle d'import
+     * (`modele_plan_comptable.xlsx` : « N° compte » ; « Intitulé du compte »),
+     * délibérément : le déversement passe par la même logique que l'import,
+     * pas par une seconde voie à maintenir en parallèle.
+     */
+    private static function recevoirUnCompte($company, array $ligne, array &$compteur, array &$refus): void
+    {
+        $numero   = trim((string) ($ligne['numero_de_compte'] ?? ''));
+        $intitule = trim((string) ($ligne['intitule'] ?? ''));
+
+        if ($numero === '') {
+            $refus[] = 'Compte sans numéro : ' . ($intitule ?: 'ligne vide');
+            return;
+        }
+
+        $existant = PlanComptable::where('company_id', $company->id)
+            ->where('numero_de_compte', $numero)
+            ->first();
+
+        if (!$existant) {
+            $cree = self::compteGeneral($company, $numero, $intitule, 'imported');
+            self::completer($cree, ['numero_original' => $ligne['numero_original'] ?? null]);
+            $compteur['crees']++;
+            return;
+        }
+
+        // Le compte existe : son intitulé et son type appartiennent au
+        // comptable. On ne remplit que ce qui est resté vide.
+        $modifie = self::completer($existant, [
+            'numero_original' => $ligne['numero_original'] ?? null,
+            'type_de_compte'  => self::typeDeCompte($numero),
+            'classe'          => is_numeric(substr($numero, 0, 1)) ? substr($numero, 0, 1) : null,
+        ]);
+
+        $modifie ? $compteur['completes']++ : $compteur['inchanges']++;
+    }
+
+    /**
+     * Un code journal de Selflow.
+     *
+     * Colonnes du modèle `modele_codes_journaux.xlsx` : « Code » ; « Intitulé » ;
+     * « Type ». `compte_numero` porte le compte de trésorerie des journaux de
+     * banque et de caisse.
+     */
+    private static function recevoirUnJournal($company, array $ligne, array &$compteur, array &$refus): void
+    {
+        $code     = strtoupper(trim((string) ($ligne['code_journal'] ?? '')));
+        $intitule = trim((string) ($ligne['intitule'] ?? ''));
+        $type     = trim((string) ($ligne['type'] ?? ''));
+
+        if ($code === '') {
+            $refus[] = 'Journal sans code : ' . ($intitule ?: 'ligne vide');
+            return;
+        }
+
+        // Le compte de trésorerie, s'il est annoncé. Le plan comptable vient
+        // d'être déversé : il y est déjà, sauf numérotation exotique.
+        $compteTresorerie = null;
+        $compteNumero = trim((string) ($ligne['compte_numero'] ?? ''));
+        if ($compteNumero !== '') {
+            $compteTresorerie = self::compteGeneral($company, $compteNumero, $intitule, 'imported')->id;
+        }
+
+        $existant = CodeJournal::where('company_id', $company->id)
+            ->where('code_journal', $code)
+            ->first();
+
+        if (!$existant) {
+            CodeJournal::create([
+                'code_journal'          => $code,
+                'numero_original'      => $ligne['numero_original'] ?? null,
+                'intitule'             => $intitule ?: $code,
+                'type'                 => $type ?: 'Opérations Diverses',
+                'compte_de_tresorerie' => $compteTresorerie,
+                'traitement_analytique' => false,
+                'user_id'              => $company->user_id,
+                'company_id'           => $company->id,
+            ]);
+            $compteur['crees']++;
+            return;
+        }
+
+        // Le journal de Comptaflow fait foi — c'est sa configuration d'origine.
+        $modifie = self::completer($existant, [
+            'numero_original'      => $ligne['numero_original'] ?? null,
+            'type'                 => $type ?: null,
+            'compte_de_tresorerie' => $compteTresorerie,
+        ]);
+
+        $modifie ? $compteur['completes']++ : $compteur['inchanges']++;
+    }
+
+    /**
+     * Un tiers de Selflow.
+     *
+     * Colonnes du modèle `modele_plan_tiers.xlsx` : « N° tiers » ; « Intitulé
+     * du tiers » ; « Type ». Selflow transmet en plus `compte_general` — le
+     * numéro du compte collectif — et `informations`, tout ce qui n'est pas
+     * comptable.
+     */
+    private static function recevoirUnTiers($company, array $ligne, array &$compteur, array &$refus): void
+    {
+        $numero   = strtoupper(trim((string) ($ligne['numero_de_tiers'] ?? '')));
+        $intitule = trim((string) ($ligne['intitule'] ?? ''));
+        $type     = trim((string) ($ligne['type_de_tiers'] ?? ''));
+
+        if ($numero === '' || $intitule === '') {
+            $refus[] = 'Tiers incomplet : ' . ($numero ?: '(sans numéro)') . ' ' . ($intitule ?: '(sans intitulé)');
+            return;
+        }
+
+        $compteGeneralId = self::compteGeneralDuTiers($company, $ligne['compte_general'] ?? null, $numero, $type);
+
+        // `informations` — téléphone, adresse, courriel, NCC, RCCM, régime —
+        // ne passe aucun contrôle : rien de comptable n'en dépend. Un champ
+        // vide n'est pas transmis, il écraserait ce que Comptaflow détient
+        // peut-être déjà.
+        $informations = self::informationsDuTiers((array) ($ligne['informations'] ?? []));
+
+        $existant = PlanTiers::where('company_id', $company->id)
+            ->where('numero_de_tiers', $numero)
+            ->first();
+
+        if (!$existant) {
+            PlanTiers::create(array_merge([
+                'numero_de_tiers' => $numero,
+                'numero_original' => $ligne['numero_original'] ?? null,
+                'intitule'        => mb_strtoupper($intitule),
+                'type_de_tiers'   => $type ?: 'Autre',
+                'compte_general'  => $compteGeneralId,
+                'user_id'         => $company->user_id,
+                'company_id'      => $company->id,
+            ], $informations));
+            $compteur['crees']++;
+            return;
+        }
+
+        // La fiche du comptable fait foi : on complète, on ne réécrit pas.
+        $modifie = self::completer($existant, array_merge([
+            'numero_original' => $ligne['numero_original'] ?? null,
+            'compte_general'  => $compteGeneralId,
+            'type_de_tiers'   => $type ?: null,
+        ], $informations));
+
+        $modifie ? $compteur['completes']++ : $compteur['inchanges']++;
+    }
+
+    /**
+     * Le compte collectif d'un tiers.
+     *
+     * Selflow le transmet — c'est précisément ce qui manquait à
+     * `MasterTiersImport`, dont l'import échouait sur la contrainte
+     * d'intégrité. À défaut, on le déduit du préfixe du numéro de tiers, puis
+     * de son type, comme le fait déjà `linkCompany`.
+     */
+    private static function compteGeneralDuTiers($company, ?string $numeroCompte, string $numeroTiers, ?string $type): ?int
+    {
+        $numeroCompte = trim((string) $numeroCompte);
+
+        if ($numeroCompte !== '') {
+            return self::compteGeneral($company, $numeroCompte, '', 'imported')->id;
+        }
+
+        $prefixe = self::prefixeCollectif($numeroTiers, $type);
+
+        if (!$prefixe) {
+            return null;
+        }
+
+        return PlanComptable::where('company_id', $company->id)
+            ->where('numero_de_compte', 'like', $prefixe . '%')
+            ->orderBy('numero_de_compte')
+            ->value('id');
+    }
+
+    /**
+     * Le compte collectif déduit d'un numéro de tiers, ou de son type :
+     * `401…` fournisseurs, `410…` / `411…` clients.
+     */
+    private static function prefixeCollectif(string $numeroTiers, ?string $type): ?string
+    {
+        if (str_starts_with($numeroTiers, '401')) {
+            return '401';
+        }
+
+        if (str_starts_with($numeroTiers, '410') || str_starts_with($numeroTiers, '411')) {
+            return '411';
+        }
+
+        $type = strtolower(trim((string) $type));
+
+        if (str_contains($type, 'fourn')) {
+            return '401';
+        }
+
+        if (str_contains($type, 'client')) {
+            return '411';
+        }
+
+        return null;
+    }
+
+    /**
+     * Les informations non comptables d'un tiers, ramenées aux colonnes de
+     * `plan_tiers`. Ce que l'on ne sait pas ranger est ignoré : `informations`
+     * est un dépôt libre côté Selflow, et rien de comptable n'en dépend.
+     */
+    private static function informationsDuTiers(array $informations): array
+    {
+        $alias = [
+            'telephone'           => 'telephone',
+            'tel'                 => 'telephone',
+            'phone'               => 'telephone',
+            'email'               => 'email',
+            'courriel'            => 'email',
+            'mail'                => 'email',
+            'adresse'             => 'adresse',
+            'address'             => 'adresse',
+            'ncc'                 => 'ncc',
+            'rccm'                => 'rccm',
+            'compte_contribuable' => 'compte_contribuable',
+            'regime'              => 'regime',
+            'regime_imposition'   => 'regime',
+        ];
+
+        $colonnes = [];
+
+        foreach ($informations as $cle => $valeur) {
+            if (!is_scalar($valeur)) {
+                continue;
+            }
+
+            $valeur = trim((string) $valeur);
+
+            if ($valeur === '') {
+                continue;
+            }
+
+            $normalisee = strtolower(trim((string) $cle));
+
+            if (isset($alias[$normalisee])) {
+                $colonnes[$alias[$normalisee]] = $valeur;
+            }
+        }
+
+        return $colonnes;
+    }
+
+    /**
+     * Remplit les champs restés vides d'une ligne existante, et **ceux-là
+     * seuls**.
+     *
+     * C'est la règle du déversement : ce que le comptable a saisi chez
+     * Comptaflow lui appartient, ce qui manque peut venir de Selflow.
+     *
+     * @return bool vrai si quelque chose a été écrit
+     */
+    private static function completer($modele, array $valeurs): bool
+    {
+        $aRemplir = [];
+
+        foreach ($valeurs as $colonne => $valeur) {
+            if ($valeur === null || $valeur === '') {
+                continue;
+            }
+
+            $actuel = $modele->{$colonne};
+
+            if ($actuel === null || $actuel === '') {
+                $aRemplir[$colonne] = $valeur;
+            }
+        }
+
+        if (!$aRemplir) {
+            return false;
+        }
+
+        $modele->fill($aRemplir)->save();
+
+        return true;
     }
 
     /**
