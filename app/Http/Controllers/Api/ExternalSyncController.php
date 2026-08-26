@@ -9,20 +9,22 @@ use App\Models\EcritureComptable;
 use App\Models\ExerciceComptable;
 use App\Models\PlanComptable;
 use App\Models\PlanTiers;
-use App\Models\TreasuryCategory;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 
 /**
  * ExternalSyncController
- * Endpoint API dédié à la liaison Selflow ↔ COMPTAFLOW.
- * Sécurisé par un secret partagé (header ou body).
+ * Points d'entrée de la liaison Selflow ↔ COMPTAFLOW.
+ *
+ * Le secret partagé `EXTERNAL_SYNC_SECRET` dit que l'appel vient de Selflow ; il
+ * ne dit **pas quelle entreprise appelle**. Les deux déversements sont donc
+ * désormais filtrés par `cle.entreprise`, qui résout le dossier depuis l'en-tête
+ * `X-Company-Key` et refuse une clé désignant un autre dossier que celui annoncé
+ * dans le corps. Le cycle de vie de cette clé — provision, revoke, verify — vit
+ * dans `ExternalCompanyController`.
  */
 class ExternalSyncController extends Controller
 {
@@ -182,127 +184,63 @@ class ExternalSyncController extends Controller
     }
 
     /**
-     * Crée une entreprise + un administrateur depuis une requête externe (ex : Selflow).
-     * POST /api/external/register-enterprise
+     * Le dossier visé par la requête — d'après la clé, pas d'après le corps.
+     *
+     * `entreprise_liee` est posé par le filtre `cle.entreprise` à partir de
+     * l'en-tête `X-Company-Key`, et c'est la seule source digne de foi : le
+     * secret partagé dit que l'appel vient de Selflow, il ne dit pas de quelle
+     * entreprise. Chercher le dossier dans le corps revenait à laisser
+     * l'appelant désigner lui-même les livres dans lesquels il écrit.
+     *
+     * Le `??` est la **TOLÉRANCE DE TRANSITION** : tant que les deux
+     * applications ne sont pas déployées ensemble, un Selflow d'avant ce lot
+     * appelle encore sans en-tête. Il se retire en même temps que celle de
+     * `VerifieCleEntreprise` — les deux vont par paire, et tant qu'elles sont
+     * là le secret partagé suffit toujours à écrire dans n'importe quel dossier.
      */
-    public function registerEnterprise(Request $request)
+    private static function entrepriseDeLaRequete(Request $request): ?Company
     {
-        // ── Vérification du secret partagé ──
-        $expectedSecret = config('external_sync.external_sync_secret');
-        $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+        $entreprise = $request->attributes->get('entreprise_liee');
 
-        if (!self::secretValide($providedSecret, $expectedSecret)) {
-            Log::warning('ExternalSync: secret invalide', ['ip' => $request->ip()]);
-            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+        if ($entreprise instanceof Company) {
+            return $entreprise;
         }
 
-        // ── Validation ──
-        $validator = Validator::make($request->all(), [
-            'company_name'       => 'required|string|max:255',
-            'activity'           => 'nullable|string|max:255',
-            'juridique_form'     => 'nullable|string|max:50',
-            'adresse'            => 'nullable|string|max:255',
-            'city'               => 'nullable|string|max:100',
-            'country'            => 'nullable|string|max:100',
-            'phone_number'       => 'nullable|string|max:30',
-            'email_adresse'      => 'required|email|max:255',
-            'ncc'                => 'nullable|string|max:50',
-            'rccm'               => 'nullable|string|max:100',
-            'compte_contribuable'=> 'nullable|string|max:100',
-            'regime'             => 'nullable|string|max:80',
-            'admin_nom'          => 'nullable|string|max:100',
-            'admin_prenom'       => 'nullable|string|max:150',
-            'admin_password'     => 'required|string|min:8',
-            'selflow_company_id' => 'nullable|integer',
-            'selflow_sync_key'   => 'nullable|string|max:100',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Données invalides.',
-                'errors'  => $validator->errors(),
-            ], 422);
-        }
-
-        // ── Vérifier unicité email / company_name ──
-        if (User::where('email_adresse', $request->email_adresse)->exists()) {
-            return response()->json(['success' => false, 'message' => 'Un compte avec cet email existe déjà.'], 409);
-        }
-        if (Company::where('company_name', $request->company_name)->exists()) {
-            return response()->json(['success' => false, 'message' => 'Une entreprise avec ce nom existe déjà.'], 409);
-        }
-
-        DB::beginTransaction();
-        try {
-            // 1. Créer l'entreprise
-            $company = Company::create([
-                'company_name'        => $request->company_name,
-                'activity'            => $request->activity ?? 'Commercial',
-                'juridique_form'      => $request->juridique_form ?? 'SARL',
-                'social_capital'      => $request->social_capital ?? 0,
-                'adresse'             => $request->adresse,
-                'code_postal'         => '',
-                'city'                => $request->city ?? 'Abidjan',
-                'country'             => $request->country ?? "Côte d'Ivoire",
-                'phone_number'        => $request->phone_number,
-                'email_adresse'       => $request->email_adresse,
-                'ncc'                 => $request->ncc,
-                'rccm'                => $request->rccm,
-                'compte_contribuable' => $request->compte_contribuable,
-                'regime'              => $request->regime,
-                'is_active'           => true,
-                'selflow_company_id'  => $request->selflow_company_id,
-                'selflow_sync_key'    => $request->selflow_sync_key,
-                'selflow_sync_status' => 'active',
-                'user_id'             => 0, // sera mis à jour après
-            ]);
-
-            // 2. Créer l'admin
-            $adminUser = User::create([
-                'name'          => $request->admin_nom ?? 'Admin',
-                'last_name'     => $request->admin_prenom ?? '',
-                'email_adresse' => $request->email_adresse,
-                'password'      => Hash::make($request->admin_password),
-                'role'          => 'admin',
-                'company_id'    => $company->id,
-                'is_active'     => true,
-            ]);
-
-            // 3. Lier l'admin à l'entreprise
-            $company->update(['user_id' => $adminUser->id]);
-
-            // 4. Créer les catégories TFT obligatoires
-            foreach ([
-                'I. Flux de trésorerie des activités opérationnelles',
-                'II. Flux de trésorerie des activités d\'investissement',
-                'III. Flux de trésorerie des activités de financement',
-            ] as $catName) {
-                TreasuryCategory::create(['name' => $catName, 'company_id' => $company->id]);
-            }
-
-            DB::commit();
-
-            Log::info('ExternalSync: entreprise créée depuis Selflow', [
-                'company_id'   => $company->id,
-                'company_name' => $company->company_name,
-            ]);
-
-            return response()->json([
-                'success'    => true,
-                'company_id' => $company->id,
-                'message'    => 'Entreprise et administrateur créés avec succès dans COMPTAFLOW.',
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('ExternalSync: erreur création entreprise', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur interne : ' . $e->getMessage(),
-            ], 500);
-        }
+        return Company::where('selflow_company_id', $request->input('selflow_company_id'))->first();
     }
+
+    /**
+     * Date la **réception** d'un déversement accepté.
+     *
+     * Selflow affiche cette date à l'entreprise, et il l'écrivait jusqu'ici au
+     * moment de l'*envoi* : elle datait une réception qui n'avait pas eu lieu —
+     * un déversement refusé, ou perdu en route, laissait quand même « dernière
+     * synchronisation : aujourd'hui » à l'écran.
+     */
+    private static function daterLaReception(Company $company): void
+    {
+        $company->forceFill(['selflow_last_deposit_at' => now()])->save();
+    }
+
+    /**
+     * `registerEnterprise` a été retirée avec sa route.
+     *
+     * `POST /api/external/companies/provision` la remplace
+     * (`ExternalCompanyController`). Trois raisons, dans cet ordre :
+     *
+     * - elle exigeait `admin_password` : le superadministrateur Selflow
+     *   choisissait le mot de passe du compte d'un client, et cette valeur
+     *   traversait la passerelle **en clair** dans le corps de la requête ;
+     * - elle acceptait `selflow_sync_key` depuis le corps — c'est-à-dire que
+     *   l'appelant choisissait lui-même le laissez-passer que Comptaflow allait
+     *   ensuite reconnaître. La clé est désormais générée ici ;
+     * - plus rien ne l'appelait depuis Selflow dans ce sens.
+     *
+     * ⚠️ La route **homonyme de Selflow** reste en place : Comptaflow l'appelle
+     * toujours pour créer une entreprise *chez Selflow*
+     * (`SuperAdminCompanyController`, `SuperAdminLiaisonController`). Les deux
+     * portent le même chemin de chaque côté de la passerelle.
+     */
 
     /**
      * Crée une entreprise dans SELFLOW depuis COMPTAFLOW.
@@ -353,9 +291,21 @@ class ExternalSyncController extends Controller
             'fournisseurs'       => 'nullable|array',
         ]);
 
-        $company = Company::where('selflow_sync_key', $request->selflow_sync_key)->first();
+        // La clé n'est plus stockée en clair : la recherche porte sur son
+        // SHA-256, indexé et unique. Les liaisons établies avant ce lot ont été
+        // basculées par la migration, elles continuent donc de répondre ici.
+        $company = Company::where('selflow_sync_key_hash', hash('sha256', $request->selflow_sync_key))->first();
+
         if (!$company) {
             return response()->json(['success' => false, 'message' => 'Clé de synchronisation COMPTAFLOW invalide.'], 404);
+        }
+
+        if ($company->selflow_sync_key_revoked_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Clé de synchronisation révoquée le '
+                    . $company->selflow_sync_key_revoked_at->format('d/m/Y') . '.',
+            ], 401);
         }
 
         DB::beginTransaction();
@@ -563,7 +513,8 @@ class ExternalSyncController extends Controller
             'ecritures'          => 'required|array',
         ]);
 
-        $company = Company::where('selflow_company_id', $request->selflow_company_id)->first();
+        $company = self::entrepriseDeLaRequete($request);
+
         if (!$company) {
             return response()->json(['success' => false, 'message' => 'Entreprise non trouvée ou non connectée.'], 404);
         }
@@ -673,6 +624,8 @@ class ExternalSyncController extends Controller
                 $count++;
             }
 
+            self::daterLaReception($company);
+
             DB::commit();
 
             // Le compte rendu dit ce qui est passé, ce qui était déjà là, et
@@ -749,9 +702,19 @@ class ExternalSyncController extends Controller
         // On ne reçoit que d'une entreprise déjà liée, et on n'en crée pas une
         // au passage : un `comptaflow_company_id` erroné déverserait le
         // référentiel d'une entreprise dans la comptabilité d'une autre.
-        $company = Company::where('id', $request->comptaflow_company_id)
-            ->where('selflow_company_id', $request->selflow_company_id)
-            ->first();
+        //
+        // Le dossier vient d'abord de la clé d'en-tête, que `cle.entreprise` a
+        // déjà confrontée aux deux identifiants du corps. Le repli croise les
+        // deux identifiants entre eux — c'est tout ce qu'on peut faire sans
+        // clé, et cela ne vaut que le temps de la transition : les deux valeurs
+        // viennent du même corps de requête, donc du même appelant.
+        $company = self::entrepriseDeLaRequete($request);
+
+        if ($company
+            && ((int) $company->id !== (int) $request->comptaflow_company_id
+                || (int) $company->selflow_company_id !== (int) $request->selflow_company_id)) {
+            $company = null;
+        }
 
         if (!$company) {
             return response()->json([
@@ -780,6 +743,8 @@ class ExternalSyncController extends Controller
             foreach ((array) $request->input('tiers', []) as $ligne) {
                 self::recevoirUnTiers($company, (array) $ligne, $tiers, $refus);
             }
+
+            self::daterLaReception($company);
 
             DB::commit();
 

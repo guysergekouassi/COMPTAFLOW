@@ -135,21 +135,60 @@ Route::prefix('v1')->group(function () {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Routes de synchronisation externe (Selflow ↔ COMPTAFLOW)
-// Protégées par un secret partagé (pas d'auth JWT requise)
+//
+// Le secret serveur `EXTERNAL_SYNC_SECRET` dit que l'appel vient de Selflow ;
+// il ne dit pas **quelle entreprise** appelle. C'était le corps de la requête
+// qui l'annonçait, et Comptaflow le croyait sur parole : quiconque détenait le
+// secret pouvait écrire dans les livres de n'importe quelle entreprise en
+// changeant un entier dans un JSON.
+//
+// Chaque dossier porte désormais sa propre clé, présentée en en-tête
+// `X-Company-Key` et vérifiée par `cle.entreprise`, qui refuse une clé
+// désignant un autre dossier que celui annoncé dans le corps.
 // ═══════════════════════════════════════════════════════════════════════════
 Route::prefix('external')->group(function () {
-    Route::post('/register-enterprise', [\App\Http\Controllers\Api\ExternalSyncController::class, 'registerEnterprise'])
-        ->name('api.external.register-enterprise');
-    Route::get('/status', [\App\Http\Controllers\Api\ExternalSyncController::class, 'syncStatus'])
-        ->name('api.external.sync-status');
-    Route::post('/link-company', [\App\Http\Controllers\Api\ExternalSyncController::class, 'linkCompany'])
-        ->name('api.external.link-company');
+    // ── Le cycle de vie de la liaison ──
+    //
+    // `provision` est le seul appel sans `cle.entreprise` : il n'y a pas encore
+    // de clé à présenter, puisque c'est lui qui la génère. D'où la limitation
+    // de débit serrée — c'est aussi le seul qui crée des dossiers.
+    Route::post('/companies/provision', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'provision'])
+        ->middleware('throttle:6,1')
+        ->name('api.external.companies.provision');
+    Route::post('/companies/revoke', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'revoke'])
+        ->middleware(['cle.entreprise', 'throttle:20,1'])
+        ->name('api.external.companies.revoke');
+    Route::post('/companies/verify', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'verify'])
+        ->middleware(['cle.entreprise', 'throttle:60,1'])
+        ->name('api.external.companies.verify');
+
+    // ── Les deux déversements ──
+    //
+    // C'est ici que la clé sert vraiment : sans `cle.entreprise` sur ces deux
+    // routes, tout le reste ne sert à rien.
     Route::post('/ecritures/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserEcritures'])
+        ->middleware('cle.entreprise')
         ->name('api.external.ecritures.deverser');
     // Selflow déverse son référentiel — plan comptable, journaux, tiers — dans
     // l'entreprise Comptaflow qui lui est liée. Sens unique : rien ne repart.
     Route::post('/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
+        ->middleware('cle.entreprise')
         ->name('api.external.referentiel.deverser');
+
+    // ── Le reste de la passerelle ──
+    //
+    // `register-enterprise` a été retirée : `companies/provision` la remplace,
+    // plus rien ne l'appelait depuis Selflow dans ce sens, et elle exigeait un
+    // `admin_password` transporté en clair dans le corps de la requête.
+    //
+    // ⚠️ Ne pas confondre avec la route **homonyme de Selflow** : Comptaflow
+    // l'appelle toujours pour créer une entreprise *chez Selflow*
+    // (SuperAdminCompanyController, SuperAdminLiaisonController). Les deux
+    // portent le même chemin de chaque côté de la passerelle ; celle-là reste.
+    Route::get('/status', [\App\Http\Controllers\Api\ExternalSyncController::class, 'syncStatus'])
+        ->name('api.external.sync-status');
+    Route::post('/link-company', [\App\Http\Controllers\Api\ExternalSyncController::class, 'linkCompany'])
+        ->name('api.external.link-company');
     Route::post('/list-companies', [\App\Http\Controllers\Api\ExternalSyncController::class, 'listCompanies'])
         ->name('api.external.list-companies');
     Route::post('/company-info', [\App\Http\Controllers\Api\ExternalSyncController::class, 'companyInfo'])
