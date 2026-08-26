@@ -275,6 +275,11 @@ class DeversementReferentielTest extends TestCase
             $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('selflow_company_id')->nullable();
             $table->integer('tier_digits')->default(6);
+            // Un déversement accepté date sa **réception** : Selflow affichait
+            // cette date à l'entreprise en l'écrivant au moment de l'*envoi*,
+            // ce qui datait une réception qui n'avait pas forcément eu lieu.
+            $table->timestamp('selflow_last_deposit_at')->nullable();
+            $table->timestamps();
         });
 
         Schema::create('plan_comptables', function (Blueprint $table) {
