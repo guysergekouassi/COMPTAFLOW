@@ -338,6 +338,12 @@ class ExternalCompanyController extends Controller
             // répondre « révoquée le … » plutôt que « inconnue ».
             'selflow_sync_key_revoked_at' => now(),
             'selflow_sync_status'         => 'revoked',
+            // Couper la liaison coupe aussi la grâce d'un renouvellement récent.
+            // Le filtre refuserait de toute façon un dossier révoqué, quelle que
+            // soit la clé présentée ; mais laisser un haché dont plus personne ne
+            // veut ne sert qu'à le faire fuiter un jour.
+            'selflow_sync_key_hash_precedente'      => null,
+            'selflow_sync_key_precedente_expire_at' => null,
         ])->save();
 
         Log::info('Liaison Selflow : clé révoquée', [
@@ -350,6 +356,125 @@ class ExternalCompanyController extends Controller
             'company_id' => $company->id,
             'revoked_at' => $company->selflow_sync_key_revoked_at->toIso8601String(),
             'message'    => 'Liaison coupée. Le dossier comptable et ses écritures sont conservés.',
+        ]);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // rotate-key
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Renouvelle la clé de liaison. La clé actuelle authentifie sa propre relève.
+     *
+     * POST /api/external/companies/rotate-key — secret serveur + `X-Company-Key`.
+     *
+     * **Une clé éternelle ouvre le dossier comptable d'une entreprise aussi
+     * longtemps qu'il existe.** Un prestataire qui a vu passer une requête, une
+     * sauvegarde égarée, un journal mal purgé : rien ne referme derrière eux. La
+     * rotation n'empêche pas une fuite, elle borne sa durée de vie à un mois.
+     *
+     * Comme au provisionnement, **c'est Comptaflow qui génère** : la clé désigne
+     * un dossier *ici*. Selflow appelle depuis deux endroits — un bouton du
+     * superadministrateur, et une tâche mensuelle sur les clés de plus de trente
+     * jours — et n'écrit rien tant qu'il n'a pas la nouvelle en main. Un appel
+     * qui échoue laisse donc l'ancienne clé active : le déversement continue.
+     *
+     * ── Pourquoi pas de tolérance de transition ici ──────────────────────────
+     *
+     * Les autres points d'entrée acceptent encore un appel sans en-tête, le
+     * temps que les deux applications soient déployées. Pas celui-ci, et c'est
+     * délibéré : un renouvellement sans clé serait une **prise de liaison en un
+     * appel** — l'appelant repart avec la clé neuve, et le détenteur légitime se
+     * fait couper cinq minutes plus tard. Personne n'en a besoin non plus : on
+     * ne renouvelle que ce qu'on détient déjà. Refuser ici ne coûte rien et
+     * ferme la pire chose que la tolérance laisserait passer.
+     */
+    public function rotateKey(Request $request)
+    {
+        if ($refus = $this->refusDeSecret($request, 'api/external/companies/rotate-key')) {
+            return $refus;
+        }
+
+        $company = $request->attributes->get('entreprise_liee');
+
+        if (!$company instanceof Company) {
+            Log::warning('Liaison Selflow : renouvellement demandé sans clé', [
+                'ip'                 => $request->ip(),
+                'selflow_company_id' => $request->input('selflow_company_id'),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Le renouvellement exige la clé actuelle en en-tête X-Company-Key : '
+                    . 'c\'est elle qui authentifie sa propre relève.',
+            ], 401);
+        }
+
+        // ── Un renouvellement rejoué ──
+        //
+        // La demande présentée avec la clé **précédente** ne peut vouloir dire
+        // qu'une chose : Selflow n'a pas reçu la réponse du premier appel — un
+        // délai réseau, une coupure — et il rejoue avec la seule clé qu'il ait.
+        // Lui en tirer une troisième condamnerait sur-le-champ celle qu'il vient
+        // de recevoir sans le savoir, et les écritures encore en vol avec elle.
+        // On lui rend celle qui est en place : la grâce garde **une** clé
+        // précédente, pas une pile.
+        if ($request->attributes->get('cle_de_liaison_en_grace') === true) {
+            $courante = $company->cleDeLiaisonEnClair();
+
+            if ($courante !== null) {
+                Log::info('Liaison Selflow : renouvellement rejoué, la clé en place est rendue', [
+                    'company_id' => $company->id,
+                ]);
+
+                return $this->reponseDeRenouvellement($company, $courante, true);
+            }
+            // `APP_KEY` a changé : la clé en place est illisible et ne sert plus
+            // à personne. On tombe dans le renouvellement ordinaire, qui en pose
+            // une neuve — c'est la seule issue qui rétablisse la liaison.
+        }
+
+        DB::beginTransaction();
+        try {
+            $cle = $company->renouvelerLaCleDeLiaison();
+            DB::commit();
+        } catch (\Throwable $e) {
+            // La transaction remet l'ancienne clé : Selflow garde la sienne, qui
+            // fonctionne toujours, et il réessaiera. Un renouvellement à moitié
+            // écrit couperait la liaison jusqu'à une intervention manuelle.
+            DB::rollBack();
+            Log::error('Liaison Selflow : échec du renouvellement de clé', [
+                'company_id' => $company->id,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du renouvellement de la clé.',
+            ], 500);
+        }
+
+        Log::info('Liaison Selflow : clé renouvelée', [
+            'company_id'         => $company->id,
+            'selflow_company_id' => $company->selflow_company_id,
+            'grace_jusqu_a'      => $company->selflow_sync_key_precedente_expire_at?->toIso8601String(),
+        ]);
+
+        return $this->reponseDeRenouvellement($company, $cle, false);
+    }
+
+    private function reponseDeRenouvellement(Company $company, string $cle, bool $rejoue)
+    {
+        return response()->json([
+            'success'    => true,
+            'company_id' => $company->id,
+            'sync_key'   => $cle,
+            // De quoi savoir, côté Selflow, jusqu'à quand un déversement parti
+            // avec l'ancienne clé sera encore accepté.
+            'previous_key_valid_until' => $company->graceEncoreOuverte()
+                ? $company->selflow_sync_key_precedente_expire_at->toIso8601String()
+                : null,
+            'replayed'   => $rejoue,
         ]);
     }
 
@@ -390,6 +515,11 @@ class ExternalCompanyController extends Controller
             'revoked_at'         => $revoquee ? $company->selflow_sync_key_revoked_at->toIso8601String() : null,
             'linked_at'          => $company->selflow_linked_at?->toIso8601String(),
             'last_deposit_at'    => $company->selflow_last_deposit_at?->toIso8601String(),
+            // La date du dernier renouvellement : c'est elle que la tâche
+            // mensuelle de Selflow regarde pour décider quelles clés ont passé
+            // trente jours. `linked_at`, elle, se remet à zéro pour de tout
+            // autres raisons — un reprovisionnement, par exemple.
+            'key_rotated_at'     => $company->selflow_sync_key_rotated_at?->toIso8601String(),
             'message'            => $revoquee
                 ? 'Liaison révoquée le ' . $company->selflow_sync_key_revoked_at->format('d/m/Y') . '.'
                 : 'Liaison active.',

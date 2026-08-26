@@ -21,6 +21,7 @@ use Tests\TestCase;
 class MigrationCleDeLiaisonTest extends TestCase
 {
     private const MIGRATION = __DIR__ . '/../../database/migrations/2026_08_26_000001_cle_de_liaison_par_entreprise.php';
+    private const MIGRATION_GRACE = __DIR__ . '/../../database/migrations/2026_08_26_000003_grace_de_rotation_de_cle.php';
 
     private function monterCompanies(): void
     {
@@ -37,6 +38,29 @@ class MigrationCleDeLiaisonTest extends TestCase
     private function jouerLaMigration(): void
     {
         (require self::MIGRATION)->up();
+    }
+
+    public function test_la_grace_de_rotation_sinstalle_et_se_defait(): void
+    {
+        // La migration de la grâce se joue **après** celle de la clé, et ses
+        // colonnes se posent `after` les siennes : jouée dans le désordre, ou
+        // rejouée, elle ne doit pas s'effondrer — une migration qui échoue à
+        // mi-chemin laisse une base que personne ne sait plus décrire.
+        $this->monterCompanies();
+        $this->jouerLaMigration();
+
+        (require self::MIGRATION_GRACE)->up();
+
+        $this->assertTrue(Schema::hasColumn('companies', 'selflow_sync_key_hash_precedente'));
+        $this->assertTrue(Schema::hasColumn('companies', 'selflow_sync_key_precedente_expire_at'));
+        $this->assertTrue(Schema::hasColumn('companies', 'selflow_sync_key_rotated_at'));
+
+        // Rejouée, elle ne fait rien de plus.
+        (require self::MIGRATION_GRACE)->up();
+        $this->assertTrue(Schema::hasColumn('companies', 'selflow_sync_key_rotated_at'));
+
+        (require self::MIGRATION_GRACE)->down();
+        $this->assertFalse(Schema::hasColumn('companies', 'selflow_sync_key_hash_precedente'));
     }
 
     public function test_une_cle_deja_posee_en_clair_bascule_en_hache_et_copie_chiffree(): void

@@ -34,6 +34,14 @@ use Symfony\Component\HttpFoundation\Response;
  * distinguer une mise en service ratée d'une tentative d'écriture croisée, et
  * c'est la seconde qu'on veut voir arriver. D'où la journalisation des **deux**
  * identifiants sur le refus 403.
+ *
+ * ── La clé précédente ────────────────────────────────────────────────────────
+ *
+ * Depuis que la clé se renouvelle (`companies/rotate-key`), celle qu'elle
+ * remplace reste acceptée cinq minutes. Un déversement **déjà parti** au moment
+ * du renouvellement porte encore l'ancienne et arrive après elle : sans cette
+ * grâce, il échouerait une fois par mois, au hasard, pour une raison qu'aucun
+ * journal ne nommerait. Elle est essayée **en second**, jamais en premier.
  */
 class VerifieCleEntreprise
 {
@@ -79,7 +87,31 @@ class VerifieCleEntreprise
         // La recherche porte sur le haché, jamais sur la valeur : la clé n'est
         // lisible dans aucune colonne, et l'index unique évite un balayage de
         // la table des dossiers à chaque écriture reçue.
-        $entreprise = Company::where('selflow_sync_key_hash', hash('sha256', $cle))->first();
+        $hache = hash('sha256', $cle);
+        $entreprise = Company::where('selflow_sync_key_hash', $hache)->first();
+        $parGrace = false;
+
+        // ── La clé précédente, essayée **en second** ──
+        //
+        // L'ordre n'est pas une commodité. Une clé révoquée puis reprovisionnée
+        // ne doit jamais redevenir valide par l'arrière : la clé courante d'un
+        // dossier prime toujours sur la clé périmée d'un autre, sans quoi une
+        // valeur qu'on croit remplacée continuerait de désigner quelqu'un.
+        if (!$entreprise) {
+            $grace = self::parLaCleDeGrace($hache);
+            $entreprise = $grace['entreprise'];
+            $parGrace   = $grace['grace'];
+
+            if (!$entreprise && $grace['expiree']) {
+                // Nommer la cause, comme pour la révocation : « clé inconnue »
+                // enverrait chercher une panne de réseau alors que la réponse
+                // tient en une ligne — le renouvellement du mois est passé, et
+                // c'est la clé qu'il a rendue qu'il faut présenter.
+                return self::refus($request, 401, 'Clé de synchronisation renouvelée : la période de '
+                    . 'grâce de l\'ancienne clé est expirée. Présentez la clé rendue par le dernier '
+                    . 'renouvellement (companies/rotate-key).');
+            }
+        }
 
         if (!$entreprise) {
             return self::refus($request, 401, 'Clé de synchronisation inconnue.');
@@ -117,8 +149,47 @@ class VerifieCleEntreprise
         }
 
         $request->attributes->set('entreprise_liee', $entreprise);
+        // `rotate-key` en a besoin : une demande de renouvellement présentée
+        // avec la clé **précédente** est un renouvellement rejoué — Selflow n'a
+        // pas reçu la réponse du premier. Il faut lui rendre la clé courante,
+        // pas en tirer une troisième.
+        $request->attributes->set('cle_de_liaison_en_grace', $parGrace);
 
         return $next($request);
+    }
+
+    /**
+     * Le dossier dont la clé vient d'être remplacée, si la grâce court encore.
+     *
+     * Un déversement parti juste avant un renouvellement porte l'ancienne clé et
+     * arrive après elle : le refuser ferait perdre des écritures une fois par
+     * mois, au hasard, pour une raison qu'aucun journal ne nommerait.
+     *
+     * Passé la grâce, l'ancienne ne vaut plus rien — et on la retire de la base
+     * au passage plutôt que de la garder « au cas où ».
+     *
+     * @return array{entreprise: Company|null, grace: bool, expiree: bool}
+     */
+    private static function parLaCleDeGrace(string $hache): array
+    {
+        $entreprise = Company::where('selflow_sync_key_hash_precedente', $hache)->first();
+
+        if (!$entreprise) {
+            return ['entreprise' => null, 'grace' => false, 'expiree' => false];
+        }
+
+        if (!$entreprise->graceEncoreOuverte()) {
+            $entreprise->oublierLaCleDeGrace();
+
+            return ['entreprise' => null, 'grace' => false, 'expiree' => true];
+        }
+
+        Log::info('Liaison Selflow : appel accepté avec la clé précédente, dans la période de grâce', [
+            'company_id' => $entreprise->id,
+            'expire_a'   => $entreprise->selflow_sync_key_precedente_expire_at->toIso8601String(),
+        ]);
+
+        return ['entreprise' => $entreprise, 'grace' => true, 'expiree' => false];
     }
 
     /**

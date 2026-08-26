@@ -24,6 +24,8 @@ class Company extends Model
         'selflow_company_id', 'selflow_sync_key', 'selflow_sync_status',
         'selflow_sync_key_hash', 'selflow_sync_key_chiffree', 'selflow_sync_key_revoked_at',
         'selflow_linked_at', 'selflow_last_deposit_at',
+        'selflow_sync_key_hash_precedente', 'selflow_sync_key_precedente_expire_at',
+        'selflow_sync_key_rotated_at',
     ];
 
     protected $casts = [
@@ -35,6 +37,8 @@ class Company extends Model
         'selflow_sync_key_revoked_at' => 'datetime',
         'selflow_linked_at'           => 'datetime',
         'selflow_last_deposit_at'     => 'datetime',
+        'selflow_sync_key_precedente_expire_at' => 'datetime',
+        'selflow_sync_key_rotated_at'           => 'datetime',
     ];
 
     /**
@@ -45,7 +49,10 @@ class Company extends Model
      * d'API la publierait. `companies/provision` la déchiffre explicitement, et
      * c'est le seul endroit qui en a besoin.
      */
-    protected $hidden = ['selflow_sync_key', 'selflow_sync_key_hash', 'selflow_sync_key_chiffree'];
+    protected $hidden = [
+        'selflow_sync_key', 'selflow_sync_key_hash', 'selflow_sync_key_chiffree',
+        'selflow_sync_key_hash_precedente',
+    ];
 
     /**
      * Le préfixe des clés de liaison.
@@ -55,6 +62,17 @@ class Company extends Model
      * de support — et donc de savoir qu'il faut le révoquer.
      */
     public const PREFIXE_CLE_LIAISON = 'cptf_live_';
+
+    /**
+     * Combien de temps l'ancienne clé survit à son remplacement.
+     *
+     * Assez pour qu'un déversement **déjà parti** au moment du renouvellement se
+     * pose — sans quoi cet appel-là échouerait une fois par mois, au hasard, et
+     * pour une raison introuvable dans les journaux. Assez peu pour que la
+     * rotation garde son sens : passé ce délai, la clé remplacée ne vaut plus
+     * rien et ses colonnes sont vidées.
+     */
+    public const MINUTES_DE_GRACE = 5;
 
     /**
      * Génère la clé de liaison du dossier, la range, et rend sa valeur en clair.
@@ -86,9 +104,76 @@ class Company extends Model
             'selflow_sync_key_revoked_at' => null,
             'selflow_sync_status'         => 'active',
             'selflow_linked_at'           => now(),
+            // Poser une clé neuve efface la grâce d'un renouvellement antérieur.
+            // Sans cette remise à zéro, une clé révoquée puis reprovisionnée
+            // redeviendrait valide **par l'arrière** : le dossier retrouve une
+            // clé courante, la révocation tombe, et l'ancienne clé encore rangée
+            // en `précédente` recommencerait à ouvrir la porte.
+            'selflow_sync_key_hash_precedente'      => null,
+            'selflow_sync_key_precedente_expire_at' => null,
+            // Depuis quand *cette* clé-ci est en place — c'est l'âge que la
+            // tâche mensuelle de Selflow interroge pour décider laquelle
+            // renouveler. Une clé posée au provisionnement vieillit comme les
+            // autres : sans cette date, elle resterait éternelle faute d'avoir
+            // jamais été renouvelée une première fois.
+            'selflow_sync_key_rotated_at'           => now(),
         ])->save();
 
         return $cle;
+    }
+
+    /**
+     * Renouvelle la clé du dossier, en laissant l'ancienne vivre cinq minutes.
+     *
+     * `rotate-key` l'appelle, et rien d'autre. La clé courante devient la clé
+     * précédente le temps de la grâce : ce que le filtre `cle.entreprise`
+     * accepte **en second**, jamais en premier.
+     *
+     * Un dossier sans clé courante n'ouvre pas de grâce — il n'y a rien à
+     * laisser vivre, et écrire `null` en clé précédente ferait accepter les
+     * appels dont l'en-tête ne se hache sur rien.
+     */
+    public function renouvelerLaCleDeLiaison(): string
+    {
+        $ancienHache = $this->selflow_sync_key_hash;
+
+        $cle = $this->poserUneCleDeLiaison();
+
+        $this->forceFill([
+            'selflow_sync_key_hash_precedente'      => $ancienHache,
+            'selflow_sync_key_precedente_expire_at' => $ancienHache
+                ? now()->addMinutes(self::MINUTES_DE_GRACE)
+                : null,
+        ])->save();
+
+        return $cle;
+    }
+
+    /**
+     * Vide la clé précédente — grâce expirée, liaison coupée, clé remplacée.
+     *
+     * Un haché dont plus personne ne veut n'a aucune raison de rester en base :
+     * il ne sert plus à reconnaître, il ne sert plus qu'à fuiter.
+     */
+    public function oublierLaCleDeGrace(): void
+    {
+        if ($this->selflow_sync_key_hash_precedente === null
+            && $this->selflow_sync_key_precedente_expire_at === null) {
+            return;
+        }
+
+        $this->forceFill([
+            'selflow_sync_key_hash_precedente'      => null,
+            'selflow_sync_key_precedente_expire_at' => null,
+        ])->save();
+    }
+
+    /** La grâce ouverte par le dernier renouvellement court-elle encore ? */
+    public function graceEncoreOuverte(): bool
+    {
+        return $this->selflow_sync_key_hash_precedente !== null
+            && $this->selflow_sync_key_precedente_expire_at !== null
+            && $this->selflow_sync_key_precedente_expire_at->isFuture();
     }
 
     /**
