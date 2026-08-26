@@ -92,6 +92,18 @@ Route::get('/login', function () {
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/login/company', [AuthController::class, 'loginCompany'])->name('login.company');
 
+// L'activation d'un compte ouvert par `companies/provision`.
+//
+// Selflow ne transmet aucun mot de passe — l'ancienne route
+// `register-enterprise` faisait choisir par le superadministrateur Selflow le
+// mot de passe du compte d'un client, et le transportait en clair dans le corps
+// de la requête. Le titulaire choisit désormais le sien ici, depuis un lien
+// envoyé à son adresse.
+Route::get('/activation/{jeton}', [\App\Http\Controllers\ActivationCompteController::class, 'formulaire'])
+    ->name('activation.formulaire');
+Route::post('/activation/{jeton}', [\App\Http\Controllers\ActivationCompteController::class, 'enregistrer'])
+    ->name('activation.enregistrer');
+
 // Routes Google OAuth (Socialite)
 // ⚠️ IMPORTANT : le callback DOIT être déclaré AVANT la route dynamique {type}
 // pour éviter que Laravel ne capture 'callback' comme valeur de {type}
