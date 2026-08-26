@@ -168,9 +168,17 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label text-xs fw-bold text-slate-500">Mot de passe pour l'administrateur SELFLOW <span class="text-danger">*</span></label>
-                            <input type="password" name="admin_password" class="form-control rounded-xl" required minlength="8" placeholder="Définir le mot de passe admin Selflow (min 8 car.)">
+                        {{-- Plus de mot de passe à définir ici. On en demandait un,
+                             choisi par le superadministrateur pour le compte d'un
+                             client, et il partait en clair vers Selflow. C'est
+                             l'empreinte du compte ComptaFlow existant qui est
+                             transmise : le gérant garde les identifiants qu'il a
+                             déjà, et personne ne choisit de mot de passe pour lui. --}}
+                        <div class="alert alert-info py-2 mb-0 text-xs">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            Le gérant se connectera à SELFLOW avec <strong>les mêmes identifiants que sur
+                            ComptaFlow</strong>. Aucun second mot de passe n'est créé, et le mot de passe
+                            lui-même ne quitte jamais ce serveur.
                         </div>
                     </div>
                     <div class="modal-footer border-t border-slate-100 px-6 py-3">

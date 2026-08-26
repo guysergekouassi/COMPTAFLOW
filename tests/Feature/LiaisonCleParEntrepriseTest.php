@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Company;
+use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
@@ -283,22 +284,86 @@ class LiaisonCleParEntrepriseTest extends TestCase
             ->where('id', $reponse->json('company_id'))->value('tier_digits'));
     }
 
-    public function test_le_compte_administrateur_nest_ouvert_par_aucun_mot_de_passe_transmis(): void
+    public function test_le_compte_ouvert_accepte_le_mot_de_passe_selflow(): void
     {
-        // Selflow ne transmet aucun mot de passe, délibérément : l'ancienne
-        // route en faisait choisir un par le superadministrateur Selflow, et le
-        // transportait en clair dans le corps de la requête.
-        $reponse = $this->provisionner(99)->assertOk();
+        // Le compte Comptaflow **est** le compte Selflow : même adresse, même
+        // mot de passe. C'est l'empreinte bcrypt de Selflow qui voyage, et elle
+        // doit être rangée telle quelle — la re-hacher rendrait le compte
+        // inaccessible avec le mot de passe que l'utilisateur connaît déjà.
+        // C'est la seule épreuve qui prouve qu'elle n'a pas été re-hachée.
+        $empreinte = Hash::make('le-mot-de-passe');
 
-        $admin = DB::table('users')->where('email_adresse', 'gerant@nouvelle.ci')->first();
+        $this->provisionner(99, self::SECRET, $empreinte)->assertOk();
+
+        $admin = User::where('email_adresse', 'gerant@nouvelle.ci')->first();
+
         $this->assertNotNull($admin);
+        $this->assertTrue(Hash::check('le-mot-de-passe', $admin->password));
+        $this->assertSame($empreinte, $admin->password);
+        $this->assertSame('Konan', $admin->name);
+        $this->assertSame('Yao', $admin->last_name);
+
+        // Le client se connecte avec ce qu'il a déjà : lui envoyer « choisissez
+        // un mot de passe » l'inviterait à en poser un second sans le vouloir.
+        $this->assertNull($admin->activation_token);
+        Mail::assertNothingSent();
+    }
+
+    public function test_aucun_mot_de_passe_en_clair_n_entre_par_le_provisionnement(): void
+    {
+        // L'ancienne route `register-enterprise` faisait choisir par le
+        // superadministrateur Selflow le mot de passe du compte d'un client, et
+        // le transportait en clair dans le corps de la requête.
+        $lignes = [];
+        Log::listen(function ($message) use (&$lignes) {
+            $lignes[] = $message;
+        });
+
+        $empreinte = Hash::make('le-mot-de-passe');
+        $reponse = $this->provisionner(99, self::SECRET, $empreinte);
+
+        $reponse->assertOk();
+
+        // Le corps ne porte aucun champ `admin_password`…
+        $corps = $this->corpsDeProvision(99, $empreinte);
+        $this->assertArrayNotHasKey('admin_password', $corps['entreprise']);
+        $this->assertStringNotContainsString('le-mot-de-passe', json_encode($corps));
+
+        // …rien de lisible ne finit en base…
+        $admin = DB::table('users')->where('email_adresse', 'gerant@nouvelle.ci')->first();
+        $this->assertStringStartsWith('$2y$', $admin->password);
+        $this->assertStringNotContainsString('le-mot-de-passe', $admin->password);
+
+        // …ni la réponse, ni le journal ne reprennent l'empreinte — elle
+        // s'attaque hors ligne, et ce journal est lu par du monde.
+        $this->assertStringNotContainsString($empreinte, $reponse->getContent());
+        foreach ($lignes as $ligne) {
+            $this->assertStringNotContainsString($empreinte, $ligne->message . json_encode($ligne->context));
+            $this->assertStringNotContainsString('le-mot-de-passe', $ligne->message . json_encode($ligne->context));
+        }
+    }
+
+    public function test_sans_empreinte_le_repli_ouvre_un_compte_inutilisable_et_envoie_le_lien(): void
+    {
+        // Le repli, pas le cas normal : un connecteur Selflow antérieur à ce
+        // contrat n'envoie pas d'empreinte.
+        $this->provisionner(99)->assertOk();
+
+        $admin = User::where('email_adresse', 'gerant@nouvelle.ci')->first();
+
         $this->assertNotNull($admin->activation_token, 'Aucun lien d\'activation n\'a été préparé.');
-
         Mail::assertSent(\App\Mail\LienActivationMail::class, fn ($mail) => $mail->hasTo('gerant@nouvelle.ci'));
+    }
 
-        // Le corps de l'appel ne contient aucun mot de passe, et la réponse non
-        // plus : rien de tel ne traverse la passerelle.
-        $this->assertArrayNotHasKey('password', $reponse->json());
+    public function test_un_mot_de_passe_en_clair_presente_comme_empreinte_est_refuse(): void
+    {
+        // Un connecteur mal réglé qui enverrait le mot de passe en clair sous
+        // `admin_password_hash` le verrait rangé tel quel dans `password` : le
+        // compte deviendrait inouvrable, et le mot de passe serait en base en
+        // clair. Il vaut mieux refuser l'appel.
+        $this->provisionner(99, self::SECRET, 'le-mot-de-passe')->assertStatus(422);
+
+        $this->assertSame(0, DB::table('companies')->where('selflow_company_id', 99)->count());
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -452,31 +517,44 @@ class LiaisonCleParEntrepriseTest extends TestCase
         ], ['X-Company-Key' => $cle]);
     }
 
-    private function provisionner(int $selflowCompanyId, ?string $secret = self::SECRET)
+    private function provisionner(int $selflowCompanyId, ?string $secret = self::SECRET, ?string $empreinte = null)
     {
-        $corps = [
-            'selflow_company_id' => $selflowCompanyId,
-            'entreprise'         => [
-                'nom'               => 'NOUVELLE ENTREPRISE',
-                'forme_juridique'   => 'SARL',
-                'ncc'               => 'CI-1234567 A',
-                'rccm'              => 'CI-ABJ-2026-B-1234',
-                'regime_imposition' => 'RSI',
-                'adresse'           => 'Cocody, Abidjan',
-                'telephone'         => '+225 07 00 00 00',
-                'email'             => 'contact@nouvelle.ci',
-                'admin_nom'         => 'Konan',
-                'admin_email'       => 'gerant@nouvelle.ci',
-            ],
-            'numerotation_tiers' => 'numeric',
-            'longueur_tiers'     => 6,
-        ];
+        $corps = $this->corpsDeProvision($selflowCompanyId, $empreinte);
 
         if ($secret !== null) {
             $corps['secret'] = $secret;
         }
 
         return $this->postJson('/api/external/companies/provision', $corps);
+    }
+
+    /** Le corps de `provision`, tel que Selflow le transmet. */
+    private function corpsDeProvision(int $selflowCompanyId, ?string $empreinte = null): array
+    {
+        $entreprise = [
+            'nom'               => 'NOUVELLE ENTREPRISE',
+            'forme_juridique'   => 'SARL',
+            'ncc'               => 'CI-1234567 A',
+            'rccm'              => 'CI-ABJ-2026-B-1234',
+            'regime_imposition' => 'RSI',
+            'adresse'           => 'Cocody, Abidjan',
+            'telephone'         => '+225 07 00 00 00',
+            'email'             => 'contact@nouvelle.ci',
+            'admin_nom'         => 'Konan',
+            'admin_prenom'      => 'Yao',
+            'admin_email'       => 'gerant@nouvelle.ci',
+        ];
+
+        if ($empreinte !== null) {
+            $entreprise['admin_password_hash'] = $empreinte;
+        }
+
+        return [
+            'selflow_company_id' => $selflowCompanyId,
+            'entreprise'         => $entreprise,
+            'numerotation_tiers' => 'numeric',
+            'longueur_tiers'     => 6,
+        ];
     }
 
     private function revoquer(int $dossier, int $selflow, string $cle)

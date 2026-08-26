@@ -47,6 +47,48 @@ class Company extends Model
      */
     protected $hidden = ['selflow_sync_key', 'selflow_sync_key_hash', 'selflow_sync_key_chiffree'];
 
+    /**
+     * Le préfixe des clés de liaison.
+     *
+     * Il n'a pas d'usage technique : il permet de reconnaître un secret quand il
+     * traîne — dans un journal, dans un presse-papiers, dans une capture d'écran
+     * de support — et donc de savoir qu'il faut le révoquer.
+     */
+    public const PREFIXE_CLE_LIAISON = 'cptf_live_';
+
+    /**
+     * Génère la clé de liaison du dossier, la range, et rend sa valeur en clair.
+     *
+     * **Un seul endroit produit ces clés**, parce qu'il y a trois chemins qui en
+     * ont besoin — `companies/provision`, et les deux écrans du
+     * superadministrateur qui créent une entreprise Selflow depuis ici. Ces deux
+     * derniers tiraient chacun leur propre `Str::random()` et l'écrivaient **en
+     * clair** dans `selflow_sync_key` : depuis que la reconnaissance se fait par
+     * haché, une clé posée ainsi n'aurait plus été reconnue par personne.
+     *
+     * C'est le seul instant où la clé existe en clair côté Comptaflow — le temps
+     * de la remettre à l'appelant.
+     */
+    public function poserUneCleDeLiaison(): string
+    {
+        $cle = self::PREFIXE_CLE_LIAISON . \Illuminate\Support\Str::random(40);
+
+        $this->forceFill([
+            // La colonne en clair reste vide : c'est tout l'objet du changement.
+            'selflow_sync_key'            => null,
+            'selflow_sync_key_hash'       => hash('sha256', $cle),
+            // La copie chiffrée n'existe que pour l'idempotence de `provision` :
+            // rappelé pour une entreprise déjà provisionnée, il doit rendre *la
+            // même* clé, et un haché ne se retourne pas.
+            'selflow_sync_key_chiffree'   => \Illuminate\Support\Facades\Crypt::encryptString($cle),
+            'selflow_sync_key_revoked_at' => null,
+            'selflow_sync_status'         => 'active',
+            'selflow_linked_at'           => now(),
+        ])->save();
+
+        return $cle;
+    }
+
     public function users()
     {
         return $this->hasMany(User::class, 'company_id');

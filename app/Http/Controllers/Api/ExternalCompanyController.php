@@ -34,15 +34,6 @@ use Illuminate\Support\Str;
 class ExternalCompanyController extends Controller
 {
     /**
-     * Le préfixe des clés de liaison.
-     *
-     * Il n'a pas d'usage technique : il permet de reconnaître un secret quand
-     * il traîne — dans un journal applicatif, dans un presse-papiers, dans une
-     * capture d'écran de support — et donc de savoir qu'il faut le révoquer.
-     */
-    private const PREFIXE_CLE = 'cptf_live_';
-
-    /**
      * Le secret serveur fourni est-il celui que l'on attend ?
      *
      * - **`hash_equals` plutôt que `!==`** : une comparaison de chaînes
@@ -109,7 +100,14 @@ class ExternalCompanyController extends Controller
             'entreprise.telephone'        => 'nullable|string|max:30',
             'entreprise.email'            => 'nullable|email|max:255',
             'entreprise.admin_nom'        => 'nullable|string|max:150',
+            'entreprise.admin_prenom'     => 'nullable|string|max:150',
             'entreprise.admin_email'      => 'required|email|max:255',
+            // L'empreinte bcrypt du compte Selflow, telle qu'elle est en base
+            // là-bas. Jamais un mot de passe : `regex` refuse tout ce qui n'a
+            // pas la forme d'une empreinte, pour qu'un connecteur mal réglé qui
+            // enverrait le mot de passe en clair soit rejeté plutôt que rangé
+            // tel quel dans la colonne `password`.
+            'entreprise.admin_password_hash' => ['nullable', 'string', 'max:255', 'regex:/^\$2[aby]?\$\d{2}\$.{53}$/'],
             'numerotation_tiers'          => 'nullable|in:numeric,alphanumeric',
             'longueur_tiers'              => 'nullable|integer|min:3|max:20',
         ]);
@@ -141,7 +139,7 @@ class ExternalCompanyController extends Controller
                 Log::warning('Liaison Selflow : clé existante illisible, elle est remplacée', [
                     'company_id' => $existante->id,
                 ]);
-                $cle = $this->poserUneCle($existante);
+                $cle = $existante->poserUneCleDeLiaison();
             }
 
             Log::info('Liaison Selflow : provision rejouée, même dossier et même clé', [
@@ -162,7 +160,7 @@ class ExternalCompanyController extends Controller
                 // Dossier déjà là mais clé révoquée : on relie, sans jamais
                 // ressusciter l'ancienne clé. Le dossier et ses écritures
                 // restent en place — délier n'est pas supprimer.
-                $cle = $this->poserUneCle($existante);
+                $cle = $existante->poserUneCleDeLiaison();
                 DB::commit();
 
                 return response()->json([
@@ -198,7 +196,8 @@ class ExternalCompanyController extends Controller
                 'tier_id_type'        => $request->input('numerotation_tiers', 'numeric'),
             ]);
 
-            $admin = $this->creerLAdministrateur($company, $entreprise);
+            $activationRequise = false;
+            $admin = $this->creerLAdministrateur($company, $entreprise, $activationRequise);
             $company->update(['user_id' => $admin->id]);
 
             foreach ([
@@ -209,15 +208,24 @@ class ExternalCompanyController extends Controller
                 TreasuryCategory::create(['name' => $categorie, 'company_id' => $company->id]);
             }
 
-            $cle = $this->poserUneCle($company);
+            $cle = $company->poserUneCleDeLiaison();
 
             DB::commit();
 
-            $this->envoyerLeLienDActivation($admin, $company);
+            // Le lien d'activation n'a lieu d'être que dans le repli : avec
+            // l'empreinte Selflow, le client se connecte avec les identifiants
+            // qu'il utilise déjà, et lui envoyer « choisissez un mot de passe »
+            // l'inviterait à en poser un second sans le vouloir.
+            if ($activationRequise) {
+                $this->envoyerLeLienDActivation($admin, $company);
+            }
 
             Log::info('Liaison Selflow : dossier provisionné', [
                 'company_id'         => $company->id,
                 'selflow_company_id' => $company->selflow_company_id,
+                // Jamais l'empreinte, jamais l'adresse : ce journal est lu par
+                // du monde, et une empreinte bcrypt s'attaque hors ligne.
+                'acces_selflow_repris' => !$activationRequise,
             ]);
 
             return response()->json([
@@ -240,67 +248,65 @@ class ExternalCompanyController extends Controller
     }
 
     /**
-     * Génère une clé, la range hachée et chiffrée, et rend sa valeur en clair.
+     * Le compte administrateur du dossier — **le compte Selflow du client**.
      *
-     * C'est le seul instant où la clé existe en clair côté Comptaflow — le
-     * temps de la mettre dans la réponse.
-     */
-    private function poserUneCle(Company $company): string
-    {
-        $cle = self::PREFIXE_CLE . Str::random(40);
-
-        $company->forceFill([
-            'selflow_sync_key'            => null,
-            'selflow_sync_key_hash'       => hash('sha256', $cle),
-            'selflow_sync_key_chiffree'   => Crypt::encryptString($cle),
-            'selflow_sync_key_revoked_at' => null,
-            'selflow_sync_status'         => 'active',
-            'selflow_linked_at'           => now(),
-        ])->save();
-
-        return $cle;
-    }
-
-    /**
-     * Le compte administrateur du dossier — **sans mot de passe transmis**.
+     * Même adresse, même mot de passe des deux côtés : l'utilisateur n'en
+     * apprend pas un second, et le jour où il change celui de Selflow il n'a pas
+     * deux endroits où penser.
      *
-     * `register-enterprise` exigeait `admin_password` : le superadministrateur
-     * Selflow choisissait le mot de passe du compte d'un client, et cette
-     * valeur traversait la passerelle en clair dans le corps de la requête.
-     * Le compte reçoit ici un secret aléatoire que personne ne détient, et son
-     * titulaire choisit le sien depuis un lien envoyé à son adresse.
+     * Ce qui voyage n'est pourtant **jamais le mot de passe**, mais son empreinte
+     * `bcrypt` telle qu'elle est en base chez Selflow. Elle est rangée **telle
+     * quelle** dans `password` : la re-hacher rendrait le compte inaccessible
+     * avec le mot de passe que l'utilisateur connaît déjà. Les deux applications
+     * sont sous Laravel, le format est identique (`$2y$…`).
+     *
+     * Ce que cela remplace : `register-enterprise` exigeait `admin_password` —
+     * le superadministrateur Selflow choisissait le mot de passe du compte d'un
+     * client, et cette valeur traversait la passerelle **en clair** dans le corps
+     * de la requête. Personne ne choisit plus de mot de passe pour personne, et
+     * personne ne le lit.
+     *
+     * @param  bool  $activationRequise  vrai si aucune empreinte n'est venue —
+     *                                   le compte est alors ouvert sans mot de
+     *                                   passe utilisable et attend son lien
      */
-    private function creerLAdministrateur(Company $company, array $entreprise): User
+    private function creerLAdministrateur(Company $company, array $entreprise, bool &$activationRequise): User
     {
         $email = $entreprise['admin_email'];
         $existant = User::where('email_adresse', $email)->first();
 
         if ($existant) {
-            // L'adresse sert déjà à un compte : on ne le réécrit pas, et on ne
-            // le rattache pas ailleurs. Le dossier est créé quand même — c'est
-            // le rôle de `provision` — et le rattachement se règle à la main.
+            // L'adresse sert déjà à un compte : on ne le réécrit pas — ni son
+            // mot de passe — et on ne le rattache pas ailleurs. Le dossier est
+            // créé quand même, c'est le rôle de `provision`, et le rattachement
+            // se règle à la main.
             Log::warning('Liaison Selflow : l\'adresse de l\'administrateur est déjà prise', [
                 'company_id' => $company->id,
                 'email'      => $email,
             ]);
 
+            $activationRequise = false;
+
             return $existant;
         }
 
-        $admin = User::create([
+        $empreinte = $entreprise['admin_password_hash'] ?? null;
+
+        // Le repli, pas le cas normal : un connecteur Selflow antérieur à ce
+        // contrat n'envoie pas d'empreinte. Le compte reçoit alors un secret
+        // aléatoire que personne ne détient, et son titulaire choisit le sien
+        // depuis un lien envoyé à son adresse.
+        $activationRequise = empty($empreinte);
+
+        return User::create([
             'name'          => $entreprise['admin_nom'] ?? 'Administrateur',
-            'last_name'     => '',
+            'last_name'     => $entreprise['admin_prenom'] ?? '',
             'email_adresse' => $email,
-            // Un secret aléatoire que personne ne connaît : le compte existe,
-            // mais aucun mot de passe n'ouvre la session tant que son titulaire
-            // n'a pas suivi le lien d'activation.
-            'password'      => Hash::make(Str::random(64)),
+            'password'      => $empreinte ?: Hash::make(Str::random(64)),
             'role'          => 'admin',
             'company_id'    => $company->id,
             'is_active'     => true,
         ]);
-
-        return $admin;
     }
 
     /**
