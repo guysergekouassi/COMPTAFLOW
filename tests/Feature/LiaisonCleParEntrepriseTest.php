@@ -545,8 +545,206 @@ class LiaisonCleParEntrepriseTest extends TestCase
     }
 
     // ═════════════════════════════════════════════════════════════════════════
+    // Le renouvellement de la clé, et la période de grâce
+    //
+    // Une clé posée une fois et jamais changée ouvre le dossier comptable d'une
+    // entreprise aussi longtemps qu'il existe. La rotation borne la durée de vie
+    // d'une fuite à un mois — mais elle casserait le déversement une fois par
+    // mois, au hasard, sans la grâce que ces épreuves vérifient.
+    // ═════════════════════════════════════════════════════════════════════════
+
+    public function test_rotate_key_rend_une_cle_neuve_et_lancienne_cesse_de_servir(): void
+    {
+        $reponse = $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleA);
+
+        $reponse->assertStatus(200)->assertJson(['success' => true]);
+        $neuve = $reponse->json('sync_key');
+
+        $this->assertNotSame($this->cleA, $neuve);
+        $this->assertStringStartsWith('cptf_live_', $neuve);
+
+        // La clé rendue ouvre le dossier ; celle d'avant, une fois la grâce
+        // passée, ne l'ouvre plus.
+        $this->deverserChez(self::SELFLOW_A, $neuve)->assertStatus(200);
+
+        $dossier = Company::find(self::DOSSIER_A);
+        $this->assertSame(hash('sha256', $neuve), $dossier->selflow_sync_key_hash);
+        $this->assertSame(hash('sha256', $this->cleA), $dossier->selflow_sync_key_hash_precedente);
+        $this->assertNotNull($dossier->selflow_sync_key_rotated_at);
+    }
+
+    public function test_une_requete_partie_avant_la_rotation_est_encore_acceptee(): void
+    {
+        // **L'épreuve qui compte.** Un déversement parti à l'instant précis du
+        // renouvellement porte encore l'ancienne clé et arrive après elle. Sans
+        // grâce, il échoue — rarement, une fois par mois au pire, et sans qu'on
+        // comprenne pourquoi. C'est le genre de défaut qu'on met six mois à
+        // diagnostiquer, parce qu'il ne se reproduit pas quand on le cherche.
+        $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleA)->assertStatus(200);
+
+        $this->deverserChez(self::SELFLOW_A, $this->cleA)->assertStatus(200);
+
+        $this->assertDatabaseHas('ecriture_comptables', ['company_id' => self::DOSSIER_A]);
+    }
+
+    public function test_l_ancienne_cle_ne_vaut_plus_apres_la_grace(): void
+    {
+        $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleA)->assertStatus(200);
+
+        $this->travel(Company::MINUTES_DE_GRACE + 1)->minutes();
+
+        $refus = $this->deverserChez(self::SELFLOW_A, $this->cleA);
+
+        $refus->assertStatus(401);
+        // Le refus nomme sa cause : « clé inconnue » enverrait chercher une
+        // panne de réseau là où la réponse tient en une ligne.
+        $this->assertStringContainsString('renouvelée', $refus->json('message'));
+
+        // Et l'ancienne n'est pas gardée « au cas où » : le haché périmé est
+        // retiré de la base au passage.
+        $this->assertNull(Company::find(self::DOSSIER_A)->selflow_sync_key_hash_precedente);
+    }
+
+    public function test_la_cle_courante_est_essayee_avant_la_precedente(): void
+    {
+        // L'ordre n'est pas une commodité. On range ici, en clé *précédente* du
+        // dossier A, le haché de la clé **courante** de B : présentée, elle doit
+        // désigner B — son propriétaire actuel — et non A.
+        Company::find(self::DOSSIER_A)->forceFill([
+            'selflow_sync_key_hash_precedente'      => hash('sha256', $this->cleB),
+            'selflow_sync_key_precedente_expire_at' => now()->addMinutes(5),
+        ])->save();
+
+        // Écrire chez B avec la clé de B : accepté, c'est bien B qu'elle désigne.
+        $this->deverserChez(self::SELFLOW_B, $this->cleB)->assertStatus(200);
+
+        // Et chez A, elle est refusée — la grâce de A ne la fait pas passer.
+        $this->deverserChez(self::SELFLOW_A, $this->cleB)->assertStatus(403);
+        $this->assertDatabaseMissing('ecriture_comptables', ['company_id' => self::DOSSIER_A]);
+    }
+
+    public function test_une_cle_revoquee_puis_reprovisionnee_ne_revient_pas_par_la_grace(): void
+    {
+        // Le même danger, par l'autre bout : si poser une clé neuve laissait la
+        // grâce en place, une clé révoquée redeviendrait valide **par l'arrière**
+        // au premier reprovisionnement — la révocation tombe, et l'ancienne clé
+        // encore rangée en « précédente » rouvrirait la porte.
+        $dossier = Company::find(self::DOSSIER_A);
+        $dossier->forceFill([
+            'selflow_sync_key_hash_precedente'      => hash('sha256', 'cptf_live_ancienne_cle_fuitee'),
+            'selflow_sync_key_precedente_expire_at' => now()->addMinutes(5),
+        ])->save();
+
+        $dossier->poserUneCleDeLiaison();
+
+        $frais = Company::find(self::DOSSIER_A);
+        $this->assertNull($frais->selflow_sync_key_hash_precedente);
+        $this->assertNull($frais->selflow_sync_key_precedente_expire_at);
+    }
+
+    public function test_un_renouvellement_rejoue_ne_produit_pas_deux_cles_valides_de_plus(): void
+    {
+        // Selflow n'écrit rien tant qu'il n'a pas la nouvelle clé en main : si la
+        // réponse se perd, il rejoue avec la seule clé qu'il ait — l'ancienne.
+        // Lui en tirer une troisième condamnerait sur-le-champ celle qu'il vient
+        // de recevoir sans le savoir. La grâce garde **une** clé précédente, pas
+        // une pile.
+        $premiere = $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleA)->json('sync_key');
+
+        $rejeu = $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleA);
+
+        $rejeu->assertStatus(200);
+        $this->assertSame($premiere, $rejeu->json('sync_key'));
+        $this->assertTrue($rejeu->json('replayed'));
+
+        // Deux clés valides en tout, jamais trois : la neuve et celle d'avant.
+        $dossier = Company::find(self::DOSSIER_A);
+        $this->assertSame(hash('sha256', $premiere), $dossier->selflow_sync_key_hash);
+        $this->assertSame(hash('sha256', $this->cleA), $dossier->selflow_sync_key_hash_precedente);
+    }
+
+    public function test_le_renouvellement_exige_la_cle_actuelle(): void
+    {
+        // Pas de tolérance de transition sur ce point d'entrée, et c'est
+        // délibéré : un renouvellement sans clé serait une prise de liaison en un
+        // appel — l'appelant repart avec la clé neuve, le détenteur légitime est
+        // coupé cinq minutes plus tard.
+        $sansCle = $this->postJson('/api/external/companies/rotate-key', [
+            'secret'                => self::SECRET,
+            'selflow_company_id'    => self::SELFLOW_A,
+            'comptaflow_company_id' => self::DOSSIER_A,
+        ]);
+
+        $sansCle->assertStatus(401);
+        $this->assertSame(
+            hash('sha256', $this->cleA),
+            Company::find(self::DOSSIER_A)->selflow_sync_key_hash
+        );
+    }
+
+    public function test_le_renouvellement_avec_la_cle_dun_autre_dossier_est_refuse(): void
+    {
+        $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleB)->assertStatus(403);
+
+        // La clé de A n'a pas bougé : personne n'a coupé sa liaison en passant.
+        $this->assertSame(
+            hash('sha256', $this->cleA),
+            Company::find(self::DOSSIER_A)->selflow_sync_key_hash
+        );
+    }
+
+    public function test_le_renouvellement_dune_cle_revoquee_est_refuse(): void
+    {
+        $this->revoquer(self::DOSSIER_A, self::SELFLOW_A, $this->cleA)->assertStatus(200);
+
+        $refus = $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleA);
+
+        $refus->assertStatus(401);
+        $this->assertStringContainsString('révoquée', $refus->json('message'));
+    }
+
+    public function test_revoquer_efface_la_grace_en_cours(): void
+    {
+        $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleA)->assertStatus(200);
+        $this->assertNotNull(Company::find(self::DOSSIER_A)->selflow_sync_key_hash_precedente);
+
+        $neuve = Company::find(self::DOSSIER_A)->cleDeLiaisonEnClair();
+        $this->revoquer(self::DOSSIER_A, self::SELFLOW_A, $neuve)->assertStatus(200);
+
+        $frais = Company::find(self::DOSSIER_A);
+        $this->assertNull($frais->selflow_sync_key_hash_precedente);
+        // La clé de grâce ne survit pas à la coupure de la liaison.
+        $this->deverserChez(self::SELFLOW_A, $this->cleA)->assertStatus(401);
+    }
+
+    public function test_verify_date_le_dernier_renouvellement(): void
+    {
+        // C'est cette date que la tâche mensuelle de Selflow regarde pour savoir
+        // quelles clés ont passé trente jours.
+        $neuve = $this->renouveler(self::DOSSIER_A, self::SELFLOW_A, $this->cleA)->json('sync_key');
+
+        $etat = $this->postJson('/api/external/companies/verify', [
+            'secret'                => self::SECRET,
+            'selflow_company_id'    => self::SELFLOW_A,
+            'comptaflow_company_id' => self::DOSSIER_A,
+        ], ['X-Company-Key' => $neuve]);
+
+        $etat->assertStatus(200);
+        $this->assertNotNull($etat->json('key_rotated_at'));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
     // Utilitaires
     // ═════════════════════════════════════════════════════════════════════════
+
+    private function renouveler(int $dossier, int $selflow, string $cle)
+    {
+        return $this->postJson('/api/external/companies/rotate-key', [
+            'secret'                => self::SECRET,
+            'selflow_company_id'    => $selflow,
+            'comptaflow_company_id' => $dossier,
+        ], ['X-Company-Key' => $cle]);
+    }
 
     private function deverserChez(int $selflowCompanyId, ?string $cle)
     {
@@ -706,6 +904,9 @@ class LiaisonCleParEntrepriseTest extends TestCase
             $table->unsignedBigInteger('selflow_company_id')->nullable()->unique();
             $table->string('selflow_sync_key', 100)->nullable();
             $table->string('selflow_sync_key_hash', 64)->nullable()->unique();
+            $table->string('selflow_sync_key_hash_precedente', 64)->nullable();
+            $table->timestamp('selflow_sync_key_precedente_expire_at')->nullable();
+            $table->timestamp('selflow_sync_key_rotated_at')->nullable();
             $table->text('selflow_sync_key_chiffree')->nullable();
             $table->timestamp('selflow_sync_key_revoked_at')->nullable();
             $table->timestamp('selflow_linked_at')->nullable();

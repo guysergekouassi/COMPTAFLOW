@@ -158,6 +158,12 @@ Route::prefix('external')->group(function () {
     Route::post('/companies/revoke', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'revoke'])
         ->middleware(['cle.entreprise', 'throttle:20,1'])
         ->name('api.external.companies.revoke');
+    // La clé ne doit pas être éternelle : `rotate-key` la remplace, et la clé
+    // actuelle authentifie sa propre relève. Débit serré comme `revoke` — un
+    // dossier ne se renouvelle qu'une fois par mois, plus un bouton manuel.
+    Route::post('/companies/rotate-key', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'rotateKey'])
+        ->middleware(['cle.entreprise', 'throttle:20,1'])
+        ->name('api.external.companies.rotate-key');
     Route::post('/companies/verify', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'verify'])
         ->middleware(['cle.entreprise', 'throttle:60,1'])
         ->name('api.external.companies.verify');
