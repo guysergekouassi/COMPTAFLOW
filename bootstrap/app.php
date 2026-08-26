@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'company.session'   => \App\Http\Middleware\CompanySession::class,
             'exercice.context'  => \App\Http\Middleware\ExerciceContextMiddleware::class,
             'verify.hub.token'  => \App\Http\Middleware\VerifyHubToken::class,
+            'cle.entreprise'    => \App\Http\Middleware\VerifieCleEntreprise::class,
         ]);
 
         $middleware->web(append: [
