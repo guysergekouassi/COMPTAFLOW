@@ -252,10 +252,23 @@
                                 <label class="form-label text-xs fw-bold text-slate-500">Prénom Admin</label>
                                 <input type="text" name="admin_prenom" id="sf_gerant_prenom" class="form-control rounded-xl">
                             </div>
+                            {{-- Plus de mot de passe à définir ici : le superadministrateur
+                                 en choisissait un pour le compte d'un client. Le gérant
+                                 choisit le sien depuis un lien envoyé à son adresse. --}}
                             <div class="col-md-12">
-                                <label class="form-label text-xs fw-bold text-slate-500">Mot de passe COMPTAFLOW <span class="text-danger">*</span></label>
-                                <input type="password" name="admin_password" class="form-control rounded-xl" required minlength="8" placeholder="Mot de passe du nouveau compte (min 8 car.)">
+                                <div class="alert alert-info py-2 mb-0 text-xs">
+                                    <i class="fa-solid fa-envelope me-2"></i>
+                                    Aucun mot de passe n'est défini ici : un <strong>lien d'activation</strong>
+                                    part à l'adresse ci-dessus, et le gérant y choisit lui-même le sien.
+                                </div>
                             </div>
+                        </div>
+                        <div class="alert alert-warning py-2 mt-3 mb-0 text-xs">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                            SELFLOW ne transmet plus le détail de ses entreprises dans la liste
+                            (adresse, NCC, RCCM, gérant) : ces champs peuvent arriver vides et sont
+                            à compléter à la main. Le détail redevient consultable une fois la
+                            liaison établie.
                         </div>
                     </div>
                     <div class="modal-footer border-t border-slate-100 px-6 py-3">
@@ -291,9 +304,14 @@
                             <label class="form-label text-xs fw-bold text-slate-500">ID Entreprise SELFLOW</label>
                             <input type="number" name="selflow_company_id" class="form-control rounded-xl" required placeholder="Ex: 12">
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label text-xs fw-bold text-slate-500">Clé de synchronisation</label>
-                            <input type="text" name="selflow_sync_key" class="form-control rounded-xl" required placeholder="Ex: sf_abc123xyz">
+                        {{-- La clé n'est plus saisie à la main. Ce champ libre était
+                             exactement la faille que ce lot ferme de l'autre côté :
+                             coller la clé d'une autre entreprise ouvrait la liaison
+                             vers ses livres. ComptaFlow la génère et SELFLOW la range. --}}
+                        <div class="alert alert-info py-2 mb-0 text-xs">
+                            <i class="fa-solid fa-key me-2"></i>
+                            La clé de synchronisation est <strong>générée par ComptaFlow</strong> et
+                            transmise à SELFLOW automatiquement. Elle n'est ni saisie ni affichée.
                         </div>
                     </div>
                     <div class="modal-footer border-t border-slate-100 px-6 py-3">

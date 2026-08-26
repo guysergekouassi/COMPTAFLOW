@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Company;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Crypt;
@@ -486,6 +487,61 @@ class LiaisonCleParEntrepriseTest extends TestCase
 
         $this->assertNotNull(DB::table('companies')->where('id', self::DOSSIER_A)
             ->value('selflow_last_deposit_at'));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // La clé présentée à Selflow — les appels sortants
+    // ═════════════════════════════════════════════════════════════════════════
+
+    public function test_la_cle_se_relit_pour_etre_presentee_a_selflow(): void
+    {
+        // `company-info` et `tier-info` de Selflow honorent maintenant
+        // `X-Company-Key` : c'est la **même** clé des deux côtés, elle nomme la
+        // paire (entreprise Selflow ↔ dossier Comptaflow).
+        $dossier = Company::find(self::DOSSIER_A);
+
+        $this->assertSame($this->cleA, $dossier->cleDeLiaisonEnClair());
+        $this->assertSame(['X-Company-Key' => $this->cleA], $dossier->enTeteDeLiaison());
+    }
+
+    public function test_une_cle_revoquee_nest_pas_presentee_a_selflow(): void
+    {
+        // La présenter ferait un 401 côté Selflow là où l'appelant peut
+        // simplement s'abstenir — et l'en-tête vide, lui, vaudrait « clé
+        // inconnue » au lieu de « pas de clé ».
+        $dossier = Company::find(self::DOSSIER_A);
+        $dossier->forceFill(['selflow_sync_key_revoked_at' => now()])->save();
+
+        $this->assertNull($dossier->cleDeLiaisonEnClair());
+        $this->assertSame([], $dossier->enTeteDeLiaison());
+    }
+
+    public function test_un_dossier_sans_liaison_ne_presente_aucun_en_tete(): void
+    {
+        $dossier = Company::find(self::DOSSIER_A);
+        $dossier->forceFill(['selflow_sync_key_chiffree' => null])->save();
+
+        $this->assertSame([], $dossier->enTeteDeLiaison());
+    }
+
+    public function test_delier_revoque_la_cle_au_lieu_de_leffacer(): void
+    {
+        // Vider `selflow_sync_key` ne suffit plus : depuis que la
+        // reconnaissance porte sur le haché, un dossier délié ainsi aurait
+        // gardé une clé parfaitement valide, et Selflow aurait continué
+        // d'écrire dans ses livres.
+        $dossier = Company::find(self::DOSSIER_A);
+
+        (new \App\Http\Controllers\Super\SuperAdminLiaisonController())->destroy($dossier->id);
+
+        $frais = Company::find(self::DOSSIER_A);
+        $this->assertNull($frais->selflow_company_id);
+        $this->assertNotNull($frais->selflow_sync_key_revoked_at);
+        // Le haché reste : un appel refusé peut dire « révoquée le … » plutôt
+        // que « inconnue ».
+        $this->assertNotNull($frais->selflow_sync_key_hash);
+
+        $this->deverserChez(self::SELFLOW_A, $this->cleA)->assertStatus(401);
     }
 
     // ═════════════════════════════════════════════════════════════════════════

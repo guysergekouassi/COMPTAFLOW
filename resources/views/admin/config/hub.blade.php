@@ -234,22 +234,51 @@
 
                                     <hr style="margin:16px 0; border:0; border-top:1px solid #e2e8f0;">
                                     <div style="display:flex; align-items:center; flex-wrap:wrap; gap:16px;">
+                                        {{-- La clé de synchronisation ne s'affiche plus, et cet écran ne
+                                             la fabrique plus.
+
+                                             Il en tirait une au passage — un `update()` dans un gabarit,
+                                             déclenché par un simple affichage de page — puis la montrait
+                                             au gérant avec un bouton « Copier », en lui demandant de la
+                                             coller dans SELFLOW. C'est précisément la faille refermée de
+                                             l'autre côté : le champ libre où l'on collait cette clé
+                                             acceptait aussi celle d'une autre entreprise, et ouvrait la
+                                             liaison vers ses livres.
+
+                                             La clé désigne un dossier ; elle n'a rien à faire dans les
+                                             mains de qui que ce soit. ComptaFlow la génère au
+                                             provisionnement, SELFLOW la range chiffrée, et l'entreprise
+                                             ne la voit jamais. Ce qui lui est utile — l'état de la
+                                             liaison — tient dans les lignes ci-dessous. --}}
                                         <div style="flex:1; min-width:300px;">
-                                            @if(!$mainCompany->selflow_sync_key)
-                                                @php
-                                                    $mainCompany->update(['selflow_sync_key' => \Illuminate\Support\Str::random(40)]);
-                                                @endphp
+                                            <label style="font-weight:700; color:#334155; display:block; margin-bottom:4px; font-size:13px;">Liaison SELFLOW</label>
+                                            @if($mainCompany->selflow_sync_key_revoked_at)
+                                                <div style="font-size:13px; color:#b91c1c; font-weight:600;">
+                                                    <i class="fa-solid fa-plug-circle-xmark"></i>
+                                                    Liaison coupée le {{ $mainCompany->selflow_sync_key_revoked_at->format('d/m/Y') }}.
+                                                </div>
+                                                <small style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">
+                                                    Vos écritures déjà reçues sont conservées. Demandez le rétablissement de la
+                                                    liaison depuis SELFLOW.
+                                                </small>
+                                            @elseif($mainCompany->selflow_company_id)
+                                                <div style="font-size:13px; color:#15803d; font-weight:600;">
+                                                    <i class="fa-solid fa-plug-circle-check"></i>
+                                                    Liaison active@if($mainCompany->selflow_linked_at) depuis le {{ $mainCompany->selflow_linked_at->format('d/m/Y') }}@endif.
+                                                </div>
+                                                <small style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">
+                                                    Dernière réception de données :
+                                                    {{ $mainCompany->selflow_last_deposit_at?->format('d/m/Y à H:i') ?? 'aucune à ce jour' }}.
+                                                </small>
+                                            @else
+                                                <div style="font-size:13px; color:#64748b; font-weight:600;">
+                                                    <i class="fa-solid fa-plug"></i> Aucune liaison SELFLOW.
+                                                </div>
+                                                <small style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">
+                                                    La liaison se demande depuis vos paramètres SELFLOW : elle s'établit sans
+                                                    qu'aucune clé ne transite par vous.
+                                                </small>
                                             @endif
-                                            <label style="font-weight:700; color:#334155; display:block; margin-bottom:4px; font-size:13px;">Clé de synchronisation COMPTAFLOW</label>
-                                            <div style="display:flex; gap:8px;">
-                                                <input type="text" id="selflow-sync-key" class="form-control" readonly value="{{ $mainCompany->selflow_sync_key }}" style="font-family:monospace; font-size:12px; padding:10px; background:white; border:1px solid #cbd5e1; border-radius:8px; flex:1;">
-                                                <button class="btn btn-primary" type="button" onclick="copierCleSync()" style="background:#1e40af; border:0; color:white; padding:10px 16px; border-radius:8px; font-weight:700; cursor:pointer; white-space:nowrap;">
-                                                    <i class="fa-regular fa-copy"></i> Copier
-                                                </button>
-                                            </div>
-                                            <small style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">
-                                                Copiez cette clé et collez-la dans les Paramètres de votre entreprise sur SELFLOW pour établir la liaison.
-                                            </small>
                                         </div>
                                         <div style="text-align:right; font-size:11px; color:#64748b;">
                                             <div>API COMPTAFLOW :</div>
@@ -362,14 +391,9 @@
             </div>
         </div>
     </div>
-<script>
-function copierCleSync() {
-    const input = document.getElementById('selflow-sync-key');
-    input.select();
-    input.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(input.value);
-    alert('Clé de synchronisation copiée dans le presse-papiers !');
-}
-</script>
+{{-- `copierCleSync()` est parti avec le champ qu'il copiait : la clé de
+     synchronisation ne s'affiche plus, et n'a donc plus à finir dans un
+     presse-papiers — c'est l'un des endroits où un secret traîne le plus
+     longtemps sans que personne y pense. --}}
 </body>
 </html>

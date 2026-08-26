@@ -194,9 +194,16 @@ class ExternalSyncController extends Controller
      *
      * Le `??` est la **TOLÉRANCE DE TRANSITION** : tant que les deux
      * applications ne sont pas déployées ensemble, un Selflow d'avant ce lot
-     * appelle encore sans en-tête. Il se retire en même temps que celle de
-     * `VerifieCleEntreprise` — les deux vont par paire, et tant qu'elles sont
-     * là le secret partagé suffit toujours à écrire dans n'importe quel dossier.
+     * appelle encore sans en-tête.
+     *
+     * IL Y EN A **TROIS**, ET ELLES SE RETIRENT ENSEMBLE — en retirer une ou
+     * deux laisse la porte ouverte du côté qu'on n'a pas fermé :
+     *   1. celle-ci ;
+     *   2. le bloc marqué dans `VerifieCleEntreprise::handle()` ;
+     *   3. celle de Selflow, dans son `ExternalSyncControleur::entrepriseDeLaCle()`.
+     *
+     * Tant qu'elles sont là, le secret partagé suffit toujours à écrire dans
+     * n'importe quel dossier.
      */
     private static function entrepriseDeLaRequete(Request $request): ?Company
     {
