@@ -21,13 +21,30 @@ class Company extends Model
         'expert_comptable_nom', 'expert_comptable_ncc',
         'compte_contribuable', 'regime',
         'selflow_company_id', 'selflow_sync_key', 'selflow_sync_status',
+        'selflow_sync_key_hash', 'selflow_sync_key_chiffree', 'selflow_sync_key_revoked_at',
+        'selflow_linked_at', 'selflow_last_deposit_at',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_blocked' => 'boolean',
         'blocked_at' => 'datetime',
+        // Sans ces trois-là, `selflow_sync_key_revoked_at` revient en chaîne et
+        // le message « clé révoquée le … » ne peut pas la formater.
+        'selflow_sync_key_revoked_at' => 'datetime',
+        'selflow_linked_at'           => 'datetime',
+        'selflow_last_deposit_at'     => 'datetime',
     ];
+
+    /**
+     * `selflow_sync_key_chiffree` ne sort jamais d'ici par accident.
+     *
+     * La colonne porte de quoi écrire dans les livres de l'entreprise. Elle est
+     * cachée de toute sérialisation — un `toArray()` distrait dans une réponse
+     * d'API la publierait. `companies/provision` la déchiffre explicitement, et
+     * c'est le seul endroit qui en a besoin.
+     */
+    protected $hidden = ['selflow_sync_key', 'selflow_sync_key_hash', 'selflow_sync_key_chiffree'];
 
     public function users()
     {
