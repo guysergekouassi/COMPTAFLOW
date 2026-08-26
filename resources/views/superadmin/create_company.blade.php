@@ -207,20 +207,17 @@
                                     </label>
 
                                     <div id="selflow-fields" style="display:none; flex-direction:column; gap:12px;">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-semibold">Mot de passe admin Selflow <span class="text-danger">*</span></label>
-                                                <input type="password" name="selflow_password" id="selflow_password" class="form-control @error('selflow_password') is-invalid @enderror" placeholder="Min. 8 caractères">
-                                                @error('selflow_password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-semibold">Confirmer le mot de passe <span class="text-danger">*</span></label>
-                                                <input type="password" name="selflow_password_confirmation" class="form-control" placeholder="Répéter le mot de passe">
-                                            </div>
-                                        </div>
+                                        {{-- Il n'y a plus de mot de passe Selflow à saisir ici. On en
+                                             demandait un second, choisi par le superadministrateur pour
+                                             le compte d'un client, et il partait en clair vers Selflow :
+                                             le gérant se retrouvait avec deux mots de passe pour deux
+                                             applications, dont un qu'il n'avait pas choisi. --}}
                                         <div class="alert alert-info py-2 mb-0">
                                             <i class="fa-solid fa-info-circle me-2"></i>
-                                            Les informations de l'entreprise seront transmises automatiquement à Selflow pour créer le dossier d'exploitation.
+                                            Les informations de l'entreprise seront transmises automatiquement à Selflow
+                                            pour créer le dossier d'exploitation. <strong>Le gérant s'y connectera avec
+                                            les mêmes identifiants que sur ComptaFlow</strong> — aucun second mot de passe
+                                            n'est créé, et le mot de passe lui-même ne quitte jamais ce serveur.
                                         </div>
                                     </div>
                                 </div>
@@ -259,8 +256,6 @@
 function toggleSelflow(cb) {
     const fields = document.getElementById('selflow-fields');
     fields.style.display = cb.checked ? 'flex' : 'none';
-    const pwdInput = document.getElementById('selflow_password');
-    if (pwdInput) pwdInput.required = cb.checked;
 }
 document.addEventListener('DOMContentLoaded', function() {
     const cb = document.getElementById('cb-selflow');

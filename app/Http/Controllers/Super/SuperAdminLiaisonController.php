@@ -34,15 +34,28 @@ class SuperAdminLiaisonController extends Controller
     {
         $request->validate([
             'comptaflow_company_id' => 'required|exists:companies,id',
-            'admin_password'        => 'required|string|min:8',
         ]);
 
         $company = Company::findOrFail($request->comptaflow_company_id);
         $adminUser = User::where('company_id', $company->id)->where('role', 'admin')->first();
 
+        // L'entreprise doit retrouver **les mêmes accès** des deux côtés : c'est
+        // l'empreinte du compte d'ici qui part là-bas, jamais un mot de passe —
+        // et surtout pas un second, choisi par le superadministrateur pour le
+        // compte d'un client, comme le formulaire le demandait jusqu'ici.
+        // Sans compte administrateur, il n'y a pas d'accès à reprendre.
+        if (!$adminUser) {
+            return back()->with('error',
+                "«{$company->company_name}» n'a pas de compte administrateur : créez-le d'abord, "
+                . 'sinon le compte Selflow serait ouvert sans identifiants utilisables.');
+        }
+
         $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
         $secret     = config('external_sync.external_sync_secret');
-        $syncKey    = 'sf_' . Str::random(32);
+        // La clé de liaison vient d'un seul endroit : elle est rangée hachée, et
+        // un `sf_ . Str::random(32)` écrit en clair dans `selflow_sync_key` ne
+        // serait plus reconnu par personne.
+        $syncKey    = $company->poserUneCleDeLiaison();
 
         try {
             $response = Http::timeout(10)->post("{$selflowUrl}/api/external/register-enterprise", [
@@ -56,9 +69,9 @@ class SuperAdminLiaisonController extends Controller
                 'rccm'                  => $company->rccm,
                 'compte_contribuable'   => $company->compte_contribuable,
                 'regime_imposition'     => $company->regime,
-                'gerant_nom'            => $adminUser ? $adminUser->name : 'Admin',
-                'gerant_prenom'         => $adminUser ? $adminUser->last_name : '',
-                'admin_password'        => $request->admin_password,
+                'gerant_nom'            => $adminUser->name,
+                'gerant_prenom'         => $adminUser->last_name,
+                'admin_password_hash'   => $adminUser->password,
                 'comptaflow_company_id' => $company->id,
                 'comptaflow_sync_key'   => $syncKey,
             ]);
@@ -66,14 +79,15 @@ class SuperAdminLiaisonController extends Controller
             if ($response->successful() && $response->json('success')) {
                 $sfCompanyId = $response->json('entreprise_id');
 
+                // `poserUneCleDeLiaison()` a déjà rangé la clé et daté la liaison.
+                // (`selflow_last_sync_at` n'existe ni en base ni dans `$fillable` :
+                // cette ligne ne faisait rien. `selflow_linked_at` la remplace.)
                 $company->update([
                     'selflow_company_id'  => $sfCompanyId,
-                    'selflow_sync_key'    => $syncKey,
                     'selflow_sync_status' => 'active',
-                    'selflow_last_sync_at'=> now(),
                 ]);
 
-                return back()->with('success', "🚀 Entreprise SELFLOW créée et liée avec succès pour «{$company->company_name}» (ID Selflow: #{$sfCompanyId}).");
+                return back()->with('success', "🚀 Entreprise SELFLOW créée et liée avec succès pour «{$company->company_name}» (ID Selflow: #{$sfCompanyId}). Le gérant s'y connecte avec les mêmes identifiants qu'ici.");
             } else {
                 $msg = $response->json('message') ?? 'Erreur inconnue côté Selflow.';
                 return back()->with('error', "Échec de création sur Selflow : {$msg}");

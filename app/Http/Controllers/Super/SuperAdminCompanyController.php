@@ -49,8 +49,8 @@ class SuperAdminCompanyController extends Controller
             'admin_nom'           => 'required|string|max:100',
             'admin_prenom'        => 'nullable|string|max:150',
             'admin_password'      => 'required|string|min:8|confirmed',
-            // Champs Selflow conditionnels
-            'selflow_password'    => [$request->boolean('creer_compte_selflow') ? 'required' : 'nullable', 'string', 'min:8', 'confirmed'],
+            // Il n'y a plus de mot de passe Selflow à saisir : le compte Selflow
+            // est le compte Comptaflow, et c'est son empreinte qui part là-bas.
         ]);
         
         DB::beginTransaction();
@@ -104,9 +104,12 @@ class SuperAdminCompanyController extends Controller
 
             // ── Liaison SELFLOW (si case cochée) ──
             $messageSupplement = '';
-            if ($request->boolean('creer_compte_selflow') && $request->filled('selflow_password')) {
+            if ($request->boolean('creer_compte_selflow')) {
                 try {
-                    $syncKey = Str::random(40);
+                    // La clé de liaison vient d'un seul endroit désormais : elle
+                    // est rangée hachée, et un `Str::random(40)` écrit en clair
+                    // dans `selflow_sync_key` ne serait plus reconnu par personne.
+                    $syncKey = $company->poserUneCleDeLiaison();
                     $selflowUrl = config('external_sync.selflow_api_url', 'http://127.0.0.1:8003');
 
                     $response = Http::timeout(15)->post($selflowUrl . '/api/external/register-enterprise', [
@@ -122,7 +125,13 @@ class SuperAdminCompanyController extends Controller
                         'regime_imposition'   => $company->regime,
                         'gerant_nom'          => $request->admin_nom,
                         'gerant_prenom'       => $request->admin_prenom,
-                        'admin_password'      => $request->selflow_password,
+                        // L'empreinte du compte Comptaflow qui vient d'être créé,
+                        // et non un second mot de passe. Le superadministrateur
+                        // en choisissait un ici pour le compte d'un client, et il
+                        // partait en clair dans le corps de la requête : le
+                        // client se retrouvait avec deux mots de passe pour deux
+                        // applications, dont un qu'il n'avait pas choisi.
+                        'admin_password_hash'   => $adminUser->password,
                         'comptaflow_company_id' => $company->id,
                         'comptaflow_sync_key'   => $syncKey,
                     ]);
@@ -130,10 +139,10 @@ class SuperAdminCompanyController extends Controller
                     if ($response->successful() && $response->json('success')) {
                         $company->update([
                             'selflow_company_id'  => $response->json('company_id'),
-                            'selflow_sync_key'    => $syncKey,
                             'selflow_sync_status' => 'active',
                         ]);
-                        $messageSupplement = ' Le compte SELFLOW a été créé et lié avec succès.';
+                        $messageSupplement = ' Le compte SELFLOW a été créé et lié avec succès.'
+                            . ' Le gérant s\'y connecte avec les mêmes identifiants qu\'ici.';
                     } else {
                         $messageSupplement = ' ⚠️ Avertissement : La création du compte SELFLOW a échoué (' . ($response->json('message') ?? 'Erreur inconnue') . ').';
                         Log::warning('SELFLOW register-enterprise failed', ['response' => $response->json()]);
