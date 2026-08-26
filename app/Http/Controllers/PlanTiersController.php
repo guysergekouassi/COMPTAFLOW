@@ -335,14 +335,21 @@ class PlanTiersController extends Controller
                 try {
                     $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
                     $secret     = config('external_sync.external_sync_secret');
-                    $response = \Illuminate\Support\Facades\Http::timeout(4)->post("{$selflowUrl}/api/external/tier-info", [
-                        'secret'             => $secret,
-                        'selflow_company_id' => $company->selflow_company_id,
-                        'numero_original'    => $tier->numero_original,
-                        'numero_de_tiers'    => $tier->numero_de_tiers,
-                        'intitule'           => $tier->intitule,
-                        'type'               => $tier->type_de_tiers,
-                    ]);
+                    // `tier-info` de Selflow honore désormais `X-Company-Key` :
+                    // sans lui, le secret partagé suffisait à lire la fiche d'un
+                    // tiers de n'importe quelle entreprise. Sans en-tête, sa
+                    // tolérance de transition laisse encore passer — elle tombera
+                    // en même temps que les nôtres.
+                    $response = \Illuminate\Support\Facades\Http::timeout(4)
+                        ->withHeaders($company->enTeteDeLiaison())
+                        ->post("{$selflowUrl}/api/external/tier-info", [
+                            'secret'             => $secret,
+                            'selflow_company_id' => $company->selflow_company_id,
+                            'numero_original'    => $tier->numero_original,
+                            'numero_de_tiers'    => $tier->numero_de_tiers,
+                            'intitule'           => $tier->intitule,
+                            'type'               => $tier->type_de_tiers,
+                        ]);
                     if ($response->successful() && $response->json('success')) {
                         $selflowTierInfo = $response->json('tier');
 

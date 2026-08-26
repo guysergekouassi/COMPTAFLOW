@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\User;
 use App\Models\TreasuryCategory;
+use App\Support\LienDActivation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -108,7 +109,9 @@ class SuperAdminLiaisonController extends Controller
             'selflow_company_id' => 'required|integer',
             'company_name'       => 'required|string|max:255',
             'email_adresse'      => 'required|email|max:255',
-            'admin_password'     => 'required|string|min:8',
+            // Plus d'`admin_password` : le superadministrateur choisissait ici le
+            // mot de passe du compte d'un client. Le titulaire choisit le sien
+            // depuis un lien envoyé à son adresse.
         ]);
 
         if (Company::where('company_name', $request->company_name)->exists()) {
@@ -117,8 +120,6 @@ class SuperAdminLiaisonController extends Controller
         if (User::where('email_adresse', $request->email_adresse)->exists()) {
             return back()->with('error', "Un compte utilisateur avec l'email «{$request->email_adresse}» existe déjà.");
         }
-
-        $syncKey = 'sf_' . Str::random(32);
 
         DB::beginTransaction();
         try {
@@ -139,17 +140,24 @@ class SuperAdminLiaisonController extends Controller
                 'regime'              => $request->regime,
                 'is_active'           => true,
                 'selflow_company_id'  => $request->selflow_company_id,
-                'selflow_sync_key'    => $syncKey,
-                'selflow_sync_status' => 'active',
                 'user_id'             => 0,
             ]);
 
-            // 2. Créer l'utilisateur admin
+            // La clé de liaison est générée ici — un seul endroit la produit, et
+            // elle est rangée hachée. Le `'sf_' . Str::random(32)` écrit en clair
+            // dans `selflow_sync_key` ne serait plus reconnu par personne.
+            $syncKey = $company->poserUneCleDeLiaison();
+
+            // 2. Créer l'utilisateur admin, **sans mot de passe utilisable**
+            //
+            // Le formulaire en demandait un, choisi par le superadministrateur
+            // pour le compte d'un client. Le titulaire choisit le sien depuis le
+            // lien envoyé plus bas ; personne d'autre ne le connaît.
             $adminUser = User::create([
                 'name'          => $request->admin_nom ?? 'Admin',
                 'last_name'     => $request->admin_prenom ?? '',
                 'email_adresse' => $request->email_adresse,
-                'password'      => Hash::make($request->admin_password),
+                'password'      => Hash::make(Str::random(64)),
                 'role'          => 'admin',
                 'company_id'    => $company->id,
                 'is_active'     => true,
@@ -168,7 +176,10 @@ class SuperAdminLiaisonController extends Controller
 
             DB::commit();
 
-            // 4. Notifier Selflow pour enregistrer la liaison
+            // 4. Le titulaire choisit son mot de passe lui-même.
+            LienDActivation::envoyer($adminUser, $company);
+
+            // 5. Notifier Selflow pour enregistrer la liaison
             $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
             $secret     = config('external_sync.external_sync_secret');
 
@@ -184,7 +195,7 @@ class SuperAdminLiaisonController extends Controller
             }
 
             return redirect()->route('superadmin.liaisons.index')
-                ->with('success', "✅ Compte COMPTAFLOW créé et lié avec succès pour «{$company->company_name}» (ID COMPTAFLOW: #{$company->id}).");
+                ->with('success', "✅ Compte COMPTAFLOW créé et lié avec succès pour «{$company->company_name}» (ID COMPTAFLOW: #{$company->id}). Un lien d'activation a été envoyé à {$adminUser->email_adresse} : le gérant y choisit son mot de passe.");
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -194,47 +205,116 @@ class SuperAdminLiaisonController extends Controller
     }
 
     /**
-     * Liaison manuelle (ID COMPTAFLOW + Clé Sync).
+     * Liaison manuelle : on rapproche deux dossiers, **la clé est générée ici**.
+     *
+     * Le formulaire demandait la clé de synchronisation dans un champ de texte
+     * libre. C'est exactement la faille que ce lot ferme de l'autre côté : coller
+     * la clé d'une autre entreprise ouvrait la liaison vers ses livres. Et depuis
+     * que la reconnaissance se fait par haché, une clé collée à la main n'aurait
+     * de toute façon plus été reconnue par personne.
+     *
+     * Comptaflow génère, Selflow range : c'est le sens du modèle, et c'est déjà
+     * ce que fait `store()` juste au-dessus.
      */
     public function lierManuellement(Request $request)
     {
         $request->validate([
             'comptaflow_company_id' => 'required|exists:companies,id',
             'selflow_company_id'    => 'required|integer',
-            'selflow_sync_key'      => 'required|string',
         ]);
 
         $company = Company::findOrFail($request->comptaflow_company_id);
-        $company->update([
-            'selflow_company_id'  => $request->selflow_company_id,
-            'selflow_sync_key'    => $request->selflow_sync_key,
-            'selflow_sync_status' => 'active',
-            'selflow_last_sync_at'=> now(),
-        ]);
+
+        // `selflow_company_id` est unique en base : deux dossiers rattachés à la
+        // même entreprise Selflow rendraient le déversement indéterminé. On le
+        // dit ici plutôt que de laisser remonter une erreur SQL.
+        $deja = Company::where('selflow_company_id', $request->selflow_company_id)
+            ->where('id', '!=', $company->id)
+            ->first();
+
+        if ($deja) {
+            return back()->with('error',
+                "L'entreprise Selflow n° {$request->selflow_company_id} est déjà rattachée à "
+                . "«{$deja->company_name}». Déliez ce dossier avant de la rattacher ailleurs : "
+                . 'deux dossiers pour la même entreprise se partageraient ses écritures.');
+        }
+
+        $company->update(['selflow_company_id' => $request->selflow_company_id]);
+        $syncKey = $company->poserUneCleDeLiaison();
+
+        // Selflow doit ranger la clé, sans quoi il n'aura rien à présenter.
+        $selflowUrl = config('app.selflow_api_url', 'http://127.0.0.1:8003');
+
+        try {
+            $reponse = Http::timeout(10)->post("{$selflowUrl}/api/external/link-company", [
+                'secret'                => config('external_sync.external_sync_secret'),
+                'selflow_company_id'    => $request->selflow_company_id,
+                'comptaflow_company_id' => $company->id,
+                'comptaflow_sync_key'   => $syncKey,
+            ]);
+
+            if (!$reponse->successful() || !$reponse->json('success')) {
+                return back()->with('error',
+                    "Le dossier est rattaché ici, mais Selflow n'a pas rangé la clé ("
+                    . ($reponse->json('message') ?? 'réponse inattendue')
+                    . '). Relancez la liaison : sans la clé, aucun déversement ne passera.');
+            }
+        } catch (\Exception $e) {
+            Log::warning('[LIAISON COMPTAFLOW] Selflow injoignable à la liaison manuelle: ' . $e->getMessage());
+
+            return back()->with('error',
+                "Le dossier est rattaché ici, mais Selflow est injoignable ({$e->getMessage()}). "
+                . 'Relancez la liaison : sans la clé, aucun déversement ne passera.');
+        }
 
         return back()->with('success', "🔌 Liaison établie avec succès pour «{$company->company_name}».");
     }
 
     /**
      * Supprimer la liaison d'une entreprise.
+     *
+     * **La clé est révoquée, pas effacée.** Vider `selflow_sync_key` ne suffisait
+     * plus : depuis que la reconnaissance porte sur le haché, un dossier délié
+     * ainsi aurait gardé une clé parfaitement valide, et Selflow aurait continué
+     * d'écrire dans ses livres. On la date révoquée, comme le fait
+     * `companies/revoke` — et un appel refusé peut alors dire « révoquée le … »
+     * plutôt que « inconnue ».
+     *
+     * Le dossier et ses écritures restent : délier n'est pas supprimer.
      */
     public function destroy($id)
     {
         $company = Company::findOrFail($id);
         $name = $company->company_name;
 
-        $company->update([
-            'selflow_company_id'  => null,
-            'selflow_sync_key'    => null,
-            'selflow_sync_status' => null,
-            'selflow_last_sync_at'=> null,
+        $company->forceFill([
+            'selflow_company_id'          => null,
+            'selflow_sync_key'            => null,
+            'selflow_sync_key_revoked_at' => now(),
+            'selflow_sync_status'         => 'revoked',
+        ])->save();
+
+        Log::info('Liaison Selflow : déliée depuis l\'écran superadministrateur', [
+            'company_id' => $company->id,
         ]);
 
-        return back()->with('success', "🔌 Liaison supprimée pour «{$name}».");
+        return back()->with('success', "🔌 Liaison supprimée pour «{$name}». Les écritures déjà reçues sont conservées.");
     }
 
     /**
      * Récupère la liste des entreprises Selflow via API.
+     *
+     * **Sans `X-Company-Key`, et c'est voulu** : cet écran sert à rapprocher un
+     * dossier qui n'est justement pas encore lié, donc il n'y a pas de clé à
+     * présenter. Avec une clé, Selflow ne rendrait que ce dossier-là.
+     *
+     * Selflow a réduit ce que ce point d'entrée rend : il livrait **toutes les
+     * entreprises de la plateforme** avec leur adresse, leur NCC, leur RCCM et
+     * l'adresse électronique de leur administrateur, pour qui détenait le secret
+     * partagé. Il ne rend plus que `{id, uuid, nom, created_at, is_linked,
+     * comptaflow_status}` — de quoi rapprocher un dossier, rien de plus. Le
+     * détail se demande par `company-info`, en présentant la clé, donc une fois
+     * la liaison faite.
      */
     private function fetchSelflowCompanies(): array
     {

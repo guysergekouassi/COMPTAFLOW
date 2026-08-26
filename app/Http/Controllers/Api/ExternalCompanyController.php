@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\LienActivationMail;
 use App\Models\Company;
 use App\Models\TreasuryCategory;
 use App\Models\User;
+use App\Support\LienDActivation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -217,7 +216,7 @@ class ExternalCompanyController extends Controller
             // qu'il utilise déjà, et lui envoyer « choisissez un mot de passe »
             // l'inviterait à en poser un second sans le vouloir.
             if ($activationRequise) {
-                $this->envoyerLeLienDActivation($admin, $company);
+                LienDActivation::envoyer($admin, $company);
             }
 
             Log::info('Liaison Selflow : dossier provisionné', [
@@ -307,36 +306,6 @@ class ExternalCompanyController extends Controller
             'company_id'    => $company->id,
             'is_active'     => true,
         ]);
-    }
-
-    /**
-     * Le lien d'activation, envoyé après le commit.
-     *
-     * Hors transaction, et sans faire échouer le provisionnement : un serveur
-     * de messagerie indisponible ne doit pas annuler un dossier créé ni priver
-     * Selflow de la clé qu'il attend. Le lien se renvoie depuis Comptaflow.
-     */
-    private function envoyerLeLienDActivation(User $admin, Company $company): void
-    {
-        try {
-            $jeton = Str::random(64);
-
-            $admin->forceFill([
-                // Haché en base : la table `users` est lue par bien plus de code
-                // que ce lot, et un jeton en clair vaut un mot de passe tant
-                // qu'il n'a pas servi.
-                'activation_token'            => hash('sha256', $jeton),
-                'activation_token_expires_at' => now()->addDays(7),
-            ])->save();
-
-            Mail::to($admin->email_adresse)->send(new LienActivationMail($admin, $company, $jeton));
-        } catch (\Throwable $e) {
-            Log::error('Liaison Selflow : lien d\'activation non envoyé', [
-                'company_id' => $company->id,
-                'user_id'    => $admin->id,
-                'error'      => $e->getMessage(),
-            ]);
-        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════

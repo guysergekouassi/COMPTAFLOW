@@ -66,8 +66,8 @@ class Company extends Model
      * clair** dans `selflow_sync_key` : depuis que la reconnaissance se fait par
      * haché, une clé posée ainsi n'aurait plus été reconnue par personne.
      *
-     * C'est le seul instant où la clé existe en clair côté Comptaflow — le temps
-     * de la remettre à l'appelant.
+     * La clé n'existe en clair que le temps de la remettre à l'appelant ; elle
+     * se relit ensuite par `cleDeLiaisonEnClair()`, et par lui seul.
      */
     public function poserUneCleDeLiaison(): string
     {
@@ -77,9 +77,11 @@ class Company extends Model
             // La colonne en clair reste vide : c'est tout l'objet du changement.
             'selflow_sync_key'            => null,
             'selflow_sync_key_hash'       => hash('sha256', $cle),
-            // La copie chiffrée n'existe que pour l'idempotence de `provision` :
-            // rappelé pour une entreprise déjà provisionnée, il doit rendre *la
-            // même* clé, et un haché ne se retourne pas.
+            // La copie chiffrée existe pour deux raisons, et deux seulement :
+            // l'idempotence de `provision` — rappelé pour une entreprise déjà
+            // provisionnée, il doit rendre *la même* clé, et un haché ne se
+            // retourne pas — et les appels **sortants** vers Selflow, qui
+            // présentent cette même clé en en-tête `X-Company-Key`.
             'selflow_sync_key_chiffree'   => \Illuminate\Support\Facades\Crypt::encryptString($cle),
             'selflow_sync_key_revoked_at' => null,
             'selflow_sync_status'         => 'active',
@@ -87,6 +89,56 @@ class Company extends Model
         ])->save();
 
         return $cle;
+    }
+
+    /**
+     * La clé de liaison en clair, pour la présenter à Selflow.
+     *
+     * Les points d'entrée entrants de Selflow — `company-info`, `tier-info`,
+     * `list-companies` — honorent désormais `X-Company-Key` avec la même
+     * distinction que notre filtre : 403 si la clé désigne un autre dossier,
+     * 401 si elle est inconnue ou révoquée. C'est la **même** clé des deux
+     * côtés : elle nomme la paire (entreprise Selflow ↔ dossier Comptaflow).
+     *
+     * Une clé révoquée ne ressort pas : la présenter ferait un 401 côté Selflow
+     * là où l'appelant peut simplement s'abstenir.
+     *
+     * @return string|null `null` s'il n'y a pas de clé, ou si elle est révoquée
+     */
+    public function cleDeLiaisonEnClair(): ?string
+    {
+        if (empty($this->selflow_sync_key_chiffree) || $this->selflow_sync_key_revoked_at) {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Facades\Crypt::decryptString($this->selflow_sync_key_chiffree);
+        } catch (\Throwable $e) {
+            // `APP_KEY` a changé depuis : la clé rangée est illisible. On
+            // n'échoue pas pour autant — l'appel partira sans en-tête, et la
+            // tolérance de transition de Selflow le laissera passer le temps
+            // qu'un reprovisionnement repose une clé lisible.
+            \Illuminate\Support\Facades\Log::warning(
+                'Liaison Selflow : clé de liaison illisible, appel sortant sans X-Company-Key',
+                ['company_id' => $this->id]
+            );
+
+            return null;
+        }
+    }
+
+    /**
+     * L'en-tête `X-Company-Key`, ou un tableau vide s'il n'y a pas de clé.
+     *
+     * À passer tel quel à `Http::withHeaders(...)` : un en-tête vide vaudrait
+     * « clé inconnue » côté Selflow, donc un 401, là où l'absence d'en-tête
+     * passe encore par sa tolérance de transition.
+     */
+    public function enTeteDeLiaison(): array
+    {
+        $cle = $this->cleDeLiaisonEnClair();
+
+        return $cle ? ['X-Company-Key' => $cle] : [];
     }
 
     public function users()

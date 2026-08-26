@@ -50,11 +50,17 @@ class VerifieCleEntreprise
             // sans en-tête, et refuser le ferait tomber la synchronisation
             // de toutes les entreprises déjà liées.
             //
-            // TANT QUE CES DEUX LIGNES SONT LÀ, LE SECRET PARTAGÉ SUFFIT
+            // TANT QUE CES LIGNES SONT LÀ, LE SECRET PARTAGÉ SUFFIT
             // TOUJOURS À ÉCRIRE DANS N'IMPORTE QUEL DOSSIER : la porte que
-            // ce lot ferme reste entrouverte. Elles se retirent en même
-            // temps que le `??` de `entrepriseDeLaRequete()` dans
-            // ExternalSyncController — les deux vont par paire.
+            // ce lot ferme reste entrouverte.
+            //
+            // IL Y A **TROIS** TOLÉRANCES, ET ELLES SE RETIRENT ENSEMBLE.
+            // En retirer une ou deux laisse la porte ouverte du côté qu'on
+            // n'a pas fermé :
+            //   1. celle-ci ;
+            //   2. le repli de `ExternalSyncController::entrepriseDeLaRequete()` ;
+            //   3. celle de Selflow, marquée TOLÉRANCE DE TRANSITION dans
+            //      son `ExternalSyncControleur::entrepriseDeLaCle()`.
             //
             // La ligne qui les remplace, une fois les deux applications
             // déployées :
