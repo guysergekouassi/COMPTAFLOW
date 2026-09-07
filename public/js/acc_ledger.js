@@ -132,29 +132,76 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
+        // Créer des champs cachés pour transmettre les valeurs même quand les selects sont disabled
+        const hiddenInput1 = document.createElement('input');
+        hiddenInput1.type = 'hidden';
+        hiddenInput1.name = 'plan_comptable_id_1';
+        hiddenInput1.id = 'hidden_plan_comptable_id_1';
+
+        const hiddenInput2 = document.createElement('input');
+        hiddenInput2.type = 'hidden';
+        hiddenInput2.name = 'plan_comptable_id_2';
+        hiddenInput2.id = 'hidden_plan_comptable_id_2';
+
+        if (grandLivreForm) {
+            grandLivreForm.appendChild(hiddenInput1);
+            grandLivreForm.appendChild(hiddenInput2);
+        }
+
+        // Sync hidden inputs with selects whenever selects change
+        function syncHiddenInputs() {
+            if (accountSelects[0]) hiddenInput1.value = accountSelects[0].value || '';
+            if (accountSelects[1]) hiddenInput2.value = accountSelects[1].value || '';
+        }
+
+        if (accountSelects[0]) {
+            accountSelects[0].addEventListener('change', syncHiddenInputs);
+            if (window.jQuery) $(accountSelects[0]).on('change', syncHiddenInputs);
+        }
+        if (accountSelects[1]) {
+            accountSelects[1].addEventListener('change', syncHiddenInputs);
+            if (window.jQuery) $(accountSelects[1]).on('change', syncHiddenInputs);
+        }
+
         // Validation Range
         if (grandLivreForm) {
             grandLivreForm.addEventListener("submit", function (e) {
-                // Si "Tout sélectionner" est coché, on active temporairement les champs pour qu'ils soient envoyés
+                // Sync hidden inputs before submit (handles disabled selects)
+                syncHiddenInputs();
+
+                // Si "Tout sélectionner" est coché: les champs cachés ont déjà les bonnes valeurs
                 if (selectAllCheck && selectAllCheck.checked) {
-                    accountSelects.forEach(select => {
-                        if (select) select.disabled = false;
-                    });
-                    // On ne fait pas de e.preventDefault() ici, on laisse le formulaire partir normalement
+                    // Désactiver temporairement le name des selects pour éviter les doublons
+                    if (accountSelects[0]) accountSelects[0].removeAttribute('name');
+                    if (accountSelects[1]) accountSelects[1].removeAttribute('name');
                     return;
                 }
 
-                const v1 = accountSelects[0]?.options[accountSelects[0].selectedIndex]?.text.split(" - ")[0].trim();
-                const v2 = accountSelects[1]?.options[accountSelects[1].selectedIndex]?.text.split(" - ")[0].trim();
-                if (v1 && v2 && v1 > v2) {
+                // Retirer le name des selects si les champs cachés sont actifs
+                if (accountSelects[0]) accountSelects[0].removeAttribute('name');
+                if (accountSelects[1]) accountSelects[1].removeAttribute('name');
+
+                const v1 = hiddenInput1.value;
+                const v2 = hiddenInput2.value;
+                const sel1 = accountSelects[0];
+                const sel2 = accountSelects[1];
+                const t1 = sel1?.options[sel1.selectedIndex]?.text.split(" - ")[0].trim() || '';
+                const t2 = sel2?.options[sel2.selectedIndex]?.text.split(" - ")[0].trim() || '';
+
+                if (!v1 || !v2) {
                     e.preventDefault();
-                    accountSelects[1].classList.add("is-invalid");
+                    FlowToast && FlowToast.warning("Veuillez sélectionner une plage de comptes.");
+                    return;
+                }
+
+                if (t1 && t2 && t1 > t2) {
+                    e.preventDefault();
+                    if (sel2) sel2.classList.add("is-invalid");
                     const errorDiv = document.getElementById("compte2-error");
                     if (errorDiv) {
                         errorDiv.innerText = "Le compte de fin doit être >= au compte de début.";
                         errorDiv.style.display = "block";
                     }
-                    if (window.jQuery && $.fn.selectpicker) $(accountSelects[1]).selectpicker('refresh');
                 }
             });
         }
@@ -183,12 +230,17 @@ document.addEventListener("DOMContentLoaded", function () {
                             accountSelects[0].value = vFirst;
                             accountSelects[1].value = vLast;
                         }
+                        // Sync hidden inputs immediately
+                        hiddenInput1.value = vFirst;
+                        hiddenInput2.value = vLast;
                     }
+                } else {
+                    // Sync hidden inputs with current select values
+                    syncHiddenInputs();
                 }
                 if (accountSearch) {
                     accountSearch.disabled = isChecked;
                     if (isChecked) {
-                        // Reset search logic to show everything for class selection hidden in background
                         accountSearch.value = "";
                         accountSearch.dispatchEvent(new Event('input'));
                     }
@@ -275,11 +327,16 @@ document.addEventListener("DOMContentLoaded", function () {
         const resetForm = () => {
             if (grandLivreForm) grandLivreForm.reset();
             if (selectAllCheck) { selectAllCheck.checked = false; selectAllCheck.dispatchEvent(new Event('change')); }
-            accountSelects.forEach(select => {
+            accountSelects.forEach((select, idx) => {
                 if (!select) return;
                 select.classList.remove("is-invalid");
+                // Restore name attributes that may have been removed during submit
+                select.setAttribute('name', idx === 0 ? 'plan_comptable_id_1' : 'plan_comptable_id_2');
                 if (window.jQuery && $.fn.select2) $(select).val('').trigger('change');
             });
+            // Clear hidden inputs
+            hiddenInput1.value = '';
+            hiddenInput2.value = '';
             const errorDiv = document.getElementById("compte2-error");
             if (errorDiv) errorDiv.style.display = "none";
         };

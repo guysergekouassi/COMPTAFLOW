@@ -145,12 +145,103 @@ class AdjustmentController extends Controller
     }
 
     /**
-     * Recherche AJAX pour autocomplétion
+     * Page de réimputation (changement de numéro de compte)
+     */
+    public function reimputation(Request $request)
+    {
+        $user = Auth::user();
+        $activeCompanyId = session('current_company_id', $user->company_id);
+        $exerciceId = session('current_exercice_id');
+
+        $query = EcritureComptable::with(['planComptable', 'planTiers', 'codeJournal'])
+            ->where('company_id', $activeCompanyId);
+
+        if ($exerciceId) {
+            $query->where('exercices_comptables_id', $exerciceId);
+        }
+
+        // Filtres
+        if ($request->filled('compte_id')) {
+            $query->where('plan_comptable_id', $request->compte_id);
+        }
+
+        if ($request->filled('journal_id')) {
+            $query->where('code_journal_id', $request->journal_id);
+        }
+
+        if ($request->filled('date_start')) {
+            $query->where('date', '>=', $request->date_start);
+        }
+        if ($request->filled('date_end')) {
+            $query->where('date', '<=', $request->date_end);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('description_operation', 'like', "%$s%")
+                  ->orWhere('reference_piece', 'like', "%$s%");
+            });
+        }
+
+        $entries = $query->orderBy('date', 'desc')->paginate(50);
+        $journals = CodeJournal::where('company_id', $activeCompanyId)->get();
+        $comptes = PlanComptable::where('company_id', $activeCompanyId)->orderBy('numero_de_compte')->get();
+
+        // Compte sélectionné pour l'affichage du filtre
+        $selectedCompte = $request->filled('compte_id')
+            ? PlanComptable::find($request->compte_id)
+            : null;
+
+        return view('adjustment.reimputation', compact(
+            'entries', 'journals', 'comptes', 'selectedCompte'
+        ));
+    }
+
+    /**
+     * Appliquer la réimputation (changer le numéro de compte)
+     */
+    public function applyReimputation(Request $request)
+    {
+        $request->validate([
+            'ids'             => 'required|array|min:1',
+            'ids.*'           => 'integer|exists:ecriture_comptables,id',
+            'new_compte_id'   => 'required|exists:plan_comptables,id',
+        ]);
+
+        $user = Auth::user();
+        $activeCompanyId = session('current_company_id', $user->company_id);
+
+        try {
+            DB::beginTransaction();
+
+            $newCompte = PlanComptable::where('company_id', $activeCompanyId)
+                ->findOrFail($request->new_compte_id);
+
+            $updated = EcritureComptable::whereIn('id', $request->ids)
+                ->where('company_id', $activeCompanyId)
+                ->update(['plan_comptable_id' => $newCompte->id]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$updated} écriture(s) réimputée(s) vers le compte {$newCompte->numero_de_compte} - {$newCompte->intitule}.",
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Réimputation error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Recherche AJAX pour autocomplétion (comptes et tiers)
      */
     public function searchReferences(Request $request)
     {
         $type = $request->input('type'); // 'account' or 'tier'
-        $q = $request->input('q');
+        $q = $request->input('q', '');
         $companyId = session('current_company_id');
 
         if ($type === 'account') {
@@ -159,6 +250,7 @@ class AdjustmentController extends Controller
                     $query->where('numero_de_compte', 'like', "$q%")
                           ->orWhere('intitule', 'like', "%$q%");
                 })
+                ->orderBy('numero_de_compte')
                 ->limit(20)
                 ->get()
                 ->map(fn($item) => ['id' => $item->id, 'text' => $item->numero_de_compte . ' - ' . $item->intitule]);
@@ -168,6 +260,7 @@ class AdjustmentController extends Controller
                     $query->where('numero_de_tiers', 'like', "$q%")
                           ->orWhere('intitule', 'like', "%$q%");
                 })
+                ->orderBy('numero_de_tiers')
                 ->limit(20)
                 ->get()
                 ->map(fn($item) => ['id' => $item->id, 'text' => $item->numero_de_tiers . ' - ' . $item->intitule]);

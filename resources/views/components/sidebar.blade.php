@@ -789,6 +789,10 @@
                     <i class="fa-solid fa-list-check"></i>
                     <span>Modification par lot</span>
                 </a>
+                <a href="{{ route('adjustment.reimputation') }}" class="menu-link-new {{ request()->routeIs('adjustment.reimputation') ? 'active' : '' }}">
+                    <i class="fa-solid fa-right-left"></i>
+                    <span>Réimputation</span>
+                </a>
             </div>
 
             {{-- ANALYTIQUE --}}

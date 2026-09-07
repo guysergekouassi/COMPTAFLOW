@@ -299,6 +299,8 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
         Route::get('/bulk-edit', [App\Http\Controllers\AdjustmentController::class, 'bulkEdit'])->name('bulk_edit');
         Route::post('/bulk-update', [App\Http\Controllers\AdjustmentController::class, 'bulkUpdate'])->name('bulk_update');
         Route::get('/search-references', [App\Http\Controllers\AdjustmentController::class, 'searchReferences'])->name('search_references');
+        Route::get('/reimputation', [App\Http\Controllers\AdjustmentController::class, 'reimputation'])->name('reimputation');
+        Route::post('/reimputation/apply', [App\Http\Controllers\AdjustmentController::class, 'applyReimputation'])->name('reimputation.apply');
     });
 
     // Brouillons
