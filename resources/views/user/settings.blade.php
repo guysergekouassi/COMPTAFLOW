@@ -88,6 +88,20 @@
                                             <span>Alerte & Mails</span>
                                         </a>
                                     </div>
+
+                                    @if(auth()->user()->hasPermission('compagny_information'))
+                                    {{-- Ces paramètres-ci concernent le compte utilisateur ;
+                                         la fiche de l'entreprise se modifie sur sa propre page. --}}
+                                    <hr class="my-4 opacity-50">
+                                    <a href="{{ route('compagny_information') }}" class="settings-link">
+                                        <i class="fa-solid fa-building"></i>
+                                        <span>Fiche Entreprise</span>
+                                        <i class="fa-solid fa-arrow-up-right-from-square ms-auto opacity-50" style="font-size:0.7rem;"></i>
+                                    </a>
+                                    <p class="text-slate-500 small mb-0 px-3 mt-1" style="font-size:0.72rem;">
+                                        Nom, adresse, NCC, RCCM, régime fiscal, logo…
+                                    </p>
+                                    @endif
                                     <hr class="my-4 opacity-50">
                                     <div class="p-3 bg-slate-50 rounded-15 text-center">
                                         <p class="text-slate-500 small mb-0">Dernière connexion :</p>
