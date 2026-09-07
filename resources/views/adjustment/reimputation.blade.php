@@ -284,7 +284,11 @@
                                 </thead>
                                 <tbody>
                                     @forelse($entries as $entry)
-                                    <tr data-id="{{ $entry->id }}" data-compte="{{ $entry->planComptable->numero_de_compte ?? '' }}">
+                                    <tr data-id="{{ $entry->id }}"
+                                        data-compte="{{ $entry->planComptable->numero_de_compte ?? '' }}"
+                                        data-compte-lib="{{ $entry->planComptable->intitule ?? '' }}"
+                                        data-debit="{{ $entry->debit ?? 0 }}"
+                                        data-credit="{{ $entry->credit ?? 0 }}">
                                         <td class="ps-4">
                                             <input type="checkbox" class="form-check-input row-check" value="{{ $entry->id }}">
                                         </td>
@@ -384,6 +388,97 @@
     </button>
 </div>
 
+{{-- ══════════════════════════════════════
+     MODALE DE CONFIRMATION DE LA RÉIMPUTATION
+══════════════════════════════════════ --}}
+<div class="modal fade" id="reimputConfirmModal" tabindex="-1" aria-labelledby="reimputConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border: 0; border-radius: 18px; overflow: hidden;">
+
+            <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: #fff;">
+                <h5 class="modal-title fw-bold" id="reimputConfirmLabel">
+                    <i class="fa-solid fa-right-left me-2"></i>Confirmer la réimputation
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+
+            <div class="modal-body p-4">
+
+                {{-- Ce qui va être fait --}}
+                <div class="row g-3 align-items-stretch mb-4">
+                    <div class="col-md-5">
+                        <div class="h-100 p-3 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                            <div class="text-muted text-uppercase fw-bold" style="font-size:0.68rem; letter-spacing:.04em;">Compte(s) d'origine</div>
+                            <div id="cfmSourceList" class="mt-2"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-center justify-content-center">
+                        <i class="fa-solid fa-right-long fa-lg" style="color:#3b82f6;"></i>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="h-100 p-3 rounded-3" style="background:#ecfdf5; border:1px solid #a7f3d0;">
+                            <div class="text-uppercase fw-bold" style="font-size:0.68rem; letter-spacing:.04em; color:#047857;">Compte de destination</div>
+                            <div id="cfmTargetAccount" class="fw-bold mt-2" style="color:#065f46;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Volumétrie --}}
+                <div class="row g-3 mb-4">
+                    <div class="col-4">
+                        <div class="p-3 rounded-3 text-center" style="background:#eff6ff; border:1px solid #bfdbfe;">
+                            <div class="fw-bold" style="font-size:1.35rem; color:#1e40af;" id="cfmCount">0</div>
+                            <div class="text-muted" style="font-size:0.72rem;">écriture(s)</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 rounded-3 text-center" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                            <div class="fw-bold" style="font-size:1.1rem; color:#15803d;" id="cfmDebit">0</div>
+                            <div class="text-muted" style="font-size:0.72rem;">Total débit</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 rounded-3 text-center" style="background:#fef2f2; border:1px solid #fecaca;">
+                            <div class="fw-bold" style="font-size:1.1rem; color:#b91c1c;" id="cfmCredit">0</div>
+                            <div class="text-muted" style="font-size:0.72rem;">Total crédit</div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Traitement appliqué --}}
+                <div class="p-3 rounded-3 mb-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                    <div class="fw-bold text-dark mb-2" style="font-size:0.82rem;">
+                        <i class="fa-solid fa-gears me-1" style="color:#3b82f6;"></i>Traitement appliqué
+                    </div>
+                    <ul class="mb-0 ps-3 text-muted" style="font-size:0.8rem; line-height:1.6;">
+                        <li>Seul le <strong>compte général d'imputation</strong> des lignes cochées est remplacé.</li>
+                        <li>Les <strong>montants, dates, journaux, tiers, libellés et n° de saisie</strong> restent inchangés : l'équilibre débit/crédit de chaque pièce est conservé.</li>
+                        <li>L'opération est exécutée dans une <strong>transaction unique</strong> : en cas d'erreur, aucune ligne n'est modifiée.</li>
+                        <li>Balance, grand livre, compte de résultat et bilan sont recalculés automatiquement à partir des nouvelles imputations.</li>
+                    </ul>
+                </div>
+
+                <div class="d-flex align-items-start gap-2 p-3 rounded-3" style="background:#fffbeb; border:1px solid #fde68a;">
+                    <i class="fa-solid fa-triangle-exclamation mt-1" style="color:#d97706;"></i>
+                    <div style="font-size:0.82rem; color:#92400e;">
+                        <strong>Action irréversible.</strong> Aucun retour arrière automatique n'est prévu :
+                        pour annuler, il faudra refaire une réimputation vers le compte d'origine.
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    Annuler
+                </button>
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-bold" id="btnConfirmReimput">
+                    <i class="fa-solid fa-check me-2"></i>Confirmer la réimputation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -463,28 +558,107 @@ document.addEventListener('DOMContentLoaded', function () {
         updateBar();
     });
 
-    // ── Appliquer la réimputation ──
+    // ── Notification (remplace les alert() natifs) ──
+    function showNotice(type, message) {
+        const palette = {
+            success: { bg: '#059669', icon: 'fa-check-circle' },
+            danger:  { bg: '#dc2626', icon: 'fa-circle-exclamation' },
+            warning: { bg: '#d97706', icon: 'fa-triangle-exclamation' }
+        };
+        const conf = palette[type] || palette.warning;
+        const el = document.createElement('div');
+        el.className = 'alert alert-dismissible fade show position-fixed d-flex align-items-center gap-2';
+        el.style.cssText = 'top:80px;right:20px;z-index:10600;min-width:320px;max-width:420px;border:0;border-radius:12px;'
+            + 'color:#fff;background:' + conf.bg + ';box-shadow:0 8px 24px rgba(15,23,42,0.18);';
+        el.innerHTML = '<i class="fa-solid ' + conf.icon + '"></i><div class="flex-grow-1">' + message + '</div>'
+            + '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 6000);
+    }
+
+    // ── Préparation + ouverture de la modale de confirmation ──
+    const confirmModalEl = document.getElementById('reimputConfirmModal');
+    const confirmModal = (window.bootstrap && confirmModalEl) ? new bootstrap.Modal(confirmModalEl) : null;
+    const fmt = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+
+    function getTargetAccount() {
+        const select = document.getElementById('newCompteSelect');
+        if (window.jQuery && $.fn.select2) {
+            return { id: $('#newCompteSelect').val(), label: ($('#newCompteSelect').find(':selected').text() || '').trim() };
+        }
+        return { id: select?.value, label: (select?.options[select.selectedIndex]?.text || '').trim() };
+    }
+
+    function buildRecap(checked, target) {
+        // Regroupement par compte d'origine + cumuls débit / crédit
+        const sources = new Map();
+        let totalDebit = 0, totalCredit = 0;
+
+        checked.forEach(cb => {
+            const row = cb.closest('tr');
+            const numero = row?.dataset.compte || 'N/A';
+            const lib = row?.dataset.compteLib || '';
+            const entry = sources.get(numero) || { numero, lib, count: 0 };
+            entry.count++;
+            sources.set(numero, entry);
+            totalDebit += parseFloat(row?.dataset.debit || 0) || 0;
+            totalCredit += parseFloat(row?.dataset.credit || 0) || 0;
+        });
+
+        document.getElementById('cfmCount').textContent = fmt.format(checked.length);
+        document.getElementById('cfmDebit').textContent = fmt.format(totalDebit);
+        document.getElementById('cfmCredit').textContent = fmt.format(totalCredit);
+        document.getElementById('cfmTargetAccount').textContent = target.label;
+
+        const list = document.getElementById('cfmSourceList');
+        list.innerHTML = '';
+        Array.from(sources.values())
+            .sort((a, b) => a.numero.localeCompare(b.numero))
+            .forEach(src => {
+                const line = document.createElement('div');
+                line.className = 'd-flex justify-content-between align-items-center gap-2 mb-1';
+                line.innerHTML = '<span class="text-truncate" style="font-size:0.8rem;">'
+                    + '<span class="fw-bold font-monospace">' + src.numero + '</span>'
+                    + (src.lib ? ' <span class="text-muted">' + src.lib + '</span>' : '')
+                    + '</span>'
+                    + '<span class="badge bg-light text-dark border">' + src.count + '</span>';
+                list.appendChild(line);
+            });
+    }
+
     document.getElementById('btnApplyReimput')?.addEventListener('click', function () {
+        const checked = getChecked();
+        const target = getTargetAccount();
+
+        if (checked.length === 0) {
+            showNotice('warning', 'Veuillez sélectionner au moins une écriture.');
+            return;
+        }
+
+        if (!target.id) {
+            showNotice('warning', 'Veuillez choisir le compte général de destination.');
+            return;
+        }
+
+        buildRecap(checked, target);
+
+        if (confirmModal) {
+            confirmModal.show();
+        } else {
+            // Filet de sécurité si Bootstrap n'est pas chargé
+            runReimputation(checked.map(c => c.value), target.id);
+        }
+    });
+
+    // ── Exécution après confirmation dans la modale ──
+    document.getElementById('btnConfirmReimput')?.addEventListener('click', function () {
+        const target = getTargetAccount();
         const ids = getChecked().map(c => c.value);
-        const newCompteId = window.jQuery ? $('#newCompteSelect').val() : document.getElementById('newCompteSelect').value;
-        const newCompteTxt = window.jQuery
-            ? ($('#newCompteSelect').find(':selected').text() || '')
-            : (document.getElementById('newCompteSelect')?.options[document.getElementById('newCompteSelect').selectedIndex]?.text || '');
+        if (confirmModal) confirmModal.hide();
+        runReimputation(ids, target.id);
+    });
 
-        if (ids.length === 0) {
-            alert('Veuillez sélectionner au moins une écriture.');
-            return;
-        }
-
-        if (!newCompteId) {
-            alert('Veuillez choisir le compte cible.');
-            return;
-        }
-
-        if (!confirm(`Réimputer ${ids.length} écriture(s) vers le compte :\n${newCompteTxt}\n\nCette action est irréversible. Continuer ?`)) {
-            return;
-        }
-
+    function runReimputation(ids, newCompteId) {
         const btn = document.getElementById('btnApplyReimput');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>En cours...';
@@ -503,32 +677,27 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Appliquer la réimputation';
             if (data.success) {
-                // Flash message and reload
+                // Message conservé le temps du rechargement de la page
                 sessionStorage.setItem('reimput_success', data.message);
                 window.location.reload();
             } else {
-                alert('Erreur : ' + data.message);
+                // Message métier renvoyé par le serveur (exercice clôturé, compte inchangé, etc.)
+                showNotice('danger', data.message || 'La réimputation a échoué.');
             }
         })
         .catch(err => {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Appliquer la réimputation';
             console.error(err);
-            alert('Erreur réseau. Veuillez réessayer.');
+            showNotice('danger', 'Erreur réseau. Veuillez réessayer.');
         });
-    });
+    }
 
-    // ── Flash message après rechargement ──
+    // ── Message de succès après rechargement ──
     const msg = sessionStorage.getItem('reimput_success');
     if (msg) {
         sessionStorage.removeItem('reimput_success');
-        // Créer un toast ou alert
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-        alertDiv.style.cssText = 'top:80px;right:20px;z-index:9999;min-width:320px;border-radius:12px;box-shadow:0 8px 24px rgba(5,150,105,0.2);';
-        alertDiv.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i>${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-        document.body.appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 5000);
+        showNotice('success', msg);
     }
 
     // ── Highlight sélectionnée ──

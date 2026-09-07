@@ -77,6 +77,7 @@
                                             <option value="CREATE">Création</option>
                                             <option value="UPDATE">Modification</option>
                                             <option value="DELETE">Suppression</option>
+                                            <option value="REIMPUTATION" {{ request('event') == 'REIMPUTATION' ? 'selected' : '' }}>Réimputation</option>
                                             <option value="LOGIN">Connexion</option>
                                         </select>
                                     </div>
@@ -128,6 +129,7 @@
                                                             'UPDATE' => 'bg-updated',
                                                             'DELETE' => 'bg-deleted',
                                                             'LOGIN' => 'bg-login',
+                                                            'REIMPUTATION' => 'bg-updated',
                                                             default => 'bg-slate-100'
                                                         };
                                                         $icon = match($action) {
@@ -135,6 +137,7 @@
                                                             'UPDATE' => 'fa-edit',
                                                             'DELETE' => 'fa-trash-alt',
                                                             'LOGIN' => 'fa-sign-in-alt',
+                                                            'REIMPUTATION' => 'fa-right-left',
                                                             default => 'fa-info-circle'
                                                         };
                                                     @endphp

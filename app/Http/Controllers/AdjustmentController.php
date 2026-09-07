@@ -200,6 +200,11 @@ class AdjustmentController extends Controller
 
     /**
      * Appliquer la réimputation (changer le numéro de compte)
+     *
+     * Règles :
+     *  - les écritures d'un exercice clôturé ne peuvent pas être réimputées ;
+     *  - chaque lot est tracé dans le journal d'audit avec l'ancien compte de
+     *    chaque ligne, ce qui permet de revenir en arrière si besoin.
      */
     public function applyReimputation(Request $request)
     {
@@ -212,15 +217,66 @@ class AdjustmentController extends Controller
         $user = Auth::user();
         $activeCompanyId = session('current_company_id', $user->company_id);
 
+        $newCompte = PlanComptable::where('company_id', $activeCompanyId)
+            ->find($request->new_compte_id);
+
+        if (!$newCompte) {
+            return response()->json([
+                'success' => false,
+                'message' => "Le compte de destination n'appartient pas à l'entreprise courante.",
+            ], 422);
+        }
+
+        // Lignes réellement concernées (cloisonnement par entreprise)
+        $ecritures = EcritureComptable::with('planComptable:id,numero_de_compte,intitule')
+            ->whereIn('id', $request->ids)
+            ->where('company_id', $activeCompanyId)
+            ->get();
+
+        if ($ecritures->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => "Aucune écriture correspondante n'a été trouvée pour cette entreprise.",
+            ], 422);
+        }
+
+        // Blocage des exercices clôturés
+        $exercicesClotures = ExerciceComptable::whereIn('id', $ecritures->pluck('exercices_comptables_id')->filter()->unique())
+            ->where('cloturer', 1)
+            ->pluck('intitule', 'id');
+
+        if ($exercicesClotures->isNotEmpty()) {
+            $bloquees = $ecritures->whereIn('exercices_comptables_id', $exercicesClotures->keys())->count();
+            $libelles = implode(', ', array_filter($exercicesClotures->all()));
+
+            return response()->json([
+                'success' => false,
+                'message' => "Réimputation impossible : {$bloquees} écriture(s) appartiennent à un exercice clôturé"
+                    . ($libelles ? " ({$libelles})" : '')
+                    . ". Rouvrez l'exercice avant de corriger ces écritures.",
+            ], 422);
+        }
+
+        // Lignes déjà imputées sur le compte cible : rien à faire
+        $aModifier = $ecritures->where('plan_comptable_id', '!=', $newCompte->id);
+
+        if ($aModifier->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => "Les écritures sélectionnées sont déjà imputées sur le compte {$newCompte->numero_de_compte}.",
+            ], 422);
+        }
+
         try {
             DB::beginTransaction();
 
-            $newCompte = PlanComptable::where('company_id', $activeCompanyId)
-                ->findOrFail($request->new_compte_id);
-
-            $updated = EcritureComptable::whereIn('id', $request->ids)
+            $updated = EcritureComptable::whereIn('id', $aModifier->pluck('id'))
                 ->where('company_id', $activeCompanyId)
                 ->update(['plan_comptable_id' => $newCompte->id]);
+
+            // Traçabilité : l'update de masse ne déclenche pas les events Eloquent,
+            // le journal d'audit est donc alimenté explicitement.
+            $this->logReimputation($request, $activeCompanyId, $aModifier, $newCompte, $updated);
 
             DB::commit();
 
@@ -231,8 +287,52 @@ class AdjustmentController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Réimputation error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Enregistre le lot de réimputation dans le journal d'audit.
+     * Le payload conserve l'ancien compte de chaque ligne pour permettre un retour arrière.
+     */
+    private function logReimputation(Request $request, $companyId, $ecritures, PlanComptable $newCompte, $updated)
+    {
+        $lignes = $ecritures->map(function ($e) {
+            return [
+                'ecriture_id'      => $e->id,
+                'n_saisie'         => $e->n_saisie,
+                'date'             => optional($e->date)->format('Y-m-d') ?? (string) $e->date,
+                'ancien_compte_id' => $e->plan_comptable_id,
+                'ancien_compte'    => $e->planComptable->numero_de_compte ?? null,
+                'debit'            => $e->debit,
+                'credit'           => $e->credit,
+            ];
+        })->values()->all();
+
+        $anciensComptes = collect($lignes)->pluck('ancien_compte')->filter()->unique()->sort()->values();
+
+        \App\Models\AuditLog::create([
+            'user_id'     => Auth::id(),
+            'company_id'  => $companyId,
+            'action'      => 'REIMPUTATION',
+            'model_type'  => EcritureComptable::class,
+            'model_id'    => null,
+            'description' => "Réimputation de {$updated} écriture(s) : "
+                . ($anciensComptes->isNotEmpty() ? $anciensComptes->implode(', ') : 'compte inconnu')
+                . " → {$newCompte->numero_de_compte} - {$newCompte->intitule}",
+            'payload'     => [
+                'nouveau_compte'  => [
+                    'id'       => $newCompte->id,
+                    'numero'   => $newCompte->numero_de_compte,
+                    'intitule' => $newCompte->intitule,
+                ],
+                'anciens_comptes' => $anciensComptes->all(),
+                'nb_ecritures'    => $updated,
+                'lignes'          => $lignes,
+            ],
+            'ip_address'  => $request->ip(),
+            'user_agent'  => $request->userAgent(),
+        ]);
     }
 
     /**
