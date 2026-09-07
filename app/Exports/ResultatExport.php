@@ -17,6 +17,9 @@ class ResultatExport implements FromCollection, WithHeadings, WithMapping, WithS
     protected $exercice;
     protected $month;
     protected $detailed;
+    /** Données de l'exercice précédent (null si le comparatif N-1 n'est pas demandé). */
+    protected $dataN1;
+    protected $exerciceN1;
 
     /** Lignes à mettre en gras (numéros de lignes de la feuille). */
     protected $boldRows = [];
@@ -25,12 +28,20 @@ class ResultatExport implements FromCollection, WithHeadings, WithMapping, WithS
     /** Ligne du résultat net. */
     protected $resultatRow = null;
 
-    public function __construct($data, $exercice, $month = null, $detailed = false)
+    public function __construct($data, $exercice, $month = null, $detailed = false, $dataN1 = null, $exerciceN1 = null)
     {
         $this->data = $data;
         $this->exercice = $exercice;
         $this->month = $month;
         $this->detailed = $detailed;
+        $this->dataN1 = $dataN1;
+        $this->exerciceN1 = $exerciceN1;
+    }
+
+    /** Le comparatif est-il actif ? */
+    protected function cmp(): bool
+    {
+        return !is_null($this->dataN1);
     }
 
     public function collection()
@@ -41,63 +52,80 @@ class ResultatExport implements FromCollection, WithHeadings, WithMapping, WithS
             ->resolvePeriode($this->exercice, $this->month);
 
         // --- En-tête du document ---
-        $this->push($rows, 'COMPTE DE RÉSULTAT (SIG)', '', 'title');
-        $this->push($rows, 'Entreprise : ' . ($this->exercice->company->company_name ?? ''), '');
-        $this->push($rows, 'Exercice : ' . $this->exercice->intitule, '');
-        $this->push($rows, 'Période : ' . $periode['label'], '');
-        $this->push($rows, 'Du ' . $periode['debut']->format('d/m/Y') . ' au ' . $periode['fin']->format('d/m/Y'), '');
-        $this->push($rows, '', '');
+        $this->push($rows, 'COMPTE DE RÉSULTAT (SIG)', null, 'title');
+        $this->push($rows, 'Entreprise : ' . ($this->exercice->company->company_name ?? ''), null);
+        $this->push($rows, 'Exercice : ' . $this->exercice->intitule, null);
+        $this->push($rows, 'Période : ' . $periode['label'], null);
+        $this->push($rows, 'Du ' . $periode['debut']->format('d/m/Y') . ' au ' . $periode['fin']->format('d/m/Y'), null);
+        if ($this->cmp()) {
+            $this->push($rows, 'Comparatif : ' . ($this->exerciceN1->intitule ?? 'N-1'), null);
+        }
+        $this->push($rows, '', null);
 
-        // --- 1. MARGE COMMERCIALE ---
-        $this->push($rows, 'Ventes de marchandises', $this->v('ventes_marchandises'));
-        $this->push($rows, 'Achats de marchandises (y compris variations stocks)', -($this->v('achats_marchandises') + $this->v('var_stock_march')));
-        $this->push($rows, 'MARGE COMMERCIALE', $this->v('marge_commerciale'), 'solde');
+        // Trame du SIG : une définition unique, évaluée sur N puis sur N-1.
+        $lignes = [
+            ['Ventes de marchandises',                               fn($d) => $this->v($d, 'ventes_marchandises')],
+            ['Achats de marchandises (y compris variations stocks)', fn($d) => -($this->v($d, 'achats_marchandises') + $this->v($d, 'var_stock_march'))],
+            ['MARGE COMMERCIALE',                                    fn($d) => $this->v($d, 'marge_commerciale'), 'solde'],
 
-        // --- 2. VALEUR AJOUTÉE ---
-        $this->push($rows, "Production de l'exercice", $this->v('production_exercice'));
-        $this->push($rows, "Consommation de l'exercice", -$this->v('consommation_exercice'));
-        $this->push($rows, 'VALEUR AJOUTÉE', $this->v('valeur_ajoutee'), 'solde');
+            ["Production de l'exercice",                             fn($d) => $this->v($d, 'production_exercice')],
+            ["Consommation de l'exercice",                           fn($d) => -$this->v($d, 'consommation_exercice')],
+            ['VALEUR AJOUTÉE',                                       fn($d) => $this->v($d, 'valeur_ajoutee'), 'solde'],
 
-        // --- 3. EXCÉDENT BRUT D'EXPLOITATION ---
-        $this->push($rows, "Subventions d'exploitation", $this->v('subventions_expl'));
-        $this->push($rows, 'Charges de personnel', -$this->v('charges_personnel'));
-        $this->push($rows, 'Impôts et Taxes', -$this->v('impots_taxes'));
-        $this->push($rows, "EXCÉDENT BRUT D'EXPLOITATION (EBE)", $this->v('ebe'), 'solde');
+            ["Subventions d'exploitation",                           fn($d) => $this->v($d, 'subventions_expl')],
+            ['Charges de personnel',                                 fn($d) => -$this->v($d, 'charges_personnel')],
+            ['Impôts et Taxes',                                      fn($d) => -$this->v($d, 'impots_taxes')],
+            ["EXCÉDENT BRUT D'EXPLOITATION (EBE)",                   fn($d) => $this->v($d, 'ebe'), 'solde'],
 
-        // --- 4. RÉSULTAT D'EXPLOITATION ---
-        $this->push($rows, "Reprises d'amortissements et provisions", $this->v('reprises_amort_prov') + $this->v('transfert_charges'));
-        $this->push($rows, 'Dotations aux amortissements et provisions', -$this->v('dotations_amort_prov'));
-        $this->push($rows, "RÉSULTAT D'EXPLOITATION", $this->v('resultat_exploitation'), 'solde');
+            ["Reprises d'amortissements et provisions",              fn($d) => $this->v($d, 'reprises_amort_prov') + $this->v($d, 'transfert_charges')],
+            ['Dotations aux amortissements et provisions',           fn($d) => -$this->v($d, 'dotations_amort_prov')],
+            ["RÉSULTAT D'EXPLOITATION",                              fn($d) => $this->v($d, 'resultat_exploitation'), 'solde'],
 
-        // --- 5. RÉSULTAT FINANCIER ---
-        $this->push($rows, 'Revenus financiers', $this->v('revenus_financiers') + $this->v('reprises_fin') + $this->v('transfert_fin'));
-        $this->push($rows, 'Frais financiers', -($this->v('frais_financiers') + $this->v('dotations_fin')));
-        $this->push($rows, 'RÉSULTAT FINANCIER', $this->v('resultat_financier'), 'solde');
+            ['Revenus financiers',                                   fn($d) => $this->v($d, 'revenus_financiers') + $this->v($d, 'reprises_fin') + $this->v($d, 'transfert_fin')],
+            ['Frais financiers',                                     fn($d) => -($this->v($d, 'frais_financiers') + $this->v($d, 'dotations_fin'))],
+            ['RÉSULTAT FINANCIER',                                   fn($d) => $this->v($d, 'resultat_financier'), 'solde'],
 
-        $this->push($rows, 'RÉSULTAT DES ACTIVITÉS ORDINAIRES', $this->v('resultat_activites_ordinaires'), 'solde');
+            ['RÉSULTAT DES ACTIVITÉS ORDINAIRES',                    fn($d) => $this->v($d, 'resultat_activites_ordinaires'), 'solde'],
 
-        // --- 6. RÉSULTAT H.A.O ---
-        $this->push($rows, 'Produits H.A.O', $this->v('produits_hao'));
-        $this->push($rows, 'Charges H.A.O', -$this->v('charges_hao'));
-        $this->push($rows, 'RÉSULTAT H.A.O', $this->v('resultat_hao'), 'solde');
+            ['Produits H.A.O',                                       fn($d) => $this->v($d, 'produits_hao')],
+            ['Charges H.A.O',                                        fn($d) => -$this->v($d, 'charges_hao')],
+            ['RÉSULTAT H.A.O',                                       fn($d) => $this->v($d, 'resultat_hao'), 'solde'],
 
-        // --- 7. RÉSULTAT NET ---
-        $this->push($rows, 'Impôts sur le Résultat', -$this->v('impots_resultat'));
-        $this->push($rows, 'RÉSULTAT NET', $this->v('resultat_net'), 'resultat');
+            ['Impôts sur le Résultat',                               fn($d) => -$this->v($d, 'impots_resultat')],
+            ['RÉSULTAT NET',                                         fn($d) => $this->v($d, 'resultat_net'), 'resultat'],
+        ];
+
+        foreach ($lignes as $ligne) {
+            [$libelle, $calc] = $ligne;
+            $style = $ligne[2] ?? null;
+            $this->push($rows, $libelle, $calc($this->data), $style, $this->cmp() ? $calc($this->dataN1) : null);
+        }
 
         // --- DÉTAIL DES COMPTES ---
         if ($this->detailed && !empty($this->data['details'])) {
-            $this->push($rows, '', '');
-            $this->push($rows, 'DÉTAIL DES COMPTES', '', 'title');
+            $this->push($rows, '', null);
+            $this->push($rows, 'DÉTAIL DES COMPTES', null, 'title');
 
             foreach ($this->data['details'] as $categorie => $items) {
-                $this->push($rows, '', '');
-                $this->push($rows, mb_strtoupper($categorie), '', 'solde');
+                $this->push($rows, '', null);
+                $this->push($rows, mb_strtoupper($categorie), null, 'solde');
+
+                // Index des mêmes comptes en N-1, pour aligner le détail ligne à ligne.
+                $itemsN1 = [];
+                if ($this->cmp()) {
+                    foreach ($this->dataN1['details'][$categorie] ?? [] as $itemN1) {
+                        $itemsN1[$itemN1['numero'] ?? ''] = $itemN1['solde'] ?? 0;
+                    }
+                }
+
                 foreach ($items as $item) {
+                    $numero = $item['numero'] ?? '';
                     $this->push(
                         $rows,
-                        '   ' . ($item['numero'] ?? '') . ' - ' . ($item['intitule'] ?? ''),
-                        $item['solde'] ?? 0
+                        '   ' . $numero . ' - ' . ($item['intitule'] ?? ''),
+                        $item['solde'] ?? 0,
+                        null,
+                        $this->cmp() ? ($itemsN1[$numero] ?? 0) : null
                     );
                 }
             }
@@ -109,9 +137,14 @@ class ResultatExport implements FromCollection, WithHeadings, WithMapping, WithS
     /**
      * Ajoute une ligne et mémorise son style (la ligne 1 est l'en-tête de colonnes).
      */
-    private function push(Collection $rows, $libelle, $montant, $style = null)
+    private function push(Collection $rows, $libelle, $montant, $style = null, $montantN1 = null)
     {
-        $rows->push((object)['libelle' => $libelle, 'montant' => $montant]);
+        $rows->push((object) [
+            'libelle'    => $libelle,
+            'montant'    => $montant,
+            'montant_n1' => $montantN1,
+            'variation'  => (is_numeric($montant) && is_numeric($montantN1)) ? $montant - $montantN1 : null,
+        ]);
         $sheetRow = $rows->count() + 1;
 
         if ($style === 'title') {
@@ -124,29 +157,43 @@ class ResultatExport implements FromCollection, WithHeadings, WithMapping, WithS
     }
 
     /**
-     * Valeur numérique sécurisée d'un poste SIG.
+     * Valeur numérique sécurisée d'un poste SIG dans un jeu de données donné.
      */
-    private function v($key)
+    private function v($data, $key)
     {
-        return isset($this->data[$key]) && is_numeric($this->data[$key]) ? (float) $this->data[$key] : 0;
+        return isset($data[$key]) && is_numeric($data[$key]) ? (float) $data[$key] : 0;
     }
 
     public function headings(): array
     {
-        return ['Libellé', 'Montant (' . ($this->exercice->company->currency ?? 'FCFA') . ')'];
+        $devise = $this->exercice->company->currency ?? 'FCFA';
+
+        if (!$this->cmp()) {
+            return ['Libellé', 'Montant (' . $devise . ')'];
+        }
+
+        return [
+            'Libellé',
+            ($this->exercice->intitule ?? 'N') . ' (' . $devise . ')',
+            ($this->exerciceN1->intitule ?? 'N-1') . ' (' . $devise . ')',
+            'Variation (' . $devise . ')',
+        ];
     }
 
     public function map($row): array
     {
-        return [
-            $row->libelle,
-            $row->montant,
-        ];
+        if (!$this->cmp()) {
+            return [$row->libelle, $row->montant];
+        }
+
+        return [$row->libelle, $row->montant, $row->montant_n1, $row->variation];
     }
 
     public function columnWidths(): array
     {
-        return ['A' => 55, 'B' => 22];
+        return $this->cmp()
+            ? ['A' => 55, 'B' => 22, 'C' => 22, 'D' => 22]
+            : ['A' => 55, 'B' => 22];
     }
 
     public function styles(Worksheet $sheet)
@@ -173,7 +220,8 @@ class ResultatExport implements FromCollection, WithHeadings, WithMapping, WithS
             ];
         }
 
-        $sheet->getStyle('B2:B' . max(2, $sheet->getHighestRow()))
+        $derniereColonne = $this->cmp() ? 'D' : 'B';
+        $sheet->getStyle('B2:' . $derniereColonne . max(2, $sheet->getHighestRow()))
             ->getNumberFormat()->setFormatCode('#,##0');
 
         return $styles;

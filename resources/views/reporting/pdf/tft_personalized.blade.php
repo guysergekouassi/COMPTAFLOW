@@ -136,6 +136,28 @@
     </style>
 </head>
 <body>
+@php
+    // ── Comparatif N-1 & restriction de période (filtres de téléchargement) ──
+    $dataN1     = $dataN1     ?? null;
+    $exerciceN1 = $exerciceN1 ?? null;
+    $cmp        = !is_null($dataN1);
+    $detailed   = $detailed   ?? false;
+
+    $monthFrom = $monthFrom ?? 1;
+    $monthTo   = $monthTo   ?? count($data['months']);
+
+    $sliceMonths = function ($months) use ($monthFrom, $monthTo) {
+        $out = [];
+        foreach (array_values($months ?? []) as $i => $m) {
+            if ($i + 1 >= $monthFrom && $i + 1 <= $monthTo) {
+                $out[$i] = $m;
+            }
+        }
+        return $out ?: ($months ?? []);
+    };
+
+    $visibleMonths = $sliceMonths($data['months']);
+@endphp
     <div class="watermark">COMPTAFLOW</div>
     <header>
         <table class="header-table">
@@ -146,7 +168,7 @@
                 </td>
                 <td style="width: 40%; border-bottom: 1px solid #000; text-align: center;">
                     <div class="doc-title">TABLEAU DES FLUX DE TRÉSORERIE MENSUEL</div>
-                    <div class="doc-subtitle">Analyse des flux réels par activité</div>
+                    <div class="doc-subtitle">Analyse des flux réels par activité@if($cmp) &mdash; Comparatif {{ $exerciceN1->intitule ?? 'N-1' }}@endif</div>
                 </td>
                 <td style="width: 30%; border-bottom: 1px solid #000; text-align: right;">
                     <div class="period">
@@ -170,124 +192,14 @@
         </table>
     </header>
 
-    <table>
-        <thead>
-            <tr class="header-row">
-                <th class="label-col">Flux de trésorerie</th>
-                @foreach($data['months'] as $month)
-                    <th>{{ $month['name'] }}</th>
-                @endforeach
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php
-                $activityNames = [
-                    'operationnelle' => 'I. Flux de trésorerie des activités opérationnelles',
-                    'investissement' => 'II. Flux de trésorerie des activités d\'investissement',
-                    'financement' => 'III. Flux de trésorerie des activités de financement'
-                ];
-            @endphp
+    @include('reporting.pdf.partials.tft_personalized_matrix', ['data' => $data, 'visibleMonths' => $visibleMonths, 'detailed' => $detailed])
 
-            @foreach($data['activities'] as $key => $activity)
-                <tr class="section-header">
-                    <td colspan="{{ count($data['months']) + 2 }}" class="label-col">{{ $activityNames[$key] }}</td>
-                </tr>
-                
-                {{-- ENCAISSEMENTS --}}
-                <tr class="subsection-header">
-                    <td colspan="{{ count($data['months']) + 2 }}" class="label-col" style="padding-left: 10px;">ENCAISSEMENTS (+)</td>
-                </tr>
-
-                @if(isset($detailed) && $detailed)
-                    @foreach($activity['encaissements']['categories'] as $category)
-                    <tr class="detail-row">
-                        <td class="label-col" style="padding-left: 20px;">{{ data_get($category, 'label') }}</td>
-                        @foreach($data['months'] as $i => $m)
-                            <td>{{ number_format(data_get($category, "data.$i", 0), 0, ',', ' ') }}</td>
-                        @endforeach
-                        <td>{{ number_format(array_sum((array)data_get($category, 'data', [])), 0, ',', ' ') }}</td>
-                    </tr>
-                    @endforeach
-                @endif
-
-                <tr class="total-row">
-                    @php
-                        $suffix = $key == 'operationnelle' ? 'OPÉRATIONNELS' : ($key == 'investissement' ? 'D\'INVESTISSEMENT' : 'DE FINANCEMENT');
-                        $roman = $key == 'operationnelle' ? 'I' : ($key == 'investissement' ? 'II' : 'III');
-                    @endphp
-                    <td class="label-col" style="padding-left: 10px; color: green;">TOTAL DES ENCAISSEMENTS {{ $suffix }} ({{ $roman }})</td>
-                    @foreach($data['months'] as $i => $m)
-                        <td class="text-success">{{ number_format($activity['encaissements']['total'][$i], 0, ',', ' ') }}</td>
-                    @endforeach
-                    <td class="text-success">{{ number_format(array_sum($activity['encaissements']['total']), 0, ',', ' ') }}</td>
-                </tr>
-
-                {{-- DÉCAISSEMENTS --}}
-                <tr class="subsection-header">
-                    <td colspan="{{ count($data['months']) + 2 }}" class="label-col" style="padding-left: 10px;">DÉCAISSEMENTS (-)</td>
-                </tr>
-
-                @if(isset($detailed) && $detailed)
-                    @foreach($activity['decaissements']['categories'] as $category)
-                    <tr class="detail-row">
-                        <td class="label-col" style="padding-left: 20px;">{{ data_get($category, 'label') }}</td>
-                        @foreach($data['months'] as $i => $m)
-                            <td>{{ number_format(data_get($category, "data.$i", 0), 0, ',', ' ') }}</td>
-                        @endforeach
-                        <td>{{ number_format(array_sum((array)data_get($category, 'data', [])), 0, ',', ' ') }}</td>
-                    </tr>
-                    @endforeach
-                @endif
-
-                <tr class="total-row">
-                    @php
-                        $suffix = $key == 'operationnelle' ? 'OPÉRATIONNELS' : ($key == 'investissement' ? 'D\'INVESTISSEMENT' : 'DE FINANCEMENT');
-                        $roman = $key == 'operationnelle' ? 'I' : ($key == 'investissement' ? 'II' : 'III');
-                    @endphp
-                    <td class="label-col" style="padding-left: 10px; color: red;">TOTAL DES DÉCAISSEMENTS {{ $suffix }} ({{ $roman }})</td>
-                    @foreach($data['months'] as $i => $m)
-                        <td class="text-danger">{{ number_format($activity['decaissements']['total'][$i], 0, ',', ' ') }}</td>
-                    @endforeach
-                    <td class="text-danger">{{ number_format(array_sum($activity['decaissements']['total']), 0, ',', ' ') }}</td>
-                </tr>
-
-                {{-- Flux Net --}}
-                <tr class="activity-net-row">
-                    @php
-                        $suffixNet = $key == 'operationnelle' ? 'OPÉRATIONNELLE' : ($key == 'investissement' ? 'D\'INVESTISSEMENT' : 'DE FINANCEMENT');
-                        $roman = $key == 'operationnelle' ? 'I' : ($key == 'investissement' ? 'II' : 'III');
-                    @endphp
-                    <td class="label-col">FLUX NET DE L'ACTIVITÉ {{ $suffixNet }} ({{ $roman }})</td>
-                    @foreach($data['months'] as $i => $m)
-                        <td>{{ number_format($activity['net'][$i], 0, ',', ' ') }}</td>
-                    @endforeach
-                    <td>{{ number_format(array_sum($activity['net']), 0, ',', ' ') }}</td>
-                </tr>
-                <tr><td colspan="{{ count($data['months']) + 2 }}" style="border: none; padding: 5px;"></td></tr>
-            @endforeach
-
-            <!-- SYNTHÈSE -->
-            <tr class="section-header" style="background-color: #0f172a; color: #fff;">
-                <td colspan="{{ count($data['months']) + 2 }}" class="label-col" style="color: #fff;">VARIATION GLOBALE ET TRÉSORERIE</td>
-            </tr>
-
-            <tr class="main-total">
-                <td class="label-col">VARIATION NETTE GLOBALE</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ number_format($data['global_net'][$i], 0, ',', ' ') }}</td>
-                @endforeach
-                <td>{{ number_format(array_sum($data['global_net']), 0, ',', ' ') }}</td>
-            </tr>
-
-            <tr class="main-total">
-                <td class="label-col">TRÉSORERIE FINALE (CUMULÉE)</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ number_format($data['cumule'][$i], 0, ',', ' ') }}</td>
-                @endforeach
-                <td>-</td>
-            </tr>
-        </tbody>
-    </table>
+    @if($cmp)
+        <div style="page-break-before: always;"></div>
+        <div style="font-weight: bold; font-size: 13px; text-transform: uppercase; margin: 8px 0 6px 0; border-bottom: 2px solid #000; padding-bottom: 3px;">
+            Comparatif exercice précédent &mdash; {{ $exerciceN1->intitule ?? 'N-1' }}
+        </div>
+        @include('reporting.pdf.partials.tft_personalized_matrix', ['data' => $dataN1, 'visibleMonths' => $sliceMonths($dataN1['months'] ?? []), 'detailed' => $detailed])
+    @endif
 </body>
 </html>

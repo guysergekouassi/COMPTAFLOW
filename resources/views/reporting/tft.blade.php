@@ -148,12 +148,9 @@
                                 </div>
 
                                 <div class="border-start ps-2 d-flex gap-2">
-                                    <a href="{{ route('reporting.tft.export', ['format' => 'pdf'] + request()->all()) }}" class="btn btn-sm btn-light text-danger" data-bs-toggle="tooltip" title="Exporter en PDF">
-                                        <i class="bx bxs-file-pdf fs-4"></i>
-                                    </a>
-                                    <a href="{{ route('reporting.tft.export', ['format' => 'excel'] + request()->all()) }}" class="btn btn-sm btn-light text-success" data-bs-toggle="tooltip" title="Exporter en Excel">
-                                        <i class="bx bxs-file-json fs-4"></i>
-                                    </a>
+                                    <button type="button" class="btn btn-sm btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#reportDownloadModal">
+                                        <i class="bx bx-download me-1"></i> Télécharger
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -489,5 +486,13 @@
             </div>
         </div>
     </div>
+
+    @include('reporting.partials.download_modal', [
+        'route'          => 'reporting.tft.export',
+        'titre'          => 'Flux de Trésorerie (TFT)',
+        'withMonth'      => false,
+        'withMonthRange' => true,
+        'withExcel'      => true,
+    ])
 </body>
 </html>

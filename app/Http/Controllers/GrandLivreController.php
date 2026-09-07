@@ -107,7 +107,9 @@ class GrandLivreController extends Controller
                 Excel::store(new GrandLivreExport($ecritures, $soldesInitiaux), $filename, $disk);
                 GrandLivre::create($this->livreData($request, $user, $format, $filename));
 
-                return back()->with('success', ucfirst($format) . " Grand Livre généré avec succès ! ({$count} écritures)");
+                return back()
+                    ->with('success', ucfirst($format) . " Grand Livre généré avec succès ! ({$count} écritures)")
+                    ->with('generated_file', asset('grand_livres/' . rawurlencode($filename)));
             }
 
             // ── PDF via mPDF (génération native, sans parsing HTML) ──────────
@@ -128,7 +130,9 @@ class GrandLivreController extends Controller
 
             GrandLivre::create($this->livreData($request, $user, $format, $filename));
 
-            return back()->with('success', "PDF Grand Livre généré avec succès ! ({$count} écritures)");
+            return back()
+                ->with('success', "PDF Grand Livre généré avec succès ! ({$count} écritures)")
+                ->with('generated_file', asset('grand_livres/' . rawurlencode($filename)));
 
         } catch (\Exception $e) {
             Log::error('Erreur grand livre : ' . $e->getMessage());
@@ -354,6 +358,10 @@ class GrandLivreController extends Controller
      */
     private function livreData(Request $request, $user, string $format, string $filename): array
     {
+        // company_id : TOUJOURS l'entreprise active en session (mode switch / multi-sociétés),
+        // sinon la ligne créée est filtrée par le TenantScope et n'apparaît jamais dans la liste.
+        $companyId = session('current_company_id', $user->company_id);
+
         return [
             'date_debut'          => $request->date_debut,
             'date_fin'            => $request->date_fin,
@@ -362,7 +370,7 @@ class GrandLivreController extends Controller
             'format'              => $format,
             'grand_livre'         => $filename,
             'user_id'             => $user->id,
-            'company_id'          => $user->company_id,
+            'company_id'          => $companyId,
         ];
     }
 }

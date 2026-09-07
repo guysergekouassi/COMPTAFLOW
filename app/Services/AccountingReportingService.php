@@ -12,7 +12,9 @@ class AccountingReportingService
      */
     private function getMonthsForExercise($exerciceId)
     {
-        $exercice = \App\Models\ExerciceComptable::find($exerciceId);
+        // Sans scopes globaux : un exercice N-1 clôturé reste introuvable via find()
+        // (UserIsolationScope impose `cloturer = 0` aux utilisateurs non-admin).
+        $exercice = \App\Models\ExerciceComptable::withoutGlobalScopes()->find($exerciceId);
         if (!$exercice) return [];
 
         $start = \Carbon\Carbon::parse($exercice->date_debut);
@@ -29,6 +31,49 @@ class AccountingReportingService
             $current->addMonth();
         }
         return $months;
+    }
+
+    /**
+     * Liste publique des mois d'un exercice (alimente les filtres de période).
+     * Chaque entrée : ['id' => n° de mois, 'name' => 'janv.-25', 'year' => 2025]
+     */
+    public function getMonthsForExercice($exerciceId)
+    {
+        return $this->getMonthsForExercise($exerciceId);
+    }
+
+    /**
+     * Retourne l'exercice précédent (N-1) d'un exercice donné, pour la même entreprise.
+     *
+     * On ignore volontairement les scopes globaux : l'exercice N-1 est presque
+     * toujours clôturé, or UserIsolationScope filtre sur `cloturer = 0` pour les
+     * utilisateurs non-admin — il resterait donc introuvable.
+     *
+     * @param  \App\Models\ExerciceComptable  $exercice
+     * @return \App\Models\ExerciceComptable|null
+     */
+    public function getExercicePrecedent($exercice)
+    {
+        if (!$exercice) return null;
+
+        return \App\Models\ExerciceComptable::withoutGlobalScopes()
+            ->where('company_id', $exercice->company_id)
+            ->where('id', '!=', $exercice->id)
+            ->whereDate('date_fin', '<', $exercice->date_debut)
+            ->orderByDesc('date_fin')
+            ->first();
+    }
+
+    /**
+     * Liste des exercices sélectionnables pour une entreprise (du plus récent au plus ancien).
+     * Sert à alimenter le filtre « Exercice » des boîtes de téléchargement.
+     */
+    public function getExercicesSelectionnables($companyId)
+    {
+        return \App\Models\ExerciceComptable::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->orderByDesc('date_debut')
+            ->get();
     }
 
     /**

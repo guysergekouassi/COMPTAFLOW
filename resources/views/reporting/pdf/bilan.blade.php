@@ -89,6 +89,14 @@
 <body>
 @php
     $periode = $periode ?? app(\App\Services\AccountingReportingService::class)->resolvePeriode($exercice, $month ?? null);
+
+    // Comparatif N-1 : $dataN1 est fourni par le contrôleur uniquement si l'option est cochée.
+    $dataN1     = $dataN1     ?? null;
+    $exerciceN1 = $exerciceN1 ?? null;
+    $cmp        = !is_null($dataN1);
+    $libN       = $exercice->intitule ?? 'N';
+    $libN1      = $exerciceN1->intitule ?? 'N-1';
+    $nf         = fn($v) => number_format((float) $v, 0, ',', ' ');
 @endphp
 
     <div class="watermark">COMPTAFLOW</div>
@@ -101,7 +109,7 @@
                 </td>
                 <td style="width: 40%; border-bottom: 1px solid #000; text-align: center;">
                     <div class="doc-title">BILAN ACTIF / PASSIF</div>
-                    <div class="doc-subtitle">{{ $periode['is_month'] ? $periode['label'] : 'Comptes Annuels' }}</div>
+                    <div class="doc-subtitle">{{ $periode['is_month'] ? $periode['label'] : 'Comptes Annuels' }}@if($cmp) &mdash; Comparatif {{ $libN1 }}@endif</div>
                 </td>
                 <td style="width: 30%; border-bottom: 1px solid #000; text-align: right;">
                     <div class="period">
@@ -134,7 +142,8 @@
                     <thead>
                         <tr>
                             <th>Libellé</th>
-                            <th class="amount">Montant</th>
+                            <th class="amount">{{ $cmp ? $libN : 'Montant' }}</th>
+                            @if($cmp)<th class="amount">{{ $libN1 }}</th><th class="amount">Var.</th>@endif
                         </tr>
                     </thead>
                     <tbody>
@@ -142,7 +151,12 @@
                             <!-- Section Header -->
                             <tr>
                                 <td style="font-weight:bold; background-color: #eee;">{{ $title }}</td>
-                                <td class="amount" style="font-weight:bold; background-color: #eee;">{{ number_format($data['actif'][$key]['total_net'], 0, ',', ' ') }} FCFA</td>
+                                <td class="amount" style="font-weight:bold; background-color: #eee;">{{ $nf($data['actif'][$key]['total_net']) }} FCFA</td>
+                                @if($cmp)
+                                    @php $n1 = $dataN1['actif'][$key]['total_net'] ?? 0; @endphp
+                                    <td class="amount" style="font-weight:bold; background-color: #eee;">{{ $nf($n1) }}</td>
+                                    <td class="amount" style="font-weight:bold; background-color: #eee;">{{ $nf($data['actif'][$key]['total_net'] - $n1) }}</td>
+                                @endif
                             </tr>
                             
                             <!-- Subcategories -->
@@ -150,7 +164,12 @@
                                 @if($subData['net'] != 0 || !empty($subData['details']))
                                 <tr>
                                     <td style="padding-left: 10px; font-weight:600;">{{ $subData['label'] }}</td>
-                                    <td class="amount" style="font-weight:600;">{{ number_format($subData['net'], 0, ',', ' ') }}</td>
+                                    <td class="amount" style="font-weight:600;">{{ $nf($subData['net']) }}</td>
+                                    @if($cmp)
+                                        @php $n1 = $dataN1['actif'][$key]['subcategories'][$subKey]['net'] ?? 0; @endphp
+                                        <td class="amount" style="font-weight:600;">{{ $nf($n1) }}</td>
+                                        <td class="amount" style="font-weight:600;">{{ $nf($subData['net'] - $n1) }}</td>
+                                    @endif
                                 </tr>
                                 
                                     @if(isset($detailed) && $detailed && !empty($subData['details']))
@@ -159,8 +178,8 @@
                                             <td style="padding-left: 25px; font-style: italic; color: #333; font-size: 10px;">
                                                 {{ $detail['numero'] }} - {{ $detail['intitule'] }}
                                             </td>
-                                            <td class="amount" style="font-size: 10px; color: #333;">
-                                                {{ number_format($detail['solde'], 0, ',', ' ') }}
+                                            <td class="amount" style="font-size: 10px; color: #333;" @if($cmp) colspan="3" @endif>
+                                                {{ $nf($detail['solde']) }}
                                             </td>
                                         </tr>
                                         @endforeach
@@ -172,7 +191,11 @@
                     <tfoot>
                         <tr class="total-row">
                             <th>TOTAL ACTIF</th>
-                            <th class="amount">{{ number_format($data['actif']['total_net'], 0, ',', ' ') }} FCFA</th>
+                            <th class="amount">{{ $nf($data['actif']['total_net']) }} FCFA</th>
+                            @if($cmp)
+                                <th class="amount">{{ $nf($dataN1['actif']['total_net'] ?? 0) }}</th>
+                                <th class="amount">{{ $nf($data['actif']['total_net'] - ($dataN1['actif']['total_net'] ?? 0)) }}</th>
+                            @endif
                         </tr>
                     </tfoot>
                 </table>
@@ -184,7 +207,8 @@
                     <thead>
                         <tr>
                             <th>Libellé</th>
-                            <th class="amount">Montant</th>
+                            <th class="amount">{{ $cmp ? $libN : 'Montant' }}</th>
+                            @if($cmp)<th class="amount">{{ $libN1 }}</th><th class="amount">Var.</th>@endif
                         </tr>
                     </thead>
                     <tbody>
@@ -192,7 +216,12 @@
                             <!-- Section Header -->
                             <tr>
                                 <td style="font-weight:bold; background-color: #eee;">{{ $title }}</td>
-                                <td class="amount" style="font-weight:bold; background-color: #eee;">{{ number_format($data['passif'][$key]['total'], 0, ',', ' ') }} FCFA</td>
+                                <td class="amount" style="font-weight:bold; background-color: #eee;">{{ $nf($data['passif'][$key]['total']) }} FCFA</td>
+                                @if($cmp)
+                                    @php $n1 = $dataN1['passif'][$key]['total'] ?? 0; @endphp
+                                    <td class="amount" style="font-weight:bold; background-color: #eee;">{{ $nf($n1) }}</td>
+                                    <td class="amount" style="font-weight:bold; background-color: #eee;">{{ $nf($data['passif'][$key]['total'] - $n1) }}</td>
+                                @endif
                             </tr>
                             
                             <!-- Subcategories -->
@@ -200,7 +229,12 @@
                                 @if($subData['total'] != 0 || !empty($subData['details']))
                                 <tr>
                                     <td style="padding-left: 10px; font-weight:600;">{{ $subData['label'] }}</td>
-                                    <td class="amount" style="font-weight:600;">{{ number_format($subData['total'], 0, ',', ' ') }}</td>
+                                    <td class="amount" style="font-weight:600;">{{ $nf($subData['total']) }}</td>
+                                    @if($cmp)
+                                        @php $n1 = $dataN1['passif'][$key]['subcategories'][$subKey]['total'] ?? 0; @endphp
+                                        <td class="amount" style="font-weight:600;">{{ $nf($n1) }}</td>
+                                        <td class="amount" style="font-weight:600;">{{ $nf($subData['total'] - $n1) }}</td>
+                                    @endif
                                 </tr>
                                 
                                     @if(isset($detailed) && $detailed && !empty($subData['details']))
@@ -209,8 +243,8 @@
                                             <td style="padding-left: 25px; font-style: italic; color: #333; font-size: 10px;">
                                                 {{ $detail['numero'] }} - {{ $detail['intitule'] }}
                                             </td>
-                                            <td class="amount" style="font-size: 10px; color: #333;">
-                                                {{ number_format($detail['solde'], 0, ',', ' ') }}
+                                            <td class="amount" style="font-size: 10px; color: #333;" @if($cmp) colspan="3" @endif>
+                                                {{ $nf($detail['solde']) }}
                                             </td>
                                         </tr>
                                         @endforeach
@@ -222,7 +256,11 @@
                     <tfoot>
                         <tr class="total-row">
                             <th>TOTAL PASSIF</th>
-                            <th class="amount">{{ number_format($data['passif']['total'], 0, ',', ' ') }} FCFA</th>
+                            <th class="amount">{{ $nf($data['passif']['total']) }} FCFA</th>
+                            @if($cmp)
+                                <th class="amount">{{ $nf($dataN1['passif']['total'] ?? 0) }}</th>
+                                <th class="amount">{{ $nf($data['passif']['total'] - ($dataN1['passif']['total'] ?? 0)) }}</th>
+                            @endif
                         </tr>
                     </tfoot>
                 </table>

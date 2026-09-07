@@ -133,6 +133,39 @@
 <body>
 @php
     $periode = $periode ?? app(\App\Services\AccountingReportingService::class)->resolvePeriode($exercice, $month ?? null);
+
+    // Comparatif N-1 : $dataN1 n'est fourni que si l'option a été cochée au téléchargement.
+    $dataN1     = $dataN1     ?? null;
+    $exerciceN1 = $exerciceN1 ?? null;
+    $cmp        = !is_null($dataN1);
+    $libN       = $exercice->intitule ?? 'N';
+    $libN1      = $exerciceN1->intitule ?? 'N-1';
+    $nf         = fn($v) => number_format((float) $v, 0, ',', ' ');
+
+    // Trame du compte de résultat : une seule définition, rendue en N et en N-1.
+    $sigRows = [
+        ['Ventes de marchandises',                              '+', 'text-success', '',                 fn($d) => $d['ventes_marchandises']],
+        ['Achats de marchandises (y compris variations stocks)','-', 'text-danger',  '',                 fn($d) => $d['achats_marchandises'] + $d['var_stock_march']],
+        ['MARGE COMMERCIALE',                                   '',  '',             'sig-row main',     fn($d) => $d['marge_commerciale']],
+        ["Production de l'exercice",                            '+', 'text-success', '',                 fn($d) => $d['production_exercice']],
+        ["Consommation de l'exercice",                          '-', 'text-danger',  '',                 fn($d) => $d['consommation_exercice']],
+        ['VALEUR AJOUTÉE',                                      '',  '',             'sig-row main',     fn($d) => $d['valeur_ajoutee']],
+        ["Subventions d'exploitation",                          '+', 'text-success', '',                 fn($d) => $d['subventions_expl']],
+        ['Charges de personnel',                                '-', 'text-danger',  '',                 fn($d) => $d['charges_personnel']],
+        ['Impôts et Taxes',                                     '-', 'text-danger',  '',                 fn($d) => $d['impots_taxes']],
+        ["EXCÉDENT BRUT D'EXPLOITATION (EBE)",                  '',  '',             'sig-row main',     fn($d) => $d['ebe']],
+        ["Reprises d'amortissements et provisions",             '+', 'text-success', '',                 fn($d) => $d['reprises_amort_prov']],
+        ['Dotations aux amortissements et provisions',          '-', 'text-danger',  '',                 fn($d) => $d['dotations_amort_prov']],
+        ["RÉSULTAT D'EXPLOITATION",                             '',  '',             'sig-row main',     fn($d) => $d['resultat_exploitation']],
+        ['Revenus financiers',                                  '+', 'text-success', '',                 fn($d) => $d['revenus_financiers'] + $d['reprises_fin'] + $d['transfert_fin']],
+        ['Frais financiers',                                    '-', 'text-danger',  '',                 fn($d) => $d['frais_financiers'] + $d['dotations_fin']],
+        ['RÉSULTAT FINANCIER',                                  '',  '',             'sig-row main',     fn($d) => $d['resultat_financier']],
+        ['Produits H.A.O',                                      '+', 'text-success', '',                 fn($d) => $d['produits_hao']],
+        ['Charges H.A.O',                                       '-', 'text-danger',  '',                 fn($d) => $d['charges_hao']],
+        ['RÉSULTAT H.A.O',                                      '',  '',             'sig-row main',     fn($d) => $d['resultat_hao']],
+        ['Impôts sur le Résultat',                              '-', 'text-danger',  '',                 fn($d) => $d['impots_resultat']],
+        ['RÉSULTAT NET',                                        '',  '',             'resultat-net-row', fn($d) => $d['resultat_net']],
+    ];
 @endphp
 
     <div class="watermark">COMPTAFLOW</div>
@@ -145,7 +178,7 @@
                 </td>
                 <td style="width: 40%; border-bottom: 1px solid #000; text-align: center;">
                     <div class="doc-title">COMPTE DE RÉSULTAT (SIG)</div>
-                    <div class="doc-subtitle">{{ $periode['is_month'] ? $periode['label'] : 'Comptes Annuels' }}</div>
+                    <div class="doc-subtitle">{{ $periode['is_month'] ? $periode['label'] : 'Comptes Annuels' }}@if($cmp) &mdash; Comparatif {{ $libN1 }}@endif</div>
                 </td>
                 <td style="width: 30%; border-bottom: 1px solid #000; text-align: right;">
                     <div class="period">
@@ -171,104 +204,32 @@
 
 
     <table>
+        <thead>
+            <tr>
+                <th>Libellé</th>
+                <th class="amount">{{ $cmp ? $libN : 'Montant' }}</th>
+                @if($cmp)
+                    <th class="amount">{{ $libN1 }}</th>
+                    <th class="amount">Var.</th>
+                @endif
+            </tr>
+        </thead>
         <tbody>
-            <!-- 1. MARGE COMMERCIALE -->
-            <tr>
-                <td>Ventes de marchandises</td>
-                <td class="amount text-success">+ {{ number_format($data['ventes_marchandises'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td>Achats de marchandises (y compris variations stocks)</td>
-                <td class="amount text-danger">- {{ number_format($data['achats_marchandises'] + $data['var_stock_march'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr class="sig-row main">
-                <td>MARGE COMMERCIALE</td>
-                <td class="amount">{{ number_format($data['marge_commerciale'], 0, ',', ' ') }}</td>
-            </tr>
-
-            <!-- 2. VALEUR AJOUTEE -->
-            <tr>
-                <td>Production de l'exercice</td>
-                <td class="amount text-success">+ {{ number_format($data['production_exercice'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td>Consommation de l'exercice</td>
-                <td class="amount text-danger">- {{ number_format($data['consommation_exercice'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr class="sig-row main">
-                <td>VALEUR AJOUTÉE</td>
-                <td class="amount">{{ number_format($data['valeur_ajoutee'], 0, ',', ' ') }}</td>
-            </tr>
-
-            <!-- 3. EBE -->
-            <tr>
-                <td>Subventions d'exploitation</td>
-                <td class="amount text-success">+ {{ number_format($data['subventions_expl'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td>Charges de personnel</td>
-                <td class="amount text-danger">- {{ number_format($data['charges_personnel'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td>Impôts et Taxes</td>
-                <td class="amount text-danger">- {{ number_format($data['impots_taxes'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr class="sig-row main">
-                <td>EXCÉDENT BRUT D'EXPLOITATION (EBE)</td>
-                <td class="amount">{{ number_format($data['ebe'], 0, ',', ' ') }}</td>
-            </tr>
-
-            <!-- 4. RESULTAT D'EXPLOITATION -->
-            <tr>
-                <td>Reprises d'amortissements et provisions</td>
-                <td class="amount text-success">+ {{ number_format($data['reprises_amort_prov'], 0, ',', ' ') }}</td>
-            </tr>
-             <tr>
-                <td>Dotations aux amortissements et provisions</td>
-                <td class="amount text-danger">- {{ number_format($data['dotations_amort_prov'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr class="sig-row main">
-                <td>RÉSULTAT D'EXPLOITATION</td>
-                <td class="amount">{{ number_format($data['resultat_exploitation'], 0, ',', ' ') }}</td>
-            </tr>
-
-            <!-- 5. RESULTAT FINANCIER -->
-            <tr>
-                <td>Revenus financiers</td>
-                <td class="amount text-success">+ {{ number_format($data['revenus_financiers'] + $data['reprises_fin'] + $data['transfert_fin'], 0, ',', ' ') }}</td>
-            </tr>
-             <tr>
-                <td>Frais financiers</td>
-                <td class="amount text-danger">- {{ number_format($data['frais_financiers'] + $data['dotations_fin'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr class="sig-row main">
-                <td>RÉSULTAT FINANCIER</td>
-                <td class="amount">{{ number_format($data['resultat_financier'], 0, ',', ' ') }}</td>
-            </tr>
-
-            <!-- 6. RESULTAT HAO -->
-            <tr>
-                <td>Produits H.A.O</td>
-                <td class="amount text-success">+ {{ number_format($data['produits_hao'], 0, ',', ' ') }}</td>
-            </tr>
-             <tr>
-                <td>Charges H.A.O</td>
-                <td class="amount text-danger">- {{ number_format($data['charges_hao'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr class="sig-row main">
-                <td>RÉSULTAT H.A.O</td>
-                <td class="amount">{{ number_format($data['resultat_hao'], 0, ',', ' ') }}</td>
-            </tr>
-
-             <!-- 7. RESULTAT NET -->
-             <tr>
-                <td>Impôts sur le Résultat</td>
-                <td class="amount text-danger">- {{ number_format($data['impots_resultat'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr class="resultat-net-row">
-                <td>RÉSULTAT NET</td>
-                <td class="amount">{{ number_format($data['resultat_net'], 0, ',', ' ') }} FCFA</td>
-            </tr>
+            @foreach($sigRows as [$label, $signe, $couleur, $rowClass, $valeur])
+                @php
+                    $vN     = (float) $valeur($data);
+                    $vN1    = $cmp ? (float) $valeur($dataN1) : 0;
+                    $isNet  = $rowClass === 'resultat-net-row';
+                @endphp
+                <tr @if($rowClass) class="{{ $rowClass }}" @endif>
+                    <td>{{ $label }}</td>
+                    <td class="amount {{ $couleur }}">{{ $signe ? $signe . ' ' : '' }}{{ $nf($vN) }}{{ $isNet ? ' FCFA' : '' }}</td>
+                    @if($cmp)
+                        <td class="amount {{ $couleur }}">{{ $signe ? $signe . ' ' : '' }}{{ $nf($vN1) }}</td>
+                        <td class="amount">{{ $nf($vN - $vN1) }}</td>
+                    @endif
+                </tr>
+            @endforeach
         </tbody>
     </table>
 

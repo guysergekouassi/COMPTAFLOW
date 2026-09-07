@@ -132,7 +132,7 @@ class BalanceTiersController extends Controller
     //             'plan_tiers_id_2' => $request->plan_tiers_id_2,
     //             'balance_tiers' => $filename,
     //             'user_id' => $user->id,
-    //             'company_id' => $user->company_id,
+    //             'company_id' => session('current_company_id', $user->company_id),
     //         ]);
 
     //         return back()->with('success', "PDF balance des Tiers généré avec succès ! ({$ecritures->count()} écritures)");
@@ -209,7 +209,7 @@ class BalanceTiersController extends Controller
                     'format' => $format_fichier,
                     'balance_tiers' => $filename,
                     'user_id' => $user->id,
-                    'company_id' => $user->company_id,
+                    'company_id' => session('current_company_id', $user->company_id),
                 ]);
 
                 return back()->with('success', "Excel Balance des Tiers généré avec succès ! ($count écritures)");
@@ -229,7 +229,7 @@ class BalanceTiersController extends Controller
                     'format' => $format_fichier,
                     'balance_tiers' => $filename,
                     'user_id' => $user->id,
-                    'company_id' => $user->company_id,
+                    'company_id' => session('current_company_id', $user->company_id),
                 ]);
 
                 return back()->with('success', "CSV Balance des Tiers généré avec succès ! ($count écritures)");
@@ -262,7 +262,7 @@ class BalanceTiersController extends Controller
                 'format' => $format_fichier,
                 'balance_tiers' => $filename,
                 'user_id' => $user->id,
-                'company_id' => $user->company_id,
+                'company_id' => session('current_company_id', $user->company_id),
                 
             ]);
 

@@ -258,6 +258,12 @@
                                 <div class="flex items-center gap-3">
                                     <i class="fas fa-check-circle text-xl"></i>
                                     <span class="font-medium">{{ session('success') }}</span>
+                                    @if (session('generated_file'))
+                                        <a href="{{ session('generated_file') }}" target="_blank"
+                                           class="inline-flex items-center gap-2 ms-3 px-3 py-1 rounded-lg bg-white border border-green-200 text-green-700 font-semibold text-sm hover:bg-green-100 transition">
+                                            <i class="fas fa-download"></i> Télécharger maintenant
+                                        </a>
+                                    @endif
                                 </div>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>

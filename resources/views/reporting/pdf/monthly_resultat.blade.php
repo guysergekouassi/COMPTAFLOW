@@ -126,6 +126,28 @@
     </style>
 </head>
 <body>
+@php
+    // ── Comparatif N-1 & restriction de période (filtres de téléchargement) ──
+    $dataN1     = $dataN1     ?? null;
+    $exerciceN1 = $exerciceN1 ?? null;
+    $cmp        = !is_null($dataN1);
+    $detailed   = $detailed   ?? false;
+
+    $monthFrom = $monthFrom ?? 1;
+    $monthTo   = $monthTo   ?? count($data['months']);
+
+    $sliceMonths = function ($months) use ($monthFrom, $monthTo) {
+        $out = [];
+        foreach (array_values($months ?? []) as $i => $m) {
+            if ($i + 1 >= $monthFrom && $i + 1 <= $monthTo) {
+                $out[$i] = $m;
+            }
+        }
+        return $out ?: ($months ?? []);
+    };
+
+    $visibleMonths = $sliceMonths($data['months']);
+@endphp
     <div class="watermark">COMPTAFLOW</div>
     <header>
         <table class="header-table">
@@ -136,7 +158,7 @@
                 </td>
                 <td style="width: 40%; border-bottom: 1px solid #000; text-align: center;">
                     <div class="doc-title">COMPTE D'EXPLOITATION MENSUEL</div>
-                    <div class="doc-subtitle">Comptes Annuels</div>
+                    <div class="doc-subtitle">Comptes Annuels @if($cmp) &mdash; Comparatif {{ $exerciceN1->intitule ?? 'N-1' }}@endif</div>
                 </td>
                 <td style="width: 30%; border-bottom: 1px solid #000; text-align: right;">
                     <div class="period">
@@ -160,100 +182,15 @@
         </table>
     </header>
 
-    <table>
-        <thead>
-            <tr class="header-row">
-                <th class="label-col">Rubrique</th>
-                @foreach($data['months'] as $month)
-                    <th>{{ $month['name'] }}</th>
-                @endforeach
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- PRODUITS -->
-            <tr class="section-header">
-                <td colspan="{{ count($data['months']) + 2 }}" class="label-col text-success">PRODUITS / CHIFFRE D'AFFAIRES</td>
-            </tr>
-            
-            @foreach($data['data']['produits'] as $key => $row)
-                @if($key !== 'total')
-                    <tr>
-                        <td class="label-col">{{ $row['label'] }}</td>
-                        @foreach($data['months'] as $i => $m)
-                            <td>{{ number_format($row['data'][$i], 0, ',', ' ') }}</td>
-                        @endforeach
-                        <td>{{ number_format(array_sum($row['data']), 0, ',', ' ') }}</td>
-                    </tr>
-                    @if(isset($detailed) && $detailed && !empty($row['details']))
-                        @foreach($row['details'] as $compte)
-                        <tr class="detail-row">
-                            <td class="label-col" style="padding-left: 20px;">{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                            @foreach($data['months'] as $i => $m)
-                                <td>{{ isset($compte['data'][$i]) ? number_format($compte['data'][$i], 0, ',', ' ') : '-' }}</td>
-                            @endforeach
-                            <td>{{ number_format(array_sum($compte['data']), 0, ',', ' ') }}</td>
-                        </tr>
-                        @endforeach
-                    @endif
-                @endif
-            @endforeach
+    @include('reporting.pdf.partials.monthly_resultat_matrix', ['data' => $data, 'visibleMonths' => $visibleMonths, 'detailed' => $detailed])
 
-            <tr class="total-row">
-                <td class="label-col">TOTAL PRODUITS</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ number_format($data['data']['produits']['total'][$i], 0, ',', ' ') }}</td>
-                @endforeach
-                <td>{{ number_format(array_sum($data['data']['produits']['total']), 0, ',', ' ') }}</td>
-            </tr>
-
-            <!-- CHARGES -->
-            <tr class="section-header">
-                <td colspan="{{ count($data['months']) + 2 }}" class="label-col text-danger" style="border-top: 2px solid #000;">CHARGES / DÉPENSES</td>
-            </tr>
-            
-            @foreach($data['data']['charges'] as $key => $row)
-                @if($key !== 'total')
-                    <tr>
-                        <td class="label-col">{{ $row['label'] }}</td>
-                        @foreach($data['months'] as $i => $m)
-                            <td>{{ number_format($row['data'][$i], 0, ',', ' ') }}</td>
-                        @endforeach
-                        <td>{{ number_format(array_sum($row['data']), 0, ',', ' ') }}</td>
-                    </tr>
-                    @if(isset($detailed) && $detailed && !empty($row['details']))
-                        @foreach($row['details'] as $compte)
-                        <tr class="detail-row">
-                            <td class="label-col" style="padding-left: 20px;">{{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                            @foreach($data['months'] as $i => $m)
-                                <td>{{ isset($compte['data'][$i]) ? number_format($compte['data'][$i], 0, ',', ' ') : '-' }}</td>
-                            @endforeach
-                            <td>{{ number_format(array_sum($compte['data']), 0, ',', ' ') }}</td>
-                        </tr>
-                        @endforeach
-                    @endif
-                @endif
-            @endforeach
-
-            <tr class="total-row">
-                <td class="label-col">TOTAL CHARGES</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ number_format($data['data']['charges']['total'][$i], 0, ',', ' ') }}</td>
-                @endforeach
-                <td>{{ number_format(array_sum($data['data']['charges']['total']), 0, ',', ' ') }}</td>
-            </tr>
-
-            <!-- RÉSULTAT -->
-            <tr class="main-total">
-                <td class="label-col">RÉSULTAT NET</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ number_format($data['data']['resultat'][$i], 0, ',', ' ') }}</td>
-                @endforeach
-                <td>{{ number_format(array_sum($data['data']['resultat']), 0, ',', ' ') }}</td>
-            </tr>
-
-        </tbody>
-    </table>
+    @if($cmp)
+        <div style="page-break-before: always;"></div>
+        <div style="font-weight: bold; font-size: 13px; text-transform: uppercase; margin: 8px 0 6px 0; border-bottom: 2px solid #000; padding-bottom: 3px;">
+            Comparatif exercice précédent &mdash; {{ $exerciceN1->intitule ?? 'N-1' }}
+        </div>
+        @include('reporting.pdf.partials.monthly_resultat_matrix', ['data' => $dataN1, 'visibleMonths' => $sliceMonths($dataN1['months'] ?? []), 'detailed' => $detailed])
+    @endif
 
     <div style="font-size: 8px; color: #999; text-align: center; margin-top: 20px;">
         Généré par ComptaFlow le {{ date('d/m/Y H:i') }}

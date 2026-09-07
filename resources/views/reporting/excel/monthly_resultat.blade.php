@@ -13,100 +13,33 @@
     </style>
 </head>
 <body>
-    <table>
-        <thead>
-            <tr>
-                <th colspan="{{ count($data['months']) + 2 }}" style="text-align: center; font-size: 16px;">
-                    COMPTE D'EXPLOITATION MENSUEL - {{ $exercice->intitule }}
-                </th>
-            </tr>
-            <tr>
-                <th class="label-col">Rubrique</th>
-                @foreach($data['months'] as $month)
-                    <th>{{ $month['name'] }}</th>
-                @endforeach
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="section-header">
-                <td colspan="{{ count($data['months']) + 2 }}" class="label-col">PRODUITS / CHIFFRE D'AFFAIRES</td>
-            </tr>
-            
-            @foreach($data['data']['produits'] as $key => $row)
-                @if($key !== 'total')
-                    <tr>
-                        <td class="label-col">{{ $row['label'] }}</td>
-                        @foreach($data['months'] as $i => $m)
-                            <td>{{ $row['data'][$i] }}</td>
-                        @endforeach
-                        <td>{{ array_sum($row['data']) }}</td>
-                    </tr>
-                    @if(isset($detailed) && $detailed && !empty($row['details']))
-                        @foreach($row['details'] as $compte)
-                        <tr class="detail-row">
-                            <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                            @foreach($data['months'] as $i => $m)
-                                <td>{{ $compte['data'][$i] ?? 0 }}</td>
-                            @endforeach
-                            <td>{{ array_sum($compte['data']) }}</td>
-                        </tr>
-                        @endforeach
-                    @endif
-                @endif
-            @endforeach
+@php
+    // ── Comparatif N-1 & restriction de période (filtres de téléchargement) ──
+    $dataN1     = $dataN1     ?? null;
+    $exerciceN1 = $exerciceN1 ?? null;
+    $cmp        = !is_null($dataN1);
+    $detailed   = $detailed   ?? false;
 
-            <tr class="total-row">
-                <td class="label-col">TOTAL PRODUITS</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['data']['produits']['total'][$i] }}</td>
-                @endforeach
-                <td>{{ array_sum($data['data']['produits']['total']) }}</td>
-            </tr>
+    $monthFrom = $monthFrom ?? 1;
+    $monthTo   = $monthTo   ?? count($data['months']);
 
-            <tr class="section-header">
-                <td colspan="{{ count($data['months']) + 2 }}" class="label-col">CHARGES / DÉPENSES</td>
-            </tr>
-            
-            @foreach($data['data']['charges'] as $key => $row)
-                @if($key !== 'total')
-                    <tr>
-                        <td class="label-col">{{ $row['label'] }}</td>
-                        @foreach($data['months'] as $i => $m)
-                            <td>{{ $row['data'][$i] }}</td>
-                        @endforeach
-                        <td>{{ array_sum($row['data']) }}</td>
-                    </tr>
-                    @if(isset($detailed) && $detailed && !empty($row['details']))
-                        @foreach($row['details'] as $compte)
-                        <tr class="detail-row">
-                            <td class="label-col">   {{ $compte['numero'] }} - {{ $compte['intitule'] }}</td>
-                            @foreach($data['months'] as $i => $m)
-                                <td>{{ $compte['data'][$i] ?? 0 }}</td>
-                            @endforeach
-                            <td>{{ array_sum($compte['data']) }}</td>
-                        </tr>
-                        @endforeach
-                    @endif
-                @endif
-            @endforeach
+    $sliceMonths = function ($months) use ($monthFrom, $monthTo) {
+        $out = [];
+        foreach (array_values($months ?? []) as $i => $m) {
+            if ($i + 1 >= $monthFrom && $i + 1 <= $monthTo) {
+                $out[$i] = $m;
+            }
+        }
+        return $out ?: ($months ?? []);
+    };
 
-            <tr class="total-row">
-                <td class="label-col">TOTAL CHARGES</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['data']['charges']['total'][$i] }}</td>
-                @endforeach
-                <td>{{ array_sum($data['data']['charges']['total']) }}</td>
-            </tr>
+    $visibleMonths = $sliceMonths($data['months']);
+@endphp
+    @include('reporting.excel.partials.monthly_resultat_matrix', ['data' => $data, 'exercice' => $exercice, 'visibleMonths' => $visibleMonths, 'detailed' => $detailed])
 
-            <tr class="main-total">
-                <td class="label-col">RÉSULTAT NET</td>
-                @foreach($data['months'] as $i => $m)
-                    <td>{{ $data['data']['resultat'][$i] }}</td>
-                @endforeach
-                <td>{{ array_sum($data['data']['resultat']) }}</td>
-            </tr>
-        </tbody>
-    </table>
+    @if($cmp)
+        <table><tr><td></td></tr></table>
+        @include('reporting.excel.partials.monthly_resultat_matrix', ['data' => $dataN1, 'exercice' => $exerciceN1 ?? $exercice, 'visibleMonths' => $sliceMonths($dataN1['months'] ?? []), 'detailed' => $detailed])
+    @endif
 </body>
 </html>
