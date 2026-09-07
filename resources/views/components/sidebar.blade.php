@@ -482,7 +482,8 @@
             {{-- SECTION 2 : CONFIGURATION ENTREPRISE --}}
             {{-- (Inchangé) --}}
             @php
-                $showConfig = (auth()->user()->hasPermission('admin.config.hub') || 
+                $showConfig = (auth()->user()->hasPermission('compagny_information') ||
+                               auth()->user()->hasPermission('admin.config.hub') || 
                                auth()->user()->hasPermission('admin.config.plan_comptable') || 
                                auth()->user()->hasPermission('admin.config.plan_tiers') || 
                                auth()->user()->hasPermission('admin.config.journals') ||
@@ -494,6 +495,12 @@
             @if($showConfig && !session('sidebar_admin_hidden', false))
             <div class="menu-section" data-section-id="configuration">
                 <div class="menu-section-header">Configuration Entreprise</div>
+                @if(auth()->user()->hasPermission('compagny_information'))
+                <a href="{{ route('compagny_information') }}" class="menu-link-new {{ request()->routeIs('compagny_information') ? 'active' : '' }}">
+                    <i class="fa-solid fa-building"></i>
+                    <span>Fiche Entreprise</span>
+                </a>
+                @endif
                 @if(auth()->user()->hasPermission('admin.config.hub'))
                 <a href="{{ route('admin.config.hub') }}" class="menu-link-new {{ request()->routeIs('admin.config.hub') ? 'active' : '' }}">
                     <i class="fa-solid fa-gears"></i>

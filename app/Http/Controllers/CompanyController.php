@@ -27,6 +27,11 @@ class CompanyController extends Controller
         $currentCompanyId = session('current_company_id', $user->company_id);
         $company = Company::find($currentCompanyId);
 
+        if (!$company) {
+            return redirect()->route('app.dashboard')
+                ->with('error', "Aucune entreprise n'est sélectionnée : impossible d'afficher la fiche.");
+        }
+
         return view('compagny_information', compact('company','adminUsers'));
     }
 
@@ -124,27 +129,91 @@ class CompanyController extends Controller
 
 
 
+    /**
+     * Met à jour la fiche de l'entreprise depuis l'interface de comptabilité.
+     *
+     * Accessible à l'administrateur de l'entreprise et à tout utilisateur
+     * disposant de l'habilitation "compagny_information", uniquement sur une
+     * entreprise qu'il gère.
+     */
     public function update(Request $request, Company $company)
     {
+        $user = Auth::user();
+
+        if (!$user->hasPermission('compagny_information') && !$user->isAdmin() && !$user->isSuperAdmin()) {
+            abort(403, "Vous n'avez pas l'autorisation de modifier la fiche de l'entreprise.");
+        }
+
+        // On ne peut modifier que l'entreprise sur laquelle on travaille,
+        // ou l'une des entreprises rattachées que l'on gère.
+        $currentCompanyId = session('current_company_id', $user->company_id);
+        $autorise = $user->isSuperAdmin()
+            || (int) $company->id === (int) $currentCompanyId
+            || $this->getManagedCompanies()->contains('id', $company->id);
+
+        if (!$autorise) {
+            abort(403, "Cette entreprise ne fait pas partie de celles que vous gérez.");
+        }
+
         $validated = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'juridique_form' => 'nullable|string',
-            'activity' => 'nullable|string',
-            'social_capital' => 'nullable|numeric',
-            'adresse' => 'required|string|max:255',
-            'code_postal' => 'required|string|max:50',
-            'city' => 'required|string|max:100',
-            'country' => 'required|string|max:100',
-            'phone_number' => 'required|string|max:50',
-            'identification_TVA' => 'nullable|string',
+            // Identité
+            'company_name'         => 'required|string|max:255',
+            'juridique_form'       => 'nullable|string|max:255',
+            'activity'             => 'nullable|string|max:255',
+            'social_capital'       => 'nullable|numeric|min:0',
+            'phone_number'         => 'required|string|max:50',
+
+            // Localisation
+            'adresse'              => 'required|string|max:255',
+            'siege_social'         => 'nullable|string|max:255',
+            'commune'              => 'nullable|string|max:120',
+            'quartier'             => 'nullable|string|max:120',
+            'city'                 => 'required|string|max:50',
+            'code_postal'          => 'required|string|max:20',
+            'country'              => 'required|string|max:100',
+
+            // Fiscal & DGI
+            'idu'                  => 'nullable|string|max:100',
+            'ncc'                  => 'nullable|string|max:255',
+            'identification_TVA'   => 'nullable|string|max:255',
+            'rccm'                 => 'nullable|string|max:255',
+            'cnps'                 => 'nullable|string|max:255',
+            'compte_contribuable'  => 'nullable|string|max:100',
+            'regime'               => 'nullable|string|max:80',
+            'rattachement_dgi'     => 'nullable|string|max:255',
+
+            // Local & expert-comptable
+            'proprietaire_local'   => 'nullable|string|max:255',
+            'reference_cadastrale' => 'nullable|string|max:100',
+            'expert_comptable_nom' => 'nullable|string|max:255',
+            'expert_comptable_ncc' => 'nullable|string|max:255',
+
+            // Logo & alertes
+            'logo'                 => 'nullable|image|mimes:jpg,jpeg,png,svg,webp|max:2048',
+            'sticker_solde_alerte' => 'nullable|integer|min:0|max:9999',
+        ], [
+            'logo.image' => 'Le logo doit être une image (JPG, PNG, SVG ou WEBP).',
+            'logo.max'   => 'Le logo ne doit pas dépasser 2 Mo.',
         ]);
 
-        // Retirer explicitement email_adresse pour qu'elle ne soit pas modifiée
-        unset($validated['email_adresse']);
+        // L'adresse e-mail reste gérée à la création : elle n'est pas modifiable ici.
+        unset($validated['email_adresse'], $validated['logo']);
 
+        // Remplacement du logo
+        if ($request->hasFile('logo')) {
+            $ancienLogo = $company->logo_path;
+            $validated['logo_path'] = $request->file('logo')->store('logos/companies', 'public');
+
+            if ($ancienLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($ancienLogo)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($ancienLogo);
+            }
+        }
+
+        // Le trait LogsActivity du modèle Company trace automatiquement
+        // l'ancienne et la nouvelle valeur de chaque champ modifié.
         $company->update($validated);
 
-        return back()->with('success', 'Informations de l\'entreprise mises à jour avec succès.');
+        return back()->with('success', "Informations de l'entreprise mises à jour avec succès.");
     }
 
     /**
