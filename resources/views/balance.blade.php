@@ -190,10 +190,17 @@
     </div>
 
     @php
-        // Trier les écritures par numéro de compte
+        // Mode d'affichage du numéro de compte (détermine aussi l'ordre de tri)
+        $displayMode = $display_mode ?? 'comptaflow';
+
+        // Trier les écritures par numéro de compte.
+        // SORT_STRING est indispensable : en comparaison numérique, "10100" (classe 1)
+        // passerait après "6011" (classe 6). En comparaison chaîne, l'ordre suit
+        // toujours la classe 1 jusqu'à la dernière classe, quelle que soit la
+        // longueur des numéros.
         $ecritures = $ecritures->sortBy(function ($item) {
-            return $item->planComptable->numero_de_compte ?? 0;
-        });
+            return (string) ($item->planComptable->numero_de_compte ?? '');
+        }, SORT_STRING);
 
         // Grouper par plan_comptable_id
         $grouped = $ecritures->groupBy('plan_comptable_id');
@@ -266,6 +273,15 @@
             }
         }
 
+        // Ordre d'affichage garanti : on trie sur le numéro réellement imprimé
+        // (le numéro d'origine peut avoir un format différent du numéro ComptaFlow).
+        usort($comptesData, function ($a, $b) use ($displayMode) {
+            $ka = $displayMode === 'origine' ? ($a['numero_original'] ?: $a['numero']) : $a['numero'];
+            $kb = $displayMode === 'origine' ? ($b['numero_original'] ?: $b['numero']) : $b['numero'];
+            $cmp = strcmp((string) $ka, (string) $kb);
+            return $cmp !== 0 ? $cmp : strcmp((string) $a['numero'], (string) $b['numero']);
+        });
+
         // Calcul correct des soldes des totaux (différence des totaux de mouvements)
         $bilanMouvDiff = $totalBilanMouvDebit - $totalBilanMouvCredit;
         $bilanTotalSoldeDebit = $bilanMouvDiff > 0 ? $bilanMouvDiff : 0;
@@ -300,10 +316,6 @@
             @foreach ($comptesData as $compte)
                 <tr>
                     <td class="col-compte">
-                        @php
-                            $displayMode = $display_mode ?? 'comptaflow';
-                        @endphp
-                        
                         @if($displayMode === 'origine')
                             {{-- Afficher uniquement le numéro original --}}
                             {{ $compte['numero_original'] ?? $compte['numero'] }}

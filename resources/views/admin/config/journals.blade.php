@@ -186,6 +186,9 @@
                                     <h4 class="font-black mb-0">Nomenclature des Journaux</h4>
                                     <p class="text-slate-400 text-sm mb-0">Définition des flux de trésorerie et d'opérations.</p>
                                 </div>
+                                <div class="d-flex gap-2">
+                                    <input type="text" id="masterSearch" class="form-control border-slate-200 rounded-xl" placeholder="Rechercher un journal...">
+                                </div>
                             </div>
 
                             <div class="table-responsive">
@@ -201,9 +204,13 @@
                                             <th class="pe-8 py-5 text-uppercase text-xs font-black text-emerald-700 text-end">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="bg-white">
+                                    <tbody class="bg-white" id="masterTableBody">
                                         @foreach($journals as $journal)
-                                        <tr>
+                                        @php
+                                            $numStr = $journal->code_journal;
+                                            $labelStr = strtolower($journal->intitule . ' ' . $journal->type);
+                                        @endphp
+                                        <tr data-account-num="{{ $numStr }}" data-account-label="{{ $labelStr }}">
                                             <td class="ps-8 py-6">
                                                 <span class="journal-badge border border-emerald-200 text-emerald-700 bg-emerald-50">{{ strtoupper($journal->type) }}</span>
                                             </td>
@@ -520,6 +527,35 @@
         </div>
     </div>
     <script>
+        // Filtre de recherche précis + rapide (debounce 120ms) - identique au Modèle de Plan
+        let _searchTimer = null;
+        document.getElementById('masterSearch')?.addEventListener('input', function() {
+            clearTimeout(_searchTimer);
+            const val = this.value.trim();
+            _searchTimer = setTimeout(function() {
+                const rows = document.querySelectorAll('#masterTableBody tr');
+                if (val === '') {
+                    rows.forEach(r => r.style.display = '');
+                    return;
+                }
+                const isNumericSearch = /^[0-9]/.test(val);
+                const valLow = val.toLowerCase();
+                rows.forEach(row => {
+                    const num   = (row.dataset.accountNum   || '').toLowerCase();
+                    const label = row.dataset.accountLabel || '';
+                    let matches;
+                    if (isNumericSearch) {
+                        // Filtre précis : le code doit COMMENCER par la valeur saisie
+                        matches = num.startsWith(valLow);
+                    } else {
+                        // Filtre sur l'intitulé et le type : contient la valeur saisie
+                        matches = label.includes(valLow) || num.startsWith(valLow);
+                    }
+                    row.style.display = matches ? '' : 'none';
+                });
+            }, 120);
+        });
+
     document.addEventListener('DOMContentLoaded', function() {
         // AJOUT: Forcer l'affichage des titres de modal
         setTimeout(function() {

@@ -242,9 +242,6 @@
                                 <button class="btn btn-sm btn-light fw-bold" data-bs-toggle="modal" data-bs-target="#editCompanyModal">
                                     <i class="fas fa-edit me-1"></i> Modifier
                                 </button>
-                                <a href="{{ route('admin.companies.create') }}" class="btn btn-sm btn-outline-light fw-bold">
-                                    <i class="fas fa-plus-circle me-1"></i> Nouvelle entreprise
-                                </a>
                             </div>
                         </div>
                     </div>

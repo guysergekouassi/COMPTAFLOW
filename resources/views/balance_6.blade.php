@@ -95,8 +95,20 @@
 
     @php
         // --- Préparation des données ---
-        $ecritures = $ecritures->sortBy(fn($item) => $item->planComptable->numero_de_compte ?? 0);
-        $grouped = $ecritures->groupBy('plan_comptable_id');
+        // Mode d'affichage du numéro de compte (détermine aussi l'ordre de tri)
+        $displayMode = $display_mode ?? 'comptaflow';
+
+        // Tri par numéro de compte en comparaison CHAÎNE : en comparaison numérique,
+        // "10100" (classe 1) passerait après "6011" (classe 6). On trie sur le numéro
+        // réellement imprimé pour que la colonne affichée soit toujours ordonnée
+        // de la classe 1 à la dernière classe.
+        $grouped = $ecritures->groupBy('plan_comptable_id')->sortBy(function ($operations) use ($displayMode) {
+            $plan = $operations->first()->planComptable;
+            if ($displayMode === 'origine' && !empty($plan->numero_original)) {
+                return (string) $plan->numero_original;
+            }
+            return (string) ($plan->numero_de_compte ?? '');
+        }, SORT_STRING);
 
         $totalSI_D = $totalSI_C = 0;
         $totalMD = $totalMC = 0;
@@ -144,10 +156,6 @@
                 @endphp
                 <tr>
                     <td>
-                        @php
-                            $displayMode = $display_mode ?? 'comptaflow';
-                        @endphp
-                        
                         @if($displayMode === 'origine')
                             {{-- Afficher uniquement le numéro original --}}
                             {{ $plan->numero_original ?? $num }}

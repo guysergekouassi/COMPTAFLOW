@@ -194,9 +194,11 @@
         $grouped = $ecritures->groupBy('plan_tiers_id');
         
         // Trier les groupes par numero_de_tiers
+        // SORT_STRING : en comparaison numérique, les numéros de tiers de longueurs
+        // différentes se retrouvent mélangés entre catégories.
         $grouped = $grouped->sortBy(function ($operations) {
-            return $operations->first()->planTiers->numero_de_tiers ?? '';
-        });
+            return (string) ($operations->first()->planTiers->numero_de_tiers ?? '');
+        }, SORT_STRING);
 
         $totalMouvementDebit = 0;
         $totalMouvementCredit = 0;

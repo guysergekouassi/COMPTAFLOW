@@ -155,6 +155,9 @@
                                     <h4 class="font-black mb-0">Répertoire des Tiers Master</h4>
                                     <p class="text-slate-400 text-sm mb-0">Modèles pré-configurés avec comptes de rattachement.</p>
                                 </div>
+                                <div class="d-flex gap-2">
+                                    <input type="text" id="masterSearch" class="form-control border-slate-200 rounded-xl" placeholder="Rechercher un tiers...">
+                                </div>
                             </div>
 
                             <div class="table-responsive">
@@ -167,9 +170,13 @@
                                             <th class="pe-8 py-5 text-uppercase text-xs font-black text-indigo-400 text-end">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="bg-white">
+                                    <tbody class="bg-white" id="masterTableBody">
                                         @foreach($planTiers as $tier)
-                                        <tr>
+                                        @php
+                                            $numStr = $tier->numero_de_tiers;
+                                            $labelStr = strtolower($tier->intitule . ' ' . ($tier->compte->numero_de_compte ?? ''));
+                                        @endphp
+                                        <tr data-account-num="{{ $numStr }}" data-account-label="{{ $labelStr }}">
                                             <td class="ps-8 py-6">
                                                 <div class="d-flex flex-column">
                                                     <div class="d-flex align-items-center gap-2 mb-1">
@@ -708,6 +715,37 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Filtre de recherche précis + rapide (debounce 120ms) - identique au Modèle de Plan
+        let _searchTimer = null;
+        document.getElementById('masterSearch')?.addEventListener('input', function() {
+            clearTimeout(_searchTimer);
+            const val = this.value.trim();
+            _searchTimer = setTimeout(function() {
+                const rows = document.querySelectorAll('#masterTableBody tr');
+                if (val === '') {
+                    rows.forEach(r => r.style.display = '');
+                    return;
+                }
+                const isNumericSearch = /^[0-9]/.test(val);
+                const valLow = val.toLowerCase();
+                rows.forEach(row => {
+                    const num   = row.dataset.accountNum   || '';
+                    const label = row.dataset.accountLabel || '';
+                    let matches;
+                    if (isNumericSearch) {
+                        // Filtre précis : le numéro doit COMMENCER par la valeur saisie
+                        matches = num.startsWith(val);
+                    } else {
+                        // Filtre sur le libellé : contient la valeur saisie
+                        matches = label.includes(valLow) || num.toLowerCase().startsWith(valLow);
+                    }
+                    row.style.display = matches ? '' : 'none';
+                });
+            }, 120);
+        });
+    </script>
 
     @include('components.import_instructions_tiers')
 </body>
