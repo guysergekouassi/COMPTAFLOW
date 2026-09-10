@@ -616,6 +616,12 @@
                     <span>Audit de l'IA</span>
                 </a>
                 @endif
+                @if(auth()->user()->hasPermission('admin.audit'))
+                <a href="{{ route('admin.archives') }}" class="menu-link-new {{ request()->routeIs('admin.archives') ? 'active' : '' }}">
+                    <i class="fa-solid fa-box-archive"></i>
+                    <span>Archive des suppressions</span>
+                </a>
+                @endif
                 @if(auth()->user()->hasPermission('admin.access'))
                 <a href="{{ route('admin.access') }}" class="menu-link-new {{ request()->routeIs('admin.access') ? 'active' : '' }}">
                     <i class="fa-solid fa-lock-open"></i>
@@ -625,19 +631,13 @@
 
                 {{-- Quick Actions Sub-Section (Épurée) --}}
                 @php
-                    $hasQuickActions = auth()->user()->hasPermission('admin.companies.create') ||
-                                      auth()->user()->hasPermission('admin.admins.create') || 
+                    // La creation d'entreprise se fait depuis Mon Espace, plus depuis le menu.
+                    $hasQuickActions = auth()->user()->hasPermission('admin.admins.create') ||
                                       auth()->user()->hasPermission('admin.secondary_admins.create');
                 @endphp
                 @if($hasQuickActions)
                 <div class="mt-2 pt-2 border-top border-light">
                     <small class="text-muted text-uppercase px-3 mb-2 d-block" style="font-size: 0.65rem;">Création Rapide</small>
-                    @if(auth()->user()->hasPermission('admin.companies.create'))
-                    <a href="{{ route('admin.companies.create') }}" class="menu-link-quick {{ request()->routeIs('admin.companies.create') ? 'active' : '' }}">
-                        <i class="fa-solid fa-plus-circle"></i>
-                        <span>Créer Entreprise</span>
-                    </a>
-                    @endif
                     @if(auth()->user()->hasPermission('admin.admins.create'))
                     <a href="{{ route('admin.admins.create') }}" class="menu-link-quick {{ request()->routeIs('admin.admins.create') ? 'active' : '' }}">
                         <i class="fa-solid fa-user-plus"></i>
@@ -957,9 +957,9 @@
                     <i class="fa-solid fa-building"></i>
                     <span>Mes Compagnies</span>
                 </a>
-                <a href="{{ route('admin.companies.create') }}" class="menu-link-new {{ request()->routeIs('admin.companies.create') ? 'active' : '' }}">
-                    <i class="fa-solid fa-plus-circle"></i>
-                    <span>Créer Entreprise</span>
+                <a href="{{ route('accountant.space', ['page' => 'companies']) }}" class="menu-link-new">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <span>Mon Espace</span>
                 </a>
                 <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
                     <i class="fa-solid fa-user-group"></i>

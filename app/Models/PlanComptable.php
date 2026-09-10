@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 use App\Traits\BelongsToTenant;
 
+use App\Traits\LogsActivity;
+
 class PlanComptable extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, LogsActivity;
     protected $table = 'plan_comptables';
     protected $fillable = [
         'numero_de_compte',

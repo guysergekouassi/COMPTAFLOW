@@ -10,9 +10,11 @@ use App\Models\ExerciceComptable;
 use App\Traits\BelongsToTenant;
 
 
+use App\Traits\LogsActivity;
+
 class CodeJournal extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, LogsActivity;
 
     protected $fillable = [
         'code_journal',

@@ -673,10 +673,27 @@ body {
                                 </div>
                                 @endif
 
-                                <div class="company-actions">
-                                    <a href="{{ route('accountant.space.switch', $comp->id) }}" class="btn-work" style="width:100%; text-align:center; justify-content:center;">
+                                <div class="company-actions" style="display:flex; gap:0.5rem;">
+                                    <a href="{{ route('accountant.space.switch', $comp->id) }}" class="btn-work" style="flex:1; text-align:center; justify-content:center;">
                                         <i class="fas fa-arrow-right"></i> Accéder
                                     </a>
+
+                                    {{-- Suppression reservee au createur, et impossible si la comptabilite contient des ecritures --}}
+                                    @if((int) $comp->user_id === (int) auth()->id())
+                                        @php $bloquee = ($data['entries_count'] ?? 0) > 0; @endphp
+                                        <button type="button"
+                                                class="btn-work"
+                                                style="flex:0 0 auto; padding:0 0.9rem; background:{{ $bloquee ? 'rgba(148,163,184,0.15)' : 'rgba(239,68,68,0.12)' }}; color:{{ $bloquee ? '#94a3b8' : '#ef4444' }}; {{ $bloquee ? 'cursor:not-allowed;' : '' }}"
+                                                @if($bloquee)
+                                                    disabled
+                                                    title="Suppression impossible : {{ $data['entries_count'] }} écriture(s) enregistrée(s)"
+                                                @else
+                                                    title="Supprimer cette comptabilité"
+                                                    onclick="ouvrirSuppressionEntreprise({{ $comp->id }}, @js($comp->company_name))"
+                                                @endif>
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -1432,5 +1449,49 @@ document.getElementById('chat-msg-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
 });
 </script>
+
+{{-- Suppression d'une comptabilite --}}
+<div class="modal fade" id="modal-delete-company" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border:0; border-radius:18px; overflow:hidden;">
+            <div class="modal-header border-0" style="background:linear-gradient(135deg,#b91c1c,#ef4444); color:#fff;">
+                <h5 class="modal-title fw-bold"><i class="fas fa-trash me-2"></i>Supprimer la comptabilité</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-3">
+                    Vous êtes sur le point de supprimer <strong id="delete-company-name"></strong>.
+                </p>
+                <ul class="text-muted mb-3 ps-3" style="font-size:0.85rem; line-height:1.6;">
+                    <li>Le plan comptable, le plan tiers, les journaux et les exercices de cette comptabilité sont supprimés avec elle.</li>
+                    <li>Tout est conservé <strong>30 jours</strong> dans l'Archive des suppressions.</li>
+                    <li>Une comptabilité contenant des écritures ne peut pas être supprimée.</li>
+                </ul>
+                <div class="p-3 rounded-3" style="background:#fffbeb; border:1px solid #fde68a; font-size:0.82rem; color:#92400e;">
+                    <strong>Action définitive après 30 jours.</strong> Confirmez uniquement si vous êtes certain.
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Annuler</button>
+                <form id="form-delete-company" method="POST" action="">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+                        <i class="fas fa-trash me-2"></i>Supprimer définitivement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function ouvrirSuppressionEntreprise(id, nom) {
+        document.getElementById('delete-company-name').textContent = nom;
+        document.getElementById('form-delete-company').action = '{{ url('mon-espace/company') }}/' + id;
+        new bootstrap.Modal(document.getElementById('modal-delete-company')).show();
+    }
+</script>
+
 </body>
 </html>

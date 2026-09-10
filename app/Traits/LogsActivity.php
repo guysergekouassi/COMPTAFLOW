@@ -26,7 +26,23 @@ trait LogsActivity
         });
 
         static::deleted(function ($model) {
-            $model->logActivity('DELETE', "Suppression de " . class_basename($model) . " #{$model->id}");
+            // Archive : le contenu supprime est conserve 30 jours avant purge.
+            // Un lot en cours (voir ArchivedRecord::nouveauLot) regroupe les lignes.
+            try {
+                \App\Models\ArchivedRecord::archiver(
+                    $model,
+                    app()->bound('archive.batch_id') ? app('archive.batch_id') : null,
+                    app()->bound('archive.batch_size') ? app('archive.batch_size') : null
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Archivage impossible : ' . $e->getMessage());
+            }
+
+            $model->logActivity(
+                'DELETE',
+                'Suppression de ' . \App\Models\ArchivedRecord::libelle($model),
+                ['supprime' => $model->attributesToArray()]
+            );
         });
     }
 

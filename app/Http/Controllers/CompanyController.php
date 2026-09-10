@@ -216,105 +216,12 @@ class CompanyController extends Controller
         return back()->with('success', "Informations de l'entreprise mises à jour avec succès.");
     }
 
-    /**
-     * Affiche la vue de création de sous-compagnie pour l'Admin.
+    /*
+     * La création d'une sous-entreprise (entreprise dans une entreprise) a été
+     * retirée : une comptabilité se crée désormais depuis Mon Espace, où chaque
+     * personne retrouve toutes celles qu'elle gère.
+     * Anciennes méthodes supprimées : adminCreateCompany() / adminStoreCompany().
      */
-    public function adminCreateCompany()
-    {
-        return view('admin.companies.create');
-    }
-
-
-    /**
-     * Permet à un Admin (non SuperAdmin) de créer une sous-compagnie/comptabilité (B', B'', etc.).
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function adminStoreCompany(Request $request)
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        
-        \Illuminate\Support\Facades\Log::info('Tentative de création de sous-compagnie par User ID: ' . $user->id);
-        
-        // 1. Assurer que l'utilisateur est un 'admin'
-        if ($user->role !== 'admin') {
-            abort(403, 'Accès non autorisé.');
-        }
-
-        // 2. Validation
-        $request->validate([
-            'company_name' => 'required|string|max:255|unique:companies,company_name',
-            'juridique_form' => 'required|string|max:255',
-            'activity' => 'required|string|max:255',
-            'social_capital' => 'nullable|numeric|min:0',
-            'adresse' => 'required|string|max:255',
-            'code_postal' => 'required|string|max:20',
-            'city' => 'required|string|max:50',
-            'country' => 'required|string|max:255',
-            'phone_number' => 'required|string|min:10', // REQUIRED
-            'email_adresse' => 'required|email|max:191|unique:companies,email_adresse', // REQUIRED
-            'identification_TVA' => 'nullable|string|max:50',
-        ]);
-
-        DB::beginTransaction();
-        try {
-            // Création de la sous-compagnie (B', B'', etc.)
-            $company = Company::create([
-                'company_name' => $request->company_name,
-                'is_active' => true,
-                'juridique_form' => $request->juridique_form,
-                'activity' => $request->activity,
-                'social_capital' => $request->social_capital,
-                'adresse' => $request->adresse,
-                'code_postal' => $request->code_postal,
-                'city' => $request->city,
-                'country' => $request->country,
-                'phone_number' => $request->phone_number,
-                'email_adresse' => $request->email_adresse,
-                'identification_TVA' => $request->identification_TVA,
-                // Le lien clé ! La compagnie B' est rattachée à la compagnie B de l'Admin Manager
-                'parent_company_id' => session('current_company_id', $user->company_id),
-                'user_id' => $user->id, // REQUIRED BY DB SCHEMA
-            ]);
-
-            // Une entreprise n'est jamais vide : celui qui la crée en est le
-            // premier responsable. On matérialise ce rattachement dans la table
-            // pivot, sans quoi l'entreprise apparaît « sans utilisateur ».
-            $company->associatedUsers()->syncWithoutDetaching([
-                $user->id => ['role' => $user->role ?? 'admin'],
-            ]);
-
-            // Création automatique des trois catégories de flux indispensables pour le TFT
-            $tftCategories = [
-                'I. Flux de trésorerie des activités opérationnelles',
-                'II. Flux de trésorerie des activités d\'investissement',
-                'III. Flux de trésorerie des activités de financement',
-            ];
-
-            foreach ($tftCategories as $catName) {
-                TreasuryCategory::create([
-                    'name' => $catName,
-                    'company_id' => $company->id,
-                ]);
-            }
-
-            DB::commit();
-
-            // Basculer automatiquement vers la nouvelle compagnie
-            session(['current_company_id' => $company->id]);
-
-
-            return redirect()->route('compagny_information')
-                ->with('success', 'La sous-compagnie "' . $company->company_name . '" a été créée et sélectionnée avec succès !');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur lors de la création de la sous-compagnie : ' . $e->getMessage())->withInput();
-        }
-    }
-
-
-
 
     private function getManagedCompanies()
     {

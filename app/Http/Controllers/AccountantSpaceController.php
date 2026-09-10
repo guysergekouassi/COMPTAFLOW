@@ -292,6 +292,11 @@ class AccountantSpaceController extends Controller
                 'updated_at' => now()
             ]);
 
+            // Celui qui cree la comptabilite en est le responsable : il doit
+            // disposer de toutes les habilitations, sinon des pages entieres
+            // (Hub des Tiers, etats, configuration...) lui restent invisibles.
+            $this->accorderToutesLesHabilitations($user);
+
             // Création automatique des trois catégories de flux pour le TFT
             $tftCategories = [
                 'I. Flux de trésorerie des activités opérationnelles',
@@ -547,11 +552,111 @@ class AccountantSpaceController extends Controller
         // Stocker la compagnie en session
         session(['current_company_id' => $id]);
 
+        // On memorise d'ou vient le switch : « Quitter le mode switch » doit
+        // ramener a Mon Espace, et non a la passerelle administrative.
+        session(['context_return_url' => route('accountant.space', ['page' => 'companies'])]);
+
         // Redirection vers le tableau de bord de l'entreprise
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
         } else {
             return redirect()->route('comptable.comptdashboard');
+        }
+    }
+
+    /**
+     * Donne à un utilisateur l'ensemble des habilitations, hors section Super Admin.
+     * Les droits déjà accordés sont conservés : on n'enlève jamais rien.
+     */
+    /** Point d'entrée public, pour les autres écrans de création d'entreprise. */
+    public function accorderToutesLesHabilitationsA(User $user): void
+    {
+        $this->accorderToutesLesHabilitations($user);
+    }
+
+    private function accorderToutesLesHabilitations(User $user): void
+    {
+        $groupes = config('accounting_permissions.permissions', []);
+        $habilitations = $user->habilitations ?? [];
+
+        foreach ($groupes as $section => $permissions) {
+            if (!is_array($permissions)) {
+                continue;
+            }
+            // Les droits Super Admin ne s'accordent pas ainsi
+            if (str_contains($section, 'Super Admin')) {
+                continue;
+            }
+            foreach (array_keys($permissions) as $cle) {
+                $habilitations[$cle] = "1";
+            }
+        }
+
+        $user->habilitations = $habilitations;
+        $user->save();
+    }
+
+    /**
+     * Supprimer une comptabilité depuis Mon Espace.
+     *
+     * Refusée si l'entreprise contient des écritures : on ne détruit pas une
+     * comptabilité mouvementée. La suppression est archivée 30 jours.
+     */
+    public function destroyCompany(Request $request, $id)
+    {
+        $user = Auth::user();
+        $company = Company::find($id);
+
+        if (!$company) {
+            return redirect()->route('accountant.space', ['page' => 'companies'])
+                ->with('error', 'Entreprise introuvable.');
+        }
+
+        // Seul le propriétaire (celui qui l'a créée) peut la supprimer
+        if ((int) $company->user_id !== (int) $user->id) {
+            return redirect()->route('accountant.space', ['page' => 'companies'])
+                ->with('error', "Seule la personne qui a créé « {$company->company_name} » peut la supprimer.");
+        }
+
+        // Condition bloquante : présence d'écritures
+        $nbEcritures = \App\Models\EcritureComptable::where('company_id', $company->id)->count();
+        if ($nbEcritures > 0) {
+            return redirect()->route('accountant.space', ['page' => 'companies'])
+                ->with('error', "Suppression impossible : « {$company->company_name} » contient {$nbEcritures} écriture(s) comptable(s).");
+        }
+
+        $nom = $company->company_name;
+
+        DB::beginTransaction();
+        try {
+            $lot = \App\Models\ArchivedRecord::nouveauLot();
+            app()->instance('archive.batch_id', $lot);
+
+            // Données de paramétrage rattachées, archivées avec l'entreprise
+            foreach (\App\Models\PlanTiers::where('company_id', $company->id)->get() as $ligne) { $ligne->delete(); }
+            foreach (\App\Models\CodeJournal::where('company_id', $company->id)->get() as $ligne) { $ligne->delete(); }
+            foreach (\App\Models\PlanComptable::where('company_id', $company->id)->get() as $ligne) { $ligne->delete(); }
+            foreach (\App\Models\ExerciceComptable::where('company_id', $company->id)->get() as $ligne) { $ligne->delete(); }
+
+            DB::table('company_user')->where('company_id', $company->id)->delete();
+            DB::table('treasury_categories')->where('company_id', $company->id)->delete();
+
+            // L'entreprise elle-même (tracée et archivée par le trait LogsActivity)
+            $company->delete();
+
+            if (session('current_company_id') == $id) {
+                session()->forget('current_company_id');
+            }
+
+            DB::commit();
+            app()->forgetInstance('archive.batch_id');
+
+            return redirect()->route('accountant.space', ['page' => 'companies'])
+                ->with('success', "L'entreprise « {$nom} » a été supprimée. Elle reste consultable 30 jours dans l'Archive des suppressions.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('accountant.space', ['page' => 'companies'])
+                ->with('error', 'Suppression impossible : ' . $e->getMessage());
         }
     }
 

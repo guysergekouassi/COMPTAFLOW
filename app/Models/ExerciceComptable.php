@@ -12,9 +12,11 @@ use App\Traits\BelongsToTenant;
 use App\Traits\BelongsToUser;
 
 
+use App\Traits\LogsActivity;
+
 class ExerciceComptable extends Model
 {
-    use HasFactory, BelongsToTenant, BelongsToUser;
+    use HasFactory, BelongsToTenant, BelongsToUser, LogsActivity;
     protected $table = 'exercices_comptables';
     
     public static $rules = [

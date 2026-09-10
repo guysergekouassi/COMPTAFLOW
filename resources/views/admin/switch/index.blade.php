@@ -124,8 +124,9 @@
                                 <p class="text-slate-400 font-semibold mb-0">Basculez entre vos structures ou gérez les accès collaborateurs.</p>
                             </div>
                             <div>
-                                <a href="{{ route('admin.companies.create') }}" class="btn-premium-action py-3 px-6 rounded-2xl">
-                                    <i class="fa-solid fa-plus-circle me-2"></i> Ajouter une entreprise
+                                {{-- Une comptabilite se cree depuis Mon Espace --}}
+                                <a href="{{ route('accountant.space', ['page' => 'companies']) }}" class="btn-premium-action py-3 px-6 rounded-2xl">
+                                    <i class="fa-solid fa-briefcase me-2"></i> Mon Espace
                                 </a>
                             </div>
                         </div>

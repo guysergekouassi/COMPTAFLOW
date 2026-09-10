@@ -546,7 +546,16 @@ User::create($validated);
      */
     public function resetContext()
     {
+        // Retour à l'écran d'où venait le switch : Mon Espace si la comptabilité
+        // y a été ouverte, la passerelle administrative sinon.
+        $retour = session()->pull('context_return_url');
+
         session()->forget('current_company_id');
+
+        if ($retour) {
+            return redirect($retour)->with('success', 'Vous avez quitté la comptabilité et êtes revenu à votre espace.');
+        }
+
         return redirect()->route('admin.switch')->with('success', 'Vous êtes revenu à votre vue principale.');
     }
 

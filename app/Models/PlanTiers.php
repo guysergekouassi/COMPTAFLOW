@@ -10,9 +10,11 @@ use App\Models\Company;
 use App\Models\PlanComptable;
 use App\Models\EcritureComptable;
 
+use App\Traits\LogsActivity;
+
 class PlanTiers extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, LogsActivity;
 
     protected $table = 'plan_tiers';
 

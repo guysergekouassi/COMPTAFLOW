@@ -113,6 +113,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/mon-espace/fusion', [App\Http\Controllers\AccountantSpaceController::class, 'fusionData'])->name('accountant.space.fusion');
     Route::post('/mon-espace/company/{id}/generate-code', [App\Http\Controllers\AccountantSpaceController::class, 'generateCode'])->name('accountant.space.generate_code');
     Route::post('/mon-espace/bulk-generate-codes', [App\Http\Controllers\AccountantSpaceController::class, 'bulkGenerateCodes'])->name('accountant.space.bulk_generate');
+    Route::delete('/mon-espace/company/{id}', [App\Http\Controllers\AccountantSpaceController::class, 'destroyCompany'])->name('accountant.space.company.destroy');
     
     // Chat & Discussions
     Route::post('/mon-espace/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('accountant.space.chat.send');
@@ -483,6 +484,10 @@ Route::get('/dashboard-compta', [ComptaDashboardController::class, 'index'])->na
         Route::get('/audit/export', [App\Http\Controllers\Admin\AuditController::class, 'export'])->name('audit.export');
         Route::get('/ia-dashboard', [App\Http\Controllers\IaController::class, 'dashboard'])->name('ia.dashboard');
         
+        // Archive des suppressions (conservation 30 jours)
+        Route::get('/archives', [App\Http\Controllers\Admin\ArchiveController::class, 'index'])->name('archives');
+        Route::get('/archives/{id}', [App\Http\Controllers\Admin\ArchiveController::class, 'show'])->name('archives.show');
+
         // Contrôle d'Accès
         Route::get('/access-control', [App\Http\Controllers\Admin\AccessController::class, 'index'])->name('access');
         Route::post('/access/toggle-user/{id}', [App\Http\Controllers\Admin\AccessController::class, 'toggleUser'])->name('access.toggle_user');
@@ -769,8 +774,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/secondary-admins/store', [UserController::class, 'storeSecondaryAdmin'])->name('admin.secondary_admins.store');
     
     // Routes de création de sous-entreprises pour l'Admin
-    Route::get('/admin/companies/create-entity', [CompanyController::class, 'adminCreateCompany'])->name('admin.companies.create');
-    Route::post('/admin/companies/store-entity', [CompanyController::class, 'adminStoreCompany'])->name('admin.companies.store');
+    // Creation de sous-entreprise retiree : une comptabilite se cree depuis Mon Espace.
 
     // Routes de création de comptabilité (Style SuperAdmin) - Exercices
     Route::get('/admin/companies/create', [ComptaAccountController::class, 'create'])->name('compta.create');

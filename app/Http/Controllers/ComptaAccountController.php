@@ -133,7 +133,15 @@ class ComptaAccountController extends Controller
         // mais ici on semble créer des entités racines pour l'utilisateur.
 
         try {
-            Company::create($validatedData);
+            $company = Company::create($validatedData);
+
+            // Une entreprise n'est jamais vide : son createur en est le premier
+            // responsable et recoit l'ensemble des habilitations.
+            $company->associatedUsers()->syncWithoutDetaching([
+                $userId => ['role' => Auth::user()->role ?? 'admin'],
+            ]);
+            app(\App\Http\Controllers\AccountantSpaceController::class)
+                ->accorderToutesLesHabilitationsA(Auth::user());
             return redirect()->route('compta_accounts.index')->with('success', 'L\'entité a été créée avec succès.');
         } catch (\Exception $e) {
             return back()->with('error', 'Erreur lors de la création de l\'entité : ' . $e->getMessage())->withInput();
