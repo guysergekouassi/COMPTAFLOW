@@ -240,6 +240,7 @@ return [
         'password'              => 'mot de passe',
         'password_confirmation' => 'confirmation du mot de passe',
         'role'                  => 'rôle',
+        'pack'                  => 'offre souscrite',
         'admin_name'            => "nom de l'administrateur",
         'admin_last_name'       => "nom de famille de l'administrateur",
         'admin_email_adresse'   => "adresse e-mail de l'administrateur",

@@ -166,6 +166,35 @@ class User extends Authenticatable
         return ($this->pack ?? 'cabinet') === 'entreprise';
     }
 
+    /** Libellé de l'offre souscrite. */
+    public function libellePack(): string
+    {
+        return $this->estPackEntreprise() ? 'Pack Entreprise' : 'Pack Cabinet';
+    }
+
+    /**
+     * Accorder toutes les habilitations métier, hors section Super Admin.
+     *
+     * Utilisé pour le responsable d'une comptabilité : sans cela, des pages
+     * entières (Hub des Tiers, états, configuration) lui restent invisibles.
+     */
+    public function accorderToutesLesHabilitationsMetier(): void
+    {
+        $habilitations = $this->habilitations ?? [];
+
+        foreach (Config::get('accounting_permissions.permissions', []) as $section => $permissions) {
+            if (!is_array($permissions) || str_contains($section, 'Super Admin')) {
+                continue;
+            }
+            foreach (array_keys($permissions) as $cle) {
+                $habilitations[$cle] = "1";
+            }
+        }
+
+        $this->habilitations = $habilitations;
+        $this->save();
+    }
+
     /** L'espace cabinet (Mon Espace) est-il accessible à cette personne ? */
     public function aAccesEspaceCabinet(): bool
     {

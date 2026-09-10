@@ -48,7 +48,19 @@ class AuthController extends Controller
 
         if ($user->role === 'super_admin') {
             return redirect()->route('superadmin.dashboard');
-        } elseif ($user->role === 'admin' || $user->role === 'comptable') {
+        }
+
+        // Pack Entreprise : pas d'espace cabinet, on ouvre directement sa
+        // comptabilité unique.
+        if (!$user->aAccesEspaceCabinet()) {
+            if ($user->company_id) {
+                session(['current_company_id' => $user->company_id]);
+            }
+
+            return redirect()->route('comptable.comptdashboard');
+        }
+
+        if ($user->role === 'admin' || $user->role === 'comptable') {
             return redirect()->route('accountant.space');
         }
 

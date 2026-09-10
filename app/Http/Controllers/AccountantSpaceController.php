@@ -598,24 +598,7 @@ class AccountantSpaceController extends Controller
 
     private function accorderToutesLesHabilitations(User $user): void
     {
-        $groupes = config('accounting_permissions.permissions', []);
-        $habilitations = $user->habilitations ?? [];
-
-        foreach ($groupes as $section => $permissions) {
-            if (!is_array($permissions)) {
-                continue;
-            }
-            // Les droits Super Admin ne s'accordent pas ainsi
-            if (str_contains($section, 'Super Admin')) {
-                continue;
-            }
-            foreach (array_keys($permissions) as $cle) {
-                $habilitations[$cle] = "1";
-            }
-        }
-
-        $user->habilitations = $habilitations;
-        $user->save();
+        $user->accorderToutesLesHabilitationsMetier();
     }
 
     /**

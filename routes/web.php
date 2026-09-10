@@ -129,14 +129,18 @@ Route::middleware(['auth'])->group(function () {
                 return redirect()->route('admin.dashboard');
             }
             return redirect()->route('superadmin.dashboard');
-        } elseif ($user->isAdmin()) {
+        }
+
+        // Aucune comptabilité ouverte : le gérant de cabinet repart de son
+        // espace. Le Pack Entreprise, lui, n'a pas d'espace cabinet et rejoint
+        // directement sa comptabilité unique.
+        if (!$user->company_id && !session('current_company_id') && $user->aAccesEspaceCabinet()) {
+            return redirect()->route('accountant.space');
+        }
+
+        if ($user->isAdmin()) {
             return redirect()->route('admin.dashboard');
         } elseif ($user->isComptable()) {
-            // Le Pack Entreprise n'a pas d'espace cabinet : il va droit a sa
-            // comptabilite unique.
-            if (!$user->company_id && !session('current_company_id') && $user->aAccesEspaceCabinet()) {
-                return redirect()->route('accountant.space');
-            }
             return redirect()->route('comptable.comptdashboard');
         }
         return redirect('/unauthorized');
@@ -850,6 +854,10 @@ Route::middleware(['auth',authSuperAdminMiddleware::class])->group(function () {
     Route::get('/superadmin/switch', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'index'])->name('superadmin.switch');
     Route::post('/superadmin/switch/company/{id}', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'switchToCompany'])->name('superadmin.switch.company');
     Route::post('/superadmin/switch/user/{id}', [\App\Http\Controllers\Super\SuperAdminSwitchController::class, 'switchToUser'])->name('superadmin.switch.user');
+
+    // Offres souscrites (Pack Entreprise / Pack Cabinet)
+    Route::get('/superadmin/offres', [\App\Http\Controllers\Super\SuperAdminPackController::class, 'index'])->name('superadmin.packs');
+    Route::post('/superadmin/offres/{id}', [\App\Http\Controllers\Super\SuperAdminPackController::class, 'update'])->name('superadmin.packs.update');
 
     // Contrôle d'Accès (Blocage/Déblocage)
     Route::get('/superadmin/access-control', [\App\Http\Controllers\Super\SuperAdminAccessController::class, 'index'])->name('superadmin.access');

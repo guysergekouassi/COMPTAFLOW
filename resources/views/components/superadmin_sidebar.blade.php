@@ -95,6 +95,11 @@
             </a>
             @endif
 
+            <a href="{{ route('superadmin.packs') }}" class="menu-link-new {{ request()->routeIs('superadmin.packs*') ? 'active' : '' }}">
+                <i class="fa-solid fa-gem"></i>
+                <span>Offres & Abonnements</span>
+            </a>
+
             <a href="{{ route('superadmin.liaisons.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.liaisons.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-link"></i>
                 <span>Liaisons SELFLOW</span>
