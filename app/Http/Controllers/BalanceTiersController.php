@@ -132,7 +132,7 @@ class BalanceTiersController extends Controller
     //             'plan_tiers_id_2' => $request->plan_tiers_id_2,
     //             'balance_tiers' => $filename,
     //             'user_id' => $user->id,
-    //             'company_id' => session('current_company_id', $user->company_id),
+    //             'company_id' => $companyId,
     //         ]);
 
     //         return back()->with('success', "PDF balance des Tiers généré avec succès ! ({$ecritures->count()} écritures)");
@@ -155,15 +155,25 @@ class BalanceTiersController extends Controller
         try {
 
             $user = Auth::user();
+            // L'entreprise de travail vient de la session (mode switch), pas du
+            // profil de l'utilisateur : sinon la balance interroge une autre
+            // entreprise et ne trouve aucune écriture.
+            $companyId = session('current_company_id', $user->company_id);
+            $company = \App\Models\Company::find($companyId);
 
-            $compte1 = PlanTiers::findOrFail($request->plan_tiers_id_1);
-            $compte2 = PlanTiers::findOrFail($request->plan_tiers_id_2);
+            $compte1 = PlanTiers::where('company_id', $companyId)->findOrFail($request->plan_tiers_id_1);
+            $compte2 = PlanTiers::where('company_id', $companyId)->findOrFail($request->plan_tiers_id_2);
 
-            $min = min($compte1->numero_de_tiers, $compte2->numero_de_tiers);
-            $max = max($compte1->numero_de_tiers, $compte2->numero_de_tiers);
+            // Comparaison chaîne : en comparaison numérique, des numéros de tiers
+            // de longueurs différentes donneraient de mauvaises bornes.
+            $v1 = (string) $compte1->numero_de_tiers;
+            $v2 = (string) $compte2->numero_de_tiers;
+            $min = strcmp($v1, $v2) < 0 ? $v1 : $v2;
+            $max = strcmp($v1, $v2) < 0 ? $v2 : $v1;
 
-            $comptesIds = PlanTiers::where('company_id', $user->company_id)
-                ->whereBetween('numero_de_tiers', [$min, $max])
+            $comptesIds = PlanTiers::where('company_id', $companyId)
+                ->where('numero_de_tiers', '>=', $min)
+                ->where('numero_de_tiers', '<=', $max)
                 ->pluck('id');
 
             $query = EcritureComptable::with([
@@ -175,7 +185,7 @@ class BalanceTiersController extends Controller
                 'user',
                 'company'
             ])
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $companyId)
                 ->whereIn('plan_tiers_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin]);
 
@@ -209,7 +219,7 @@ class BalanceTiersController extends Controller
                     'format' => $format_fichier,
                     'balance_tiers' => $filename,
                     'user_id' => $user->id,
-                    'company_id' => session('current_company_id', $user->company_id),
+                    'company_id' => $companyId,
                 ]);
 
                 return back()->with('success', "Excel Balance des Tiers généré avec succès ! ($count écritures)");
@@ -229,7 +239,7 @@ class BalanceTiersController extends Controller
                     'format' => $format_fichier,
                     'balance_tiers' => $filename,
                     'user_id' => $user->id,
-                    'company_id' => session('current_company_id', $user->company_id),
+                    'company_id' => $companyId,
                 ]);
 
                 return back()->with('success', "CSV Balance des Tiers généré avec succès ! ($count écritures)");
@@ -242,7 +252,7 @@ class BalanceTiersController extends Controller
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
             $pdf->loadView('balance_tiers', [
-                'company_name' => $user->company->company_name ?? 'Non défini', // retiré comme demandé
+                'company_name' => $company->company_name ?? 'Non défini',
                 'ecritures' => $ecritures,
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
@@ -262,7 +272,7 @@ class BalanceTiersController extends Controller
                 'format' => $format_fichier,
                 'balance_tiers' => $filename,
                 'user_id' => $user->id,
-                'company_id' => session('current_company_id', $user->company_id),
+                'company_id' => $companyId,
                 
             ]);
 
@@ -287,15 +297,25 @@ class BalanceTiersController extends Controller
             ]);
 
             $user = Auth::user();
+            // L'entreprise de travail vient de la session (mode switch), pas du
+            // profil de l'utilisateur : sinon la balance interroge une autre
+            // entreprise et ne trouve aucune écriture.
+            $companyId = session('current_company_id', $user->company_id);
+            $company = \App\Models\Company::find($companyId);
 
-            $compte1 = PlanTiers::findOrFail($request->plan_tiers_id_1);
-            $compte2 = PlanTiers::findOrFail($request->plan_tiers_id_2);
+            $compte1 = PlanTiers::where('company_id', $companyId)->findOrFail($request->plan_tiers_id_1);
+            $compte2 = PlanTiers::where('company_id', $companyId)->findOrFail($request->plan_tiers_id_2);
 
-            $min = min($compte1->numero_de_tiers, $compte2->numero_de_tiers);
-            $max = max($compte1->numero_de_tiers, $compte2->numero_de_tiers);
+            // Comparaison chaîne : en comparaison numérique, des numéros de tiers
+            // de longueurs différentes donneraient de mauvaises bornes.
+            $v1 = (string) $compte1->numero_de_tiers;
+            $v2 = (string) $compte2->numero_de_tiers;
+            $min = strcmp($v1, $v2) < 0 ? $v1 : $v2;
+            $max = strcmp($v1, $v2) < 0 ? $v2 : $v1;
 
-            $comptesIds = PlanTiers::where('company_id', $user->company_id)
-                ->whereBetween('numero_de_tiers', [$min, $max])
+            $comptesIds = PlanTiers::where('company_id', $companyId)
+                ->where('numero_de_tiers', '>=', $min)
+                ->where('numero_de_tiers', '<=', $max)
                 ->pluck('id');
 
             $query = EcritureComptable::with([
@@ -307,7 +327,7 @@ class BalanceTiersController extends Controller
                 'user',
                 'company'
             ])
-                ->where('company_id', $user->company_id)
+                ->where('company_id', $companyId)
                 ->whereIn('plan_tiers_id', $comptesIds)
                 ->whereBetween('date', [$request->date_debut, $request->date_fin]);
 
@@ -327,7 +347,7 @@ class BalanceTiersController extends Controller
             $pdf = app('dompdf.wrapper');
             $pdf->getDomPDF()->set_option('isPhpEnabled', true);
             $pdf->loadView('balance_tiers', [
-                'company_name' => $user->company->company_name ?? 'Non défini',
+                'company_name' => $company->company_name ?? 'Non défini',
                 'ecritures' => $ecritures,
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,
