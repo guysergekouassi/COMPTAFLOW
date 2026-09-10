@@ -182,10 +182,10 @@
                 à la nature de votre activité.</p>
         </div>
 
-        <div class="row g-4 px-3 px-md-0">
+        <div class="row g-4 px-3 px-md-0 justify-content-center">
 
             <!-- Pack Entreprise (Premium/Recommended) -->
-            <div class="col-lg-4 col-md-6 d-flex">
+            <div class="col-lg-5 col-md-6 d-flex">
                 <div class="pricing-card pricing-card-premium p-4 p-md-5 w-100 d-flex flex-column">
                     <div class="popular-badge">Recommandé</div>
 
@@ -194,19 +194,17 @@
                     </div>
 
                     <h2 class="h3 fw-bold text-dark mb-2">Pack Entreprise</h2>
-                    <p class="text-muted mb-4 small">La solution complète pour gérer toutes vos entreprises avec un
-                        contrôle total, sans aucune limite logicielle.</p>
+                    <p class="text-muted mb-4 small">Pour une entreprise qui tient sa propre comptabilité : un dossier
+                        unique, tous les outils comptables.</p>
 
-                    <div class="price-text text-primary">Complet</div>
+                    <div class="price-text text-primary">Une comptabilité</div>
 
                     <ul class="feature-list mb-5">
-                        <li><i class="fa-solid fa-check text-primary"></i> Multi-entreprises et multi-dossiers
-                            centralisés</li>
-                        <li><i class="fa-solid fa-check text-primary"></i> Accès à 100% des fonctionnalités avancées
-                        </li>
-                        <li><i class="fa-solid fa-check text-primary"></i> Utilisateurs et collaborateurs illimités</li>
-                        <li><i class="fa-solid fa-check text-primary"></i> Automatisation IA, Edition et Reporting de
-                            pointe</li>
+                        <li><i class="fa-solid fa-check text-primary"></i> Une seule comptabilité, la vôtre</li>
+                        <li><i class="fa-solid fa-check text-primary"></i> Saisie, lettrage, états financiers et liasse</li>
+                        <li><i class="fa-solid fa-check text-primary"></i> Collaborateurs de votre entreprise</li>
+                        <li><i class="fa-solid fa-check text-primary"></i> Automatisation IA, édition et reporting</li>
+                        <li><i class="fa-solid fa-arrow-up text-primary"></i> Évolutif vers le Pack Cabinet à tout moment</li>
                     </ul>
 
                     <a href="{{ route('landing.register_form', 'entreprise') }}"
@@ -216,40 +214,15 @@
                 </div>
             </div>
 
-            <!-- Pack Comptable (Standard) -->
-            <div class="col-lg-4 col-md-6 d-flex">
-                <div class="pricing-card p-4 p-md-5 w-100 d-flex flex-column">
-                    <div class="icon-box icon-standard">
-                        <i class="fa-solid fa-calculator"></i>
-                    </div>
-
-                    <h2 class="h3 fw-bold text-dark mb-2">Pack Comptable</h2>
-                    <p class="text-muted mb-4 small">Idéal pour la gestion de base d'une entreprise ou entité.</p>
-
-                    <div class="price-text">Standard</div>
-
-                    <ul class="feature-list mb-5">
-                        <li><i class="fa-solid fa-check text-success"></i> Limité à une seule et unique entreprise</li>
-                        <li><i class="fa-solid fa-check text-success"></i> Outils de saisie comptable et lettrage</li>
-                        <li><i class="fa-solid fa-check text-success"></i> Suivi financier essentiel</li>
-                    </ul>
-
-                    <a href="{{ route('landing.register_form', 'comptable') }}"
-                        class="btn btn-dark btn-lg rounded-pill w-100 mt-auto shadow-sm">
-                        Sélectionner ce pack <i class="fa-solid fa-arrow-right ms-2 opacity-75"></i>
-                    </a>
-                </div>
-            </div>
-
             <!-- Espace Cabinet Comptable (Cabinet) -->
-            <div class="col-lg-4 col-md-6 d-flex">
+            <div class="col-lg-5 col-md-6 d-flex">
                 <div class="pricing-card p-4 p-md-5 w-100 d-flex flex-column">
                     <div class="icon-box icon-cabinet">
                         <i class="fa-solid fa-briefcase"></i>
                     </div>
 
-                    <h2 class="h3 fw-bold text-dark mb-2">Espace Cabinet</h2>
-                    <p class="text-muted mb-4 small">Créez votre espace comptable personnel et centralisé pour gérer librement vos dossiers clients.</p>
+                    <h2 class="h3 fw-bold text-dark mb-2">Pack Cabinet</h2>
+                    <p class="text-muted mb-4 small">Pour un cabinet ou un comptable indépendant : un espace centralisé pour gérer autant de comptabilités que nécessaire.</p>
 
                     <div class="price-text text-violet" style="color: #8b5cf6;">Multi-dossiers</div>
 

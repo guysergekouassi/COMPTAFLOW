@@ -356,8 +356,8 @@
         </div>
     </div>
 
-    {{-- Bouton "Mon Espace" – visible pour admin et comptable non-superadmin --}}
-    @if(!auth()->user()->isSuperAdmin())
+    {{-- Bouton "Mon Espace" : masque pour le Pack Entreprise, limite a une seule comptabilite --}}
+    @if(auth()->user()->aAccesEspaceCabinet())
     <div style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">
         <a href="{{ route('accountant.space') }}" class="d-flex align-items-center gap-2 text-decoration-none"
            style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe; border-radius: 10px; padding: 9px 12px; transition: all 0.2s;"
@@ -964,10 +964,12 @@
                     <i class="fa-solid fa-building"></i>
                     <span>Mes Compagnies</span>
                 </a>
+                @if(auth()->user()->aAccesEspaceCabinet())
                 <a href="{{ route('accountant.space', ['page' => 'companies']) }}" class="menu-link-new">
                     <i class="fa-solid fa-briefcase"></i>
                     <span>Mon Espace</span>
                 </a>
+                @endif
                 <a href="{{ route('user_management') }}" class="menu-link-new {{ request()->routeIs('user_management') ? 'active' : '' }}">
                     <i class="fa-solid fa-user-group"></i>
                     <span>Équipe & Permissions</span>
@@ -1028,6 +1030,7 @@
                     <span>Collaborateurs</span>
                 </a>
 
+                @if(auth()->user()->aAccesEspaceCabinet())
                 <a href="{{ route('accountant.space') }}?page=fusion" 
                    class="menu-link-new {{ (request('page') === 'fusion') ? 'active' : '' }}"
                    data-page-link="fusion"
@@ -1035,6 +1038,7 @@
                     <i class="fa-solid fa-code-branch"></i>
                     <span>Fusion & Déversement</span>
                 </a>
+                @endif
 
                 <a href="{{ route('accountant.space') }}?page=chat" 
                    class="menu-link-new {{ (request('page') === 'chat') ? 'active' : '' }}"

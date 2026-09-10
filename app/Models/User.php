@@ -10,6 +10,8 @@ use App\Traits\LogsActivity;
 
 use Laravel\Sanctum\HasApiTokens;
 
+use App\Models\Company;
+
 class User extends Authenticatable
 {
     use \Laravel\Sanctum\HasApiTokens, HasFactory, Notifiable, LogsActivity;
@@ -20,6 +22,7 @@ class User extends Authenticatable
         'email_adresse',
         'password',
         'role',
+        'pack',
         'super_admin_type',
         'supervised_companies',
         'is_online',
@@ -151,6 +154,47 @@ class User extends Authenticatable
     public function isSecondaryAdmin(): bool
     {
         return $this->role === 'admin' && !$this->isPrincipalAdmin();
+    }
+
+    /**
+     * Offre « Pack Entreprise » : une seule comptabilité, celle créée à
+     * l'inscription. Pas d'espace cabinet, pas de nouvelle société, pas de
+     * fusion, jusqu'à un passage sur une offre supérieure.
+     */
+    public function estPackEntreprise(): bool
+    {
+        return ($this->pack ?? 'cabinet') === 'entreprise';
+    }
+
+    /** L'espace cabinet (Mon Espace) est-il accessible à cette personne ? */
+    public function aAccesEspaceCabinet(): bool
+    {
+        return !$this->isSuperAdmin() && !$this->estPackEntreprise();
+    }
+
+    /**
+     * Cette personne gère-t-elle la comptabilité ouverte ?
+     *
+     * Vrai pour un administrateur, un super administrateur, et pour le
+     * responsable de l'entreprise courante (créateur, admin de l'entreprise ou
+     * personne affectée avec le rôle admin) — y compris un comptable qui gère
+     * ses propres comptabilités depuis Mon Espace. Sans cela, il ne pourrait
+     * pas ouvrir d'exercice et sa comptabilité resterait inutilisable.
+     */
+    public function gereLaComptabiliteCourante(): bool
+    {
+        if ($this->isAdmin() || $this->isSuperAdmin()) {
+            return true;
+        }
+
+        $companyId = session('current_company_id', $this->company_id);
+        if (!$companyId) {
+            return false;
+        }
+
+        $company = Company::find($companyId);
+
+        return $company ? $company->estResponsable($this) : false;
     }
 
     /**

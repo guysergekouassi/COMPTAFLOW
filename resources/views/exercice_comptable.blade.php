@@ -288,7 +288,7 @@
                             </div>
 
                             <!-- Right Group: Actions -->
-                            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+                            @if(auth()->user()->gereLaComptabiliteCourante())
                             <div class="flex flex-wrap items-center justify-end gap-3">
                                 <button type="button" data-bs-toggle="modal" data-bs-target="#modalCenterCreate"
                                     class="btn-action flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-2xl font-semibold text-sm border-0 shadow-lg shadow-blue-200">
@@ -343,7 +343,7 @@
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Statut</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Durée</th>
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Journaux</th>
-                                            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+                                            @if(auth()->user()->gereLaComptabiliteCourante())
                                             <th class="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                             @endif
                                         </tr>
@@ -660,7 +660,7 @@
                                 }
                             },
                             { data: 'nombre_journaux_saisis' },
-                            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+                            @if(auth()->user()->gereLaComptabiliteCourante())
                             {
                                 data: null,
                                 orderable: false,

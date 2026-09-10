@@ -34,15 +34,19 @@ class LandingController extends Controller
      */
     public function registerForm($type)
     {
-        // Validation du type
-        if (!in_array($type, ['entreprise', 'comptable', 'cabinet'])) {
+        // Le Pack Comptable a ete retire : les anciens liens basculent sur le Pack Entreprise.
+        if ($type === 'comptable') {
+            $type = 'entreprise';
+        }
+
+        if (!in_array($type, ['entreprise', 'cabinet'])) {
             return redirect()->route('landing.pricing')->with('error', 'Type de pack invalide.');
         }
 
         $generatedCode = null;
         if ($type !== 'cabinet') {
             // Générer un code d'accès par défaut pour l'inscription
-            $prefix = ($type === 'comptable') ? 'CAB' : 'ENT';
+            $prefix = 'ENT';
             do {
                 $generatedCode = $prefix . '-' . strtoupper(\Illuminate\Support\Str::random(6));
                 $exists = Company::where('company_code', $generatedCode)->exists();
@@ -66,7 +70,7 @@ class LandingController extends Controller
         }
 
         $request->validate([
-            'type' => 'required|in:entreprise,comptable,cabinet',
+            'type' => 'required|in:entreprise,cabinet',
             // Infos entreprise
             'company_name' => 'required_unless:type,cabinet|nullable|string|max:255',
             'juridique_form' => 'required_unless:type,cabinet|nullable|string|max:100',
@@ -116,23 +120,28 @@ class LandingController extends Controller
                     'identification_TVA' => $request->identification_TVA,
                     'parent_company_id' => null, // Racine
                     'company_code' => $request->company_code,
+                    'pack' => 'entreprise',
                 ]);
             }
 
             // 3. Déterminer les habilitations
             // Si c'est un admin, on laisse vide [] pour qu'il ait TOUT par défaut (isPrincipalAdmin)
             // Si c'est un comptable, on lui donne les accès par défaut définis dans la config
+            // Le souscripteur est responsable de sa comptabilité : il recoit toutes
+            // les habilitations, hors section Super Admin.
             $habilitations = [];
-            if ($request->type === 'comptable' || $isCabinet) {
-                $comptablePermissions = config('accounting_permissions.role_permissions_map.comptable', []);
-                foreach ($comptablePermissions as $perm) {
-                    $habilitations[$perm] = "1";
+            foreach (config('accounting_permissions.permissions', []) as $section => $permissions) {
+                if (!is_array($permissions) || str_contains($section, 'Super Admin')) {
+                    continue;
+                }
+                foreach (array_keys($permissions) as $cle) {
+                    $habilitations[$cle] = "1";
                 }
             }
 
-            // 4. Déterminer le rôle
-            // Un administrateur métier ou un comptable
-            $role = ($request->type === 'comptable' || $isCabinet) ? 'comptable' : 'admin';
+            // 4. Rôle : comptable dans les deux offres. Le Pack Entreprise ne gere
+            // qu'une seule comptabilite, le Pack Cabinet en gere autant que voulu.
+            $role = 'comptable';
 
             // 5. Créer l'utilisateur Administrateur
             $user = User::create([
@@ -144,13 +153,19 @@ class LandingController extends Controller
                 'company_id' => $company ? $company->id : null, // Lier à l'entreprise
                 'phone_number' => $request->admin_phone ?? $request->phone_number,
                 'habilitations' => $habilitations,
+                'pack' => $isCabinet ? 'cabinet' : 'entreprise',
                 'is_active' => 1
             ]);
 
-            // Assigner l'administrateur à l'entreprise
+            // Le souscripteur est le premier responsable de son entreprise :
+            // createur et membre admin, ce qui lui ouvre l'exercice comptable.
             if ($company) {
                 $company->user_id = $user->id;
                 $company->save();
+
+                $company->associatedUsers()->syncWithoutDetaching([
+                    $user->id => ['role' => 'admin'],
+                ]);
             }
 
             DB::commit();;
@@ -159,6 +174,12 @@ class LandingController extends Controller
 
             // 6. Connecter l'utilisateur automatiquement
             Auth::login($user);
+
+            // Pack Entreprise : on ouvre sa comptabilite unique, sans passer par
+            // l'espace cabinet auquel il n'a pas acces.
+            if ($company) {
+                session(['current_company_id' => $company->id]);
+            }
 
             // 7. Envoi de l'e-mail de bienvenue
             try {

@@ -129,8 +129,8 @@ public function index()
 
     public function store(Request $request)
     {
-        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
-            return response()->json(['success' => false, 'message' => 'Action non autorisée. Seul un administrateur peut créer un exercice.'], 403);
+        if (!Auth::user()->gereLaComptabiliteCourante()) {
+            return response()->json(['success' => false, 'message' => 'Action non autorisée : seul le responsable de cette comptabilité peut créer un exercice.'], 403);
         }
         try {
             $user = Auth::user();
@@ -244,7 +244,7 @@ public function index()
 
     public function activate($id)
     {
-        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+        if (!Auth::user()->gereLaComptabiliteCourante()) {
             return back()->with('error', 'Action non autorisée.');
         }
 
@@ -339,7 +339,7 @@ public function index()
 
     public function cloturer($id)
     {
-        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+        if (!Auth::user()->gereLaComptabiliteCourante()) {
             return back()->with('error', 'Action non autorisée. Seul un administrateur peut clôturer un exercice.');
         }
 
@@ -476,7 +476,7 @@ public function index()
 
     public function reouvrir($id)
     {
-        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+        if (!Auth::user()->gereLaComptabiliteCourante()) {
             return back()->with('error', 'Action non autorisée.');
         }
 
@@ -524,7 +524,7 @@ public function index()
 
     public function destroy($id)
     {
-        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+        if (!Auth::user()->gereLaComptabiliteCourante()) {
             return back()->with('error', 'Action non autorisée. Seul un administrateur peut supprimer un exercice.');
         }
         $exercice = ExerciceComptable::findOrFail($id);
@@ -570,7 +570,7 @@ public function index()
 
     public function update(Request $request, $id)
     {
-        if (!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin()) {
+        if (!Auth::user()->gereLaComptabiliteCourante()) {
             return back()->with('error', 'Action non autorisée. Seul un administrateur peut modifier un exercice.');
         }
         $user = Auth::user();

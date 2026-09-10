@@ -328,7 +328,7 @@
                 <div class="col-md-6">
                     <h2 class="section-title">
                         <i class="fa-solid fa-building text-primary me-2"></i>
-                        Informations {{ $type == 'comptable' ? 'du Cabinet' : 'de l\'Entreprise' }}
+                        Informations de l'Entreprise
                     </h2>
 
                     <div class="row g-3">
@@ -503,7 +503,7 @@
 
         function generateRandomCompanyCode() {
             const type = "{{ $type }}";
-            const prefix = type === 'comptable' ? 'CAB' : 'ENT';
+            const prefix = 'ENT';
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             let randomStr = '';
             for (let i = 0; i < 6; i++) {

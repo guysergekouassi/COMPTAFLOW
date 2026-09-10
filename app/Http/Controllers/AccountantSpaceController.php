@@ -20,8 +20,26 @@ class AccountantSpaceController extends Controller
     /**
      * Espace Comptable centralisé
      */
+    /**
+     * Le Pack Entreprise ne dispose pas de l'espace cabinet : une seule
+     * comptabilite, donc ni portefeuille de societes, ni fusion.
+     */
+    private function refuserSiPackEntreprise()
+    {
+        if (Auth::user() && !Auth::user()->aAccesEspaceCabinet()) {
+            return redirect()->route('comptable.comptdashboard')
+                ->with('error', "L'espace cabinet n'est pas inclus dans le Pack Entreprise, qui ne gère qu'une seule comptabilité.");
+        }
+
+        return null;
+    }
+
     public function index()
     {
+        if ($refus = $this->refuserSiPackEntreprise()) {
+            return $refus;
+        }
+
         $user = Auth::user();
 
         // 1. Récupérer toutes les entreprises gérées ou associées
@@ -222,6 +240,10 @@ class AccountantSpaceController extends Controller
      */
     public function storeCompany(Request $request)
     {
+        if ($refus = $this->refuserSiPackEntreprise()) {
+            return $refus;
+        }
+
         $request->validate([
             'company_name'     => 'required|string|max:255|unique:companies,company_name',
             'activity'         => 'required|string|max:255',
@@ -665,6 +687,10 @@ class AccountantSpaceController extends Controller
      */
     public function fusionData(Request $request)
     {
+        if ($refus = $this->refuserSiPackEntreprise()) {
+            return $refus;
+        }
+
         $request->validate([
             'source_company_id' => 'required|exists:companies,id',
             'target_company_id' => 'required|exists:companies,id',
