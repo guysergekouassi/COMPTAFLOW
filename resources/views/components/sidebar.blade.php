@@ -2,6 +2,13 @@
     $isInAccountantSpace = request()->routeIs('accountant.space');
     $isSwitched = session('switched_company_id') || session('is_super_admin_bypassing');
 
+    // Responsable de la comptabilite ouverte : createur, admin de l'entreprise
+    // ou personne affectee comme admin. Il doit pouvoir ouvrir un exercice,
+    // sans quoi la comptabilite reste inutilisable.
+    $estResponsableCompta = isset($currentCompany) && $currentCompany
+        ? $currentCompany->estResponsable(auth()->user())
+        : false;
+
     if ($isInAccountantSpace) {
         $currentCompany = null;
         $isComptaAccountActive = false;
@@ -764,7 +771,7 @@
                     <span>Brouillons</span>
                 </a>
                 @endif
-                @if(auth()->user()->hasPermission('exercice_comptable') && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin() || $isSwitched))
+                @if(auth()->user()->hasPermission('exercice_comptable') && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin() || $isSwitched || $estResponsableCompta))
                 <a href="{{ route('exercice_comptable') }}" class="menu-link-new {{ request()->routeIs('exercice_comptable') ? 'active' : '' }}">
                     <i class="fa-solid fa-calendar-check"></i>
                     <span>Exercice comptable</span>

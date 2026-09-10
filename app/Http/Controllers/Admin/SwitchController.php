@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Company;
 use App\Models\User;
 
@@ -14,10 +15,29 @@ class SwitchController extends Controller
     {
         $user = Auth::user();
         
-        // Récupérer les entreprises gérées par l'admin (Principale + Sous-comptes + Créées par lui)
-        $managedCompanies = Company::where('id', $user->company_id)
-            ->orWhere('parent_company_id', $user->company_id)
-            ->orWhere('user_id', $user->id)
+        // Entreprises reellement gerees : la sienne, celles qu'il a creees et
+        // celles auxquelles il est affecte.
+        // ATTENTION : un orWhere('parent_company_id', $user->company_id) avec un
+        // company_id nul se traduisait par "parent_company_id IS NULL", ce qui
+        // remontait TOUTES les entreprises siege de la plateforme.
+        $companyIds = collect();
+
+        if ($user->company_id) {
+            $companyIds->push($user->company_id);
+            $companyIds = $companyIds->merge(
+                Company::where('parent_company_id', $user->company_id)->pluck('id')
+            );
+        }
+
+        $companyIds = $companyIds
+            ->merge(Company::where('user_id', $user->id)->pluck('id'))
+            ->merge(DB::table('company_user')->where('user_id', $user->id)->pluck('company_id'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $managedCompanies = Company::whereIn('id', $companyIds)
+            ->orderBy('company_name')
             ->get();
 
         // Récupérer les utilisateurs associés à ces entreprises (comptables, etc.)

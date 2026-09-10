@@ -556,7 +556,10 @@ User::create($validated);
             return redirect($retour)->with('success', 'Vous avez quitté la comptabilité et êtes revenu à votre espace.');
         }
 
-        return redirect()->route('admin.switch')->with('success', 'Vous êtes revenu à votre vue principale.');
+        // Par defaut on renvoie vers Mon Espace : c'est la page qui regroupe les
+        // comptabilites que la personne gere, et non la liste des entreprises.
+        return redirect()->route('accountant.space', ['page' => 'companies'])
+            ->with('success', 'Vous avez quitté la comptabilité.');
     }
 
 

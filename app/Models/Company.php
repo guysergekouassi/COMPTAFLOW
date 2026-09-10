@@ -59,6 +59,32 @@ class Company extends Model
      *
      * Penser à charger with(['users', 'associatedUsers', 'admin']) pour éviter le N+1.
      */
+    /**
+     * Cette personne est-elle responsable de l'entreprise ?
+     * C'est le cas de son créateur, de l'admin dont c'est l'entreprise principale
+     * et de toute personne affectée avec le rôle admin.
+     * Un responsable gère la comptabilité de bout en bout : exercices compris.
+     */
+    public function estResponsable($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ((int) $this->user_id === (int) $user->id) {
+            return true;
+        }
+
+        if ((int) $user->company_id === (int) $this->id && method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return true;
+        }
+
+        return $this->associatedUsers()
+            ->where('users.id', $user->id)
+            ->wherePivot('role', 'admin')
+            ->exists();
+    }
+
     public function membres()
     {
         return collect()
