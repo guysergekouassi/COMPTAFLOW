@@ -173,7 +173,8 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <span class="badge bg-secondary">{{ $company->users->count() }} utilisateurs</span>
+                                                @php $membres = $company->membres(); @endphp
+                                                <span class="badge bg-secondary">{{ $membres->count() }} utilisateur{{ $membres->count() > 1 ? 's' : '' }}</span>
                                             </td>
                                             <td>
                                                 @if($company->created_at)
@@ -212,7 +213,7 @@
                                                 <div class="p-3">
                                                     <h6 class="fw-semibold mb-3">Utilisateurs de {{ $company->company_name }}</h6>
                                                     <div class="row g-2">
-                                                        @forelse($company->users as $user)
+                                                        @forelse($company->membres() as $user)
                                                             <div class="col-md-6">
                                                                 <div class="d-flex justify-content-between align-items-center p-2 border rounded">
                                                                     <div>
@@ -220,6 +221,12 @@
                                                                         <span class="badge bg-{{ $user->role === 'admin' ? 'success' : ($user->role === 'comptable' ? 'primary' : 'secondary') }} ms-2">
                                                                             {{ ucfirst($user->role) }}
                                                                         </span>
+                                                                        @if($company->user_id === $user->id)
+                                                                            <span class="badge bg-label-warning ms-1" title="A créé cette entreprise">Responsable</span>
+                                                                        @endif
+                                                                        @if($user->company_id !== $company->id)
+                                                                            <span class="badge bg-label-info ms-1" title="Rattaché à plusieurs comptabilités">Affecté</span>
+                                                                        @endif
                                                                         @if($user->is_blocked)
                                                                             <span class="badge bg-danger ms-1">Bloqué</span>
                                                                         @endif

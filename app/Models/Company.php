@@ -47,6 +47,32 @@ class Company extends Model
         return $this->belongsTo(User::class, 'user_id');
         // return $this->hasMany(User::class, 'company_id')->where('role', 'admin');
     }
+
+    /**
+     * Toutes les personnes rattachées à l'entreprise, quel que soit le mode de rattachement :
+     *  - users.company_id : l'entreprise principale de la personne ;
+     *  - table pivot company_user : les personnes affectées à plusieurs comptabilités ;
+     *  - companies.user_id : le créateur, premier responsable de l'entreprise.
+     *
+     * Compter uniquement users.company_id fait apparaître à tort des entreprises
+     * « sans utilisateur », alors qu'une entreprise a toujours au moins son créateur.
+     *
+     * Penser à charger with(['users', 'associatedUsers', 'admin']) pour éviter le N+1.
+     */
+    public function membres()
+    {
+        return collect()
+            ->merge($this->users)
+            ->merge($this->associatedUsers)
+            ->push($this->admin)
+            ->filter()
+            ->unique('id')
+            ->sortBy(function ($user) {
+                // Les administrateurs en premier, puis par nom
+                return ($user->role === 'admin' ? '0' : '1') . ' ' . mb_strtolower($user->name ?? '');
+            })
+            ->values();
+    }
       public function children()
     {
         return $this->hasMany(Company::class, 'parent_company_id');

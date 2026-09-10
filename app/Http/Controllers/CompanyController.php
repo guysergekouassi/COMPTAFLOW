@@ -278,6 +278,13 @@ class CompanyController extends Controller
                 'user_id' => $user->id, // REQUIRED BY DB SCHEMA
             ]);
 
+            // Une entreprise n'est jamais vide : celui qui la crée en est le
+            // premier responsable. On matérialise ce rattachement dans la table
+            // pivot, sans quoi l'entreprise apparaît « sans utilisateur ».
+            $company->associatedUsers()->syncWithoutDetaching([
+                $user->id => ['role' => $user->role ?? 'admin'],
+            ]);
+
             // Création automatique des trois catégories de flux indispensables pour le TFT
             $tftCategories = [
                 'I. Flux de trésorerie des activités opérationnelles',

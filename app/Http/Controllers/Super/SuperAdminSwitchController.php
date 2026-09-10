@@ -16,7 +16,8 @@ class SuperAdminSwitchController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Company::with('users');
+        // Les trois rattachements possibles, cf. Company::membres()
+        $query = Company::with(['users', 'associatedUsers', 'admin']);
 
         // Filtre : recherche libre sur le nom ou le code entreprise
         if ($request->filled('search')) {
@@ -61,10 +62,10 @@ class SuperAdminSwitchController extends Controller
         Session::put('switched_company_id', $companyId);
         Session::put('current_company_id', $companyId);
         
-        // Trouver un admin de cette entreprise pour se connecter en tant que
-        $admin = User::where('company_id', $companyId)
-            ->where('role', 'admin')
-            ->first();
+        // Trouver un admin de cette entreprise pour se connecter en tant que.
+        // On regarde tous les rattachements (entreprise principale, affectation
+        // multi-comptabilités, créateur) et pas seulement users.company_id.
+        $admin = $company->membres()->firstWhere('role', 'admin');
         
         if ($admin) {
             // Stocker les infos de switch
