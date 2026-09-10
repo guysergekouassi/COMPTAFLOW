@@ -82,7 +82,7 @@
                                 <div class="kpi-card">
                                     <div class="text-slate-500 text-xs fw-bold text-uppercase mb-2">Pack Cabinet</div>
                                     <div class="h3 fw-black mb-0 text-primary">{{ number_format($stats['cabinet'], 0, ',', ' ') }}</div>
-                                    <small class="text-slate-400">Espace multi-dossiers, rôle gérant</small>
+                                    <small class="text-slate-400">Espace multi-dossiers, sociétés illimitées</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -228,16 +228,17 @@
                                                 <div class="mb-3">
                                                     <label class="form-label font-bold text-xs text-slate-500 uppercase">Nouvelle offre</label>
                                                     <select name="pack" class="form-select border-slate-200 rounded-xl py-2.5">
-                                                        <option value="cabinet" {{ $cible === 'cabinet' ? 'selected' : '' }}>Pack Cabinet — espace multi-dossiers, rôle gérant</option>
-                                                        <option value="entreprise" {{ $cible === 'entreprise' ? 'selected' : '' }}>Pack Entreprise — une comptabilité, rôle comptable</option>
+                                                        <option value="cabinet" {{ $cible === 'cabinet' ? 'selected' : '' }}>Pack Cabinet — espace multi-dossiers</option>
+                                                        <option value="entreprise" {{ $cible === 'entreprise' ? 'selected' : '' }}>Pack Entreprise — une seule comptabilité</option>
                                                     </select>
                                                 </div>
 
                                                 <div class="bg-slate-50 rounded-xl p-3 text-slate-600" style="font-size:0.82rem;">
                                                     <div class="mb-2"><strong>Ce que le changement applique</strong></div>
                                                     <ul class="mb-0 ps-3">
-                                                        <li>Pack Cabinet : accès à Mon Espace, création de sociétés, fusion, rôle gérant.</li>
-                                                        <li>Pack Entreprise : une seule comptabilité, rôle comptable, ni Mon Espace ni fusion.</li>
+                                                        <li>Pack Cabinet : accès à Mon Espace, création de sociétés, fusion.</li>
+                                                        <li>Pack Entreprise : une seule comptabilité, ni Mon Espace ni fusion.</li>
+                                                        <li>Le titulaire reste gérant de ses comptabilités dans les deux offres.</li>
                                                         <li>Toutes les habilitations métier sont conservées dans les deux sens.</li>
                                                         <li>Le retour au Pack Entreprise est refusé si le compte gère plusieurs comptabilités.</li>
                                                     </ul>

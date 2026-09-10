@@ -139,13 +139,12 @@ class LandingController extends Controller
                 }
             }
 
-            // 4. Rôle selon l'offre souscrite.
-            //  - Pack Cabinet : la personne dirige son espace et toutes les
-            //    comptabilités qu'elle y crée. Elle en est le gérant : rôle admin,
-            //    sans quoi les pages réservées à l'administrateur lui échappent.
-            //  - Pack Entreprise : une seule comptabilité, rôle comptable, dont
-            //    elle reste la responsable (créatrice et membre admin).
-            $role = $isCabinet ? 'admin' : 'comptable';
+            // 4. Rôle : gérant (admin) dans les deux offres. Celui qui souscrit
+            // crée sa comptabilité, il en est donc le premier responsable et doit
+            // disposer des pages réservées à l'administrateur. Ce qui sépare les
+            // deux offres n'est pas le rôle mais l'espace cabinet : le Pack
+            // Entreprise n'en a pas, il tient une seule comptabilité.
+            $role = 'admin';
 
             // 5. Créer l'utilisateur Administrateur
             $user = User::create([

@@ -26,8 +26,12 @@ class AccountantSpaceController extends Controller
      */
     private function refuserSiPackEntreprise()
     {
-        if (Auth::user() && !Auth::user()->aAccesEspaceCabinet()) {
-            return redirect()->route('comptable.comptdashboard')
+        $user = Auth::user();
+
+        if ($user && !$user->aAccesEspaceCabinet()) {
+            $destination = $user->isAdmin() ? 'admin.dashboard' : 'comptable.comptdashboard';
+
+            return redirect()->route($destination)
                 ->with('error', "L'espace cabinet n'est pas inclus dans le Pack Entreprise, qui ne gère qu'une seule comptabilité.");
         }
 

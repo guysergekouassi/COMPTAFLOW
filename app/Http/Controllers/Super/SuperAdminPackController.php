@@ -136,9 +136,13 @@ class SuperAdminPackController extends Controller
         DB::transaction(function () use ($user, $nouveau, $comptabilites) {
             $user->pack = $nouveau;
 
-            // Le gérant de cabinet administre son espace ; le titulaire d'un
-            // Pack Entreprise est le comptable de sa comptabilité unique.
-            $user->role = $nouveau === 'cabinet' ? 'admin' : 'comptable';
+            // Le titulaire d'une offre est le gérant de ses comptabilités, quelle
+            // que soit l'offre. On promeut celui qui en a créé une et qui ne
+            // l'était pas encore ; on ne rétrograde jamais personne, et un
+            // collaborateur simplement rattaché n'est pas concerné.
+            if ($user->role === 'comptable' && Company::where('user_id', $user->id)->exists()) {
+                $user->role = 'admin';
+            }
 
             if ($nouveau === 'entreprise') {
                 $companyId = (int) $comptabilites[0];
@@ -166,10 +170,14 @@ class SuperAdminPackController extends Controller
 
         $sens = $nouveau === 'cabinet' ? 'Montée en gamme appliquée' : 'Retour au Pack Entreprise appliqué';
 
+        $espace = $user->aAccesEspaceCabinet()
+            ? "avec l'espace cabinet et la création de sociétés"
+            : "sur une seule comptabilité, sans espace cabinet";
+
         return redirect()->route('superadmin.packs')->with(
             'success',
-            $sens . ' : ' . $user->name . ' ' . $user->last_name . ' passe au ' . $user->libellePack()
-                . ' (' . ($user->role === 'admin' ? 'gérant' : 'comptable') . ').'
+            $sens . ' : ' . $user->name . ' ' . $user->last_name . ' passe au '
+                . $user->libellePack() . ', ' . $espace . '.'
         );
     }
 

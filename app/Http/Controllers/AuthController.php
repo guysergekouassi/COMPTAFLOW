@@ -57,7 +57,9 @@ class AuthController extends Controller
                 session(['current_company_id' => $user->company_id]);
             }
 
-            return redirect()->route('comptable.comptdashboard');
+            return $user->isAdmin()
+                ? redirect()->route('admin.dashboard')
+                : redirect()->route('comptable.comptdashboard');
         }
 
         if ($user->role === 'admin' || $user->role === 'comptable') {
