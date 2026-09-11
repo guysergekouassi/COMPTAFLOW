@@ -62,13 +62,19 @@ class VerifieCleEntreprise
             // TOUJOURS À ÉCRIRE DANS N'IMPORTE QUEL DOSSIER : la porte que
             // ce lot ferme reste entrouverte.
             //
-            // IL Y A **TROIS** TOLÉRANCES, ET ELLES SE RETIRENT ENSEMBLE.
-            // En retirer une ou deux laisse la porte ouverte du côté qu'on
-            // n'a pas fermé :
+            // IL Y A **QUATRE** TOLÉRANCES, ET ELLES SE RETIRENT ENSEMBLE.
+            // En retirer trois sur quatre laisse la porte ouverte du côté
+            // qu'on n'a pas fermé, en croyant l'avoir fermée :
             //   1. celle-ci ;
             //   2. le repli de `ExternalSyncController::entrepriseDeLaRequete()` ;
-            //   3. celle de Selflow, marquée TOLÉRANCE DE TRANSITION dans
+            //   3. le repli de `ExternalCompanyController::entrepriseDeLaRequete()` ;
+            //   4. celle de Selflow, marquée TOLÉRANCE DE TRANSITION dans
             //      son `ExternalSyncControleur::entrepriseDeLaCle()`.
+            //
+            // La troisième ne figurait dans aucun décompte jusqu'au lot 22 de
+            // Selflow : ce commentaire annonçait trois tolérances alors que le
+            // dépôt en portait quatre. Les deux épreuves de garde seraient
+            // passées au vert sur une porte restée ouverte.
             //
             // La ligne qui les remplace, une fois les deux applications
             // déployées :

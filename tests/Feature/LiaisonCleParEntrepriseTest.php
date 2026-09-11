@@ -153,10 +153,13 @@ class LiaisonCleParEntrepriseTest extends TestCase
     public function test_sans_cle_le_refus_sera_401(): void
     {
         $this->markTestSkipped(
-            'À activer quand la tolérance de transition tombe : retirer le '
-            . 'bloc marqué TOLÉRANCE DE TRANSITION dans VerifieCleEntreprise::handle() '
-            . 'et le `??` de ExternalSyncController::entrepriseDeLaRequete(), puis '
-            . 'supprimer cette ligne et test_la_tolerance_de_transition_laisse_encore_passer_le_secret_seul().'
+            'À activer quand les tolérances de transition tombent. Il y en a '
+            . 'QUATRE, et elles se retirent ensemble : VerifieCleEntreprise::handle(), '
+            . 'le repli de ExternalSyncController::entrepriseDeLaRequete(), celui de '
+            . 'ExternalCompanyController::entrepriseDeLaRequete() — ce troisième ne '
+            . 'figurait dans aucun décompte avant le lot 22 de Selflow — et, chez '
+            . 'Selflow, ExternalSyncControleur::entrepriseDeLaCle(). Puis supprimer '
+            . 'cette ligne et test_la_tolerance_de_transition_laisse_encore_passer_le_secret_seul().'
         );
 
         $this->postJson('/api/external/ecritures/deverser', [
