@@ -834,7 +834,14 @@
                     const fin = new Date(parts.year + 1, parts.month - 1, parts.day);
                     fin.setDate(fin.getDate() - 1);
 
-                    dateFinInput.value = toIsoDate(fin);
+                    // Le calendrier francais garde un champ jumeau visible :
+                    // le renseigner directement laisserait l'affichage en arriere.
+                    const isoFin = toIsoDate(fin);
+                    if (dateFinInput._flatpickr) {
+                        dateFinInput._flatpickr.setDate(isoFin, false);
+                    } else {
+                        dateFinInput.value = isoFin;
+                    }
                     dateFinInput.dataset.autoFilled = '1';
                 }
 
@@ -1133,6 +1140,7 @@
 
 </script>
 
+@include('components.dates_francaises', ['champs' => '#date_debut, #date_fin, #filter-date-debut, #filter-date-fin'])
 </body>
 
 </html>
