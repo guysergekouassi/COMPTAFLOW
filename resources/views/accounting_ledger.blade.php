@@ -580,19 +580,7 @@
     </div>
 
     {{-- previsualisation avant sauvegarde --}}
-    <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen" role="document">
-            <div class="modal-content overflow-hidden" style="border-radius: 0;">
-                <div class="modal-header border-b border-slate-200 px-6 py-4">
-                    <h5 class="modal-title font-extrabold text-xl">Prévisualisation du Grand Livre</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body p-0" style="background: #525659;">
-                    <iframe id="pdfPreviewFrame" style="width:100%; height: calc(100vh - 70px);" frameborder="0"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('components.apercu_pdf', ['id' => 'modalPreviewPDF', 'frame' => 'pdfPreviewFrame', 'titre' => "Aperçu du grand livre"])
 
     <!-- Modal Creation plan update-->
     <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">
@@ -633,20 +621,7 @@
     </div>
 
     <!-- modal -->
-    <div class="modal fade" id="filePreviewModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl" style="max-width:90%;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Prévisualisation</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body" style="height: 80vh;">
-                    <iframe id="fileViewer" src="" frameborder="0" style="width: 100%; height: 100%;">
-                    </iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('components.apercu_pdf', ['id' => 'filePreviewModal', 'frame' => 'fileViewer', 'titre' => "Visualisation du document"])
 
     <!-- Modal Confirmation de suppression -->
     <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">

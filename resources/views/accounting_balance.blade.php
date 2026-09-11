@@ -581,53 +581,10 @@
     </div>
 
     {{-- previsualisation avant sauvegarde --}}
-    <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen m-0" role="document">
-            <div class="modal-content border-0">
-                <div class="modal-header bg-slate-900 border-0 py-2 px-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <i class="bx bxs-file-pdf text-white fs-5"></i>
-                        </div>
-                        <div>
-                            <h5 class="modal-title text-white font-bold mb-0 fs-6">Aperçu du Rapport - Balance</h5>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body p-0 bg-slate-800 d-flex justify-content-center align-items-start" style="height: calc(100vh - 100px); overflow: auto;">
-                    <div style="width: 100%; max-width: 1400px; height: 100%; background: white;">
-                        <iframe id="pdfPreviewFrame" style="width:100%;height:100%;border:none;display:block;" src="about:blank"></iframe>
-                    </div>
-                </div>
-                <div class="modal-footer bg-slate-900 border-0 py-2 px-3">
-                    <button type="button" class="btn btn-label-secondary px-3 py-1" data-bs-dismiss="modal">
-                        <i class="bx bx-x me-1"></i>Fermer l'aperçu
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('components.apercu_pdf', ['id' => 'modalPreviewPDF', 'frame' => 'pdfPreviewFrame', 'titre' => "Aperçu de la balance"])
 
     {{-- modal pdf --}}
-    <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen">
-            <div class="modal-content border-0">
-                <div class="modal-header bg-slate-900 border-0 py-3 px-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                            <i class="bx bxs-file-pdf text-white fs-4"></i>
-                        </div>
-                        <h5 class="modal-title text-white font-bold mb-0" id="pdfModalLabel">Visualisation du Document</h5>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body p-0 bg-slate-800">
-                    <iframe id="pdfViewer" src="" frameborder="0" style="width: 100%; height: 100%;"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('components.apercu_pdf', ['id' => 'pdfPreviewModal', 'frame' => 'pdfViewer', 'titre' => "Visualisation du document"])
 
     <!-- Modal Creation plan update-->
     <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">

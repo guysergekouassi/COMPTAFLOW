@@ -525,34 +525,10 @@
     </div>
 
     {{-- previsualisation avant sauvegarde --}}
-    <div class="modal fade" id="modalPreviewPDF" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog" style="position: fixed !important; margin: 0 !important; width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; top: 0 !important; left: 0 !important;">
-            <div class="modal-content" style="height: 100vh !important; min-height: 100vh !important; border-radius: 0 !important; border: none !important;">
-                <div class="modal-header">
-                    <h5 class="modal-title">Prévisualisation du Grand Livre</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body" style="padding: 0 !important; height: calc(100vh - 60px) !important; overflow: hidden !important;">
-                    <iframe id="pdfPreviewFrame" style="width: 100% !important; height: 100% !important; border: 0 !important;" frameborder="0"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('components.apercu_pdf', ['id' => 'modalPreviewPDF', 'frame' => 'pdfPreviewFrame', 'titre' => "Aperçu de la balance des tiers"])
 
     {{-- modal pdf --}}
-    <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
-        <div class="modal-dialog" style="position: fixed !important; margin: 0 !important; width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; top: 0 !important; left: 0 !important;">
-            <div class="modal-content" style="height: 100vh !important; min-height: 100vh !important; border-radius: 0 !important; border: none !important;">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="pdfModalLabel">Prévisualisation du PDF</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body" style="padding: 0 !important; height: calc(100vh - 60px) !important; overflow: hidden !important;">
-                    <iframe id="pdfViewer" src="" frameborder="0" style="width: 100% !important; height: 100% !important; border: 0 !important;"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('components.apercu_pdf', ['id' => 'pdfPreviewModal', 'frame' => 'pdfViewer', 'titre' => "Visualisation du document"])
 
     <!-- Modal Creation plan update-->
     <div class="modal fade" id="modalCenterUpdate" tabindex="-1" aria-hidden="true">

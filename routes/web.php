@@ -126,6 +126,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/mon-espace/company/{id}/generate-code', [App\Http\Controllers\AccountantSpaceController::class, 'generateCode'])->name('accountant.space.generate_code');
     Route::post('/mon-espace/bulk-generate-codes', [App\Http\Controllers\AccountantSpaceController::class, 'bulkGenerateCodes'])->name('accountant.space.bulk_generate');
     Route::delete('/mon-espace/company/{id}', [App\Http\Controllers\AccountantSpaceController::class, 'destroyCompany'])->name('accountant.space.company.destroy');
+    Route::post('/mon-espace/mot-de-passe', [App\Http\Controllers\AccountantSpaceController::class, 'updatePassword'])->name('accountant.space.password');
     
     // Chat & Discussions
     Route::post('/mon-espace/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('accountant.space.chat.send');

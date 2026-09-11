@@ -1151,5 +1151,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 @endif
 
+@include('components.navigation_instantanee')
+
 <!-- Ancien sidebar (supprimé car doublon inutile) -->
 

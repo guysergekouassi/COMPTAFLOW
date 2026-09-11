@@ -512,17 +512,17 @@ class AccountantSpaceController extends Controller
         })->all();
 
         // Collaborateurs du périmètre, avec leurs droits dossier par dossier
+        // Le gérant fait partie du personnel : il figure dans la liste, marqué
+        // comme tel, avec ses propres droits sur chaque dossier.
         $parPersonne = [];
         foreach ($societes as $soc) {
             foreach ($rattachements->get($soc->id, []) as $ligne) {
-                if ((int) $ligne->id === (int) $user->id) {
-                    continue;
-                }
                 $cle = (int) $ligne->id;
                 $parPersonne[$cle] ??= [
                     'nom'        => trim($ligne->name . ' ' . $ligne->last_name),
                     'email'      => $ligne->email_adresse,
                     'cree_par_vous' => (int) ($ligne->created_by_id ?? 0) === (int) $user->id,
+                    'c_est_vous' => $cle === (int) $user->id,
                     'dossiers'   => [],
                 ];
                 $parPersonne[$cle]['dossiers'][] = [
@@ -532,12 +532,43 @@ class AccountantSpaceController extends Controller
             }
         }
 
+        // Soi-même en tête : c'est la fiche que l'on consulte le plus souvent.
+        uasort($parPersonne, fn ($a, $b) => ($b['c_est_vous'] <=> $a['c_est_vous']));
+
         return [
             'est_gerant'     => $estGerant,
             'cabinets'       => $cabinets,
             'societes'       => $listeSocietes,
             'collaborateurs' => array_values($parPersonne),
         ];
+    }
+
+    /**
+     * Changer son propre mot de passe, depuis sa fiche.
+     *
+     * On ne réclame pas l'ancien : la personne est déjà connectée, et c'est
+     * précisément parce qu'elle l'a oublié qu'elle vient le remplacer. La
+     * session reste valide pour qu'elle ne soit pas éjectée de son travail.
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.required'  => 'Saisissez le nouveau mot de passe.',
+            'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'password.confirmed' => 'Les deux mots de passe ne correspondent pas.',
+        ]);
+
+        $user = Auth::user();
+        $user->password = Hash::make($request->input('password'));
+        $user->save();
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('accountant.space', ['page' => 'informations'])
+            ->with('success', 'Votre mot de passe a été changé. Il vous servira à votre prochaine connexion.');
     }
 
     /**

@@ -989,6 +989,58 @@ body {
                             </div>
                         </div>
 
+                        {{-- Le titulaire fait partie du personnel : sa fiche figure ici,
+                             avec de quoi remplacer un mot de passe oublié. --}}
+                        <div class="col-12">
+                            <div class="dark-card">
+                                <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:1.25rem;">
+                                    <i class="fas fa-id-badge me-2"></i>Ma fiche
+                                </div>
+                                <div class="row g-3 align-items-start">
+                                    <div class="col-md-3">
+                                        <div class="dark-label">Nom</div>
+                                        <div style="font-weight:800;color:var(--text-primary);font-size:1.02rem;">
+                                            {{ auth()->user()->name }} {{ auth()->user()->last_name }}
+                                        </div>
+                                        <div style="font-size:0.75rem;color:var(--text-muted);">
+                                            {{ $informations['est_gerant'] ? 'Gérant du cabinet' : (auth()->user()->isAdmin() ? 'Accès total' : 'Sur habilitations') }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="dark-label">Adresse e-mail</div>
+                                        <div style="font-weight:700;color:var(--text-primary);word-break:break-all;">
+                                            {{ auth()->user()->email_adresse }}
+                                        </div>
+                                        <div style="font-size:0.75rem;color:var(--text-muted);">Identifiant de connexion</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <form method="POST" action="{{ route('accountant.space.password') }}" class="row g-2 align-items-end">
+                                            @csrf
+                                            <input type="hidden" name="form_origin" value="password">
+                                            <div class="col-sm-5">
+                                                <label class="dark-label">Nouveau mot de passe</label>
+                                                <input type="password" name="password" class="dark-input @error('password') field-invalid @enderror"
+                                                       required minlength="8" placeholder="Au moins 8 caractères" autocomplete="new-password">
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <label class="dark-label">Confirmer</label>
+                                                <input type="password" name="password_confirmation" class="dark-input"
+                                                       required minlength="8" placeholder="Retapez-le" autocomplete="new-password">
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <button type="submit" class="btn-work w-100" style="justify-content:center;">
+                                                    <i class="fas fa-key me-1"></i>Changer
+                                                </button>
+                                            </div>
+                                            @error('password')
+                                            <div class="col-12"><div class="field-error">{{ $message }}</div></div>
+                                            @enderror
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-lg-7">
                             <div class="dark-card">
                                 <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:1.25rem;">
@@ -1036,12 +1088,15 @@ body {
                         <div class="col-lg-5">
                             <div class="dark-card">
                                 <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:1.25rem;">
-                                    <i class="fas fa-users me-2"></i>Collaborateurs et leurs droits
+                                    <i class="fas fa-users me-2"></i>Le personnel et ses droits
                                 </div>
                                 @forelse($informations['collaborateurs'] as $membre)
                                 <div class="mb-3 pb-3" style="border-bottom:1px solid rgba(148,163,184,0.15);">
                                     <div style="font-weight:700;color:var(--text-primary);">
                                         {{ $membre['nom'] }}
+                                        @if($membre['c_est_vous'] ?? false)
+                                        <span style="background:rgba(59,130,246,0.12);color:#60a5fa;padding:0.1rem 0.45rem;border-radius:6px;font-size:0.62rem;font-weight:800;">VOUS</span>
+                                        @endif
                                         @if($membre['cree_par_vous'])
                                         <span style="background:rgba(16,185,129,0.12);color:#34d399;padding:0.1rem 0.45rem;border-radius:6px;font-size:0.62rem;font-weight:800;">CRÉÉ PAR VOUS</span>
                                         @endif
@@ -1055,7 +1110,7 @@ body {
                                     @endforeach
                                 </div>
                                 @empty
-                                <div style="color:var(--text-muted);font-size:0.9rem;">Aucun collaborateur rattaché à vos comptabilités.</div>
+                                <div style="color:var(--text-muted);font-size:0.9rem;">Personne n'est encore rattaché à vos comptabilités.</div>
                                 @endforelse
                             </div>
                         </div>
