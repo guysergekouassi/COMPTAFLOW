@@ -13,13 +13,12 @@ use Illuminate\Support\Facades\DB;
 /**
  * Gestion des offres souscrites (montées et descentes en gamme).
  *
- *  - Pack Entreprise : une seule comptabilité, pas d'espace cabinet, rôle
- *    comptable, responsable de sa comptabilité.
- *  - Pack Cabinet : espace multi-dossiers, rôle gérant (admin), autant de
- *    comptabilités que voulu.
+ *  - Pack Entreprise : une seule comptabilité, celle du titulaire. Son espace
+ *    existe, mais il n'y ouvre pas d'autres sociétés et ne fusionne pas.
+ *  - Pack Cabinet : autant de comptabilités que voulu, création et fusion.
  *
- * Le changement d'offre entraîne le rôle qui va avec, et l'octroi de toutes
- * les habilitations métier : sans elles, le titulaire perdrait des pages
+ * Dans les deux cas, le titulaire est le gérant de ses dossiers et garde
+ * toutes les habilitations métier : sans elles, il perdrait des pages
  * entières de sa propre comptabilité.
  */
 class SuperAdminPackController extends Controller
@@ -170,9 +169,9 @@ class SuperAdminPackController extends Controller
 
         $sens = $nouveau === 'cabinet' ? 'Montée en gamme appliquée' : 'Retour au Pack Entreprise appliqué';
 
-        $espace = $user->aAccesEspaceCabinet()
-            ? "avec l'espace cabinet et la création de sociétés"
-            : "sur une seule comptabilité, sans espace cabinet";
+        $espace = $user->peutCreerDesSocietes()
+            ? "avec la création de sociétés et la fusion"
+            : "sur une seule comptabilité, sans création ni fusion";
 
         return redirect()->route('superadmin.packs')->with(
             'success',

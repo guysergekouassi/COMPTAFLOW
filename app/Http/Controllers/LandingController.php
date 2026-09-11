@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Cabinet;
 use App\Models\Company;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -71,6 +72,8 @@ class LandingController extends Controller
 
         $request->validate([
             'type' => 'required|in:entreprise,cabinet',
+            // Le cabinet porte un nom : c'est lui qui s'affiche chez ses membres
+            'cabinet_nom' => 'required_if:type,cabinet|nullable|string|max:191',
             // Infos entreprise
             'company_name' => 'required_unless:type,cabinet|nullable|string|max:255',
             'juridique_form' => 'required_unless:type,cabinet|nullable|string|max:100',
@@ -93,6 +96,7 @@ class LandingController extends Controller
             'admin_email.required' => 'L\'adresse e-mail de connexion est obligatoire.',
             'admin_password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
             'admin_password.confirmed' => 'Les mots de passe ne correspondent pas.',
+            'cabinet_nom.required_if' => 'Le nom du cabinet est obligatoire.',
         ]);
 
         try {
@@ -159,6 +163,20 @@ class LandingController extends Controller
                 'pack' => $isCabinet ? 'cabinet' : 'entreprise',
                 'is_active' => 1
             ]);
+
+            // Le cabinet devient l'entité qui regroupera collaborateurs et
+            // comptabilités. Son code l'identifie, comme le code entreprise
+            // identifie un dossier.
+            $cabinet = null;
+            if ($isCabinet) {
+                $nomCabinet = $request->cabinet_nom ?: trim($request->admin_name . ' ' . $request->admin_last_name);
+                $cabinet = Cabinet::create([
+                    'nom'     => $nomCabinet,
+                    'code'    => Cabinet::genererCode($nomCabinet),
+                    'user_id' => $user->id,
+                ]);
+                $cabinet->membres()->syncWithoutDetaching([$user->id => ['role' => 'gerant']]);
+            }
 
             // Le souscripteur est le premier responsable de son entreprise :
             // createur et membre admin, ce qui lui ouvre l'exercice comptable.

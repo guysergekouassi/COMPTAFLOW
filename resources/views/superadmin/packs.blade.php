@@ -75,7 +75,7 @@
                                 <div class="kpi-card">
                                     <div class="text-slate-500 text-xs fw-bold text-uppercase mb-2">Pack Entreprise</div>
                                     <div class="h3 fw-black mb-0 text-success">{{ number_format($stats['entreprise'], 0, ',', ' ') }}</div>
-                                    <small class="text-slate-400">Une comptabilité, sans espace cabinet</small>
+                                    <small class="text-slate-400">Une comptabilité, sans création ni fusion</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -142,7 +142,7 @@
                                             <th>Offre</th>
                                             <th>Rôle</th>
                                             <th class="text-center">Comptabilités</th>
-                                            <th class="text-center">Espace cabinet</th>
+                                            <th class="text-center">Nouvelles sociétés</th>
                                             <th>Inscription</th>
                                             <th class="text-end">Action</th>
                                         </tr>
@@ -167,7 +167,7 @@
                                                     <div class="text-slate-400" style="font-size:0.72rem;">dont {{ $compte->nb_creees }} créée(s)</div>
                                                 </td>
                                                 <td class="text-center">
-                                                    @if($compte->aAccesEspaceCabinet())
+                                                    @if($compte->peutCreerDesSocietes())
                                                         <span class="text-success fw-bold">Oui</span>
                                                     @else
                                                         <span class="text-slate-400 fw-bold">Non</span>
@@ -236,8 +236,8 @@
                                                 <div class="bg-slate-50 rounded-xl p-3 text-slate-600" style="font-size:0.82rem;">
                                                     <div class="mb-2"><strong>Ce que le changement applique</strong></div>
                                                     <ul class="mb-0 ps-3">
-                                                        <li>Pack Cabinet : accès à Mon Espace, création de sociétés, fusion.</li>
-                                                        <li>Pack Entreprise : une seule comptabilité, ni Mon Espace ni fusion.</li>
+                                                        <li>Pack Cabinet : création de sociétés et fusion, sans limite de dossiers.</li>
+                                                        <li>Pack Entreprise : une seule comptabilité, ni création ni fusion.</li>
                                                         <li>Le titulaire reste gérant de ses comptabilités dans les deux offres.</li>
                                                         <li>Toutes les habilitations métier sont conservées dans les deux sens.</li>
                                                         <li>Le retour au Pack Entreprise est refusé si le compte gère plusieurs comptabilités.</li>

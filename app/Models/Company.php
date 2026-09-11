@@ -10,7 +10,7 @@ class Company extends Model
     use HasFactory, LogsActivity;
 
     protected $fillable = [
-        'company_name', 'company_code', 'pack', 'activity', 'juridique_form', 'social_capital',
+        'company_name', 'company_code', 'pack', 'cabinet_id', 'activity', 'juridique_form', 'social_capital',
         'adresse', 'code_postal', 'city', 'commune', 'quartier', 'country', 'phone_number',
         'email_adresse', 'identification_TVA', 'is_active', 'user_id', 'parent_company_id',
         'is_blocked', 'block_reason', 'blocked_at', 'blocked_by',
@@ -279,6 +279,12 @@ class Company extends Model
             ->where('users.id', $user->id)
             ->wherePivot('role', 'admin')
             ->exists();
+    }
+
+    /** Le cabinet qui porte ce dossier, s'il y en a un. */
+    public function cabinet()
+    {
+        return $this->belongsTo(\App\Models\Cabinet::class, 'cabinet_id');
     }
 
     public function membres()

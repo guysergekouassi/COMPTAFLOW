@@ -61,8 +61,8 @@
                             <label for="role" class="input-label-premium">Rôle Système <span class="text-danger">*</span></label>
                             <select id="role" name="role" class="input-field-premium form-select" required>
                                 <option value="">Choisir un rôle</option>
-                                <option value="admin">Administrateur</option>
-                                <option value="comptable">Comptable</option>
+                                <option value="admin">Accès total (gérant)</option>
+                                <option value="comptable">Sur habilitations (à cocher ci-dessous)</option>
                             </select>
                             <div class="invalid-feedback" id="errorRole"></div>
                         </div>
@@ -76,7 +76,10 @@
                         </div>
                         
                         <div id="habilitationsGroup" class="col-12 mt-6 d-none">
-                            <h6 class="text-xs font-black text-slate-400 uppercase tracking-widest border-bottom pb-2 mb-4">Périmètre des Habilitations</h6>
+                            <h6 class="text-xs font-black text-slate-400 uppercase tracking-widest border-bottom pb-2 mb-4 d-flex justify-content-between align-items-center">
+                                <span>Périmètre des Habilitations</span>
+                                @include('components.tout_cocher', ['cible' => 'habilitationsGroup'])
+                            </h6>
                             @foreach(config('accounting_permissions.permissions') as $section => $groupPermissions)
                                 <div class="mb-4 permission-section" data-section-name="{{ $section }}">
                                     <h6 class="text-xs font-bold text-slate-600 uppercase mb-2">{{ $section }}</h6>
@@ -140,8 +143,8 @@
                         <div class="col-md-6">
                             <label for="updateRole" class="input-label-premium">Rôle</label>
                             <select id="updateRole" name="role" class="input-field-premium form-select">
-                                <option value="admin">Administrateur</option>
-                                <option value="comptable">Comptable</option>
+                                <option value="admin">Accès total (gérant)</option>
+                                <option value="comptable">Sur habilitations (à cocher ci-dessous)</option>
                             </select>
                         </div>
                         <div class="col-md-6" id="updateCompanyField">
@@ -155,7 +158,10 @@
                     </div>
 
                     <div id="updateHabilitationsSection" class="mt-8">
-                        <h6 class="text-xs font-black text-slate-400 uppercase tracking-widest border-bottom pb-2 mb-4">Gestion des Habilitations</h6>
+                        <h6 class="text-xs font-black text-slate-400 uppercase tracking-widest border-bottom pb-2 mb-4 d-flex justify-content-between align-items-center">
+                            <span>Gestion des Habilitations</span>
+                            @include('components.tout_cocher', ['cible' => 'updateHabilitationsSection'])
+                        </h6>
                         @foreach(config('accounting_permissions.permissions') as $section => $groupPermissions)
                             <div class="mb-4 permission-section" data-section-name="{{ $section }}">
                                 <h6 class="text-xs font-bold text-slate-600 uppercase mb-2">{{ $section }}</h6>

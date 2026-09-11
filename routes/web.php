@@ -146,7 +146,7 @@ Route::middleware(['auth'])->group(function () {
         // Aucune comptabilité ouverte : le gérant de cabinet repart de son
         // espace. Le Pack Entreprise, lui, n'a pas d'espace cabinet et rejoint
         // directement sa comptabilité unique.
-        if (!$user->company_id && !session('current_company_id') && $user->aAccesEspaceCabinet()) {
+        if (!$user->company_id && !session('current_company_id') && $user->aAccesMonEspace()) {
             return redirect()->route('accountant.space');
         }
 

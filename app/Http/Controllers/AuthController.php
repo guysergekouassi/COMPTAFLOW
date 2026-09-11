@@ -50,18 +50,9 @@ class AuthController extends Controller
             return redirect()->route('superadmin.dashboard');
         }
 
-        // Pack Entreprise : pas d'espace cabinet, on ouvre directement sa
-        // comptabilité unique.
-        if (!$user->aAccesEspaceCabinet()) {
-            if ($user->company_id) {
-                session(['current_company_id' => $user->company_id]);
-            }
-
-            return $user->isAdmin()
-                ? redirect()->route('admin.dashboard')
-                : redirect()->route('comptable.comptdashboard');
-        }
-
+        // Chacun repart de son espace, offre comprise : il y retrouve ses
+        // comptabilités. Le Pack Entreprise n'en tient qu'une, mais elle s'y
+        // affiche comme les autres.
         if ($user->role === 'admin' || $user->role === 'comptable') {
             return redirect()->route('accountant.space');
         }

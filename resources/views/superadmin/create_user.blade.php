@@ -83,7 +83,7 @@
                                         <div class="col-md-6">
                                             <label for="role" class="form-label fw-semibold">Rôle Plateforme <span class="text-danger">*</span></label>
                                             <select class="form-select @error('role') is-invalid @enderror" id="role" name="role" required>
-                                                <option value="comptable" {{ old('role', 'comptable') == 'comptable' ? 'selected' : '' }}>Comptable</option>
+                                                <option value="comptable" {{ old('role', 'comptable') == 'comptable' ? 'selected' : '' }}>Sur habilitations (à cocher ci-dessous)</option>
                                                 <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>Utilisateur Standard</option>
                                                 <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrateur Entreprise</option>
                                             </select>
@@ -118,9 +118,10 @@
                                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                     <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
                                         <i class="fa-solid fa-shield-halved me-2"></i>Habilitations Spécifiques
+                                        @include('components.tout_cocher', ['cible' => 'grilleSaCreationUtilisateur'])
                                     </h5>
                                     
-                                    <div class="row">
+                                    <div class="row" id="grilleSaCreationUtilisateur">
                                         @foreach($permissions as $section => $groupPermissions)
                                             <div class="col-12 permission-section mb-4" data-section-name="{{ $section }}">
                                                 <div class="mb-2">

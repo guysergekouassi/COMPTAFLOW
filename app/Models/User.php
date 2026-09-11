@@ -10,7 +10,9 @@ use App\Traits\LogsActivity;
 
 use Laravel\Sanctum\HasApiTokens;
 
+use App\Models\Cabinet;
 use App\Models\Company;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -180,7 +182,58 @@ class User extends Authenticatable
      */
     public function accorderToutesLesHabilitationsMetier(): void
     {
-        $habilitations = $this->habilitations ?? [];
+        $this->habilitations = array_merge($this->habilitations ?? [], self::catalogueMetier());
+        $this->save();
+    }
+
+    /**
+     * Mon Espace est ouvert à tout le monde, Pack Entreprise compris : chacun y
+     * retrouve ses comptabilités et ses collaborateurs. Ce que l'offre décide,
+     * c'est le droit d'ouvrir de nouvelles sociétés et de fusionner.
+     */
+    public function aAccesMonEspace(): bool
+    {
+        return !$this->isSuperAdmin();
+    }
+
+    /** Ouvrir d'autres comptabilités : réservé aux offres multi-dossiers. */
+    public function peutCreerDesSocietes(): bool
+    {
+        return !$this->isSuperAdmin() && !$this->estPackEntreprise();
+    }
+
+    /** La fusion suppose plusieurs dossiers : même règle que la création. */
+    public function peutFusionner(): bool
+    {
+        return $this->peutCreerDesSocietes();
+    }
+
+    /** Les cabinets auxquels cette personne appartient. */
+    public function cabinets()
+    {
+        return $this->belongsToMany(Cabinet::class, 'cabinet_user')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /** Le cabinet dont cette personne est la gérante, s'il existe. */
+    public function cabinetGere()
+    {
+        return $this->hasOne(Cabinet::class, 'user_id');
+    }
+
+    public function estGerantDeCabinet(): bool
+    {
+        return Cabinet::where('user_id', $this->id)->exists();
+    }
+
+    /**
+     * Catalogue complet des habilitations métier, hors section Super Admin.
+     * Sert d'accès total pour un responsable de dossier.
+     */
+    public static function catalogueMetier(): array
+    {
+        $habilitations = [];
 
         foreach (Config::get('accounting_permissions.permissions', []) as $section => $permissions) {
             if (!is_array($permissions) || str_contains($section, 'Super Admin')) {
@@ -191,14 +244,41 @@ class User extends Authenticatable
             }
         }
 
-        $this->habilitations = $habilitations;
-        $this->save();
+        return $habilitations;
     }
 
-    /** L'espace cabinet (Mon Espace) est-il accessible à cette personne ? */
-    public function aAccesEspaceCabinet(): bool
+    /**
+     * Droits accordés sur la comptabilité ouverte, et sur elle seule.
+     *
+     * Une affectation porte ses propres habilitations : elles ne valent que
+     * pour ce dossier et ne touchent pas à celles reçues ailleurs. Renvoie
+     * null quand l'affectation ne dit rien de particulier, auquel cas les
+     * habilitations du compte s'appliquent.
+     */
+    public function habilitationsSurDossierCourant(): ?array
     {
-        return !$this->isSuperAdmin() && !$this->estPackEntreprise();
+        $companyId = session('current_company_id', $this->company_id);
+        if (!$companyId || !$this->id) {
+            return null;
+        }
+
+        $pivot = DB::table('company_user')
+            ->where('company_id', $companyId)
+            ->where('user_id', $this->id)
+            ->first();
+
+        if (!$pivot) {
+            return null;
+        }
+
+        // Accès total sur ce dossier
+        if (($pivot->role ?? null) === 'admin') {
+            return self::catalogueMetier();
+        }
+
+        $choisies = !empty($pivot->habilitations) ? json_decode($pivot->habilitations, true) : null;
+
+        return is_array($choisies) && $choisies !== [] ? $choisies : null;
     }
 
     /**
@@ -247,6 +327,15 @@ class User extends Authenticatable
         // Si c'est une permission superadmin et que l'utilisateur n'est pas SA
         if (str_starts_with($permission, 'superadmin.') && !$this->isSuperAdmin()) {
             return false;
+        }
+
+        // 3 bis. Droits accordés sur la comptabilité ouverte : ils priment, et
+        // ne concernent qu'elle. Sans affectation particulière, on retombe sur
+        // les habilitations du compte.
+        $surDossier = $this->habilitationsSurDossierCourant();
+        if ($surDossier !== null && !$this->isSuperAdmin()) {
+            return isset($surDossier[$permission])
+                && ($surDossier[$permission] === "1" || $surDossier[$permission] === true || $surDossier[$permission] === 1);
         }
 
         $habilitations = $this->habilitations ?? [];

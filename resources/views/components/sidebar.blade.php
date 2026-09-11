@@ -328,6 +328,18 @@
             </div>
             <div class="brand-text">
                 <h1 class="brand-title">Flow Compta</h1>
+                @php
+                    // Le cabinet d'appartenance : celui qu'on gère, sinon celui qui nous accueille.
+                    $monCabinet = \App\Models\Cabinet::where('user_id', auth()->id())->first()
+                        ?? \App\Models\Cabinet::whereIn('id', function ($q) {
+                                $q->select('cabinet_id')->from('cabinet_user')->where('user_id', auth()->id());
+                            })->first();
+                @endphp
+                @if($monCabinet)
+                    <div class="company-name-sidebar" title="Code : {{ $monCabinet->code }}">
+                        {{ $monCabinet->nom }}
+                    </div>
+                @endif
                 @if ($currentCompany)
                     <div class="company-name-sidebar">
                         {{ $currentCompany->company_name }}
@@ -356,8 +368,8 @@
         </div>
     </div>
 
-    {{-- Bouton "Mon Espace" : masque pour le Pack Entreprise, limite a une seule comptabilite --}}
-    @if(auth()->user()->aAccesEspaceCabinet())
+    {{-- Bouton "Mon Espace" : chacun y retrouve ses comptabilites, offre comprise --}}
+    @if(auth()->user()->aAccesMonEspace())
     <div style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">
         <a href="{{ route('accountant.space') }}" class="d-flex align-items-center gap-2 text-decoration-none"
            style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe; border-radius: 10px; padding: 9px 12px; transition: all 0.2s;"
@@ -964,7 +976,7 @@
                     <i class="fa-solid fa-building"></i>
                     <span>Mes Compagnies</span>
                 </a>
-                @if(auth()->user()->aAccesEspaceCabinet())
+                @if(auth()->user()->aAccesMonEspace())
                 <a href="{{ route('accountant.space', ['page' => 'companies']) }}" class="menu-link-new">
                     <i class="fa-solid fa-briefcase"></i>
                     <span>Mon Espace</span>
@@ -1030,7 +1042,7 @@
                     <span>Collaborateurs</span>
                 </a>
 
-                @if(auth()->user()->aAccesEspaceCabinet())
+                @if(auth()->user()->peutFusionner())
                 <a href="{{ route('accountant.space') }}?page=fusion" 
                    class="menu-link-new {{ (request('page') === 'fusion') ? 'active' : '' }}"
                    data-page-link="fusion"
@@ -1039,6 +1051,14 @@
                     <span>Fusion & Déversement</span>
                 </a>
                 @endif
+
+                <a href="{{ route('accountant.space') }}?page=informations"
+                   class="menu-link-new {{ (request('page') === 'informations') ? 'active' : '' }}"
+                   data-page-link="informations"
+                   onclick="if(window.showSection) { showSection('informations'); return false; }">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Informations</span>
+                </a>
 
                 <a href="{{ route('accountant.space') }}?page=chat" 
                    class="menu-link-new {{ (request('page') === 'chat') ? 'active' : '' }}"
@@ -1057,10 +1077,12 @@
                         <span>Auto-générer codes</span>
                     </button>
                 </form>
+                @if(auth()->user()->peutCreerDesSocietes())
                 <button onclick="document.getElementById('modal-new-company').classList.add('show')" class="menu-link-new text-primary w-100 border-0 bg-transparent text-start py-2" style="font-size: 13px; color: #1e40af;">
                     <i class="fa-solid fa-plus"></i>
                     <span>Nouvelle société</span>
                 </button>
+                @endif
                 <button onclick="document.getElementById('modal-new-member').classList.add('show')" class="menu-link-new text-violet w-100 border-0 bg-transparent text-start py-2" style="font-size: 13px; color: #8b5cf6;">
                     <i class="fa-solid fa-user-plus"></i>
                     <span>Nouveau membre</span>

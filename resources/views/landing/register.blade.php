@@ -283,6 +283,12 @@
                     </div>
 
                     <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Nom du cabinet <span class="text-danger">*</span></label>
+                            <input type="text" name="cabinet_nom" value="{{ old('cabinet_nom') }}" required
+                                class="form-control" placeholder="Cabinet Expertise & Conseil">
+                            <small class="text-muted">Ce nom identifiera votre cabinet, pour vous comme pour vos collaborateurs.</small>
+                        </div>
                         <div class="col-6">
                             <label class="form-label">Nom <span class="text-danger">*</span></label>
                             <input type="text" name="admin_name" value="{{ old('admin_name') }}" required

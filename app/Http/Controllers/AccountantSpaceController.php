@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Cabinet;
 use App\Models\Company;
 use App\Models\User;
 use App\Models\PlanComptable;
@@ -21,18 +22,16 @@ class AccountantSpaceController extends Controller
      * Espace Comptable centralisé
      */
     /**
-     * Le Pack Entreprise ne dispose pas de l'espace cabinet : une seule
-     * comptabilite, donc ni portefeuille de societes, ni fusion.
+     * Le Pack Entreprise tient une seule comptabilité : son espace existe, mais
+     * il n'y ouvre pas d'autres sociétés et ne fusionne pas de dossiers.
      */
     private function refuserSiPackEntreprise()
     {
         $user = Auth::user();
 
-        if ($user && !$user->aAccesEspaceCabinet()) {
-            $destination = $user->isAdmin() ? 'admin.dashboard' : 'comptable.comptdashboard';
-
-            return redirect()->route($destination)
-                ->with('error', "L'espace cabinet n'est pas inclus dans le Pack Entreprise, qui ne gère qu'une seule comptabilité.");
+        if ($user && !$user->peutCreerDesSocietes()) {
+            return redirect()->route('accountant.space', ['page' => 'companies'])
+                ->with('error', "Le Pack Entreprise ne gère qu'une seule comptabilité : la création de sociétés et la fusion demandent une offre supérieure.");
         }
 
         return null;
@@ -40,15 +39,21 @@ class AccountantSpaceController extends Controller
 
     public function index()
     {
-        if ($refus = $this->refuserSiPackEntreprise()) {
-            return $refus;
-        }
-
         $user = Auth::user();
 
         // 1. Récupérer toutes les entreprises gérées ou associées
         $myCompanyIds = Company::where('user_id', $user->id)->pluck('id')->toArray();
         $assignedCompanyIds = DB::table('company_user')->where('user_id', $user->id)->pluck('company_id')->toArray();
+
+        // Le gérant voit tout ce que porte son cabinet, y compris les dossiers
+        // qu'un collaborateur a ouverts de son côté : ils reviennent au cabinet.
+        $cabinetGere = Cabinet::where('user_id', $user->id)->first();
+        if ($cabinetGere) {
+            $assignedCompanyIds = array_merge(
+                $assignedCompanyIds,
+                Company::where('cabinet_id', $cabinetGere->id)->pluck('id')->toArray()
+            );
+        }
 
         // Rattachement historique porté par users.company_id : un utilisateur créé
         // depuis la gestion des utilisateurs n'a pas de ligne dans company_user.
@@ -236,7 +241,9 @@ class AccountantSpaceController extends Controller
             'total_entries' => DB::table('ecriture_comptables')->whereIn('company_id', $allCompanyIds)->count()
         ];
 
-        return view('accountant.index', compact('companiesData', 'collaborators', 'assignableCollaborators', 'chatUsers', 'stats', 'selectedCollaboratorId'));
+        $informations = $this->informationsEspace($user, $cabinetGere);
+
+        return view('accountant.index', compact('companiesData', 'collaborators', 'assignableCollaborators', 'chatUsers', 'stats', 'selectedCollaboratorId', 'cabinetGere', 'informations'));
     }
 
     /**
@@ -307,6 +314,9 @@ class AccountantSpaceController extends Controller
                 'email_adresse' => $request->email_adresse,
                 'identification_TVA' => $request->identification_TVA,
                 'user_id' => $user->id, // Propriétaire principal
+                // Un collaborateur ouvre ses dossiers sans en référer au gérant,
+                // mais le cabinet les porte et les voit.
+                'cabinet_id' => optional($this->cabinetDe($user))->id,
             ]);
 
             // Liaison dans la table pivot company_user
@@ -381,17 +391,187 @@ class AccountantSpaceController extends Controller
             'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
         ]);
 
-        User::create([
+        // On n'accorde plus un rôle opaque : soit l'accès total, soit les cases
+        // cochées, pour qu'on sache toujours ce que le collaborateur peut faire.
+        $accesTotal = $request->input('acces') === 'total';
+        $habilitations = $accesTotal
+            ? User::catalogueMetier()
+            : $this->habilitationsCochees($request->input('habilitations', []));
+
+        $collaborateur = User::create([
             'name' => $request->name,
             'last_name' => $request->last_name,
             'email_adresse' => $request->email_adresse,
             'password' => Hash::make($request->password),
             'role' => 'comptable',
+            'habilitations' => $habilitations,
+            'pack' => Auth::user()->pack ?? 'cabinet',
             'is_active' => true,
             'created_by_id' => Auth::id(),
         ]);
 
-        return redirect()->route('accountant.space')->with('success', 'Collaborateur créé avec succès.');
+        // Il entre dans le cabinet de celui qui le crée
+        $cabinet = $this->cabinetDe(Auth::user());
+        if ($cabinet) {
+            DB::table('cabinet_user')->updateOrInsert(
+                ['cabinet_id' => $cabinet->id, 'user_id' => $collaborateur->id],
+                ['role' => 'collaborateur', 'updated_at' => now(), 'created_at' => now()]
+            );
+        }
+
+        return redirect()->route('accountant.space', ['page' => 'collaborators'])
+            ->with('success', 'Collaborateur créé ' . ($accesTotal ? 'avec un accès total.' : 'avec ' . count($habilitations) . ' habilitation(s).'));
+    }
+
+    /**
+     * Ce que la page Informations donne à lire, selon qui regarde.
+     *
+     * Le gérant voit tout le cabinet : son code, ses collaborateurs, ses
+     * comptabilités et les droits de chacun. Un collaborateur ne voit que ce
+     * qui le concerne : le ou les cabinets qui l'accueillent, les dossiers
+     * qu'il a lui-même ouverts, et les personnes rattachées à ceux-là. Les
+     * dossiers d'un confrère ne le regardent pas.
+     */
+    private function informationsEspace($user, ?Cabinet $cabinetGere): array
+    {
+        $estGerant = (bool) $cabinetGere;
+
+        // Cabinets auxquels la personne appartient, le sien compris
+        $idsCabinets = DB::table('cabinet_user')->where('user_id', $user->id)->pluck('cabinet_id')->toArray();
+        if ($cabinetGere) {
+            $idsCabinets[] = $cabinetGere->id;
+        }
+        $cabinets = Cabinet::with('gerant:id,name,last_name,email_adresse')
+            ->whereIn('id', array_unique($idsCabinets) ?: [0])
+            ->get()
+            ->map(fn ($cab) => [
+                'nom'        => $cab->nom,
+                'code'       => $cab->code,
+                'gerant'     => trim(($cab->gerant->name ?? '') . ' ' . ($cab->gerant->last_name ?? '')) ?: '—',
+                'est_gerant' => $cab->estGerant($user),
+                'cree_le'    => $cab->created_at ? $cab->created_at->format('d/m/Y') : '—',
+            ])
+            ->values()
+            ->all();
+
+        // Comptabilités du périmètre
+        $requete = Company::query();
+        if ($estGerant) {
+            $requete->where(function ($q) use ($cabinetGere, $user) {
+                $q->where('cabinet_id', $cabinetGere->id)->orWhere('user_id', $user->id);
+            });
+        } else {
+            $requete->where('user_id', $user->id);
+        }
+        $societes = $requete->with('admin:id,name,last_name')->orderBy('company_name')->get();
+
+        $idsSocietes = $societes->pluck('id')->all() ?: [0];
+        $rattachements = DB::table('company_user')
+            ->join('users', 'company_user.user_id', '=', 'users.id')
+            ->whereIn('company_user.company_id', $idsSocietes)
+            ->select(
+                'company_user.company_id',
+                'company_user.role',
+                'company_user.habilitations',
+                'users.id',
+                'users.name',
+                'users.last_name',
+                'users.email_adresse',
+                'users.created_by_id'
+            )
+            ->get()
+            ->groupBy('company_id');
+
+        $lireAcces = function ($ligne) {
+            if (($ligne->role ?? null) === 'admin') {
+                return 'Accès total';
+            }
+            $choisies = !empty($ligne->habilitations) ? json_decode($ligne->habilitations, true) : null;
+
+            return is_array($choisies) && $choisies !== []
+                ? count($choisies) . ' habilitation(s)'
+                : 'Habilitations du compte';
+        };
+
+        $listeSocietes = $societes->map(function ($soc) use ($rattachements, $lireAcces, $user) {
+            $membres = collect($rattachements->get($soc->id, []))->map(fn ($l) => [
+                'nom'   => trim($l->name . ' ' . $l->last_name),
+                'email' => $l->email_adresse,
+                'acces' => $lireAcces($l),
+            ])->values()->all();
+
+            return [
+                'nom'            => $soc->company_name,
+                'code'           => $soc->company_code ?: '—',
+                'createur'       => (int) $soc->user_id === (int) $user->id
+                    ? 'Vous'
+                    : (trim(($soc->admin->name ?? '') . ' ' . ($soc->admin->last_name ?? '')) ?: '—'),
+                'cree_le'        => $soc->created_at ? $soc->created_at->format('d/m/Y') : '—',
+                'collaborateurs' => $membres,
+            ];
+        })->all();
+
+        // Collaborateurs du périmètre, avec leurs droits dossier par dossier
+        $parPersonne = [];
+        foreach ($societes as $soc) {
+            foreach ($rattachements->get($soc->id, []) as $ligne) {
+                if ((int) $ligne->id === (int) $user->id) {
+                    continue;
+                }
+                $cle = (int) $ligne->id;
+                $parPersonne[$cle] ??= [
+                    'nom'        => trim($ligne->name . ' ' . $ligne->last_name),
+                    'email'      => $ligne->email_adresse,
+                    'cree_par_vous' => (int) ($ligne->created_by_id ?? 0) === (int) $user->id,
+                    'dossiers'   => [],
+                ];
+                $parPersonne[$cle]['dossiers'][] = [
+                    'societe' => $soc->company_name,
+                    'acces'   => $lireAcces($ligne),
+                ];
+            }
+        }
+
+        return [
+            'est_gerant'     => $estGerant,
+            'cabinets'       => $cabinets,
+            'societes'       => $listeSocietes,
+            'collaborateurs' => array_values($parPersonne),
+        ];
+    }
+
+    /**
+     * Le cabinet d'une personne : celui qu'elle gère, sinon celui qui l'accueille.
+     */
+    private function cabinetDe($user): ?Cabinet
+    {
+        if (!$user) {
+            return null;
+        }
+
+        $gere = Cabinet::where('user_id', $user->id)->first();
+        if ($gere) {
+            return $gere;
+        }
+
+        $id = DB::table('cabinet_user')->where('user_id', $user->id)->value('cabinet_id');
+
+        return $id ? Cabinet::find($id) : null;
+    }
+
+    /** Cases cochées ramenées au catalogue : on n'accorde que ce qui existe. */
+    private function habilitationsCochees(array $cles): array
+    {
+        $catalogue = User::catalogueMetier();
+        $retenues = [];
+
+        foreach ($cles as $cle) {
+            if (array_key_exists($cle, $catalogue)) {
+                $retenues[$cle] = "1";
+            }
+        }
+
+        return $retenues;
     }
 
     /**
@@ -429,6 +609,11 @@ class AccountantSpaceController extends Controller
             return true;
         }
 
+        // Le gérant du cabinet répond de tous les dossiers qui lui reviennent
+        if ($company->cabinet_id && Cabinet::where('id', $company->cabinet_id)->where('user_id', $user->id)->exists()) {
+            return true;
+        }
+
         return DB::table('company_user')
             ->where('company_id', $company->id)
             ->where('user_id', $user->id)
@@ -442,10 +627,23 @@ class AccountantSpaceController extends Controller
     public function assignUser(Request $request)
     {
         $request->validate([
-            'company_id' => 'required|exists:companies,id',
-            'user_id' => 'required|exists:users,id',
-            'role' => 'required|in:admin,comptable',
+            'company_id'      => 'required|exists:companies,id',
+            'user_id'         => 'required|exists:users,id',
+            'acces'           => 'required|in:total,habilitations',
+            'habilitations'   => 'required_if:acces,habilitations|array',
+            'habilitations.*' => 'string',
+        ], [
+            'acces.required' => "Choisissez l'etendue de l'acces accorde sur cette comptabilite.",
+            'habilitations.required_if' => 'Cochez au moins une habilitation, ou accordez un acces total.',
         ]);
+
+        // Ce que l'affectation accorde ne vaut que pour cette comptabilité :
+        // accès total, ou les seules cases cochées.
+        $accesTotal = $request->input('acces') === 'total';
+        $roleDossier = $accesTotal ? 'admin' : 'comptable';
+        $habilitationsDossier = $accesTotal
+            ? null
+            : json_encode($this->habilitationsCochees($request->input('habilitations', [])));
 
         $user = Auth::user();
 
@@ -467,15 +665,28 @@ class AccountantSpaceController extends Controller
             if ($existing) {
                 DB::table('company_user')
                     ->where('id', $existing->id)
-                    ->update(['role' => $request->role, 'updated_at' => now()]);
+                    ->update([
+                        'role' => $roleDossier,
+                        'habilitations' => $habilitationsDossier,
+                        'updated_at' => now(),
+                    ]);
             } else {
                 DB::table('company_user')->insert([
                     'company_id' => $company->id,
                     'user_id' => $collaborator->id,
-                    'role' => $request->role,
+                    'role' => $roleDossier,
+                    'habilitations' => $habilitationsDossier,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+            }
+
+            // Le collaborateur rejoint le cabinet qui porte ce dossier
+            if ($company->cabinet_id) {
+                DB::table('cabinet_user')->updateOrInsert(
+                    ['cabinet_id' => $company->cabinet_id, 'user_id' => $collaborator->id],
+                    ['role' => 'collaborateur', 'updated_at' => now(), 'created_at' => now()]
+                );
             }
 
             // Sans entreprise de rattachement, le collaborateur n'a aucun contexte
@@ -499,7 +710,8 @@ class AccountantSpaceController extends Controller
                 'sender_id' => $user->id,
                 'receiver_id' => $collaborator->id,
                 'title' => 'Affectation à une entreprise',
-                'message' => 'Vous avez été affecté à l\'entreprise ' . $company->company_name . ' en tant que ' . $request->role,
+                'message' => 'Vous avez été affecté à l\'entreprise ' . $company->company_name
+                    . ($accesTotal ? ' avec un accès total.' : ' avec les habilitations qui vous ont été accordées.'),
                 'type' => 'info',
                 'company_id' => $company->id,
                 'is_read' => false,
@@ -508,10 +720,14 @@ class AccountantSpaceController extends Controller
             Log::warning('Notification d\'affectation non envoyée : ' . $e->getMessage());
         }
 
-        return redirect()->route('accountant.space')->with(
+        $etendue = $accesTotal
+            ? 'avec un accès total'
+            : 'avec ' . count(json_decode($habilitationsDossier, true) ?: []) . ' habilitation(s)';
+
+        return redirect()->route('accountant.space', ['page' => 'collaborators'])->with(
             'success',
-            trim($collaborator->name . ' ' . $collaborator->last_name) . ' est désormais ' . $request->role
-                . ' de « ' . $company->company_name . ' ». L’entreprise apparaît dans son espace dès sa prochaine connexion.'
+            trim($collaborator->name . ' ' . $collaborator->last_name) . ' est rattaché à « '
+                . $company->company_name . ' » ' . $etendue . '. L’entreprise apparaît dans son espace dès sa prochaine connexion.'
         );
     }
 

@@ -719,46 +719,55 @@ body {
                 <div class="page-section" id="section-collaborators">
                     <div class="row g-4">
                         <!-- Formulaire affecter -->
-                        <div class="col-lg-4">
+                        <div class="col-12">
                             <div class="dark-card">
                                 <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:1.25rem;"><i class="fas fa-user-plus me-2"></i>Affecter un collaborateur</div>
                                 <form method="POST" action="{{ route('accountant.space.assign') }}">
                                     @csrf
-                                    <div class="mb-3">
-                                        <label class="dark-label">Entreprise cible</label>
-                                        <select name="company_id" class="dark-input" required>
-                                            <option value="" disabled selected>Choisir une entreprise</option>
-                                            @foreach($companiesData as $d)
-                                            <option value="{{ $d['model']->id }}">{{ $d['model']->company_name }}</option>
-                                            @endforeach
-                                        </select>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="dark-label">Entreprise cible</label>
+                                            <select name="company_id" class="dark-input" required>
+                                                <option value="" disabled selected>Choisir une entreprise</option>
+                                                @foreach($companiesData as $d)
+                                                <option value="{{ $d['model']->id }}">{{ $d['model']->company_name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="dark-label">Collaborateur</label>
+                                            <select id="assign_collaborator_select" name="user_id" class="dark-input" required>
+                                                <option value="" disabled selected>Choisir un collaborateur</option>
+                                                @foreach($assignableCollaborators as $c)
+                                                {{-- On ne cite que mes sociétés : celles des autres gérants ne sont pas affichées --}}
+                                                <option value="{{ $c->id }}">{{ $c->name }} {{ $c->last_name }}@if($c->linked_companies->count()) - {{ $c->linked_companies->pluck('name')->join(', ') }}@endif</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="dark-label">Étendue de l'accès sur cette comptabilité</label>
+                                            <select name="acces" id="assign_acces" class="dark-input" required>
+                                                <option value="total">Accès total (gérant du dossier)</option>
+                                                <option value="habilitations" selected>Habilitations à cocher</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="dark-label">Collaborateur</label>
-                                        <select id="assign_collaborator_select" name="user_id" class="dark-input" required>
-                                            <option value="" disabled selected>Choisir un collaborateur</option>
-                                            @foreach($assignableCollaborators as $c)
-                                            {{-- On ne cite que mes sociétés : celles des autres gérants ne sont pas affichées --}}
-                                            <option value="{{ $c->id }}">{{ $c->name }} {{ $c->last_name }} ({{ $c->role }})@if($c->linked_companies->count()) - {{ $c->linked_companies->pluck('name')->join(', ') }}@endif</option>
-                                            @endforeach
-                                        </select>
+
+                                    <div class="mt-3" id="assign_habilitations">
+                                        <div class="dark-label mb-2">
+                                            Ces droits ne valent que pour l'entreprise choisie. Ceux reçus ailleurs ne bougent pas.
+                                        </div>
+                                        @include('components.habilitations_grid', ['prefixe' => 'affect'])
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="dark-label">Rôle</label>
-                                        <select name="role" class="dark-input" required>
-                                            <option value="" disabled selected>Choisir un rôle</option>
-                                            <option value="admin">Admin</option>
-                                            <option value="comptable">Comptable</option>
-                                        </select>
-                                    </div>
-                                    <button type="submit" class="btn-work w-100" style="justify-content:center;">
+
+                                    <button type="submit" class="btn-work w-100 mt-3" style="justify-content:center;">
                                         <i class="fas fa-link me-1"></i>Lier à l'entreprise
                                     </button>
                                 </form>
                             </div>
                         </div>
                         <!-- Tableau -->
-                        <div class="col-lg-8">
+                        <div class="col-12">
                             <div class="dark-card">
                                 <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:1.25rem;"><i class="fas fa-users me-2"></i>Mes collaborateurs</div>
                                 <div class="table-responsive">
@@ -798,7 +807,11 @@ body {
                                                         <span style="color:var(--text-muted);font-size:0.8rem;">Aucune entreprise</span>
                                                     @endif
                                                 </td>
-                                                <td><span class="badge-role badge-{{ $collab->role }}">{{ $collab->role }}</span></td>
+                                                <td>
+                                                    <span class="badge-role badge-{{ $collab->role }}">
+                                                        {{ $collab->role === 'admin' ? 'Accès total' : 'Sur habilitations' }}
+                                                    </span>
+                                                </td>
                                                 <td>
                                                     @if($collab->is_active)
                                                     <span style="background:rgba(16,185,129,0.1);color:#34d399;padding:0.25rem 0.6rem;border-radius:6px;font-size:0.65rem;font-weight:700;">Actif</span>
@@ -938,6 +951,117 @@ body {
                     </div>
                 </div>
 
+                <!-- ──────────────── INFORMATIONS ──────────────── -->
+                {{-- Page de lecture seule. Le gérant y voit tout son cabinet ;
+                     un collaborateur n'y voit que ce qui le concerne. --}}
+                <div class="page-section" id="section-informations">
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <div class="dark-card">
+                                <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:1.25rem;">
+                                    <i class="fas fa-circle-info me-2"></i>{{ $informations['est_gerant'] ? 'Mon cabinet' : 'Mes rattachements' }}
+                                </div>
+
+                                @forelse($informations['cabinets'] as $cab)
+                                <div class="row g-3 mb-3 pb-3" style="border-bottom:1px solid rgba(148,163,184,0.15);">
+                                    <div class="col-md-4">
+                                        <div class="dark-label">Cabinet</div>
+                                        <div style="font-weight:800;color:var(--text-primary);font-size:1.05rem;">{{ $cab['nom'] }}</div>
+                                        <div style="font-size:0.75rem;color:var(--text-muted);">Ouvert le {{ $cab['cree_le'] }}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="dark-label">Code cabinet</div>
+                                        <div style="font-family:monospace;font-weight:800;color:var(--blue);font-size:1.05rem;">{{ $cab['code'] }}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="dark-label">Gérant</div>
+                                        <div style="font-weight:700;color:var(--text-primary);">{{ $cab['gerant'] }}</div>
+                                        @if($cab['est_gerant'])
+                                        <span style="background:rgba(59,130,246,0.12);color:#60a5fa;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.65rem;font-weight:800;">C'EST VOUS</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                @empty
+                                <div style="color:var(--text-muted);font-size:0.9rem;">
+                                    Aucun cabinet ne vous est rattaché. Les comptabilités que vous créez restent les vôtres.
+                                </div>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <div class="col-lg-7">
+                            <div class="dark-card">
+                                <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:1.25rem;">
+                                    <i class="fas fa-building me-2"></i>{{ $informations['est_gerant'] ? 'Comptabilités du cabinet' : 'Les comptabilités que j\'ai créées' }}
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="dark-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Comptabilité</th>
+                                                <th>Code</th>
+                                                <th>Créée par</th>
+                                                <th>Collaborateurs</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($informations['societes'] as $soc)
+                                            <tr>
+                                                <td>
+                                                    <span style="color:var(--text-primary);font-weight:700;">{{ $soc['nom'] }}</span>
+                                                    <div style="font-size:0.7rem;color:var(--text-muted);">Créée le {{ $soc['cree_le'] }}</div>
+                                                </td>
+                                                <td style="font-family:monospace;">{{ $soc['code'] }}</td>
+                                                <td>{{ $soc['createur'] }}</td>
+                                                <td>
+                                                    @forelse($soc['collaborateurs'] as $membre)
+                                                    <div style="font-size:0.78rem;margin-bottom:0.2rem;">
+                                                        <span style="color:var(--text-primary);font-weight:600;">{{ $membre['nom'] }}</span>
+                                                        <span style="color:var(--text-muted);"> — {{ $membre['acces'] }}</span>
+                                                    </div>
+                                                    @empty
+                                                    <span style="color:var(--text-muted);font-size:0.8rem;">Personne d'autre</span>
+                                                    @endforelse
+                                                </td>
+                                            </tr>
+                                            @empty
+                                            <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem;">Aucune comptabilité</td></tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-5">
+                            <div class="dark-card">
+                                <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:1.25rem;">
+                                    <i class="fas fa-users me-2"></i>Collaborateurs et leurs droits
+                                </div>
+                                @forelse($informations['collaborateurs'] as $membre)
+                                <div class="mb-3 pb-3" style="border-bottom:1px solid rgba(148,163,184,0.15);">
+                                    <div style="font-weight:700;color:var(--text-primary);">
+                                        {{ $membre['nom'] }}
+                                        @if($membre['cree_par_vous'])
+                                        <span style="background:rgba(16,185,129,0.12);color:#34d399;padding:0.1rem 0.45rem;border-radius:6px;font-size:0.62rem;font-weight:800;">CRÉÉ PAR VOUS</span>
+                                        @endif
+                                    </div>
+                                    <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.4rem;">{{ $membre['email'] }}</div>
+                                    @foreach($membre['dossiers'] as $dossier)
+                                    <div style="font-size:0.78rem;">
+                                        <i class="fas fa-caret-right" style="color:var(--blue);"></i>
+                                        {{ $dossier['societe'] }} — <span style="color:var(--text-muted);">{{ $dossier['acces'] }}</span>
+                                    </div>
+                                    @endforeach
+                                </div>
+                                @empty
+                                <div style="color:var(--text-muted);font-size:0.9rem;">Aucun collaborateur rattaché à vos comptabilités.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
         </div>
@@ -1039,6 +1163,17 @@ body {
                 </div>
                 <div class="col-12" id="member_password_field"><label class="dark-label">Mot de passe *</label><input type="password" id="member_password" name="password" class="dark-input" placeholder="Minimum 6 caractères"></div>
                 <input type="hidden" id="member_mode" name="mode" value="invite">
+
+                <div class="col-12 member-acces-fields">
+                    <label class="dark-label">Étendue de l'accès</label>
+                    <select name="acces" id="member_acces" class="dark-input">
+                        <option value="total">Accès total</option>
+                        <option value="habilitations" selected>Habilitations à cocher</option>
+                    </select>
+                </div>
+                <div class="col-12 member-acces-fields" id="member_habilitations">
+                    @include('components.habilitations_grid', ['prefixe' => 'membre'])
+                </div>
             </div>
             <div class="d-flex gap-2 mt-4 justify-content-end">
                 <button type="button" class="btn-secondary-dark" onclick="document.getElementById('modal-new-member').classList.remove('show')">Annuler</button>
@@ -1084,6 +1219,24 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endif
+
+<script>
+// La grille d'habilitations ne sert que si l'accès n'est pas total.
+document.addEventListener('DOMContentLoaded', function () {
+    [['assign_acces', 'assign_habilitations'], ['member_acces', 'member_habilitations']].forEach(function (paire) {
+        const choix = document.getElementById(paire[0]);
+        const grille = document.getElementById(paire[1]);
+        if (!choix || !grille) return;
+
+        function refleter() {
+            grille.style.display = choix.value === 'total' ? 'none' : '';
+        }
+
+        choix.addEventListener('change', refleter);
+        refleter();
+    });
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

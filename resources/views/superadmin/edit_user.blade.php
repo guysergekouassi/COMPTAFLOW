@@ -115,7 +115,7 @@
                                             <label for="role" class="form-label fw-semibold">Rôle Système <span class="text-danger">*</span></label>
                                             <select class="form-select @error('role') is-invalid @enderror" id="role" name="role" required>
                                                 <option value="user" {{ old('role', $user->role) == 'user' ? 'selected' : '' }}>Utilisateur Simple</option>
-                                                <option value="comptable" {{ old('role', $user->role) == 'comptable' ? 'selected' : '' }}>Comptable</option>
+                                                <option value="comptable" {{ old('role', $user->role) == 'comptable' ? 'selected' : '' }}>Sur habilitations (à cocher ci-dessous)</option>
                                                 <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Administrateur Client</option>
                                             </select>
                                             @error('role') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -149,9 +149,10 @@
                                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                     <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">
                                         <i class="fa-solid fa-shield-halved me-2"></i>Habilitations Spécifiques
+                                        @include('components.tout_cocher', ['cible' => 'grilleSaEditionUtilisateur'])
                                     </h5>
                                     
-                                    <div class="row g-3">
+                                    <div class="row g-3" id="grilleSaEditionUtilisateur">
                                         @php $currentHabilitations = is_array($user->habilitations) ? $user->habilitations : (json_decode($user->habilitations, true) ?? []); @endphp
                                         @foreach($permissions as $section => $groupPermissions)
                                             <div class="col-12 permission-section mb-4" data-section-name="{{ $section }}">
