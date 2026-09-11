@@ -996,7 +996,11 @@ class LiaisonCleParEntrepriseTest extends TestCase
         Schema::create('exercices_comptables', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
+            $table->unsignedBigInteger('parent_company_id')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
+            // La colonne s'appelle `intitule`, non `libelle` : le provisionnement
+            // y écrivait sous le mauvais nom et l'exercice naissait sans titre.
+            $table->string('intitule')->nullable();
             $table->boolean('is_active')->default(true);
             $table->date('date_debut')->nullable();
             $table->date('date_fin')->nullable();

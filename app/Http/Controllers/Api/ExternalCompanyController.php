@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\ExerciceComptable;
 use App\Models\TreasuryCategory;
 use App\Models\User;
 use App\Support\LienDActivation;
@@ -109,6 +110,11 @@ class ExternalCompanyController extends Controller
             'entreprise.admin_password_hash' => ['nullable', 'string', 'max:255', 'regex:/^\$2[aby]?\$\d{2}\$.{53}$/'],
             'numerotation_tiers'          => 'nullable|in:numeric,alphanumeric',
             'longueur_tiers'              => 'nullable|integer|min:3|max:20',
+            // L'exercice ouvert chez Selflow. Voir `ouvrirLExercice()`.
+            'exercice'                    => 'nullable|array',
+            'exercice.debut'              => 'required_with:exercice|date',
+            'exercice.fin'                => 'required_with:exercice|date|after:exercice.debut',
+            'exercice.libelle'            => 'nullable|string|max:150',
         ]);
 
         if ($validator->fails()) {
@@ -140,6 +146,15 @@ class ExternalCompanyController extends Controller
                 ]);
                 $cle = $existante->poserUneCleDeLiaison();
             }
+
+            // Le rejeu ouvre l'exercice si le dossier n'en a pas.
+            //
+            // C'est ce qui répare les dossiers provisionnés avant que Selflow
+            // n'annonce sa période : ils existaient, liés et actifs, et
+            // refusaient chaque écriture faute d'exercice. Sans cette ligne, un
+            // dossier déjà lié restait inguérissable — la seule issue aurait
+            // été de le délier pour le relier.
+            $this->ouvrirLExercice($existante, $existante->admin, $request->input('exercice'));
 
             Log::info('Liaison Selflow : provision rejouée, même dossier et même clé', [
                 'company_id'         => $existante->id,
@@ -206,6 +221,8 @@ class ExternalCompanyController extends Controller
             ] as $categorie) {
                 TreasuryCategory::create(['name' => $categorie, 'company_id' => $company->id]);
             }
+
+            $this->ouvrirLExercice($company, $admin, $request->input('exercice'));
 
             $cle = $company->poserUneCleDeLiaison();
 
@@ -534,6 +551,80 @@ class ExternalCompanyController extends Controller
      * **tolérance de transition** : il se retire en même temps que celle du
      * filtre, les deux vont par paire.
      */
+    /**
+     * Ouvrir le premier exercice comptable du dossier.
+     *
+     * ─────────────────────────────────────────────────────────────────────
+     * Le défaut que cette méthode referme
+     * ─────────────────────────────────────────────────────────────────────
+     *
+     * Le provisionnement créait le dossier, l'administrateur, les catégories de
+     * trésorerie et la clé de liaison — **mais aucun exercice**. Or
+     * `deverserEcritures()` refuse en 422 (Unprocessable Content — contenu non
+     * traitable) tant qu'il n'y en a pas : « Aucun exercice comptable trouvé
+     * pour cette entreprise. »
+     *
+     * Conséquence : la liaison s'affichait active des deux côtés, le référentiel
+     * arrivait, et **pas une seule écriture ne pouvait se poser**. Cinq des huit
+     * dossiers étaient dans ce cas sans que personne l'ait vu, parce que Selflow
+     * marquait l'écriture en échec sans dire pourquoi.
+     *
+     * Les dates viennent de Selflow, qui tient la période. Les laisser deviner
+     * ici rouvrirait le désaccord d'exercice que `desaccordDExercice()` vérifie
+     * à chaque déversement : deux exercices disjoints rangeraient les pièces
+     * dans la mauvaise année.
+     *
+     * Sans dates annoncées, on n'invente rien — un exercice comptable est une
+     * décision, pas un réglage. Le dossier naît alors sans exercice, comme
+     * avant, et le déversement le dira clairement.
+     *
+     * @param array{debut: string, fin: string, libelle?: string}|null $exercice
+     */
+    private function ouvrirLExercice(Company $company, ?User $admin, ?array $exercice): void
+    {
+        if (!is_array($exercice) || empty($exercice['debut']) || empty($exercice['fin'])) {
+            Log::info('Liaison Selflow : dossier provisionné sans exercice comptable', [
+                'company_id' => $company->id,
+                'motif'      => "Selflow n'a annonce aucune periode active. Les ecritures seront refus"
+                              . "es tant que l'exercice ne sera pas ouvert.",
+            ]);
+
+            return;
+        }
+
+        // Un dossier qui vient de naître n'en a pas ; la garde vaut pour le
+        // rejeu du provisionnement, qui doit rester idempotent.
+        $existant = ExerciceComptable::where('company_id', $company->id)->exists();
+
+        if ($existant) {
+            return;
+        }
+
+        ExerciceComptable::create([
+            'company_id'        => $company->id,
+            'parent_company_id' => $company->parent_company_id ?: $company->id,
+            'user_id'           => $admin?->id,
+            'date_debut'        => $exercice['debut'],
+            'date_fin'          => $exercice['fin'],
+            // La colonne s'appelle `intitule`, non `libelle` : le nom passé
+            // sous le mauvais intitulé n'est pas assignable, il tombait en
+            // silence et l'exercice s'affichait sans nom.
+            //
+            // `??` ne rattraperait que `null` ; un libellé vide passerait tel
+            // quel, ce qui revient au même pour qui lit l'écran.
+            'intitule'          => filled($exercice['libelle'] ?? null)
+                ? $exercice['libelle']
+                : ('Exercice ' . substr((string) $exercice['debut'], 0, 4)),
+            'is_active'         => true,
+        ]);
+
+        Log::info('Liaison Selflow : exercice comptable ouvert', [
+            'company_id' => $company->id,
+            'du'         => $exercice['debut'],
+            'au'         => $exercice['fin'],
+        ]);
+    }
+
     private function entrepriseDeLaRequete(Request $request): ?Company
     {
         $entreprise = $request->attributes->get('entreprise_liee');
