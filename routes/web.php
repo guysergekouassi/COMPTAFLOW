@@ -253,6 +253,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     // *****************ROUTE GESTION DE COMPANY
     Route::get('/compagny_information', [CompanyController::class, 'index'])->name('compagny_information');
     Route::put('/compagny_information/{company}', [CompanyController::class, 'update'])->name('compagny_information.update');
+    Route::get('/compagny_information/{id}/logo', [CompanyController::class, 'logo'])->name('compagny_information.logo');
 
     // *****************ROUTE GESTION DES USERS
     Route::post('/users', [UserController::class, 'store'])->name('users.store');

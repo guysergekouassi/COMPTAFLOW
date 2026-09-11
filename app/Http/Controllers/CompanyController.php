@@ -155,22 +155,25 @@ class CompanyController extends Controller
             abort(403, "Cette entreprise ne fait pas partie de celles que vous gérez.");
         }
 
+        // Une fiche se remplit au fil de l'eau : seul le nom est indispensable.
+        // Exiger l'adresse ou le telephone a chaque enregistrement empechait de
+        // changer le logo d'une entreprise dont ces champs n'etaient pas saisis.
         $validated = $request->validate([
             // Identité
             'company_name'         => 'required|string|max:255',
             'juridique_form'       => 'nullable|string|max:255',
             'activity'             => 'nullable|string|max:255',
             'social_capital'       => 'nullable|numeric|min:0',
-            'phone_number'         => 'required|string|max:50',
+            'phone_number'         => 'nullable|string|max:50',
 
             // Localisation
-            'adresse'              => 'required|string|max:255',
+            'adresse'              => 'nullable|string|max:255',
             'siege_social'         => 'nullable|string|max:255',
             'commune'              => 'nullable|string|max:120',
             'quartier'             => 'nullable|string|max:120',
-            'city'                 => 'required|string|max:50',
-            'code_postal'          => 'required|string|max:20',
-            'country'              => 'required|string|max:100',
+            'city'                 => 'nullable|string|max:50',
+            'code_postal'          => 'nullable|string|max:20',
+            'country'              => 'nullable|string|max:100',
 
             // Fiscal & DGI
             'idu'                  => 'nullable|string|max:100',
@@ -201,11 +204,26 @@ class CompanyController extends Controller
 
         // Remplacement du logo
         if ($request->hasFile('logo')) {
-            $ancienLogo = $company->logo_path;
-            $validated['logo_path'] = $request->file('logo')->store('logos/companies', 'public');
+            $fichier = $request->file('logo');
 
-            if ($ancienLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($ancienLogo)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($ancienLogo);
+            if (!$fichier->isValid()) {
+                return back()->withInput()->with('error', $this->motifEchecEnvoi($fichier->getError()));
+            }
+
+            try {
+                $ancienLogo = $company->logo_path;
+                $validated['logo_path'] = $fichier->store('logos/companies', 'public');
+
+                if ($ancienLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($ancienLogo)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($ancienLogo);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Enregistrement du logo impossible : ' . $e->getMessage());
+
+                return back()->withInput()->with(
+                    'error',
+                    "Le logo n'a pas pu être enregistré : le dossier de stockage n'est pas accessible en écriture."
+                );
             }
         }
 
@@ -213,7 +231,48 @@ class CompanyController extends Controller
         // l'ancienne et la nouvelle valeur de chaque champ modifié.
         $company->update($validated);
 
-        return back()->with('success', "Informations de l'entreprise mises à jour avec succès.");
+        return back()->with(
+            'success',
+            isset($validated['logo_path'])
+                ? "Informations enregistrées, logo compris."
+                : "Informations de l'entreprise mises à jour avec succès."
+        );
+    }
+
+    /**
+     * Le logo, servi par l'application.
+     *
+     * Passer par « storage/... » suppose le lien symbolique posé sur le
+     * serveur. Quand il manque, l'image répond 404 sans que rien ne le dise.
+     * On lit donc le fichier nous-mêmes : le logo s'affiche, lien ou pas.
+     */
+    public function logo($id)
+    {
+        $company = Company::findOrFail($id);
+        $disque = \Illuminate\Support\Facades\Storage::disk('public');
+
+        if (!$company->logo_path || !$disque->exists($company->logo_path)) {
+            abort(404);
+        }
+
+        return $disque->response($company->logo_path, null, [
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
+    /** Ce que le serveur reproche au fichier envoyé, dit en clair. */
+    private function motifEchecEnvoi(int $code): string
+    {
+        return match ($code) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
+                "Le logo dépasse la taille que le serveur accepte. Choisissez une image plus légère (2 Mo au plus).",
+            UPLOAD_ERR_PARTIAL =>
+                "L'envoi du logo a été interrompu. Réessayez.",
+            UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE =>
+                "Le serveur n'a pas pu écrire le fichier reçu. Prévenez l'administrateur.",
+            default =>
+                "Le logo n'a pas pu être envoyé. Réessayez avec une autre image.",
+        };
     }
 
     /*

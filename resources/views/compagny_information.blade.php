@@ -214,6 +214,21 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     @endif
+                    @if($errors->any())
+                        {{-- Sans cet encart, un champ refuse renvoyait la page telle quelle :
+                             on croyait que le logo n'avait pas ete pris, sans savoir pourquoi. --}}
+                        <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                            <i class="fas fa-circle-exclamation mt-1"></i>
+                            <div>
+                                <strong>Le formulaire n'a pas pu être enregistré :</strong>
+                                <ul class="mb-0 mt-1 ps-3">
+                                    @foreach($errors->all() as $message)
+                                        <li>{{ $message }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show rounded-3 border-0 shadow-sm mb-4" role="alert">
                             <i class="fas fa-exclamation-triangle me-2"></i>{{ session('error') }}
@@ -255,7 +270,7 @@
                                     <i class="fas fa-image"></i> Logo
                                 </div>
                                 @if($company->logo_path)
-                                    <img src="{{ asset('storage/' . $company->logo_path) }}"
+                                    <img src="{{ route('compagny_information.logo', $company->id) }}"
                                          alt="Logo {{ $company->company_name }}"
                                          class="logo-preview mb-3">
                                 @else
@@ -803,6 +818,21 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
+
+        @if($errors->any())
+        // Un champ refuse : on rouvre le formulaire sur l'onglet concerne,
+        // plutot que de laisser la page fermee sur une erreur invisible.
+        document.addEventListener('DOMContentLoaded', function () {
+            const fenetre = document.getElementById('editCompanyModal');
+            if (fenetre && window.bootstrap) {
+                bootstrap.Modal.getOrCreateInstance(fenetre).show();
+            }
+            @if($errors->has('logo'))
+            const onglet = document.querySelector('a[href="#tab-logo"]');
+            if (onglet && window.bootstrap) { new bootstrap.Tab(onglet).show(); }
+            @endif
+        });
+        @endif
     </script>
 </body>
 </html>

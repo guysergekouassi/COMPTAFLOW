@@ -1,17 +1,18 @@
 {{--
     Aperçu plein écran d'un document.
 
-    Deux pièges expliquaient l'aperçu minuscule sur fond noir :
+    Trois pièges se sont succédé sur cet écran :
 
-    1. La classe plein écran de Bootstrap se faisait rogner par les feuilles de
-       style du gabarit. On ne s'y fie plus : la taille est imposée ici, sur
-       l'identifiant de la fenêtre, hors d'atteinte des autres règles.
+    1. La classe plein écran de Bootstrap se faisait rogner par les feuilles du
+       gabarit. La taille est donc imposée ici, sur l'identifiant de la fenêtre.
 
     2. Le document était chargé pendant que la fenêtre était encore fermée. Le
-       lecteur PDF ajuste la page à la largeur qu'il trouve au chargement, et
-       ne la reprend pas ensuite : la page restait à la taille d'une fenêtre
-       invisible. On ne charge donc le document qu'une fois la fenêtre ouverte,
-       à sa vraie largeur.
+       lecteur ajuste la page à la largeur qu'il trouve au chargement et ne la
+       reprend jamais : la page gardait la taille d'une fenêtre invisible.
+
+    3. Vider puis recharger la même adresse laissait le cadre blanc. On ne joue
+       donc plus avec la propriété « src » : l'adresse attend sur l'élément, et
+       n'est posée qu'une fois, à l'ouverture.
 
     Variables : $id (identifiant de la fenêtre), $frame (identifiant de l'iframe),
                 $titre, $icone (facultatifs)
@@ -59,6 +60,29 @@
         display: block;
         background: #e9edf2;
     }
+    #{{ $id }} .apercu-fermer {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.78rem;
+        border-radius: 8px;
+        padding: 0.35rem 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    #{{ $id }} .apercu-fermer:hover { background: rgba(239, 68, 68, 0.85); border-color: transparent; }
+    #{{ $id }} .apercu-attente {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
 </style>
 
 <div class="modal fade" id="{{ $id }}" tabindex="-1" aria-hidden="true">
@@ -71,10 +95,14 @@
                     </div>
                     <h5 class="modal-title text-white fw-bold mb-0 fs-6">{{ $titre }}</h5>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                {{-- Un bouton nommé, jamais tributaire d'une icône de fond. --}}
+                <button type="button" class="apercu-fermer" data-bs-dismiss="modal" aria-label="Fermer">
+                    <i class="bx bx-x fs-5"></i> Fermer
+                </button>
             </div>
             <div class="modal-body">
-                <iframe id="{{ $frame }}" class="apercu-cadre" src="about:blank" frameborder="0"></iframe>
+                <div class="apercu-attente" id="{{ $frame }}_attente">Préparation du document…</div>
+                <iframe id="{{ $frame }}" class="apercu-cadre" frameborder="0"></iframe>
             </div>
         </div>
     </div>
@@ -84,28 +112,43 @@
 (function () {
     const fenetre = document.getElementById(@json($id));
     const cadre = document.getElementById(@json($frame));
+    const attente = document.getElementById(@json($frame) + '_attente');
     if (!fenetre || !cadre) return;
 
     const REGLAGE = '#toolbar=0&navpanes=0&scrollbar=1&statusbar=0&view=FitH';
 
-    function adresseVoulue() {
-        const src = cadre.getAttribute('src') || '';
-        if (!src || src === 'about:blank') return null;
-        return src.includes('#') ? src : src + REGLAGE;
-    }
-
-    // Le document est rechargé à l'ouverture, quand la fenêtre a sa vraie
-    // largeur : c'est là que le lecteur ajuste la page.
-    fenetre.addEventListener('shown.bs.modal', function () {
-        const adresse = adresseVoulue();
-        if (!adresse) return;
-        cadre.src = 'about:blank';
-        window.requestAnimationFrame(function () { cadre.src = adresse; });
+    // Les écrans posent l'adresse avant d'ouvrir la fenêtre. On la retient,
+    // sans charger : le lecteur doit connaître la largeur définitive.
+    Object.defineProperty(cadre, 'src', {
+        configurable: true,
+        get() { return cadre.dataset.apercuSrc || ''; },
+        set(valeur) {
+            if (!valeur || valeur === 'about:blank') {
+                delete cadre.dataset.apercuSrc;
+                cadre.removeAttribute('src');
+                return;
+            }
+            cadre.dataset.apercuSrc = valeur.includes('#') ? valeur : valeur + REGLAGE;
+            if (fenetre.classList.contains('show')) charger();
+        },
     });
 
-    // Refermer libère le document : on ne garde pas un PDF en mémoire.
+    function charger() {
+        const adresse = cadre.dataset.apercuSrc;
+        if (!adresse || cadre.getAttribute('src') === adresse) return;
+        if (attente) attente.style.display = 'flex';
+        cadre.setAttribute('src', adresse);
+    }
+
+    cadre.addEventListener('load', function () {
+        if (attente && cadre.getAttribute('src')) attente.style.display = 'none';
+    });
+
+    fenetre.addEventListener('shown.bs.modal', charger);
+
     fenetre.addEventListener('hidden.bs.modal', function () {
-        cadre.src = 'about:blank';
+        cadre.removeAttribute('src');
+        if (attente) attente.style.display = 'flex';
     });
 })();
 </script>

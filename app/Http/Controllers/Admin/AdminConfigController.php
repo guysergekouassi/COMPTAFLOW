@@ -767,11 +767,18 @@ class AdminConfigController extends Controller
      */
     public function storeTier(Request $request)
     {
+        // Le compte collectif est demandé ici : un tiers saisi à la main sans
+        // compte de rattachement ne sert à rien, et la base le refuse.
         $request->validate([
             'numero_de_tiers' => 'required|string|max:20',
             'intitule' => 'required|string|max:255',
             'type_de_tiers' => 'required|string', // On laisse plus souple pour les nouvelles catégories
-            'compte_general' => 'nullable|exists:plan_comptables,id',
+            'compte_general' => 'required|exists:plan_comptables,id',
+        ], [
+            'intitule.required'        => "Le nom du tiers est obligatoire.",
+            'type_de_tiers.required'   => "Choisissez la catégorie du tiers.",
+            'compte_general.required'  => "Choisissez le compte général auquel rattacher ce tiers.",
+            'compte_general.exists'    => "Ce compte général n'existe pas dans le plan comptable.",
         ]);
 
         $user = Auth::user();

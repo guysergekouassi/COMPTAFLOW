@@ -264,7 +264,9 @@
                                             @elseif($mainCompany->selflow_company_id)
                                                 <div style="font-size:13px; color:#15803d; font-weight:600;">
                                                     <i class="fa-solid fa-plug-circle-check"></i>
-                                                    Liaison active@if($mainCompany->selflow_linked_at) depuis le {{ $mainCompany->selflow_linked_at->format('d/m/Y') }}@endif.
+                                                    {{-- Une directive collee a un mot n'est pas reconnue par Blade : le @if
+                                                         restait du texte, et son @endif compilait seul, cassant la page. --}}
+                                                    Liaison active{{ $mainCompany->selflow_linked_at ? ' depuis le ' . $mainCompany->selflow_linked_at->format('d/m/Y') : '' }}.
                                                 </div>
                                                 <small style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">
                                                     Dernière réception de données :
