@@ -4,10 +4,18 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ *
+ * Cette fabrique etait restee le modele livre par Laravel : elle posait
+ * `email`, `email_verified_at` et `remember_token`, trois colonnes que la table
+ * `users` de cette application n'a pas, et taisait `last_name`, `role`,
+ * `pack`, `is_online`, `is_active` et `is_blocked`, qui sont obligatoires.
+ *
+ * Consequence : `User::factory()` echouait a la premiere insertion —
+ * « table users has no column named email ». Aucune epreuve ne pouvait donc
+ * creer un utilisateur, ce qui est le point de depart de presque toutes.
  */
 class UserFactory extends Factory
 {
@@ -24,21 +32,38 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'name'          => fake()->firstName(),
+            'last_name'     => fake()->lastName(),
+            'email_adresse' => fake()->unique()->safeEmail(),
+            'password'      => static::$password ??= Hash::make('password'),
+            'role'          => 'admin',
+            'pack'          => 'entreprise',
+            'is_online'     => false,
+            'is_active'     => true,
+            'is_blocked'    => false,
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Un compte de plateforme, qui ne depend d'aucune entreprise.
      */
-    public function unverified(): static
+    public function superadmin(): static
     {
         return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+            'role'       => 'super_admin',
+            'company_id' => null,
+        ]);
+    }
+
+    /**
+     * Un compte ferme : il existe, il ne se connecte pas.
+     */
+    public function bloque(string $motif = 'Compte suspendu'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_blocked'   => true,
+            'block_reason' => $motif,
+            'blocked_at'   => now(),
         ]);
     }
 }

@@ -11,11 +11,20 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        try {
-            DB::statement("ALTER TABLE `companies` MODIFY `social_capital` DECIMAL(15, 2) NULL DEFAULT NULL");
-        } catch (\Throwable $e) {
-            // Ignorer si déjà nullable
+        // Voir `2026_02_25_190000` : `MODIFY` ne se lit que sur MySQL.
+        if (DB::getDriverName() === 'mysql') {
+            try {
+                DB::statement("ALTER TABLE `companies` MODIFY `social_capital` DECIMAL(15, 2) NULL DEFAULT NULL");
+            } catch (\Throwable $e) {
+                // Ignorer si déjà nullable
+            }
+
+            return;
         }
+
+        Schema::table('companies', function (Blueprint $table) {
+            $table->decimal('social_capital', 15, 2)->nullable()->default(null)->change();
+        });
     }
 
     /**
@@ -23,10 +32,18 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        try {
-            DB::statement("ALTER TABLE `companies` MODIFY `social_capital` DECIMAL(15, 2) NOT NULL DEFAULT 0.00");
-        } catch (\Throwable $e) {
-            // Ignorer
+        if (DB::getDriverName() === 'mysql') {
+            try {
+                DB::statement("ALTER TABLE `companies` MODIFY `social_capital` DECIMAL(15, 2) NOT NULL DEFAULT 0.00");
+            } catch (\Throwable $e) {
+                // Ignorer
+            }
+
+            return;
         }
+
+        Schema::table('companies', function (Blueprint $table) {
+            $table->decimal('social_capital', 15, 2)->default(0)->change();
+        });
     }
 };

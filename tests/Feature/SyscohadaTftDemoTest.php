@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Company;
+use App\Models\CodeJournal;
 use App\Models\CompteTresorerie;
 use App\Models\EcritureComptable;
 use App\Models\PlanComptable;
@@ -12,6 +13,7 @@ use App\Models\ExerciceComptable;
 use App\Services\AccountingReportingService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SyscohadaTftDemoTest extends TestCase
 {
@@ -26,11 +28,24 @@ class SyscohadaTftDemoTest extends TestCase
     public function test_tft_respects_syscohada_explicit_mapping()
     {
         // 1. Setup : Création Environnement Manuelle (Sans Factory)
-        $company = Company::create(['name' => 'Demo SAS', 'email' => 'demo@sas.com']);
+        // La fiche entreprise porte 'company_name' et 'email_adresse'. Ce jeu
+        // d'essai passait 'name' et 'email' : ni l'un ni l'autre n'est
+        // assignable, la colonne obligatoire restait vide et l'insertion
+        // tombait en contrainte NOT NULL — la suite entiere restait rouge.
+        $company = Company::create([
+            'company_name'   => 'Demo SAS',
+            'activity'       => 'Demonstration',
+            'juridique_form' => 'SAS',
+            'email_adresse'  => 'demo@sas.com',
+        ]);
         $user = User::factory()->create(['company_id' => $company->id]);
         
+        // `user_id` est obligatoire sur l'exercice, le plan et l'ecriture :
+        // ces trois tables gardent qui a saisi. Le jeu d'essai les omettait
+        // tous les trois.
         $exercice = ExerciceComptable::create([
             'company_id' => $company->id,
+            'user_id' => $user->id,
             'date_debut' => Carbon::now()->startOfYear()->toDateString(),
             'date_fin' => Carbon::now()->endOfYear()->toDateString(),
             'is_active' => true,
@@ -39,6 +54,24 @@ class SyscohadaTftDemoTest extends TestCase
         
         $this->actingAs($user);
 
+        // Le journal et la categorie etaient passes en « dummy » a 1. Les cles
+        // etrangeres etant tenues, la ligne ne s'inserait pas : il faut de vraies
+        // lignes, et elles appartiennent a l'entreprise du jeu d'essai.
+        $journal = CodeJournal::create([
+            'company_id'             => $company->id,
+            'user_id'                => $user->id,
+            'code_journal'           => 'BQ',
+            'intitule'               => 'Journal de banque',
+            'traitement_analytique'  => 0,
+        ]);
+
+        $categorie = DB::table('treasury_categories')->insertGetId([
+            'company_id' => $company->id,
+            'name'       => 'Banque',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         // 2. Création des Postes de Trésorerie avec Mapping SYSCOHADA
         
         // Cas A : Emprunt (Financement - Entrée d'argent)
@@ -46,7 +79,7 @@ class SyscohadaTftDemoTest extends TestCase
             'company_id' => $company->id,
             'name' => 'Ligne de Crédit BOA',
             'type' => 'Banque', // Peu importe
-            'category_id' => 1, // Dummy
+            'category_id' => $categorie,
             'syscohada_line_id' => 'FIN_EMP', // <--- LE POINT CLÉ
             'solde_initial' => 0,
             'solde_actuel' => 0
@@ -57,7 +90,7 @@ class SyscohadaTftDemoTest extends TestCase
             'company_id' => $company->id,
             'name' => 'Investissement Matériel',
             'type' => 'Banque',
-            'category_id' => 1, // Dummy
+            'category_id' => $categorie,
             'syscohada_line_id' => 'INV_ACQ', // <--- LE POINT CLÉ
             'solde_initial' => 0,
             'solde_actuel' => 0
@@ -66,6 +99,7 @@ class SyscohadaTftDemoTest extends TestCase
         // Correction : Il faut que create EcritureComptable pointe vers un vrai PlanComptable avec un numéro commencant par 5
         $compteBanque = PlanComptable::create([
             'company_id' => $company->id,
+            'user_id' => $user->id,
             'numero_de_compte' => '52110000',
             'intitule' => 'Banque BOA',
         ]);
@@ -75,7 +109,8 @@ class SyscohadaTftDemoTest extends TestCase
         // Écriture 1 : Encaissement de l'emprunt (10 000 000)
         EcritureComptable::create([
             'company_id' => $company->id,
-            'journal_id' => 1, // Dummy
+            'code_journal_id' => $journal->id,
+            'user_id' => $user->id,
             'exercices_comptables_id' => $exercice->id,
             'date' => Carbon::now()->format('Y-m-d'),
             'n_saisie' => 'ECR-DEMO-001',
@@ -90,7 +125,8 @@ class SyscohadaTftDemoTest extends TestCase
         // Écriture 2 : Achat Ordinateurs (2 000 000)
         EcritureComptable::create([
             'company_id' => $company->id,
-            'journal_id' => 1,
+            'code_journal_id' => $journal->id,
+            'user_id' => $user->id,
             'exercices_comptables_id' => $exercice->id,
             'date' => Carbon::now()->format('Y-m-d'),
             'n_saisie' => 'ECR-DEMO-002',
