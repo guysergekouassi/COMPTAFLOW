@@ -30,7 +30,8 @@
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
-            <div class="modal-body p-0" style="flex:1 1 auto;min-height:0;position:relative;background:#525659;">
+            {{-- Fond clair : un etat comptable se lit sur du papier, pas sur du noir. --}}
+            <div class="modal-body p-0" style="flex:1 1 auto;min-height:0;position:relative;background:#e9edf2;">
                 <iframe id="{{ $frame }}" src="about:blank" frameborder="0"
                         style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;display:block;"></iframe>
             </div>

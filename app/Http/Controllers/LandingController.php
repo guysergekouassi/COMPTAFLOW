@@ -200,13 +200,20 @@ class LandingController extends Controller
                 session(['current_company_id' => $company->id]);
             }
 
-            // 7. Envoi de l'e-mail de bienvenue
-            try {
-                Mail::to($user->email_adresse)->send(new WelcomeEmail($user, $request->type, $company, $request->admin_password));
-            } catch (\Exception $e) {
-                // Log l'erreur d'envoi mais on ne bloque pas l'inscription
-                \Log::error('Erreur envoi email bienvenue : ' . $e->getMessage());
-            }
+            // 7. Bienvenue par courriel, une fois la page rendue.
+            // Une poignée de main SMTP prend plusieurs secondes : les faire
+            // attendre à l'inscription donnait une création interminable.
+            $destinataire = $user->email_adresse;
+            $type = $request->type;
+            $motDePasse = $request->admin_password;
+
+            dispatch(static function () use ($user, $type, $company, $motDePasse, $destinataire) {
+                try {
+                    Mail::to($destinataire)->send(new WelcomeEmail($user, $type, $company, $motDePasse));
+                } catch (\Throwable $e) {
+                    \Log::error('Erreur envoi email bienvenue : ' . $e->getMessage());
+                }
+            })->afterResponse();
 
             return redirect()->route('app.dashboard')->with('success', 'Votre compte a été créé avec succès.');
 

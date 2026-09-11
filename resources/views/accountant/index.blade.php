@@ -422,10 +422,13 @@ body {
 }
 
 /* ── MODALS ── */
-.dark-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1060; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+.dark-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1060; display: none; align-items: flex-start; justify-content: center; backdrop-filter: blur(2px); padding: 3vh 1rem; overflow-y: auto; }
 .dark-modal-backdrop.show { display: flex; }
-.dark-modal { background: var(--space-card); border: 1px solid var(--space-border); border-radius: 22px; padding: 2rem; width: 100%; max-width: 580px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); animation: fadeInUp 0.25s ease; }
-.dark-modal.large { max-width: 760px; max-height: 85vh; overflow-y: auto; }
+/* Une fenetre ne depasse jamais l'ecran : ses champs defilent, le titre et
+   les boutons restent en vue. */
+.dark-modal { background: var(--space-card); border: 1px solid var(--space-border); border-radius: 22px; padding: 2rem; width: 100%; max-width: 580px; max-height: 94vh; display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.1); animation: fadeInUp 0.25s ease; }
+.dark-modal .corps-defilant { overflow-y: auto; overflow-x: hidden; flex: 1 1 auto; min-height: 0; padding-right: 0.4rem; margin-right: -0.4rem; }
+.dark-modal.large { max-width: 820px; }
 @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 .modal-close { background: rgba(0,0,0,0.04); border: 1px solid var(--space-border); color: var(--text-secondary); border-radius: 8px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 1rem; transition: all 0.2s; }
 .modal-close:hover { background: rgba(239,68,68,0.08); color: #ef4444; border-color: rgba(239,68,68,0.2); }
@@ -1134,11 +1137,12 @@ body {
             <button class="modal-close" onclick="document.getElementById('modal-new-company').classList.remove('show')">✕</button>
         </div>
         <div class="space-alert info mb-4"><i class="fas fa-key"></i>Un code d'accès unique sera généré automatiquement.</div>
-        <form method="POST" action="{{ route('accountant.space.company.store') }}">
+        <form method="POST" action="{{ route('accountant.space.company.store') }}"
+              style="display:flex;flex-direction:column;min-height:0;flex:1 1 auto;">
             @csrf
             {{-- Permet de rouvrir la bonne modale après un échec de validation --}}
             <input type="hidden" name="form_origin" value="company">
-            <div class="row g-3">
+            <div class="row g-3 corps-defilant">
                 <div class="col-md-6">
                     <label class="dark-label">Nom de la société *</label>
                     <input type="text" name="company_name" class="dark-input @error('company_name') field-invalid @enderror" required placeholder="Ex: Groupe ABC SARL" value="{{ old('company_name') }}">
@@ -1188,7 +1192,7 @@ body {
 
 <!-- Nouveau Membre -->
 <div class="dark-modal-backdrop" id="modal-new-member" onclick="if(event.target===this)this.classList.remove('show')">
-    <div class="dark-modal">
+    <div class="dark-modal large">
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div style="display:flex;align-items:center;gap:0.75rem;">
                 <i class="fas fa-user-plus me-2" style="color:var(--green);"></i>
@@ -1200,12 +1204,13 @@ body {
             </div>
             <button class="modal-close" onclick="document.getElementById('modal-new-member').classList.remove('show')">✕</button>
         </div>
-        <form method="POST" id="newMemberForm" action="{{ route('accountant.space.member.store') }}">
+        <form method="POST" id="newMemberForm" action="{{ route('accountant.space.member.store') }}"
+              style="display:flex;flex-direction:column;min-height:0;flex:1 1 auto;">
             @csrf
             {{-- Permet de rouvrir la bonne modale après un échec de validation --}}
             <input type="hidden" name="form_origin" value="member">
             @php $memberFailed = old('form_origin') === 'member'; @endphp
-            <div class="row g-3">
+            <div class="row g-3 corps-defilant">
                 <div class="col-6 member-name-fields"><label class="dark-label">Prénom *</label><input type="text" id="member_name" name="name" class="dark-input @error('name') field-invalid @enderror" required placeholder="Jean" value="{{ $memberFailed ? old('name') : '' }}"></div>
                 <div class="col-6 member-name-fields"><label class="dark-label">Nom *</label><input type="text" id="member_last_name" name="last_name" class="dark-input @error('last_name') field-invalid @enderror" required placeholder="DUPONT" value="{{ $memberFailed ? old('last_name') : '' }}"></div>
                 <div class="col-12">

@@ -248,7 +248,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             const frame = document.getElementById("pdfPreviewFrame");
                             if (frame) {
                                 // Ajouter le paramètre #view=FitH pour ajuster à la largeur
-                                frame.src = data.url + '#view=FitH&toolbar=1&navpanes=0&scrollbar=1';
+                                frame.src = data.url + '#toolbar=0&navpanes=0&scrollbar=1&statusbar=0&view=FitH';
                             }
                             const modalEl = document.getElementById("modalPreviewPDF");
                             if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();

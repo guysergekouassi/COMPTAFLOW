@@ -306,7 +306,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         if (data.success) {
                             const frame = document.getElementById("pdfPreviewFrame");
-                            if (frame) frame.src = data.url;
+                            if (frame) frame.src = data.url + "#toolbar=0&navpanes=0&scrollbar=1&statusbar=0&view=FitH";
                             const modalEl = document.getElementById("modalPreviewPDF");
                             if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
                         } else { FlowToast.error(data.error || "Erreur lors de la prévisualisation."); }

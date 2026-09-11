@@ -275,6 +275,13 @@ class Company extends Model
             return true;
         }
 
+        // Le gérant du cabinet répond de tous ses dossiers, y compris ceux
+        // qu'un collaborateur a ouverts, et ceux dont le créateur a disparu.
+        if ($this->cabinet_id
+            && \App\Models\Cabinet::where('id', $this->cabinet_id)->where('user_id', $user->id)->exists()) {
+            return true;
+        }
+
         return $this->associatedUsers()
             ->where('users.id', $user->id)
             ->wherePivot('role', 'admin')

@@ -120,6 +120,58 @@ class User extends Authenticatable
     }
 
 
+    /**
+     * Une comptabilité ne disparaît pas avec la personne qui l'a ouverte.
+     *
+     * Le dossier reste, et revient au gérant du cabinet qui le porte : il
+     * continue de le voir, de l'ouvrir et d'en répondre. Quand c'est le gérant
+     * lui-même qui s'en va, le cabinet passe au plus ancien de ses membres.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (User $partant) {
+            foreach (Cabinet::where('user_id', $partant->id)->get() as $cabinet) {
+                $successeur = DB::table('cabinet_user')
+                    ->where('cabinet_id', $cabinet->id)
+                    ->where('user_id', '!=', $partant->id)
+                    ->orderBy('id')
+                    ->value('user_id');
+
+                if ($successeur) {
+                    $cabinet->user_id = $successeur;
+                    $cabinet->save();
+                    DB::table('cabinet_user')
+                        ->where('cabinet_id', $cabinet->id)
+                        ->where('user_id', $successeur)
+                        ->update(['role' => 'gerant', 'updated_at' => now()]);
+                }
+            }
+
+            // Ses dossiers reviennent au gérant du cabinet qui les porte
+            foreach (Company::where('user_id', $partant->id)->get() as $dossier) {
+                $repreneur = $dossier->cabinet_id
+                    ? Cabinet::where('id', $dossier->cabinet_id)->value('user_id')
+                    : null;
+
+                if (!$repreneur || (int) $repreneur === (int) $partant->id) {
+                    continue;
+                }
+
+                $dossier->user_id = $repreneur;
+                $dossier->save();
+
+                // Sans ligne d'affectation, le repreneur verrait le dossier
+                // sans pouvoir y ouvrir d'exercice.
+                DB::table('company_user')->updateOrInsert(
+                    ['company_id' => $dossier->id, 'user_id' => $repreneur],
+                    ['role' => 'admin', 'updated_at' => now(), 'created_at' => now()]
+                );
+            }
+
+            DB::table('cabinet_user')->where('user_id', $partant->id)->delete();
+        });
+    }
+
     public function ecritures()
     {
         return $this->hasMany(EcritureComptable::class, 'user_id');

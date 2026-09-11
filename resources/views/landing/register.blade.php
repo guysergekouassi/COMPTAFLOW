@@ -15,13 +15,11 @@
         rel="stylesheet" />
 
     <!-- Icons -->
-    <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/boxicons.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/boxicons/2.1.4/css/boxicons.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Core CSS -->
     <link rel="stylesheet" href="{{ asset('assets/vendor/css/core.css') }}" class="template-customizer-core-css" />
-    <link rel="stylesheet" href="{{ asset('assets/vendor/css/theme-default.css') }}"
-        class="template-customizer-theme-css" />
     <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
 
     <style>
@@ -308,13 +306,13 @@
 
                         <div class="col-12">
                             <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
-                            <input type="password" name="admin_password" required class="form-control"
+                            <input type="password" name="admin_password" required autocomplete="new-password" class="form-control"
                                 placeholder="Minimum 8 caractères">
                         </div>
 
                         <div class="col-12">
                             <label class="form-label">Confirmer mot de passe <span class="text-danger">*</span></label>
-                            <input type="password" name="admin_password_confirmation" required class="form-control"
+                            <input type="password" name="admin_password_confirmation" required autocomplete="new-password" class="form-control"
                                 placeholder="Retapez le mot de passe">
                         </div>
                     </div>
@@ -447,13 +445,13 @@
 
                         <div class="col-12">
                             <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
-                            <input type="password" name="admin_password" required class="form-control"
+                            <input type="password" name="admin_password" required autocomplete="new-password" class="form-control"
                                 placeholder="Minimum 8 caractères">
                         </div>
 
                         <div class="col-12">
                             <label class="form-label">Confirmer mot de passe <span class="text-danger">*</span></label>
-                            <input type="password" name="admin_password_confirmation" required class="form-control"
+                            <input type="password" name="admin_password_confirmation" required autocomplete="new-password" class="form-control"
                                 placeholder="Retapez le mot de passe">
                         </div>
                     </div>

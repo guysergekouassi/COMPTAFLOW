@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
         button.addEventListener('click', function () {
             const pdfUrl = this.getAttribute('data-pdf-url');
             if (pdfUrl) {
-                pdfViewer.src = pdfUrl;
+                pdfViewer.src = pdfUrl + "#toolbar=0&navpanes=0&scrollbar=1&statusbar=0&view=FitH";
             }
         });
     });
@@ -266,7 +266,7 @@ if (btnPreview) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById("pdfPreviewFrame").src = data.url;
+                    document.getElementById("pdfPreviewFrame").src = data.url + "#toolbar=0&navpanes=0&scrollbar=1&statusbar=0&view=FitH";
                     let modal = new bootstrap.Modal(document.getElementById("modalPreviewPDF"));
                     modal.show();
                 } else {
