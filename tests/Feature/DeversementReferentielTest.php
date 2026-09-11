@@ -274,6 +274,12 @@ class DeversementReferentielTest extends TestCase
             $table->string('name')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('selflow_company_id')->nullable();
+            // La configuration que le provisionnement aligne sur celle de
+            // Selflow : sans ces colonnes, l'insertion tombe en « no such
+            // column » et la reponse part en 500.
+            $table->integer('account_digits')->default(8);
+            $table->integer('journal_code_digits')->default(4);
+            $table->string('journal_code_type')->default('alphabetical');
             $table->integer('tier_digits')->default(6);
             // Un déversement accepté date sa **réception** : Selflow affichait
             // cette date à l'entreprise en l'écrivant au moment de l'*envoi*,

@@ -165,6 +165,43 @@ class ExerciceALOuvertureTest extends TestCase
             "Une charge utile refusée ne doit pas laisser un dossier à moitié créé.");
     }
 
+    // ── La configuration du dossier ──────────────────────────────────
+
+    public function test_le_dossier_se_configure_sur_la_convention_de_selflow(): void
+    {
+        $charge = $this->dossier(['debut' => '2026-01-01', 'fin' => '2026-12-31']);
+        $charge['longueur_comptes'] = 6;
+
+        $this->postJson('/api/external/companies/provision', $charge)->assertOk();
+
+        $dossier = DB::table('companies')->where('selflow_company_id', self::SELFLOW_ID)->first();
+
+        // Le défaut de Comptaflow est 8. Selflow numérote sur six chiffres, et
+        // c'est le format « COMPTES SAGE (6) » de son propre référentiel.
+        $this->assertSame(6, (int) $dossier->account_digits);
+        $this->assertSame(6, (int) $dossier->tier_digits);
+    }
+
+    public function test_le_rejeu_aligne_un_dossier_reste_sur_le_defaut(): void
+    {
+        // Un dossier né avant que Selflow n'annonce ses conventions.
+        $this->postJson('/api/external/companies/provision', $this->dossier(null))->assertOk();
+
+        $dossier = DB::table('companies')->where('selflow_company_id', self::SELFLOW_ID)->first();
+        DB::table('companies')->where('id', $dossier->id)->update(['account_digits' => 8]);
+
+        $charge = $this->dossier(['debut' => '2026-01-01', 'fin' => '2026-12-31']);
+        $charge['longueur_comptes'] = 6;
+
+        $this->postJson('/api/external/companies/provision', $charge)->assertOk();
+
+        $this->assertSame(6,
+            (int) DB::table('companies')->where('id', $dossier->id)->value('account_digits'),
+            "Un dossier resté sur `account_digits = 8` recevrait des comptes à six "
+            . 'chiffres de Selflow, et en produirait à huit dès le premier import : '
+            . 'deux conventions dans un même dossier.');
+    }
+
     // ── Le schéma minimal ────────────────────────────────────────────
 
     private function monterLeSchema(): void
@@ -205,6 +242,9 @@ class ExerciceALOuvertureTest extends TestCase
             $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('parent_company_id')->nullable();
             $table->unsignedBigInteger('selflow_company_id')->nullable();
+            $table->integer('account_digits')->default(8);
+            $table->integer('journal_code_digits')->default(4);
+            $table->string('journal_code_type')->default('alphabetical');
             $table->integer('tier_digits')->default(6);
             $table->string('tier_id_type')->default('numeric');
             // La colonne d'avant le chiffrement : `poserUneCleDeLiaison()` la

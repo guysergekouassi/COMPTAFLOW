@@ -902,6 +902,12 @@ class LiaisonCleParEntrepriseTest extends TestCase
             $table->string('regime')->nullable();
             $table->boolean('is_active')->default(true);
             $table->unsignedBigInteger('user_id')->nullable();
+            // La configuration que le provisionnement aligne sur celle de
+            // Selflow : sans ces colonnes, l'insertion tombe en « no such
+            // column » et la reponse part en 500.
+            $table->integer('account_digits')->default(8);
+            $table->integer('journal_code_digits')->default(4);
+            $table->string('journal_code_type')->default('alphabetical');
             $table->integer('tier_digits')->default(6);
             $table->string('tier_id_type')->default('numeric');
             $table->unsignedBigInteger('selflow_company_id')->nullable()->unique();
