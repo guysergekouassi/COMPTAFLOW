@@ -14,6 +14,7 @@ use App\Models\PlanComptable;
 use App\Models\PlanTiers;
 use App\Models\User;
 use App\Services\UniformisationImport;
+use App\Services\NumerotationSaisie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -569,12 +570,47 @@ class ExternalSyncController extends Controller
             return response()->json(['success' => false, 'message' => $desaccord], 409);
         }
 
+        // ── L'équilibre, vérifié à la réception ──
+        //
+        // Selflow le contrôle avant d'envoyer ; on le refait ici, parce
+        // qu'une opération qui ne tombe pas, une fois rangée, ne se retrouve
+        // qu'à la balance — et que nous n'avons pas la pièce d'origine pour
+        // la comprendre. Seule une opération entière se juge ainsi : un envoi
+        // ligne à ligne n'est pas censé tomber.
+        if ($atomique) {
+            $totalDebit  = round(collect($request->ecritures)->sum(fn ($ec) => (float) ($ec['debit'] ?? 0)), 2);
+            $totalCredit = round(collect($request->ecritures)->sum(fn ($ec) => (float) ($ec['credit'] ?? 0)), 2);
+
+            if (abs($totalDebit - $totalCredit) >= 0.01) {
+                return response()->json([
+                    'success' => false,
+                    'count'   => 0,
+                    'refus'   => [sprintf('opération déséquilibrée : débit %.2f, crédit %.2f', $totalDebit, $totalCredit)],
+                    'message' => 'Opération refusée en entier : ses débits n\'égalent pas ses crédits. Rien n\'a été enregistré.',
+                ], 422);
+            }
+        }
+
         $count = 0;
         $ignorees = 0;
         $refus = [];
 
         DB::beginTransaction();
         try {
+            // ── Une opération, un numéro de saisie ──
+            //
+            // `n_saisie` recevait la `cle_selflow` de chaque ligne : unique
+            // par ligne, il faisait de chaque ligne sa propre saisie. Une
+            // facture de vente arrivait en quatre saisies d'une ligne chacune,
+            // aucune équilibrée, et l'écran des saisies comme la copie — qui
+            // regroupent par `n_saisie` — les traitaient comme quatre pièces.
+            // Les lignes d'une même opération partagent désormais un numéro,
+            // attribué ici, à notre convention : Selflow envoie, nous
+            // numérotons. `cle_selflow` reste la clé d'idempotence de la ligne.
+            $numeroDeSaisie = $request->filled('operation')
+                ? self::numeroDeSaisieDeLOperation($company, $exercice, $request->ecritures)
+                : null;
+
             foreach ($request->ecritures as $ec) {
                 $refPiece = $ec['reference_document'] ?? '';
                 $libelle = $ec['libelle'] ?? '';
@@ -635,6 +671,13 @@ class ExternalSyncController extends Controller
                     continue;
                 }
 
+                // Une ligne, un compte. Deux comptes sur une ligne : nous n'en
+                // lirions qu'un, et l'autre se perdrait sans bruit.
+                if (!empty($ec['compte_debit']) && !empty($ec['compte_credit'])) {
+                    $refus[] = ($refPiece ?: '?') . ' : deux comptes sur une même ligne';
+                    continue;
+                }
+
                 $planComptable = self::compteGeneral($company, $accountCode, $libelle);
                 $planTiersId = self::tiers($company, $ec['compte_tiers'] ?? null, $planComptable->id);
 
@@ -647,7 +690,7 @@ class ExternalSyncController extends Controller
                     'date'                    => $ec['date_ecriture'],
                     'description_operation'   => $libelle,
                     'reference_piece'         => $refPiece,
-                    'n_saisie'                => $cleSelflow ?: ($refPiece ?: 'SELF_' . time() . '_' . $count),
+                    'n_saisie'                => $numeroDeSaisie ?: ($cleSelflow ?: ($refPiece ?: 'SELF_' . time() . '_' . $count)),
                     'cle_selflow'             => $cleSelflow,
                     'plan_comptable_id'       => $planComptable->id,
                     'plan_tiers_id'           => $planTiersId,
@@ -708,6 +751,40 @@ class ExternalSyncController extends Controller
             Log::error('ExternalSync deverserEcritures error', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Erreur lors du déversement : ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Le numéro de saisie d'une opération déversée.
+     *
+     * - Une ligne de l'opération déjà rangée sous un numéro commun : on le
+     *   reprend, pour qu'un renvoi complète la saisie au lieu d'en ouvrir une
+     *   seconde.
+     * - Sinon, un numéro neuf, du générateur ordinaire.
+     *
+     * Les lignes reçues **sous l'ancienne forme** — une saisie par ligne, le
+     * numéro égal à leur `cle_selflow` — sont rangées au passage sous ce
+     * numéro. C'est ce qui rend le rejeu sûr (chantier 7.4 du plan Selflow) :
+     * renvoyer une opération déjà reçue n'ajoute rien, puisque chaque ligne
+     * est reconnue par sa clé, mais la regroupe.
+     */
+    private static function numeroDeSaisieDeLOperation(Company $company, $exercice, array $lignes): string
+    {
+        $cles = collect($lignes)->pluck('cle_selflow')->filter()->values()->all();
+
+        $dejaLa = $cles === [] ? collect() : EcritureComptable::where('company_id', $company->id)
+            ->whereIn('cle_selflow', $cles)
+            ->get(['id', 'cle_selflow', 'n_saisie']);
+
+        $numero = $dejaLa->first(fn ($e) => $e->n_saisie && $e->n_saisie !== $e->cle_selflow)?->n_saisie
+            ?? NumerotationSaisie::global($company->id, $exercice->id);
+
+        $ancienneForme = $dejaLa->filter(fn ($e) => $e->n_saisie === $e->cle_selflow)->pluck('id')->all();
+
+        if ($ancienneForme !== []) {
+            EcritureComptable::whereIn('id', $ancienneForme)->update(['n_saisie' => $numero]);
+        }
+
+        return $numero;
     }
 
     /**
