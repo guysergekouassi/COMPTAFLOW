@@ -92,7 +92,7 @@ class ExternalCompanyController extends Controller
             'mode'                        => 'sometimes|required|in:creer,lier',
             'selflow_company_id'          => 'required|integer|min:1',
             'comptaflow_company_id'       => 'required_if:mode,lier|integer|min:1',
-            'conserver_acces'             => 'required_if:mode,lier|accepted',
+            'conserver_acces'             => 'exclude_unless:mode,lier|required|accepted',
             'entreprise'                  => 'required|array',
             'entreprise.nom'              => 'required|string|max:255',
             'entreprise.forme_juridique'  => 'nullable|string|max:50',
