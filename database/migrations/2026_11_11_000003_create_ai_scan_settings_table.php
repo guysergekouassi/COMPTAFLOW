@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('ai_scan_settings', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->primary();
+            $table->id();
             $table->boolean('quotas_enabled')->default(false);
             $table->json('limits')->nullable();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
