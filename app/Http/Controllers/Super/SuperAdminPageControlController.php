@@ -47,7 +47,7 @@ class SuperAdminPageControlController extends Controller
         $rules = SuperAdminPageRule::all()->groupBy(fn ($r) => $r->company_id === null ? 'global' : (string) $r->company_id);
         $companies = Company::orderBy('company_name')->get(['id', 'company_name']);
         $credentials = AiProviderCredential::orderBy('provider')->orderBy('model')->get();
-        $scanSettings = AiScanSetting::firstOrCreate(['id' => 1], ['quotas_enabled' => false, 'limits' => []]);
+        $scanSettings = AiScanSetting::first() ?? AiScanSetting::create(['quotas_enabled' => false, 'limits' => []]);
 
         return view('superadmin.page-control.index', compact('sections', 'rules', 'companies', 'credentials', 'scanSettings'));
     }
@@ -135,14 +135,13 @@ class SuperAdminPageControlController extends Controller
             'limits.Enterprise.batch' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        AiScanSetting::updateOrCreate(
-            ['id' => 1],
-            [
-                'quotas_enabled' => $request->boolean('quotas_enabled'),
-                'limits' => $data['limits'] ?? [],
-                'updated_by' => $request->user()->id,
-            ]
-        );
+        $scanSettings = AiScanSetting::first() ?? new AiScanSetting();
+        $scanSettings->fill([
+            'quotas_enabled' => $request->boolean('quotas_enabled'),
+            'limits' => $data['limits'] ?? [],
+            'updated_by' => $request->user()->id,
+        ]);
+        $scanSettings->save();
 
         return back()->with('success', 'Les paramètres de quotas du SCAN ont été enregistrés.');
     }
