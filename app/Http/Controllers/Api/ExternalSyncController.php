@@ -956,8 +956,9 @@ class ExternalSyncController extends Controller
                     ], (array) $request->input('plan_comptable', [])),
                     $refus, [], $origine),
 
-                // Le type est détecté par l'import, comme sur l'écran où il est
-                // marqué « auto-généré par défaut ».
+                // Selflow transmet déjà le type métier du journal.
+                // Le conserver évite qu'une détection automatique reclasse
+                // Banque/Caisse ou Vente/Achat dans un type différent.
                 'codes_journaux' => self::importer($company, $admin, 'journals',
                     ['code_journal', 'intitule', 'type', 'compte_de_tresorerie', 'numero_original'],
                     array_map(fn ($l) => [
@@ -967,7 +968,7 @@ class ExternalSyncController extends Controller
                         trim((string) ($l['compte_numero'] ?? '')),
                         strtoupper(trim((string) ($l['numero_original'] ?? $l['code_journal'] ?? ''))),
                     ], (array) $request->input('codes_journaux', [])),
-                    $refus, ['type'], $origine),
+                    $refus, [], $origine),
 
                 // Seuls les champs nécessaires passent par l'import : le numéro,
                 // l'intitulé, le compte collectif. La catégorie se déduit du
