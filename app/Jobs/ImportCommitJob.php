@@ -941,9 +941,14 @@ $baseRanCounter = (int)(EcritureComptable::where('company_id', $targetCompanyId)
                         $compteGenNum = trim($row['compte_general'] ?? '');
                         $compteGenId = null;
                         if (!empty($compteGenNum)) {
-                            // Find the account by its standardized account number
+                            // Selflow transmet son numéro d'origine. Comptaflow
+                            // peut l'avoir normalisé à sa propre longueur :
+                            // retrouver le compte par l'un ou l'autre numéro.
                             $pc = PlanComptable::where('company_id', $targetCompanyId)
-                                ->where('numero_de_compte', $compteGenNum)
+                                ->where(function ($q) use ($compteGenNum) {
+                                    $q->where('numero_de_compte', $compteGenNum)
+                                      ->orWhere('numero_original', $compteGenNum);
+                                })
                                 ->first();
                             if ($pc) {
                                 $compteGenId = $pc->id;
