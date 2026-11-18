@@ -3,6 +3,8 @@
 namespace App\Imports;
 
 use App\Models\CodeJournal;
+use App\Models\PlanComptable;
+use App\Services\UniformisationImport;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
@@ -126,7 +128,7 @@ class MasterJournalImport implements ToModel, WithCustomCsvSettings
         }
 
         $codeRaw      = $code;
-        $codeFormatted = $this->standardizeJournalCode($code, $this->journalDigits);
+        $codeFormatted = UniformisationImport::codeJournal($code, $this->journalDigits);
 
         $existant = CodeJournal::where('company_id', $this->companyId)
             ->where(function($q) use ($codeFormatted, $codeRaw) {
