@@ -1011,7 +1011,10 @@ $baseRanCounter = (int)(EcritureComptable::where('company_id', $targetCompanyId)
                         $compteTresoNum = trim($row['compte_de_tresorerie'] ?? '');
                         if (!empty($compteTresoNum)) {
                             $planTresoObj = PlanComptable::where('company_id', $targetCompanyId)
-                                ->where('numero_de_compte', $compteTresoNum)
+                                ->where(function ($q) use ($compteTresoNum) {
+                                    $q->where('numero_de_compte', $compteTresoNum)
+                                      ->orWhere('numero_original', $compteTresoNum);
+                                })
                                 ->first();
                             $compteIdTreso = $planTresoObj?->id;
                         }
