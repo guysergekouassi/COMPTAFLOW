@@ -948,22 +948,24 @@ class ExternalSyncController extends Controller
         try {
             $bilan = [
                 'plan_comptable' => self::importer($company, $admin, 'initial',
-                    ['numero_de_compte', 'intitule'],
+                    ['numero_de_compte', 'intitule', 'numero_original'],
                     array_map(fn ($l) => [
                         trim((string) ($l['numero_de_compte'] ?? '')),
                         trim((string) ($l['intitule'] ?? '')),
+                        trim((string) ($l['numero_original'] ?? $l['numero_de_compte'] ?? '')),
                     ], (array) $request->input('plan_comptable', [])),
                     $refus, [], $origine),
 
                 // Le type est détecté par l'import, comme sur l'écran où il est
                 // marqué « auto-généré par défaut ».
                 'codes_journaux' => self::importer($company, $admin, 'journals',
-                    ['code_journal', 'intitule', 'type', 'compte_de_tresorerie'],
+                    ['code_journal', 'intitule', 'type', 'compte_de_tresorerie', 'numero_original'],
                     array_map(fn ($l) => [
                         strtoupper(trim((string) ($l['code_journal'] ?? ''))),
                         trim((string) ($l['intitule'] ?? '')),
                         trim((string) ($l['type'] ?? '')),
                         trim((string) ($l['compte_numero'] ?? '')),
+                        strtoupper(trim((string) ($l['numero_original'] ?? $l['code_journal'] ?? ''))),
                     ], (array) $request->input('codes_journaux', [])),
                     $refus, ['type'], $origine),
 
@@ -971,11 +973,13 @@ class ExternalSyncController extends Controller
                 // l'intitulé, le compte collectif. La catégorie se déduit du
                 // préfixe, comme à l'écran.
                 'tiers' => self::importer($company, $admin, 'tiers',
-                    ['numero_de_tiers', 'intitule', 'compte_general'],
+                    ['numero_de_tiers', 'intitule', 'compte_general', 'type_de_tiers', 'numero_original'],
                     array_map(fn ($l) => [
                         strtoupper(trim((string) ($l['numero_de_tiers'] ?? ''))),
                         trim((string) ($l['intitule'] ?? '')),
                         trim((string) ($l['compte_general'] ?? '')),
+                        strtolower(trim((string) ($l['type_de_tiers'] ?? 'autre'))),
+                        strtoupper(trim((string) ($l['numero_original'] ?? $l['numero_de_tiers'] ?? ''))),
                     ], (array) $request->input('tiers', [])),
                     $refus, [], $origine),
             ];
@@ -1001,6 +1005,18 @@ class ExternalSyncController extends Controller
         // Le compte rendu dit ce qui est entré, ce qui était déjà là et ce qui
         // a été écarté. Une synchronisation qui annonce « succès » en ayant
         // laissé la moitié des lignes de côté est pire qu'un échec.
+        // Ne pas lancer les écritures si une partie du référentiel a été
+        // refusée. Les lignes déjà créées restent protégées contre les doublons ;
+        // le rejeu complète les références manquantes.
+        if ($refus !== []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Référentiel incomplet : certaines références Selflow n\'ont pas été acceptées. Corrigez les éléments signalés puis relancez la synchronisation.',
+                'refus'   => array_values(array_unique($refus)),
+                'detail'  => $bilan,
+            ], 422);
+        }
+
         return response()->json([
             'success'  => true,
             'comptes'  => $bilan['plan_comptable']['recues'],
