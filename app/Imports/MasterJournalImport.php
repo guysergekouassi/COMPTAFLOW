@@ -3,8 +3,6 @@
 namespace App\Imports;
 
 use App\Models\CodeJournal;
-use App\Models\PlanComptable;
-use App\Services\UniformisationImport;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
@@ -78,46 +76,6 @@ class MasterJournalImport implements ToModel, WithCustomCsvSettings
         $code  = trim($row[0] ?? '');
         $label = trim($row[1] ?? '');
         $type  = trim($row[2] ?? 'Opérations Diverses');
-        // Le référentiel Selflow transmet le numéro du compte de trésorerie
-        // (et non son identifiant SQL). Le plan est importé avant les journaux.
-        $compteNumero = trim((string) ($row[3] ?? ''));
-        $compteTresorerieId = null;
-
-        if ($compteNumero !== '' && in_array($type, ['Trésorerie', 'Banque', 'Caisse'], true)) {
-            $company = Auth::user()->company;
-            $compte = $company ? UniformisationImport::compte($company, $compteNumero) : null;
-
-            // Défense supplémentaire : si un journal désigne un compte absent
-            // du plan transmis, on le crée avec la nature SYSCOHADA correcte.
-            if (!$compte && $company) {
-                $numero = UniformisationImport::numeroDeCompte(
-                    $compteNumero,
-                    UniformisationImport::chiffresDeCompte($company)
-                );
-                $classe = substr($numero, 0, 1);
-                $nature = match ($classe) {
-                    '1' => 'passif',
-                    '2', '3', '5' => 'actif',
-                    '4' => 'actif',
-                    '6', '8' => 'charge',
-                    '7' => 'produit',
-                    '9' => 'analytique',
-                    default => 'actif',
-                };
-                $compte = PlanComptable::create([
-                    'numero_de_compte' => $numero,
-                    'numero_original' => $compteNumero,
-                    'intitule' => 'Compte de trésorerie ' . $compteNumero,
-                    'type_de_compte' => $nature,
-                    'classe' => ctype_digit($classe) ? $classe : null,
-                    'user_id' => $this->userId,
-                    'company_id' => $this->companyId,
-                ]);
-            }
-
-            $compteTresorerieId = $compte?->id;
-        }
-
         if (empty($code) || empty($label)) {
             return null;
         }
@@ -128,40 +86,26 @@ class MasterJournalImport implements ToModel, WithCustomCsvSettings
         }
 
         $codeRaw      = $code;
-        $codeFormatted = UniformisationImport::codeJournal($code, $this->journalDigits);
+        $codeFormatted = $this->standardizeJournalCode($code, $this->journalDigits);
 
-        $existant = CodeJournal::where('company_id', $this->companyId)
+        $exists = CodeJournal::where('company_id', $this->companyId)
             ->where(function($q) use ($codeFormatted, $codeRaw) {
                 $q->where('code_journal', $codeFormatted)
                   ->orWhere('numero_original', $codeRaw);
             })
-            ->first();
+            ->exists();
 
-        if ($existant) {
-            // Ne pas remplacer la configuration du comptable. En revanche,
-            // compléter un lien de trésorerie resté vide est sans danger.
-            $aCompleter = [];
-            if (blank($existant->numero_original)) {
-                $aCompleter['numero_original'] = $codeRaw;
-            }
-            if ($compteTresorerieId && blank($existant->compte_de_tresorerie)) {
-                $aCompleter['compte_de_tresorerie'] = $compteTresorerieId;
-            }
-            if ($aCompleter) {
-                $existant->update($aCompleter);
-            }
-
+        if ($exists) {
             return null;
         }
 
         return new CodeJournal([
-            'code_journal'          => $codeFormatted,
-            'numero_original'       => $codeRaw,
-            'intitule'              => strtoupper($label),
-            'type'                  => $type,
-            'compte_de_tresorerie'  => $compteTresorerieId,
-            'user_id'               => $this->userId,
-            'company_id'            => $this->companyId,
+            'code_journal'    => $codeFormatted,
+            'numero_original' => $codeRaw,
+            'intitule'        => strtoupper($label),
+            'type'            => $type,
+            'user_id'         => $this->userId,
+            'company_id'      => $this->companyId,
         ]);
     }
 
