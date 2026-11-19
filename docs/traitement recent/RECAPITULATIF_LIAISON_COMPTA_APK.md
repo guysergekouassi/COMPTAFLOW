@@ -304,3 +304,10 @@ La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne pe
 - Workflow `44600112707` : succès après adaptation des assertions de métadonnées.
 - Workflow `44600200330` : succès après ajustement de la portée des assertions MySQL.
 - Workflow `44600248946` : lancé sur le commit `49ed888f97d3b9962f0929fa0cfff6cdfb105e56` ; résultat à confirmer.
+
+
+### Confirmation finale CI — 19/11/2026
+- Workflow `44600248946` sur le commit applicatif `49ed888f97d3b9962f0929fa0cfff6cdfb105e56` : **completed / success**.
+- Étapes réussies : installation Composer, tests ciblés migration et Bearer, compilation Blade, vérification des routes.
+- La vue IA est validée à la compilation. La migration est validée sur SQLite en mode création et reprise d'un schéma partiellement créé ; la CI ne simule pas un serveur MySQL réel.
+- La correction de MySQL 1059 est basée sur des noms de contraintes courts et la migration de reprise. Le résultat MySQL réel doit encore être confirmé par la commande sur l'hébergement après récupération du code.
