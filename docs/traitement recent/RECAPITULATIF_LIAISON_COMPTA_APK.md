@@ -295,3 +295,12 @@ La réalisation applicative COMPTA-APK demandée dans ce lot est terminée et pu
 4. Si une erreur subsiste, arrêter et transmettre le message exact ; ne pas supprimer manuellement les tables du registre.
 
 La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne permet pas de lire l'état exact des tables en production. La migration révisée vérifie et complète cet état sans présumer qu'il est vide.
+
+
+## 16. Résultat de validation après corrections de test — 19/11/2026
+
+- Le premier test de reprise avait une assertion trop stricte sur les métadonnées de clés étrangères SQLite ; le contrôle a été adapté pour vérifier les tables/index sur SQLite et les noms de contraintes sur MySQL.
+- Un index simple sur le statut des liaisons a été ajouté en plus de l'index composite entreprise/statut, afin de restaurer les deux index que la migration initiale n'avait pas encore atteints avant son arrêt.
+- Workflow `44600112707` : succès après adaptation des assertions de métadonnées.
+- Workflow `44600200330` : succès après ajustement de la portée des assertions MySQL.
+- Workflow `44600248946` : lancé sur le commit `49ed888f97d3b9962f0929fa0cfff6cdfb105e56` ; résultat à confirmer.
