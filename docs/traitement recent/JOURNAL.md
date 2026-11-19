@@ -237,3 +237,20 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 7. Garder les mécanismes legacy tant que GESTION-DE-SITES et tous les clients actifs ne sont pas migrés.
 
 Aucun accès au serveur de production n'étant disponible dans ce traitement, aucune migration, commande artisan ni validation de site en production n'est déclarée exécutée.
+
+
+## 2026-11-19 — durcissement du parcours des applications externes
+
+### Correction
+- Audit de la console : le formulaire de rattachement à une entreprise existante était également affiché pour les applications externes. Cela ne respectait pas l'exigence d'un dossier dédié.
+- Contrôle ajouté dans `SuperAdminIntegrationController::lier` : seule une application maison peut utiliser le rattachement générique ; une application externe reçoit HTTP 403.
+- Vue ajustée : le formulaire de liaison à une entreprise existante est désormais réservé à la section maison.
+- Deux tests ajoutés : refus du rattachement générique par une application externe et refus d'un jeton pour un dossier non lié.
+
+### Validation
+- Commit applicatif/test : `45a033138022579f9ae84f8daadac8ae2e6bf7bb`.
+- Workflow GitHub Actions COMPTAFLOW `44589011690` : succès.
+- Tests ciblés, compilation Blade et contrôle des routes : réussis.
+
+### Limite de livraison
+Le code et les tests sont sur `main`. La migration sur la base de production, le déploiement des deux applications et les essais réseau réels restent à effectuer depuis les serveurs de production ; ils ne sont pas déclarés faits.
