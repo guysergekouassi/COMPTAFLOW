@@ -17,8 +17,6 @@ use Tests\TestCase;
  */
 class DeversementReferentielTest extends TestCase
 {
-    private const SECRET = 'secret-de-test-partage';
-
     /** La clé du dossier : les tolérances de transition sont tombées. */
     private const CLE = 'cptf_live_deversement_referentiel_de_test_000000';
 
@@ -29,8 +27,6 @@ class DeversementReferentielTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        config(['external_sync.external_sync_secret' => self::SECRET]);
 
         $this->monterLeSchema();
 
@@ -49,30 +45,18 @@ class DeversementReferentielTest extends TestCase
         ]);
     }
 
-    // ─── Le secret, et la liaison ────────────────────────────────────────────
+    // ─── La clé de liaison suffit ────────────────────────────────────────────
 
-    public function test_un_secret_faux_est_refuse(): void
+    public function test_la_cle_authentifie_le_dossier_sans_secret_ni_identifiants_dans_le_json(): void
     {
-        $this->deverser(['plan_comptable' => []], 'mauvais')
-            ->assertStatus(401)
-            ->assertJson(['success' => false]);
-    }
-
-    public function test_sans_secret_configure_rien_ne_passe(): void
-    {
-        // Un secret non configuré ne vaut pas « pas de contrôle ».
-        config(['external_sync.external_sync_secret' => null]);
-
-        $this->deverser(['plan_comptable' => []])->assertStatus(401);
+        $this->deverser($this->referentiel())->assertOk()->assertJson(['success' => true]);
     }
 
     public function test_une_liaison_absente_est_refusee_et_nest_pas_creee(): void
     {
         $this->postJson('/api/external/referentiel/deverser', [
-            'selflow_company_id'    => 999,
-            'comptaflow_company_id' => self::COMPTAFLOW,
-            'plan_comptable'        => [['numero_de_compte' => '411000', 'intitule' => 'Clients']],
-        ], ['X-Sync-Secret' => self::SECRET, 'X-Company-Key' => self::CLE])->assertStatus(403);
+            'plan_comptable' => [['numero_de_compte' => '411000', 'intitule' => 'Clients']],
+        ], ['X-Company-Key' => 'cle-inconnue'])->assertStatus(401);
 
         $this->assertSame(0, DB::table('plan_comptables')->count());
     }
@@ -294,12 +278,11 @@ class DeversementReferentielTest extends TestCase
 
     // ─── Utilitaires ─────────────────────────────────────────────────────────
 
-    private function deverser(array $charge, ?string $secret = self::SECRET)
+    private function deverser(array $charge)
     {
-        return $this->postJson('/api/external/referentiel/deverser', array_merge([
-            'selflow_company_id'    => self::SELFLOW,
-            'comptaflow_company_id' => self::COMPTAFLOW,
-        ], $charge), ['X-Sync-Secret' => $secret, 'X-Company-Key' => self::CLE]);
+        return $this->postJson('/api/external/referentiel/deverser', $charge, [
+            'X-Company-Key' => self::CLE,
+        ]);
     }
 
     /** Le référentiel type, tel que Selflow le transmet. */
@@ -313,16 +296,16 @@ class DeversementReferentielTest extends TestCase
             ],
             'codes_journaux' => [
                 ['code_journal' => 'VTE', 'intitule' => 'Ventes', 'type' => 'Ventes',
-                 'compte_numero' => null, 'numero_original' => null],
+                 'compte_numero' => null],
                 ['code_journal' => 'MTN', 'intitule' => 'MTN Mobile Money', 'type' => 'Trésorerie',
-                 'compte_numero' => '521500', 'numero_original' => null],
+                 'compte_numero' => '521500'],
             ],
             'tiers' => [
                 ['numero_de_tiers' => '410000', 'intitule' => 'Client divers', 'type_de_tiers' => 'client',
-                 'compte_general' => '411000', 'informations' => [], 'numero_original' => '3'],
+                 'compte_general' => '411000', 'informations' => []],
                 ['numero_de_tiers' => '410007', 'intitule' => 'Konan Yao', 'type_de_tiers' => 'client',
                  'compte_general' => '411000',
-                 'informations' => ['telephone' => '+225 07 00 00 00'], 'numero_original' => '11'],
+                 'informations' => ['telephone' => '+225 07 00 00 00']],
             ],
         ];
     }
