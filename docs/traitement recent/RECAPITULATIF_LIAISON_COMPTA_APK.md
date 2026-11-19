@@ -180,6 +180,7 @@ Ces contrôles sont automatisés sur GitHub. Ils ne remplacent pas les tests de 
 - COMPTAFLOW, branche `main` : `8c408a97ea7f0483f200db4bb8a0176d0ef460dc`.
 - SELFLOW, branche `main` : code Bearer initial `6c716b8ee055ec2b5e4cd53f54fffa02b1769fb3`, puis mises à jour de tests et de CI jusqu'au commit `c6226eb4ab6510264dd9c693603b27ce7392daca`.
 - La correction initiale de la page de contrôle Super Admin reste référencée par `b0277ea32f7dfe4eae29c65567fb875d40a9b080`.
+- Dernière consolidation documentaire (récapitulatif, journal et README) : `350193e4fb3ca1787e4a8bf45a220e16d54e9db1`.
 
 ## 10. État global à retenir
 

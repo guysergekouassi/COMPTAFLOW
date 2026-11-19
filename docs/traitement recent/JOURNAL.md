@@ -166,3 +166,13 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - Non déployé sur les sites de production depuis cette intervention.
 - À faire avant activation : migration COMPTAFLOW, déploiement des deux applications, génération du secret SELFLOW dans COMPTAFLOW puis saisie du Client ID/Secret dans SELFLOW, tests réseau réels.
 - RH-FLOW reste enregistré en attente, sans connecteur livré.
+
+
+## 2026-11-19 — consolidation documentaire finale
+
+- Ajout de `README.md` comme point d'entrée « À LIRE » du dossier `docs/traitement recent/`.
+- Réécriture du récapitulatif pour distinguer les fonctionnalités livrées, les contrôles CI réussis et les opérations qui restent à effectuer en production.
+- CI COMPTAFLOW : workflow `44586071484` réussi.
+- CI SELFLOW : workflow `44586186577` réussi.
+- Déploiement production et saisie des identifiants réels non effectués depuis cette session.
+- Commit de cette consolidation : `350193e4fb3ca1787e4a8bf45a220e16d54e9db1`.
