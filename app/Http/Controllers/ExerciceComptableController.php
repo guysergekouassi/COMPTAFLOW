@@ -363,6 +363,9 @@ public function index()
                 ->where('exercices_comptables_id', $exercice->id)
                 ->whereDate('date', '>', now()->toDateString())
                 ->where(function ($q) {
+                    $q->whereNull('statut')->orWhereNotIn('statut', ['rejected', 'refused']);
+                })
+                ->where(function ($q) {
                     $q->where('is_ran', false)->orWhereNull('is_ran');
                 })
                 ->exists();
@@ -498,6 +501,9 @@ public function index()
                 $ecrituresFutures = EcritureComptable::where('company_id', $companyId)
                     ->where('exercices_comptables_id', $exercice->id)
                     ->whereDate('date', '>', $dateCloture->toDateString())
+                    ->where(function ($q) {
+                        $q->whereNull('statut')->orWhereNotIn('statut', ['rejected', 'refused']);
+                    })
                     ->where(function ($q) {
                         $q->where('is_ran', false)->orWhereNull('is_ran');
                     })
@@ -878,7 +884,9 @@ public function index()
 
         return EcritureComptable::where('company_id', $exercice->company_id)
             ->where('exercices_comptables_id', $exercice->id)
-            ->whereIn('statut', ['approved', 'pending'])
+            ->where(function ($q) {
+                $q->whereNull('statut')->orWhereNotIn('statut', ['rejected', 'refused']);
+            })
             ->where(function ($q) {
                 $q->where('is_ran', false)->orWhereNull('is_ran');
             })
