@@ -433,6 +433,17 @@ const saisieGrille = (() => {
       const compte = plansComptables.find(p => p.id == l.plan_comptable_id);
       return estCompteDeResultat(compte?.numero_de_compte);
     });
+    const sensResultatCorrect = !ligneResultat
+      || (String(compteSelectionne?.numero_de_compte || '').startsWith('1301')
+        ? (credit > 0 && debit <= 0)
+        : (debit > 0 && credit <= 0));
+    if (ligneResultat && !sensResultatCorrect) {
+      if (window.Swal) Swal.fire({
+        icon: 'warning', title: 'Sens du résultat incorrect',
+        text: 'Un bénéfice sur 1301 se saisit au crédit ; une perte sur 1309 se saisit au débit.',
+      });
+      return false;
+    }
     if ((ligneResultat && addedLines.length > 0) || (!ligneResultat && resultatDejaAjoute)) {
       if (window.Swal) Swal.fire({
         icon: 'warning',

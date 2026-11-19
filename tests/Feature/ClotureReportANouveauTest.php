@@ -45,7 +45,7 @@ class ClotureReportANouveauTest extends TestCase
 
         $this->user = User::factory()->create(['company_id' => $this->company->id]);
 
-        // Un exercice déjà terminé : la clôture refuse d'anticiper.
+        // La clôture peut être anticipée ; la date théorique ne bloque plus l'opération.
         $this->exercice = ExerciceComptable::create([
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
@@ -225,6 +225,21 @@ class ClotureReportANouveauTest extends TestCase
             ->count();
 
         $this->assertSame(1, $lignesResultat);
+    }
+
+    public function test_la_cloture_peut_etre_anticipee_avant_la_date_de_fin(): void
+    {
+        $this->exercice->update(['date_fin' => now()->addDays(30)->toDateString()]);
+
+        $this->piece('ECR-000001', [
+            ['57100000', 5000000, 0],
+            ['70100000', 0, 5000000],
+        ]);
+
+        $this->passerResultat();
+        $this->cloturer();
+
+        $this->assertTrue((bool) $this->exercice->fresh()->cloturer);
     }
 
     public function test_le_sens_du_resultat_est_annonce_en_clair(): void

@@ -509,7 +509,10 @@ class EcritureComptableController extends Controller
             if ($estResultat) {
                 $debitResultat = (float) ($data['debit'] ?? 0);
                 $creditResultat = (float) ($data['credit'] ?? 0);
-                if (($debitResultat > 0 && $creditResultat > 0) || ($debitResultat <= 0 && $creditResultat <= 0)) {
+                $sensResultatCorrect = str_starts_with((string) $numeroCompteSaisi, '1301')
+                    ? ($creditResultat > 0 && $debitResultat <= 0)
+                    : ($debitResultat > 0 && $creditResultat <= 0);
+                if (!$sensResultatCorrect) {
                     return response()->json(['success' => false, 'message' => 'Une écriture sur 1301 ou 1309 doit comporter un seul montant, au débit ou au crédit, sur une seule ligne.'], 422);
                 }
                 if ($this->resultatDejaSaisi($activeCompanyId, $exerciceActif->id)) {
@@ -750,8 +753,12 @@ class EcritureComptableController extends Controller
                 $ligneResultat = $lignesResultatLot->first();
                 $debitResultat = (float) ($ligneResultat['debit'] ?? 0);
                 $creditResultat = (float) ($ligneResultat['credit'] ?? 0);
-                if (($debitResultat > 0 && $creditResultat > 0) || ($debitResultat <= 0 && $creditResultat <= 0)) {
-                    return response()->json(['success' => false, 'error' => 'Une écriture sur 1301 ou 1309 doit comporter un montant au débit ou au crédit, sans contrepartie.'], 422);
+                $numeroCompteResultat = $numerosDesComptes[$ligneResultat['plan_comptable_id'] ?? $ligneResultat['compte_general'] ?? null] ?? '';
+                $sensResultatCorrect = str_starts_with((string) $numeroCompteResultat, '1301')
+                    ? ($creditResultat > 0 && $debitResultat <= 0)
+                    : ($debitResultat > 0 && $creditResultat <= 0);
+                if (!$sensResultatCorrect) {
+                    return response()->json(['success' => false, 'error' => 'Le compte 1301 reçoit un bénéfice au crédit ; le compte 1309 reçoit une perte au débit. Une seule ligne est autorisée.'], 422);
                 }
                 if ($this->resultatDejaSaisi($activeCompanyId, $exerciceActif->id)) {
                     return response()->json(['success' => false, 'error' => 'L’écriture de résultat a déjà été passée pour cet exercice.'], 422);
