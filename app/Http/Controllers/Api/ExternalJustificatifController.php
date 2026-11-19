@@ -83,8 +83,8 @@ class ExternalJustificatifController extends Controller
 
                 if ($cheminsExistants->isNotEmpty()) {
                     $existant = $cheminsExistants->first();
-                    if (Storage::disk('public')->exists($existant)) {
-                        $hashExistant = hash('sha256', Storage::disk('public')->get($existant));
+                    if (is_file(public_path('justificatifs/' . $existant))) {
+                        $hashExistant = hash_file('sha256', public_path('justificatifs/' . $existant));
                         if (hash_equals($hashExistant, $empreinte)) {
                             return [
                                 'status' => 200,
@@ -94,7 +94,7 @@ class ExternalJustificatifController extends Controller
                                     'operation_source' => $donnees['operation_source'],
                                     'sha256' => $empreinte,
                                     'piece_justificatif' => $existant,
-                                    'url' => Storage::disk('public')->url($existant),
+                                    'url' => asset('justificatifs/' . $existant),
                                     'idempotent' => true,
                                 ],
                             ];
@@ -107,10 +107,15 @@ class ExternalJustificatifController extends Controller
                     ];
                 }
 
-                $nomTechnique = hash('sha256', $donnees['operation_source']) . '_' . $empreinte . '.pdf';
-                $chemin = 'justificatifs/' . $company->id . '/' . $nomTechnique;
+                $nomTechnique = $company->id . '_' . hash('sha256', $donnees['operation_source']) . '_' . $empreinte . '.pdf';
+                $chemin = $nomTechnique;
+                $repertoire = public_path('justificatifs');
 
-                if (!Storage::disk('public')->put($chemin, $contenu)) {
+                if (!is_dir($repertoire) && !mkdir($repertoire, 0750, true) && !is_dir($repertoire)) {
+                    throw new \RuntimeException('Impossible de créer le dossier des justificatifs.');
+                }
+
+                if (file_put_contents($repertoire . DIRECTORY_SEPARATOR . $chemin, $contenu, LOCK_EX) === false) {
                     throw new \RuntimeException('Impossible d’enregistrer le fichier PDF.');
                 }
 
@@ -136,7 +141,7 @@ class ExternalJustificatifController extends Controller
                         'operation_source' => $donnees['operation_source'],
                         'sha256' => $empreinte,
                         'piece_justificatif' => $chemin,
-                        'url' => Storage::disk('public')->url($chemin),
+                        'url' => asset('justificatifs/' . $chemin),
                         'nombre_lignes' => $lignes->count(),
                         'idempotent' => false,
                     ],
@@ -145,8 +150,8 @@ class ExternalJustificatifController extends Controller
 
             return response()->json($resultat['body'], $resultat['status']);
         } catch (\Throwable $e) {
-            if ($chemin && Storage::disk('public')->exists($chemin)) {
-                Storage::disk('public')->delete($chemin);
+            if ($chemin && is_file(public_path('justificatifs/' . $chemin))) {
+                @unlink(public_path('justificatifs/' . $chemin));
             }
 
             Log::error('Échec du dépôt de pièce justificative externe', [
