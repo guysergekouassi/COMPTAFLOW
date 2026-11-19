@@ -267,3 +267,31 @@ Cette correction renforce la règle métier : une application externe n'est pas 
 
 ### État de clôture
 La réalisation applicative COMPTA-APK demandée dans ce lot est terminée et publiée sur `main`, avec contrôles CI réussis. La mise en service sur les serveurs n'est pas déclarée terminée : elle nécessite accès à l'hébergement, sauvegarde, migration réelle, déploiement COMPTAFLOW + SELFLOW et essais de bout en bout avec les identifiants réels.
+
+
+## 15. Correctifs suite au retour de production — 19/11/2026
+
+### Présentation « Visibilité des pages & clés IA »
+- Le rendu signalé venait de la vue `resources/views/superadmin/page-control/index.blade.php` : elle incluait directement le sidebar Super Admin et ajoutait un CSS autonome qui forçait une sidebar bleu nuit de 260 px, un layout flex et une largeur calculée pour le contenu.
+- La vue utilise maintenant `components.sidebar`, comme le tableau de bord Super Admin. Ce composant restitue la barre horizontale et choisit le sidebar Super Admin par son mécanisme normal.
+- Suppression des règles CSS qui forçaient le thème sombre et le positionnement latéral. Le style reste limité aux cartes, formulaires et éléments propres au catalogue.
+- Le contenu conserve les informations du compte Super Admin, les onglets Pages / IA / Quotas et toutes les actions existantes.
+
+### Échec MySQL de la migration
+- Erreur constatée sur le serveur : nom de contrainte généré `integration_application_companies_integration_application_id_foreign` trop long pour MySQL (limite 64 caractères).
+- Migration corrigée avec des noms de contraintes explicites courts : `ia_companies_app_fk`, `ia_companies_company_fk`, `ia_tokens_app_fk`, `ia_tokens_company_fk`, `ia_nonces_app_fk`, `ia_events_app_fk`, `ia_events_company_fk`.
+- La migration vérifie l'existence des tables avant de les créer et répare les index et clés étrangères manquants. Elle est conçue pour reprendre après le cas MySQL où la table existe déjà mais où l'ajout de la première clé étrangère a échoué.
+- Aucun `DROP TABLE` correctif ni suppression de données n'est demandé.
+
+### Tests ajoutés
+- Exécution de la migration deux fois pour vérifier son idempotence.
+- Simulation du cas réel : tables `integration_applications` et `integration_application_companies` déjà créées, mais clés étrangères absentes ; la migration doit compléter les contraintes et index.
+- Résultat du nouveau workflow CI à confirmer après son exécution.
+
+### Procédure serveur après récupération de main
+1. Sauvegarder la base COMPTAFLOW.
+2. Récupérer le commit de correction sur le serveur.
+3. Exécuter `php artisan migrate --force` (ou `php artisan migrate` après confirmation interactive).
+4. Si une erreur subsiste, arrêter et transmettre le message exact ; ne pas supprimer manuellement les tables du registre.
+
+La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne permet pas de lire l'état exact des tables en production. La migration révisée vérifie et complète cet état sans présumer qu'il est vide.
