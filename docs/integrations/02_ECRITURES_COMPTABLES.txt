@@ -69,3 +69,19 @@ La période est bornée par les dates de début et de fin choisies dans SELFLOW.
 Les opérations générées suivent exactement le même payload d'écritures que les
 ventes, achats et OD. Le mode de transmission COMPTAFLOW reste indépendant :
 manuel par défaut, ou automatique si l'entreprise l'a explicitement choisi.
+
+
+PROPAGATION DES COMPTES HISTORIQUES
+Quand une configuration de compte change dans SELFLOW, l'application :
+1. synchronise d'abord le référentiel mis à jour via POST /api/external/referentiel/deverser ;
+2. appelle ensuite POST /api/external/ecritures/comptes/propager avec :
+{
+  "remplacements": [
+    {"ancien_numero": "701000", "nouveau_numero": "702000"}
+  ]
+}
+COMPTAFLOW résout les deux numéros dans son plan (numero_original ou numéro interne),
+puis réaffecte les lignes historiques de l'ancien PlanComptable vers le nouveau.
+Les références des tiers qui utilisent cet ancien compte général sont également
+réaffectées. Aucun débit, crédit, date, journal ou libellé n'est recalculé.
+L'appel est idempotent : un second passage ne modifie aucune ligne déjà réaffectée.
