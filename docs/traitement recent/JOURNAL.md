@@ -203,3 +203,37 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - Cette erreur est préexistante et hors du lot COMPTA-APK ; aucune modification n'a été faite sur cette migration historique.
 - Remplacement de l'étape CI par un test isolé `IntegrationRegistryMigrationTest` : création d'une table `companies` minimale, exécution de la nouvelle migration COMPTA-APK, vérification des tables/champs, puis rollback.
 - Le workflow vérifie désormais cette migration ciblée et les tests Bearer sans exécuter les migrations historiques incompatibles avec SQLite.
+
+
+## 2026-11-19 — audit final après consolidation COMPTA-APK
+
+### État du dépôt et de l'interface
+- Relecture directe de `routes/web.php`, `routes/api.php`, `bootstrap/app.php`, du contrôleur Super Admin, de la vue, du menu, du middleware Bearer, du contrôleur de jeton et de la migration.
+- La console n'est pas à créer : elle est déjà présente sur `main`. Les deux sous-pages sont raccordées à des routes protégées par `auth` et `superadmin`.
+- Le composant `components.sidebar` utilisé par la vue sélectionne bien `components.superadmin_sidebar` pour un Super Admin ; le menu central est donc visible via le rendu conditionnel existant.
+- La page historique `/superadmin/liaisons` demeure séparée.
+- La migration crée les cinq tables du registre : applications, liaisons, jetons, nonces et événements.
+- Le middleware résout le dossier depuis le jeton et la liaison active ; la portée externe est limitée à un dossier ; les permissions et l'anti-rejeu sont appliqués. Le mode historique SELFLOW reste raccordé au registre.
+- RH-FLOW reste volontairement en attente ; aucun code RH-FLOW n'a été modifié.
+
+### Vérification CI
+- COMPTAFLOW HEAD : `fef72c2c620b4fa12c612e947bf9b362be6a5839`.
+- Workflow `44587278019` : succès, toutes les étapes du job réussies. Le test de migration est isolé car une migration historique du projet utilise une syntaxe MySQL non compatible SQLite. La suite complète du projet n'a pas été exécutée par ce workflow.
+- SELFLOW HEAD : `c6226eb4ab6510264dd9c693603b27ce7392daca`.
+- Workflow `44586186577` : succès.
+- Les tests CI ne constituent pas un test navigateur ni une validation réseau en production.
+
+### Actions de ce passage
+- Aucun changement applicatif supplémentaire n'a été nécessaire après l'audit : les routes, le contrôleur, la vue, le menu et le middleware étaient déjà raccordés et présents sur `main`.
+- Mise à jour du récapitulatif pour que l'état réel le plus récent prévale sur les notes intermédiaires plus anciennes.
+
+### Reste avant mise en service réelle
+1. Sauvegarder les bases de production.
+2. Déployer les branches `main` COMPTAFLOW et SELFLOW sur leurs serveurs.
+3. Lancer la migration du registre COMPTAFLOW.
+4. Ouvrir `/superadmin/liaison-compta-apk` avec le compte Super Admin réel.
+5. Générer/activer les identifiants Bearer de SELFLOW dans COMPTAFLOW et les saisir dans le panneau sécurisé de SELFLOW.
+6. Vérifier sur les serveurs réels un dépôt de référentiel, une écriture et un PDF, puis rotation et révocation.
+7. Garder les mécanismes legacy tant que GESTION-DE-SITES et tous les clients actifs ne sont pas migrés.
+
+Aucun accès au serveur de production n'étant disponible dans ce traitement, aucune migration, commande artisan ni validation de site en production n'est déclarée exécutée.
