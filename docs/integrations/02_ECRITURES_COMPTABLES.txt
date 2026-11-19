@@ -1,12 +1,10 @@
 COMPTAFLOW — PAYLOAD ECRITURES COMPTABLES
 STATUT : CONTRAT HISTORIQUE À ALIGNER SUR LA SPÉCIFICATION 04_LIAISON_COMPTA_APK.txt
 Endpoint observe : POST /api/external/ecritures/deverser
-Authentification : X-Company-Key + secret serveur.
+Authentification actuelle : X-Company-Key via middleware, avec contrôle supplémentaire du secret global historique dans le contrôleur. Cible : authentification applicative gérée par le SuperAdmin (voir 04_LIAISON_COMPTA_APK.txt).
 
 CORPS JSON :
 {
-  "selflow_company_id": 123,
-  "secret": "<secret serveur>",
   "operation": "OP-OD-2026-00123",
   "atomique": true,
   "exercice_debut": "2026-01-01",
