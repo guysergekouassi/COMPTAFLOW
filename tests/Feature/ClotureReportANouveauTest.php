@@ -111,6 +111,14 @@ class ClotureReportANouveauTest extends TestCase
         }
     }
 
+    private function passerResultat(): void
+    {
+        $reponse = $this->patch(route('exercice_comptable.resultat', $this->exercice->id));
+        $erreur = $reponse->baseResponse->getSession()?->get('error');
+        $this->assertNull($erreur, "Le passage du résultat a été refusé : " . (string) $erreur);
+        $this->assertFalse($this->exercice->fresh()->cloturer, "Passer le résultat ne doit pas clôturer l'exercice.");
+    }
+
     private function cloturer(): void
     {
         $reponse = $this->patch(route('exercice_comptable.cloturer', $this->exercice->id));
@@ -139,6 +147,7 @@ class ClotureReportANouveauTest extends TestCase
             ['70100000', 0, 5000000],
         ]);
 
+        $this->passerResultat();
         $this->cloturer();
 
         $resultat = $this->lignesDuReport()
@@ -158,6 +167,7 @@ class ClotureReportANouveauTest extends TestCase
             ['57100000', 0, 2000000],
         ]);
 
+        $this->passerResultat();
         $this->cloturer();
 
         $resultat = $this->lignesDuReport()
@@ -180,6 +190,7 @@ class ClotureReportANouveauTest extends TestCase
             ['57100000', 0, 1200000],
         ]);
 
+        $this->passerResultat();
         $this->cloturer();
 
         $lignes = $this->lignesDuReport();
@@ -191,6 +202,29 @@ class ClotureReportANouveauTest extends TestCase
             0.01,
             'Le report à nouveau doit être équilibré.'
         );
+    }
+
+    public function test_le_passage_du_resultat_ne_cloture_pas_et_est_unique(): void
+    {
+        $this->piece('ECR-000001', [
+            ['57100000', 5000000, 0],
+            ['70100000', 0, 5000000],
+        ]);
+
+        $this->passerResultat();
+
+        $this->assertTrue($this->exercice->fresh()->resultat_passe);
+        $this->assertFalse($this->exercice->fresh()->cloturer);
+
+        $second = $this->patch(route('exercice_comptable.resultat', $this->exercice->id));
+        $this->assertNotNull($second->baseResponse->getSession()?->get('error'));
+
+        $lignesResultat = EcritureComptable::where('exercices_comptables_id', $this->exercice->id)
+            ->whereHas('planComptable', fn ($q) => $q->where('numero_de_compte', 'like', '1301%')
+                ->orWhere('numero_de_compte', 'like', '1309%'))
+            ->count();
+
+        $this->assertSame(1, $lignesResultat);
     }
 
     public function test_le_sens_du_resultat_est_annonce_en_clair(): void
