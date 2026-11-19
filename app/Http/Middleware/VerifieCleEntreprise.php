@@ -191,7 +191,7 @@ class VerifieCleEntreprise
     }
 
     /**
-     * Le corps annonce-t-il un dossier autre que celui de la clé ?
+     * Un identifiant historique facultatif du corps contredit-il la clé ?
      *
      * @return string|null le motif du refus, ou `null` si les deux concordent
      */
