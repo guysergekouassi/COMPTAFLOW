@@ -196,3 +196,10 @@ Le code serveur est ajouté dans ce commit, mais migration SQL, tests PHP/Featur
 - Code COMPTAFLOW et client SELFLOW publiés sur leurs branches `main`.
 - Les migrations, `php -l`, tests Feature, tests de rendu, tests bout en bout et déploiement serveur ne sont pas encore exécutés/confirmés.
 - Le nouveau formulaire SELFLOW doit être renseigné avec les identifiants générés depuis COMPTAFLOW après déploiement des deux dépôts.
+
+
+### Contrôles de cohérence supplémentaires
+- Le dossier COMPTAFLOW créé pour une application externe reçoit aussi un exercice comptable dont les dates sont saisies explicitement par le Super Admin.
+- La liaison SELFLOW manuelle dans la console centrale est limitée aux dossiers réellement provisionnés et actifs dans le parcours SELFLOW.
+- Le schéma du registre inclut les champs propriétaire utilisés par le contrôleur.
+- Deux workflows GitHub Actions ont été ajoutés pour tester les routes, compiler les vues et exécuter les tests ciblés. Le premier essai s'est arrêté avant les tests car le runner n'avait pas de fichier `.env`; les workflows ont été corrigés pour le créer avant la génération de clé. Les nouveaux résultats sont à vérifier.

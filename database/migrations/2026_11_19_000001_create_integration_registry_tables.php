@@ -13,6 +13,7 @@ return new class extends Migration {
             $table->string('name', 160);
             $table->string('owner_name', 160)->nullable();
             $table->string('owner_email', 191)->nullable();
+            $table->string('owner_contact', 80)->nullable();
             $table->text('description')->nullable();
             $table->string('type', 20)->index(); // maison | externe
             $table->string('status', 20)->default('active')->index(); // active | pending | suspended | revoked

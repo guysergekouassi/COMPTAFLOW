@@ -116,3 +116,12 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - Les opérations historiques de rotation/révocation de clé restent explicitement sur X-Company-Key.
 - Référence de commit client : `6c716b8ee055ec2b5e4cd53f54fffa02b1769fb3`.
 - Tests PHP et parcours réseau non exécutés ; le formulaire doit être renseigné après déploiement.
+
+
+## 2026-11-19 — CI et cohérence des dossiers dédiés
+
+- Ajout du champ `owner_contact` au schéma du registre.
+- La création d'une entreprise externe demande les dates de l'exercice et crée l'exercice correspondant.
+- Le rattachement SELFLOW depuis la console centrale refuse un dossier qui n'a pas de liaison SELFLOW active et de clé provisionnée.
+- Premier lancement GitHub Actions : Composer s'est installé, mais l'étape `key:generate` a échoué car aucun `.env` n'existait dans le runner. Aucun test n'a alors été exécuté.
+- Correction des workflows : création explicite d'un `.env` minimal avant `key:generate`. Un nouveau lancement doit confirmer le résultat.
