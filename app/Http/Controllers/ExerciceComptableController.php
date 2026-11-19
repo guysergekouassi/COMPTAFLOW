@@ -358,6 +358,10 @@ public function index()
             return back()->with('error', 'Impossible de passer le résultat : cet exercice est déjà clôturé.');
         }
 
+        if (Carbon::parse($exercice->date_debut)->gt(now()->startOfDay())) {
+            return back()->with('error', 'Impossible de passer le résultat avant la date de début de l’exercice.');
+        }
+
         if (Carbon::parse($exercice->date_fin)->gt(now()->startOfDay())) {
             $ecrituresFutures = EcritureComptable::where('company_id', $companyId)
                 ->where('exercices_comptables_id', $exercice->id)
@@ -471,6 +475,10 @@ public function index()
 
         if ($exercice->cloturer) {
             return back()->with('error', 'L\'exercice est déjà clôturé.');
+        }
+
+        if (Carbon::parse($exercice->date_debut)->gt(now()->startOfDay())) {
+            return back()->with('error', 'Impossible de clôturer un exercice avant sa date de début.');
         }
 
         // La clôture anticipée est autorisée : les écritures en attente restent bloquantes.
