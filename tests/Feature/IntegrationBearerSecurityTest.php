@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
@@ -42,7 +43,7 @@ class IntegrationBearerSecurityTest extends TestCase
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
-        Route::middleware('integration.auth')->post('/__integration/test', function ($request) {
+        Route::middleware('integration.auth')->post('/__integration/test', function (Request $request) {
             return response()->json(['company_id' => $request->attributes->get('entreprise_liee')->id]);
         });
         Route::middleware('integration.auth')->post('/__integration/ecritures/deverser', function () {

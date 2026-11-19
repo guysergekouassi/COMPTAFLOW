@@ -125,3 +125,10 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - Le rattachement SELFLOW depuis la console centrale refuse un dossier qui n'a pas de liaison SELFLOW active et de clé provisionnée.
 - Premier lancement GitHub Actions : Composer s'est installé, mais l'étape `key:generate` a échoué car aucun `.env` n'existait dans le runner. Aucun test n'a alors été exécuté.
 - Correction des workflows : création explicite d'un `.env` minimal avant `key:generate`. Un nouveau lancement doit confirmer le résultat.
+
+
+## 2026-11-19 — compatibilité historique et ajustement des tests
+
+- Ajustement du registre pour reprendre les dossiers SELFLOW historiques avec clé active même si l'ancien champ de statut est vide ; les dossiers révoqués restent exclus.
+- Typage explicite de la requête injectée dans la route de test Bearer afin de fiabiliser l'exécution Feature.
+- Le workflow corrigé est en cours de relance ; résultat à inscrire après son achèvement.

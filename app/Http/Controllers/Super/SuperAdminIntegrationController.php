@@ -65,7 +65,10 @@ class SuperAdminIntegrationController extends Controller
 
         $selflow = DB::table('integration_applications')->where('code', 'selflow')->first();
         foreach (Company::query()->whereNotNull('selflow_company_id')->whereNull('selflow_sync_key_revoked_at')
-            ->where('selflow_sync_status', 'active')->whereNotNull('selflow_sync_key_hash')->get(['id']) as $company) {
+            ->whereNotNull('selflow_sync_key_hash')
+            ->where(function ($query) {
+                $query->whereNull('selflow_sync_status')->orWhere('selflow_sync_status', 'active');
+            })->get(['id']) as $company) {
             $exists = DB::table('integration_application_companies')->where('integration_application_id', $selflow->id)->where('company_id', $company->id)->exists();
             if (!$exists) DB::table('integration_application_companies')->insert([
                 'integration_application_id' => $selflow->id, 'company_id' => $company->id,
@@ -129,7 +132,7 @@ class SuperAdminIntegrationController extends Controller
         $company = Company::query()->whereKey($data['company_id'])->where('is_active', true)->where('is_blocked', false)->firstOrFail();
         if ($app->code === 'selflow' && (
             !$company->selflow_company_id
-            || $company->selflow_sync_status !== 'active'
+            || ($company->selflow_sync_status && $company->selflow_sync_status !== 'active')
             || $company->selflow_sync_key_revoked_at
             || !$company->selflow_sync_key_hash
         )) {

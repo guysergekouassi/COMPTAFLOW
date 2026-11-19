@@ -203,3 +203,7 @@ Le code serveur est ajouté dans ce commit, mais migration SQL, tests PHP/Featur
 - La liaison SELFLOW manuelle dans la console centrale est limitée aux dossiers réellement provisionnés et actifs dans le parcours SELFLOW.
 - Le schéma du registre inclut les champs propriétaire utilisés par le contrôleur.
 - Deux workflows GitHub Actions ont été ajoutés pour tester les routes, compiler les vues et exécuter les tests ciblés. Le premier essai s'est arrêté avant les tests car le runner n'avait pas de fichier `.env`; les workflows ont été corrigés pour le créer avant la génération de clé. Les nouveaux résultats sont à vérifier.
+
+
+### Compatibilité des dossiers SELFLOW historiques
+Le registre reprend aussi les dossiers SELFLOW plus anciens dont le statut de synchronisation est vide, à condition que l'identifiant source et le haché de clé existent et que la clé n'ait pas été révoquée. Les dossiers explicitement révoqués restent exclus.
