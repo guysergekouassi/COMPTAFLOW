@@ -207,3 +207,6 @@ Le code serveur est ajouté dans ce commit, mais migration SQL, tests PHP/Featur
 
 ### Compatibilité des dossiers SELFLOW historiques
 Le registre reprend aussi les dossiers SELFLOW plus anciens dont le statut de synchronisation est vide, à condition que l'identifiant source et le haché de clé existent et que la clé n'ait pas été révoquée. Les dossiers explicitement révoqués restent exclus.
+
+### Résultat CI intermédiaire
+Le workflow COMPTAFLOW a réussi l'installation Composer, les tests de sécurité Bearer et la compilation des vues. L'étape `route:list` a détecté une erreur de syntaxe dans les trois journaux de provisionnement de `ExternalCompanyController` (crochet ouvrant manquant dans les tableaux de contexte de `Log::info`). Cette erreur a été corrigée ; un nouveau lancement doit confirmer le lint de toutes les routes.

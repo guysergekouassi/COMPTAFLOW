@@ -217,7 +217,7 @@ class ExternalCompanyController extends Controller
 
             $this->synchroniserLiaisonApplicationSelflow(Company::find($resultat['company_id']));
 
-            Log::info('Liaison Selflow : dossier Comptaflow existant rattaché',
+            Log::info('Liaison Selflow : dossier Comptaflow existant rattaché', [
                 'company_id' => $resultat['company_id'],
                 'selflow_company_id' => $selflowId,
             ]);
@@ -262,7 +262,7 @@ class ExternalCompanyController extends Controller
 
             $this->synchroniserLiaisonApplicationSelflow($existante);
 
-            Log::info('Liaison Selflow : provision rejouée, même dossier et même clé',
+            Log::info('Liaison Selflow : provision rejouée, même dossier et même clé', [
                 'company_id'         => $existante->id,
                 'selflow_company_id' => $existante->selflow_company_id,
             ]);
@@ -356,7 +356,7 @@ class ExternalCompanyController extends Controller
 
             $this->synchroniserLiaisonApplicationSelflow($company);
 
-            Log::info('Liaison Selflow : dossier provisionné',
+            Log::info('Liaison Selflow : dossier provisionné', [
                 'company_id'         => $company->id,
                 'selflow_company_id' => $company->selflow_company_id,
                 // Jamais l'empreinte, jamais l'adresse : ce journal est lu par

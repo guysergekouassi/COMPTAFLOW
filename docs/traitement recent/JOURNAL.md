@@ -132,3 +132,11 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - Ajustement du registre pour reprendre les dossiers SELFLOW historiques avec clé active même si l'ancien champ de statut est vide ; les dossiers révoqués restent exclus.
 - Typage explicite de la requête injectée dans la route de test Bearer afin de fiabiliser l'exécution Feature.
 - Le workflow corrigé est en cours de relance ; résultat à inscrire après son achèvement.
+
+## 2026-11-19 — correction issue du premier contrôle CI COMPTAFLOW
+
+- Composer : réussi.
+- Tests Bearer : réussis.
+- Compilation Blade : réussie.
+- Contrôle des routes : a révélé un crochet ouvrant manquant dans trois appels `Log::info` du contrôleur de provisionnement externe.
+- Correction appliquée dans `ExternalCompanyController.php`; nouveau workflow attendu.
