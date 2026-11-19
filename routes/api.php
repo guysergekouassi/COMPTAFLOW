@@ -198,6 +198,12 @@ Route::prefix('external')->group(function () {
     Route::post('/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
         ->middleware('cle.entreprise')
         ->name('api.external.referentiel.deverser');
+
+    // Pièce PDF rattachée à toutes les lignes d'une opération source.
+    // Le dossier destinataire provient exclusivement de X-Company-Key.
+    Route::post('/pieces-justificatives/deverser', [\App\Http\Controllers\Api\ExternalJustificatifController::class, 'deverser'])
+        ->middleware(['cle.entreprise', 'throttle:20,1'])
+        ->name('api.external.pieces-justificatives.deverser');
     Route::post('/gestionsites/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
         ->middleware('cle.entreprise')
         ->name('api.external.gestionsites.referentiel.deverser');
