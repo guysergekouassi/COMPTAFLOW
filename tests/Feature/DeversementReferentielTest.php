@@ -290,9 +290,9 @@ class DeversementReferentielTest extends TestCase
     {
         return [
             'plan_comptable' => [
-                ['numero_de_compte' => '411000', 'intitule' => 'Clients',      'numero_original' => null],
-                ['numero_de_compte' => '701000', 'intitule' => 'Ventes',       'numero_original' => null],
-                ['numero_de_compte' => '521500', 'intitule' => 'MTN Money',    'numero_original' => null],
+                ['numero_de_compte' => '411000', 'intitule' => 'Clients'],
+                ['numero_de_compte' => '701000', 'intitule' => 'Ventes'],
+                ['numero_de_compte' => '521500', 'intitule' => 'MTN Money'],
             ],
             'codes_journaux' => [
                 ['code_journal' => 'VTE', 'intitule' => 'Ventes', 'type' => 'Ventes',
