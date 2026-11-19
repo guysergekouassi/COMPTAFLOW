@@ -1,10 +1,9 @@
 <?php
 
-namespace App\\Http\\Controllers\\Super;
+namespace App\Http\Controllers\Super;
 
-use App\\Http\\Controllers\\Controller;
-use Illuminate\\Http\\Request;
-use Symfony\\Component\\HttpFoundation\\BinaryFileResponse;
+use App\Http\Controllers\Controller;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SuperAdminPayloadController extends Controller
 {
@@ -22,7 +21,6 @@ class SuperAdminPayloadController extends Controller
     public function telecharger(string $type): BinaryFileResponse
     {
         abort_unless(isset(self::FICHIERS[$type]), 404);
-
         $path = base_path('docs/integrations/' . self::FICHIERS[$type]);
         abort_unless(is_file($path), 404);
 
