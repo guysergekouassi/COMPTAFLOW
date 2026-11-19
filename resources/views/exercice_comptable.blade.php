@@ -465,7 +465,7 @@
                                         <div class="text-center space-y-3 mb-6">
                                             <p class="text-slate-500 text-sm font-medium leading-relaxed">
                                                 Êtes-vous sûr de vouloir <strong>clôturer</strong> cet exercice ?<br>
-                                                Le report à nouveau sera généré. L'écriture de résultat doit déjà avoir été passée séparément.
+                                                Le report à nouveau sera généré. L'écriture de résultat doit déjà avoir été passée séparément. Si la date de fin est future, elle sera ramenée à aujourd'hui.
                                             </p>
                                             <p class="text-slate-900 font-bold" id="exerciceToCloture"></p>
                                         </div>
@@ -1079,7 +1079,7 @@
                         button.addEventListener('click', function() {
                             const id = this.getAttribute('data-id');
                             const label = this.getAttribute('data-label') || 'cet exercice';
-                            if (!id || !confirm(`Passer l'écriture de résultat pour ${label} ? Cette opération ne clôturera pas l'exercice et ne pourra pas être répétée.`)) return;
+                            if (!id || !confirm(`Passer l'écriture de résultat pour ${label} ? Cette opération ne clôturera pas l'exercice et ne pourra pas être répétée. Passez le résultat après toutes les saisies.`)) return;
                             const form = document.getElementById('passerResultatForm');
                             if (form) { form.action = exercice_comptableResultatUrl.replace('__ID__', id); form.submit(); }
                         });

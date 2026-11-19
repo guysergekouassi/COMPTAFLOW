@@ -238,7 +238,14 @@ class ClotureReportANouveauTest extends TestCase
         $this->passerResultat();
         $this->cloturer();
 
-        $this->assertTrue((bool) $this->exercice->fresh()->cloturer);
+        $exerciceCloture = $this->exercice->fresh();
+        $this->assertTrue((bool) $exerciceCloture->cloturer);
+        $this->assertSame(now()->toDateString(), $exerciceCloture->date_fin->toDateString());
+
+        $suivant = ExerciceComptable::where('company_id', $this->exercice->company_id)
+            ->whereDate('date_debut', now()->addDay()->toDateString())
+            ->first();
+        $this->assertNotNull($suivant, 'Le nouvel exercice doit commencer le lendemain de la clôture anticipée.');
     }
 
     public function test_le_sens_du_resultat_est_annonce_en_clair(): void

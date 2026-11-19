@@ -506,6 +506,11 @@ public function index()
                 ->first();
 
             if ($nextExercice) {
+                if ($nextExercice->cloturer) {
+                    DB::rollBack();
+                    return back()->with('error', "L'exercice suivant est déjà clôturé. Vérifiez sa période avant de clôturer celui-ci.");
+                }
+
                 $debutExistant = Carbon::parse($nextExercice->date_debut)->startOfDay();
 
                 if ($clotureAnticipee && $debutExistant->gt($debutNext)) {
