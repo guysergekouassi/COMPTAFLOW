@@ -320,7 +320,7 @@ class DeversementReferentielTest extends TestCase
             ->value('piece_justificatif');
 
         $this->assertStringStartsWith('private/justificatifs/42/', $chemin);
-        $this->assertSame(1, DB::table('ecriture_comptables')
+        $this->assertSame(2, DB::table('ecriture_comptables')
             ->where('operation_selflow', $operation)
             ->where('piece_justificatif', $chemin)->count());
 
