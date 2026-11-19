@@ -1,7 +1,7 @@
 COMPTAFLOW — PAYLOAD ECRITURES COMPTABLES
-STATUT : CONTRAT HISTORIQUE À ALIGNER SUR LA SPÉCIFICATION 04_LIAISON_COMPTA_APK.txt
+STATUT : CONTRAT APPLIQUÉ AU DÉVERSEMENT SELFLOW (19/11/2026)
 Endpoint observe : POST /api/external/ecritures/deverser
-Authentification actuelle : X-Company-Key via middleware, avec contrôle supplémentaire du secret global historique dans le contrôleur. Cible : authentification applicative gérée par le SuperAdmin (voir 04_LIAISON_COMPTA_APK.txt).
+Authentification actuelle : X-Company-Key via middleware cle.entreprise. Le dossier est résolu côté serveur. Le payload ne transporte ni secret ni identifiant de société. L'authentification applicative centralisée client_id/client_secret reste à réaliser.
 
 CORPS JSON :
 {
@@ -57,4 +57,4 @@ REGLES
 - Verifier la compatibilite des exercices.
 
 
-EVOLUTION OBLIGATOIRE : le payload métier ne doit plus transporter selflow_company_id, comptaflow_company_id ni secret pour choisir/authentifier le dossier. L'identité applicative et la liaison déterminent le dossier côté serveur. Les numéros source des comptes, journaux et tiers sont envoyés une seule fois ; COMPTAFLOW les conserve comme numero_original et génère ses numéros internes. Cette évolution nécessite la migration des contrôleurs et des connecteurs : le contrôle du secret global historique est encore présent dans le code actuel.
+AUTHENTIFICATION ET ROUTAGE : les endpoints /ecritures/deverser et /ecritures/regrouper sont protégés par cle.entreprise. Le middleware résout le dossier à partir de X-Company-Key ; les identifiants de société et le secret global ne sont plus requis dans le JSON métier. La gestion des clients applicatifs centralisés reste un chantier distinct.
