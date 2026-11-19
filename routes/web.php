@@ -328,7 +328,7 @@ Route::middleware(['auth', 'exercice.context'])->group(function () {
     // *****************ROUTE GESTION DES ECRITURES COMPTABLE
     Route::get('/accounting_entry_real', [EcritureComptableController::class, 'index'])->name('accounting_entry_real');
     Route::get('/ecriture/{id}', [EcritureComptableController::class, 'show'])->name('ecriture.show');
-    Route::get('/ecriture/{id}/justificatif', [\\App\\Http\\Controllers\\Api\\ExternalJustificatifController::class, 'telechargerPourUtilisateur'])
+    Route::get('/ecriture/{id}/justificatif', [\App\Http\Controllers\Api\ExternalJustificatifController::class, 'telechargerPourUtilisateur'])
         ->middleware('company.session')
         ->name('ecriture.justificatif');
     Route::get('/ecritures/hub', [EcritureComptableController::class, 'journalHub'])->name('ecriture.hub');
