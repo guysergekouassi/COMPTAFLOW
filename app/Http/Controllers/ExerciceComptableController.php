@@ -358,6 +358,20 @@ public function index()
             return back()->with('error', 'Impossible de passer le résultat : cet exercice est déjà clôturé.');
         }
 
+        if (Carbon::parse($exercice->date_fin)->gt(now()->startOfDay())) {
+            $ecrituresFutures = EcritureComptable::where('company_id', $companyId)
+                ->where('exercices_comptables_id', $exercice->id)
+                ->whereDate('date', '>', now()->toDateString())
+                ->where(function ($q) {
+                    $q->where('is_ran', false)->orWhereNull('is_ran');
+                })
+                ->exists();
+
+            if ($ecrituresFutures) {
+                return back()->with('error', "Le résultat ne peut pas être passé : des écritures sont datées après aujourd'hui. Corrigez leurs dates avant de calculer le résultat.");
+            }
+        }
+
         try {
             $resultat = DB::transaction(function () use ($exercice, $companyId, $user) {
                 $exercice = ExerciceComptable::where('company_id', $companyId)
