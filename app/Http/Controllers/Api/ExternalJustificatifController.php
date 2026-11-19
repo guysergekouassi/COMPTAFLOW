@@ -86,6 +86,14 @@ class ExternalJustificatifController extends Controller
                     if (is_file(storage_path('app/' . $existant))) {
                         $hashExistant = hash_file('sha256', storage_path('app/' . $existant));
                         if (hash_equals($hashExistant, $empreinte)) {
+                            // Réparer aussi les lignes qui n'auraient pas reçu
+                            // le chemin lors d'une ancienne tentative partielle.
+                            EcritureComptable::withoutGlobalScopes()
+                                ->where('company_id', $company->id)
+                                ->where('operation_selflow', $donnees['operation_source'])
+                                ->whereNull('piece_justificatif')
+                                ->update(['piece_justificatif' => $existant]);
+
                             return [
                                 'status' => 200,
                                 'body' => [
