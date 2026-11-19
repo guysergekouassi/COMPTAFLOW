@@ -189,3 +189,9 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - Le premier ajout de l'étape SQLite a produit un fichier YAML invalide, car `:memory:` était dans une valeur scalaire non délimitée.
 - La commande a été passée en bloc multilignes et la valeur SQLite explicitement citée.
 - Nouveau workflow en attente ; il doit confirmer l'exécution réelle des migrations.
+
+
+## 2026-11-19 — vérification de l'isolation des applications externes
+
+- Ajout de deux tests Feature : un jeton Bearer d'application ne peut pas appeler `/api/external/list-companies` pour obtenir la liste globale, ni `/api/external/company-info` pour sélectionner un dossier arbitraire.
+- Les endpoints de contrôle historiques restent protégés par le secret serveur global ; ce secret n'est pas communiqué aux applications externes.

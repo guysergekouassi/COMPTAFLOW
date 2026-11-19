@@ -90,6 +90,25 @@ class IntegrationBearerSecurityTest extends TestCase
         $this->appelSigne()->assertStatus(403);
     }
 
+    public function test_un_jeton_bearer_ne_donne_pas_acces_a_la_liste_globale_des_entreprises(): void
+    {
+        config(['external_sync.external_sync_secret' => 'secret-global-test']);
+
+        $this->withHeaders($this->headers(Str::random(24)))
+            ->postJson('/api/external/list-companies')
+            ->assertUnauthorized()
+            ->assertJsonMissingPath('companies');
+    }
+
+    public function test_un_jeton_bearer_ne_permet_pas_de_choisir_un_dossier_via_company_info(): void
+    {
+        config(['external_sync.external_sync_secret' => 'secret-global-test']);
+
+        $this->withHeaders($this->headers(Str::random(24)))
+            ->postJson('/api/external/company-info', ['comptaflow_company_id' => 43])
+            ->assertUnauthorized();
+    }
+
     public function test_le_endpoint_emet_un_jeton_seulement_pour_un_dossier_lie(): void
     {
         $response = $this->postJson('/api/integration/token', [
