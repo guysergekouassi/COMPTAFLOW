@@ -1,36 +1,51 @@
 COMPTAFLOW — PAYLOAD REFERENTIEL
-STATUT : CONTRAT HISTORIQUE À ALIGNER SUR LA SPÉCIFICATION 04_LIAISON_COMPTA_APK.txt
-Endpoint observe : POST /api/external/referentiel/deverser
-Authentification : X-Company-Key obligatoire ; secret serveur selon configuration.
+STATUT : CONTRAT CIBLE À IMPLEMENTER ET À ALIGNER AVEC LE CONTROLEUR ACTUEL.
+Endpoint actuel : POST /api/external/referentiel/deverser
+La route applique actuellement le middleware cle.entreprise. La migration complète
+vers les identifiants applicatifs de 04_LIAISON_COMPTA_APK.txt reste à faire.
 
-CORPS JSON :
+PRINCIPE
+Le dossier destinataire est résolu côté serveur à partir de la liaison authentifiée.
+Le payload métier ne contient aucun comptaflow_company_id ni selflow_company_id
+utilisé pour choisir le dossier.
+
+CORPS JSON CIBLE
 {
-  "selflow_company_id": 123,
-  "comptaflow_company_id": 456,
   "plan_comptable": [
-    {"numero_de_compte":"601000","intitule":"Achats","numero_de_compte":"601"}
+    {"numero_de_compte": "601000", "intitule": "Achats"}
   ],
   "codes_journaux": [
-    {"code_journal":"ACH","intitule":"Journal des achats","type":"Achats","compte_numero":"401000","numero_original":"ACH"}
+    {"code_journal": "ACH", "intitule": "Journal des achats", "type": "Achats", "compte_numero": "401000"}
   ],
   "tiers": [
-    {"numero_de_tiers":"FOU00001","intitule":"FOURNISSEUR EXEMPLE","compte_general":"401000","type_de_tiers":"fournisseur","numero_original":"FOU-001"}
+    {"numero_de_tiers": "FOU00001", "intitule": "FOURNISSEUR EXEMPLE", "compte_general": "401000", "type_de_tiers": "fournisseur"}
   ]
 }
 
-PLAN COMPTABLE : numero_de_compte, intitule, numero_original.
-JOURNAUX : code_journal, intitule, type, compte_numero, numero_original.
-TIERS : numero_de_tiers, intitule, compte_general, type_de_tiers, numero_original.
+CHAMPS
+- Plan comptable : numero_de_compte (numéro fourni par l'application source), intitule.
+- Journaux : code_journal (code source), intitule, type, compte_numero.
+- Tiers : numero_de_tiers (numéro source), intitule, compte_general, type_de_tiers.
+
+NUMEROS ORIGINAUX ET UNIFORMISATION
+L'application source ne transmet PAS numero_original.
+Le numéro source transmis dans numero_de_compte, code_journal ou numero_de_tiers
+est automatiquement conservé par COMPTAFLOW comme numéro original.
+COMPTAFLOW génère ensuite son numéro interne selon la configuration du dossier.
+Les écritures ultérieures utilisent le numéro source pour retrouver le référentiel.
+Ne pas écraser un référentiel COMPTAFLOW existant sans règle explicite de mise à jour.
 
 REGLES
-1. Envoyer le referentiel avant les ecritures.
-2. Garder les identifiants source stables et uniques par entreprise.
-3. Ne jamais identifier un compte ou un tiers par son seul libelle.
-4. Corriger toute reponse 422 et son tableau refus avant de poursuivre.
+1. Envoyer le référentiel avant les écritures.
+2. Garder les numéros source stables et uniques par entreprise.
+3. Ne jamais identifier un compte ou un tiers par son seul libellé.
+4. Corriger toute réponse 422 et son tableau de refus avant de poursuivre.
 5. Le rejeu doit rester idempotent.
-6. Le dossier destinataire est resolu par X-Company-Key, jamais par un identifiant libre dans le corps.
+6. Ne jamais accepter un identifiant de dossier libre dans le JSON pour router le dépôt.
 
-Le endpoint actuel accepte les trois collections dans un seul objet JSON.
-
-
-EVOLUTION OBLIGATOIRE : ne plus envoyer numero_original en doublon. Le numéro source transmis est la valeur de référence originale. Le dossier destinataire doit être résolu par la liaison authentifiée côté serveur, pas par un identifiant libre du JSON. Voir 04_LIAISON_COMPTA_APK.txt. La migration d'authentification n'est pas encore livrée.
+IMPORTANT — ECART AVEC LE CODE ACTUEL
+Ce document décrit le contrat cible. Le contrôleur et les connecteurs doivent encore
+être vérifiés et alignés pour les trois collections. La route utilise X-Company-Key,
+mais certains contrôleurs de l'intégration vérifient encore le secret global historique.
+Ne pas considérer l'authentification applicative cible comme déjà livrée.
+Voir 04_LIAISON_COMPTA_APK.txt.
