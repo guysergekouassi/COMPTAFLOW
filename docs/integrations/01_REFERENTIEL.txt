@@ -1,0 +1,32 @@
+COMPTAFLOW — PAYLOAD REFERENTIEL
+Endpoint observe : POST /api/external/referentiel/deverser
+Authentification : X-Company-Key obligatoire ; secret serveur selon configuration.
+
+CORPS JSON :
+{
+  "selflow_company_id": 123,
+  "comptaflow_company_id": 456,
+  "plan_comptable": [
+    {"numero_de_compte":"601000","intitule":"Achats","numero_original":"601"}
+  ],
+  "codes_journaux": [
+    {"code_journal":"ACH","intitule":"Journal des achats","type":"Achats","compte_numero":"401000","numero_original":"ACH"}
+  ],
+  "tiers": [
+    {"numero_de_tiers":"FOU00001","intitule":"FOURNISSEUR EXEMPLE","compte_general":"401000","type_de_tiers":"fournisseur","numero_original":"FOU-001"}
+  ]
+}
+
+PLAN COMPTABLE : numero_de_compte, intitule, numero_original.
+JOURNAUX : code_journal, intitule, type, compte_numero, numero_original.
+TIERS : numero_de_tiers, intitule, compte_general, type_de_tiers, numero_original.
+
+REGLES
+1. Envoyer le referentiel avant les ecritures.
+2. Garder les identifiants source stables et uniques par entreprise.
+3. Ne jamais identifier un compte ou un tiers par son seul libelle.
+4. Corriger toute reponse 422 et son tableau refus avant de poursuivre.
+5. Le rejeu doit rester idempotent.
+6. Le dossier destinataire est resolu par X-Company-Key, jamais par un identifiant libre dans le corps.
+
+Le endpoint actuel accepte les trois collections dans un seul objet JSON.
