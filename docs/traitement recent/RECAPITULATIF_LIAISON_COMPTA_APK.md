@@ -213,7 +213,7 @@ Cette section fait foi lorsqu'une ancienne section ci-dessus présente encore un
   - `/superadmin/liaison-compta-apk`
   - `/superadmin/liaison-compta-apk/maison`
   - `/superadmin/liaison-compta-apk/externe`
-  - routes POST/PUT/DELETE de création, modification, liaison, dél liaison, rotation et révocation.
+  - routes POST/PUT/DELETE de création, modification, liaison, révocation de liaison, rotation et révocation d'application.
 - La vue `resources/views/superadmin/liaison_compta_apk.blade.php` est présente et utilise le composant `components.sidebar`, lequel bascule vers `components.superadmin_sidebar` lorsque le compte est Super Admin.
 - Le contrôleur `SuperAdminIntegrationController`, la migration du registre, le middleware `VerifieApplicationOuCleEntreprise` et `IntegrationTokenController` sont présents.
 - SELFLOW est repris en mode historique sans réactiver les liaisons révoquées ; RH-FLOW est enregistré en attente, sans prétendre que son connecteur est livré.
@@ -236,3 +236,16 @@ Cette section fait foi lorsqu'une ancienne section ci-dessus présente encore un
 - **Compatibilité non supprimée :** ne pas retirer `X-Company-Key` ni `EXTERNAL_SYNC_SECRET` avant la migration effective de tous les clients actifs, notamment GESTION-DE-SITES.
 
 Dernier HEAD COMPTAFLOW vérifié : `fef72c2c620b4fa12c612e947bf9b362be6a5839`.
+
+
+## 13. Durcissement final — dossier dédié obligatoire pour les applications externes
+
+- Le rattachement générique à une entreprise existante est désormais réservé aux applications maison.
+- Le contrôleur refuse en HTTP 403 toute tentative d'utiliser cette action avec une application externe, même si l'appel est forgé directement sans passer par l'interface.
+- Le formulaire « Lier à une entreprise existante » n'est plus affiché pour les applications externes.
+- Une application externe doit utiliser exclusivement le parcours « Créer une entreprise COMPTAFLOW dédiée et la lier ». Le contrôleur conserve aussi la règle d'une seule liaison active.
+- Deux tests Feature ont été ajoutés : refus du rattachement générique pour une application externe et refus d'émission d'un jeton maison pour un dossier non lié.
+- COMPTAFLOW : commit de correction/test `45a033138022579f9ae84f8daadac8ae2e6bf7bb`.
+- GitHub Actions COMPTAFLOW : workflow `44589011690` terminé avec succès ; installation, tests migration/Bearer, compilation Blade et contrôle des routes réussis.
+
+Cette correction renforce la règle métier : une application externe n'est pas autorisée à se rattacher à un dossier client préexistant. Elle possède un dossier dédié créé par le parcours Super Admin.
