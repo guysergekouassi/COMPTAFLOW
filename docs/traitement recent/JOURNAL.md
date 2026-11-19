@@ -286,3 +286,11 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - La CI doit confirmer le test de reprise MySQL simulé via SQLite et la compilation Blade.
 - Pas de suppression des tables ni des données de production.
 - La migration de production n'est pas relancée automatiquement depuis GitHub ; elle doit être exécutée sur le serveur après sauvegarde et récupération de `main`.
+
+
+## 2026-11-19 — durcissement du scénario de reprise partielle
+
+- Les premières tentatives CI ont montré que SQLite ne restitue pas les métadonnées de contraintes comme MySQL ; l'assertion de test a été ajustée pour ne pas confondre limitation du moteur de test et erreur de migration MySQL.
+- La migration complète aussi l'index simple `status` manquant dans le pivot partiellement créé, en plus des index composite et unique.
+- Workflows de validation : `44600112707` et `44600200330` réussis.
+- Workflow du dernier commit `49ed888f97d3b9962f0929fa0cfff6cdfb105e56` : `44600248946`, résultat final à confirmer.
