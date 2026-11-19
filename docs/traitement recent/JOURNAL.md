@@ -294,3 +294,9 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - La migration complète aussi l'index simple `status` manquant dans le pivot partiellement créé, en plus des index composite et unique.
 - Workflows de validation : `44600112707` et `44600200330` réussis.
 - Workflow du dernier commit `49ed888f97d3b9962f0929fa0cfff6cdfb105e56` : `44600248946`, résultat final à confirmer.
+
+
+### Confirmation finale
+- Workflow COMPTAFLOW `44600248946` : **completed / success** sur `49ed888f97d3b9962f0929fa0cfff6cdfb105e56`.
+- Composer, tests ciblés, compilation Blade et routes : réussis.
+- La migration a été vérifiée sur SQLite, y compris la reprise du schéma partiel ; un essai MySQL sur la base d'hébergement reste nécessaire.
