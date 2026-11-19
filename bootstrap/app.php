@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'exercice.context'  => \App\Http\Middleware\ExerciceContextMiddleware::class,
             'verify.hub.token'  => \App\Http\Middleware\VerifyHubToken::class,
             'cle.entreprise'    => \App\Http\Middleware\VerifieCleEntreprise::class,
+            'integration.auth'  => \App\Http\Middleware\VerifieApplicationOuCleEntreprise::class,
             // Contrôle d'accès : rôle ADMIN/SUPER ADMIN, et habilitations fines.
             'admin'             => \App\Http\Middleware\EnsureIsAdmin::class,
             'superadmin'        => \App\Http\Middleware\EnsureIsSuperAdmin::class,

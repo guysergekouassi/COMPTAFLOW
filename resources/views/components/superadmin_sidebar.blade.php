@@ -68,6 +68,23 @@
         </div>
         @endif
 
+        {{-- RUBRIQUE PRINCIPALE : LIAISONS COMPTA-APK --}}
+        <div class="menu-section">
+            <div class="menu-section-header">Liaison COMPTA-APK</div>
+            <a href="{{ route('superadmin.liaison_compta.maison') }}" class="menu-link-new {{ request()->routeIs('superadmin.liaison_compta.maison') ? 'active' : '' }}">
+                <i class="fa-solid fa-diagram-project"></i>
+                <span>APPLICATION MAISON — LA SUITE FLOW</span>
+            </a>
+            <a href="{{ route('superadmin.liaison_compta.externe') }}" class="menu-link-new {{ request()->routeIs('superadmin.liaison_compta.externe') ? 'active' : '' }}">
+                <i class="fa-solid fa-plug"></i>
+                <span>APPLICATION EXTERNE</span>
+            </a>
+            <a href="{{ route('superadmin.liaisons.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.liaisons.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-link"></i>
+                <span>Anciennes liaisons SELFLOW</span>
+            </a>
+        </div>
+
         {{-- SECTION 2 : GOUVERNANCE --}}
         <div class="menu-section">
             <div class="menu-section-header">Gouvernance</div>

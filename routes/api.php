@@ -143,75 +143,80 @@ Route::prefix('v1')->group(function () {
 // changeant un entier dans un JSON.
 //
 // Chaque dossier porte désormais sa propre clé, présentée en en-tête
-// `X-Company-Key` et vérifiée par `cle.entreprise`, qui refuse une clé
+// `X-Company-Key` et vérifiée par `integration.auth`, qui refuse une clé
 // désignant un autre dossier que celui annoncé dans le corps.
 // ═══════════════════════════════════════════════════════════════════════════
+// Authentification centralisée des applications COMPTA-APK.
+Route::post('/integration/token', [\App\Http\Controllers\Api\IntegrationTokenController::class, 'issue'])
+    ->middleware('throttle:10,1')
+    ->name('api.integration.token');
+
 Route::prefix('external')->group(function () {
     // Liaison indépendante GESTION-DE-SITES : elle ne réutilise aucun identifiant Selflow.
     Route::post('/gestionsites/companies/provision', [\App\Http\Controllers\Api\ExternalGestionSitesController::class, 'provision'])
         ->middleware('throttle:6,1')
         ->name('api.external.gestionsites.provision');
     Route::post('/gestionsites/companies/verify', [\App\Http\Controllers\Api\ExternalGestionSitesController::class, 'verify'])
-        ->middleware(['cle.entreprise', 'throttle:60,1'])
+        ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.gestionsites.verify');
     Route::post('/gestionsites/tiers/lister', [\App\Http\Controllers\Api\ExternalGestionSitesController::class, 'listerTiers'])
-        ->middleware(['cle.entreprise', 'throttle:60,1'])
+        ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.gestionsites.tiers.lister');
 
     // ── Le cycle de vie de la liaison ──
     //
-    // `provision` est le seul appel sans `cle.entreprise` : il n'y a pas encore
+    // `provision` est le seul appel sans `integration.auth` : il n'y a pas encore
     // de clé à présenter, puisque c'est lui qui la génère. D'où la limitation
     // de débit serrée — c'est aussi le seul qui crée des dossiers.
     Route::post('/companies/provision', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'provision'])
         ->middleware('throttle:6,1')
         ->name('api.external.companies.provision');
     Route::post('/companies/revoke', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'revoke'])
-        ->middleware(['cle.entreprise', 'throttle:20,1'])
+        ->middleware(['integration.auth', 'throttle:20,1'])
         ->name('api.external.companies.revoke');
     // La clé ne doit pas être éternelle : `rotate-key` la remplace, et la clé
     // actuelle authentifie sa propre relève. Débit serré comme `revoke` — un
     // dossier ne se renouvelle qu'une fois par mois, plus un bouton manuel.
     Route::post('/companies/rotate-key', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'rotateKey'])
-        ->middleware(['cle.entreprise', 'throttle:20,1'])
+        ->middleware(['integration.auth', 'throttle:20,1'])
         ->name('api.external.companies.rotate-key');
     Route::post('/companies/verify', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'verify'])
-        ->middleware(['cle.entreprise', 'throttle:60,1'])
+        ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.companies.verify');
 
     // ── Les deux déversements ──
     //
-    // C'est ici que la clé sert vraiment : sans `cle.entreprise` sur ces deux
+    // C'est ici que la clé sert vraiment : sans `integration.auth` sur ces deux
     // routes, tout le reste ne sert à rien.
     Route::post('/ecritures/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserEcritures'])
-        ->middleware('cle.entreprise')
+        ->middleware('integration.auth')
         ->name('api.external.ecritures.deverser');
     // Rejeu : les opérations parties avant le 06/10/2026 sont arrivées une
     // ligne par pièce. Ce point d'entrée les regroupe sous un seul numéro,
     // sans rien recréer — rejouer le déversement n'aurait rien changé, chaque
     // ligne y étant déjà reconnue à sa clé.
     Route::post('/ecritures/regrouper', [\App\Http\Controllers\Api\ExternalSyncController::class, 'regrouperEcritures'])
-        ->middleware('cle.entreprise')
+        ->middleware('integration.auth')
         ->name('api.external.ecritures.regrouper');
     Route::post('/ecritures/comptes/propager', [\App\Http\Controllers\Api\ExternalSyncController::class, 'propagerComptes'])
-        ->middleware(['cle.entreprise', 'throttle:30,1'])
+        ->middleware(['integration.auth', 'throttle:30,1'])
         ->name('api.external.ecritures.comptes.propager');
     // Selflow déverse son référentiel — plan comptable, journaux, tiers — dans
     // l'entreprise Comptaflow qui lui est liée. Sens unique : rien ne repart.
     Route::post('/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
-        ->middleware('cle.entreprise')
+        ->middleware('integration.auth')
         ->name('api.external.referentiel.deverser');
 
     // Pièce PDF rattachée à toutes les lignes d'une opération source.
     // Le dossier destinataire provient exclusivement de X-Company-Key.
     Route::post('/pieces-justificatives/deverser', [\App\Http\Controllers\Api\ExternalJustificatifController::class, 'deverser'])
-        ->middleware(['cle.entreprise', 'throttle:20,1'])
+        ->middleware(['integration.auth', 'throttle:20,1'])
         ->name('api.external.pieces-justificatives.deverser');
     Route::get('/pieces-justificatives/{ecritureId}', [\App\Http\Controllers\Api\ExternalJustificatifController::class, 'telechargerPourIntegration'])
-        ->middleware(['cle.entreprise', 'throttle:60,1'])
+        ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.pieces-justificatives.show');
     Route::post('/gestionsites/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
-        ->middleware('cle.entreprise')
+        ->middleware('integration.auth')
         ->name('api.external.gestionsites.referentiel.deverser');
 
     // ── Le reste de la passerelle ──

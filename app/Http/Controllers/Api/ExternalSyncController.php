@@ -613,7 +613,7 @@ class ExternalSyncController extends Controller
 
         $atomique = $request->boolean('atomique');
         $origine = $request->attributes->get('integration_origine', 'SELFLOW');
-        $prefixeSource = $origine === 'GESTION_DE_SITES' ? 'GESTION-DE-SITES' : 'SELFLOW';
+        $prefixeSource = $origine === 'GESTION_DE_SITES' ? 'GESTION-DE-SITES' : ($origine === 'SELFLOW' ? 'SELFLOW' : $origine);
 
         $company = self::entrepriseDeLaRequete($request);
 

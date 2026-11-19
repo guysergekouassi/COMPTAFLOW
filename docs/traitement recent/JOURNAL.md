@@ -49,3 +49,40 @@ Aucun code métier ni menu n'a été modifié dans ce passage. La console centra
 - Mise à jour du récapitulatif : `bd101ac50d6ce54c8d5c9ceeee18e691da68b66e`.
 
 Le prochain lot de code doit créer le registre et les liaisons, puis raccorder les routes, politiques, middleware Bearer, écrans et menus. Ne pas ajouter uniquement des liens sans fonctionnalités persistées et contrôlées côté serveur.
+
+
+## 2026-11-19 — première livraison du registre COMPTA-APK (code serveur)
+
+### Ajouts
+- Migration des tables `integration_applications`, `integration_application_companies`, `integration_api_tokens`, `integration_api_events` et `integration_request_nonces`.
+- Deux écrans Super Admin : applications maison et applications externes.
+- Actions : création d'application, modification/suspension, liaison à une entreprise existante, création d'un dossier externe dédié, révocation de liaison, révocation d'application et rotation/activation Bearer des identifiants.
+- SELFLOW est importé dans le registre comme application historique ; ses liaisons actives existantes sont reprises sans réactiver celles déjà révoquées. RH-FLOW est affiché comme prévu/en attente, sans toucher à son dépôt.
+- Endpoint `POST /api/integration/token`, jetons d'une heure et stockage des empreintes SHA-256.
+- Middleware API qui accepte Bearer avec permissions par famille, résolution serveur du dossier et anti-rejeu (timestamp Unix ± 5 minutes et nonce unique). Les appels historiques `X-Company-Key` sont délégués à l'ancien middleware.
+- Journalisation des émissions de jetons et des dépôts.
+- Contrat documenté dans `CONTRAT_API_BEARER.md`.
+
+### Fichiers modifiés/ajoutés
+- `database/migrations/2026_11_19_000001_create_integration_registry_tables.php`
+- `app/Http/Controllers/Super/SuperAdminIntegrationController.php`
+- `app/Http/Controllers/Api/IntegrationTokenController.php`
+- `app/Http/Middleware/VerifieApplicationOuCleEntreprise.php`
+- `resources/views/superadmin/liaison_compta_apk.blade.php`
+- `routes/web.php`, `routes/api.php`, `bootstrap/app.php`
+- `resources/views/components/superadmin_sidebar.blade.php`
+- `app/Http/Controllers/Api/ExternalSyncController.php`
+- Les deux fichiers de suivi et le contrat API.
+
+### Vérifications
+- Routes et points d'insertion repérés dans les fichiers réels du dépôt.
+- Contrôles syntaxiques PHP, migration, tests Laravel, rendu navigateur et tests de sécurité : non exécutés à ce stade.
+- Aucun déploiement serveur vérifié.
+
+### Points restant impérativement à valider
+1. Exécuter la migration sur une base de test puis production après sauvegarde contrôlée.
+2. Exécuter `php -l`, `php artisan route:list`, tests PHPUnit/Pest et tests Feature d'isolation.
+3. Vérifier la vue avec un compte Super Admin réel.
+4. Configurer SELFLOW pour demander/renouveler le Bearer et fournir les en-têtes timestamp/nonce ; conserver `X-Company-Key` tant que ce client n'est pas déployé.
+5. Tester une application externe : aucune liste globale, dossier unique, accès croisé refusé, permissions, rotation et révocation.
+6. Tester le dépôt PDF et l'idempotence avec un dossier réellement lié.

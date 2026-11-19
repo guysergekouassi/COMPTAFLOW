@@ -900,6 +900,18 @@ Route::middleware(['auth', 'superadmin'])->group(function () {
     Route::post('/superadmin/liaisons/lier', [\App\Http\Controllers\Super\SuperAdminLiaisonController::class, 'lierManuellement'])->name('superadmin.liaisons.lier');
     Route::delete('/superadmin/liaisons/{id}', [\App\Http\Controllers\Super\SuperAdminLiaisonController::class, 'destroy'])->name('superadmin.liaisons.destroy');
 
+    // Console centralisée des intégrations COMPTA-APK (distincte de l'ancien écran SELFLOW).
+    Route::get('/superadmin/liaison-compta-apk', fn () => redirect()->route('superadmin.liaison_compta.maison'))->name('superadmin.liaison_compta.index');
+    Route::get('/superadmin/liaison-compta-apk/maison', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'maison'])->name('superadmin.liaison_compta.maison');
+    Route::get('/superadmin/liaison-compta-apk/externe', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'externe'])->name('superadmin.liaison_compta.externe');
+    Route::post('/superadmin/liaison-compta-apk/applications', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'store'])->name('superadmin.liaison_compta.applications.store');
+    Route::put('/superadmin/liaison-compta-apk/applications/{id}', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'update'])->name('superadmin.liaison_compta.applications.update');
+    Route::post('/superadmin/liaison-compta-apk/applications/{id}/liaisons', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'lier'])->name('superadmin.liaison_compta.link');
+    Route::post('/superadmin/liaison-compta-apk/applications/{id}/entreprise', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'creerEntrepriseEtLier'])->name('superadmin.liaison_compta.company.create');
+    Route::delete('/superadmin/liaison-compta-apk/applications/{id}/liaisons/{companyId}', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'delier'])->name('superadmin.liaison_compta.unlink');
+    Route::post('/superadmin/liaison-compta-apk/applications/{id}/secret/rotate', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'renouvelerSecret'])->name('superadmin.liaison_compta.secret.rotate');
+    Route::post('/superadmin/liaison-compta-apk/applications/{id}/revoke', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'revoquer'])->name('superadmin.liaison_compta.application.revoke');
+
     // Honoraires & Abonnements
     Route::get('/superadmin/honoraires', [\App\Http\Controllers\Super\HonorairesController::class, 'index'])->name('superadmin.honoraires');
     Route::get('/superadmin/honoraires/{companyId}', [\App\Http\Controllers\Super\HonorairesController::class, 'show'])->name('superadmin.honoraires.show');

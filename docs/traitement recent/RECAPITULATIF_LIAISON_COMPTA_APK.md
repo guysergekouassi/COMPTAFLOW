@@ -148,3 +148,22 @@ Ce récapitulatif distingue les éléments vérifiés dans le dépôt, ceux rapp
 4. Mettre à jour ce récapitulatif avec les résultats réels.
 5. Pousser les modifications sur `main`.
 6. Reporter le SHA du commit et distinguer explicitement tests réussis, tests non exécutés et déploiement non vérifié.
+
+
+## 10. Livraison serveur COMPTA-APK — 19/11/2026
+
+### Code ajouté dans COMPTAFLOW
+- Migration `2026_11_19_000001_create_integration_registry_tables.php` : registre des applications, liaisons et permissions, jetons hashés, événements d'audit et nonces anti-rejeu.
+- Contrôleur `SuperAdminIntegrationController` : création/modification/suspension/révocation d'applications, liaisons, création de dossier dédié externe, rotation des secrets et journalisation.
+- Contrôleur API `IntegrationTokenController` : émission de jetons Bearer d'une heure après validation du client et de son périmètre.
+- Middleware `VerifieApplicationOuCleEntreprise` : contrôle du jeton, du dossier lié, du type maison/externe, des permissions, de l'expiration et des en-têtes anti-rejeu. Repli conservé vers `VerifieCleEntreprise` pour la compatibilité historique.
+- Vue `resources/views/superadmin/liaison_compta_apk.blade.php` et routes Super Admin dédiées.
+- Nouvelle rubrique de menu avec les deux entrées demandées ; l'ancienne page SELFLOW reste accessible.
+- Le registre affiche SELFLOW en mode historique et RH-FLOW en attente (référence uniquement ; aucun dépôt RH-FLOW modifié).
+- Le préfixe source des écritures est désormais issu du code d'application pour les applications Bearer autres que SELFLOW/GESTION-DE-SITES.
+
+### Contrat API
+Voir `CONTRAT_API_BEARER.md` dans ce dossier. Les applications maison peuvent obtenir un jeton pour une liaison parmi celles qui leur sont explicitement accordées. Une application externe doit posséder une seule liaison active.
+
+### État à ne pas surévaluer
+Le code serveur est ajouté dans ce commit, mais migration SQL, tests PHP/Feature, rendu navigateur, déploiement serveur et tests bout en bout restent à exécuter. Le connecteur SELFLOW n'a pas encore été basculé côté client vers Bearer ; il reste accepté via `X-Company-Key`. RH-FLOW reste hors développement applicatif dans ce lot.
