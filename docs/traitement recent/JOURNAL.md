@@ -31,3 +31,21 @@ Ne pas renommer ni supprimer l'ancienne page SELFLOW. Ajouter une console distin
 
 ### Commit
 Commit documentation : 47b64fe8518ec66f6c2a21fa91e75ed154bad6ae. La création de cette documentation ne signifie pas que la fonctionnalité métier est livrée.
+
+
+## 2026-11-19 — approfondissement de l'audit de navigation
+
+### Vérifications complémentaires
+- Le menu Super Admin réel est `resources/views/components/superadmin_sidebar.blade.php`.
+- Il contient actuellement une entrée unique « Liaisons SELFLOW » pointant vers `superadmin.liaisons.index`.
+- La vue historique est `resources/views/superadmin/liaisons.blade.php`, et son titre confirme qu'elle ne couvre que COMPTAFLOW ↔ SELFLOW.
+- La nouvelle rubrique « Liaison COMPTA-APK » et ses deux sous-entrées n'existent donc pas encore dans le menu.
+- Le contrôleur historique contient des opérations spécifiques SELFLOW et ne doit pas être réutilisé comme registre générique sans séparation des responsabilités.
+
+### État après ce contrôle
+Aucun code métier ni menu n'a été modifié dans ce passage. La console centrale n'est toujours pas livrée. Les commits documentaires connus sont :
+- Récapitulatif initial : `47b64fe8518ec66f6c2a21fa91e75ed154bad6ae`.
+- Journal initial : `5537cfd52ac32383b403b3dda841ea41672e13d5`.
+- Mise à jour du récapitulatif : `bd101ac50d6ce54c8d5c9ceeee18e691da68b66e`.
+
+Le prochain lot de code doit créer le registre et les liaisons, puis raccorder les routes, politiques, middleware Bearer, écrans et menus. Ne pas ajouter uniquement des liens sans fonctionnalités persistées et contrôlées côté serveur.
