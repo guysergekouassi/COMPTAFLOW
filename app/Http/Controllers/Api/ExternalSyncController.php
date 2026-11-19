@@ -866,15 +866,8 @@ class ExternalSyncController extends Controller
 
         // ── La liaison doit exister ──
         //
-        // On ne reçoit que d'une entreprise déjà liée, et on n'en crée pas une
-        // au passage : un `comptaflow_company_id` erroné déverserait le
-        // référentiel d'une entreprise dans la comptabilité d'une autre.
-        //
-        // Le dossier vient d'abord de la clé d'en-tête, que `cle.entreprise` a
-        // déjà confrontée aux deux identifiants du corps. Le repli croise les
-        // deux identifiants entre eux — c'est tout ce qu'on peut faire sans
-        // clé, et cela ne vaut que le temps de la transition : les deux valeurs
-        // viennent du même corps de requête, donc du même appelant.
+        // Le middleware a déjà vérifié X-Company-Key et résolu le dossier.
+        // Aucun identifiant reçu dans le JSON ne peut changer ce destinataire.
         $origine = $request->attributes->get('integration_origine', 'SELFLOW');
         $company = self::entrepriseDeLaRequete($request);
 
@@ -884,11 +877,6 @@ class ExternalSyncController extends Controller
                 'message' => 'Aucun dossier COMPTAFLOW n’est associé à la clé présentée. Établissez la liaison avant de déverser le référentiel.',
             ], 404);
         }
-
-        // Information de journalisation issue de la liaison, pas de l'appelant.
-        $idSource = $origine === 'GESTION_DE_SITES'
-            ? ($company->gestionsites_company_id ?? $company->id)
-            : ($company->selflow_company_id ?? $company->id);
 
         // L'import de Comptaflow travaille au nom d'un utilisateur du dossier :
         // c'est lui que l'historique des imports nommera.
