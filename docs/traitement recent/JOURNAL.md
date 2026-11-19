@@ -263,3 +263,26 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Workflow COMPTAFLOW `44589135771` : **completed / success** ; Composer, tests ciblés de migration/Bearer, compilation Blade et vérification des routes réussis.
 - Le code du lot est terminé et poussé sur `main`.
 - Non réalisé : migration et déploiement sur serveurs de production, saisie du secret réel dans SELFLOW et tests réseau réels. Ces opérations nécessitent l'accès à l'hébergement, indisponible dans ce traitement.
+
+
+## 2026-11-19 — correction de la page IA et de la migration MySQL
+
+### Anomalies signalées sur le site
+1. En ouvrant `/superadmin/controle-pages`, le thème changeait et la navigation passait à une sidebar sombre fixe, différente du tableau de bord.
+2. `php artisan migrate` échouait sur MySQL 1059 : nom automatique de clé étrangère trop long pour `integration_application_companies`.
+
+### Corrections publiées sur main
+- Vue `page-control/index.blade.php` : retour au composant de navigation partagé `components.sidebar`, suppression des règles CSS qui imposaient une sidebar sombre, une largeur fixe et un layout autonome.
+- Migration `2026_11_19_000001_create_integration_registry_tables.php` : noms de clés étrangères explicites courts et reprise idempotente des tables/index/contraintes partiellement créés.
+- Test `IntegrationRegistryMigrationTest` : migration rejouée deux fois et simulation de tables déjà créées sans FK.
+
+### Commits
+- Migration : `b99e1dfa13cbb81880057391b2c690f0dc3e383f`.
+- Vue : `26ccf2a2cd98d548b54044e830f20d390cbf7727`.
+- Tests : `fff88d38b4fddc43323cef4cba227c5b51064f05`.
+
+### État
+- Modifications poussées sur `IT-dcknowing/COMPTAFLOW`, branche `main`.
+- La CI doit confirmer le test de reprise MySQL simulé via SQLite et la compilation Blade.
+- Pas de suppression des tables ni des données de production.
+- La migration de production n'est pas relancée automatiquement depuis GitHub ; elle doit être exécutée sur le serveur après sauvegarde et récupération de `main`.
