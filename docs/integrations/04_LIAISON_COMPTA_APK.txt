@@ -123,6 +123,10 @@ des endpoints ne sont pas encore déclarés livrés par la seule présence de ce
 
 
 ETAT D'AVANCEMENT COMPLEMENTAIRE — 19/11/2026
+- COMPTAFLOW : endpoint POST /api/external/ecritures/comptes/propager disponible.
+  Il réaffecte les anciennes lignes vers le nouvel identifiant de plan comptable
+  et met à jour les comptes généraux des tiers ; aucun montant n'est recalculé.
+  SELFLOW synchronise d'abord le référentiel puis met cette propagation en file.
 - COMPTAFLOW : endpoint POST /api/external/pieces-justificatives/deverser disponible.
   Il contrôle la clé du dossier, le PDF, la taille, le SHA-256, l'existence de
   l'opération exacte et l'idempotence ; les fichiers sont conservés en privé.
