@@ -542,6 +542,19 @@ public function index()
                     ]);
                     $nextExercice->refresh();
                 }
+
+                $finNextEffective = Carbon::parse($nextExercice->date_fin)->startOfDay();
+                $chevauchementAutre = ExerciceComptable::where('company_id', $companyId)
+                    ->where('id', '!=', $exercice->id)
+                    ->where('id', '!=', $nextExercice->id)
+                    ->whereDate('date_debut', '<=', $finNextEffective->toDateString())
+                    ->whereDate('date_fin', '>=', $debutNext->toDateString())
+                    ->exists();
+
+                if ($chevauchementAutre) {
+                    DB::rollBack();
+                    return back()->with('error', "Un autre exercice chevauche la période du nouvel exercice. Ajustez les dates avant la clôture.");
+                }
             } else {
                 $finNext = $debutNext->copy()->addYear()->subDay();
                 $chevauchement = ExerciceComptable::where('company_id', $companyId)
