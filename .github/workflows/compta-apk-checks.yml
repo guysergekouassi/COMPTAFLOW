@@ -22,11 +22,8 @@ jobs:
         run: |
           printf 'APP_KEY=\\n' > .env
           php artisan key:generate --force
-      - name: Run database migrations on SQLite
-        run: |
-          DB_CONNECTION=sqlite DB_DATABASE=":memory:" php artisan migrate --force
-      - name: Run COMPTA-APK security tests
-        run: php artisan test --filter=IntegrationBearerSecurityTest
+      - name: Run registry migration and Bearer security tests
+        run: php artisan test --filter='IntegrationRegistryMigrationTest|IntegrationBearerSecurityTest'
       - name: Compile Blade views
         run: php artisan view:cache
       - name: Verify COMPTA-APK routes

@@ -142,6 +142,7 @@ Le commit `b0277ea...` n'a pas créé l'interface COMPTA-APK. Aucun commit de r�
 Workflow GitHub Actions `44586071484` :
 - Installation Composer : réussie.
 - Tests de sécurité Bearer `IntegrationBearerSecurityTest` : réussis, y compris le refus d'accès à la liste globale et à `company-info` avec un simple jeton Bearer.
+- Test isolé `IntegrationRegistryMigrationTest` ajouté pour exécuter la nouvelle migration et vérifier les tables/champs du registre.
 - Compilation des vues Blade : réussie.
 - Vérification des routes Super Admin et API : réussie.
 

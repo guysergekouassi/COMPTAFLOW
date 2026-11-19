@@ -195,3 +195,11 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 
 - Ajout de deux tests Feature : un jeton Bearer d'application ne peut pas appeler `/api/external/list-companies` pour obtenir la liste globale, ni `/api/external/company-info` pour sélectionner un dossier arbitraire.
 - Les endpoints de contrôle historiques restent protégés par le secret serveur global ; ce secret n'est pas communiqué aux applications externes.
+
+
+## 2026-11-19 — test isolé de la migration du registre
+
+- L'exécution de toutes les migrations sur SQLite s'arrête sur une migration antérieure du projet (`2026_11_16_000001_make_ai_scan_settings_id_auto_increment.php`) qui utilise la syntaxe MySQL `ALTER TABLE ... MODIFY`, non supportée par SQLite.
+- Cette erreur est préexistante et hors du lot COMPTA-APK ; aucune modification n'a été faite sur cette migration historique.
+- Remplacement de l'étape CI par un test isolé `IntegrationRegistryMigrationTest` : création d'une table `companies` minimale, exécution de la nouvelle migration COMPTA-APK, vérification des tables/champs, puis rollback.
+- Le workflow vérifie désormais cette migration ciblée et les tests Bearer sans exécuter les migrations historiques incompatibles avec SQLite.
