@@ -131,15 +131,14 @@ ETAT D'AVANCEMENT COMPLEMENTAIRE — 19/11/2026
   Il contrôle la clé du dossier, le PDF, la taille, le SHA-256, l'existence de
   l'opération exacte et l'idempotence ; les fichiers sont conservés en privé.
   Les routes de téléchargement vérifient également le dossier propriétaire.
-- SELFLOW : les écritures de stock sont désactivées par défaut. L'entreprise peut
-  activer une comptabilisation quotidienne ou périodique (1 à 12 mois), bornée
-  par des dates de début et de fin. Les opérations produites utilisent le même
-  endpoint de déversement que les autres écritures.
+- SELFLOW : la comptabilisation du stock est activée par défaut tous les trois
+  mois ; le quotidien reste optionnel. La date de fin est facultative et les
+  périodes sont traitées après leur échéance.
 - SELFLOW : les payloads référentiel et écritures n'envoient plus le secret global,
   les identifiants de société ni un champ numero_original séparé.
 - RESTE A REALISER : interface SuperAdmin « Liaison COMPTA-APK » avec les deux
   sections « APPLICATION MAISON : LA SUITE FLOW » et « APPLICATION EXTERNE »,
   registre des applications, liaisons, permissions, génération/rotation/révocation
-  centralisées des identifiants applicatifs et jetons, ainsi que l'appel SELFLOW
-  automatique au nouvel endpoint PDF. RH-FLOW reste hors développement ici :
+  centralisées des identifiants applicatifs et jetons. L'envoi PDF SELFLOW est
+  maintenant intégré au job de déversement des opérations. RH-FLOW reste hors développement ici :
   seul le contrat de données lui est fourni.

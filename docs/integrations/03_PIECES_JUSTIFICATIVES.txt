@@ -1,6 +1,6 @@
 COMPTAFLOW — DEPOT DES PIECES JUSTIFICATIVES PDF
-STATUT : ENDPOINT COMPTAFLOW IMPLEMENTE SUR MAIN LE 19/11/2026.
-L'appelant SELFLOW doit encore intégrer l'envoi effectif des fichiers.
+STATUT : ENDPOINT COMPTAFLOW ET EMETTEUR SELFLOW IMPLEMENTES SUR MAIN LE 19/11/2026.
+Le job DeverserOperationComptaflow envoie le justificatif après acceptation des écritures.
 
 OBJECTIF
 Rattacher un PDF à toutes les lignes de l'opération comptable source exacte.
@@ -56,9 +56,14 @@ TELECHARGEMENT
 Les nouveaux fichiers sont conservés hors du répertoire public. Les anciens
 justificatifs publics restent compatibles avec leurs liens historiques.
 
-INTEGRATION SELFLOW RESTANTE
-Le connecteur SELFLOW doit :
-- retrouver le PDF de la pièce rattachée à l'opération ;
-- calculer SHA-256 et encoder le fichier en base64 ;
-- appeler l'endpoint après confirmation de la réception de l'opération comptable ;
-- ne pas envoyer le fichier avant que operation_source existe dans COMPTAFLOW.
+INTEGRATION SELFLOW LIVREE
+Le job DeverserOperationComptaflow :
+- attend l'acceptation des écritures de l'opération par COMPTAFLOW ;
+- génère le PDF des factures/avoirs de vente et d'achat et des reçus de vente ;
+- récupère le PDF original local des factures reçues du portail FNE ;
+- calcule SHA-256, encode le fichier en base64 et appelle l'endpoint avec
+  operation_source égal à la clé operation_selflow déjà déversée ;
+- reprend l'envoi lors des tentatives de reprise ; l'endpoint garantit l'idempotence.
+
+Les OD, règlements fournisseurs et opérations de stock ne sont pas accompagnés
+d'un PDF commercial distinct : aucun fichier n'est envoyé pour ces types.
