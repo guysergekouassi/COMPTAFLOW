@@ -427,6 +427,21 @@ const saisieGrille = (() => {
 
     const vnts = inputRow.dataset.ventilations ? JSON.parse(inputRow.dataset.ventilations) : [];
 
+    const compteSelectionne = plansComptables.find(p => p.id == compSelect.value);
+    const ligneResultat = estCompteDeResultat(compteSelectionne?.numero_de_compte);
+    const resultatDejaAjoute = addedLines.some(l => {
+      const compte = plansComptables.find(p => p.id == l.plan_comptable_id);
+      return estCompteDeResultat(compte?.numero_de_compte);
+    });
+    if ((ligneResultat && addedLines.length > 0) || (!ligneResultat && resultatDejaAjoute)) {
+      if (window.Swal) Swal.fire({
+        icon: 'warning',
+        title: 'Écriture de résultat sur une seule ligne',
+        text: 'Les comptes 1301 et 1309 se saisissent seuls, au débit ou au crédit. Aucune ligne de contrepartie ne doit être ajoutée.',
+      });
+      return false;
+    }
+
     // Push line to temporary array
     addedLines.push({
       id: inputRow.dataset.ecritureId || null,
@@ -1382,20 +1397,23 @@ const saisieGrille = (() => {
     }
   }
 
-  // Un compte de classe 13 porte le resultat de l'exercice.
+  // Seuls 1301 (bénéfice) et 1309 (perte) portent l'affectation du résultat.
   function estCompteDeResultat(numero) {
-    return String(numero || '').startsWith('13');
+    const n = String(numero || '').trim();
+    return n.startsWith('1301') || n.startsWith('1309');
   }
 
-  // L'ecriture d'affectation du resultat est, par nature, une seule ligne :
-  // sa contrepartie est le report a nouveau, deja passe. Exiger une parite
-  // debit-credit obligeait a inventer une seconde ligne.
+  // Une affectation de résultat est une ligne unique, exclusivement sur 1301 ou 1309.
   function porteLeResultat() {
-    if (addedLines.some(l => estCompteDeResultat(l.compte_general))) return true;
+    const lignesResultat = addedLines.filter(l => {
+      const compte = plansComptables.find(p => p.id == l.plan_comptable_id);
+      return estCompteDeResultat(compte?.numero_de_compte);
+    });
+    if (lignesResultat.length) return addedLines.length === 1 && lignesResultat.length === 1;
 
     const select = document.getElementById('input_compte_general');
     const compte = select ? plansComptables.find(p => p.id == select.value) : null;
-    return !!(compte && estCompteDeResultat(compte.numero_de_compte));
+    return addedLines.length === 0 && !!(compte && estCompteDeResultat(compte.numero_de_compte));
   }
 
   function estEquilibre() {
@@ -1520,7 +1538,8 @@ const saisieGrille = (() => {
       const parGroupe = {};
       lignes.forEach(e => { (parGroupe[e.n_saisie] = parGroupe[e.n_saisie] || []).push(e); });
       const groupesDesequilibres = Object.entries(parGroupe)
-        .filter(([, l]) => Math.abs(l.reduce((s, x) => s + Number(x.debit), 0) - l.reduce((s, x) => s + Number(x.credit), 0)) > 0.01)
+        .filter(([, l]) => !l.some(x => estCompteDeResultat(x.compte_general))
+          && Math.abs(l.reduce((s, x) => s + Number(x.debit), 0) - l.reduce((s, x) => s + Number(x.credit), 0)) > 0.01)
         .map(([ns]) => ns);
       lignes = lignes.filter(e => groupesDesequilibres.includes(e.n_saisie));
     }
@@ -1549,7 +1568,7 @@ const saisieGrille = (() => {
     Object.entries(parGroupe).forEach(([ns, l]) => {
       const d = l.reduce((s, x) => s + Number(x.debit), 0);
       const c = l.reduce((s, x) => s + Number(x.credit), 0);
-      desequilibreParGroupe[ns] = Math.abs(d - c) > 0.01;
+      desequilibreParGroupe[ns] = !l.some(x => estCompteDeResultat(x.compte_general)) && Math.abs(d - c) > 0.01;
     });
 
     if (listeBody) {
@@ -1657,7 +1676,7 @@ const saisieGrille = (() => {
     Object.entries(parGroupe).forEach(([ns, l]) => {
       const d = l.reduce((s, x) => s + Number(x.debit), 0);
       const c = l.reduce((s, x) => s + Number(x.credit), 0);
-      desequilibreParGroupe[ns] = Math.abs(d - c) > 0.01;
+      desequilibreParGroupe[ns] = !l.some(x => estCompteDeResultat(x.compte_general)) && Math.abs(d - c) > 0.01;
     });
 
     if (consultationBody) {
