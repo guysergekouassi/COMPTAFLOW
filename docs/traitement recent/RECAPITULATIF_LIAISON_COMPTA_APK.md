@@ -249,3 +249,21 @@ Dernier HEAD COMPTAFLOW vérifié : `fef72c2c620b4fa12c612e947bf9b362be6a5839`.
 - GitHub Actions COMPTAFLOW : workflow `44589011690` terminé avec succès ; installation, tests migration/Bearer, compilation Blade et contrôle des routes réussis.
 
 Cette correction renforce la règle métier : une application externe n'est pas autorisée à se rattacher à un dossier client préexistant. Elle possède un dossier dédié créé par le parcours Super Admin.
+
+
+## 14. Clôture du lot de code et contrôle CI final — 19/11/2026
+
+### Commits du dernier durcissement
+- `98c620fc3f922665a9f6c02e9ab5cd0da93200b7` — refus serveur du rattachement générique pour une application externe.
+- `dafae855b9de43144c9c9ebcb174e7d868dd0281` — masquage du formulaire de rattachement existant dans la section externe.
+- `ad8ba236f2f924394382c291dcf35c52a53f6f50` — ajout des tests de refus et d'isolation.
+- `45a033138022579f9ae84f8daadac8ae2e6bf7bb` — imports de test et validation complète du commit de code.
+
+### Résultat final CI
+- Workflow COMPTAFLOW `44589135771` : **completed / success**.
+- Étapes confirmées : Composer, migration ciblée et tests Bearer, compilation Blade, vérification des routes.
+- Le workflow est exécuté sur le commit documentaire `d63b80310402bafb1393f7ec9057edf919f2ddde`, dont le code applicatif inclut le correctif testé `45a0331...`.
+- Les changements de suivi suivants n'ont modifié que les fichiers Markdown.
+
+### État de clôture
+La réalisation applicative COMPTA-APK demandée dans ce lot est terminée et publiée sur `main`, avec contrôles CI réussis. La mise en service sur les serveurs n'est pas déclarée terminée : elle nécessite accès à l'hébergement, sauvegarde, migration réelle, déploiement COMPTAFLOW + SELFLOW et essais de bout en bout avec les identifiants réels.
