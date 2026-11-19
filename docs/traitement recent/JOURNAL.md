@@ -176,3 +176,9 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - CI SELFLOW : workflow `44586186577` réussi.
 - Déploiement production et saisie des identifiants réels non effectués depuis cette session.
 - Commit de cette consolidation : `350193e4fb3ca1787e4a8bf45a220e16d54e9db1`.
+
+
+## 2026-11-19 — contrôle du schéma SQL dans la CI
+
+- Ajout d'une étape `php artisan migrate --force` sur SQLite en mémoire au workflow COMPTAFLOW, afin de vérifier aussi l'exécution des migrations et pas seulement la syntaxe PHP, les tests Bearer et les routes.
+- Résultat de cette nouvelle étape à confirmer après le prochain workflow.
