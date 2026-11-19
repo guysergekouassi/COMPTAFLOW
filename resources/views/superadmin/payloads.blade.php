@@ -9,7 +9,7 @@
             @include('components.header', ['page_title' => 'Contrats de payload COMPTAFLOW'])
             <div class="content-wrapper">
                 <div class="container-xxl flex-grow-1 container-p-y">
-                    <h3>Contrats d'intégration COMPTAFLOW</h3>
+                    <h3>Contrats d'intégration COMPTAFLOW et gouvernance des applications</h3>
                     <p class="text-muted">Formats à respecter par SELFLOW, RH-FLOW et toute application externe.</p>
                     <div class="card mb-3"><div class="card-body">
                         <h5>1. Référentiel</h5>
@@ -23,8 +23,13 @@
                     </div></div>
                     <div class="card mb-3"><div class="card-body">
                         <h5>3. Pièces justificatives</h5>
-                        <p>Contrat cible de rattachement exact des PDF. L'endpoint reste à implémenter.</p>
+                        <p>Endpoint de dépôt PDF disponible ; l'envoi automatique depuis SELFLOW reste à intégrer.</p>
                         <a class="btn btn-primary" href="{{ route('superadmin.payloads.download', 'pieces') }}">Télécharger le TXT</a>
+                    </div></div>
+                    <div class="card mb-3"><div class="card-body">
+                        <h5>4. Liaison COMPTA-APK</h5>
+                        <p>Gouvernance des applications maison et externes, rattachement des dossiers, permissions et sécurité.</p>
+                        <a class="btn btn-primary" href="{{ route('superadmin.payloads.download', 'liaison') }}">Télécharger le TXT</a>
                     </div></div>
                 </div>
             </div>
