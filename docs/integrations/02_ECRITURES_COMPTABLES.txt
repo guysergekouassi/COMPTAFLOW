@@ -58,3 +58,14 @@ REGLES
 
 
 AUTHENTIFICATION ET ROUTAGE : les endpoints /ecritures/deverser et /ecritures/regrouper sont protégés par cle.entreprise. Le middleware résout le dossier à partir de X-Company-Key ; les identifiants de société et le secret global ne sont plus requis dans le JSON métier. La gestion des clients applicatifs centralisés reste un chantier distinct.
+
+STOCK — ORIGINE SELFLOW
+Les mouvements physiques restent gérés par SELFLOW. Leur comptabilisation est
+désactivée par défaut dans les paramètres de chaque entreprise. Lorsqu'elle est
+activée, SELFLOW produit des opérations équilibrées au journal OD :
+- en périodicité quotidienne, une opération agrégée par point de vente et par jour ;
+- sinon, une opération agrégée par point de vente à chaque échéance de 1 à 12 mois.
+La période est bornée par les dates de début et de fin choisies dans SELFLOW.
+Les opérations générées suivent exactement le même payload d'écritures que les
+ventes, achats et OD. Le mode de transmission COMPTAFLOW reste indépendant :
+manuel par défaut, ou automatique si l'entreprise l'a explicitement choisi.
