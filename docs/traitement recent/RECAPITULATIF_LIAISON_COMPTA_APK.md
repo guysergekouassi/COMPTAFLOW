@@ -95,122 +95,107 @@ Ces éléments sont rapportés comme existants dans la spécification de session
 
 Le commit `b0277ea...` n'a pas créé l'interface COMPTA-APK. Aucun commit de réalisation de cette nouvelle interface n'est enregistré à la date de ce récapitulatif. Les deux fichiers de suivi ont été ajoutés sur main : récapitulatif initial `47b64fe8518ec66f6c2a21fa91e75ed154bad6ae`, journal `5537cfd52ac32383b403b3dda841ea41672e13d5`.
 
-## 6. Travail restant — non livré à ce jour
+## 6. État fonctionnel livré
 
-### À développer
-- [ ] Rubrique principale Super Admin « Liaison COMPTA-APK ».
-- [ ] Sous-menu « APPLICATION MAISON — LA SUITE FLOW ».
-- [ ] Sous-menu « APPLICATION EXTERNE ».
-- [ ] Tables/migrations et modèles du registre générique des applications.
-- [ ] Modèle des liaisons application ↔ entreprise, avec contraintes propres aux applications maison et externes.
-- [ ] Gestion centralisée des permissions par famille de données.
-- [ ] Génération de `client_id`, secret aléatoire, empreinte, expiration, rotation et révocation.
-- [ ] Émission et validation de jetons Bearer.
-- [ ] Middleware d'authentification applicative et résolution du dossier côté serveur.
-- [ ] Historique des authentifications, connexions, dépôts, refus et révocations.
-- [ ] Écrans de configuration sécurisée côté applications clientes.
-- [ ] Migration progressive des clients actifs depuis `EXTERNAL_SYNC_SECRET` / `X-Company-Key`.
-- [ ] Retrait de l'ancien secret global seulement après migration et validation.
+### Console Super Admin COMPTA-APK
+- [x] Rubrique principale « Liaison COMPTA-APK » dans le menu Super Admin.
+- [x] Entrée « APPLICATION MAISON — LA SUITE FLOW ».
+- [x] Entrée « APPLICATION EXTERNE ».
+- [x] Registre des applications : code, nom, type, propriétaire, statut et mode d'authentification.
+- [x] Liaisons application ↔ entreprise et permissions par référentiel, écritures et pièces justificatives.
+- [x] Action de liaison à une entreprise existante.
+- [x] Création d'une entreprise dédiée à une application externe, avec compte technique, catégories de trésorerie et exercice comptable dont les dates sont saisies par le Super Admin.
+- [x] Client ID, secret affiché une seule fois, empreinte du secret, expiration, rotation et révocation.
+- [x] Journal des connexions, dépôts, révocations et opérations applicatives.
+- [x] La page historique `/superadmin/liaisons` reste disponible pour le parcours SELFLOW existant.
 
-### À tester
-- [ ] Application maison autorisée sur plusieurs dossiers explicitement liés.
-- [ ] Application externe isolée à son entreprise dédiée.
-- [ ] Tentative d'accès à une entreprise non liée refusée.
-- [ ] Aucun endpoint externe ne liste les entreprises globales.
-- [ ] Aucun `company_id` libre dans les payloads ne peut changer le dossier cible.
-- [ ] Secret invalide, jeton expiré, révocation et rotation.
-- [ ] Permissions référentiel / écritures / pièces justificatives.
-- [ ] Rejeu idempotent et anti-rejeu.
-- [ ] Dépôt PDF dans le mauvais dossier refusé.
-- [ ] Compatibilité des connecteurs existants et absence de régression sur SELFLOW et GESTION-DE-SITES.
-- [ ] Tests PHP, tests applicatifs, vérification des routes et rendu navigateur après déploiement.
+### Routes de la nouvelle interface
+- `/superadmin/liaison-compta-apk` : entrée principale, redirection vers APPLICATION MAISON.
+- `/superadmin/liaison-compta-apk/maison` : applications internes et leurs liaisons.
+- `/superadmin/liaison-compta-apk/externe` : applications tierces et dossiers dédiés.
 
-## 7. Périmètre et exclusions à respecter
+### Sécurité et endpoints
+- [x] Émission de jetons Bearer d'une heure.
+- [x] Résolution du dossier côté serveur à partir du jeton et de la liaison active.
+- [x] Une application maison ne peut utiliser que les dossiers explicitement liés.
+- [x] Une application externe ne peut avoir qu'une seule liaison active vers son dossier dédié.
+- [x] Aucun endpoint externe ne fournit la liste globale des entreprises.
+- [x] Un `company_id` fourni dans un payload ne peut pas changer le dossier autorisé.
+- [x] Permissions séparées : `referentiel`, `ecritures`, `pieces_justificatives`.
+- [x] Horodatage, nonce anti-rejeu, limitation de débit, idempotence et journalisation.
+- [x] Révocation d'une liaison SELFLOW synchronisée avec le registre central et les jetons.
+- [x] Le mode historique `X-Company-Key` est maintenu en repli transitoire, mais il est aussi soumis au registre central et à ses permissions pour SELFLOW.
+- [x] Le secret global n'est plus envoyé dans les payloads métier de référentiel, écritures ou pièces. Il reste réservé au provisionnement et à certaines opérations de contrôle historiques.
 
-- Le travail de développement de cette demande porte sur COMPTAFLOW et la liaison avec SELFLOW.
-- RH-FLOW est cité comme application maison future/contractuelle, mais son dépôt et son code ne doivent pas être modifiés dans ce lot sans demande explicite distincte.
-- GESTION-DE-SITES possède déjà des endpoints dédiés ; ne pas casser ni détourner cette intégration.
-- Les changements doivent être poussés directement sur `main` du dépôt IT `IT-dcknowing/COMPTAFLOW`, sans Pull Request, conformément à la consigne actuelle.
-- Ne jamais déclarer une fonctionnalité terminée sur la seule présence d'une route ou d'une vue : vérifier contrôleur, autorisations, données, tests et parcours réel.
+### Client SELFLOW
+- [x] Formulaire Super Admin sur la page historique SELFLOW pour enregistrer le Client ID et le Client Secret COMPTAFLOW.
+- [x] Secret applicatif chiffré avec `APP_KEY` dans les paramètres plateforme ; jeton en cache chiffré.
+- [x] Appels métier en Bearer avec horodatage et nonce.
+- [x] Renouvellement transparent du jeton après HTTP 401, avec repli historique si les identifiants ne sont pas encore actualisés.
+- [x] Raccordement du référentiel, des écritures, du regroupement, des pièces justificatives et de la propagation des comptes au client HTTP commun.
+- [x] Les opérations de rotation/révocation des anciennes clés par dossier conservent leur mécanisme de contrôle historique.
 
-## 8. État de ce traitement
+## 7. Résultats des contrôles automatisés
 
-**État : documentation de suivi en cours ; interface COMPTA-APK non livrée.**
+<badge color="success">COMPTAFLOW — CI réussie</badge>
 
-Ce récapitulatif distingue les éléments vérifiés dans le dépôt, ceux rapportés par la spécification de session et les travaux réellement non réalisés. Chaque nouveau traitement doit mettre à jour ce fichier et le journal de traitement avant de conclure, avec commit, fichiers modifiés, contrôles effectués, limites et tâches restantes.
+Workflow GitHub Actions `44586071484` :
+- Installation Composer : réussie.
+- Tests de sécurité Bearer `IntegrationBearerSecurityTest` : réussis.
+- Compilation des vues Blade : réussie.
+- Vérification des routes Super Admin et API : réussie.
 
-## 9. Règle de mise à jour continue
+<badge color="success">SEFlow — CI réussie</badge>
 
-À chaque traitement :
-1. Lire ce récapitulatif avant modification.
-2. Vérifier l'état réel de `main` et des fichiers concernés.
-3. Mettre à jour le journal daté dans `docs/traitement recent/`.
+Workflow GitHub Actions `44586186577` :
+- Installation Composer : réussie.
+- Tests ciblés `LiaisonComptaflowTest` et `PasserelleComptaflowTest` : réussis.
+- Compilation des vues Blade : réussie.
+- Vérification des routes Super Admin SELFLOW : réussie.
+
+La suite SELFLOW signale encore des dépréciations PHPUnit héritées ; elles ne bloquent pas le workflow. Les assertions des suites ciblées passent.
+
+Ces contrôles sont automatisés sur GitHub. Ils ne remplacent pas les tests de bout en bout sur les serveurs de production.
+
+## 8. Ce qui reste réellement à faire
+
+### Avant activation en production
+- [ ] Déployer les deux branches `main` sur les serveurs COMPTAFLOW et SELFLOW.
+- [ ] Exécuter les migrations COMPTAFLOW en production avec sauvegarde préalable.
+- [ ] Ouvrir `/superadmin/liaison-compta-apk` avec un compte Super Admin et vérifier le rendu réel.
+- [ ] Dans COMPTAFLOW, générer/renouveler les identifiants de l'application maison SELFLOW.
+- [ ] Copier le Client ID et le Client Secret affiché une seule fois.
+- [ ] Dans SELFLOW → Super Admin → Liaisons SELFLOW, enregistrer ces identifiants dans le nouveau panneau « Authentification centralisée COMPTA-APK ».
+- [ ] Vérifier une liaison réelle, un déversement de référentiel, une écriture et une pièce justificative.
+- [ ] Vérifier la rotation et la révocation sur les deux applications en environnement réel.
+
+### Périmètre non livré
+- [ ] RH-FLOW est inscrit comme application maison en attente, mais son connecteur, ses payloads et ses tests ne sont pas développés dans ce lot.
+- [ ] Les nouveaux connecteurs d'applications externes devront être testés avec leurs vrais payloads et leurs permissions dédiées.
+- [ ] Le retrait définitif de `X-Company-Key` et du secret global n'est pas encore effectué : il doit attendre la migration de tous les clients actifs, notamment GESTION-DE-SITES.
+- [ ] Les tests navigateur et le déploiement effectif sur les sites de production restent à réaliser.
+
+## 9. Références des livraisons
+
+- COMPTAFLOW, branche `main` : `8c408a97ea7f0483f200db4bb8a0176d0ef460dc`.
+- SELFLOW, branche `main` : code Bearer initial `6c716b8ee055ec2b5e4cd53f54fffa02b1769fb3`, puis mises à jour de tests et de CI jusqu'au commit `c6226eb4ab6510264dd9c693603b27ce7392daca`.
+- La correction initiale de la page de contrôle Super Admin reste référencée par `b0277ea32f7dfe4eae29c65567fb875d40a9b080`.
+
+## 10. État global à retenir
+
+**Le code de la console COMPTA-APK, le registre, les contrôles d'accès et le client SELFLOW sont publiés sur les branches `main` et les workflows ciblés passent. La fonctionnalité n'est pas encore déclarée opérationnelle sur les sites de production : les migrations, le déploiement et la saisie des identifiants réels restent obligatoires.**
+
+Ne pas confondre :
+- l'ancienne page SELFLOW : `/superadmin/liaisons` ;
+- la nouvelle console centrale : `/superadmin/liaison-compta-apk`.
+
+## 11. Règle de mise à jour continue
+
+À chaque nouveau traitement :
+1. Lire ce récapitulatif et le journal avant modification.
+2. Vérifier l'état réel de `main` dans les dépôts concernés.
+3. Mettre à jour le journal daté dans `docs/traitement recent/JOURNAL.md`.
 4. Mettre à jour ce récapitulatif avec les résultats réels.
-5. Pousser les modifications sur `main`.
-6. Reporter le SHA du commit et distinguer explicitement tests réussis, tests non exécutés et déploiement non vérifié.
-
-
-## 10. Livraison serveur COMPTA-APK — 19/11/2026
-
-### Code ajouté dans COMPTAFLOW
-- Migration `2026_11_19_000001_create_integration_registry_tables.php` : registre des applications, liaisons et permissions, jetons hashés, événements d'audit et nonces anti-rejeu.
-- Contrôleur `SuperAdminIntegrationController` : création/modification/suspension/révocation d'applications, liaisons, création de dossier dédié externe, rotation des secrets et journalisation.
-- Contrôleur API `IntegrationTokenController` : émission de jetons Bearer d'une heure après validation du client et de son périmètre.
-- Middleware `VerifieApplicationOuCleEntreprise` : contrôle du jeton, du dossier lié, du type maison/externe, des permissions, de l'expiration et des en-têtes anti-rejeu. Repli conservé vers `VerifieCleEntreprise` pour la compatibilité historique.
-- Vue `resources/views/superadmin/liaison_compta_apk.blade.php` et routes Super Admin dédiées.
-- Nouvelle rubrique de menu avec les deux entrées demandées ; l'ancienne page SELFLOW reste accessible.
-- Le registre affiche SELFLOW en mode historique et RH-FLOW en attente (référence uniquement ; aucun dépôt RH-FLOW modifié).
-- Le préfixe source des écritures est désormais issu du code d'application pour les applications Bearer autres que SELFLOW/GESTION-DE-SITES.
-
-### Contrat API
-Voir `CONTRAT_API_BEARER.md` dans ce dossier. Les applications maison peuvent obtenir un jeton pour une liaison parmi celles qui leur sont explicitement accordées. Une application externe doit posséder une seule liaison active.
-
-### État à ne pas surévaluer
-Le code serveur est ajouté dans ce commit, mais migration SQL, tests PHP/Feature, rendu navigateur, déploiement serveur et tests bout en bout restent à exécuter. Le connecteur SELFLOW n'a pas encore été basculé côté client vers Bearer ; il reste accepté via `X-Company-Key`. RH-FLOW reste hors développement applicatif dans ce lot.
-
-
-### Correctifs complémentaires après la première livraison
-- Les routes de déversement sont maintenant soumises à des limites de débit explicites.
-- Les journaux distinguent les appels API génériques des dépôts référentiel, écritures et pièces justificatives.
-- Les applications autres que SELFLOW/GESTION-DE-SITES utilisent leur propre code comme identité source et comme préfixe de déversement ; elles ne récupèrent pas par erreur l'identifiant Selflow d'un dossier également lié à SELFLOW.
-- Une suite Feature `IntegrationBearerSecurityTest` couvre la résolution de dossier, le refus d'un company_id contradictoire, le rejeu de nonce, les permissions et l'unicité du dossier externe. Ces tests sont ajoutés mais ne sont pas encore exécutés.
-
-
-### Cohérence du parcours SELFLOW et du dossier externe
-- Le provisionnement/rattachement SELFLOW synchronise désormais sa liaison dans le registre COMPTA-APK ; une révocation SELFLOW révoque également le lien central et les jetons.
-- Le mode historique X-Company-Key est conservé, mais pour SELFLOW il est maintenant soumis au statut de l'application, au lien central actif et aux permissions centralisées. Il ne permet plus de contourner une révocation faite dans COMPTA-APK.
-- L'endpoint de réception du référentiel `/api/external/link-company` est protégé par le middleware central ; le Bearer est réservé à l'application SELFLOW sur ce parcours. Le secret serveur global n'est plus envoyé dans le corps en mode Bearer.
-- La création d'un dossier externe demande désormais explicitement les dates de l'exercice comptable et crée cet exercice ; aucun exercice n'est inventé.
-- Le contrat client SELFLOW (saisie sécurisée du Client ID/Secret, cache du jeton chiffré, nonce/horodatage et renouvellement après 401) est en cours dans le dépôt SELFLOW et n'est pas encore livré à cette date.
-
-
-### Migration du client SELFLOW vers Bearer — code ajouté
-- Le dépôt `IT-dcknowing/Selflow` dispose maintenant d'un formulaire Super Admin pour enregistrer le Client ID et le Client Secret COMPTAFLOW, sans modifier le `.env`.
-- Le secret est chiffré avec `APP_KEY` dans les paramètres plateforme ; le jeton en cache est également chiffré.
-- Les appels métier utilisent Bearer, horodatage Unix et nonce unique ; en cas de HTTP 401, le client invalide le jeton, en demande un nouveau et retente une fois.
-- Les clés X-Company-Key restent en repli de compatibilité ; les opérations de rotation/révocation des anciennes clés continuent à utiliser ce mécanisme.
-- Le parcours de réception du référentiel et la vérification de liaison n'envoient plus le secret global dans les payloads métier. Le provisionnement initial et les opérations d'administration de clés conservent leur secret serveur de contrôle.
-- Commit client SELFLOW : `6c716b8ee055ec2b5e4cd53f54fffa02b1769fb3`.
-
-### État de validation
-- Code COMPTAFLOW et client SELFLOW publiés sur leurs branches `main`.
-- Les migrations, `php -l`, tests Feature, tests de rendu, tests bout en bout et déploiement serveur ne sont pas encore exécutés/confirmés.
-- Le nouveau formulaire SELFLOW doit être renseigné avec les identifiants générés depuis COMPTAFLOW après déploiement des deux dépôts.
-
-
-### Contrôles de cohérence supplémentaires
-- Le dossier COMPTAFLOW créé pour une application externe reçoit aussi un exercice comptable dont les dates sont saisies explicitement par le Super Admin.
-- La liaison SELFLOW manuelle dans la console centrale est limitée aux dossiers réellement provisionnés et actifs dans le parcours SELFLOW.
-- Le schéma du registre inclut les champs propriétaire utilisés par le contrôleur.
-- Deux workflows GitHub Actions ont été ajoutés pour tester les routes, compiler les vues et exécuter les tests ciblés. Le premier essai s'est arrêté avant les tests car le runner n'avait pas de fichier `.env`; les workflows ont été corrigés pour le créer avant la génération de clé. Les nouveaux résultats sont à vérifier.
-
-
-### Compatibilité des dossiers SELFLOW historiques
-Le registre reprend aussi les dossiers SELFLOW plus anciens dont le statut de synchronisation est vide, à condition que l'identifiant source et le haché de clé existent et que la clé n'ait pas été révoquée. Les dossiers explicitement révoqués restent exclus.
-
-### Résultat CI intermédiaire
-Le workflow COMPTAFLOW a réussi l'installation Composer, les tests de sécurité Bearer et la compilation des vues. L'étape `route:list` a détecté une erreur de syntaxe dans les trois journaux de provisionnement de `ExternalCompanyController` (crochet ouvrant manquant dans les tableaux de contexte de `Log::info`). Cette erreur a été corrigée ; un nouveau lancement doit confirmer le lint de toutes les routes.
-
-### Règles de liaison finales
-- Une application externe ne peut conserver qu'une seule liaison active vers son dossier dédié.
-- Le rattachement manuel SELFLOW accepte les dossiers historiques ayant une clé active même si l'ancien statut de synchronisation est nul ; un statut explicitement inactif/révoqué reste refusé.
+5. Pousser directement sur `main`, conformément à la consigne actuelle.
+6. Reporter les SHA de commit et les résultats CI.
+7. Distinguer explicitement ce qui est codé, testé, déployé et vérifié en production.

@@ -145,3 +145,24 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 
 - Suppression d'une condition SELFLOW redondante qui aurait bloqué certains dossiers historiques au statut vide.
 - Confirmation côté contrôleur : une application externe ne peut pas recevoir une deuxième liaison active.
+
+
+## 2026-11-19 — validation finale des deux dépôts
+
+### COMPTAFLOW
+- Commit de référence : `8c408a97ea7f0483f200db4bb8a0176d0ef460dc`.
+- Workflow `44586071484` : **succès**.
+- Tests de sécurité Bearer, compilation Blade et vérification des routes : réussis.
+
+### SELFLOW
+- Commit de référence de la configuration Bearer : `6c716b8ee055ec2b5e4cd53f54fffa02b1769fb3`.
+- Mises à jour des tests/CI jusqu'à `c6226eb4ab6510264dd9c693603b27ce7392daca`.
+- Workflow `44586186577` : **succès**.
+- Suites liaison/passerelle, compilation Blade et vérification des routes : réussies.
+- La sortie PHPUnit signale des dépréciations historiques ; les assertions des suites ciblées passent et le workflow ne bloque plus dessus.
+
+### État réel
+- Code publié sur les deux branches `main`.
+- Non déployé sur les sites de production depuis cette intervention.
+- À faire avant activation : migration COMPTAFLOW, déploiement des deux applications, génération du secret SELFLOW dans COMPTAFLOW puis saisie du Client ID/Secret dans SELFLOW, tests réseau réels.
+- RH-FLOW reste enregistré en attente, sans connecteur livré.
