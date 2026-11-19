@@ -276,6 +276,76 @@ class DeversementReferentielTest extends TestCase
         ])->json('refus'));
     }
 
+
+    public function test_depot_pdf_rattache_l_operation_et_refuse_un_remplacement_silencieux(): void
+    {
+        $operation = 'SELFLOW-7-OP000123';
+        foreach ([1, 2] as $numero) {
+            DB::table('ecriture_comptables')->insert([
+                'date' => '2026-11-19',
+                'n_saisie' => (string) $numero,
+                'description_operation' => 'Vente test',
+                'reference_piece' => 'VTE-123',
+                'plan_comptable_id' => 1,
+                'plan_tiers_id' => 1,
+                'plan_analytique' => false,
+                'code_journal_id' => 1,
+                'debit' => 100,
+                'credit' => 0,
+                'user_id' => 1,
+                'company_id' => self::COMPTAFLOW,
+                'cle_selflow' => 'SELFLOW-7-' . $numero,
+                'operation_selflow' => $operation,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $pdf = "%PDF-1.4\n% pièce de test\n%%EOF";
+        $charge = [
+            'operation_source' => $operation,
+            'nom_fichier' => 'facture-123.pdf',
+            'sha256' => hash('sha256', $pdf),
+            'contenu_base64' => base64_encode($pdf),
+        ];
+
+        $reponse = $this->postJson('/api/external/pieces-justificatives/deverser', $charge, [
+            'X-Company-Key' => self::CLE,
+        ]);
+        $reponse->assertCreated()->assertJson(['success' => true, 'idempotent' => false]);
+
+        $chemin = DB::table('ecriture_comptables')
+            ->where('company_id', self::COMPTAFLOW)
+            ->where('operation_selflow', $operation)
+            ->value('piece_justificatif');
+
+        $this->assertStringStartsWith('private/justificatifs/42/', $chemin);
+        $this->assertSame(1, DB::table('ecriture_comptables')
+            ->where('operation_selflow', $operation)
+            ->where('piece_justificatif', $chemin)->count());
+
+        $meme = $this->postJson('/api/external/pieces-justificatives/deverser', $charge, [
+            'X-Company-Key' => self::CLE,
+        ]);
+        $meme->assertOk()->assertJson(['success' => true, 'idempotent' => true]);
+
+        $autrePdf = "%PDF-1.4\n% autre pièce\n%%EOF";
+        $autre = $charge;
+        $autre['sha256'] = hash('sha256', $autrePdf);
+        $autre['contenu_base64'] = base64_encode($autrePdf);
+        $this->postJson('/api/external/pieces-justificatives/deverser', $autre, [
+            'X-Company-Key' => self::CLE,
+        ])->assertStatus(409);
+
+        $ecritureId = DB::table('ecriture_comptables')
+            ->where('operation_selflow', $operation)->value('id');
+        $this->get('/api/external/pieces-justificatives/' . $ecritureId, [
+            'X-Company-Key' => self::CLE,
+        ])->assertOk()->assertHeader('Content-Type', 'application/pdf');
+
+        @unlink(storage_path('app/' . $chemin));
+    }
+
     // ─── Utilitaires ─────────────────────────────────────────────────────────
 
     private function deverser(array $charge)
@@ -458,6 +528,26 @@ class DeversementReferentielTest extends TestCase
             $table->boolean('is_active')->default(true);
             $table->date('date_debut')->nullable();
             $table->date('date_fin')->nullable();
+        });
+
+        Schema::create('ecriture_comptables', function (Blueprint $table) {
+            $table->id();
+            $table->date('date')->nullable();
+            $table->string('n_saisie')->nullable();
+            $table->string('description_operation')->nullable();
+            $table->string('reference_piece')->nullable();
+            $table->unsignedBigInteger('plan_comptable_id')->nullable();
+            $table->unsignedBigInteger('plan_tiers_id')->nullable();
+            $table->boolean('plan_analytique')->default(false);
+            $table->unsignedBigInteger('code_journal_id')->nullable();
+            $table->decimal('debit', 15, 2)->default(0);
+            $table->decimal('credit', 15, 2)->default(0);
+            $table->string('piece_justificatif')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('company_id');
+            $table->string('cle_selflow')->nullable();
+            $table->string('operation_selflow')->nullable();
+            $table->timestamps();
         });
     }
 }
