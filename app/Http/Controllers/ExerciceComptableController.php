@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use App\Models\Company;
 use App\Models\EcritureComptable;
 use App\Services\AccountingReportingService;
+use App\Services\ComptesDeResultat;
 use App\Services\ImmobilisationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -120,7 +121,8 @@ public function index()
                     'nb_mois' => $this->calculerNbMois($exercice->date_debut, $exercice->date_fin),
                     'is_active' => (bool) $exercice->is_active,
                     'nombre_journaux_saisis' => $exercice->nombre_journaux_saisis ?? 0,
-                    'cloturer' => (bool) $exercice->cloturer
+                    'cloturer' => (bool) $exercice->cloturer,
+                    'resultat_passe' => $this->resultatEstPasse($exercice)
                 ];
             });
 
@@ -337,6 +339,107 @@ public function index()
         return back()->with('success', $message);
     }
 
+
+    /**
+     * Passe l'écriture de résultat sans clôturer l'exercice.
+     * Une saisie manuelle sur 1301/1309 est reconnue comme un passage déjà effectué.
+     */
+    public function passerResultat($id)
+    {
+        if (!Auth::user()->hasPermission('exercice_comptable')) {
+            return back()->with('error', 'Action non autorisée : habilitation « Exercice comptable » requise.');
+        }
+
+        $user = Auth::user();
+        $companyId = session('current_company_id', $user->company_id);
+        $exercice = ExerciceComptable::where('company_id', $companyId)->findOrFail($id);
+
+        if ($exercice->cloturer) {
+            return back()->with('error', 'Impossible de passer le résultat : cet exercice est déjà clôturé.');
+        }
+
+        try {
+            $resultat = DB::transaction(function () use ($exercice, $companyId, $user) {
+                $exercice = ExerciceComptable::where('company_id', $companyId)
+                    ->whereKey($exercice->id)->lockForUpdate()->firstOrFail();
+
+                if ($this->resultatEstPasse($exercice)) {
+                    throw new \RuntimeException("L'écriture de résultat a déjà été passée pour cet exercice.");
+                }
+
+                $resultatData = $this->reportingService->getSIGData($exercice->id, $companyId);
+                $montant = round((float) ($resultatData['resultat_net'] ?? 0), 2);
+
+                $journal = CodeJournal::where('company_id', $companyId)
+                    ->where(fn ($q) => $q->where('code_journal', 'RAN')->orWhere('code_journal', 'REP'))
+                    ->first();
+
+                if (!$journal) {
+                    $journal = CodeJournal::create([
+                        'company_id' => $companyId,
+                        'code_journal' => 'RAN',
+                        'intitule' => 'REPORT À NOUVEAU',
+                        'type' => 'Opérations Diverses',
+                        'traitement_analytique' => 0,
+                        'user_id' => $user->id,
+                    ]);
+                }
+
+                $date = Carbon::parse($exercice->date_fin);
+                $journalSaisi = JournalSaisi::firstOrCreate([
+                    'annee' => $date->year,
+                    'mois' => $date->month,
+                    'exercices_comptables_id' => $exercice->id,
+                    'code_journals_id' => $journal->id,
+                    'company_id' => $companyId,
+                ], ['user_id' => $user->id]);
+
+                if (abs($montant) < 0.01) {
+                    $exercice->update(['resultat_passe' => true, 'resultat_passe_le' => now()]);
+                    return ['montant' => 0.0, 'sans_ligne' => true];
+                }
+
+                $compte = ComptesDeResultat::pourOuCreer($companyId, $montant, $user->id);
+                $sens = ComptesDeResultat::sens($montant);
+
+                EcritureComptable::create([
+                    'date' => $date->toDateString(),
+                    'n_saisie' => 'RES-' . $date->format('Y'),
+                    'n_saisie_user' => 'RES-' . $date->format('Y'),
+                    'description_operation' => 'AFFECTATION DU RESULTAT ' . $exercice->intitule,
+                    'reference_piece' => 'RES-' . $exercice->id,
+                    'plan_comptable_id' => $compte->id,
+                    'code_journal_id' => $journal->id,
+                    'exercices_comptables_id' => $exercice->id,
+                    'journaux_saisis_id' => $journalSaisi->id,
+                    'debit' => $sens['debit'],
+                    'credit' => $sens['credit'],
+                    'company_id' => $companyId,
+                    'user_id' => $user->id,
+                    'is_ran' => false,
+                    'plan_analytique' => 0,
+                    'statut' => 'approved',
+                ]);
+
+                $exercice->update(['resultat_passe' => true, 'resultat_passe_le' => now()]);
+                return ['montant' => $montant, 'sans_ligne' => false];
+            }, 5);
+
+            $message = $resultat['sans_ligne']
+                ? 'Le résultat de cet exercice est nul : aucun mouvement comptable n’était nécessaire. Le passage est enregistré.'
+                : ComptesDeResultat::annonce($resultat['montant']) . ' L’exercice reste ouvert.';
+
+            return back()->with('success', $message);
+        } catch (\Throwable $e) {
+            Log::warning('Passage de résultat refusé', [
+                'exercice_id' => $exercice->id,
+                'company_id' => $companyId,
+                'erreur' => $e->getMessage(),
+            ]);
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
     public function cloturer($id)
     {
         if (!Auth::user()->hasPermission('exercice_comptable')) {
@@ -350,14 +453,8 @@ public function index()
             return back()->with('error', 'L\'exercice est déjà clôturé.');
         }
 
-        // --- SÉCURITÉS AVANCÉES ---
-        
-        // 1. Vérification de la date : On ne peut pas clôturer avant la fin réelle
-        if (now()->lt(Carbon::parse($exercice->date_fin))) {
-            return back()->with('error', 'Sécurité : Vous ne pouvez pas clôturer un exercice avant sa date de fin effective (' . Carbon::parse($exercice->date_fin)->format('d/m/Y') . ').');
-        }
-
-        // 2. Vérification des écritures en attente
+        // La clôture anticipée est autorisée : les écritures en attente restent bloquantes.
+        // Vérification des écritures en attente
         $pendingEntries = EcritureComptable::where('exercices_comptables_id', $exercice->id)
             ->where('company_id', $companyId)
             ->where('statut', 'pending')
@@ -367,7 +464,11 @@ public function index()
             return back()->with('error', "Sécurité : Il reste $pendingEntries écritures en attente de validation. Veuillez les traiter avant la clôture.");
         }
 
-        // 3. Chercher ou CRÉER l'exercice suivant
+        if (!$this->resultatEstPasse($exercice)) {
+            return back()->with('error', "Veuillez d'abord passer l'écriture de résultat avec le bouton dédié avant de clôturer l'exercice.");
+        }
+
+        // Chercher ou CRÉER l'exercice suivant
         $nextExercice = ExerciceComptable::where('company_id', $companyId)
             ->where('date_debut', '>', $exercice->date_fin)
             ->orderBy('date_debut', 'asc')
@@ -392,11 +493,7 @@ public function index()
         try {
             DB::beginTransaction();
 
-            // 4. Calculer le résultat via le service
-            $resultatData = $this->reportingService->getSIGData($exercice->id, $companyId);
-            $montantResultat = $resultatData['resultat_net'];
-
-            // 5. Identifier ou créer le journal RAN
+            // Identifier ou créer le journal RAN
             $journalRan = CodeJournal::where('company_id', $companyId)
                 ->where(function($q) {
                     $q->where('code_journal', 'RAN')->orWhere('code_journal', 'REP');
@@ -428,27 +525,9 @@ public function index()
                 }
             }
 
-            // Le resultat, porte dans le meme mouvement que le report a nouveau.
-            //
-            // ATTENTION AU SENS. Les soldes ci-dessus sont algebriques :
-            // debit moins credit. Sur les classes 1 a 5, leur somme vaut
-            // exactement le resultat — un benefice laisse les comptes de bilan
-            // debiteurs d'autant. Pour equilibrer, le benefice doit donc etre
-            // porte au CREDIT, c'est-a-dire ajoute en NEGATIF dans ce tableau.
-            //
-            // Le code ajoutait le resultat en positif : un benefice de cinq
-            // millions partait au debit, et le report a nouveau se retrouvait
-            // desequilibre de dix millions.
-            // Le compte est cree s'il manque au plan. Sans cela, la cloture
-            // sautait la ligne de resultat en silence, et le report partait
-            // desequilibre du montant exact du resultat.
-            if (abs($montantResultat) >= 0.01) {
-                $compteResultat = \App\Services\ComptesDeResultat::pourOuCreer(
-                    $companyId, $montantResultat, Auth::id()
-                );
-
-                $soldes[$compteResultat->id] = ($soldes[$compteResultat->id] ?? 0) - $montantResultat;
-            }
+            // L'écriture de résultat a déjà été passée séparément dans l'exercice
+            // d'origine. Les soldes 1301/1309 sont reportés comme les autres
+            // comptes de bilan, sans créer une seconde écriture.
 
             // 7. Générer les écritures de RAN dans le nouvel exercice
             $nSaisie = 'RAN-' . $exercice->date_fin->format('Y');
@@ -686,5 +765,21 @@ public function index()
                 }
             }
         }
+    }
+    /** Le résultat a-t-il déjà été passé manuellement ou par le bouton dédié ? */
+    private function resultatEstPasse(ExerciceComptable $exercice): bool
+    {
+        if ((bool) $exercice->resultat_passe) {
+            return true;
+        }
+
+        return EcritureComptable::where('company_id', $exercice->company_id)
+            ->where('exercices_comptables_id', $exercice->id)
+            ->whereIn('statut', ['approved', 'pending'])
+            ->whereHas('planComptable', function ($q) {
+                $q->where('numero_de_compte', 'like', '1301%')
+                    ->orWhere('numero_de_compte', 'like', '1309%');
+            })
+            ->exists();
     }
 }

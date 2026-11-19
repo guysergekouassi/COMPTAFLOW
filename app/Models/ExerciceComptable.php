@@ -31,6 +31,8 @@ class ExerciceComptable extends Model
         'intitule',
         'nombre_journaux_saisis',
         'cloturer',
+        'resultat_passe',
+        'resultat_passe_le',
         'user_id',
         'company_id',
         'parent_company_id',
@@ -48,6 +50,8 @@ class ExerciceComptable extends Model
         'date_debut' => 'date:Y-m-d',
         'date_fin' => 'date:Y-m-d',
         'cloturer' => 'boolean',
+        'resultat_passe' => 'boolean',
+        'resultat_passe_le' => 'datetime',
         'is_active' => 'boolean',
         'nombre_journaux_saisis' => 'integer',
     ];

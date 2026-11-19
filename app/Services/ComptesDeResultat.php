@@ -27,7 +27,8 @@ class ComptesDeResultat
     /** Toute la classe 13 : résultat net de l'exercice. */
     public static function estCompteDeResultat(?string $numero): bool
     {
-        return $numero !== null && str_starts_with($numero, '13');
+        return $numero !== null
+            && (str_starts_with($numero, self::BENEFICE) || str_starts_with($numero, self::PERTE));
     }
 
     /**
@@ -48,14 +49,8 @@ class ComptesDeResultat
             return $compte;
         }
 
-        // Repli sur les comptes 131 / 139 « Résultat net », que certains plans
-        // utilisent à la place des 1301 / 1309.
-        $repli = $resultat >= 0 ? '131' : '139';
-
-        return PlanComptable::where('company_id', $companyId)
-            ->where('numero_de_compte', 'like', $repli . '%')
-            ->orderBy('numero_de_compte')
-            ->first();
+        // Seuls les comptes 1301 (bénéfice) et 1309 (perte) sont admis.
+        return null;
     }
 
     /**

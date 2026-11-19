@@ -501,6 +501,22 @@ class EcritureComptableController extends Controller
                 'poste_tresorerie_id' => 'nullable|integer',
             ]);
 
+            $numeroCompteSaisi = PlanComptable::where('company_id', $activeCompanyId)
+                ->whereKey($data['plan_comptable_id'])
+                ->value('numero_de_compte');
+            $estResultat = \App\Services\ComptesDeResultat::estCompteDeResultat($numeroCompteSaisi);
+
+            if ($estResultat) {
+                $debitResultat = (float) ($data['debit'] ?? 0);
+                $creditResultat = (float) ($data['credit'] ?? 0);
+                if (($debitResultat > 0 && $creditResultat > 0) || ($debitResultat <= 0 && $creditResultat <= 0)) {
+                    return response()->json(['success' => false, 'message' => 'Une écriture sur 1301 ou 1309 doit comporter un seul montant, au débit ou au crédit, sur une seule ligne.'], 422);
+                }
+                if ($this->resultatDejaSaisi($activeCompanyId, $exerciceActif->id)) {
+                    return response()->json(['success' => false, 'message' => 'L’écriture de résultat a déjà été passée pour cet exercice. Une seule écriture 1301/1309 est autorisée par exercice.'], 422);
+                }
+            }
+
             if ($request->plan_analytique || $request->input('plan_analytique')) {
                 $ventilations = $request->input('ventilations', []);
                 $validationError = $this->validateVentilations($ventilations, $activeCompanyId);
@@ -585,6 +601,10 @@ class EcritureComptableController extends Controller
             ];
 
             $ecriture = EcritureComptable::create($ecritureData);
+
+            if ($estResultat && $status === 'approved') {
+                $exerciceActif->update(['resultat_passe' => true, 'resultat_passe_le' => now()]);
+            }
 
             // Sauvegarder les ventilations si présentes
             if ($request->has('ventilations')) {
@@ -712,36 +732,55 @@ class EcritureComptableController extends Controller
 
             // Les numeros des comptes utilises : l'ecriture de resultat s'y
             // reconnait, quelle que soit la longueur du plan du dossier.
+            $idsComptes = collect($ecrituresRaw)->map(fn ($e) => $e['plan_comptable_id'] ?? $e['compte_general'] ?? null)->filter()->unique();
             $numerosDesComptes = PlanComptable::where('company_id', $activeCompanyId)
-                ->whereIn('id', collect($ecrituresRaw)->pluck('plan_comptable_id')->filter()->unique())
+                ->whereIn('id', $idsComptes)
                 ->pluck('numero_de_compte', 'id');
+
+            // Un seul mouvement de résultat par lot, sur 1301 ou 1309.
+            $lignesResultatLot = collect($ecrituresRaw)->filter(function ($e) use ($numerosDesComptes) {
+                $idCompte = $e['plan_comptable_id'] ?? $e['compte_general'] ?? null;
+                return \App\Services\ComptesDeResultat::estCompteDeResultat($numerosDesComptes[$idCompte] ?? null);
+            });
+
+            if ($lignesResultatLot->count() > 1) {
+                return response()->json(['success' => false, 'error' => 'Le résultat doit être saisi sur une seule ligne, sans contrepartie.'], 422);
+            }
+            if ($lignesResultatLot->isNotEmpty()) {
+                $ligneResultat = $lignesResultatLot->first();
+                $debitResultat = (float) ($ligneResultat['debit'] ?? 0);
+                $creditResultat = (float) ($ligneResultat['credit'] ?? 0);
+                if (($debitResultat > 0 && $creditResultat > 0) || ($debitResultat <= 0 && $creditResultat <= 0)) {
+                    return response()->json(['success' => false, 'error' => 'Une écriture sur 1301 ou 1309 doit comporter un montant au débit ou au crédit, sans contrepartie.'], 422);
+                }
+                if ($this->resultatDejaSaisi($activeCompanyId, $exerciceActif->id)) {
+                    return response()->json(['success' => false, 'error' => 'L’écriture de résultat a déjà été passée pour cet exercice.'], 422);
+                }
+            }
 
             // --- VALIDATE EACH GROUP BALANCE ---
             foreach ($groups as $ns => $groupEcritures) {
                 $totalDebit = 0;
                 $totalCredit = 0;
-                $porteLeResultat = false;
+                $groupePorteResultat = false;
                 foreach ($groupEcritures as $e) {
                     $totalDebit += floatval($e['debit'] ?? 0);
                     $totalCredit += floatval($e['credit'] ?? 0);
-                    $porteLeResultat = $porteLeResultat || \App\Services\ComptesDeResultat::estCompteDeResultat(
-                        $numerosDesComptes[$e['plan_comptable_id'] ?? null] ?? null
-                    );
+                    $idCompte = $e['plan_comptable_id'] ?? $e['compte_general'] ?? null;
+                    $groupePorteResultat = $groupePorteResultat || \App\Services\ComptesDeResultat::estCompteDeResultat($numerosDesComptes[$idCompte] ?? null);
                 }
 
-                // L'affectation du resultat est, par nature, une seule ligne :
-                // sa contrepartie est le report a nouveau, deja passe. Exiger
-                // une parite debit-credit obligeait a inventer une seconde
-                // ligne. Une piece qui touche un compte de classe 13 echappe
-                // donc au controle d'equilibre.
-                if ($porteLeResultat) {
+                if ($groupePorteResultat) {
+                    if (count($groupEcritures) !== 1) {
+                        return response()->json(['success' => false, 'error' => "L'opération $ns utilise 1301/1309 : elle doit contenir une seule ligne, sans contrepartie."], 422);
+                    }
                     continue;
                 }
 
                 $diff = abs($totalDebit - $totalCredit);
                 if ($diff > 0.1) {
                     return response()->json([
-                        'success' => false, 
+                        'success' => false,
                         'error' => "Opération $ns déséquilibrée (D: $totalDebit != C: $totalCredit). Écart: $diff"
                     ], 422);
                 }
@@ -833,6 +872,12 @@ class EcritureComptableController extends Controller
                     $ecriture->statut = $status;
                     $ecriture->poste_tresorerie_id = $this->resolveTreasuryPost($activeCompanyId, $planComptableId) ?? ($data['poste_tresorerie_id'] ?? null);
                     $ecriture->save();
+
+                    if (\App\Services\ComptesDeResultat::estCompteDeResultat($numerosDesComptes[$planComptableId] ?? null)
+                        && $status === 'approved') {
+                        ExerciceComptable::where('company_id', $activeCompanyId)->whereKey($exerciceId)
+                            ->update(['resultat_passe' => true, 'resultat_passe_le' => now()]);
+                    }
 
                     $createdIds[] = $ecriture->id;
                     if (!$firstInGroup) $firstInGroup = $ecriture;
@@ -1662,5 +1707,22 @@ class EcritureComptableController extends Controller
         }
 
         return null;
+    }
+    /** Une écriture 1301/1309 existe déjà dans l'exercice. */
+    private function resultatDejaSaisi(int $companyId, int $exerciceId): bool
+    {
+        $exercice = ExerciceComptable::where('company_id', $companyId)->find($exerciceId);
+        if ($exercice && (bool) $exercice->resultat_passe) {
+            return true;
+        }
+
+        return EcritureComptable::where('company_id', $companyId)
+            ->where('exercices_comptables_id', $exerciceId)
+            ->whereIn('statut', ['approved', 'pending'])
+            ->whereHas('planComptable', function ($q) {
+                $q->where('numero_de_compte', 'like', '1301%')
+                    ->orWhere('numero_de_compte', 'like', '1309%');
+            })
+            ->exists();
     }
 }

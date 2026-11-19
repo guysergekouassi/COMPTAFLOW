@@ -465,7 +465,7 @@
                                         <div class="text-center space-y-3 mb-6">
                                             <p class="text-slate-500 text-sm font-medium leading-relaxed">
                                                 Êtes-vous sûr de vouloir <strong>clôturer</strong> cet exercice ?<br>
-                                                Après clôture, aucune modification ne sera possible.
+                                                Le report à nouveau sera généré. L'écriture de résultat doit déjà avoir été passée séparément.
                                             </p>
                                             <p class="text-slate-900 font-bold" id="exerciceToCloture"></p>
                                         </div>
@@ -554,12 +554,17 @@
         <form id="activateForm" method="POST" action="" style="display: none;">
             @csrf
         </form>
+        <form id="passerResultatForm" method="POST" action="" style="display:none;">
+            @csrf
+            @method('PATCH')
+        </form>
 
         <script>
 
             const journauxSaisisUrl = "{{ route('journaux_saisis') }}";
             const exercice_comptableDeleteUrl = "{{ route('exercice_comptable.destroy', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableCloturerUrl = "{{ route('exercice_comptable.cloturer', ['exercice_comptable' => '__ID__']) }}";
+            const exercice_comptableResultatUrl = "{{ route('exercice_comptable.resultat', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableReouvrirUrl = "{{ route('exercice_comptable.reouvrir', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableShowUrl = "{{ route('exercice_comptable.show', ['exercice_comptable' => '__ID__']) }}";
             const exercice_comptableEditUrl = "{{ route('exercice_comptable.edit', ['exercice_comptable' => '__ID__']) }}";
@@ -705,6 +710,11 @@
                                                         title="Supprimer">
                                                     <i class="bx bx-trash fs-5"></i>
                                                 </button>
+                                                ${!row.resultat_passe ? `
+                                                <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition shadow-sm bg-white btn-action resultat-btn"
+                                                        data-id="${row.id}" data-label="${row.intitule}" data-bs-toggle="tooltip" title="Passer l’écriture de résultat">
+                                                    <i class="bx bx-calculator fs-5"></i>
+                                                </button>` : ''}
                                                 <button type="button"
                                                         class="w-10 h-10 flex items-center justify-center rounded-xl border border-yellow-100 text-yellow-600 hover:bg-yellow-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-cloturer cloturer-btn"
                                                         data-id="${row.id}"
@@ -1061,6 +1071,17 @@
                                     bootstrap.Modal.getOrCreateInstance(deleteModalEl).show();
                                 }
                             }
+                        });
+                    });
+
+                    // Passage du résultat indépendant de la clôture.
+                    document.querySelectorAll('.resultat-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            const label = this.getAttribute('data-label') || 'cet exercice';
+                            if (!id || !confirm(`Passer l'écriture de résultat pour ${label} ? Cette opération ne clôturera pas l'exercice et ne pourra pas être répétée.`)) return;
+                            const form = document.getElementById('passerResultatForm');
+                            if (form) { form.action = exercice_comptableResultatUrl.replace('__ID__', id); form.submit(); }
                         });
                     });
 
