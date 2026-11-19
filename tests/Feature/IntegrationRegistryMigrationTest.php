@@ -73,9 +73,15 @@ class IntegrationRegistryMigrationTest extends TestCase
         $migration = require database_path('migrations/2026_11_19_000001_create_integration_registry_tables.php');
         $migration->up();
 
-        $foreignKeys = collect(Schema::getForeignKeys('integration_application_companies'))->pluck('name');
-        $this->assertTrue($foreignKeys->contains('ia_companies_app_fk'));
-        $this->assertTrue($foreignKeys->contains('ia_companies_company_fk'));
+        $foreignKeys = collect(Schema::getForeignKeys('integration_application_companies'));
+        $this->assertTrue($foreignKeys->contains(fn (array $foreignKey) =>
+            ($foreignKey['foreign_table'] ?? null) === 'integration_applications'
+            && in_array('integration_application_id', $foreignKey['columns'] ?? [], true)
+        ), json_encode($foreignKeys->all()));
+        $this->assertTrue($foreignKeys->contains(fn (array $foreignKey) =>
+            ($foreignKey['foreign_table'] ?? null) === 'companies'
+            && in_array('company_id', $foreignKey['columns'] ?? [], true)
+        ), json_encode($foreignKeys->all()));
         $this->assertTrue(collect(Schema::getIndexes('integration_application_companies'))->contains(
             fn (array $index) => ($index['name'] ?? null) === 'integration_app_company_unique'
         ));
