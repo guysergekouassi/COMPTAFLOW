@@ -60,7 +60,7 @@ class ExternalJustificatifController extends Controller
 
         try {
             $resultat = DB::transaction(function () use ($company, $donnees, $contenu, $empreinte, &$chemin) {
-                $lignes = EcritureComptable::query()
+                $lignes = EcritureComptable::withoutGlobalScopes()
                     ->where('company_id', $company->id)
                     ->where('operation_selflow', $donnees['operation_source'])
                     ->lockForUpdate()
@@ -119,7 +119,7 @@ class ExternalJustificatifController extends Controller
                     throw new \RuntimeException('Impossible d’enregistrer le fichier PDF.');
                 }
 
-                EcritureComptable::query()
+                EcritureComptable::withoutGlobalScopes()
                     ->where('company_id', $company->id)
                     ->where('operation_selflow', $donnees['operation_source'])
                     ->update(['piece_justificatif' => $chemin]);
@@ -177,7 +177,7 @@ class ExternalJustificatifController extends Controller
         $companyId = (int) session('current_company_id');
         abort_unless($companyId > 0, 403);
 
-        $ecriture = EcritureComptable::query()
+        $ecriture = EcritureComptable::withoutGlobalScopes()
             ->where('company_id', $companyId)
             ->findOrFail($id);
 
@@ -192,7 +192,7 @@ class ExternalJustificatifController extends Controller
         $company = $request->attributes->get('entreprise_liee');
         abort_unless($company, 401);
 
-        $ecriture = EcritureComptable::query()
+        $ecriture = EcritureComptable::withoutGlobalScopes()
             ->where('company_id', $company->id)
             ->findOrFail($id);
 
