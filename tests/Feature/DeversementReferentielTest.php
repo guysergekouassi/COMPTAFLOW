@@ -284,6 +284,8 @@ class DeversementReferentielTest extends TestCase
                 ['numero_de_compte' => '701000', 'intitule' => 'Ventes anciennes'],
                 ['numero_de_compte' => '702000', 'intitule' => 'Ventes nouvelles'],
             ],
+            'codes_journaux' => [],
+            'tiers' => [],
         ])->assertOk();
 
         $ancienId = DB::table('plan_comptables')
