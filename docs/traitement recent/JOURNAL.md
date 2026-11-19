@@ -182,3 +182,10 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 
 - Ajout d'une étape `php artisan migrate --force` sur SQLite en mémoire au workflow COMPTAFLOW, afin de vérifier aussi l'exécution des migrations et pas seulement la syntaxe PHP, les tests Bearer et les routes.
 - Résultat de cette nouvelle étape à confirmer après le prochain workflow.
+
+
+## 2026-11-19 — correction du workflow de migration
+
+- Le premier ajout de l'étape SQLite a produit un fichier YAML invalide, car `:memory:` était dans une valeur scalaire non délimitée.
+- La commande a été passée en bloc multilignes et la valeur SQLite explicitement citée.
+- Nouveau workflow en attente ; il doit confirmer l'exécution réelle des migrations.
