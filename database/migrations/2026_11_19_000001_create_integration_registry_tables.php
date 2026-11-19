@@ -87,6 +87,9 @@ return new class extends Migration {
         $this->ensureIndex('integration_application_companies', 'integration_app_company_unique', function (Blueprint $table) {
             $table->unique(['integration_application_id', 'company_id'], 'integration_app_company_unique');
         });
+        $this->ensureIndex('integration_application_companies', 'ia_company_state_idx', function (Blueprint $table) {
+            $table->index('status', 'ia_company_state_idx');
+        });
         $this->ensureIndex('integration_application_companies', 'ia_company_status_idx', function (Blueprint $table) {
             $table->index(['company_id', 'status'], 'ia_company_status_idx');
         });
