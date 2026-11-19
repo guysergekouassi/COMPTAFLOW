@@ -1,4 +1,5 @@
 COMPTAFLOW — PAYLOAD REFERENTIEL
+STATUT : CONTRAT HISTORIQUE À ALIGNER SUR LA SPÉCIFICATION 04_LIAISON_COMPTA_APK.txt
 Endpoint observe : POST /api/external/referentiel/deverser
 Authentification : X-Company-Key obligatoire ; secret serveur selon configuration.
 
@@ -7,7 +8,7 @@ CORPS JSON :
   "selflow_company_id": 123,
   "comptaflow_company_id": 456,
   "plan_comptable": [
-    {"numero_de_compte":"601000","intitule":"Achats","numero_original":"601"}
+    {"numero_de_compte":"601000","intitule":"Achats","numero_de_compte":"601"}
   ],
   "codes_journaux": [
     {"code_journal":"ACH","intitule":"Journal des achats","type":"Achats","compte_numero":"401000","numero_original":"ACH"}
@@ -30,3 +31,6 @@ REGLES
 6. Le dossier destinataire est resolu par X-Company-Key, jamais par un identifiant libre dans le corps.
 
 Le endpoint actuel accepte les trois collections dans un seul objet JSON.
+
+
+EVOLUTION OBLIGATOIRE : ne plus envoyer numero_original en doublon. Le numéro source transmis est la valeur de référence originale. Le dossier destinataire doit être résolu par la liaison authentifiée côté serveur, pas par un identifiant libre du JSON. Voir 04_LIAISON_COMPTA_APK.txt. La migration d'authentification n'est pas encore livrée.
