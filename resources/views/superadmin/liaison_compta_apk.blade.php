@@ -72,7 +72,7 @@
  @empty <p class="text-muted small">Aucun dossier actif lié.</p> @endforelse
  </div>
 
- @if($app->status==='active' && $app->status!=='pending')
+ @if($type==='maison' && $app->status==='active')
  <form method="POST" action="{{ route('superadmin.liaison_compta.link', $app->id) }}" class="border-top pt-3">@csrf
   <div class="row g-2 align-items-end">
    <div class="col-md-5"><label class="form-label">Lier à une entreprise existante</label><select name="company_id" class="form-select" required><option value="">Choisir un dossier COMPTAFLOW</option>@foreach($companies as $company)<option value="{{ $company->id }}">{{ $company->company_name }} (#{{ $company->id }})</option>@endforeach</select></div>
