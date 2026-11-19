@@ -140,3 +140,8 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - Compilation Blade : réussie.
 - Contrôle des routes : a révélé un crochet ouvrant manquant dans trois appels `Log::info` du contrôleur de provisionnement externe.
 - Correction appliquée dans `ExternalCompanyController.php`; nouveau workflow attendu.
+
+## 2026-11-19 — dernière vérification des règles de liaison
+
+- Suppression d'une condition SELFLOW redondante qui aurait bloqué certains dossiers historiques au statut vide.
+- Confirmation côté contrôleur : une application externe ne peut pas recevoir une deuxième liaison active.

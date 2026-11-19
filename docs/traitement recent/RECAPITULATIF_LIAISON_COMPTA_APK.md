@@ -210,3 +210,7 @@ Le registre reprend aussi les dossiers SELFLOW plus anciens dont le statut de sy
 
 ### Résultat CI intermédiaire
 Le workflow COMPTAFLOW a réussi l'installation Composer, les tests de sécurité Bearer et la compilation des vues. L'étape `route:list` a détecté une erreur de syntaxe dans les trois journaux de provisionnement de `ExternalCompanyController` (crochet ouvrant manquant dans les tableaux de contexte de `Log::info`). Cette erreur a été corrigée ; un nouveau lancement doit confirmer le lint de toutes les routes.
+
+### Règles de liaison finales
+- Une application externe ne peut conserver qu'une seule liaison active vers son dossier dédié.
+- Le rattachement manuel SELFLOW accepte les dossiers historiques ayant une clé active même si l'ancien statut de synchronisation est nul ; un statut explicitement inactif/révoqué reste refusé.
