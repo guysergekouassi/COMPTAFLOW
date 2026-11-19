@@ -14,12 +14,11 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * Clôture d'exercice : le report à nouveau et l'écriture de résultat.
+ * Passage indépendant de l'écriture de résultat et report à nouveau.
  *
- * Le résultat était ajouté aux soldes reportés avec le signe du compte de
- * résultat lui-même. Or les soldes reportés sont algébriques : sur les classes
- * 1 à 5, leur somme vaut déjà le résultat. Un bénéfice partait donc au débit,
- * et le report à nouveau se retrouvait déséquilibré du double.
+ * Le résultat est enregistré une seule fois dans l'exercice d'origine, sur
+ * 1301 au crédit ou 1309 au débit. La clôture reporte ensuite ces soldes avec
+ * les autres comptes de bilan, sans recréer l'écriture de résultat.
  */
 class ClotureReportANouveauTest extends TestCase
 {
@@ -153,7 +152,7 @@ class ClotureReportANouveauTest extends TestCase
         $resultat = $this->lignesDuReport()
             ->first(fn ($l) => ComptesDeResultat::estCompteDeResultat($l->planComptable->numero_de_compte));
 
-        $this->assertNotNull($resultat, "L'écriture de résultat doit accompagner le report.");
+        $this->assertNotNull($resultat, "Le solde 1301/1309 issu du résultat doit être repris au report.");
         $this->assertSame('13010000', $resultat->planComptable->numero_de_compte);
         $this->assertEqualsWithDelta(5000000, (float) $resultat->credit, 0.01, 'Un bénéfice va au crédit.');
         $this->assertEqualsWithDelta(0, (float) $resultat->debit, 0.01);
