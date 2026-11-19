@@ -1,0 +1,46 @@
+COMPTAFLOW — PAYLOAD PIECES JUSTIFICATIVES
+STATUT : SPECIFICATION CIBLE, PAS UN ENDPOINT ACTUELLEMENT CONFIRME.
+
+BUT
+Rattacher le PDF a l'operation exacte. Aucun rapprochement approximatif par libelle ou par ressemblance de numero.
+
+NOMMAGE
+Vente : SELF-123-OP-VTE-000123.pdf
+Achat : SELF-123-OP-ACH-000124.pdf
+Avoir : SELF-123-OP-AVO-000125.pdf
+
+CLES
+SELFLOW-123-OP-VTE-000123
+SELFLOW-123-OP-ACH-000124
+SELFLOW-123-OP-AVO-000125
+
+PAYLOAD JSON CIBLE
+{
+  "source_application": "SELFLOW",
+  "source_company_id": 123,
+  "comptaflow_company_id": 456,
+  "operation_source": "000123",
+  "type_operation": "VTE",
+  "cle_operation": "SELFLOW-123-OP-VTE-000123",
+  "nom_fichier": "SELFLOW-123-OP-VTE-000123.pdf",
+  "mime_type": "application/pdf",
+  "contenu_base64": "<PDF en base64>",
+  "sha256": "<empreinte SHA-256>"
+}
+
+ENDPOINT CIBLE PROPOSE
+POST /api/external/pieces-justificatives/deverser
+Authentification par X-Company-Key et controle de l'entreprise liee.
+
+REGLES
+1. Verifier l'existence de l'operation exacte dans le dossier.
+2. Verifier la correspondance VTE/ACH/AVO.
+3. Verifier le type MIME, la signature PDF et la taille maximale.
+4. Verifier SHA-256.
+5. Meme cle + meme empreinte = rejeu sans doublon.
+6. Meme cle + empreinte differente = conflit a refuser.
+7. Renseigner piece_justificatif sans modifier les ecritures comptables.
+8. La colonne Piece ouvre le document avec controle d'acces.
+
+CONSTAT DU DEPOT
+Le modele EcritureComptable possede piece_justificatif. Le endpoint de depot PDF n'a pas ete trouve dans les routes inspectees ; ce payload est une cible a implementer, pas une API deja disponible.
