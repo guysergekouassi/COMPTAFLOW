@@ -102,6 +102,10 @@
                 <i class="fa-solid fa-link"></i>
                 <span>Liaisons SELFLOW</span>
             </a>
+            <a href="{{ route('superadmin.payloads.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.payloads.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Contrats de payload API</span>
+            </a>
 
             <a href="{{ route('superadmin.affectations') }}" class="menu-link-new {{ request()->routeIs('superadmin.affectations*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-plus"></i>
