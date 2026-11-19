@@ -854,6 +854,132 @@ class ExternalSyncController extends Controller
      * un tiers renvoie à son compte général par une clé étrangère, il doit
      * exister avant lui.
      */
+    /**
+     * Réaffecter les anciennes écritures d'un compte source vers son nouveau
+     * compte COMPTAFLOW, après réception du nouveau référentiel.
+     *
+     * Seuls les identifiants de comptes sont changés. Les montants, dates,
+     * journaux, pièces et libellés restent strictement identiques.
+     */
+    public function propagerComptes(Request $request)
+    {
+        $request->validate([
+            'remplacements' => 'required|array|min:1|max:100',
+            'remplacements.*.ancien_numero' => 'required|string|max:30',
+            'remplacements.*.nouveau_numero' => 'required|string|max:30',
+        ]);
+
+        $company = self::entrepriseDeLaRequete($request);
+        if (!$company) {
+            return response()->json(['success' => false, 'message' => 'Dossier non résolu par la clé de liaison.'], 404);
+        }
+
+        $resolus = [];
+        $vus = [];
+
+        foreach ($request->input('remplacements', []) as $remplacement) {
+            $ancienNumero = trim((string) $remplacement['ancien_numero']);
+            $nouveauNumero = trim((string) $remplacement['nouveau_numero']);
+
+            if ($ancienNumero === '' || $nouveauNumero === '') {
+                return response()->json(['success' => false, 'message' => 'Un numéro de compte est vide.'], 422);
+            }
+
+            if (isset($vus[$ancienNumero]) && $vus[$ancienNumero] !== $nouveauNumero) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Le compte source {$ancienNumero} est associé à plusieurs nouveaux comptes.",
+                ], 422);
+            }
+            $vus[$ancienNumero] = $nouveauNumero;
+
+            if ($ancienNumero === $nouveauNumero) {
+                continue;
+            }
+
+            $ancien = PlanComptable::withoutGlobalScopes()
+                ->where('company_id', $company->id)
+                ->where('numero_original', $ancienNumero)
+                ->first();
+
+            if (!$ancien) {
+                $ancien = PlanComptable::withoutGlobalScopes()
+                    ->where('company_id', $company->id)
+                    ->where('numero_de_compte', $ancienNumero)
+                    ->first();
+            }
+
+            $nouveau = PlanComptable::withoutGlobalScopes()
+                ->where('company_id', $company->id)
+                ->where('numero_original', $nouveauNumero)
+                ->first();
+
+            if (!$nouveau) {
+                $nouveau = PlanComptable::withoutGlobalScopes()
+                    ->where('company_id', $company->id)
+                    ->where('numero_de_compte', $nouveauNumero)
+                    ->first();
+            }
+
+            if (!$nouveau) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Le nouveau compte {$nouveauNumero} n'existe pas dans le plan COMPTAFLOW. Transmettez d'abord le référentiel.",
+                    'ancien_numero' => $ancienNumero,
+                    'nouveau_numero' => $nouveauNumero,
+                ], 409);
+            }
+
+            if ($ancien && (int) $ancien->id !== (int) $nouveau->id) {
+                $resolus[] = [
+                    'ancien_numero' => $ancienNumero,
+                    'nouveau_numero' => $nouveauNumero,
+                    'ancien_id' => $ancien->id,
+                    'nouveau_id' => $nouveau->id,
+                ];
+            }
+        }
+
+        $bilan = DB::transaction(function () use ($company, $resolus) {
+            $ecritures = 0;
+            $tiers = 0;
+            $details = [];
+
+            foreach ($resolus as $ligne) {
+                $ecrituresMaj = EcritureComptable::withoutGlobalScopes()
+                    ->where('company_id', $company->id)
+                    ->where('plan_comptable_id', $ligne['ancien_id'])
+                    ->update(['plan_comptable_id' => $ligne['nouveau_id']]);
+
+                $tiersMaj = PlanTiers::withoutGlobalScopes()
+                    ->where('company_id', $company->id)
+                    ->where('compte_general', $ligne['ancien_id'])
+                    ->update(['compte_general' => $ligne['nouveau_id']]);
+
+                $ecritures += $ecrituresMaj;
+                $tiers += $tiersMaj;
+                $details[] = [
+                    'ancien_numero' => $ligne['ancien_numero'],
+                    'nouveau_numero' => $ligne['nouveau_numero'],
+                    'ecritures_mises_a_jour' => $ecrituresMaj,
+                    'tiers_mis_a_jour' => $tiersMaj,
+                ];
+            }
+
+            return [
+                'ecritures_mises_a_jour' => $ecritures,
+                'tiers_mis_a_jour' => $tiers,
+                'remplacements' => $details,
+            ];
+        }, 5);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Les références de comptes historiques ont été propagées sans modifier les montants.',
+            ...$bilan,
+        ]);
+    }
+
     public function deverserReferentiel(Request $request)
     {
         // Le dossier est résolu exclusivement depuis X-Company-Key.
