@@ -201,3 +201,38 @@ Ne pas confondre :
 5. Pousser directement sur `main`, conformément à la consigne actuelle.
 6. Reporter les SHA de commit et les résultats CI.
 7. Distinguer explicitement ce qui est codé, testé, déployé et vérifié en production.
+
+
+## 12. Vérification de l'état réel du dépôt — 19/11/2026 (mise à jour)
+
+Cette section fait foi lorsqu'une ancienne section ci-dessus présente encore un état intermédiaire.
+
+### Code vérifié sur `main`
+- Le menu Super Admin contient bien « Liaison COMPTA-APK », « APPLICATION MAISON — LA SUITE FLOW », « APPLICATION EXTERNE » et conserve l'accès aux anciennes liaisons SELFLOW.
+- Les routes Web de la console sont présentes dans le groupe `auth + superadmin` :
+  - `/superadmin/liaison-compta-apk`
+  - `/superadmin/liaison-compta-apk/maison`
+  - `/superadmin/liaison-compta-apk/externe`
+  - routes POST/PUT/DELETE de création, modification, liaison, dél liaison, rotation et révocation.
+- La vue `resources/views/superadmin/liaison_compta_apk.blade.php` est présente et utilise le composant `components.sidebar`, lequel bascule vers `components.superadmin_sidebar` lorsque le compte est Super Admin.
+- Le contrôleur `SuperAdminIntegrationController`, la migration du registre, le middleware `VerifieApplicationOuCleEntreprise` et `IntegrationTokenController` sont présents.
+- SELFLOW est repris en mode historique sans réactiver les liaisons révoquées ; RH-FLOW est enregistré en attente, sans prétendre que son connecteur est livré.
+- Les routes de dépôt API continuent d'utiliser le middleware central ; les anciens mécanismes de clé restent disponibles pendant la migration contrôlée.
+- Le token d'une application maison ne peut être émis que pour un dossier appartenant à ses liaisons actives. Pour une application externe, une seule liaison active est exigée.
+- Les identifiants de dossier éventuellement présents dans le corps d'une requête Bearer sont comparés au dossier du jeton et ne peuvent pas changer le dossier cible.
+
+### CI vérifiée
+- COMPTAFLOW : dernier commit `fef72c2c620b4fa12c612e947bf9b362be6a5839`.
+- Workflow GitHub Actions `44587278019` : **success**. Étapes réussies : installation Composer, préparation de la clé d'application, test isolé de la migration du registre et tests Bearer, compilation Blade et vérification des routes.
+- La CI exécute les tests ciblés `IntegrationRegistryMigrationTest` et `IntegrationBearerSecurityTest`, pas l'intégralité de la suite du projet.
+- SELFLOW : branche `main` au commit `c6226eb4ab6510264dd9c693603b27ce7392daca`.
+- Workflow SELFLOW `44586186577` : **success**. Les suites ciblées de liaison/passerelle, la compilation Blade et la vérification des routes ont réussi.
+
+### État final exact
+- **Codé et poussé sur main :** console COMPTA-APK, registre, routes Super Admin, liaison des dossiers, gestion des secrets, jetons Bearer, permissions, anti-rejeu, journalisation, maintien de la compatibilité SELFLOW, client SELFLOW et tests ciblés.
+- **Validé en CI :** les étapes ci-dessus pour les deux dépôts.
+- **Non déployé / non vérifié en production dans cette session :** migrations sur les bases réelles, déploiement des deux applications, ouverture de l'interface avec un compte Super Admin de production, configuration effective du Client ID/Secret dans SELFLOW et essais de dépôts réseau réels.
+- **Non livré :** connecteur RH-FLOW ; les nouvelles intégrations externes doivent chacune faire l'objet d'un test avec leurs payloads réels.
+- **Compatibilité non supprimée :** ne pas retirer `X-Company-Key` ni `EXTERNAL_SYNC_SECRET` avant la migration effective de tous les clients actifs, notamment GESTION-DE-SITES.
+
+Dernier HEAD COMPTAFLOW vérifié : `fef72c2c620b4fa12c612e947bf9b362be6a5839`.
