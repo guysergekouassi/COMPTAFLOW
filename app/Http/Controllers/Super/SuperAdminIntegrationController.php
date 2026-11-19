@@ -124,6 +124,7 @@ class SuperAdminIntegrationController extends Controller
     public function lier(Request $request, int $id)
     {
         $app = $this->application($id);
+        abort_unless($app->type === 'maison', 403, 'Une application externe doit disposer de son propre dossier créé depuis son parcours dédié.');
         abort_unless($app->status === 'active', 422, 'Cette application n’est pas active.');
         $data = $request->validate([
             'company_id' => 'required|integer|exists:companies,id',
