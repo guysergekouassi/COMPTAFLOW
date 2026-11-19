@@ -189,14 +189,14 @@ Route::prefix('external')->group(function () {
     // C'est ici que la clé sert vraiment : sans `integration.auth` sur ces deux
     // routes, tout le reste ne sert à rien.
     Route::post('/ecritures/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserEcritures'])
-        ->middleware('integration.auth')
+        ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.ecritures.deverser');
     // Rejeu : les opérations parties avant le 06/10/2026 sont arrivées une
     // ligne par pièce. Ce point d'entrée les regroupe sous un seul numéro,
     // sans rien recréer — rejouer le déversement n'aurait rien changé, chaque
     // ligne y étant déjà reconnue à sa clé.
     Route::post('/ecritures/regrouper', [\App\Http\Controllers\Api\ExternalSyncController::class, 'regrouperEcritures'])
-        ->middleware('integration.auth')
+        ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.ecritures.regrouper');
     Route::post('/ecritures/comptes/propager', [\App\Http\Controllers\Api\ExternalSyncController::class, 'propagerComptes'])
         ->middleware(['integration.auth', 'throttle:30,1'])
@@ -204,7 +204,7 @@ Route::prefix('external')->group(function () {
     // Selflow déverse son référentiel — plan comptable, journaux, tiers — dans
     // l'entreprise Comptaflow qui lui est liée. Sens unique : rien ne repart.
     Route::post('/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
-        ->middleware('integration.auth')
+        ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.referentiel.deverser');
 
     // Pièce PDF rattachée à toutes les lignes d'une opération source.
@@ -216,7 +216,7 @@ Route::prefix('external')->group(function () {
         ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.pieces-justificatives.show');
     Route::post('/gestionsites/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
-        ->middleware('integration.auth')
+        ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.gestionsites.referentiel.deverser');
 
     // ── Le reste de la passerelle ──

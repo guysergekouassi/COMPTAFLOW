@@ -99,14 +99,16 @@ class VerifieApplicationOuCleEntreprise
         $response = $next($request);
         $status = $response->getStatusCode();
         $event = str_contains($path, '/pieces-justificatives') ? 'deposit.justificatif'
-            : (str_contains($path, '/referentiel/') ? 'deposit.referentiel' : 'deposit.ecritures');
+            : ((str_contains($path, '/referentiel/') || str_contains($path, '/tiers/lister') || str_contains($path, '/companies/verify'))
+                ? 'deposit.referentiel'
+                : (str_contains($path, '/ecritures/') ? 'deposit.ecritures' : 'api.call'));
         DB::table('integration_api_events')->insert([
             'integration_application_id' => $app->id, 'company_id' => $company->id,
             'event' => $event, 'route' => $request->path(), 'ip_address' => $request->ip(),
             'http_status' => $status, 'details' => json_encode(['method' => $request->method()]),
             'created_at' => now(),
         ]);
-        if ($status >= 200 && $status < 300) {
+        if ($status >= 200 && $status < 300 && str_starts_with($event, 'deposit.')) {
             DB::table('integration_applications')->where('id', $app->id)->update(['last_deposit_at' => now(), 'updated_at' => now()]);
         }
         return $response;

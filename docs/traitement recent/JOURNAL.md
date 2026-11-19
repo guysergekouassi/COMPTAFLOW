@@ -86,3 +86,12 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 4. Configurer SELFLOW pour demander/renouveler le Bearer et fournir les en-têtes timestamp/nonce ; conserver `X-Company-Key` tant que ce client n'est pas déployé.
 5. Tester une application externe : aucune liste globale, dossier unique, accès croisé refusé, permissions, rotation et révocation.
 6. Tester le dépôt PDF et l'idempotence avec un dossier réellement lié.
+
+
+## 2026-11-19 — durcissement et tests de sécurité ajoutés
+
+- Limites de débit ajoutées aux routes de déversement protégées par le middleware central.
+- Journalisation distinguant les dépôts réels et les appels de vérification.
+- Correction de l'identité source pour les applications Bearer génériques : seule SELFLOW utilise son identifiant Selflow, GESTION-DE-SITES son identifiant dédié, les autres applications utilisent le dossier lié.
+- Ajout de `tests/Feature/IntegrationBearerSecurityTest.php` : jeton Bearer, dossier lié, identifiant de dossier contradictoire, nonce anti-rejeu, permissions et isolation externe.
+- Les tests ne sont pas exécutés dans cet environnement ; aucune réussite de test n'est revendiquée.

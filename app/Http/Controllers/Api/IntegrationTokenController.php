@@ -27,6 +27,16 @@ class IntegrationTokenController extends Controller
             && Hash::check($data['client_secret'], $app->client_secret_hash);
 
         if (!$valid) {
+            DB::table('integration_api_events')->insert([
+                'integration_application_id' => $app->id ?? null,
+                'company_id' => null,
+                'event' => 'auth.failed',
+                'route' => $request->path(),
+                'ip_address' => $request->ip(),
+                'http_status' => 401,
+                'details' => json_encode(['reason' => 'invalid_client_credentials']),
+                'created_at' => now(),
+            ]);
             return response()->json(['message' => 'Identifiants applicatifs invalides, expirés ou révoqués.'], 401);
         }
 

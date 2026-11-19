@@ -167,3 +167,10 @@ Voir `CONTRAT_API_BEARER.md` dans ce dossier. Les applications maison peuvent ob
 
 ### État à ne pas surévaluer
 Le code serveur est ajouté dans ce commit, mais migration SQL, tests PHP/Feature, rendu navigateur, déploiement serveur et tests bout en bout restent à exécuter. Le connecteur SELFLOW n'a pas encore été basculé côté client vers Bearer ; il reste accepté via `X-Company-Key`. RH-FLOW reste hors développement applicatif dans ce lot.
+
+
+### Correctifs complémentaires après la première livraison
+- Les routes de déversement sont maintenant soumises à des limites de débit explicites.
+- Les journaux distinguent les appels API génériques des dépôts référentiel, écritures et pièces justificatives.
+- Les applications autres que SELFLOW/GESTION-DE-SITES utilisent leur propre code comme identité source et comme préfixe de déversement ; elles ne récupèrent pas par erreur l'identifiant Selflow d'un dossier également lié à SELFLOW.
+- Une suite Feature `IntegrationBearerSecurityTest` couvre la résolution de dossier, le refus d'un company_id contradictoire, le rejeu de nonce, les permissions et l'unicité du dossier externe. Ces tests sont ajoutés mais ne sont pas encore exécutés.

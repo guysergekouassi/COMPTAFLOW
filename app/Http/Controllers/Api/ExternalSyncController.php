@@ -624,7 +624,7 @@ class ExternalSyncController extends Controller
         // L'identité source est issue de la liaison enregistrée, jamais du JSON.
         $idSource = $origine === 'GESTION_DE_SITES'
             ? ($company->gestionsites_company_id ?? $company->id)
-            : ($company->selflow_company_id ?? $company->id);
+            : ($origine === 'SELFLOW' ? ($company->selflow_company_id ?? $company->id) : $company->id);
 
         $exercice = ExerciceComptable::where('company_id', $company->id)
             ->where('is_active', true)
@@ -1157,7 +1157,7 @@ class ExternalSyncController extends Controller
             'user_id'    => $admin->id,
             'source'     => $origine,
             'type'       => $type,
-            'file_name'  => 'Déversement ' . ($origine === 'GESTION_DE_SITES' ? 'GESTION-DE-SITES' : 'Selflow'),
+            'file_name'  => 'Déversement ' . ($origine === 'GESTION_DE_SITES' ? 'GESTION-DE-SITES' : ($origine === 'SELFLOW' ? 'SELFLOW' : $origine)),
             'raw_data'   => array_merge([$colonnes], $lignes),
             'mapping'    => $mapping,
             'status'     => 'staging',

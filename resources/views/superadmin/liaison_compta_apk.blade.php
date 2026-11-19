@@ -104,6 +104,7 @@
  </form></details>
  @endif
 
+ @if($app->auth_mode!=='planned')
  <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 border-top mt-3 pt-3">
   <form method="POST" action="{{ route('superadmin.liaison_compta.applications.update',$app->id) }}" class="d-flex flex-wrap gap-2 align-items-end">@csrf @method('PUT')
    <div><label class="form-label small">Nom</label><input class="form-control form-control-sm" name="name" value="{{ $app->name }}" required></div>
@@ -121,6 +122,7 @@
    @endif
   </div>
  </div>
+ @endif
 </div>
 @empty
 <div class="apk-card text-muted">Aucune application enregistrée dans cette catégorie.</div>
