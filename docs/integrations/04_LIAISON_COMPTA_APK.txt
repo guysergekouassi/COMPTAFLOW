@@ -1,0 +1,122 @@
+COMPTAFLOW — LIASON COMPTA-APK
+SPECIFICATION FONCTIONNELLE ET TECHNIQUE — CIBLE À IMPLEMENTER
+
+OBJECTIF
+Centraliser dans le SuperAdmin de COMPTAFLOW l'enregistrement, l'authentification,
+les droits et les liaisons de toutes les applications qui déposent des données.
+Aucune modification du code source ni ajout manuel d'un secret dans le .env ne doit
+être nécessaire à chaque nouvelle application ou entreprise.
+
+MENU SUPERADMIN
+Créer une rubrique principale « Liaison COMPTA-APK » avec deux entrées cliquables :
+
+1. APPLICATION MAISON — LA SUITE FLOW
+   - Liste des applications internes autorisées : SELFLOW, RH-FLOW, etc.
+   - Liste des liaisons de chaque application.
+   - Liste des entreprises COMPTAFLOW disponibles pour une liaison maison.
+   - Action « Lier à une entreprise existante ».
+   - Action « Créer une entreprise et lier » si le parcours métier le permet.
+   - Une application maison ne voit que les entreprises et les liaisons prévues
+     pour son périmètre ; les accès sont contrôlés côté serveur.
+
+2. APPLICATION EXTERNE
+   - Liste des applications tierces enregistrées (nom, propriétaire, statut).
+   - Création et modification d'une application externe.
+   - Création d'une entreprise COMPTAFLOW dédiée à cette application.
+   - Génération, renouvellement, révocation et date d'expiration des identifiants.
+   - Historique des connexions et des dépôts.
+   - Une application externe ne reçoit JAMAIS la liste globale des entreprises
+     COMPTAFLOW et ne peut pas choisir un company_id librement.
+
+MODELE DE SECURITE CIBLE
+- Chaque application enregistrée possède un identifiant client (client_id).
+- COMPTAFLOW génère un secret client aléatoire (client_secret) ; il est affiché
+  une seule fois à la création ou au renouvellement.
+- Le secret n'est jamais commité dans un dépôt, écrit en dur dans le code,
+  transmis dans le JSON métier ou journalisé.
+- COMPTAFLOW conserve uniquement une empreinte vérifiable du secret.
+- Chaque liaison associe une application à un ou plusieurs dossiers explicitement
+  autorisés selon son type (maison ou externe).
+- Le contexte entreprise est résolu côté serveur depuis l'identité authentifiée
+  et la liaison active, jamais depuis un company_id fourni librement dans le JSON.
+- Autorisations distinctes par famille : referentiel, écritures, pièces justificatives.
+- Révocation immédiate, rotation de secret, limitation de débit, journalisation,
+  protection anti-rejeu et idempotence.
+- Les secrets nécessaires à l'appel sont enregistrés dans l'interface de
+  configuration de l'application cliente, avec stockage chiffré côté client.
+  Aucun changement de code ni édition manuelle du .env pour chaque liaison.
+- Le secret global historique EXTERNAL_SYNC_SECRET est un mécanisme transitoire.
+  Il doit être retiré des appels métier après migration contrôlée vers les
+  identifiants applicatifs. Ne pas le supprimer avant que les clients actifs
+  aient migré et que les routes soient testées.
+
+AUTHENTIFICATION HTTP CIBLE
+Authorization: Bearer <jeton applicatif>
+Le jeton est délivré/renouvelé par COMPTAFLOW à partir des identifiants applicatifs.
+Ne pas envoyer client_secret, secret ou numéro d'entreprise dans le payload métier.
+X-Company-Key peut rester temporairement accepté pour compatibilité historique,
+mais ne doit pas remplacer l'autorisation applicative ni permettre de changer
+d'entreprise. Le contrat final doit choisir un seul mécanisme cohérent et documenté.
+
+PARCOURS MAISON
+1. Le SuperAdmin sélectionne SELFLOW ou RH-FLOW.
+2. Il consulte les entreprises COMPTAFLOW autorisées à être liées.
+3. Il lie l'entreprise existante ou crée un dossier depuis le parcours autorisé.
+4. COMPTAFLOW crée une liaison explicite et génère les paramètres d'accès.
+5. L'application cliente reçoit/configure ces paramètres depuis son écran sécurisé.
+6. Les endpoints de consultation et de dépôt ne renvoient que les données du dossier lié.
+
+PARCOURS EXTERNE
+1. Le SuperAdmin enregistre l'application et son propriétaire.
+2. Il crée le dossier COMPTAFLOW dédié à cette intégration.
+3. COMPTAFLOW crée une liaison unique et des identifiants propres à cette application.
+4. Le propriétaire reçoit les identifiants une seule fois par un canal sécurisé.
+5. L'application externe ne peut ni lister les autres dossiers ni se rattacher elle-même
+   à une autre entreprise.
+
+ENDPOINTS ET DEVERSEMENTS
+Les endpoints restent la seule porte d'entrée. Aucun accès SQL ou écriture directe
+dans les tables COMPTAFLOW depuis SELFLOW, RH-FLOW ou une application externe.
+Les familles de données sont :
+- référentiel : plan comptable, tiers, codes journaux ;
+- écritures comptables : ventes, achats, OD, paie, stock et autres opérations ;
+- pièces justificatives : dépôt PDF lié à une opération précise.
+
+Les endpoints référentiel et écritures existent déjà dans l'ancienne intégration
+Selflow, mais leur authentification actuelle doit être migrée : les méthodes
+deverserEcritures/regrouperEcritures contrôlent encore le secret global historique,
+même lorsque la route applique cle.entreprise. La présence de X-Company-Key seule
+ne suffit donc pas encore. Ne pas annoncer la nouvelle authentification comme livrée
+avant la migration des contrôleurs, du middleware, des routes et des clients.
+
+NUMEROS ORIGINAUX
+L'application source transmet uniquement son numéro métier courant.
+Exemple : numero_de_compte = "401000".
+COMPTAFLOW conserve cette valeur comme numero_original et génère son propre
+numero_de_compte selon les paramètres du dossier. L'application source ne transmet
+jamais un deuxième champ numero_original.
+Même principe pour les numéros de tiers et les codes journaux. Les écritures
+peuvent ensuite retrouver les référentiels grâce à ces numéros source stables.
+
+IDENTIFIANTS DANS LE CORPS JSON
+Ne pas demander comptaflow_company_id ni selflow_company_id pour déterminer le
+dossier destinataire des écritures. Le dossier est déterminé par la liaison
+authentifiée côté serveur. Les identifiants source utiles à l'idempotence peuvent
+rester dans le payload (cle_source, operation_source), sans servir à choisir le dossier.
+
+MIGRATION ET COMPATIBILITE
+- Inventorier toutes les routes qui lisent EXTERNAL_SYNC_SECRET, secret dans le corps
+  ou X-Sync-Secret.
+- Introduire les tables et modèles d'applications, secrets hashés et liaisons.
+- Créer middleware d'authentification applicative et résolution du dossier lié.
+- Créer les écrans SuperAdmin et leurs politiques d'accès.
+- Migrer les connecteurs SELFLOW et RH-FLOW vers la configuration sécurisée.
+- Garder une période de compatibilité contrôlée, puis retirer l'ancien secret global.
+- Tester les cas : application maison liée à plusieurs dossiers, externe isolée,
+  secret invalide, révocation, rotation, accès croisé interdit, rejeu idempotent,
+  et dépôt dans le mauvais dossier refusé.
+
+ETAT
+Ce fichier est une spécification de réalisation. L'interface « Liaison COMPTA-APK »,
+les tables d'applications, le mécanisme d'authentification applicative et la migration
+des endpoints ne sont pas encore déclarés livrés par la seule présence de ce document.
