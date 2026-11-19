@@ -541,14 +541,9 @@ class ExternalSyncController extends Controller
      */
     public function regrouperEcritures(Request $request)
     {
-        $expectedSecret = config('external_sync.external_sync_secret');
-        $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
-        if (!self::secretValide($providedSecret, $expectedSecret)) {
-            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
-        }
-
+        // Le dossier est déjà authentifié et résolu par le middleware
+        // cle.entreprise. Aucun secret partagé ni company_id dans le JSON.
         $request->validate([
-            'selflow_company_id'      => 'required|integer',
             'operations'              => 'required|array|max:500',
             'operations.*.operation'  => 'required|string|max:64',
             'operations.*.cles'       => 'required|array|min:2',
@@ -603,15 +598,10 @@ class ExternalSyncController extends Controller
 
     public function deverserEcritures(Request $request)
     {
-        $expectedSecret = config('external_sync.external_sync_secret');
-        $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
-        if (!self::secretValide($providedSecret, $expectedSecret)) {
-            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
-        }
-
+        // Le middleware cle.entreprise a déjà authentifié la clé et résolu
+        // le dossier cible. Les identifiants de société ne font pas partie
+        // du payload métier.
         $request->validate([
-            'selflow_company_id' => 'required_without:gestionsites_company_id|integer',
-            'gestionsites_company_id' => 'required_without:selflow_company_id|integer',
             'ecritures'          => 'required|array',
             // Selflow déverse désormais une **opération entière** en un appel,
             // et non ligne par ligne. Quand il le dit, une seule ligne refusée
@@ -623,9 +613,6 @@ class ExternalSyncController extends Controller
 
         $atomique = $request->boolean('atomique');
         $origine = $request->attributes->get('integration_origine', 'SELFLOW');
-        $idSource = $origine === 'GESTION_DE_SITES'
-            ? $request->input('gestionsites_company_id')
-            : $request->input('selflow_company_id');
         $prefixeSource = $origine === 'GESTION_DE_SITES' ? 'GESTION-DE-SITES' : 'SELFLOW';
 
         $company = self::entrepriseDeLaRequete($request);
@@ -633,6 +620,11 @@ class ExternalSyncController extends Controller
         if (!$company) {
             return response()->json(['success' => false, 'message' => 'Entreprise non trouvée ou non connectée.'], 404);
         }
+
+        // L'identité source est issue de la liaison enregistrée, jamais du JSON.
+        $idSource = $origine === 'GESTION_DE_SITES'
+            ? ($company->gestionsites_company_id ?? $company->id)
+            : ($company->selflow_company_id ?? $company->id);
 
         $exercice = ExerciceComptable::where('company_id', $company->id)
             ->where('is_active', true)
@@ -864,21 +856,9 @@ class ExternalSyncController extends Controller
      */
     public function deverserReferentiel(Request $request)
     {
-        $expectedSecret = config('external_sync.external_sync_secret');
-        $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
-
-        if (!self::secretValide($providedSecret, $expectedSecret)) {
-            Log::warning('ExternalSync: secret invalide', [
-                'ip'    => $request->ip(),
-                'route' => 'api/external/referentiel/deverser',
-            ]);
-            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
-        }
-
+        // Le dossier est résolu exclusivement depuis X-Company-Key.
+        // Les identifiants de sociétés et le secret global sont hors payload.
         $request->validate([
-            'selflow_company_id'    => 'required_without:gestionsites_company_id|integer',
-            'gestionsites_company_id' => 'required_without:selflow_company_id|integer',
-            'comptaflow_company_id' => 'required|integer',
             'plan_comptable'        => 'nullable|array',
             'codes_journaux'        => 'nullable|array',
             'tiers'                 => 'nullable|array',
@@ -896,29 +876,19 @@ class ExternalSyncController extends Controller
         // clé, et cela ne vaut que le temps de la transition : les deux valeurs
         // viennent du même corps de requête, donc du même appelant.
         $origine = $request->attributes->get('integration_origine', 'SELFLOW');
-        $idSource = $origine === 'GESTION_DE_SITES'
-            ? $request->input('gestionsites_company_id')
-            : $request->input('selflow_company_id');
         $company = self::entrepriseDeLaRequete($request);
-
-        $idLie = $origine === 'GESTION_DE_SITES'
-            ? $company?->gestionsites_company_id
-            : $company?->selflow_company_id;
-
-        if ($company
-            && ((int) $company->id !== (int) $request->comptaflow_company_id
-                || (int) $idLie !== (int) $idSource)) {
-            $company = null;
-        }
 
         if (!$company) {
             return response()->json([
                 'success' => false,
-                'message' => "Aucune liaison entre l'entreprise source n° {$idSource} "
-                    . "et le dossier COMPTAFLOW n° {$request->comptaflow_company_id}. "
-                    . 'Établissez la liaison avant de déverser le référentiel.',
+                'message' => 'Aucun dossier COMPTAFLOW n’est associé à la clé présentée. Établissez la liaison avant de déverser le référentiel.',
             ], 404);
         }
+
+        // Information de journalisation issue de la liaison, pas de l'appelant.
+        $idSource = $origine === 'GESTION_DE_SITES'
+            ? ($company->gestionsites_company_id ?? $company->id)
+            : ($company->selflow_company_id ?? $company->id);
 
         // L'import de Comptaflow travaille au nom d'un utilisateur du dossier :
         // c'est lui que l'historique des imports nommera.
