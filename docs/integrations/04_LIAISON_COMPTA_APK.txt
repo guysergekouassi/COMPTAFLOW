@@ -82,12 +82,12 @@ Les familles de données sont :
 - écritures comptables : ventes, achats, OD, paie, stock et autres opérations ;
 - pièces justificatives : dépôt PDF lié à une opération précise.
 
-Les endpoints référentiel et écritures existent déjà dans l'ancienne intégration
-Selflow, mais leur authentification actuelle doit être migrée : les méthodes
-deverserEcritures/regrouperEcritures contrôlent encore le secret global historique,
-même lorsque la route applique cle.entreprise. La présence de X-Company-Key seule
-ne suffit donc pas encore. Ne pas annoncer la nouvelle authentification comme livrée
-avant la migration des contrôleurs, du middleware, des routes et des clients.
+ÉTAT AU 19/11/2026 : les routes de déversement référentiel, écritures et regroupement
+sont protégées par cle.entreprise ; les contrôleurs n'exigent plus le secret global ni
+les identifiants de société dans les payloads métier. SELFLOW envoie ces payloads
+sans secret ni identifiants de routage. Cela ne constitue PAS encore l'authentification
+applicative centralisée décrite ici : les écrans SuperAdmin, tables d'applications,
+client_id/client_secret, jetons Bearer et permissions par application restent à réaliser.
 
 NUMEROS ORIGINAUX
 L'application source transmet uniquement son numéro métier courant.
