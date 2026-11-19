@@ -51,6 +51,30 @@ class IntegrationBearerSecurityTest extends TestCase
         });
     }
 
+    public function test_une_application_externe_ne_peut_pas_utiliser_le_rattachement_generique_a_un_dossier_existant(): void
+    {
+        DB::table('integration_applications')->where('id', $this->applicationId)->update(['type' => 'externe']);
+
+        $this->expectException(HttpException::class);
+        app(SuperAdminIntegrationController::class)->lier(Request::create('/__integration/link', 'POST'), $this->applicationId);
+    }
+
+    public function test_une_application_maison_ne_peut_demander_un_jeton_que_pour_un_dossier_lie(): void
+    {
+        DB::table('companies')->insert([
+            'id' => 43, 'company_name' => 'Dossier hors périmètre',
+            'is_active' => true, 'is_blocked' => false,
+        ]);
+
+        $this->postJson('/api/integration/token', [
+            'client_id' => 'cf_app_test', 'client_secret' => 'secret-test', 'company_id' => 43,
+        ])->assertStatus(422);
+
+        $this->postJson('/api/integration/token', [
+            'client_id' => 'cf_app_test', 'client_secret' => 'secret-test', 'company_id' => $this->companyId,
+        ])->assertOk();
+    }
+
     public function test_le_jeton_resout_le_dossier_depuis_la_liaison_et_non_depuis_le_corps(): void
     {
         $this->appelSigne(['company_id' => 999])->assertStatus(403);
