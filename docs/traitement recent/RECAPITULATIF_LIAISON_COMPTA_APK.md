@@ -93,7 +93,7 @@ Ces éléments sont rapportés comme existants dans la spécification de session
 | SELFLOW — IT | `612000ef116f486778a1f4eb6f557c64ffa70d2e` | Stock actif par défaut par période de trois mois et transmission automatique du PDF après acceptation, selon l'historique de session. |
 | COMPTAFLOW — IT | `128f5e55df8e10d79551d5ae6289b50e862000cb` | Correction PHP dans le connecteur, syntaxe contrôlée par `php -l` selon l'historique de session. |
 
-Le commit `b0277ea...` n'a pas créé l'interface COMPTA-APK. Aucun commit de réalisation de cette nouvelle interface n'est enregistré à la date de ce récapitulatif.
+Le commit `b0277ea...` n'a pas créé l'interface COMPTA-APK. Aucun commit de réalisation de cette nouvelle interface n'est enregistré à la date de ce récapitulatif. Les deux fichiers de suivi ont été ajoutés sur main : récapitulatif initial `47b64fe8518ec66f6c2a21fa91e75ed154bad6ae`, journal `5537cfd52ac32383b403b3dda841ea41672e13d5`.
 
 ## 6. Travail restant — non livré à ce jour
 
