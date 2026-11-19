@@ -1,8 +1,8 @@
 COMPTAFLOW — PAYLOAD REFERENTIEL
-STATUT : CONTRAT CIBLE À IMPLEMENTER ET À ALIGNER AVEC LE CONTROLEUR ACTUEL.
+STATUT : CONTRAT APPLIQUÉ AUX ROUTES ET AU CONNECTEUR SELFLOW (19/11/2026).
 Endpoint actuel : POST /api/external/referentiel/deverser
-La route applique actuellement le middleware cle.entreprise. La migration complète
-vers les identifiants applicatifs de 04_LIAISON_COMPTA_APK.txt reste à faire.
+La route applique le middleware cle.entreprise. Le dossier est résolu depuis X-Company-Key ;
+aucun secret global ni identifiant de société n'est requis dans le corps JSON.
 
 PRINCIPE
 Le dossier destinataire est résolu côté serveur à partir de la liaison authentifiée.
@@ -43,9 +43,9 @@ REGLES
 5. Le rejeu doit rester idempotent.
 6. Ne jamais accepter un identifiant de dossier libre dans le JSON pour router le dépôt.
 
-IMPORTANT — ECART AVEC LE CODE ACTUEL
-Ce document décrit le contrat cible. Le contrôleur et les connecteurs doivent encore
-être vérifiés et alignés pour les trois collections. La route utilise X-Company-Key,
-mais certains contrôleurs de l'intégration vérifient encore le secret global historique.
-Ne pas considérer l'authentification applicative cible comme déjà livrée.
-Voir 04_LIAISON_COMPTA_APK.txt.
+AUTHENTIFICATION ACTUELLE
+Le middleware cle.entreprise vérifie X-Company-Key, résout le dossier et bloque
+les clés inconnues/révoquées ou les identifiants de routage contradictoires.
+Le payload référentiel ne contient ni secret ni identifiant d'entreprise.
+La gestion centralisée des applications client_id/client_secret et les jetons Bearer
+reste à réaliser dans le chantier Liaison COMPTA-APK.
