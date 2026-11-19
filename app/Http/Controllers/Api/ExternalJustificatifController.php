@@ -83,7 +83,7 @@ class ExternalJustificatifController extends Controller
 
                 if ($cheminsExistants->isNotEmpty()) {
                     $existant = $cheminsExistants->first();
-                    if (is_file(public_path('justificatifs/' . $existant))) {
+                    if (is_file(storage_path('app/' . $existant))) {
                         $hashExistant = hash_file('sha256', public_path('justificatifs/' . $existant));
                         if (hash_equals($hashExistant, $empreinte)) {
                             return [
@@ -94,7 +94,7 @@ class ExternalJustificatifController extends Controller
                                     'operation_source' => $donnees['operation_source'],
                                     'sha256' => $empreinte,
                                     'piece_justificatif' => $existant,
-                                    'url' => asset('justificatifs/' . $existant),
+                                    'url' => route('api.external.pieces-justificatives.show', $lignes->first()->id),
                                     'idempotent' => true,
                                 ],
                             ];
@@ -108,8 +108,8 @@ class ExternalJustificatifController extends Controller
                 }
 
                 $nomTechnique = $company->id . '_' . hash('sha256', $donnees['operation_source']) . '_' . $empreinte . '.pdf';
-                $chemin = $nomTechnique;
-                $repertoire = public_path('justificatifs');
+                $chemin = 'private/justificatifs/' . $company->id . '/' . $nomTechnique;
+                $repertoire = storage_path('app/private/justificatifs/' . $company->id);
 
                 if (!is_dir($repertoire) && !mkdir($repertoire, 0750, true) && !is_dir($repertoire)) {
                     throw new \RuntimeException('Impossible de créer le dossier des justificatifs.');
@@ -141,7 +141,7 @@ class ExternalJustificatifController extends Controller
                         'operation_source' => $donnees['operation_source'],
                         'sha256' => $empreinte,
                         'piece_justificatif' => $chemin,
-                        'url' => asset('justificatifs/' . $chemin),
+                        'url' => route('api.external.pieces-justificatives.show', $lignes->first()->id),
                         'nombre_lignes' => $lignes->count(),
                         'idempotent' => false,
                     ],
@@ -150,7 +150,7 @@ class ExternalJustificatifController extends Controller
 
             return response()->json($resultat['body'], $resultat['status']);
         } catch (\Throwable $e) {
-            if ($chemin && is_file(public_path('justificatifs/' . $chemin))) {
+            if ($chemin && is_file(storage_path('app/' . $chemin))) {
                 @unlink(public_path('justificatifs/' . $chemin));
             }
 
@@ -166,4 +166,54 @@ class ExternalJustificatifController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Téléchargement côté utilisateur connecté : le dossier actif de session
+     * doit posséder l'écriture. Les anciens fichiers publics restent servis
+     * par leur URL historique ; cette route ne sert que les chemins privés.
+     */
+    public function telechargerPourUtilisateur(int $id)
+    {
+        $companyId = (int) session('current_company_id');
+        abort_unless($companyId > 0, 403);
+
+        $ecriture = EcritureComptable::query()
+            ->where('company_id', $companyId)
+            ->findOrFail($id);
+
+        return $this->reponseFichierPrive($ecriture->piece_justificatif);
+    }
+
+    /**
+     * Téléchargement côté application externe, sous la même clé de dossier.
+     */
+    public function telechargerPourIntegration(Request $request, int $id)
+    {
+        $company = $request->attributes->get('entreprise_liee');
+        abort_unless($company, 401);
+
+        $ecriture = EcritureComptable::query()
+            ->where('company_id', $company->id)
+            ->findOrFail($id);
+
+        return $this->reponseFichierPrive($ecriture->piece_justificatif);
+    }
+
+    private function reponseFichierPrive(?string $chemin)
+    {
+        abort_unless(
+            is_string($chemin) && str_starts_with($chemin, 'private/justificatifs/'),
+            404
+        );
+
+        $absolu = storage_path('app/' . $chemin);
+        abort_unless(is_file($absolu), 404);
+
+        return response()->file($absolu, [
+            'Content-Type' => 'application/pdf',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
 }
