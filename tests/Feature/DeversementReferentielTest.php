@@ -277,6 +277,79 @@ class DeversementReferentielTest extends TestCase
     }
 
 
+    public function test_la_propagation_des_comptes_met_a_jour_les_ecritures_et_tiers_sans_modifier_les_montants(): void
+    {
+        $this->deverser([
+            'plan_comptable' => [
+                ['numero_de_compte' => '701000', 'intitule' => 'Ventes anciennes'],
+                ['numero_de_compte' => '702000', 'intitule' => 'Ventes nouvelles'],
+            ],
+        ])->assertOk();
+
+        $ancienId = DB::table('plan_comptables')
+            ->where('company_id', self::COMPTAFLOW)
+            ->where('numero_original', '701000')
+            ->value('id');
+        $nouveauId = DB::table('plan_comptables')
+            ->where('company_id', self::COMPTAFLOW)
+            ->where('numero_original', '702000')
+            ->value('id');
+
+        $ecritureId = DB::table('ecriture_comptables')->insertGetId([
+            'date' => '2026-11-19',
+            'n_saisie' => 'STK-001',
+            'description_operation' => 'Variation stock historique',
+            'reference_piece' => 'STK-001',
+            'plan_comptable_id' => $ancienId,
+            'debit' => 125000,
+            'credit' => 125000,
+            'user_id' => 1,
+            'company_id' => self::COMPTAFLOW,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $tiersId = DB::table('plan_tiers')->insertGetId([
+            'numero_de_tiers' => '410007',
+            'numero_original' => '410007',
+            'compte_general' => $ancienId,
+            'intitule' => 'Client test',
+            'type_de_tiers' => 'Client',
+            'user_id' => 1,
+            'company_id' => self::COMPTAFLOW,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $charge = [
+            'remplacements' => [
+                ['ancien_numero' => '701000', 'nouveau_numero' => '702000'],
+            ],
+        ];
+
+        $this->postJson('/api/external/ecritures/comptes/propager', $charge, [
+            'X-Company-Key' => self::CLE,
+        ])->assertOk()->assertJson([
+            'success' => true,
+            'ecritures_mises_a_jour' => 1,
+            'tiers_mis_a_jour' => 1,
+        ]);
+
+        $ligne = DB::table('ecriture_comptables')->where('id', $ecritureId)->first();
+        $this->assertSame((int) $nouveauId, (int) $ligne->plan_comptable_id);
+        $this->assertEquals(125000, (float) $ligne->debit);
+        $this->assertEquals(125000, (float) $ligne->credit);
+        $this->assertSame((int) $nouveauId, (int) DB::table('plan_tiers')->where('id', $tiersId)->value('compte_general'));
+
+        $this->postJson('/api/external/ecritures/comptes/propager', $charge, [
+            'X-Company-Key' => self::CLE,
+        ])->assertOk()->assertJson([
+            'success' => true,
+            'ecritures_mises_a_jour' => 0,
+            'tiers_mis_a_jour' => 0,
+        ]);
+    }
+
     public function test_depot_pdf_rattache_l_operation_et_refuse_un_remplacement_silencieux(): void
     {
         $operation = 'SELFLOW-7-OP000123';
