@@ -385,7 +385,10 @@ public function index()
                     ]);
                 }
 
-                $date = Carbon::parse($exercice->date_fin);
+                $date = Carbon::parse($exercice->date_fin)->startOfDay();
+                if ($date->gt(now()->startOfDay())) {
+                    $date = now()->startOfDay();
+                }
                 $journalSaisi = JournalSaisi::firstOrCreate([
                     'annee' => $date->year,
                     'mois' => $date->month,
@@ -468,30 +471,95 @@ public function index()
             return back()->with('error', "Veuillez d'abord passer l'écriture de résultat avec le bouton dédié avant de clôturer l'exercice.");
         }
 
-        // Chercher ou CRÉER l'exercice suivant
-        $nextExercice = ExerciceComptable::where('company_id', $companyId)
-            ->where('date_debut', '>', $exercice->date_fin)
-            ->orderBy('date_debut', 'asc')
-            ->first();
-
-        if (!$nextExercice) {
-            // Création automatique de l'exercice suivant
-            $debutNext = Carbon::parse($exercice->date_fin)->addDay();
-            $finNext = (clone $debutNext)->addYear()->subDay();
-            
-            $nextExercice = ExerciceComptable::create([
-                'company_id' => $companyId,
-                'intitule' => 'EXERCICE ' . $debutNext->year,
-                'date_debut' => $debutNext,
-                'date_fin' => $finNext,
-                'is_active' => 0,
-                'cloturer' => 0,
-                'user_id' => Auth::id()
-            ]);
-        }
-
         try {
             DB::beginTransaction();
+
+            // Si la clôture est anticipée, la date réelle de fin devient aujourd'hui.
+            // Aucune écriture future ne doit rester dans l'exercice raccourci.
+            $dateCloture = now()->startOfDay();
+            $dateFinPrevue = Carbon::parse($exercice->date_fin)->startOfDay();
+            $clotureAnticipee = $dateFinPrevue->gt($dateCloture);
+
+            if ($clotureAnticipee) {
+                $ecrituresFutures = EcritureComptable::where('company_id', $companyId)
+                    ->where('exercices_comptables_id', $exercice->id)
+                    ->whereDate('date', '>', $dateCloture->toDateString())
+                    ->where(function ($q) {
+                        $q->where('is_ran', false)->orWhereNull('is_ran');
+                    })
+                    ->exists();
+
+                if ($ecrituresFutures) {
+                    DB::rollBack();
+                    return back()->with('error', "La clôture anticipée est impossible : l'exercice contient des écritures datées après aujourd'hui. Corrigez leurs dates ou leur exercice avant de clôturer.");
+                }
+
+                $exercice->update(['date_fin' => $dateCloture->toDateString()]);
+                $exercice->refresh();
+            }
+
+            // Chercher ou créer l'exercice suivant à partir du lendemain réel.
+            $debutNext = Carbon::parse($exercice->date_fin)->addDay()->startOfDay();
+            $nextExercice = ExerciceComptable::where('company_id', $companyId)
+                ->where('date_debut', '>=', $debutNext->toDateString())
+                ->orderBy('date_debut', 'asc')
+                ->first();
+
+            if ($nextExercice) {
+                $debutExistant = Carbon::parse($nextExercice->date_debut)->startOfDay();
+
+                if ($clotureAnticipee && $debutExistant->gt($debutNext)) {
+                    $aDesEcritures = EcritureComptable::where('company_id', $companyId)
+                        ->where('exercices_comptables_id', $nextExercice->id)
+                        ->exists();
+
+                    if ($nextExercice->cloturer || $aDesEcritures) {
+                        DB::rollBack();
+                        return back()->with('error', "Un exercice suivant existe déjà avec des écritures ou est clôturé. Ajustez ses dates avant la clôture anticipée.");
+                    }
+
+                    $finNext = $debutNext->copy()->addYear()->subDay();
+                    $chevauchement = ExerciceComptable::where('company_id', $companyId)
+                        ->where('id', '!=', $exercice->id)
+                        ->where('id', '!=', $nextExercice->id)
+                        ->whereDate('date_debut', '<=', $finNext->toDateString())
+                        ->whereDate('date_fin', '>=', $debutNext->toDateString())
+                        ->exists();
+
+                    if ($chevauchement) {
+                        DB::rollBack();
+                        return back()->with('error', "Un autre exercice chevauche les nouvelles dates. Ajustez les périodes avant la clôture anticipée.");
+                    }
+
+                    $nextExercice->update([
+                        'date_debut' => $debutNext->toDateString(),
+                        'date_fin' => $finNext->toDateString(),
+                    ]);
+                    $nextExercice->refresh();
+                }
+            } else {
+                $finNext = $debutNext->copy()->addYear()->subDay();
+                $chevauchement = ExerciceComptable::where('company_id', $companyId)
+                    ->where('id', '!=', $exercice->id)
+                    ->whereDate('date_debut', '<=', $finNext->toDateString())
+                    ->whereDate('date_fin', '>=', $debutNext->toDateString())
+                    ->exists();
+
+                if ($chevauchement) {
+                    DB::rollBack();
+                    return back()->with('error', "Un autre exercice chevauche les dates du nouvel exercice. Ajustez les périodes avant de clôturer.");
+                }
+
+                $nextExercice = ExerciceComptable::create([
+                    'company_id' => $companyId,
+                    'intitule' => 'EXERCICE ' . $debutNext->year,
+                    'date_debut' => $debutNext,
+                    'date_fin' => $finNext,
+                    'is_active' => 0,
+                    'cloturer' => 0,
+                    'user_id' => Auth::id()
+                ]);
+            }
 
             // Identifier ou créer le journal RAN
             $journalRan = CodeJournal::where('company_id', $companyId)
