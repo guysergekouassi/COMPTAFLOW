@@ -883,6 +883,9 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth', 'superadmin'])->group(function () {
 
+    Route::get('/superadmin/payloads', [\\App\\Http\\Controllers\\Super\\SuperAdminPayloadController::class, 'index'])->name('superadmin.payloads.index');
+    Route::get('/superadmin/payloads/{type}', [\\App\\Http\\Controllers\\Super\\SuperAdminPayloadController::class, 'telecharger'])->name('superadmin.payloads.download');
+
     // Tableau de Bord Super Admin (Statistiques Globales)
     Route::get('/superadmin/dashboard', [SuperAdminDashboardController::class, 'index'])->name('superadmin.dashboard');
 
