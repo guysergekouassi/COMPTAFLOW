@@ -1726,6 +1726,9 @@ class EcritureComptableController extends Controller
         return EcritureComptable::where('company_id', $companyId)
             ->where('exercices_comptables_id', $exerciceId)
             ->whereIn('statut', ['approved', 'pending'])
+            ->where(function ($q) {
+                $q->where('is_ran', false)->orWhereNull('is_ran');
+            })
             ->whereHas('planComptable', function ($q) {
                 $q->where('numero_de_compte', 'like', '1301%')
                     ->orWhere('numero_de_compte', 'like', '1309%');

@@ -776,6 +776,9 @@ public function index()
         return EcritureComptable::where('company_id', $exercice->company_id)
             ->where('exercices_comptables_id', $exercice->id)
             ->whereIn('statut', ['approved', 'pending'])
+            ->where(function ($q) {
+                $q->where('is_ran', false)->orWhereNull('is_ran');
+            })
             ->whereHas('planComptable', function ($q) {
                 $q->where('numero_de_compte', 'like', '1301%')
                     ->orWhere('numero_de_compte', 'like', '1309%');
