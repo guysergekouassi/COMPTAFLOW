@@ -150,7 +150,7 @@
                                 <i class="bx bx-file me-2 fs-4"></i>
                                 <div>
                                     Une pièce justificative est jointe à cette écriture.
-                                    <a href="{{ asset('justificatifs/' . $primaryEcriture->piece_justificatif) }}" target="_blank" class="fw-bold ms-2 text-decoration-underline">
+                                    <a href="{{ str_starts_with($primaryEcriture->piece_justificatif, 'private/justificatifs/') ? route('ecriture.justificatif', $primaryEcriture->id) : asset('justificatifs/' . $primaryEcriture->piece_justificatif) }}" target="_blank" class="fw-bold ms-2 text-decoration-underline">
                                         Voir le document
                                     </a>
                                 </div>
