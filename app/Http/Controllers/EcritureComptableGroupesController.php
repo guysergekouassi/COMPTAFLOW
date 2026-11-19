@@ -232,7 +232,7 @@ class EcritureComptableGroupesController extends Controller
                         'poste_tresorerie' => $e->posteTresorerie->name ?? '',
                         'poste_tresorerie_id' => $e->poste_tresorerie_id ?? null,
                         'piece' => (bool) $e->piece_justificatif,
-                        'piece_url' => $e->piece_justificatif ? asset('justificatifs/' . $e->piece_justificatif) : null,
+                        'piece_url' => $e->piece_justificatif ? (str_starts_with($e->piece_justificatif, 'private/justificatifs/') ? route('ecriture.justificatif', $e->id) : asset('justificatifs/' . $e->piece_justificatif)) : null,
                     ];
                 });
 
