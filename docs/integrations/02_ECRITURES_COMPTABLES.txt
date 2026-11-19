@@ -1,0 +1,58 @@
+COMPTAFLOW — PAYLOAD ECRITURES COMPTABLES
+Endpoint observe : POST /api/external/ecritures/deverser
+Authentification : X-Company-Key + secret serveur.
+
+CORPS JSON :
+{
+  "selflow_company_id": 123,
+  "secret": "<secret serveur>",
+  "operation": "OP-OD-2026-00123",
+  "atomique": true,
+  "exercice_debut": "2026-01-01",
+  "exercice_fin": "2026-12-31",
+  "ecritures": [
+    {
+      "date_ecriture": "2026-11-18",
+      "libelle": "Salaire novembre 2026",
+      "reference_document": "OD-2026-00123",
+      "code_journal": "OD",
+      "compte_debit": "641000",
+      "compte_credit": "421000",
+      "debit": 250000,
+      "credit": 250000,
+      "compte_tiers": null,
+      "cle_selflow": "RH-FLOW-123-OD-2026-00123-L1",
+      "operation_selflow": "RH-FLOW-123-OP-OD-2026-00123"
+    }
+  ]
+}
+
+LES 9 CHAMPS DU FICHIER TXT HISTORIQUE
+1 Date de pièce
+2 N° pièce
+3 Code journal
+4 Numéro facture
+5 N° compte général
+6 Libellé écriture
+7 Montant débit
+8 Montant crédit
+9 N° compte tiers
+
+Exemple TXT :
+18/11/2026;OD-2026-00123;OD;OD-2026-00123;641000;Salaire novembre 2026;250000;0;
+18/11/2026;OD-2026-00123;OD;OD-2026-00123;421000;Salaire novembre 2026;0;250000;
+
+IMPORTANT : le TXT a neuf colonnes ; le JSON API n'est pas une ligne TXT. Le JSON porte compte_debit et compte_credit separement, plus les cles techniques.
+
+CHAMPS JSON PAR LIGNE
+date_ecriture, libelle, reference_document, code_journal, compte_debit, compte_credit, debit, credit, compte_tiers.
+Cles techniques : cle_selflow/cle_source (unique par ligne) et operation_selflow/operation_source (commune a l'operation).
+
+REGLES
+- Envoyer une operation complete dans un lot atomique.
+- Total debit = total credit.
+- Journal connu ; aucun journal de substitution automatique.
+- Compte et tiers resolus par leurs numeros/identifiants source.
+- Cle de ligne stable pour eviter les doublons.
+- Meme operation_selflow pour toutes les lignes de l'operation.
+- Verifier la compatibilite des exercices.
