@@ -84,7 +84,7 @@ class ExternalJustificatifController extends Controller
                 if ($cheminsExistants->isNotEmpty()) {
                     $existant = $cheminsExistants->first();
                     if (is_file(storage_path('app/' . $existant))) {
-                        $hashExistant = hash_file('sha256', public_path('justificatifs/' . $existant));
+                        $hashExistant = hash_file('sha256', storage_path('app/' . $existant));
                         if (hash_equals($hashExistant, $empreinte)) {
                             return [
                                 'status' => 200,
@@ -115,7 +115,7 @@ class ExternalJustificatifController extends Controller
                     throw new \RuntimeException('Impossible de créer le dossier des justificatifs.');
                 }
 
-                if (file_put_contents($repertoire . DIRECTORY_SEPARATOR . $chemin, $contenu, LOCK_EX) === false) {
+                if (file_put_contents($repertoire . DIRECTORY_SEPARATOR . $nomTechnique, $contenu, LOCK_EX) === false) {
                     throw new \RuntimeException('Impossible d’enregistrer le fichier PDF.');
                 }
 
@@ -151,7 +151,7 @@ class ExternalJustificatifController extends Controller
             return response()->json($resultat['body'], $resultat['status']);
         } catch (\Throwable $e) {
             if ($chemin && is_file(storage_path('app/' . $chemin))) {
-                @unlink(public_path('justificatifs/' . $chemin));
+                @unlink(storage_path('app/' . $chemin));
             }
 
             Log::error('Échec du dépôt de pièce justificative externe', [
