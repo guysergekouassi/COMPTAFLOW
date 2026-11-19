@@ -11,6 +11,7 @@ class SuperAdminPayloadController extends Controller
         'referentiel' => '01_REFERENTIEL.txt',
         'ecritures' => '02_ECRITURES_COMPTABLES.txt',
         'pieces' => '03_PIECES_JUSTIFICATIVES.txt',
+        'liaison' => '04_LIAISON_COMPTA_APK.txt',
     ];
 
     public function index()
