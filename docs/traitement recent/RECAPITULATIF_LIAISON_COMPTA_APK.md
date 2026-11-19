@@ -182,3 +182,17 @@ Le code serveur est ajouté dans ce commit, mais migration SQL, tests PHP/Featur
 - L'endpoint de réception du référentiel `/api/external/link-company` est protégé par le middleware central ; le Bearer est réservé à l'application SELFLOW sur ce parcours. Le secret serveur global n'est plus envoyé dans le corps en mode Bearer.
 - La création d'un dossier externe demande désormais explicitement les dates de l'exercice comptable et crée cet exercice ; aucun exercice n'est inventé.
 - Le contrat client SELFLOW (saisie sécurisée du Client ID/Secret, cache du jeton chiffré, nonce/horodatage et renouvellement après 401) est en cours dans le dépôt SELFLOW et n'est pas encore livré à cette date.
+
+
+### Migration du client SELFLOW vers Bearer — code ajouté
+- Le dépôt `IT-dcknowing/Selflow` dispose maintenant d'un formulaire Super Admin pour enregistrer le Client ID et le Client Secret COMPTAFLOW, sans modifier le `.env`.
+- Le secret est chiffré avec `APP_KEY` dans les paramètres plateforme ; le jeton en cache est également chiffré.
+- Les appels métier utilisent Bearer, horodatage Unix et nonce unique ; en cas de HTTP 401, le client invalide le jeton, en demande un nouveau et retente une fois.
+- Les clés X-Company-Key restent en repli de compatibilité ; les opérations de rotation/révocation des anciennes clés continuent à utiliser ce mécanisme.
+- Le parcours de réception du référentiel et la vérification de liaison n'envoient plus le secret global dans les payloads métier. Le provisionnement initial et les opérations d'administration de clés conservent leur secret serveur de contrôle.
+- Commit client SELFLOW : `6c716b8ee055ec2b5e4cd53f54fffa02b1769fb3`.
+
+### État de validation
+- Code COMPTAFLOW et client SELFLOW publiés sur leurs branches `main`.
+- Les migrations, `php -l`, tests Feature, tests de rendu, tests bout en bout et déploiement serveur ne sont pas encore exécutés/confirmés.
+- Le nouveau formulaire SELFLOW doit être renseigné avec les identifiants générés depuis COMPTAFLOW après déploiement des deux dépôts.

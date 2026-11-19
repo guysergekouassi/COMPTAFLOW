@@ -67,3 +67,12 @@ La révocation de l'application ou d'une liaison révoque également les jetons 
 ## 7. Limites de la livraison serveur
 
 Le serveur COMPTAFLOW fournit le registre, les liaisons, l'émission/validation Bearer et les contrôles anti-rejeu. Le paramétrage client SELFLOW pour obtenir et renouveler automatiquement ces jetons doit être déployé séparément avant de basculer ses appels en Bearer. Jusqu'à cette migration, le connecteur SELFLOW reste compatible avec `X-Company-Key`.
+
+
+## 8. Parcours SELFLOW spécifique
+
+- `POST /api/external/companies/verify` et `POST /api/external/link-company` sont authentifiés par `integration.auth`.
+- `link-company` est réservé à l'application dont le code est `selflow` et exige la permission `referentiel`.
+- Ces appels ne nécessitent pas de secret global dans le corps : le middleware a déjà authentifié Bearer ou X-Company-Key et résolu le dossier.
+- Les anciens appels X-Company-Key de SELFLOW sont eux aussi contrôlés par le registre central (statut d'application, liaison active et permissions).
+- Le secret serveur global reste réservé au provisionnement initial et aux opérations de contrôle historiques de clé ; il ne doit pas être inclus dans les payloads métier.

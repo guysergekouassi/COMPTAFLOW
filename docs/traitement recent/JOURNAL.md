@@ -105,3 +105,14 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - `/api/external/link-company` passe sous `integration.auth`, est limité à SELFLOW, et accepte le Bearer sans secret global dans le corps.
 - Création de dossier externe : ajout de dates d'exercice obligatoires et ouverture de l'exercice comptable.
 - Les tests de sécurité ajoutés précédemment n'ont pas encore été exécutés. Les migrations, PHP lint, tests de rendu et tests bout en bout restent à exécuter.
+
+
+## 2026-11-19 — configuration Bearer côté SELFLOW
+
+- Ajout d'un écran Super Admin dans SELFLOW → Liaisons SELFLOW pour saisir le Client ID et le Client Secret COMPTAFLOW.
+- Le secret est chiffré dans les paramètres plateforme ; le jeton est mis en cache chiffré par entreprise.
+- Les appels métier passent par un helper HTTP commun qui ajoute les en-têtes anti-rejeu et renouvelle automatiquement le jeton après HTTP 401, avec repli temporaire X-Company-Key.
+- Déversement du référentiel, réception du référentiel, écritures, regroupement, pièces justificatives et propagation des comptes raccordés au helper Bearer.
+- Les opérations historiques de rotation/révocation de clé restent explicitement sur X-Company-Key.
+- Référence de commit client : `6c716b8ee055ec2b5e4cd53f54fffa02b1769fb3`.
+- Tests PHP et parcours réseau non exécutés ; le formulaire doit être renseigné après déploiement.

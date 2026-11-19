@@ -685,10 +685,8 @@ class ExternalCompanyController extends Controller
      */
     public function verify(Request $request)
     {
-        if (!$request->attributes->get('integration_application_id')
-            && ($refus = $this->refusDeSecret($request, 'api/external/companies/verify'))) {
-            return $refus;
-        }
+        // Le middleware integration.auth a déjà authentifié le jeton Bearer
+        // ou la clé historique et posé le dossier lié côté serveur.
 
         $company = $this->entrepriseDeLaRequete($request);
 

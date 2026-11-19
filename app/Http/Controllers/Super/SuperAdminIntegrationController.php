@@ -64,7 +64,8 @@ class SuperAdminIntegrationController extends Controller
         }
 
         $selflow = DB::table('integration_applications')->where('code', 'selflow')->first();
-        foreach (Company::query()->whereNotNull('selflow_company_id')->whereNull('selflow_sync_key_revoked_at')->get(['id']) as $company) {
+        foreach (Company::query()->whereNotNull('selflow_company_id')->whereNull('selflow_sync_key_revoked_at')
+            ->where('selflow_sync_status', 'active')->whereNotNull('selflow_sync_key_hash')->get(['id']) as $company) {
             $exists = DB::table('integration_application_companies')->where('integration_application_id', $selflow->id)->where('company_id', $company->id)->exists();
             if (!$exists) DB::table('integration_application_companies')->insert([
                 'integration_application_id' => $selflow->id, 'company_id' => $company->id,
@@ -126,6 +127,14 @@ class SuperAdminIntegrationController extends Controller
             'permissions' => 'nullable|array', 'permissions.*' => 'in:referentiel,ecritures,pieces_justificatives',
         ]);
         $company = Company::query()->whereKey($data['company_id'])->where('is_active', true)->where('is_blocked', false)->firstOrFail();
+        if ($app->code === 'selflow' && (
+            !$company->selflow_company_id
+            || $company->selflow_sync_status !== 'active'
+            || $company->selflow_sync_key_revoked_at
+            || !$company->selflow_sync_key_hash
+        )) {
+            return back()->with('error', 'Pour SELFLOW, établissez ou rétablissez d’abord la liaison depuis le parcours SELFLOW. Le registre central reprend ensuite automatiquement le dossier et son identifiant source.');
+        }
         if ($app->type === 'externe' && DB::table('integration_application_companies')
             ->where('integration_application_id', $id)->where('status', 'active')->where('company_id', '<>', $company->id)->exists()) {
             return back()->with('error', 'Une application externe ne peut être liée qu’à son unique dossier dédié. Révoquez d’abord la liaison existante.');

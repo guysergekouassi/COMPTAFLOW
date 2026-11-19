@@ -312,12 +312,11 @@ class ExternalSyncController extends Controller
                 return response()->json(['success' => false, 'message' => 'Cet endpoint de réception du référentiel est réservé à SELFLOW.'], 403);
             }
         } else {
-            $expectedSecret = config('external_sync.external_sync_secret');
-            $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
-            if (!self::secretValide($providedSecret, $expectedSecret)) {
-                return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+            // En mode historique, integration.auth a déjà vérifié X-Company-Key
+            // et résolu le dossier. Ce parcours reste exclusivement SELFLOW.
+            if (strtoupper((string) $request->attributes->get('integration_origine', '')) !== 'SELFLOW') {
+                return response()->json(['success' => false, 'message' => 'Cet endpoint est réservé à SELFLOW.'], 403);
             }
-            $request->validate(['selflow_sync_key' => 'required|string|max:100']);
         }
 
         $request->validate([
