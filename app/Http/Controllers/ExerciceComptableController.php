@@ -537,7 +537,9 @@ public function index()
                         return back()->with('error', "Un exercice suivant existe déjà avec des écritures ou est clôturé. Ajustez ses dates avant la clôture anticipée.");
                     }
 
-                    $finNext = $debutNext->copy()->addYear()->subDay();
+                    $finExistante = Carbon::parse($nextExercice->date_fin)->startOfDay();
+                    $dureePeriodeJours = max(1, $debutExistant->diffInDays($finExistante) + 1);
+                    $finNext = $debutNext->copy()->addDays($dureePeriodeJours - 1);
                     $chevauchement = ExerciceComptable::where('company_id', $companyId)
                         ->where('id', '!=', $exercice->id)
                         ->where('id', '!=', $nextExercice->id)
@@ -551,6 +553,7 @@ public function index()
                     }
 
                     $nextExercice->update([
+                        'intitule' => 'EXERCICE ' . $debutNext->year,
                         'date_debut' => $debutNext->toDateString(),
                         'date_fin' => $finNext->toDateString(),
                     ]);
