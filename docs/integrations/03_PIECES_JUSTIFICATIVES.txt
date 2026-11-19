@@ -1,46 +1,64 @@
-COMPTAFLOW — PAYLOAD PIECES JUSTIFICATIVES
-STATUT : SPECIFICATION CIBLE, PAS UN ENDPOINT ACTUELLEMENT CONFIRME.
+COMPTAFLOW — DEPOT DES PIECES JUSTIFICATIVES PDF
+STATUT : ENDPOINT COMPTAFLOW IMPLEMENTE SUR MAIN LE 19/11/2026.
+L'appelant SELFLOW doit encore intégrer l'envoi effectif des fichiers.
 
-BUT
-Rattacher le PDF a l'operation exacte. Aucun rapprochement approximatif par libelle ou par ressemblance de numero.
+OBJECTIF
+Rattacher un PDF à toutes les lignes de l'opération comptable source exacte.
+Aucun rapprochement approximatif par libellé ou numéro de facture.
 
-NOMMAGE
-Vente : SELF-123-OP-VTE-000123.pdf
-Achat : SELF-123-OP-ACH-000124.pdf
-Avoir : SELF-123-OP-AVO-000125.pdf
+ENDPOINT DE DEPOT
+POST /api/external/pieces-justificatives/deverser
+Authentification : en-tête X-Company-Key, contrôlé par cle.entreprise.
+Le dossier COMPTAFLOW est résolu côté serveur depuis cette clé.
 
-CLES
-SELFLOW-123-OP-VTE-000123
-SELFLOW-123-OP-ACH-000124
-SELFLOW-123-OP-AVO-000125
-
-PAYLOAD JSON CIBLE
+PAYLOAD JSON
 {
-  "source_application": "SELFLOW",
-  "source_company_id": 123,
-  "comptaflow_company_id": 456,
-  "operation_source": "000123",
-  "type_operation": "VTE",
-  "cle_operation": "SELFLOW-123-OP-VTE-000123",
-  "nom_fichier": "SELFLOW-123-OP-VTE-000123.pdf",
-  "mime_type": "application/pdf",
-  "contenu_base64": "<PDF en base64>",
-  "sha256": "<empreinte SHA-256>"
+  "operation_source": "SELFLOW-123-OP000123",
+  "nom_fichier": "facture-123.pdf",
+  "sha256": "<empreinte SHA-256 hexadécimale>",
+  "contenu_base64": "<contenu PDF encodé en base64>"
 }
 
-ENDPOINT CIBLE PROPOSE
-POST /api/external/pieces-justificatives/deverser
-Authentification par X-Company-Key et controle de l'entreprise liee.
+CHAMPS EXCLUS
+Ne pas transmettre source_company_id, comptaflow_company_id, company_id, secret,
+client_id ou cle_operation pour choisir le dossier. Le dossier vient de X-Company-Key.
+operation_source est uniquement la clé métier de l'opération source ; elle doit
+correspondre exactement à operation_selflow déjà enregistré dans COMPTAFLOW.
 
-REGLES
-1. Verifier l'existence de l'operation exacte dans le dossier.
-2. Verifier la correspondance VTE/ACH/AVO.
-3. Verifier le type MIME, la signature PDF et la taille maximale.
-4. Verifier SHA-256.
-5. Meme cle + meme empreinte = rejeu sans doublon.
-6. Meme cle + empreinte differente = conflit a refuser.
-7. Renseigner piece_justificatif sans modifier les ecritures comptables.
-8. La colonne Piece ouvre le document avec controle d'acces.
+CONTROLES
+1. La clé de liaison doit être valide et active.
+2. L'opération source doit exister dans le dossier identifié par la clé.
+3. Le contenu doit être un PDF (signature %PDF-), de 10 Mo maximum.
+4. L'empreinte SHA-256 est recalculée et comparée à celle du payload.
+5. Le fichier est enregistré sous un nom technique généré par COMPTAFLOW.
+6. Le chemin privé est inscrit dans piece_justificatif sur toutes les lignes
+   de l'opération, sans modifier les comptes, dates, libellés ou montants.
 
-CONSTAT DU DEPOT
-Le modele EcritureComptable possede piece_justificatif. Le endpoint de depot PDF n'a pas ete trouve dans les routes inspectees ; ce payload est une cible a implementer, pas une API deja disponible.
+IDEMPOTENCE
+Même operation_source + même SHA-256 : réponse 200, sans doublon.
+Même operation_source + empreinte différente : réponse 409 ; aucun remplacement
+silencieux n'est autorisé.
+
+REPONSES
+201 : pièce enregistrée et liée.
+200 : pièce déjà liée, même empreinte.
+401 : clé absente, inconnue ou révoquée.
+404 : aucune écriture correspondant à operation_source dans le dossier.
+409 : pièce différente déjà liée ou lignes portant des pièces incohérentes.
+413 : fichier supérieur à 10 Mo.
+422 : base64, signature PDF ou empreinte invalide.
+
+TELECHARGEMENT
+- Interface COMPTAFLOW : GET /ecriture/{id}/justificatif, protégé par auth et
+  company.session ; le dossier actif doit posséder l'écriture.
+- Application externe : GET /api/external/pieces-justificatives/{ecritureId},
+  protégé par X-Company-Key ; l'écriture doit appartenir au dossier de la clé.
+Les nouveaux fichiers sont conservés hors du répertoire public. Les anciens
+justificatifs publics restent compatibles avec leurs liens historiques.
+
+INTEGRATION SELFLOW RESTANTE
+Le connecteur SELFLOW doit :
+- retrouver le PDF de la pièce rattachée à l'opération ;
+- calculer SHA-256 et encoder le fichier en base64 ;
+- appeler l'endpoint après confirmation de la réception de l'opération comptable ;
+- ne pas envoyer le fichier avant que operation_source existe dans COMPTAFLOW.
