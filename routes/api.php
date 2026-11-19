@@ -204,6 +204,9 @@ Route::prefix('external')->group(function () {
     Route::post('/pieces-justificatives/deverser', [\App\Http\Controllers\Api\ExternalJustificatifController::class, 'deverser'])
         ->middleware(['cle.entreprise', 'throttle:20,1'])
         ->name('api.external.pieces-justificatives.deverser');
+    Route::get('/pieces-justificatives/{ecritureId}', [\App\Http\Controllers\Api\ExternalJustificatifController::class, 'telechargerPourIntegration'])
+        ->middleware(['cle.entreprise', 'throttle:60,1'])
+        ->name('api.external.pieces-justificatives.show');
     Route::post('/gestionsites/referentiel/deverser', [\App\Http\Controllers\Api\ExternalSyncController::class, 'deverserReferentiel'])
         ->middleware('cle.entreprise')
         ->name('api.external.gestionsites.referentiel.deverser');
