@@ -1132,7 +1132,7 @@
                         'poste_tresorerie' => $e->posteTresorerie->name ?? '',
                         'poste_tresorerie_id' => $e->poste_tresorerie_id ?? null,
                         'piece' => (bool) $e->piece_justificatif,
-                        'piece_url' => $e->piece_justificatif ? (str_starts_with($e->piece_justificatif, 'http') ? $e->piece_justificatif : asset(file_exists(public_path('justificatifs/' . $e->piece_justificatif)) ? 'justificatifs/' . $e->piece_justificatif : (str_contains($e->piece_justificatif, '/') ? $e->piece_justificatif : 'justificatifs/' . $e->piece_justificatif))) : null,
+                        'piece_url' => $e->piece_justificatif ? (str_starts_with($e->piece_justificatif, 'private/justificatifs/') ? route('ecriture.justificatif', $e->id) : (str_starts_with($e->piece_justificatif, 'http') ? $e->piece_justificatif : asset(file_exists(public_path('justificatifs/' . $e->piece_justificatif)) ? 'justificatifs/' . $e->piece_justificatif : (str_contains($e->piece_justificatif, '/') ? $e->piece_justificatif : 'justificatifs/' . $e->piece_justificatif)))) : null,
                     ];
                 })->values();
               @endphp
