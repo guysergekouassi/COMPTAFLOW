@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" class="layout-menu-fixed layout-compact">
+<html lang="fr" class="layout-compact" data-assets-path="../assets/" data-template="vertical-menu-template-free" data-bs-theme="light">
 @include('components.head')
 <style>
 .page-control-hero{background:linear-gradient(110deg,#edf4ff,#fff);border:1px solid #dce8fb;border-radius:18px;padding:24px}
@@ -28,50 +28,21 @@
 @media(max-width:800px){.superadmin-workspace{padding:10px}.control-stat{flex:1 1 130px}}
 @media(max-width:800px){.page-rule-row{grid-template-columns:1fr}.page-actions{align-items:stretch}.page-actions>*{flex:1 1 130px}}
 
-/* Correctif autonome du layout Super Admin : ne dépend pas du build Vite/Tailwind. */
-html,body{min-height:100%;width:100%;margin:0}
-.layout-wrapper.layout-content-navbar{width:100%;min-height:100vh;overflow-x:hidden}
-.layout-wrapper .layout-container{display:flex!important;flex-direction:row!important;align-items:stretch!important;width:100%!important;min-height:100vh}
-.layout-container>.sidebar-new{display:flex!important;flex:0 0 260px!important;flex-direction:column!important;width:260px!important;max-width:260px!important;min-width:260px!important;min-height:100vh!important;height:100vh;position:sticky;top:0;overflow-y:auto;overflow-x:hidden;background:#101b34;color:#e8eefb;z-index:1030;padding:0}
-.sidebar-new .sidebar-header{padding:18px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
-.sidebar-new .brand-container{display:flex;align-items:center;gap:10px}
-.sidebar-new .brand-text{min-width:0}
-.sidebar-new .brand-title{font-size:1.15rem!important;line-height:1.2;color:#fff!important;margin:0!important}
-.sidebar-new .role-badge-sidebar{font-size:.72rem;color:#a9c2ff;margin-top:4px}
-.sidebar-new .sidebar-nav{display:block!important;flex:1 1 auto;padding:12px 10px;overflow-y:auto}
-.sidebar-new .menu-section{display:block;margin:0 0 14px}
-.sidebar-new .menu-section-header{padding:9px 10px 6px;color:#91a6ca;font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-.sidebar-new .menu-link-new{display:flex!important;align-items:center;gap:10px;padding:9px 10px;margin:2px 0;border-radius:8px;color:#d5def0!important;text-decoration:none!important;font-size:.82rem;line-height:1.3;white-space:normal}
-.sidebar-new .menu-link-new i{width:17px;flex:0 0 17px;text-align:center;color:#8eafff}
-.sidebar-new .menu-link-new:hover,.sidebar-new .menu-link-new.active{background:#233b67;color:#fff!important}
-.sidebar-new .sidebar-footer{padding:12px;border-top:1px solid rgba(255,255,255,.1);margin-top:auto}
-.sidebar-new .user-profile-mini{display:flex;align-items:center;gap:9px;color:#fff;text-decoration:none}
-.sidebar-new .user-avatar-sidebar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#3159a5;color:#fff;font-weight:800}
-.sidebar-new .user-info-sidebar{display:flex;flex-direction:column;min-width:0}
-.sidebar-new .user-name-sidebar{font-size:.8rem;color:#fff}
-.sidebar-new .user-role-sidebar{font-size:.7rem;color:#a9b9d5}
-.layout-container>.layout-page{display:flex!important;flex:1 1 0!important;flex-direction:column!important;width:calc(100% - 260px)!important;min-width:0!important;max-width:none!important}
-.layout-page>.content-wrapper{flex:1 1 auto;width:100%!important;min-width:0!important;overflow-x:hidden}
-.layout-page .container-xxl{width:100%!important;max-width:none!important;padding-left:clamp(14px,2vw,30px)!important;padding-right:clamp(14px,2vw,30px)!important}
-.page-control-hero{width:100%;min-width:0}
+/* La page reprend le layout Super Admin commun ; seuls les composants propres
+   au catalogue de pages sont stylés ici. */
 .page-control-account{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #e2eaf5;border-radius:14px;padding:14px 18px;margin-bottom:18px}
 .page-control-account .account-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:#718096;font-weight:800}
 .page-control-account .account-value{font-weight:700;color:#1c3156;overflow-wrap:anywhere}
 .page-control-shortcut{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
-@media(max-width:900px){
- .layout-wrapper .layout-container{display:block!important}
- .layout-container>.sidebar-new{position:relative;width:100%!important;max-width:none!important;min-width:0!important;height:auto;min-height:0}
- .sidebar-new .sidebar-nav{max-height:260px}
- .layout-container>.layout-page{width:100%!important}
-}
-
+.page-control-content{min-width:0;width:100%}
+@media(max-width:800px){.page-control-account{align-items:flex-start}.page-control-shortcut{width:100%;justify-content:center}}
 </style>
 <body>
 <div class="layout-wrapper layout-content-navbar"><div class="layout-container">
-@include('components.superadmin_sidebar')
+@include('components.sidebar')
 <div class="layout-page">
 @include('components.header',['page_title'=>'Pilotage des fonctionnalités'])
-<div class="content-wrapper"><div class="container-xxl flex-grow-1 container-p-y">
+<div class="content-wrapper"><div class="container-xxl flex-grow-1 container-p-y page-control-content">
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
 
