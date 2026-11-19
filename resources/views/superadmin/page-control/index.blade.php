@@ -27,6 +27,44 @@
 .superadmin-section-title{font-weight:800;color:#172b4d}
 @media(max-width:800px){.superadmin-workspace{padding:10px}.control-stat{flex:1 1 130px}}
 @media(max-width:800px){.page-rule-row{grid-template-columns:1fr}.page-actions{align-items:stretch}.page-actions>*{flex:1 1 130px}}
+
+/* Correctif autonome du layout Super Admin : ne dépend pas du build Vite/Tailwind. */
+html,body{min-height:100%;width:100%;margin:0}
+.layout-wrapper.layout-content-navbar{width:100%;min-height:100vh;overflow-x:hidden}
+.layout-wrapper .layout-container{display:flex!important;flex-direction:row!important;align-items:stretch!important;width:100%!important;min-height:100vh}
+.layout-container>.sidebar-new{display:flex!important;flex:0 0 260px!important;flex-direction:column!important;width:260px!important;max-width:260px!important;min-width:260px!important;min-height:100vh!important;height:100vh;position:sticky;top:0;overflow-y:auto;overflow-x:hidden;background:#101b34;color:#e8eefb;z-index:1030;padding:0}
+.sidebar-new .sidebar-header{padding:18px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-new .brand-container{display:flex;align-items:center;gap:10px}
+.sidebar-new .brand-text{min-width:0}
+.sidebar-new .brand-title{font-size:1.15rem!important;line-height:1.2;color:#fff!important;margin:0!important}
+.sidebar-new .role-badge-sidebar{font-size:.72rem;color:#a9c2ff;margin-top:4px}
+.sidebar-new .sidebar-nav{display:block!important;flex:1 1 auto;padding:12px 10px;overflow-y:auto}
+.sidebar-new .menu-section{display:block;margin:0 0 14px}
+.sidebar-new .menu-section-header{padding:9px 10px 6px;color:#91a6ca;font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.sidebar-new .menu-link-new{display:flex!important;align-items:center;gap:10px;padding:9px 10px;margin:2px 0;border-radius:8px;color:#d5def0!important;text-decoration:none!important;font-size:.82rem;line-height:1.3;white-space:normal}
+.sidebar-new .menu-link-new i{width:17px;flex:0 0 17px;text-align:center;color:#8eafff}
+.sidebar-new .menu-link-new:hover,.sidebar-new .menu-link-new.active{background:#233b67;color:#fff!important}
+.sidebar-new .sidebar-footer{padding:12px;border-top:1px solid rgba(255,255,255,.1);margin-top:auto}
+.sidebar-new .user-profile-mini{display:flex;align-items:center;gap:9px;color:#fff;text-decoration:none}
+.sidebar-new .user-avatar-sidebar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#3159a5;color:#fff;font-weight:800}
+.sidebar-new .user-info-sidebar{display:flex;flex-direction:column;min-width:0}
+.sidebar-new .user-name-sidebar{font-size:.8rem;color:#fff}
+.sidebar-new .user-role-sidebar{font-size:.7rem;color:#a9b9d5}
+.layout-container>.layout-page{display:flex!important;flex:1 1 0!important;flex-direction:column!important;width:calc(100% - 260px)!important;min-width:0!important;max-width:none!important}
+.layout-page>.content-wrapper{flex:1 1 auto;width:100%!important;min-width:0!important;overflow-x:hidden}
+.layout-page .container-xxl{width:100%!important;max-width:none!important;padding-left:clamp(14px,2vw,30px)!important;padding-right:clamp(14px,2vw,30px)!important}
+.page-control-hero{width:100%;min-width:0}
+.page-control-account{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #e2eaf5;border-radius:14px;padding:14px 18px;margin-bottom:18px}
+.page-control-account .account-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:#718096;font-weight:800}
+.page-control-account .account-value{font-weight:700;color:#1c3156;overflow-wrap:anywhere}
+.page-control-shortcut{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+@media(max-width:900px){
+ .layout-wrapper .layout-container{display:block!important}
+ .layout-container>.sidebar-new{position:relative;width:100%!important;max-width:none!important;min-width:0!important;height:auto;min-height:0}
+ .sidebar-new .sidebar-nav{max-height:260px}
+ .layout-container>.layout-page{width:100%!important}
+}
+
 </style>
 <body>
 <div class="layout-wrapper layout-content-navbar"><div class="layout-container">
@@ -36,6 +74,14 @@
 <div class="content-wrapper"><div class="container-xxl flex-grow-1 container-p-y">
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
+
+<div class="page-control-account">
+ <div><div class="account-label">Compte Super Admin connecté</div><div class="account-value">{{ auth()->user()->name }} {{ auth()->user()->last_name }}</div></div>
+ <div><div class="account-label">Adresse de connexion</div><div class="account-value">{{ auth()->user()->email_adresse ?? 'Non renseignée' }}</div></div>
+ <div><div class="account-label">Identifiant utilisateur</div><div class="account-value">#{{ auth()->user()->id }}</div></div>
+ <div><div class="account-label">Statut du compte</div><div class="account-value"><span class="badge bg-{{ auth()->user()->is_active ? 'success' : 'secondary' }}">{{ auth()->user()->is_active ? 'Actif' : 'Statut non confirmé' }}</span></div></div>
+ <a href="{{ route('superadmin.liaisons.index') }}" class="btn btn-outline-primary btn-sm page-control-shortcut"><i class="fa-solid fa-link"></i> Gérer les liaisons d'applications</a>
+</div>
 <div class="page-control-hero mb-4">
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
 <div><span class="badge bg-primary-subtle text-primary mb-2">SUPER ADMIN · CONFIGURATION</span><h3 class="mb-1 fw-bold">Visibilité des pages & clés IA</h3><p class="text-muted mb-0">Contrôlez les fonctionnalités disponibles, globalement ou entreprise par entreprise.</p></div>
