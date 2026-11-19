@@ -254,3 +254,12 @@ Aucun accès au serveur de production n'étant disponible dans ce traitement, au
 
 ### Limite de livraison
 Le code et les tests sont sur `main`. La migration sur la base de production, le déploiement des deux applications et les essais réseau réels restent à effectuer depuis les serveurs de production ; ils ne sont pas déclarés faits.
+
+
+## 2026-11-19 — clôture du lot de code
+
+- Correctif d'isolation externe publié : contrôleur, vue et tests.
+- Commits du correctif : `98c620fc3f922665a9f6c02e9ab5cd0da93200b7`, `dafae855b9de43144c9c9ebcb174e7d868dd0281`, `ad8ba236f2f924394382c291dcf35c52a53f6f50`, `45a033138022579f9ae84f8daadac8ae2e6bf7bb`.
+- Workflow COMPTAFLOW `44589135771` : **completed / success** ; Composer, tests ciblés de migration/Bearer, compilation Blade et vérification des routes réussis.
+- Le code du lot est terminé et poussé sur `main`.
+- Non réalisé : migration et déploiement sur serveurs de production, saisie du secret réel dans SELFLOW et tests réseau réels. Ces opérations nécessitent l'accès à l'hébergement, indisponible dans ce traitement.
