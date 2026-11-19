@@ -98,6 +98,9 @@
    <div><label class="form-label">Adresse</label><input class="form-control" name="adresse"></div>
    <div><label class="form-label">Ville</label><input class="form-control" name="city" value="Abidjan"></div>
    <div><label class="form-label">Pays</label><input class="form-control" name="country" value="Côte d'Ivoire"></div>
+   <div><label class="form-label">Début de l’exercice comptable *</label><input class="form-control" type="date" name="exercice_debut" required></div>
+   <div><label class="form-label">Fin de l’exercice comptable *</label><input class="form-control" type="date" name="exercice_fin" required></div>
+   <div><label class="form-label">Intitulé de l’exercice</label><input class="form-control" name="exercice_intitule" placeholder="Exercice 2026"></div>
   </div>
   <div class="apk-checks my-3"><label><input type="checkbox" name="permissions[]" value="referentiel" checked> Référentiel</label><label><input type="checkbox" name="permissions[]" value="ecritures" checked> Écritures</label><label><input type="checkbox" name="permissions[]" value="pieces_justificatives" checked> Pièces justificatives</label></div>
   <button class="btn btn-success">Créer le dossier et établir la liaison</button>

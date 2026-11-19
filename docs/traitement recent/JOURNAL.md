@@ -95,3 +95,13 @@ Le prochain lot de code doit créer le registre et les liaisons, puis raccorder 
 - Correction de l'identité source pour les applications Bearer génériques : seule SELFLOW utilise son identifiant Selflow, GESTION-DE-SITES son identifiant dédié, les autres applications utilisent le dossier lié.
 - Ajout de `tests/Feature/IntegrationBearerSecurityTest.php` : jeton Bearer, dossier lié, identifiant de dossier contradictoire, nonce anti-rejeu, permissions et isolation externe.
 - Les tests ne sont pas exécutés dans cet environnement ; aucune réussite de test n'est revendiquée.
+
+
+## 2026-11-19 — raccordement du cycle de vie SELFLOW
+
+- Provisionnement/rattachement depuis SELFLOW : création ou réactivation de la liaison SELFLOW dans le registre central, uniquement si l'application est active.
+- Révocation d'une liaison depuis SELFLOW : révocation du pivot COMPTA-APK et des jetons Bearer associés.
+- Les appels X-Company-Key historiques de SELFLOW passent désormais aussi par le registre central : statut de l'application, liaison active et permissions sont vérifiés. Une révocation centrale ne peut plus être contournée par l'ancien mécanisme.
+- `/api/external/link-company` passe sous `integration.auth`, est limité à SELFLOW, et accepte le Bearer sans secret global dans le corps.
+- Création de dossier externe : ajout de dates d'exercice obligatoires et ouverture de l'exercice comptable.
+- Les tests de sécurité ajoutés précédemment n'ont pas encore été exécutés. Les migrations, PHP lint, tests de rendu et tests bout en bout restent à exécuter.

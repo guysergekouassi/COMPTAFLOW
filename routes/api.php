@@ -232,6 +232,7 @@ Route::prefix('external')->group(function () {
     Route::get('/status', [\App\Http\Controllers\Api\ExternalSyncController::class, 'syncStatus'])
         ->name('api.external.sync-status');
     Route::post('/link-company', [\App\Http\Controllers\Api\ExternalSyncController::class, 'linkCompany'])
+        ->middleware(['integration.auth', 'throttle:30,1'])
         ->name('api.external.link-company');
     Route::post('/list-companies', [\App\Http\Controllers\Api\ExternalSyncController::class, 'listCompanies'])
         ->name('api.external.list-companies');

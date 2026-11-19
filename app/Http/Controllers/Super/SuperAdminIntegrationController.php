@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Super;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\ExerciceComptable;
 use App\Models\TreasuryCategory;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -153,6 +154,9 @@ class SuperAdminIntegrationController extends Controller
             'adresse' => 'nullable|string|max:255', 'city' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100', 'phone_number' => 'nullable|string|max:30',
             'owner_contact' => 'nullable|string|max:150',
+            'exercice_debut' => 'required|date',
+            'exercice_fin' => 'required|date|after:exercice_debut',
+            'exercice_intitule' => 'nullable|string|max:150',
             'permissions' => 'nullable|array', 'permissions.*' => 'in:referentiel,ecritures,pieces_justificatives',
         ]);
         $company = DB::transaction(function () use ($data, $id) {
@@ -161,7 +165,7 @@ class SuperAdminIntegrationController extends Controller
                 'juridique_form' => $data['juridique_form'], 'social_capital' => 0,
                 'adresse' => $data['adresse'] ?? '', 'code_postal' => '', 'city' => $data['city'] ?? 'Abidjan',
                 'country' => $data['country'] ?? "Côte d'Ivoire", 'phone_number' => $data['phone_number'] ?? '',
-                'email_adresse' => $data['email_adresse'], 'is_active' => true, 'user_id' => 0,
+                'email_adresse' => $data['email_adresse'], 'is_active' => true,
             ]);
             $admin = User::create([
                 'name' => $data['owner_contact'] ?: 'Compte intégration', 'last_name' => 'Technique',
@@ -174,6 +178,21 @@ class SuperAdminIntegrationController extends Controller
                 'II. Flux de trésorerie des activités d’investissement',
                 'III. Flux de trésorerie des activités de financement',
             ] as $name) TreasuryCategory::create(['name' => $name, 'company_id' => $company->id]);
+
+            // Un dossier sans exercice ne peut pas recevoir d'écritures.
+            // Les dates sont donc demandées explicitement au Super Admin ;
+            // aucune période comptable n'est inventée.
+            ExerciceComptable::create([
+                'company_id' => $company->id,
+                'parent_company_id' => $company->parent_company_id ?: $company->id,
+                'user_id' => $admin->id,
+                'date_debut' => $data['exercice_debut'],
+                'date_fin' => $data['exercice_fin'],
+                'intitule' => filled($data['exercice_intitule'] ?? null)
+                    ? $data['exercice_intitule']
+                    : ('Exercice ' . substr((string) $data['exercice_debut'], 0, 4)),
+                'is_active' => true,
+            ]);
 
             DB::table('integration_application_companies')->insert([
                 'integration_application_id' => $id, 'company_id' => $company->id,

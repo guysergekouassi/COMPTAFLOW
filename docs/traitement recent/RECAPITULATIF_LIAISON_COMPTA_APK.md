@@ -174,3 +174,11 @@ Le code serveur est ajouté dans ce commit, mais migration SQL, tests PHP/Featur
 - Les journaux distinguent les appels API génériques des dépôts référentiel, écritures et pièces justificatives.
 - Les applications autres que SELFLOW/GESTION-DE-SITES utilisent leur propre code comme identité source et comme préfixe de déversement ; elles ne récupèrent pas par erreur l'identifiant Selflow d'un dossier également lié à SELFLOW.
 - Une suite Feature `IntegrationBearerSecurityTest` couvre la résolution de dossier, le refus d'un company_id contradictoire, le rejeu de nonce, les permissions et l'unicité du dossier externe. Ces tests sont ajoutés mais ne sont pas encore exécutés.
+
+
+### Cohérence du parcours SELFLOW et du dossier externe
+- Le provisionnement/rattachement SELFLOW synchronise désormais sa liaison dans le registre COMPTA-APK ; une révocation SELFLOW révoque également le lien central et les jetons.
+- Le mode historique X-Company-Key est conservé, mais pour SELFLOW il est maintenant soumis au statut de l'application, au lien central actif et aux permissions centralisées. Il ne permet plus de contourner une révocation faite dans COMPTA-APK.
+- L'endpoint de réception du référentiel `/api/external/link-company` est protégé par le middleware central ; le Bearer est réservé à l'application SELFLOW sur ce parcours. Le secret serveur global n'est plus envoyé dans le corps en mode Bearer.
+- La création d'un dossier externe demande désormais explicitement les dates de l'exercice comptable et crée cet exercice ; aucun exercice n'est inventé.
+- Le contrat client SELFLOW (saisie sécurisée du Client ID/Secret, cache du jeton chiffré, nonce/horodatage et renouvellement après 401) est en cours dans le dépôt SELFLOW et n'est pas encore livré à cette date.

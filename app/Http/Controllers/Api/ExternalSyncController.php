@@ -303,103 +303,89 @@ class ExternalSyncController extends Controller
      */
     public function linkCompany(Request $request)
     {
-        $expectedSecret = config('external_sync.external_sync_secret');
-        $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
-        if (!self::secretValide($providedSecret, $expectedSecret)) {
-            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+        $appId = $request->attributes->get('integration_application_id');
+        $company = $request->attributes->get('entreprise_liee');
+
+        if ($appId) {
+            $app = DB::table('integration_applications')->where('id', $appId)->first();
+            if (!$app || $app->code !== 'selflow') {
+                return response()->json(['success' => false, 'message' => 'Cet endpoint de réception du référentiel est réservé à SELFLOW.'], 403);
+            }
+        } else {
+            $expectedSecret = config('external_sync.external_sync_secret');
+            $providedSecret = $request->input('secret') ?? $request->header('X-Sync-Secret');
+            if (!self::secretValide($providedSecret, $expectedSecret)) {
+                return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 401);
+            }
+            $request->validate(['selflow_sync_key' => 'required|string|max:100']);
         }
 
         $request->validate([
-            'selflow_sync_key'   => 'required|string|max:100',
             'selflow_company_id' => 'required|integer',
-            'clients'            => 'nullable|array',
-            'fournisseurs'       => 'nullable|array',
+            'clients' => 'nullable|array',
+            'fournisseurs' => 'nullable|array',
         ]);
 
-        // La clé n'est plus stockée en clair : la recherche porte sur son
-        // SHA-256, indexé et unique. Les liaisons établies avant ce lot ont été
-        // basculées par la migration, elles continuent donc de répondre ici.
-        $company = Company::where('selflow_sync_key_hash', hash('sha256', $request->selflow_sync_key))->first();
-
-        if (!$company) {
-            return response()->json(['success' => false, 'message' => 'Clé de synchronisation COMPTAFLOW invalide.'], 404);
+        if (!$company instanceof Company) {
+            return response()->json(['success' => false, 'message' => 'Aucun dossier COMPTAFLOW authentifié.'], 401);
         }
 
-        if ($company->selflow_sync_key_revoked_at) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Clé de synchronisation révoquée le '
-                    . $company->selflow_sync_key_revoked_at->format('d/m/Y') . '.',
-            ], 401);
+        // L'identifiant Selflow décrit la liaison existante ; il ne sélectionne
+        // jamais le dossier COMPTAFLOW, déjà résolu par le middleware.
+        if ($company->selflow_company_id !== null
+            && (int) $company->selflow_company_id !== (int) $request->selflow_company_id) {
+            return response()->json(['success' => false, 'message' => 'Cette liaison appartient déjà à une autre entreprise SELFLOW.'], 403);
         }
 
         DB::beginTransaction();
         try {
-            // Lier l'entreprise
             $company->update([
-                'selflow_company_id'  => $request->selflow_company_id,
+                'selflow_company_id' => $request->selflow_company_id,
                 'selflow_sync_status' => 'active',
             ]);
 
-            // Fusionner les Tiers : Clients de Selflow -> PlanTiers de COMPTAFLOW
+            // Compatibilité de l'ancien contrat : si un client transmet encore
+            // ces tableaux, ils sont traités comme avant. Le connecteur actuel
+            // n'en transmet aucun ; il reçoit uniquement le référentiel COMPTAFLOW.
             if ($request->has('clients') && is_array($request->clients)) {
                 $compteGeneralClient = \App\Models\PlanComptable::where('company_id', $company->id)
-                    ->where('numero_de_compte', 'like', '411%')
-                    ->first();
-
+                    ->where('numero_de_compte', 'like', '411%')->first();
                 foreach ($request->clients as $client) {
                     $intitule = strtoupper($client['nom'] ?? '');
                     if (empty($intitule)) continue;
-
                     $exists = \App\Models\PlanTiers::where('company_id', $company->id)
-                        ->where('type_de_tiers', 'client')
-                        ->where('intitule', $intitule)
-                        ->first();
-
+                        ->where('type_de_tiers', 'client')->where('intitule', $intitule)->first();
                     if (!$exists) {
                         $num = $this->generateNextTierNumber($company, '411', $intitule);
                         \App\Models\PlanTiers::create([
-                            'numero_de_tiers' => $num,
-                            'intitule'        => $intitule,
-                            'type_de_tiers'   => 'client',
-                            'compte_general'  => $compteGeneralClient?->id,
-                            'user_id'         => $company->user_id,
-                            'company_id'      => $company->id,
+                            'numero_de_tiers' => $num, 'intitule' => $intitule,
+                            'type_de_tiers' => 'client', 'compte_general' => $compteGeneralClient?->id,
+                            'user_id' => $company->user_id, 'company_id' => $company->id,
                             'numero_original' => $client['id'] ?? null,
                         ]);
-                    } elseif ($client['id'] && !$exists->numero_original) {
+                    } elseif (!empty($client['id']) && !$exists->numero_original) {
                         $exists->update(['numero_original' => $client['id']]);
                     }
                 }
             }
 
-            // Fusionner les Tiers : Fournisseurs de Selflow -> PlanTiers de COMPTAFLOW
             if ($request->has('fournisseurs') && is_array($request->fournisseurs)) {
                 $compteGeneralFourn = \App\Models\PlanComptable::where('company_id', $company->id)
-                    ->where('numero_de_compte', 'like', '401%')
-                    ->first();
-
+                    ->where('numero_de_compte', 'like', '401%')->first();
                 foreach ($request->fournisseurs as $fourn) {
                     $intitule = strtoupper($fourn['nom'] ?? '');
                     if (empty($intitule)) continue;
-
                     $exists = \App\Models\PlanTiers::where('company_id', $company->id)
-                        ->where('type_de_tiers', 'fournisseur')
-                        ->where('intitule', $intitule)
-                        ->first();
-
+                        ->where('type_de_tiers', 'fournisseur')->where('intitule', $intitule)->first();
                     if (!$exists) {
                         $num = $this->generateNextTierNumber($company, '401', $intitule);
                         \App\Models\PlanTiers::create([
-                            'numero_de_tiers' => $num,
-                            'intitule'        => $intitule,
-                            'type_de_tiers'   => 'fournisseur',
-                            'compte_general'  => $compteGeneralFourn?->id,
-                            'user_id'         => $company->user_id,
-                            'company_id'      => $company->id,
+                            'numero_de_tiers' => $num, 'intitule' => $intitule,
+                            'type_de_tiers' => 'fournisseur', 'compte_general' => $compteGeneralFourn?->id,
+                            'user_id' => $company->user_id, 'company_id' => $company->id,
                             'numero_original' => $fourn['id'] ?? null,
                         ]);
-                    } elseif ($fourn['id'] && !$exists->numero_original) {
+                    } elseif (!empty($fourn['id']) && !$exists->numero_original) {
                         $exists->update(['numero_original' => $fourn['id']]);
                     }
                 }
@@ -407,77 +393,48 @@ class ExternalSyncController extends Controller
 
             DB::commit();
 
-            // Récupérer les données pour le retour de synchronisation
             $planComptable = \App\Models\PlanComptable::where('company_id', $company->id)
-                ->select('id', 'numero_de_compte', 'intitule', 'numero_original')
-                ->get();
-
+                ->select('id', 'numero_de_compte', 'intitule', 'numero_original')->get();
             $codesJournaux = \App\Models\CodeJournal::where('company_id', $company->id)
-                ->get()
-                ->map(function ($cj) {
+                ->get()->map(function ($cj) {
                     $compteNumero = null;
                     if ($cj->type === 'Trésorerie') {
                         $compteNumero = $cj->compte_de_contrepartie;
-                        if (!$compteNumero && $cj->account) {
-                            $compteNumero = $cj->account->numero_de_compte;
-                        }
+                        if (!$compteNumero && $cj->account) $compteNumero = $cj->account->numero_de_compte;
                     }
                     if (!$compteNumero) {
-                        if ($cj->type === 'Achats') {
-                            $compteNumero = '601000';
-                        } elseif ($cj->type === 'Ventes') {
-                            $compteNumero = '701000';
-                        } else {
-                            $compteNumero = '471000';
-                        }
+                        $compteNumero = $cj->type === 'Achats' ? '601000' : ($cj->type === 'Ventes' ? '701000' : '471000');
                     }
                     return [
-                        'id'                     => $cj->id,
-                        'code_journal'           => $cj->code_journal,
-                        'numero_original'        => $cj->numero_original,
-                        'intitule'               => $cj->intitule,
-                        'type'                   => $cj->type,
-                        'compte_de_tresorerie'   => $cj->compte_de_tresorerie,
-                        'compte_numero'          => $compteNumero,
+                        'id' => $cj->id, 'code_journal' => $cj->code_journal,
+                        'numero_original' => $cj->numero_original, 'intitule' => $cj->intitule,
+                        'type' => $cj->type, 'compte_de_tresorerie' => $cj->compte_de_tresorerie,
+                        'compte_numero' => $compteNumero,
                     ];
                 });
-
-
-            $tiers = \App\Models\PlanTiers::where('company_id', $company->id)
-                ->with('compte')
-                ->get()
-                ->map(function($t) {
+            $tiers = \App\Models\PlanTiers::where('company_id', $company->id)->with('compte')
+                ->get()->map(function ($t) {
                     return [
-                        'id'              => $t->id,
-                        'numero_de_tiers' => $t->numero_de_tiers,
-                        'intitule'        => $t->intitule,
-                        'type_de_tiers'   => $t->type_de_tiers,
+                        'id' => $t->id, 'numero_de_tiers' => $t->numero_de_tiers,
+                        'intitule' => $t->intitule, 'type_de_tiers' => $t->type_de_tiers,
                         'numero_original' => $t->numero_original,
-                        'compte_general'  => $t->compte ? $t->compte->numero_de_compte : null,
-                        'compte_numero'   => $t->compte ? $t->compte->numero_de_compte : null,
+                        'compte_general' => $t->compte ? $t->compte->numero_de_compte : null,
+                        'compte_numero' => $t->compte ? $t->compte->numero_de_compte : null,
                         'compte_original' => $t->compte ? $t->compte->numero_original : null,
                     ];
                 });
 
             return response()->json([
-                'success'        => true,
-                'company_id'     => $company->id,
-                'plan_comptable' => $planComptable,
-                'codes_journaux' => $codesJournaux,
-                'tiers'          => $tiers,
-                'message'        => 'Liaison a posteriori établie avec succès.',
+                'success' => true, 'company_id' => $company->id,
+                'plan_comptable' => $planComptable, 'codes_journaux' => $codesJournaux,
+                'tiers' => $tiers, 'message' => 'Référentiel COMPTAFLOW transmis à SELFLOW.',
             ]);
-
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('ExternalSync linkCompany error', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la liaison : ' . $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Erreur lors de la réception du référentiel.'], 500);
         }
     }
-
     /**
      * Génère le numéro de tiers suivant selon la logique COMPTAFLOW.
      */

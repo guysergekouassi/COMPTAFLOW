@@ -215,7 +215,9 @@ class ExternalCompanyController extends Controller
                 ], 409);
             }
 
-            Log::info('Liaison Selflow : dossier Comptaflow existant rattaché', [
+            $this->synchroniserLiaisonApplicationSelflow(Company::find($resultat['company_id']));
+
+            Log::info('Liaison Selflow : dossier Comptaflow existant rattaché',
                 'company_id' => $resultat['company_id'],
                 'selflow_company_id' => $selflowId,
             ]);
@@ -258,7 +260,9 @@ class ExternalCompanyController extends Controller
             // été de le délier pour le relier.
             $this->ouvrirLExercice($existante, $existante->admin, $request->input('exercice'));
 
-            Log::info('Liaison Selflow : provision rejouée, même dossier et même clé', [
+            $this->synchroniserLiaisonApplicationSelflow($existante);
+
+            Log::info('Liaison Selflow : provision rejouée, même dossier et même clé',
                 'company_id'         => $existante->id,
                 'selflow_company_id' => $existante->selflow_company_id,
             ]);
@@ -278,6 +282,8 @@ class ExternalCompanyController extends Controller
                 // restent en place — délier n'est pas supprimer.
                 $cle = $existante->poserUneCleDeLiaison();
                 DB::commit();
+
+                $this->synchroniserLiaisonApplicationSelflow($existante);
 
                 return response()->json([
                     'success'    => true,
@@ -348,7 +354,9 @@ class ExternalCompanyController extends Controller
                 LienDActivation::envoyer($admin, $company);
             }
 
-            Log::info('Liaison Selflow : dossier provisionné', [
+            $this->synchroniserLiaisonApplicationSelflow($company);
+
+            Log::info('Liaison Selflow : dossier provisionné',
                 'company_id'         => $company->id,
                 'selflow_company_id' => $company->selflow_company_id,
                 // Jamais l'empreinte, jamais l'adresse : ce journal est lu par
@@ -373,6 +381,36 @@ class ExternalCompanyController extends Controller
                 'message' => 'Erreur lors du provisionnement : ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Maintient le registre COMPTA-APK cohérent avec le provisionnement
+     * historique SELFLOW. Une nouvelle liaison réactive uniquement le lien
+     * SELFLOW correspondant, jamais les autres applications.
+     */
+    private function synchroniserLiaisonApplicationSelflow(?Company $company): void
+    {
+        if (!$company || !$company->selflow_company_id || $company->selflow_sync_key_revoked_at) {
+            return;
+        }
+
+        $application = DB::table('integration_applications')->where('code', 'selflow')->first();
+        if (!$application || $application->status !== 'active') {
+            return;
+        }
+
+        $now = now();
+        DB::table('integration_application_companies')->updateOrInsert(
+            ['integration_application_id' => $application->id, 'company_id' => $company->id],
+            [
+                'permissions' => json_encode(['referentiel', 'ecritures', 'pieces_justificatives']),
+                'status' => 'active',
+                'linked_at' => $now,
+                'revoked_at' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
     }
 
     /**
@@ -474,6 +512,30 @@ class ExternalCompanyController extends Controller
             'selflow_sync_key_hash_precedente'      => null,
             'selflow_sync_key_precedente_expire_at' => null,
         ])->save();
+
+        $application = DB::table('integration_applications')->where('code', 'selflow')->first();
+        if ($application) {
+            $now = now();
+            DB::table('integration_application_companies')
+                ->where('integration_application_id', $application->id)
+                ->where('company_id', $company->id)
+                ->update(['status' => 'revoked', 'revoked_at' => $now, 'updated_at' => $now]);
+            DB::table('integration_api_tokens')
+                ->where('integration_application_id', $application->id)
+                ->where('company_id', $company->id)
+                ->whereNull('revoked_at')
+                ->update(['revoked_at' => $now, 'updated_at' => $now]);
+            DB::table('integration_api_events')->insert([
+                'integration_application_id' => $application->id,
+                'company_id' => $company->id,
+                'event' => 'link.revoked',
+                'route' => $request->path(),
+                'ip_address' => $request->ip(),
+                'http_status' => 200,
+                'details' => json_encode(['reason' => 'selflow_unlinked']),
+                'created_at' => $now,
+            ]);
+        }
 
         Log::info('Liaison Selflow : clé révoquée', [
             'company_id'         => $company->id,
@@ -623,7 +685,8 @@ class ExternalCompanyController extends Controller
      */
     public function verify(Request $request)
     {
-        if ($refus = $this->refusDeSecret($request, 'api/external/companies/verify')) {
+        if (!$request->attributes->get('integration_application_id')
+            && ($refus = $this->refusDeSecret($request, 'api/external/companies/verify'))) {
             return $refus;
         }
 

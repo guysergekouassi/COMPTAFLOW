@@ -14,8 +14,67 @@ class VerifieApplicationOuCleEntreprise
     {
         $bearer = $request->bearerToken();
         if (!$bearer) {
-            // Compatibilité stricte avec les connecteurs qui utilisent encore X-Company-Key.
-            return app(VerifieCleEntreprise::class)->handle($request, $next);
+            // Compatibilité temporaire X-Company-Key. Dès que SELFLOW est
+            // enregistré dans le registre COMPTA-APK, le lien et ses permissions
+            // centralisés s'appliquent aussi à l'ancien mode : une révocation
+            // dans la console ne peut donc pas être contournée par la clé legacy.
+            return app(VerifieCleEntreprise::class)->handle($request, function (Request $authenticated) use ($next) {
+                $origine = strtoupper((string) $authenticated->attributes->get('integration_origine', ''));
+                $app = $origine === 'SELFLOW'
+                    ? DB::table('integration_applications')->where('code', 'selflow')->first()
+                    : null;
+
+                if ($app) {
+                    if ($app->status !== 'active') {
+                        return response()->json(['success' => false, 'message' => 'Application SELFLOW suspendue ou révoquée.'], 403);
+                    }
+
+                    $company = $authenticated->attributes->get('entreprise_liee');
+                    $link = $company instanceof Company
+                        ? DB::table('integration_application_companies')
+                            ->where('integration_application_id', $app->id)
+                            ->where('company_id', $company->id)
+                            ->where('status', 'active')->first()
+                        : null;
+                    if (!$link) {
+                        return response()->json(['success' => false, 'message' => 'Cette entreprise n’est plus autorisée dans le registre COMPTA-APK.'], 403);
+                    }
+
+                    $permissions = json_decode($link->permissions, true) ?: [];
+                    $legacyPath = '/' . ltrim($authenticated->path(), '/');
+                    $permission = str_contains($legacyPath, '/pieces-justificatives')
+                        ? 'pieces_justificatives'
+                        : ((str_contains($legacyPath, '/referentiel/') || str_contains($legacyPath, '/tiers/lister')
+                            || str_contains($legacyPath, '/companies/verify') || str_contains($legacyPath, '/link-company'))
+                            ? 'referentiel'
+                            : (str_contains($legacyPath, '/ecritures/') ? 'ecritures' : null));
+                    if ($permission && !in_array($permission, $permissions, true)) {
+                        return response()->json(['success' => false, 'message' => 'Permission applicative insuffisante : ' . $permission . '.'], 403);
+                    }
+
+                    $response = $next($authenticated);
+                    $event = str_contains($legacyPath, '/pieces-justificatives') ? 'deposit.justificatif'
+                        : ((str_contains($legacyPath, '/referentiel/') || str_contains($legacyPath, '/link-company')
+                            || str_contains($legacyPath, '/companies/verify')) ? 'deposit.referentiel'
+                            : (str_contains($legacyPath, '/ecritures/') ? 'deposit.ecritures' : 'api.call'));
+                    DB::table('integration_api_events')->insert([
+                        'integration_application_id' => $app->id,
+                        'company_id' => $company->id,
+                        'event' => $event,
+                        'route' => $authenticated->path(),
+                        'ip_address' => $authenticated->ip(),
+                        'http_status' => $response->getStatusCode(),
+                        'details' => json_encode(['auth_mode' => 'legacy', 'method' => $authenticated->method()]),
+                        'created_at' => now(),
+                    ]);
+                    if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300 && str_starts_with($event, 'deposit.')) {
+                        DB::table('integration_applications')->where('id', $app->id)->update(['last_deposit_at' => now(), 'updated_at' => now()]);
+                    }
+                    return $response;
+                }
+
+                return $next($authenticated);
+            });
         }
 
         $path = '/' . ltrim($request->path(), '/');
@@ -63,7 +122,7 @@ class VerifieApplicationOuCleEntreprise
         $permissions = json_decode($link->permissions, true) ?: [];
         $permission = str_contains($path, '/pieces-justificatives')
             ? 'pieces_justificatives'
-            : ((str_contains($path, '/referentiel/') || str_contains($path, '/tiers/lister') || str_contains($path, '/companies/verify'))
+            : ((str_contains($path, '/referentiel/') || str_contains($path, '/tiers/lister') || str_contains($path, '/companies/verify') || str_contains($path, '/link-company'))
                 ? 'referentiel'
                 : (str_contains($path, '/ecritures/') ? 'ecritures' : null));
         if ($permission && !in_array($permission, $permissions, true)) {
@@ -99,7 +158,7 @@ class VerifieApplicationOuCleEntreprise
         $response = $next($request);
         $status = $response->getStatusCode();
         $event = str_contains($path, '/pieces-justificatives') ? 'deposit.justificatif'
-            : ((str_contains($path, '/referentiel/') || str_contains($path, '/tiers/lister') || str_contains($path, '/companies/verify'))
+            : ((str_contains($path, '/referentiel/') || str_contains($path, '/tiers/lister') || str_contains($path, '/companies/verify') || str_contains($path, '/link-company'))
                 ? 'deposit.referentiel'
                 : (str_contains($path, '/ecritures/') ? 'deposit.ecritures' : 'api.call'));
         DB::table('integration_api_events')->insert([
