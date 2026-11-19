@@ -1,0 +1,30 @@
+name: COMPTA-APK checks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, dom, fileinfo, gd, intl, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml, zip
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Prepare application key
+        run: php artisan key:generate --force
+      - name: Run COMPTA-APK security tests
+        run: php artisan test --filter=IntegrationBearerSecurityTest
+      - name: Compile Blade views
+        run: php artisan view:cache
+      - name: Verify COMPTA-APK routes
+        run: |
+          php artisan route:list --path=superadmin/liaison-compta-apk
+          php artisan route:list --path=api/integration
