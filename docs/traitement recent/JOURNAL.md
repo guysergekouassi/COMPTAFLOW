@@ -358,3 +358,8 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Contrôle des routes COMPTA-APK : réussi.
 - Les échecs précédents venaient de fixtures de test (schéma de test incomplet et table de demande incluse à tort dans le test de la migration initiale) et d'une séquence de retours à la ligne échappés dans le contrôleur API ; ils ont été corrigés avant le succès final.
 - Prochaine vérification requise : déploiement serveur après sauvegarde, migration de production, puis intégration du endpoint catalogue et du bouton Déverser dans RH-FLOW.
+
+
+## 2026-11-20 — unicité de l'association partenaire
+- Contrôle serveur ajouté : un dossier partenaire actif ne peut plus être associé à deux dossiers COMPTAFLOW différents pour la même application.
+- Contrôle effectué après relecture du catalogue distant, avant insertion de la liaison.
