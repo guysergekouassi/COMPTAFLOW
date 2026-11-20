@@ -397,3 +397,12 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Relecture des fichiers après commit : les séparateurs de namespace du nouveau contrôleur et des trois routes avaient été doublés par l'écriture automatisée.
 - Correction effectuée dans le contrôleur et dans les routes avant livraison.
 - À confirmer par `php -l` et `php artisan route:list` sur l'environnement PHP du dépôt/serveur ; ces commandes ne sont pas exécutées depuis GitHub.
+
+
+## 2026-11-20 — simplification interface Suite FLOW et correction création application
+- La page maison affiche maintenant les applications sous forme de boutons/cartes distincts. Le clic ouvre l'espace de l'application sélectionnée ; seules ses liaisons et son historique sont affichés.
+- La création d'une application maison est regroupée dans un panneau « Ajouter une application » et n'encombre plus l'espace de consultation.
+- La validité du code de liaison est choisie dès la création (3 mois, 6 mois, 1 an ou 2 ans) et reste configurable lors d'un renouvellement.
+- Correction de l'erreur `Undefined variable $validityDays` : la durée est validée, initialisée, utilisée pour l'expiration en base et transmise à l'écran. La valeur de secours est un an si un client ancien n'envoie pas le champ.
+- Après création, l'utilisateur arrive directement dans l'espace de l'application et voit son code de liaison avec la durée choisie.
+- Vérification effectuée par relecture des fichiers source GitHub. Les commandes PHP, le rendu Blade et les parcours navigateur doivent encore être testés sur comptaflow-dev après déploiement.
