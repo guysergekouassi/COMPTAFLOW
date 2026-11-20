@@ -335,3 +335,13 @@ La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne pe
 - Deux cahiers des charges généraux ont été créés : applications maison Suite FLOW et applications tierces.
 - Le catalogue COMPTAFLOW côté partenaire et l'endpoint de demande de liaison inverse sont identifiés comme endpoints à développer/valider. Le parcours bidirectionnel est donc spécifié, mais pas encore déclaré opérationnel de bout en bout.
 - Les tests de paie avec un vrai payload RH-FLOW et la validation de production restent à effectuer.
+
+
+## Bibliothèque documentaire Super Admin — 20/11/2026
+- Les trois cahiers des charges sont désormais prévus dans l'interface Super Admin, sous la rubrique « Liaison COMPTA-APK » via « Documentation des intégrations ».
+- Consultation du texte Markdown et téléchargement du fichier sont protégés par les middlewares `auth` et `superadmin`.
+- Les fichiers sont servis depuis le répertoire du dépôt `docs/traitement recent/`, avec une liste blanche de noms fixes (aucun chemin de fichier fourni par l'utilisateur).
+- Fichiers UI/serveur ajoutés : contrôleur documentaire, page de catalogue, page de lecture.
+- Routes ajoutées : `/superadmin/documentation-integrations`, `/{slug}`, `/{slug}/telecharger` sous le groupe Super Admin.
+- À vérifier après déploiement : menu visible, consultation des trois cahiers, téléchargement des trois fichiers. Aucun test runtime n'est revendiqué depuis GitHub seul.
+- Aucun `php artisan migrate` requis pour cette fonctionnalité.
