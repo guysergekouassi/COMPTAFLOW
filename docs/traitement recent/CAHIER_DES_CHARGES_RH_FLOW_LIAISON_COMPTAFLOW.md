@@ -31,7 +31,7 @@ RH-FLOW doit fournir un écran de configuration simple comprenant :
 
 Le code doit être stocké de manière protégée côté serveur, jamais dans le JavaScript, le HTML public, les journaux ou une réponse accessible à un utilisateur non autorisé.
 
-Le code est fourni par COMPTAFLOW. RH-FLOW ne doit pas en fabriquer, le modifier, ni tenter de le deviner. Si COMPTAFLOW le renouvelle, l'ancien code doit être remplacé par le nouveau après validation.
+Le code est fourni par COMPTAFLOW. Lors de sa génération, le Super Admin choisit sa durée : 3 mois (90 jours), 6 mois (180 jours), 1 an (365 jours, valeur par défaut) ou 2 ans (730 jours). La date d'expiration correspondante est affichée à l'administrateur. RH-FLOW doit accepter le code pendant sa période de validité et refuser un code expiré ou révoqué. RH-FLOW ne doit pas fixer sa propre durée, fabriquer le code, le modifier ni tenter de le deviner. Si COMPTAFLOW le renouvelle, l'ancien code doit être remplacé par le nouveau après validation.
 
 ## 3. Endpoint obligatoire à développer dans RH-FLOW : catalogue des entreprises
 
