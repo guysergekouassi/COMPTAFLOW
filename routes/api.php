@@ -146,6 +146,11 @@ Route::prefix('v1')->group(function () {
 // `X-Company-Key` et vérifiée par `integration.auth`, qui refuse une clé
 // désignant un autre dossier que celui annoncé dans le corps.
 // ═══════════════════════════════════════════════════════════════════════════
+// Demande de création de dossier dédiée par une application externe.
+Route::post('/integration/external/company-requests', [\\App\\Http\\Controllers\\Api\\IntegrationCompanyRequestController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('api.integration.external.company_requests.store');
+
 // Échange du code de liaison copié depuis le Super Admin (application maison).
 Route::post('/integration/pairing/redeem', [\App\Http\Controllers\Api\IntegrationPairingController::class, 'redeem'])
     ->middleware('throttle:5,1')
