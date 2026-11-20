@@ -358,6 +358,7 @@ class SuperAdminIntegrationController extends Controller
         $app = $this->application($id);
         abort_unless($app->type === 'maison', 403, 'Le code de liaison maison ne concerne que la Suite FLOW.');
         abort_unless($app->status !== 'revoked', 422, 'Cette application est révoquée.');
+        abort_unless(!empty($app->app_url), 422, 'Enregistrez d’abord l’URL de l’application partenaire.');
         $code = 'cf_link_' . Str::random(48);
         $now = now();
         DB::table('integration_applications')->where('id', $id)->update([
