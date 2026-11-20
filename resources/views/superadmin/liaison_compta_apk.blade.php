@@ -48,6 +48,7 @@
  @endforelse
  </div>
 </div>
+@endif
 @if(!$selectedApplicationId)
 <div class="apk-card">
  <h5 class="fw-bold mb-1">Connecter une nouvelle application</h5>
