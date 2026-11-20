@@ -1,9 +1,9 @@
 <?php
 
-namespace App\\Http\\Controllers\\Super;
+namespace App\Http\Controllers\Super;
 
-use App\\Http\\Controllers\\Controller;
-use Symfony\\Component\\HttpFoundation\\BinaryFileResponse;
+use App\Http\Controllers\Controller;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SuperAdminIntegrationDocumentationController extends Controller
 {
