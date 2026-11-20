@@ -9,6 +9,8 @@ use App\Models\TreasuryCategory;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -29,7 +31,7 @@ class SuperAdminIntegrationController extends Controller
                 ->join('companies as c', 'c.id', '=', 'l.company_id')
                 ->where('l.integration_application_id', $app->id)
                 ->orderBy('c.company_name')
-                ->get(['l.company_id', 'l.permissions', 'l.status', 'l.linked_at', 'c.company_name']);
+                ->get(['l.company_id', 'l.partner_company_id', 'l.partner_company_name', 'l.permissions', 'l.status', 'l.linked_at', 'c.company_name']);
         }
         $companies = Company::query()->where('is_active', true)->where('is_blocked', false)
             ->orderBy('company_name')->get(['id', 'company_name', 'email_adresse']);
@@ -82,6 +84,7 @@ class SuperAdminIntegrationController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:160', 'type' => 'required|in:maison,externe',
+            'app_url' => 'required|url|max:500',
             'owner_name' => 'nullable|string|max:160', 'owner_email' => 'nullable|email|max:191',
             'description' => 'nullable|string|max:2000',
         ]);
@@ -98,12 +101,16 @@ class SuperAdminIntegrationController extends Controller
             'code' => $code, 'name' => $data['name'], 'owner_name' => $data['owner_name'] ?? null,
             'owner_email' => $data['owner_email'] ?? null, 'description' => $data['description'] ?? null,
             'type' => $data['type'], 'status' => 'active', 'auth_mode' => 'bearer', 'client_id' => $clientId,
+            'app_url' => rtrim($data['app_url'], '/'),
+            'pairing_code_hash' => hash('sha256', $pairingCode = 'cf_link_' . Str::random(48)),
+            'pairing_code_encrypted' => Crypt::encryptString($pairingCode),
+            'pairing_code_expires_at' => $now->copy()->addDays(30), 'pairing_rotated_at' => $now,
             'client_secret_hash' => Hash::make($secret), 'client_secret_expires_at' => $now->copy()->addYear(),
             'secret_rotated_at' => $now, 'created_at' => $now, 'updated_at' => $now,
         ]);
         $this->journal($id, null, 'application.created', 201);
         return redirect()->route($data['type'] === 'maison' ? 'superadmin.liaison_compta.maison' : 'superadmin.liaison_compta.externe')
-            ->with('integration_credentials', ['client_id' => $clientId, 'client_secret' => $secret])
+            ->with('integration_credentials', ['client_id' => $clientId, 'client_secret' => $secret, 'pairing_code' => $pairingCode])
             ->with('success', 'Application enregistrée. Copiez le secret maintenant : il ne sera plus affiché.');
     }
 
@@ -112,10 +119,11 @@ class SuperAdminIntegrationController extends Controller
         $app = $this->application($id);
         abort_unless($app->status !== 'revoked' && $app->auth_mode !== 'planned', 422, 'Cette application est en attente ou définitivement révoquée.');
         $data = $request->validate([
-            'name' => 'required|string|max:160', 'owner_name' => 'nullable|string|max:160',
+            'name' => 'required|string|max:160', 'app_url' => 'nullable|url|max:500', 'owner_name' => 'nullable|string|max:160',
             'owner_email' => 'nullable|email|max:191', 'description' => 'nullable|string|max:2000',
             'status' => 'required|in:active,suspended',
         ]);
+        if (array_key_exists('app_url', $data)) $data['app_url'] = $data['app_url'] ? rtrim($data['app_url'], '/') : null;
         DB::table('integration_applications')->where('id', $id)->update($data + ['updated_at' => now()]);
         $this->journal($id, null, 'application.updated', 200);
         return back()->with('success', 'Application mise à jour.');
@@ -128,6 +136,8 @@ class SuperAdminIntegrationController extends Controller
         abort_unless($app->status === 'active', 422, 'Cette application n’est pas active.');
         $data = $request->validate([
             'company_id' => 'required|integer|exists:companies,id',
+            'partner_company_id' => 'required|string|max:100',
+            'partner_company_name' => 'required|string|max:255',
             'permissions' => 'nullable|array', 'permissions.*' => 'in:referentiel,ecritures,pieces_justificatives',
         ]);
         $company = Company::query()->whereKey($data['company_id'])->where('is_active', true)->where('is_blocked', false)->firstOrFail();
@@ -145,7 +155,8 @@ class SuperAdminIntegrationController extends Controller
         }
         DB::table('integration_application_companies')->updateOrInsert(
             ['integration_application_id' => $id, 'company_id' => $company->id],
-            ['permissions' => json_encode(array_values(array_intersect($data['permissions'] ?? [], self::PERMISSIONS))),
+            ['partner_company_id' => $data['partner_company_id'], 'partner_company_name' => $data['partner_company_name'],
+                'permissions' => json_encode(array_values(array_intersect($data['permissions'] ?? self::PERMISSIONS, self::PERMISSIONS))),
                 'status' => 'active', 'linked_at' => now(), 'revoked_at' => null, 'created_at' => now(), 'updated_at' => now()]
         );
         $this->journal($id, $company->id, 'link.created', 200);
@@ -229,6 +240,69 @@ class SuperAdminIntegrationController extends Controller
         return back()->with('success', 'Liaison révoquée. Les écritures déjà reçues sont conservées.');
     }
 
+    /**
+     * Génère le code que le responsable colle dans l'application partenaire.
+     * Le code est montré une seule fois ; le hash sert à la validation distante
+     * et la valeur chiffrée est réservée aux appels sortants de découverte.
+     */
+    public function genererCodeLiaison(int $id)
+    {
+        $app = $this->application($id);
+        abort_unless($app->type === 'maison', 403, 'Le code de liaison maison ne concerne que la Suite FLOW.');
+        abort_unless($app->status !== 'revoked', 422, 'Cette application est révoquée.');
+        $code = 'cf_link_' . Str::random(48);
+        $now = now();
+        DB::table('integration_applications')->where('id', $id)->update([
+            'status' => 'active', 'auth_mode' => 'bearer',
+            'pairing_code_hash' => hash('sha256', $code),
+            'pairing_code_encrypted' => Crypt::encryptString($code),
+            'pairing_code_expires_at' => $now->copy()->addDays(30),
+            'pairing_code_used_at' => null, 'pairing_rotated_at' => $now, 'updated_at' => $now,
+        ]);
+        DB::table('integration_api_tokens')->where('integration_application_id', $id)
+            ->whereNull('revoked_at')->update(['revoked_at' => $now, 'updated_at' => $now]);
+        $this->journal($id, null, 'pairing_code.generated', 200);
+        return back()->with('integration_pairing_code', ['application' => $app->name, 'code' => $code, 'expires_at' => $now->copy()->addDays(30)->toDateTimeString()])
+            ->with('success', 'Code de liaison généré. Copiez-le dans l’application partenaire ; il expire dans 30 jours.');
+    }
+
+    /**
+     * Proxy sécurisé vers le catalogue de dossiers du partenaire.
+     * Contrat attendu côté application partenaire :
+     * GET /api/integration/companies, header X-Integration-Pairing-Code,
+     * réponse JSON { data: [{ id, name }] }.
+     */
+    public function entreprisesPartenaire(int $id)
+    {
+        $app = $this->application($id);
+        abort_unless($app->type === 'maison' && $app->status === 'active', 403);
+        abort_unless($app->app_url && $app->pairing_code_encrypted
+            && (!$app->pairing_code_expires_at || now()->lessThanOrEqualTo($app->pairing_code_expires_at)), 422,
+            'URL ou code de liaison absent/expiré. Régénérez le code de liaison.');
+        try {
+            $code = Crypt::decryptString($app->pairing_code_encrypted);
+            $response = Http::acceptJson()->timeout(12)->withHeaders([
+                'X-Integration-Pairing-Code' => $code,
+                'X-Request-Id' => (string) Str::uuid(),
+            ])->get(rtrim($app->app_url, '/') . '/api/integration/companies');
+            if (!$response->successful()) {
+                $this->journal($id, null, 'partner.companies.failed', $response->status());
+                return response()->json(['message' => 'L’application partenaire a refusé la consultation de ses entreprises.', 'http_status' => $response->status()], 502);
+            }
+            $rows = $response->json('data');
+            if (!is_array($rows)) {
+                return response()->json(['message' => 'Réponse partenaire invalide : le tableau data est absent.'], 502);
+            }
+            $companies = collect($rows)->filter(fn ($row) => is_array($row) && isset($row['id'], $row['name']))
+                ->map(fn ($row) => ['id' => (string) $row['id'], 'name' => (string) $row['name']])->values();
+            $this->journal($id, null, 'partner.companies.listed', 200);
+            return response()->json(['data' => $companies]);
+        } catch (\\Throwable $e) {
+            $this->journal($id, null, 'partner.companies.error', 502);
+            return response()->json(['message' => 'Impossible de joindre le catalogue de l’application partenaire. Vérifiez son URL et son connecteur API.'], 502);
+        }
+    }
+
     public function renouvelerSecret(int $id)
     {
         $app = $this->application($id);
@@ -271,6 +345,7 @@ class SuperAdminIntegrationController extends Controller
         DB::table('integration_api_events')->insert([
             'integration_application_id' => $appId, 'company_id' => $companyId, 'event' => $event,
             'route' => request()->path(), 'ip_address' => request()->ip(), 'http_status' => $status,
+            'http_method' => request()->method(), 'request_id' => (string) Str::uuid(),
             'details' => json_encode(['actor_user_id' => auth()->id()]), 'created_at' => now(),
         ]);
     }
