@@ -71,7 +71,7 @@ class IntegrationCompanyRequestController extends Controller
             'status' => 'pending', 'created_at' => now(), 'updated_at' => now(),
         ]);
 
-        $this->journal($request, $app->id, null, 'company.request.received', 202, ['request_id' => $data['request_id']]);
+        $this->journal($request, $app->id, null, 'company.request.received', 202, [\n            'request_id' => $data['request_id'], 'company_name' => $data['company_name'],\n            'manager_name' => $data['manager_name'], 'manager_email' => $data['manager_email'],\n            'activity' => $data['activity'] ?? null, 'legal_form' => $data['legal_form'] ?? null,\n        ]);
 
         return response()->json([
             'success' => true, 'request_id' => $data['request_id'], 'status' => 'pending',
