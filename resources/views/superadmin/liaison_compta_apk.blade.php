@@ -21,6 +21,34 @@
 @if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 
+@if($type==='maison')
+<div class="apk-card">
+ <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div><h5 class="fw-bold mb-1">Applications de la Suite FLOW</h5><p class="apk-muted mb-0">Chaque application possède son propre espace et ses propres dossiers liés.</p></div>
+  @if($selectedApplicationId)
+   <a class="btn btn-outline-secondary btn-sm" href="{{ route('superadmin.liaison_compta.maison') }}"><i class="fa-solid fa-arrow-left me-1"></i> Toutes les applications</a>
+  @endif
+ </div>
+ <div class="apk-app-grid">
+ @forelse($allApps as $houseApp)
+  <a class="apk-app-button {{ $selectedApplicationId===$houseApp->id?'active':'' }}" href="{{ route('superadmin.liaison_compta.maison',['application'=>$houseApp->id]) }}">
+   <span class="apk-app-symbol"><i class="fa-solid fa-cubes"></i></span>
+   <span class="apk-app-name">{{ $houseApp->name }}</span>
+   <span class="badge {{ $houseApp->status==='active'?'bg-success':($houseApp->status==='pending'?'bg-warning text-dark':'bg-secondary') }}">{{ strtoupper($houseApp->status) }}</span>
+   <span class="apk-app-arrow"><i class="fa-solid fa-chevron-right"></i></span>
+  </a>
+ @empty
+  <p class="text-muted mb-0">Aucune application maison enregistrée.</p>
+ @endforelse
+ </div>
+</div>
+@if(!$selectedApplicationId)
+<div class="apk-card">
+ <h5 class="fw-bold mb-1">Connecter une nouvelle application</h5>
+ <p class="apk-muted">Enregistrez l'application une seule fois. Elle apparaîtra ensuite comme un bouton indépendant ci-dessus.</p>
+ <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#apkNewAppForm"><i class="fa-solid fa-plus me-1"></i> Ajouter une application</button>
+ <div class="collapse mt-3" id="apkNewAppForm">
+@endif
 @if(session('integration_pairing_code'))
 <div class="alert alert-success border-success">
  <h5 class="fw-bold mb-1">Code de liaison à copier dans {{ session("integration_pairing_code.application") }}</h5>
@@ -53,6 +81,9 @@
  </div><button class="btn btn-primary mt-3">{{ $type==='maison'?'Enregistrer et générer le code de liaison':'Enregistrer et générer les identifiants API' }}</button>
  </form>
 </div>
+@if($type==='maison')
+ </div>
+@endif
 
 @if($type==='externe')
 <div class="alert alert-info">Une application externe ne peut être liée qu’à un seul dossier COMPTAFLOW dédié. Elle ne reçoit jamais la liste globale des entreprises et ne peut pas changer de dossier dans ses payloads.</div>
@@ -84,7 +115,12 @@
 </div>
 @endif
 
+@if($type==='externe')
 <h5 class="fw-bold mb-3">Applications enregistrées</h5>
+@endif
+@if($type==='maison' && $selectedApplicationId)
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><div><h4 class="fw-bold mb-1">{{ $apps->first()->name }}</h4><p class="text-muted mb-0">Paramètres et dossiers associés à cette application uniquement.</p></div></div>
+@endif
 @forelse($apps as $app)
 <div class="apk-card">
  <div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
@@ -146,7 +182,11 @@
  @endif
 </div>
 @empty
+@if($type==='maison' && $selectedApplicationId)
+<div class="apk-card text-muted">Aucune information pour cette application.</div>
+@elseif($type==='externe')
 <div class="apk-card text-muted">Aucune application enregistrée dans cette catégorie.</div>
+@endif
 @endforelse
 
 <div class="apk-card mt-4">
