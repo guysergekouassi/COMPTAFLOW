@@ -363,12 +363,28 @@ class SuperAdminIntegrationController extends Controller
     public function delier(int $id, int $companyId)
     {
         $this->application($id);
-        DB::table('integration_application_companies')->where('integration_application_id', $id)->where('company_id', $companyId)
-            ->update(['status' => 'revoked', 'revoked_at' => now(), 'updated_at' => now()]);
-        DB::table('integration_api_tokens')->where('integration_application_id', $id)->where('company_id', $companyId)
-            ->whereNull('revoked_at')->update(['revoked_at' => now(), 'updated_at' => now()]);
-        $this->journal($id, $companyId, 'link.revoked', 200);
-        return back()->with('success', 'Liaison révoquée. Les écritures déjà reçues sont conservées.');
+
+        $deleted = DB::transaction(function () use ($id, $companyId) {
+            // Supprimer d'abord tous les jetons, y compris ceux déjà révoqués,
+            // puis la relation entre le dossier COMPTAFLOW et l'application.
+            DB::table('integration_api_tokens')
+                ->where('integration_application_id', $id)
+                ->where('company_id', $companyId)
+                ->delete();
+
+            return DB::table('integration_application_companies')
+                ->where('integration_application_id', $id)
+                ->where('company_id', $companyId)
+                ->delete();
+        });
+
+        abort_unless($deleted > 0, 404, 'Cette liaison n’existe plus.');
+
+        // Conserver la trace d'audit, mais supprimer les données techniques
+        // qui autorisaient effectivement cette liaison.
+        $this->journal($id, $companyId, 'link.deleted', 200);
+
+        return back()->with('success', 'Liaison supprimée : association et jetons API effacés. Les données comptables déjà reçues et l’historique d’audit sont conservés.');
     }
 
     /**
