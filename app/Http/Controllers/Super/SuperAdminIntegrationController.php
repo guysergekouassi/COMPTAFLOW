@@ -109,19 +109,25 @@ class SuperAdminIntegrationController extends Controller
             'secret_rotated_at' => $now, 'created_at' => $now, 'updated_at' => $now,
         ]);
         $this->journal($id, null, 'application.created', 201);
-        return redirect()->route($data['type'] === 'maison' ? 'superadmin.liaison_compta.maison' : 'superadmin.liaison_compta.externe')
-            ->with('integration_credentials', ['client_id' => $clientId, 'client_secret' => $secret, 'pairing_code' => $pairingCode])
-            ->with('success', 'Application enregistrée. Copiez le secret maintenant : il ne sera plus affiché.');
+        $redirect = redirect()->route($data['type'] === 'maison' ? 'superadmin.liaison_compta.maison' : 'superadmin.liaison_compta.externe');
+        if ($data['type'] === 'maison') {
+            return $redirect
+                ->with('integration_pairing_code', ['application' => $data['name'], 'code' => $pairingCode, 'expires_at' => $now->copy()->addDays(30)->toDateTimeString()])
+                ->with('success', 'Application enregistrée. Copiez le code dans l’application partenaire.');
+        }
+        return $redirect
+            ->with('integration_credentials', ['client_id' => $clientId, 'client_secret' => $secret])
+            ->with('success', 'Application enregistrée. Copiez les identifiants API maintenant : le secret ne sera plus affiché.');
     }
 
     public function update(Request $request, int $id)
     {
         $app = $this->application($id);
-        abort_unless($app->status !== 'revoked' && $app->auth_mode !== 'planned', 422, 'Cette application est en attente ou définitivement révoquée.');
+        abort_unless($app->status !== 'revoked', 422, 'Cette application est définitivement révoquée.');
         $data = $request->validate([
             'name' => 'required|string|max:160', 'app_url' => 'nullable|url|max:500', 'owner_name' => 'nullable|string|max:160',
             'owner_email' => 'nullable|email|max:191', 'description' => 'nullable|string|max:2000',
-            'status' => 'required|in:active,suspended',
+            'status' => 'required|in:active,pending,suspended',
         ]);
         if (array_key_exists('app_url', $data)) $data['app_url'] = $data['app_url'] ? rtrim($data['app_url'], '/') : null;
         DB::table('integration_applications')->where('id', $id)->update($data + ['updated_at' => now()]);
