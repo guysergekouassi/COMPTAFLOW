@@ -151,7 +151,7 @@
   @php($perms=json_decode($link->permissions,true) ?: [])
   <div class="d-flex justify-content-between align-items-center flex-wrap border rounded p-2 mt-2 gap-2">
    <div><strong>{{ $link->company_name }}</strong> <span class="text-muted small">(#{{ $link->company_id }})</span><div class="small text-muted">Partenaire : {{ $link->partner_company_name ?: 'Non associé' }} @if($link->partner_company_id) (#{{ $link->partner_company_id }}) @endif</div><div class="small text-muted">Droits : {{ implode(', ', $perms) ?: 'aucun' }}</div></div>
-   <form method="POST" action="{{ route('superadmin.liaison_compta.unlink',[$app->id,$link->company_id]) }}" onsubmit="return confirm('Supprimer définitivement cette liaison ? Les jetons API associés seront supprimés. Les données comptables déjà reçues et les traces d’audit seront conservées.')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash-can me-1"></i> Supprimer la liaison</button></form>
+   <form method="POST" action="{{ route('superadmin.liaison_compta.unlink',[$app->id,$link->company_id]) }}" onsubmit="return confirm('Supprimer définitivement cette liaison ? Les jetons API associés seront supprimés. Les données comptables déjà reçues et les traces d’audit seront conservées.')">@csrf @method('DELETE')<button type="submit" class="btn btn-sm btn-outline-danger apk-delete-link" title="Supprimer cette liaison" aria-label="Supprimer cette liaison"><i class="fa-solid fa-trash-can"></i></button></form>
   </div>
  @empty <p class="text-muted small">Aucun dossier actif lié.</p> @endforelse
  </div>
