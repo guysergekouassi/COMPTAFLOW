@@ -346,3 +346,11 @@ Le transfert d'écritures reste déclenché par l'application source via son bou
 - Tests unitaires ajoutés pour l'échange du code maison à usage unique et la demande externe idempotente.
 - Les tests CI doivent encore être confirmés après la dernière correction des fixtures.
 - Le parcours partenaire RH-FLOW et le bouton Déverser côté RH-FLOW ne sont pas déclarés opérationnels tant que le dépôt RH-FLOW et son endpoint ne sont pas intégrés et testés.
+
+
+### Validation CI — 20/11/2026
+- Workflow `44736719640` sur `cc2a25f5045bee4cdf7f8d086e306a4686cd1c89` : **completed / success**.
+- Tests ciblés du registre, du code de liaison à usage unique et de la demande externe idempotente : réussis.
+- Compilation Blade : réussie.
+- Vérification des routes Super Admin et API COMPTA-APK : réussie.
+- La CI valide COMPTAFLOW uniquement. Le catalogue d'entreprises RH-FLOW et le bouton Déverser côté RH-FLOW restent dépendants du dépôt partenaire et de son API.
