@@ -28,9 +28,13 @@ class SuperAdminIntegrationController extends Controller
         $apps = DB::table('integration_applications')->where('type', $type)
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")->orderBy('name')->get();
         $allApps = $apps;
-        if ($selectedApplicationId) {
-            $apps = $apps->where('id', $selectedApplicationId)->values();
-            abort_if($apps->isEmpty(), 404, 'Application introuvable dans cette catégorie.');
+        if ($type === 'maison') {
+            if ($selectedApplicationId) {
+                $apps = $apps->where('id', $selectedApplicationId)->values();
+                abort_if($apps->isEmpty(), 404, 'Application introuvable dans cette catégorie.');
+            } else {
+                $apps = collect();
+            }
         }
         foreach ($apps as $app) {
             $app->links = DB::table('integration_application_companies as l')
