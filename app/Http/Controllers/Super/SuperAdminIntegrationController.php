@@ -89,7 +89,7 @@ class SuperAdminIntegrationController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:160', 'type' => 'required|in:maison,externe',
-            'app_url' => 'required|url|max:500',
+            'app_url' => ['required', 'url', 'starts_with:https://', 'max:500'],
             'owner_name' => 'nullable|string|max:160', 'owner_email' => 'nullable|email|max:191',
             'description' => 'nullable|string|max:2000',
         ]);
@@ -130,7 +130,7 @@ class SuperAdminIntegrationController extends Controller
         $app = $this->application($id);
         abort_unless($app->status !== 'revoked', 422, 'Cette application est définitivement révoquée.');
         $data = $request->validate([
-            'name' => 'required|string|max:160', 'app_url' => 'nullable|url|max:500', 'owner_name' => 'nullable|string|max:160',
+            'name' => 'required|string|max:160', 'app_url' => ['nullable', 'url', 'starts_with:https://', 'max:500'], 'owner_name' => 'nullable|string|max:160',
             'owner_email' => 'nullable|email|max:191', 'description' => 'nullable|string|max:2000',
             'status' => 'required|in:active,pending,suspended',
         ]);
@@ -151,6 +151,14 @@ class SuperAdminIntegrationController extends Controller
             'partner_company_name' => 'required|string|max:255',
             'permissions' => 'nullable|array', 'permissions.*' => 'in:referentiel,ecritures,pieces_justificatives',
         ]);
+        try {
+            $remote = collect($this->chargerCataloguePartenaire($app))->firstWhere('id', (string) $data['partner_company_id']);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Impossible de vérifier l’entreprise partenaire. La liaison n’a pas été enregistrée.');
+        }
+        if (!$remote || !hash_equals((string) $remote['name'], (string) $data['partner_company_name'])) {
+            return back()->with('error', 'L’entreprise partenaire sélectionnée n’existe plus dans le catalogue distant.');
+        }
         $company = Company::query()->whereKey($data['company_id'])->where('is_active', true)->where('is_blocked', false)->firstOrFail();
         if ($app->code === 'selflow' && (
             !$company->selflow_company_id
@@ -380,27 +388,39 @@ class SuperAdminIntegrationController extends Controller
             && (!$app->pairing_code_expires_at || now()->lessThanOrEqualTo($app->pairing_code_expires_at)), 422,
             'URL ou code de liaison absent/expiré. Régénérez le code de liaison.');
         try {
-            $code = Crypt::decryptString($app->pairing_code_encrypted);
-            $response = Http::acceptJson()->timeout(12)->withHeaders([
-                'X-Integration-Pairing-Code' => $code,
-                'X-Request-Id' => (string) Str::uuid(),
-            ])->get(rtrim($app->app_url, '/') . '/api/integration/companies');
-            if (!$response->successful()) {
-                $this->journal($id, null, 'partner.companies.failed', $response->status());
-                return response()->json(['message' => 'L’application partenaire a refusé la consultation de ses entreprises.', 'http_status' => $response->status()], 502);
-            }
-            $rows = $response->json('data');
-            if (!is_array($rows)) {
-                return response()->json(['message' => 'Réponse partenaire invalide : le tableau data est absent.'], 502);
-            }
-            $companies = collect($rows)->filter(fn ($row) => is_array($row) && isset($row['id'], $row['name']))
-                ->map(fn ($row) => ['id' => (string) $row['id'], 'name' => (string) $row['name']])->values();
+            $companies = $this->chargerCataloguePartenaire($app);
             $this->journal($id, null, 'partner.companies.listed', 200);
             return response()->json(['data' => $companies]);
         } catch (\Throwable $e) {
             $this->journal($id, null, 'partner.companies.error', 502);
             return response()->json(['message' => 'Impossible de joindre le catalogue de l’application partenaire. Vérifiez son URL et son connecteur API.'], 502);
         }
+    }
+
+    private function chargerCataloguePartenaire(object $app): array
+    {
+        $parts = parse_url((string) $app->app_url);
+        if (!$parts || strtolower($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])) {
+            throw new \RuntimeException('URL partenaire HTTPS invalide.');
+        }
+        $host = strtolower($parts['host']);
+        $ip = filter_var($host, FILTER_VALIDATE_IP);
+        if ($host === 'localhost' || str_ends_with($host, '.local') || ($ip && !filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))) {
+            throw new \RuntimeException('Hôte partenaire non autorisé.');
+        }
+        if (!$app->pairing_code_encrypted || ($app->pairing_code_expires_at && now()->greaterThan($app->pairing_code_expires_at))) {
+            throw new \RuntimeException('Code de liaison expiré.');
+        }
+        $code = Crypt::decryptString($app->pairing_code_encrypted);
+        $response = Http::acceptJson()->timeout(12)->withoutRedirecting()->withHeaders([
+            'X-Integration-Pairing-Code' => $code,
+            'X-Request-Id' => (string) Str::uuid(),
+        ])->get(rtrim($app->app_url, '/') . '/api/integration/companies');
+        if (!$response->successful()) throw new \RuntimeException('Catalogue partenaire indisponible.');
+        $rows = $response->json('data');
+        if (!is_array($rows)) throw new \RuntimeException('Format du catalogue partenaire invalide.');
+        return collect($rows)->filter(fn ($row) => is_array($row) && isset($row['id'], $row['name']))
+            ->map(fn ($row) => ['id' => (string) $row['id'], 'name' => (string) $row['name']])->values()->all();
     }
 
     public function renouvelerSecret(int $id)
