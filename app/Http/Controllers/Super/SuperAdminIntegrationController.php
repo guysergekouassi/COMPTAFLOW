@@ -437,7 +437,12 @@ class SuperAdminIntegrationController extends Controller
             return response()->json(['data' => $companies]);
         } catch (\Throwable $e) {
             $this->journal($id, null, 'partner.companies.error', 502);
-            return response()->json(['message' => 'Impossible de joindre le catalogue de l’application partenaire. Vérifiez son URL et son connecteur API.'], 502);
+            // Un 401 ou 403 du partenaire veut presque toujours dire qu'il n'a pas
+            // encore retenu le code en cours : le dire évite de chercher l'URL.
+            $message = in_array($e->getCode(), [401, 403], true)
+                ? 'L’application partenaire refuse le code de liaison actuel (HTTP ' . $e->getCode() . '). Collez le dernier code généré dans l’application partenaire, puis réessayez.'
+                : 'Impossible de joindre le catalogue de l’application partenaire. Vérifiez son URL et son connecteur API.';
+            return response()->json(['message' => $message], 502);
         }
     }
 
@@ -460,7 +465,7 @@ class SuperAdminIntegrationController extends Controller
             'X-Integration-Pairing-Code' => $code,
             'X-Request-Id' => (string) Str::uuid(),
         ])->get(rtrim($app->app_url, '/') . '/api/integration/companies');
-        if (!$response->successful()) throw new \RuntimeException('Catalogue partenaire indisponible.');
+        if (!$response->successful()) throw new \RuntimeException('Catalogue partenaire indisponible.', $response->status());
         $rows = $response->json('data');
         if (!is_array($rows)) throw new \RuntimeException('Format du catalogue partenaire invalide.');
         return collect($rows)->filter(fn ($row) => is_array($row) && isset($row['id'], $row['name']))

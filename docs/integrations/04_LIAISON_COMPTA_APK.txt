@@ -170,3 +170,32 @@ AUDIT
 LIMITES DE LIVRAISON
 - Le code RH-FLOW n'est pas dans le dépôt COMPTAFLOW. Son endpoint GET /api/integration/companies et son bouton Déverser restent à réaliser/tester dans RH-FLOW.
 - Le bouton Déverser appartient à l'application source : il doit déclencher l'appel POST vers les endpoints métier COMPTAFLOW existants, et non provoquer un transfert automatique lors de la création de la liaison.
+
+
+CORRECTIF DE L'ECHANGE DU CODE DE LIAISON — 20/11/2026
+Symptôme côté RH-FLOW : « Code non retenu, la connexion précédente est conservée.
+COMPTAFLOW refuse l'authentification lors de l'échange du code (Code de liaison
+invalide, expiré ou déjà utilisé.) » alors que le code venait d'être généré.
+
+Causes corrigées dans POST /api/integration/pairing/redeem :
+- Code strictement à usage unique : si l'application partenaire échangeait le code
+  puis échouait à enregistrer la réponse (ou appelait deux fois : vérification puis
+  enregistrement), tout nouvel essai était refusé jusqu'à régénération. Le code peut
+  désormais être réechangé pendant 15 minutes après le premier échange ; chaque
+  échange réémet le client_secret et annule le précédent (un seul secret valable).
+- application_code comparé à l'octet près : « RH-FLOW » ou « rh_flow » étaient
+  refusés face à « rh-flow ». La comparaison se fait maintenant sous forme de slug.
+- Code collé avec espace insécable, retour à la ligne ou guillemets : nettoyé avant
+  le calcul de l'empreinte.
+- Le refus porte désormais un champ `reason` (unknown_code, expired, already_used,
+  application_mismatch, application_inactive, not_house_application), journalisé
+  dans integration_api_events. Le message précis n'est donné qu'à qui présente un
+  code existant.
+
+Catalogue des dossiers partenaires : si l'application partenaire répond 401/403 à
+GET /api/integration/companies, l'écran le dit (le partenaire n'a pas retenu le code
+courant) au lieu d'accuser l'URL.
+
+A vérifier côté RH-FLOW (code hors de ce dépôt) : il doit enregistrer client_id et
+client_secret reçus, et accepter sur GET /api/integration/companies l'en-tête
+X-Integration-Pairing-Code égal au DERNIER code collé.

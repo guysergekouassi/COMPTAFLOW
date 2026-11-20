@@ -168,7 +168,55 @@ class IntegrationBearerSecurityTest extends TestCase
         $this->assertTrue(Hash::check($clientSecret, DB::table('integration_applications')->where('id', $this->applicationId)->value('client_secret_hash')));
         $this->assertNotNull(DB::table('integration_applications')->where('id', $this->applicationId)->value('pairing_code_used_at'));
 
-        $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => $code])->assertUnauthorized();
+        // Reprise : l'application partenaire qui n'a pas pu enregistrer la
+        // réponse peut rejouer le code ; le secret est réémis et l'ancien tombe.
+        $reprise = $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => $code])
+            ->assertOk()->assertJsonPath('client_id', $clientId);
+        $hash = DB::table('integration_applications')->where('id', $this->applicationId)->value('client_secret_hash');
+        $this->assertTrue(Hash::check($reprise->json('client_secret'), $hash));
+        $this->assertFalse(Hash::check($clientSecret, $hash));
+
+        // Passé le délai de reprise, le code est définitivement consommé.
+        $this->travel(16)->minutes();
+        $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => $code])
+            ->assertUnauthorized()->assertJsonPath('reason', 'already_used');
+    }
+
+    public function test_le_code_colle_avec_espaces_et_un_code_application_en_majuscules_est_accepte(): void
+    {
+        $code = 'cf_link_pairing-test-colle-987654321';
+        DB::table('integration_applications')->where('id', $this->applicationId)->update([
+            'pairing_code_hash' => hash('sha256', $code),
+            'pairing_code_expires_at' => now()->addDays(5),
+            'pairing_code_used_at' => null,
+        ]);
+
+        $this->postJson('/api/integration/pairing/redeem', [
+            'pairing_code' => "  \u{00A0}" . $code . "\n",
+            'application_code' => 'APP_TEST',
+        ])->assertOk()->assertJsonPath('success', true);
+    }
+
+    public function test_un_code_pour_une_autre_application_ou_expire_est_refuse_avec_sa_raison(): void
+    {
+        $code = 'cf_link_pairing-test-raison-111111111';
+        DB::table('integration_applications')->where('id', $this->applicationId)->update([
+            'pairing_code_hash' => hash('sha256', $code),
+            'pairing_code_expires_at' => now()->addDays(5),
+            'pairing_code_used_at' => null,
+        ]);
+
+        $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => $code, 'application_code' => 'selflow'])
+            ->assertUnauthorized()->assertJsonPath('reason', 'application_mismatch');
+
+        DB::table('integration_applications')->where('id', $this->applicationId)->update(['pairing_code_expires_at' => now()->subMinute()]);
+        $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => $code])
+            ->assertUnauthorized()->assertJsonPath('reason', 'expired');
+
+        $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => 'cf_link_inconnu'])
+            ->assertUnauthorized()->assertJsonPath('reason', 'unknown_code')
+            ->assertJsonPath('message', 'Code de liaison invalide, expiré ou déjà utilisé.');
+        $this->assertSame(0, DB::table('integration_applications')->where('id', $this->applicationId)->whereNotNull('pairing_code_used_at')->count());
     }
 
     public function test_une_application_externe_peut_demander_un_dossier_dedie_sans_choisir_un_company_id(): void
