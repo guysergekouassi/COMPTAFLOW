@@ -147,6 +147,9 @@ Route::prefix('v1')->group(function () {
 // désignant un autre dossier que celui annoncé dans le corps.
 // ═══════════════════════════════════════════════════════════════════════════
 // Demande de création de dossier dédiée par une application externe.
+Route::get('/integration/external/company-requests/{requestId}', [\App\Http\Controllers\Api\IntegrationCompanyRequestController::class, 'show'])
+    ->middleware('throttle:20,1')
+    ->name('api.integration.external.company_requests.show');
 Route::post('/integration/external/company-requests', [\App\Http\Controllers\Api\IntegrationCompanyRequestController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('api.integration.external.company_requests.store');
