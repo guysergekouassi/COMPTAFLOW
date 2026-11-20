@@ -354,3 +354,16 @@ Le transfert d'écritures reste déclenché par l'application source via son bou
 - Compilation Blade : réussie.
 - Vérification des routes Super Admin et API COMPTA-APK : réussie.
 - La CI valide COMPTAFLOW uniquement. Le catalogue d'entreprises RH-FLOW et le bouton Déverser côté RH-FLOW restent dépendants du dépôt partenaire et de son API.
+
+
+## 12. Correction de la durée du code de liaison — 20/11/2026
+La durée de validité n'est plus imposée à 30 jours. Au moment de générer ou renouveler le code, le Super Admin choisit :
+- 3 mois (90 jours) ;
+- 6 mois (180 jours) ;
+- 1 an (365 jours, valeur par défaut) ;
+- 2 ans (730 jours).
+
+La durée choisie est enregistrée côté COMPTAFLOW et affichée avec la date d'expiration. Le code reste à usage unique pour l'échange d'identifiants. Cette durée concerne le code de liaison initial, pas le jeton Bearer temporaire ni le secret applicatif.
+
+Le cahier des charges à transmettre à l'équipe RH-FLOW est désormais :
+`docs/traitement recent/CAHIER_DES_CHARGES_RH_FLOW_LIAISON_COMPTAFLOW.md`.
