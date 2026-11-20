@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
+use App\Support\LienDActivation;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -40,7 +41,11 @@ class SuperAdminIntegrationController extends Controller
             ->leftJoin('companies', 'integration_api_events.company_id', '=', 'companies.id')
             ->orderByDesc('integration_api_events.id')->limit(60)
             ->get(['integration_api_events.*', 'integration_applications.name as application_name', 'companies.company_name']);
-        return view('superadmin.liaison_compta_apk', compact('type', 'apps', 'companies', 'events'));
+        $companyRequests = DB::table('integration_company_requests as r')
+            ->join('integration_applications as a', 'a.id', '=', 'r.integration_application_id')
+            ->where('r.status', 'pending')->orderBy('r.created_at')
+            ->get(['r.*', 'a.name as application_name']);
+        return view('superadmin.liaison_compta_apk', compact('type', 'apps', 'companies', 'events', 'companyRequests'));
     }
 
     /** SELFLOW est repris en mode historique ; RH-FLOW est référencé comme prévu,
@@ -233,6 +238,95 @@ class SuperAdminIntegrationController extends Controller
         });
         $this->journal($id, $company->id, 'company.created_and_linked', 201);
         return back()->with('success', 'Dossier dédié créé et lié. Le compte technique d’import possède un mot de passe aléatoire non communiqué.');
+    }
+
+    /**
+     * Validation manuelle d'une demande externe. Le dossier et son compte
+     * sont créés par COMPTAFLOW ; le titulaire reçoit un lien d'activation
+     * temporaire pour choisir lui-même son mot de passe.
+     */
+    public function validerDemandeEntreprise(Request $request, int $requestId)
+    {
+        $data = $request->validate([
+            'exercice_debut' => 'required|date',
+            'exercice_fin' => 'required|date|after:exercice_debut',
+            'exercice_intitule' => 'nullable|string|max:150',
+        ]);
+        $companyRequest = DB::table('integration_company_requests')->where('id', $requestId)->where('status', 'pending')->first();
+        abort_unless($companyRequest, 404, 'Demande inexistante ou déjà traitée.');
+        $app = $this->application((int) $companyRequest->integration_application_id);
+        abort_unless($app->type === 'externe' && $app->status === 'active', 403);
+        if (DB::table('integration_application_companies')->where('integration_application_id', $app->id)->where('status', 'active')->exists()) {
+            return back()->with('error', 'Un dossier actif existe déjà pour cette application externe.');
+        }
+
+        $validator = \\Illuminate\\Support\\Facades\\Validator::make([
+            'company_name' => $companyRequest->company_name,
+            'email_adresse' => $companyRequest->manager_email,
+        ], [
+            'company_name' => 'required|string|max:255|unique:companies,company_name',
+            'email_adresse' => 'required|email|max:191|unique:companies,email_adresse|unique:users,email_adresse',
+        ]);
+        if ($validator->fails()) return back()->withErrors($validator)->withInput();
+
+        [$company, $admin] = DB::transaction(function () use ($data, $companyRequest, $app, $requestId) {
+            $company = Company::create([
+                'company_name' => $companyRequest->company_name,
+                'activity' => $companyRequest->activity ?: 'Activité à préciser',
+                'juridique_form' => $companyRequest->legal_form ?: 'Autre',
+                'social_capital' => 0, 'adresse' => '', 'code_postal' => '',
+                'city' => 'Abidjan', 'country' => "Côte d'Ivoire",
+                'phone_number' => $companyRequest->phone_number ?: '',
+                'email_adresse' => $companyRequest->manager_email, 'is_active' => true,
+            ]);
+            $admin = User::create([
+                'name' => $companyRequest->manager_name, 'last_name' => '',
+                'email_adresse' => $companyRequest->manager_email,
+                'password' => Hash::make(Str::random(96)),
+                'role' => 'admin', 'company_id' => $company->id, 'is_active' => true,
+            ]);
+            $company->update(['user_id' => $admin->id]);
+            foreach ([
+                'I. Flux de trésorerie des activités opérationnelles',
+                'II. Flux de trésorerie des activités d’investissement',
+                'III. Flux de trésorerie des activités de financement',
+            ] as $name) TreasuryCategory::create(['name' => $name, 'company_id' => $company->id]);
+            ExerciceComptable::create([
+                'company_id' => $company->id,
+                'parent_company_id' => $company->parent_company_id ?: $company->id,
+                'user_id' => $admin->id,
+                'date_debut' => $data['exercice_debut'], 'date_fin' => $data['exercice_fin'],
+                'intitule' => filled($data['exercice_intitule'] ?? null) ? $data['exercice_intitule'] : ('Exercice ' . substr((string) $data['exercice_debut'], 0, 4)),
+                'is_active' => true,
+            ]);
+            DB::table('integration_application_companies')->insert([
+                'integration_application_id' => $app->id, 'company_id' => $company->id,
+                'permissions' => json_encode(self::PERMISSIONS), 'status' => 'active',
+                'linked_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            DB::table('integration_company_requests')->where('id', $requestId)->where('status', 'pending')->update([
+                'status' => 'approved', 'company_id' => $company->id,
+                'reviewed_by' => auth()->id(), 'reviewed_at' => now(), 'updated_at' => now(),
+            ]);
+            return [$company, $admin];
+        });
+
+        LienDActivation::envoyer($admin, $company);
+        $this->journal((int) $app->id, (int) $company->id, 'company.request.approved', 201);
+        return back()->with('success', 'Demande acceptée : dossier dédié créé, liaison établie et lien d’activation envoyé au gérant.');
+    }
+
+    public function rejeterDemandeEntreprise(Request $request, int $requestId)
+    {
+        $data = $request->validate(['rejection_reason' => 'required|string|max:1000']);
+        $row = DB::table('integration_company_requests')->where('id', $requestId)->where('status', 'pending')->first();
+        abort_unless($row, 404, 'Demande inexistante ou déjà traitée.');
+        DB::table('integration_company_requests')->where('id', $requestId)->update([
+            'status' => 'rejected', 'rejection_reason' => $data['rejection_reason'],
+            'reviewed_by' => auth()->id(), 'reviewed_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->journal((int) $row->integration_application_id, null, 'company.request.rejected_by_admin', 200);
+        return back()->with('success', 'Demande rejetée et motif enregistré.');
     }
 
     public function delier(int $id, int $companyId)
