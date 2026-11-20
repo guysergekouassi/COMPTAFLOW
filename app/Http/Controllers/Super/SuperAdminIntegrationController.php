@@ -109,7 +109,7 @@ class SuperAdminIntegrationController extends Controller
             'app_url' => rtrim($data['app_url'], '/'),
             'pairing_code_hash' => hash('sha256', $pairingCode = 'cf_link_' . Str::random(48)),
             'pairing_code_encrypted' => Crypt::encryptString($pairingCode),
-            'pairing_code_expires_at' => $now->copy()->addDays(30), 'pairing_rotated_at' => $now,
+            'pairing_code_expires_at' => $now->copy()->addDays($validityDays), 'pairing_rotated_at' => $now,
             'client_secret_hash' => Hash::make($secret), 'client_secret_expires_at' => $now->copy()->addYear(),
             'secret_rotated_at' => $now, 'created_at' => $now, 'updated_at' => $now,
         ]);
@@ -362,8 +362,12 @@ class SuperAdminIntegrationController extends Controller
      * Le code est montré une seule fois ; le hash sert à la validation distante
      * et la valeur chiffrée est réservée aux appels sortants de découverte.
      */
-    public function genererCodeLiaison(int $id)
+    public function genererCodeLiaison(Request $request, int $id)
     {
+        $data = $request->validate([
+            'validity_days' => 'required|in:90,180,365,730',
+        ]);
+        $validityDays = (int) $data['validity_days'];
         $app = $this->application($id);
         abort_unless($app->type === 'maison', 403, 'Le code de liaison maison ne concerne que la Suite FLOW.');
         abort_unless($app->status !== 'revoked', 422, 'Cette application est révoquée.');
@@ -380,8 +384,8 @@ class SuperAdminIntegrationController extends Controller
         DB::table('integration_api_tokens')->where('integration_application_id', $id)
             ->whereNull('revoked_at')->update(['revoked_at' => $now, 'updated_at' => $now]);
         $this->journal($id, null, 'pairing_code.generated', 200);
-        return back()->with('integration_pairing_code', ['application' => $app->name, 'code' => $code, 'expires_at' => $now->copy()->addDays(30)->toDateTimeString()])
-            ->with('success', 'Code de liaison généré. Copiez-le dans l’application partenaire ; il expire dans 30 jours.');
+        return back()->with('integration_pairing_code', ['application' => $app->name, 'code' => $code, 'expires_at' => $now->copy()->addDays($validityDays)->toDateTimeString(), 'validity_days' => $validityDays])
+            ->with('success', 'Code de liaison généré. Copiez-le dans l’application partenaire ; validité : ' . $validityDays . ' jours.');
     }
 
     /**
