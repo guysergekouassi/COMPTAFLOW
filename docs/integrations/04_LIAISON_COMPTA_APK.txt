@@ -142,3 +142,31 @@ ETAT D'AVANCEMENT COMPLEMENTAIRE — 19/11/2026
   centralisées des identifiants applicatifs et jetons. L'envoi PDF SELFLOW est
   maintenant intégré au job de déversement des opérations. RH-FLOW reste hors développement ici :
   seul le contrat de données lui est fourni.
+
+
+IMPLEMENTATION DU PARCOURS SIMPLIFIE — 20/11/2026
+
+APPLICATIONS MAISON
+- COMPTAFLOW stocke l'URL de l'application et génère un code aléatoire de liaison, affiché une seule fois, valable 30 jours.
+- POST /api/integration/pairing/redeem reçoit pairing_code et application_code. L'échange est à usage unique et retourne client_id/client_secret ; le secret est haché en base.
+- Pour afficher les entreprises partenaires, l'application distante doit exposer GET /api/integration/companies, protégé par X-Integration-Pairing-Code, et répondre :
+  { "data": [ { "id": "identifiant-source", "name": "Nom entreprise" } ] }
+- L'écran COMPTAFLOW choisit d'abord le dossier local, puis charge ce catalogue dans une fenêtre. Le serveur vérifie à nouveau l'identifiant et le nom sélectionnés avant d'enregistrer la liaison.
+- La correspondance distante est stockée dans integration_application_companies.partner_company_id / partner_company_name.
+- Le code manuel est renouvelable. Le renouvellement automatique n'est pas activé : il exige un protocole de renouvellement confirmé par les deux applications afin de ne pas couper la liaison.
+
+APPLICATIONS EXTERNES
+- POST /api/integration/external/company-requests reçoit client_id, client_secret, request_id, company_name, manager_name, manager_email, activity, legal_form, phone_number.
+- La demande est idempotente par application + request_id. Aucun company_id n'est accepté dans la demande.
+- Le Super Admin examine la file, renseigne les dates de l'exercice, puis accepte ou rejette.
+- Après acceptation, COMPTAFLOW crée le dossier dédié, l'exercice et la liaison. Le gérant reçoit un lien d'activation temporaire pour choisir son propre mot de passe.
+- POST /api/integration/external/company-requests/{requestId}/status, avec client_id/client_secret dans le corps, permet à l'application de consulter uniquement sa propre demande et de récupérer le company.id après acceptation.
+- L'application externe ne reçoit aucune liste globale et ne peut pas choisir un dossier existant.
+
+AUDIT
+- Les événements API authentifiés conservent la méthode HTTP, durée, identifiant de requête, route, IP, payload et réponse avec masquage des champs sensibles.
+- Les mots de passe, secrets, tokens, clés et en-têtes d'authentification ne doivent jamais apparaître en clair dans les journaux.
+
+LIMITES DE LIVRAISON
+- Le code RH-FLOW n'est pas dans le dépôt COMPTAFLOW. Son endpoint GET /api/integration/companies et son bouton Déverser restent à réaliser/tester dans RH-FLOW.
+- Le bouton Déverser appartient à l'application source : il doit déclencher l'appel POST vers les endpoints métier COMPTAFLOW existants, et non provoquer un transfert automatique lors de la création de la liaison.
