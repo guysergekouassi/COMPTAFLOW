@@ -79,6 +79,10 @@
                 <i class="fa-solid fa-plug"></i>
                 <span>APPLICATION EXTERNE</span>
             </a>
+            <a href="{{ route('superadmin.integration-docs.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.integration-docs.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Documentation des intégrations</span>
+            </a>
             <a href="{{ route('superadmin.liaisons.index') }}" class="menu-link-new {{ request()->routeIs('superadmin.liaisons.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-link"></i>
                 <span>Anciennes liaisons SELFLOW</span>
