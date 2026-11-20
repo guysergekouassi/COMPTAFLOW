@@ -219,6 +219,40 @@ class IntegrationBearerSecurityTest extends TestCase
         $this->assertSame(0, DB::table('integration_applications')->where('id', $this->applicationId)->whereNotNull('pairing_code_used_at')->count());
     }
 
+    public function test_le_code_application_de_base_est_accepte_quand_le_registre_l_a_suffixe(): void
+    {
+        $code = 'cf_link_pairing-test-suffixe-22222222';
+        DB::table('integration_applications')->where('id', $this->applicationId)->update([
+            'code' => 'rh-flow-2',
+            'pairing_code_hash' => hash('sha256', $code),
+            'pairing_code_expires_at' => now()->addDays(5),
+            'pairing_code_used_at' => null,
+        ]);
+
+        $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => $code, 'application_code' => 'rh-flow'])
+            ->assertOk()->assertJsonPath('success', true);
+    }
+
+    public function test_la_fiche_rh_flow_creee_d_office_est_retiree_mais_pas_une_fiche_completee(): void
+    {
+        $migration = require database_path('migrations/2026_11_20_000003_retirer_fiche_rh_flow_creee_d_office.php');
+        $fiche = fn () => DB::table('integration_applications')->insertGetId([
+            'code' => 'rh-flow', 'name' => 'RH-FLOW', 'type' => 'maison', 'status' => 'pending',
+            'auth_mode' => 'planned', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $id = $fiche();
+        DB::table('integration_api_events')->insert(['integration_application_id' => $id, 'event' => 'x', 'created_at' => now()]);
+        $migration->up();
+        $this->assertDatabaseMissing('integration_applications', ['id' => $id]);
+        $this->assertSame(1, DB::table('integration_api_events')->where('event', 'x')->whereNull('integration_application_id')->count());
+
+        $id = $fiche();
+        DB::table('integration_applications')->where('id', $id)->update(['pairing_code_hash' => hash('sha256', 'cf_link_x')]);
+        $migration->up();
+        $this->assertDatabaseHas('integration_applications', ['id' => $id]);
+    }
+
     public function test_une_application_externe_peut_demander_un_dossier_dedie_sans_choisir_un_company_id(): void
     {
         DB::table('integration_applications')->where('id', $this->applicationId)->update(['type' => 'externe']);

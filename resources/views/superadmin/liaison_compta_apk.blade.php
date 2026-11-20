@@ -109,7 +109,7 @@
 @if($type==='externe')
 <div class="alert alert-info">Une application externe ne peut être liée qu’à un seul dossier COMPTAFLOW dédié. Elle ne reçoit jamais la liste globale des entreprises et ne peut pas changer de dossier dans ses payloads.</div>
 @else
-<div class="alert alert-info">Les applications maison peuvent être liées à plusieurs dossiers, mais chaque jeton Bearer est limité à un seul dossier autorisé. SELFLOW reste affiché en mode historique pendant sa migration ; RH-FLOW est référencé comme prévu, sans connecteur déclaré opérationnel.</div>
+<div class="alert alert-info">Les applications maison peuvent être liées à plusieurs dossiers, mais chaque jeton Bearer est limité à un seul dossier autorisé. SELFLOW reste affiché en mode historique pendant sa migration ; les autres applications de la Suite FLOW, RH-FLOW compris, s’ajoutent par le formulaire.</div>
 @endif
 
 @if($type==='externe')

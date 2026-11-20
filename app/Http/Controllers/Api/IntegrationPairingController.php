@@ -106,7 +106,14 @@ class IntegrationPairingController extends Controller
      */
     private static function memeApplication(string $attendu, string $recu): bool
     {
-        return hash_equals(Str::slug($attendu), Str::slug(str_replace('_', '-', $recu)));
+        $recu = Str::slug(str_replace('_', '-', $recu));
+        $attendu = Str::slug($attendu);
+
+        // Le registre suffixe « -2 », « -3 »… un code déjà pris (la fiche RH-FLOW
+        // créée d'office occupait `rh-flow`) : l'application partenaire, elle,
+        // ne connaît que son nom de base.
+        return hash_equals($attendu, $recu)
+            || hash_equals(preg_replace('/-\d+$/', '', $attendu), $recu);
     }
 
     private function raisonDuRefus(?object $app, ?string $applicationCode): ?string

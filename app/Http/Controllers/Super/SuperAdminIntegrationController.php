@@ -58,8 +58,8 @@ class SuperAdminIntegrationController extends Controller
         return view('superadmin.liaison_compta_apk', compact('type', 'apps', 'allApps', 'selectedApplicationId', 'companies', 'events', 'companyRequests'));
     }
 
-    /** SELFLOW est repris en mode historique ; RH-FLOW est référencé comme prévu,
-     * sans modifier son dépôt ni prétendre que son connecteur est livré. */
+    /** SELFLOW est repris en mode historique : ses dossiers liés par clé y sont
+     * reportés pour figurer dans le registre central. */
     private function initialiserApplicationsMaison(): void
     {
         $now = now();
@@ -71,14 +71,12 @@ class SuperAdminIntegrationController extends Controller
                 'created_at' => $now, 'updated_at' => $now,
             ]);
         }
-        if (!DB::table('integration_applications')->where('code', 'rh-flow')->exists()) {
-            DB::table('integration_applications')->insert([
-                'code' => 'rh-flow', 'name' => 'RH-FLOW', 'type' => 'maison',
-                'status' => 'pending', 'auth_mode' => 'planned',
-                'description' => 'Application prévue : contrat de données documenté, connecteur non livré dans ce lot.',
-                'created_at' => $now, 'updated_at' => $now,
-            ]);
-        }
+        // RH-FLOW n'est plus créé ici en fiche « pending » : recréée à chaque
+        // affichage, elle revenait aussitôt supprimée, et elle occupait le code
+        // `rh-flow`, si bien que la vraie application enregistrée par le Super
+        // Admin recevait `rh-flow-2` et que l'échange du code de liaison envoyé
+        // par RH-FLOW (`rh-flow`) était refusé. Les applications maison autres
+        // que SELFLOW sont désormais enregistrées par le formulaire.
 
         $selflow = DB::table('integration_applications')->where('code', 'selflow')->first();
         foreach (Company::query()->whereNotNull('selflow_company_id')->whereNull('selflow_sync_key_revoked_at')

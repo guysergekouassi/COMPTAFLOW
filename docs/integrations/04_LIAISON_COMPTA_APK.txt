@@ -199,3 +199,15 @@ courant) au lieu d'accuser l'URL.
 A vérifier côté RH-FLOW (code hors de ce dépôt) : il doit enregistrer client_id et
 client_secret reçus, et accepter sur GET /api/integration/companies l'en-tête
 X-Integration-Pairing-Code égal au DERNIER code collé.
+
+FICHE RH-FLOW « PENDING » — 20/11/2026
+L'écran recréait à chaque affichage une fiche RH-FLOW vide (pending / planned) :
+supprimée, elle revenait ; et elle occupait le code `rh-flow`, si bien que la vraie
+application RH-FLOW enregistrée par le formulaire recevait `rh-flow-2`, et que
+l'échange du code de liaison envoyé avec application_code=rh-flow était refusé.
+- La fiche n'est plus créée d'office ; seule SELFLOW l'est encore (mode historique).
+- Migration 2026_11_20_000003 : retire la fiche restée intacte (sans URL, code,
+  client_id, dossier, jeton ni demande) ; les événements d'audit sont détachés.
+- L'échange accepte le code de base (`rh-flow`) pour une application suffixée
+  (`rh-flow-2`).
+A JOUER SUR LE SERVEUR : php artisan migrate
