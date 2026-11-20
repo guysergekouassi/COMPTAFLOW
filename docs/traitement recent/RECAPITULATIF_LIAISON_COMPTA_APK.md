@@ -345,3 +345,9 @@ La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne pe
 - Routes ajoutées : `/superadmin/documentation-integrations`, `/{slug}`, `/{slug}/telecharger` sous le groupe Super Admin.
 - À vérifier après déploiement : menu visible, consultation des trois cahiers, téléchargement des trois fichiers. Aucun test runtime n'est revendiqué depuis GitHub seul.
 - Aucun `php artisan migrate` requis pour cette fonctionnalité.
+
+
+### Correctif avant déploiement — 20/11/2026
+- Une relecture des fichiers ajoutés a révélé des séparateurs de namespace PHP doublés dans le contrôleur documentaire et les routes.
+- Les séparateurs ont été corrigés dans les fichiers source.
+- La compilation PHP/Blade et le chargement réel des routes doivent encore être confirmés sur un environnement PHP ou le serveur après récupération du commit.
