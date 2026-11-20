@@ -6,6 +6,7 @@ use App\Models\Company;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class VerifieApplicationOuCleEntreprise
@@ -52,21 +53,13 @@ class VerifieApplicationOuCleEntreprise
                         return response()->json(['success' => false, 'message' => 'Permission applicative insuffisante : ' . $permission . '.'], 403);
                     }
 
+                    $startedAt = microtime(true);
                     $response = $next($authenticated);
                     $event = str_contains($legacyPath, '/pieces-justificatives') ? 'deposit.justificatif'
                         : ((str_contains($legacyPath, '/referentiel/') || str_contains($legacyPath, '/link-company')
                             || str_contains($legacyPath, '/companies/verify')) ? 'deposit.referentiel'
                             : (str_contains($legacyPath, '/ecritures/') ? 'deposit.ecritures' : 'api.call'));
-                    DB::table('integration_api_events')->insert([
-                        'integration_application_id' => $app->id,
-                        'company_id' => $company->id,
-                        'event' => $event,
-                        'route' => $authenticated->path(),
-                        'ip_address' => $authenticated->ip(),
-                        'http_status' => $response->getStatusCode(),
-                        'details' => json_encode(['auth_mode' => 'legacy', 'method' => $authenticated->method()]),
-                        'created_at' => now(),
-                    ]);
+                    $this->journaliserAppel($authenticated, $response, $app->id, $company->id, $event, $startedAt, ['auth_mode' => 'legacy']);
                     if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300 && str_starts_with($event, 'deposit.')) {
                         DB::table('integration_applications')->where('id', $app->id)->update(['last_deposit_at' => now(), 'updated_at' => now()]);
                     }
@@ -155,21 +148,71 @@ class VerifieApplicationOuCleEntreprise
         $request->attributes->set('integration_application_id', $app->id);
         $request->attributes->set('integration_permissions', $permissions);
 
+        $startedAt = microtime(true);
         $response = $next($request);
         $status = $response->getStatusCode();
         $event = str_contains($path, '/pieces-justificatives') ? 'deposit.justificatif'
             : ((str_contains($path, '/referentiel/') || str_contains($path, '/tiers/lister') || str_contains($path, '/companies/verify') || str_contains($path, '/link-company'))
                 ? 'deposit.referentiel'
                 : (str_contains($path, '/ecritures/') ? 'deposit.ecritures' : 'api.call'));
-        DB::table('integration_api_events')->insert([
-            'integration_application_id' => $app->id, 'company_id' => $company->id,
-            'event' => $event, 'route' => $request->path(), 'ip_address' => $request->ip(),
-            'http_status' => $status, 'details' => json_encode(['method' => $request->method()]),
-            'created_at' => now(),
-        ]);
+        $this->journaliserAppel($request, $response, $app->id, $company->id, $event, $startedAt);
         if ($status >= 200 && $status < 300 && str_starts_with($event, 'deposit.')) {
             DB::table('integration_applications')->where('id', $app->id)->update(['last_deposit_at' => now(), 'updated_at' => now()]);
         }
         return $response;
     }
+    /** Journal d'audit avec contenu expurgé, méthode, durée et corrélation. */
+    private function journaliserAppel(Request $request, Response $response, int $appId, int $companyId, string $event, float $startedAt, array $extra = []): void
+    {
+        $requestId = (string) ($request->header('X-Request-Id') ?: Str::uuid());
+        $payload = $this->masquerDonneesSensibles($request->except(['_token']));
+        $responseData = null;
+        if (method_exists($response, 'getContent')) {
+            $raw = $response->getContent();
+            if (is_string($raw) && $raw !== '') {
+                $decoded = json_decode($raw, true);
+                $responseData = is_array($decoded) ? $this->masquerDonneesSensibles($decoded) : mb_substr(strip_tags($raw), 0, 3000);
+            }
+        }
+        $details = array_merge($extra, [
+            'actor' => strtoupper((string) $request->attributes->get('integration_origine', 'application')),
+            'method' => $request->method(),
+            'request_payload' => $payload,
+            'response' => $responseData,
+        ]);
+        $encoded = json_encode($details, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        if (is_string($encoded) && strlen($encoded) > 18000) {
+            $details['request_payload'] = '[payload volumineux tronqué pour le journal]';
+            $details['response'] = '[réponse volumineuse tronquée pour le journal]';
+        }
+        DB::table('integration_api_events')->insert([
+            'integration_application_id' => $appId, 'company_id' => $companyId,
+            'event' => $event, 'route' => $request->path(), 'ip_address' => $request->ip(),
+            'http_status' => $response->getStatusCode(), 'http_method' => $request->method(),
+            'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            'request_id' => $requestId,
+            'details' => json_encode($details, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
+            'created_at' => now(),
+        ]);
+    }
+
+    private function masquerDonneesSensibles(array $data): array
+    {
+        $result = [];
+        foreach ($data as $key => $value) {
+            if (preg_match('/password|secret|token|authorization|company[-_]?key|pairing[-_]?code|api[-_]?key/i', (string) $key)) {
+                $result[$key] = '[MASQUÉ]';
+            } elseif (is_array($value)) {
+                $result[$key] = $this->masquerDonneesSensibles($value);
+            } elseif (is_object($value)) {
+                $result[$key] = '[objet]';
+            } elseif (is_string($value)) {
+                $result[$key] = mb_substr($value, 0, 2000);
+            } else {
+                $result[$key] = $value;
+            }
+        }
+        return $result;
+    }
+
 }
