@@ -916,6 +916,7 @@ Route::middleware(['auth', 'superadmin'])->group(function () {
     Route::delete('/superadmin/liaison-compta-apk/applications/{id}/liaisons/{companyId}', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'delier'])->name('superadmin.liaison_compta.unlink');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/secret/rotate', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'renouvelerSecret'])->name('superadmin.liaison_compta.secret.rotate');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/revoke', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'revoquer'])->name('superadmin.liaison_compta.application.revoke');
+    Route::delete('/superadmin/liaison-compta-apk/applications/{id}', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'supprimerApplication'])->name('superadmin.liaison_compta.application.delete');
 
     // Bibliothèque documentaire des intégrations — accessible uniquement au Super Admin.
     Route::get('/superadmin/documentation-integrations', [\App\Http\Controllers\Super\SuperAdminIntegrationDocumentationController::class, 'index'])->name('superadmin.integration-docs.index');
