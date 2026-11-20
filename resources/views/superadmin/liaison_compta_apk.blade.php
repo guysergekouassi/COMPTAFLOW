@@ -95,7 +95,8 @@
   </div>
  </div>
  @if($app->description)<p class="apk-muted">{{ $app->description }}</p>@endif
- @if($app->client_id)<div class="small mb-2"><strong>Client ID :</strong> <span class="apk-code">{{ $app->client_id }}</span> · <strong>Expiration secret :</strong> {{ $app->client_secret_expires_at ?: '—' }}</div>@endif
+ @if($app->client_id)<div class="small mb-2"><strong>Identifiant application :</strong> #{{ $app->id }} · <strong>Client ID :</strong> <span class="apk-code">{{ $app->client_id }}</span> · <strong>Expiration secret :</strong> {{ $app->client_secret_expires_at ?: '—' }}</div>@endif
+ @if($app->app_url)<div class="small apk-muted mb-2"><strong>URL partenaire :</strong> {{ $app->app_url }}</div>@endif
  <div class="mb-3"><strong>Liaisons actives</strong>
  @forelse($app->links->where('status','active') as $link)
   @php($perms=json_decode($link->permissions,true) ?: [])
