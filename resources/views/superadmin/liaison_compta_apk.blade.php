@@ -151,7 +151,7 @@
   @php($perms=json_decode($link->permissions,true) ?: [])
   <div class="d-flex justify-content-between align-items-center flex-wrap border rounded p-2 mt-2 gap-2">
    <div><strong>{{ $link->company_name }}</strong> <span class="text-muted small">(#{{ $link->company_id }})</span><div class="small text-muted">Partenaire : {{ $link->partner_company_name ?: 'Non associé' }} @if($link->partner_company_id) (#{{ $link->partner_company_id }}) @endif</div><div class="small text-muted">Droits : {{ implode(', ', $perms) ?: 'aucun' }}</div></div>
-   <form method="POST" action="{{ route('superadmin.liaison_compta.unlink',[$app->id,$link->company_id]) }}" onsubmit="return confirm('Révoquer cette liaison et ses jetons ?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger">Révoquer la liaison</button></form>
+   <form method="POST" action="{{ route('superadmin.liaison_compta.unlink',[$app->id,$link->company_id]) }}" onsubmit="return confirm('Supprimer définitivement cette liaison ? Les jetons API associés seront supprimés. Les données comptables déjà reçues et les traces d’audit seront conservées.')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash-can me-1"></i> Supprimer la liaison</button></form>
   </div>
  @empty <p class="text-muted small">Aucun dossier actif lié.</p> @endforelse
  </div>
@@ -176,8 +176,14 @@
  @if($app->status!=='revoked')
  <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 border-top mt-3 pt-3">
   <form method="POST" action="{{ route('superadmin.liaison_compta.applications.update',$app->id) }}" class="d-flex flex-wrap gap-2 align-items-end">@csrf @method('PUT')
+   @if($type==='maison')
+   <input type="hidden" name="name" value="{{ $app->name }}">
+   <input type="hidden" name="app_url" value="{{ $app->app_url }}">
+   <div class="small text-muted align-self-center"><strong>Application :</strong> {{ $app->name }} · <strong>URL enregistrée :</strong> {{ $app->app_url ?: 'Non renseignée' }}</div>
+   @else
    <div><label class="form-label small">Nom</label><input class="form-control form-control-sm" name="name" value="{{ $app->name }}" required></div>
    <div><label class="form-label small">URL application</label><input class="form-control form-control-sm" type="url" name="app_url" value="{{ $app->app_url }}" placeholder="https://..."></div>
+   @endif
    <div><label class="form-label small">Propriétaire</label><input class="form-control form-control-sm" name="owner_name" value="{{ $app->owner_name }}"></div>
    <div><label class="form-label small">E-mail</label><input class="form-control form-control-sm" name="owner_email" value="{{ $app->owner_email }}"></div>
    <div><label class="form-label small">Statut</label><select class="form-select form-select-sm" name="status"><option value="active" {{ $app->status==='active'?'selected':'' }}>Actif</option><option value="pending" {{ $app->status==='pending'?'selected':'' }}>En attente</option><option value="suspended" {{ $app->status==='suspended'?'selected':'' }}>Suspendu</option></select></div>
@@ -225,8 +231,9 @@
   <form method="POST" id="apkPartnerForm">@csrf
    <div class="modal-body">
     <input type="hidden" name="company_id" id="apkLocalCompanyId">
-    <label class="form-label">Entreprise partenaire</label>
-    <select class="form-select" name="partner_company_id" id="apkRemoteCompany" required><option value="">Chargement...</option></select>
+    <div class="alert alert-light border small mb-2">Application partenaire : <strong>{{ $apps->first()->name ?? 'Application sélectionnée' }}</strong>. Son URL et ses paramètres sont repris automatiquement depuis sa fiche ; cette étape sert uniquement à associer les deux dossiers.</div>
+    <label class="form-label">Dossier de l’application partenaire</label>
+    <select class="form-select" name="partner_company_id" id="apkRemoteCompany" required><option value="">Chargement des dossiers...</option></select>
     <input type="hidden" name="partner_company_name" id="apkRemoteCompanyName">
     <div class="apk-checks mt-3">
      <label><input type="checkbox" name="permissions[]" value="referentiel" checked> Référentiel</label>
