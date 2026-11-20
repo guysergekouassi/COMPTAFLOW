@@ -171,6 +171,26 @@ class IntegrationBearerSecurityTest extends TestCase
         $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => $code])->assertUnauthorized();
     }
 
+    public function test_une_application_externe_peut_demander_un_dossier_dedie_sans_choisir_un_company_id(): void
+    {
+        DB::table('integration_applications')->where('id', $this->applicationId)->update(['type' => 'externe']);
+        $payload = [
+            'client_id' => 'cf_app_test', 'client_secret' => 'secret-test',
+            'request_id' => 'rh-request-000001',
+            'company_name' => 'Entreprise partenaire test',
+            'manager_name' => 'Gérant Test',
+            'manager_email' => 'gerant@example.test',
+        ];
+
+        $this->postJson('/api/integration/external/company-requests', $payload)
+            ->assertStatus(202)->assertJsonPath('status', 'pending');
+        $this->postJson('/api/integration/external/company-requests', $payload)
+            ->assertOk()->assertJsonPath('status', 'pending');
+
+        $this->assertSame(1, DB::table('integration_company_requests')->count());
+        $this->assertDatabaseMissing('integration_company_requests', ['company_id' => 43]);
+    }
+
     private function appelSigne(array $body = [], string $uri = '/__integration/test')
     {
         return $this->withHeaders($this->headers(Str::random(24)))->postJson($uri, $body);
@@ -220,6 +240,17 @@ class IntegrationBearerSecurityTest extends TestCase
             $table->id(); $table->unsignedBigInteger('integration_application_id');
             $table->char('nonce_hash', 64); $table->timestamp('created_at');
             $table->unique(['integration_application_id', 'nonce_hash']);
+        });
+        Schema::create('integration_company_requests', function (Blueprint $table) {
+            $table->id(); $table->unsignedBigInteger('integration_application_id');
+            $table->string('external_request_id',100); $table->string('company_name');
+            $table->string('manager_name'); $table->string('manager_email');
+            $table->string('activity')->nullable(); $table->string('legal_form')->nullable();
+            $table->string('phone_number')->nullable(); $table->json('payload')->nullable();
+            $table->string('status')->default('pending'); $table->unsignedBigInteger('reviewed_by')->nullable();
+            $table->timestamp('reviewed_at')->nullable(); $table->unsignedBigInteger('company_id')->nullable();
+            $table->text('rejection_reason')->nullable(); $table->timestamps();
+            $table->unique(['integration_application_id','external_request_id']);
         });
         Schema::create('integration_api_events', function (Blueprint $table) {
             $table->id(); $table->unsignedBigInteger('integration_application_id')->nullable();
