@@ -24,7 +24,7 @@
 @if(session('integration_pairing_code'))
 <div class="alert alert-success border-success">
  <h5 class="fw-bold mb-1">Code de liaison à copier dans {{ session("integration_pairing_code.application") }}</h5>
- <p class="mb-2">Ce code est affiché une seule fois et expire le {{ session("integration_pairing_code.expires_at") }}.</p>
+ <p class="mb-2">Ce code est affiché une seule fois. Validité choisie : {{ session("integration_pairing_code.validity_days") }} jours (expiration : {{ session("integration_pairing_code.expires_at") }}).</p>
  <div class="apk-pair-code mb-2" id="newPairingCode">{{ session("integration_pairing_code.code") }}</div>
  <button class="btn btn-sm btn-success" type="button" onclick="navigator.clipboard.writeText(document.getElementById('newPairingCode').textContent.trim())">Copier le code de liaison</button>
 </div>
@@ -111,7 +111,10 @@
  <div class="border-top pt-3">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
    <strong>Étape 2 — Associer les dossiers</strong>
-   <form method="POST" action="{{ route('superadmin.liaison_compta.pairing.generate',$app->id) }}" onsubmit="return confirm('Générer un nouveau code ? Le code précédent sera invalidé.')">@csrf<button class="btn btn-sm btn-outline-warning">Générer / renouveler le code</button></form>
+   <form method="POST" action="{{ route('superadmin.liaison_compta.pairing.generate',$app->id) }}" class="d-flex flex-wrap gap-2 align-items-end" onsubmit="return confirm('Générer un nouveau code ? Le code précédent sera invalidé.')">@csrf
+    <div><label class="form-label small mb-1">Validité du code</label><select class="form-select form-select-sm" name="validity_days" required><option value="90">3 mois</option><option value="180">6 mois</option><option value="365" selected>1 an</option><option value="730">2 ans</option></select></div>
+    <button class="btn btn-sm btn-outline-warning">Générer / renouveler le code</button>
+   </form>
   </div>
   <div class="row g-2 align-items-end">
    <div class="col-md-7"><label class="form-label">1. Choisir le dossier COMPTAFLOW</label><select class="form-select apk-local-company" data-app="{{ $app->id }}"><option value="">Choisir un dossier COMPTAFLOW</option>@foreach($companies as $company)<option value="{{ $company->id }}">{{ $company->company_name }} (#{{ $company->id }})</option>@endforeach</select></div>
