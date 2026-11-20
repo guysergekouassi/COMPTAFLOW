@@ -76,7 +76,7 @@
  @forelse($app->links->where('status','active') as $link)
   @php($perms=json_decode($link->permissions,true) ?: [])
   <div class="d-flex justify-content-between align-items-center flex-wrap border rounded p-2 mt-2 gap-2">
-   <div><strong>{{ $link->company_name }}</strong> <span class="text-muted small">(#{{ $link->company_id }})</span><div class="small text-muted">Droits : {{ implode(', ', $perms) ?: 'aucun' }}</div></div>
+   <div><strong>{{ $link->company_name }}</strong> <span class="text-muted small">(#{{ $link->company_id }})</span><div class="small text-muted">Partenaire : {{ $link->partner_company_name ?: 'Non associé' }} @if($link->partner_company_id) (#{{ $link->partner_company_id }}) @endif</div><div class="small text-muted">Droits : {{ implode(', ', $perms) ?: 'aucun' }}</div></div>
    <form method="POST" action="{{ route('superadmin.liaison_compta.unlink',[$app->id,$link->company_id]) }}" onsubmit="return confirm('Révoquer cette liaison et ses jetons ?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger">Révoquer la liaison</button></form>
   </div>
  @empty <p class="text-muted small">Aucun dossier actif lié.</p> @endforelse
@@ -121,6 +121,7 @@
  <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 border-top mt-3 pt-3">
   <form method="POST" action="{{ route('superadmin.liaison_compta.applications.update',$app->id) }}" class="d-flex flex-wrap gap-2 align-items-end">@csrf @method('PUT')
    <div><label class="form-label small">Nom</label><input class="form-control form-control-sm" name="name" value="{{ $app->name }}" required></div>
+   <div><label class="form-label small">URL application</label><input class="form-control form-control-sm" type="url" name="app_url" value="{{ $app->app_url }}" placeholder="https://..."></div>
    <div><label class="form-label small">Propriétaire</label><input class="form-control form-control-sm" name="owner_name" value="{{ $app->owner_name }}"></div>
    <div><label class="form-label small">E-mail</label><input class="form-control form-control-sm" name="owner_email" value="{{ $app->owner_email }}"></div>
    <div><label class="form-label small">Statut</label><select class="form-select form-select-sm" name="status"><option value="active" {{ $app->status==='active'?'selected':'' }}>Actif</option><option value="suspended" {{ $app->status==='suspended'?'selected':'' }}>Suspendu</option></select></div>
@@ -150,4 +151,67 @@
 </div>
 </div></div>
 </div></div></div>
+
+<div class="modal fade" id="apkPartnerModal" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">Choisir l’entreprise de l’application partenaire</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <form method="POST" id="apkPartnerForm">@csrf
+   <div class="modal-body">
+    <input type="hidden" name="company_id" id="apkLocalCompanyId">
+    <label class="form-label">Entreprise partenaire</label>
+    <select class="form-select" name="partner_company_id" id="apkRemoteCompany" required><option value="">Chargement...</option></select>
+    <input type="hidden" name="partner_company_name" id="apkRemoteCompanyName">
+    <div class="apk-checks mt-3">
+     <label><input type="checkbox" name="permissions[]" value="referentiel" checked> Référentiel</label>
+     <label><input type="checkbox" name="permissions[]" value="ecritures" checked> Écritures</label>
+     <label><input type="checkbox" name="permissions[]" value="pieces_justificatives" checked> Pièces</label>
+    </div>
+    <div class="small text-danger mt-2" id="apkPartnerError"></div>
+   </div>
+   <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button><button class="btn btn-primary" id="apkConfirmLink" disabled>Confirmer la liaison</button></div>
+  </form>
+ </div></div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+ const element=document.getElementById('apkPartnerModal');
+ if(!element || !window.bootstrap) return;
+ const modal=new bootstrap.Modal(element);
+ document.querySelectorAll('.apk-open-partner').forEach(button=>{
+  button.addEventListener('click', async ()=>{
+   const appId=button.dataset.app;
+   const local=document.querySelector('.apk-local-company[data-app="'+appId+'"]');
+   const error=document.getElementById('apkPartnerError');
+   const select=document.getElementById('apkRemoteCompany');
+   error.textContent='';
+   if(!local || !local.value){alert('Choisissez d’abord un dossier COMPTAFLOW.');return;}
+   document.getElementById('apkLocalCompanyId').value=local.value;
+   document.getElementById('apkPartnerForm').action='{{ url('/superadmin/liaison-compta-apk/applications') }}/'+appId+'/liaisons';
+   select.innerHTML='<option value="">Chargement des entreprises...</option>';
+   document.getElementById('apkConfirmLink').disabled=true;
+   modal.show();
+   try {
+    const response=await fetch(button.dataset.url,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
+    const payload=await response.json();
+    if(!response.ok) throw new Error(payload.message || 'Le catalogue partenaire est indisponible.');
+    select.innerHTML='<option value="">Sélectionner une entreprise</option>';
+    (payload.data || []).forEach(company=>{
+     const option=document.createElement('option');
+     option.value=company.id; option.textContent=company.name; option.dataset.name=company.name;
+     select.appendChild(option);
+    });
+    if(!payload.data || !payload.data.length) throw new Error('Aucune entreprise n’a été retournée par l’application partenaire.');
+    document.getElementById('apkConfirmLink').disabled=false;
+   } catch(e) {
+    select.innerHTML='<option value="">Liste indisponible</option>';
+    error.textContent=e.message;
+   }
+  });
+ });
+ document.getElementById('apkRemoteCompany')?.addEventListener('change',event=>{
+  document.getElementById('apkRemoteCompanyName').value=event.target.selectedOptions[0]?.dataset.name || '';
+ });
+});
+</script>
+
 </body></html>
