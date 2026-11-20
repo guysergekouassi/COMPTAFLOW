@@ -497,6 +497,39 @@ class SuperAdminIntegrationController extends Controller
         return back()->with('success', 'Application révoquée : ses liaisons et jetons ne donnent plus accès.');
     }
 
+    /**
+     * Supprime une application de la Suite FLOW et ses autorisations techniques.
+     * Les événements d'audit sont conservés, mais détachés de l'application.
+     */
+    public function supprimerApplication(int $id)
+    {
+        $app = $this->application($id);
+        abort_unless($app->type === 'maison', 403, 'Seules les applications maison peuvent être supprimées depuis cette liste.');
+
+        DB::transaction(function () use ($id) {
+            DB::table('integration_api_events')
+                ->where('integration_application_id', $id)
+                ->update(['integration_application_id' => null]);
+
+            DB::table('integration_company_requests')
+                ->where('integration_application_id', $id)
+                ->delete();
+
+            DB::table('integration_api_tokens')
+                ->where('integration_application_id', $id)
+                ->delete();
+
+            DB::table('integration_application_companies')
+                ->where('integration_application_id', $id)
+                ->delete();
+
+            DB::table('integration_applications')->where('id', $id)->delete();
+        });
+
+        return redirect()->route('superadmin.liaison_compta.maison')
+            ->with('success', 'Application supprimée ainsi que ses liaisons et jetons API. Les événements d’audit sont conservés.');
+    }
+
     private function application(int $id): object
     {
         $app = DB::table('integration_applications')->where('id', $id)->first();
