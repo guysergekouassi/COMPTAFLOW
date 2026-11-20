@@ -391,3 +391,9 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Les fichiers restent les sources Markdown du dépôt dans `docs/traitement recent/`. L'écran vérifie leur présence sur le serveur et signale si le déploiement n'a pas encore livré les fichiers.
 - Contrôles effectués ici : présence des trois fichiers sur `main), vérification des points d'insertion des routes et du menu. Pas d'exécution PHP/Laravel ni de validation navigateur sur le serveur dans cette session.
 - Déploiement nécessaire : récupérer `main`, puis vérifier `/superadmin/documentation-integrations`. Aucun changement de base de données ni migration n'est requis pour cette bibliothèque documentaire.
+
+
+### Correctif namespace PHP — 20/11/2026
+- Relecture des fichiers après commit : les séparateurs de namespace du nouveau contrôleur et des trois routes avaient été doublés par l'écriture automatisée.
+- Correction effectuée dans le contrôleur et dans les routes avant livraison.
+- À confirmer par `php -l` et `php artisan route:list` sur l'environnement PHP du dépôt/serveur ; ces commandes ne sont pas exécutées depuis GitHub.
