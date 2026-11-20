@@ -84,23 +84,119 @@ Réponses d'erreur recommandées :
 
 Le format JSON doit rester stable. COMPTAFLOW attend la propriété racine `data` contenant les objets `id` et `name`.
 
-## 4. Association des entreprises : correspondance à conserver
+## 4. Association des entreprises : deux sens possibles et une seule correspondance
 
-Dans COMPTAFLOW, l'administrateur :
-1. sélectionne un dossier COMPTAFLOW ;
-2. COMPTAFLOW appelle le catalogue RH-FLOW ;
-3. une fenêtre affiche les entreprises retournées ;
-4. l'administrateur choisit l'entreprise RH-FLOW ;
-5. COMPTAFLOW vérifie à nouveau l'existence de l'identifiant choisi avant d'enregistrer l'association.
+La liaison doit pouvoir être initiée depuis COMPTAFLOW **ou** depuis RH-FLOW. Les deux parcours sont équivalents et doivent aboutir à la même relation, sans créer de doublon.
 
-RH-FLOW doit conserver une correspondance fiable entre :
-- son identifiant d'entreprise source ;
-- l'identifiant du dossier COMPTAFLOW associé, communiqué après la confirmation de la liaison ;
-- l'état de la liaison.
+### 4.1 Parcours initié depuis COMPTAFLOW
 
-Cette correspondance doit être unique et ne doit pas être déduite du nom de l'entreprise. Les noms peuvent changer ; les identifiants source doivent rester stables.
+1. L'administrateur sélectionne un dossier COMPTAFLOW.
+2. COMPTAFLOW appelle le catalogue des entreprises RH-FLOW avec le code de liaison.
+3. Une fenêtre affiche uniquement les entreprises RH-FLOW autorisées.
+4. L'administrateur sélectionne l'entreprise RH-FLOW correspondante.
+5. COMPTAFLOW revalide côté serveur l'identifiant distant et l'accès avant d'enregistrer l'association.
+6. COMPTAFLOW confirme la relation à RH-FLOW ; RH-FLOW enregistre la même correspondance.
 
-Une entreprise RH-FLOW ne doit pas être associée par erreur à deux dossiers COMPTAFLOW différents pour la même intégration. Si la liaison est révoquée, RH-FLOW doit empêcher tout nouveau déversement jusqu'à réassociation valide.
+### 4.2 Parcours initié depuis RH-FLOW — obligatoire également
+
+1. L'administrateur RH-FLOW sélectionne une entreprise RH-FLOW.
+2. RH-FLOW demande à COMPTAFLOW le catalogue des dossiers COMPTAFLOW autorisés pour l'application RH-FLOW.
+3. COMPTAFLOW ne retourne que les dossiers explicitement autorisés à cette application par le Super Admin ou par une règle d'autorisation validée. Il ne retourne jamais le catalogue global.
+4. RH-FLOW affiche ces dossiers dans une fenêtre ou liste déroulante.
+5. L'administrateur RH-FLOW choisit le dossier COMPTAFLOW correspondant.
+6. RH-FLOW envoie une demande de création de correspondance à COMPTAFLOW.
+7. COMPTAFLOW vérifie côté serveur que :
+   - l'application RH-FLOW est active et authentifiée ;
+   - l'entreprise RH-FLOW appartient bien à cette application ;
+   - le dossier COMPTAFLOW est autorisé pour cette application ;
+   - aucun lien actif contradictoire ou doublon n'existe ;
+   - les deux dossiers sont actifs et accessibles.
+8. COMPTAFLOW crée la liaison comme source centrale de vérité et renvoie son résultat.
+9. RH-FLOW enregistre l'identifiant de liaison retourné et affiche le statut confirmé.
+
+### 4.3 Endpoints COMPTAFLOW à fournir pour le parcours inverse
+
+Les routes ci-dessous constituent le contrat à développer/valider pour permettre à RH-FLOW d'initier la liaison. Elles ne doivent pas être considérées comme déjà disponibles tant qu'elles n'ont pas été ajoutées aux routes et contrôleurs COMPTAFLOW et testées.
+
+**Lister les dossiers COMPTAFLOW autorisés :**
+
+`POST /api/integration/companies/catalog`
+
+Requête JSON :
+
+```json
+{
+  "client_id": "cf_app_identifiant_fourni",
+  "client_secret": "secret_applicatif",
+  "partner_company_id": "rh_company_104"
+}
+```
+
+Réponse HTTP 200 :
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 168,
+      "name": "3D PRESTA"
+    }
+  ]
+}
+```
+
+La réponse doit être limitée aux dossiers explicitement autorisés à l'application RH-FLOW. Le champ `partner_company_id` sert à vérifier le contexte de l'entreprise source et ne sélectionne pas le dossier COMPTAFLOW.
+
+**Demander l'association :**
+
+`POST /api/integration/companies/link`
+
+Requête JSON :
+
+```json
+{
+  "client_id": "cf_app_identifiant_fourni",
+  "client_secret": "secret_applicatif",
+  "partner_company_id": "rh_company_104",
+  "company_id": 168
+}
+```
+
+Réponse HTTP 201 :
+
+```json
+{
+  "success": true,
+  "link": {
+    "id": "link_opaque_id",
+    "partner_company_id": "rh_company_104",
+    "company_id": 168,
+    "status": "active"
+  },
+  "message": "Les deux entreprises sont maintenant liées."
+}
+```
+
+**Important :** ces deux payloads décrivent le contrat fonctionnel à implémenter pour le parcours inverse. Ils ne constituent pas une permission d'accès : COMPTAFLOW doit vérifier chaque champ en base et rejeter tout identifiant hors périmètre. Le secret applicatif doit transiter exclusivement en HTTPS, être conservé côté serveur et ne jamais être journalisé. À terme, préférer le jeton Bearer court plutôt que répéter le secret dans chaque requête ; si le endpoint utilise Bearer, supprimer `client_secret` du JSON et exiger `Authorization: Bearer <access_token>`.
+
+### 4.4 Correspondance unique et cohérence des deux côtés
+
+La liaison centrale doit contenir au minimum :
+- identifiant de l'application ;
+- identifiant du dossier COMPTAFLOW ;
+- identifiant stable du dossier RH-FLOW ;
+- nom d'affichage des deux dossiers (copie informative, pas clé d'identité) ;
+- statut actif/révoqué ;
+- date de création et de mise à jour ;
+- utilisateur ayant initié la demande ;
+- origine de la demande : COMPTAFLOW ou RH-FLOW.
+
+Les identifiants stables priment sur les noms. Un changement de nom ne doit pas casser la liaison.
+
+Une entreprise RH-FLOW ne peut pas être liée simultanément à plusieurs dossiers COMPTAFLOW pour la même application, sauf règle métier explicite validée par le propriétaire. Une même entreprise COMPTAFLOW ne peut pas être liée à plusieurs entreprises RH-FLOW dans le même périmètre si cela crée une ambiguïté de déversement.
+
+Les deux interfaces doivent afficher le même statut central. En cas d'échec de confirmation réseau, RH-FLOW doit relire l'état auprès de COMPTAFLOW avant de réessayer : ne pas créer une seconde liaison à l'aveugle.
 
 ## 5. Authentification pour les appels métier COMPTAFLOW
 
@@ -290,3 +386,199 @@ Fournir les résultats de tests et les références de commits avant de déclare
 - La confirmation que les secrets ne sont jamais exposés au navigateur ou aux journaux.
 
 **Critère final :** la liaison est établie, les entreprises sont correctement associées, et un utilisateur RH-FLOW peut déclencher manuellement le transfert d'une paie équilibrée vers le seul dossier COMPTAFLOW autorisé, avec une traçabilité complète.
+
+
+---
+
+## 12. Payloads de référence à respecter
+
+Les exemples ci-dessous reprennent les noms de champs effectivement utilisés par les contrôleurs COMPTAFLOW consultés dans le dépôt. Ils doivent être traités comme contrats d'intégration. Les identifiants de routage du dossier ne doivent jamais être ajoutés aux payloads métier.
+
+### 12.1 Échange initial du code de liaison maison
+
+Route COMPTAFLOW :
+
+`POST /api/integration/pairing/redeem`
+
+```json
+{
+  "pairing_code": "code_copie_depuis_comptaflow",
+  "application_code": "rh-flow"
+}
+```
+
+Réponse de succès (secret affiché une seule fois) :
+
+```json
+{
+  "success": true,
+  "application": {
+    "code": "rh-flow",
+    "name": "RH-FLOW"
+  },
+  "api_base_url": "https://comptaflow.example",
+  "client_id": "cf_app_xxxxxxxxx",
+  "client_secret": "cf_secret_xxxxxxxxx",
+  "secret_expires_at": "2027-11-20T10:00:00Z",
+  "next_step": "Associez au moins un dossier autorisé avant de demander un jeton Bearer."
+}
+```
+
+Ne jamais afficher ou journaliser le secret après cet échange. Le code est à usage unique et sa durée est celle choisie lors de sa génération dans COMPTAFLOW.
+
+### 12.2 Obtention d'un jeton Bearer
+
+Route :
+
+`POST /api/integration/token`
+
+```json
+{
+  "client_id": "cf_app_xxxxxxxxx",
+  "client_secret": "cf_secret_xxxxxxxxx",
+  "company_id": 168
+}
+```
+
+Réponse :
+
+```json
+{
+  "access_token": "cf_tok_xxxxxxxxx",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "company": {
+    "id": 168,
+    "name": "3D PRESTA"
+  }
+}
+```
+
+Le `company_id` ne peut désigner qu'un dossier déjà lié et autorisé pour l'application. Le jeton émis est limité à ce seul dossier.
+
+### 12.3 Déversement du référentiel
+
+Route :
+
+`POST /api/external/referentiel/deverser`
+
+En-têtes : `Authorization: Bearer <access_token>`, `Accept: application/json`, `Content-Type: application/json`.
+
+```json
+{
+  "plan_comptable": [
+    {
+      "numero_de_compte": "601000",
+      "intitule": "Achats de marchandises",
+      "numero_original": "601000"
+    }
+  ],
+  "codes_journaux": [
+    {
+      "code_journal": "OD",
+      "intitule": "Opérations diverses",
+      "type": "od",
+      "compte_numero": "",
+      "numero_original": "OD"
+    }
+  ],
+  "tiers": [
+    {
+      "numero_de_tiers": "FOU001",
+      "intitule": "FOURNISSEUR EXEMPLE",
+      "compte_general": "401000",
+      "type_de_tiers": "fournisseur",
+      "numero_original": "FOU001",
+      "email": "contact@example.test",
+      "telephone": "+225000000000",
+      "adresse": "Abidjan"
+    }
+  ]
+}
+```
+
+Chaque famille est facultative, mais lorsqu'elle est fournie elle doit être un tableau. Les champs principaux de mapping sont :
+- plan comptable : `numero_de_compte`, `intitule`, `numero_original` ;
+- journaux : `code_journal`, `intitule`, `type`, `compte_numero`, `numero_original` ;
+- tiers : `numero_de_tiers`, `intitule`, `compte_general`, `type_de_tiers`, `numero_original`. Les autres champs de fiche peuvent compléter les informations du tiers.
+
+Le numéro source est la référence d'origine. COMPTAFLOW applique ses propres règles de numérotation et conserve le numéro source pour la correspondance. Ne pas envoyer un second champ de routage entreprise.
+
+### 12.4 Déversement des écritures de paie
+
+Route :
+
+`POST /api/external/ecritures/deverser`
+
+En-têtes : `Authorization: Bearer <access_token>`, `Accept: application/json`, `Content-Type: application/json`.
+
+```json
+{
+  "operation": "PAIE-2026-11",
+  "atomique": true,
+  "exercice_debut": "2026-01-01",
+  "exercice_fin": "2026-12-31",
+  "ecritures": [
+    {
+      "cle_source": "PAIE-2026-11-SALAIRE-001",
+      "operation_source": "PAIE-2026-11",
+      "date_ecriture": "2026-11-30",
+      "reference_document": "BULLETIN-001",
+      "code_journal": "OD",
+      "libelle": "Salaires de novembre 2026",
+      "compte_debit": "661000",
+      "compte_credit": null,
+      "compte_tiers": null,
+      "debit": 250000,
+      "credit": 0
+    },
+    {
+      "cle_source": "PAIE-2026-11-SALAIRE-002",
+      "operation_source": "PAIE-2026-11",
+      "date_ecriture": "2026-11-30",
+      "reference_document": "BULLETIN-001",
+      "code_journal": "OD",
+      "libelle": "Net à payer",
+      "compte_debit": null,
+      "compte_credit": "421000",
+      "compte_tiers": "SAL001",
+      "debit": 0,
+      "credit": 250000
+    }
+  ]
+}
+```
+
+Champs exploités par le contrôleur d'écritures : `date_ecriture`, `reference_document`, `libelle`, `debit`, `credit`, `code_journal`, `compte_debit` ou `compte_credit`, `compte_tiers`, et les clés d'idempotence `cle_source` et/ou `operation_source`. Le lot accepte également `operation`, `atomique`, `exercice_debut` et `exercice_fin`.
+
+Règles :
+- envoyer l'opération complète dans un seul lot ;
+- `atomique: true) pour la paie : si une ligne est refusée, tout le lot est annulé ;
+- les débits et crédits doivent être équilibrés avant envoi ;
+- le code journal et les comptes doivent exister ou être préalablement synchronisés ;
+- `operation_source` doit être stable et identique sur les lignes de la même opération ;
+- ne pas envoyer `company_id`, `comptaflow_company_id` ou un identifiant de dossier pour choisir le destinataire ;
+- le destinataire est celui du jeton Bearer.
+
+### 12.5 Dépôt d'une pièce justificative PDF
+
+Route :
+
+`POST /api/external/pieces-justificatives/deverser`
+
+```json
+{
+  "operation_source": "PAIE-2026-11",
+  "nom_fichier": "journal-paie-novembre-2026.pdf",
+  "sha256": "64_caracteres_hexadecimaux_sha256",
+  "contenu_base64": "JVBERi0xLjQK..."
+}
+```
+
+Le PDF doit être valide, commencer par la signature PDF attendue, faire au maximum 10 Mo et correspondre au SHA-256 fourni. `operation_source` doit correspondre à une opération déjà reçue dans le dossier. Un dépôt identique est idempotent ; une autre pièce déjà attachée provoque un conflit.
+
+### 12.6 Réponse de dépôt et erreurs
+
+Les endpoints retournent un JSON avec `success`, un message et, selon l'opération, des compteurs ou détails. RH-FLOW doit conserver le code HTTP et le corps de réponse dans son historique. Les statuts 401/403 signalent un problème d'authentification/droit, 409 un conflit (notamment exercice), 422 un payload ou référentiel invalide, 429 une limitation de débit et 5xx une erreur serveur.
+
+**Attention sur le périmètre de validation :** ces payloads sont dérivés des champs consommés par les contrôleurs COMPTAFLOW consultés. L'exemple de paie illustre les clés réellement lues, mais doit être confirmé avec un lot RH-FLOW réel et un test d'intégration avant mise en production. Les endpoints du parcours inverse de liaison décrits en section 4.3 restent à développer/valider côté COMPTAFLOW.
