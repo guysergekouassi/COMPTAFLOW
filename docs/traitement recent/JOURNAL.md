@@ -381,3 +381,13 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Création du cahier général des applications tierces, avec demande de création dédiée, suivi de demande, authentification et payloads métier.
 - Les payloads d'écritures et de référentiel sont fondés sur les champs lus par les contrôleurs COMPTAFLOW examinés. Le lot paie reste à confirmer avec des données RH-FLOW réelles en test d'intégration.
 - Aucun code RH-FLOW ni endpoint inverse COMPTAFLOW n'a été modifié dans cette opération : il s'agit de spécifications à transmettre aux équipes.
+
+
+## 2026-11-20 — bibliothèque documentaire dans le Super Admin
+- Création du contrôleur `SuperAdminIntegrationDocumentationController` avec liste blanche de trois documents, consultation et téléchargement.
+- Création des vues `superadmin.integration-documentation` et `superadmin.integration-documentation-show`.
+- Ajout des routes sous le groupe `auth + superadmin` : index, lecture et téléchargement.
+- Ajout du menu « Documentation des intégrations » dans la rubrique Liaison COMPTA-APK du sidebar Super Admin.
+- Les fichiers restent les sources Markdown du dépôt dans `docs/traitement recent/`. L'écran vérifie leur présence sur le serveur et signale si le déploiement n'a pas encore livré les fichiers.
+- Contrôles effectués ici : présence des trois fichiers sur `main), vérification des points d'insertion des routes et du menu. Pas d'exécution PHP/Laravel ni de validation navigateur sur le serveur dans cette session.
+- Déploiement nécessaire : récupérer `main`, puis vérifier `/superadmin/documentation-integrations`. Aucun changement de base de données ni migration n'est requis pour cette bibliothèque documentaire.
