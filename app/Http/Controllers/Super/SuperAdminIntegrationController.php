@@ -19,14 +19,19 @@ class SuperAdminIntegrationController extends Controller
 {
     private const PERMISSIONS = ['referentiel', 'ecritures', 'pieces_justificatives'];
 
-    public function maison() { return $this->index('maison'); }
+    public function maison(Request $request) { return $this->index('maison', $request->integer('application')); }
     public function externe() { return $this->index('externe'); }
 
-    private function index(string $type)
+    private function index(string $type, ?int $selectedApplicationId = null)
     {
         $this->initialiserApplicationsMaison();
         $apps = DB::table('integration_applications')->where('type', $type)
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")->orderBy('name')->get();
+        $allApps = $apps;
+        if ($selectedApplicationId) {
+            $apps = $apps->where('id', $selectedApplicationId)->values();
+            abort_if($apps->isEmpty(), 404, 'Application introuvable dans cette catégorie.');
+        }
         foreach ($apps as $app) {
             $app->links = DB::table('integration_application_companies as l')
                 ->join('companies as c', 'c.id', '=', 'l.company_id')
@@ -45,7 +50,7 @@ class SuperAdminIntegrationController extends Controller
             ->join('integration_applications as a', 'a.id', '=', 'r.integration_application_id')
             ->where('r.status', 'pending')->orderBy('r.created_at')
             ->get(['r.*', 'a.name as application_name']);
-        return view('superadmin.liaison_compta_apk', compact('type', 'apps', 'companies', 'events', 'companyRequests'));
+        return view('superadmin.liaison_compta_apk', compact('type', 'apps', 'allApps', 'selectedApplicationId', 'companies', 'events', 'companyRequests'));
     }
 
     /** SELFLOW est repris en mode historique ; RH-FLOW est référencé comme prévu,
@@ -92,6 +97,7 @@ class SuperAdminIntegrationController extends Controller
             'app_url' => ['required', 'url', 'starts_with:https://', 'max:500'],
             'owner_name' => 'nullable|string|max:160', 'owner_email' => 'nullable|email|max:191',
             'description' => 'nullable|string|max:2000',
+            'validity_days' => 'nullable|in:90,180,365,730',
         ]);
         if ($data['type'] === 'externe' && empty($data['owner_name'])) {
             return back()->withErrors(['owner_name' => 'Le propriétaire est obligatoire pour une application externe.'])->withInput();
@@ -101,6 +107,7 @@ class SuperAdminIntegrationController extends Controller
         while (DB::table('integration_applications')->where('code', $code)->exists()) $code = $base . '-' . $suffix++;
         $clientId = 'cf_app_' . Str::lower(Str::random(28));
         $secret = 'cf_secret_' . Str::random(64);
+        $validityDays = $data['type'] === 'maison' ? (int) ($data['validity_days'] ?? 365) : 365;
         $now = now();
         $id = DB::table('integration_applications')->insertGetId([
             'code' => $code, 'name' => $data['name'], 'owner_name' => $data['owner_name'] ?? null,
@@ -109,7 +116,7 @@ class SuperAdminIntegrationController extends Controller
             'app_url' => rtrim($data['app_url'], '/'),
             'pairing_code_hash' => hash('sha256', $pairingCode = 'cf_link_' . Str::random(48)),
             'pairing_code_encrypted' => Crypt::encryptString($pairingCode),
-            'pairing_code_expires_at' => $now->copy()->addDays($validityDays), 'pairing_rotated_at' => $now,
+            'pairing_code_expires_at' => $data['type'] === 'maison' ? $now->copy()->addDays($validityDays) : null, 'pairing_rotated_at' => $now,
             'client_secret_hash' => Hash::make($secret), 'client_secret_expires_at' => $now->copy()->addYear(),
             'secret_rotated_at' => $now, 'created_at' => $now, 'updated_at' => $now,
         ]);
@@ -117,7 +124,7 @@ class SuperAdminIntegrationController extends Controller
         $redirect = redirect()->route($data['type'] === 'maison' ? 'superadmin.liaison_compta.maison' : 'superadmin.liaison_compta.externe');
         if ($data['type'] === 'maison') {
             return $redirect
-                ->with('integration_pairing_code', ['application' => $data['name'], 'code' => $pairingCode, 'expires_at' => $now->copy()->addDays(30)->toDateTimeString()])
+                ->with('integration_pairing_code', ['application' => $data['name'], 'code' => $pairingCode, 'expires_at' => $now->copy()->addDays($validityDays)->toDateTimeString(), 'validity_days' => $validityDays])
                 ->with('success', 'Application enregistrée. Copiez le code dans l’application partenaire.');
         }
         return $redirect
@@ -378,7 +385,7 @@ class SuperAdminIntegrationController extends Controller
             'status' => 'active', 'auth_mode' => 'bearer',
             'pairing_code_hash' => hash('sha256', $code),
             'pairing_code_encrypted' => Crypt::encryptString($code),
-            'pairing_code_expires_at' => $now->copy()->addDays(30),
+            'pairing_code_expires_at' => $now->copy()->addDays($validityDays),
             'pairing_code_used_at' => null, 'pairing_rotated_at' => $now, 'updated_at' => $now,
         ]);
         DB::table('integration_api_tokens')->where('integration_application_id', $id)
