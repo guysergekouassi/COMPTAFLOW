@@ -45,11 +45,12 @@ class SuperAdminIntegrationController extends Controller
         }
         $companies = Company::query()->where('is_active', true)->where('is_blocked', false)
             ->orderBy('company_name')->get(['id', 'company_name', 'email_adresse']);
-        $events = DB::table('integration_api_events')
+        $eventsQuery = DB::table('integration_api_events')
             ->leftJoin('integration_applications', 'integration_api_events.integration_application_id', '=', 'integration_applications.id')
             ->leftJoin('companies', 'integration_api_events.company_id', '=', 'companies.id')
-            ->orderByDesc('integration_api_events.id')->limit(60)
-            ->get(['integration_api_events.*', 'integration_applications.name as application_name', 'companies.company_name']);
+            ->when($type === 'maison' && $selectedApplicationId, fn ($query) => $query->where('integration_api_events.integration_application_id', $selectedApplicationId))
+            ->orderByDesc('integration_api_events.id')->limit(60);
+        $events = $eventsQuery->get(['integration_api_events.*', 'integration_applications.name as application_name', 'companies.company_name']);
         $companyRequests = DB::table('integration_company_requests as r')
             ->join('integration_applications as a', 'a.id', '=', 'r.integration_application_id')
             ->where('r.status', 'pending')->orderBy('r.created_at')
@@ -125,7 +126,9 @@ class SuperAdminIntegrationController extends Controller
             'secret_rotated_at' => $now, 'created_at' => $now, 'updated_at' => $now,
         ]);
         $this->journal($id, null, 'application.created', 201);
-        $redirect = redirect()->route($data['type'] === 'maison' ? 'superadmin.liaison_compta.maison' : 'superadmin.liaison_compta.externe');
+        $redirect = $data['type'] === 'maison'
+            ? redirect()->route('superadmin.liaison_compta.maison', ['application' => $id])
+            : redirect()->route('superadmin.liaison_compta.externe');
         if ($data['type'] === 'maison') {
             return $redirect
                 ->with('integration_pairing_code', ['application' => $data['name'], 'code' => $pairingCode, 'expires_at' => $now->copy()->addDays($validityDays)->toDateTimeString(), 'validity_days' => $validityDays])
