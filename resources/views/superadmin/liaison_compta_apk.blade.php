@@ -184,8 +184,10 @@
    <div><label class="form-label small">Nom</label><input class="form-control form-control-sm" name="name" value="{{ $app->name }}" required></div>
    <div><label class="form-label small">URL application</label><input class="form-control form-control-sm" type="url" name="app_url" value="{{ $app->app_url }}" placeholder="https://..."></div>
    @endif
+   @if($type==='externe')
    <div><label class="form-label small">Propriétaire</label><input class="form-control form-control-sm" name="owner_name" value="{{ $app->owner_name }}"></div>
    <div><label class="form-label small">E-mail</label><input class="form-control form-control-sm" name="owner_email" value="{{ $app->owner_email }}"></div>
+   @endif
    <div><label class="form-label small">Statut</label><select class="form-select form-select-sm" name="status"><option value="active" {{ $app->status==='active'?'selected':'' }}>Actif</option><option value="pending" {{ $app->status==='pending'?'selected':'' }}>En attente</option><option value="suspended" {{ $app->status==='suspended'?'selected':'' }}>Suspendu</option></select></div>
    <input type="hidden" name="description" value="{{ $app->description }}"><button class="btn btn-sm btn-outline-secondary">Mettre à jour</button>
   </form>
