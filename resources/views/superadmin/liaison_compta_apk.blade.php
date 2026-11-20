@@ -82,7 +82,7 @@
  @empty <p class="text-muted small">Aucun dossier actif lié.</p> @endforelse
  </div>
 
- @if($type==='maison' && $app->status==='active')
+ @if($type==='maison' && $app->status!=='revoked')
  <div class="border-top pt-3">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
    <strong>Étape 2 — Associer les dossiers</strong>
@@ -117,18 +117,18 @@
  </form></details>
  @endif
 
- @if($app->auth_mode!=='planned')
+ @if($app->status!=='revoked')
  <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 border-top mt-3 pt-3">
   <form method="POST" action="{{ route('superadmin.liaison_compta.applications.update',$app->id) }}" class="d-flex flex-wrap gap-2 align-items-end">@csrf @method('PUT')
    <div><label class="form-label small">Nom</label><input class="form-control form-control-sm" name="name" value="{{ $app->name }}" required></div>
    <div><label class="form-label small">URL application</label><input class="form-control form-control-sm" type="url" name="app_url" value="{{ $app->app_url }}" placeholder="https://..."></div>
    <div><label class="form-label small">Propriétaire</label><input class="form-control form-control-sm" name="owner_name" value="{{ $app->owner_name }}"></div>
    <div><label class="form-label small">E-mail</label><input class="form-control form-control-sm" name="owner_email" value="{{ $app->owner_email }}"></div>
-   <div><label class="form-label small">Statut</label><select class="form-select form-select-sm" name="status"><option value="active" {{ $app->status==='active'?'selected':'' }}>Actif</option><option value="suspended" {{ $app->status==='suspended'?'selected':'' }}>Suspendu</option></select></div>
+   <div><label class="form-label small">Statut</label><select class="form-select form-select-sm" name="status"><option value="active" {{ $app->status==='active'?'selected':'' }}>Actif</option><option value="pending" {{ $app->status==='pending'?'selected':'' }}>En attente</option><option value="suspended" {{ $app->status==='suspended'?'selected':'' }}>Suspendu</option></select></div>
    <input type="hidden" name="description" value="{{ $app->description }}"><button class="btn btn-sm btn-outline-secondary">Mettre à jour</button>
   </form>
   <div class="apk-actions">
-   @if($app->auth_mode!=='planned' && $app->status==='active')
+   @if($app->status==='active')
    <form method="POST" action="{{ route('superadmin.liaison_compta.secret.rotate',$app->id) }}" onsubmit="return confirm('Renouveler le secret et révoquer les jetons actuels ?')">@csrf<button class="btn btn-sm btn-outline-warning">{{ $app->auth_mode==='legacy'?'Activer Bearer / générer les identifiants':'Renouveler les identifiants' }}</button></form>
    @endif
    @if($app->status!=='revoked')
