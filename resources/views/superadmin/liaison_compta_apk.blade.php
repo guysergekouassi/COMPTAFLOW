@@ -5,7 +5,7 @@
 .apk-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin-bottom:18px}
 .apk-muted{color:#64748b}.apk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .apk-actions{display:flex;gap:8px;flex-wrap:wrap}.apk-code{font-family:monospace;overflow-wrap:anywhere}
-.apk-checks{display:flex;gap:18px;flex-wrap:wrap}.apk-checks label{font-size:13px}
+.apk-checks{display:flex;gap:18px;flex-wrap:wrap}.apk-checks label{font-size:13px}.apk-pair-code{font:600 14px ui-monospace,monospace;overflow-wrap:anywhere;background:#f1f5f9;border-radius:8px;padding:12px}
 </style>
 <body>
 <div class="layout-wrapper layout-content-navbar"><div class="layout-container">
@@ -21,6 +21,14 @@
 @if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 
+@if(session('integration_pairing_code'))
+<div class="alert alert-success border-success">
+ <h5 class="fw-bold mb-1">Code de liaison à copier dans {{ session("integration_pairing_code.application") }}</h5>
+ <p class="mb-2">Ce code est affiché une seule fois et expire le {{ session("integration_pairing_code.expires_at") }}.</p>
+ <div class="apk-pair-code mb-2" id="newPairingCode">{{ session("integration_pairing_code.code") }}</div>
+ <button class="btn btn-sm btn-success" type="button" onclick="navigator.clipboard.writeText(document.getElementById('newPairingCode').textContent.trim())">Copier le code de liaison</button>
+</div>
+@endif
 @if(session('integration_credentials'))
 <div class="alert alert-warning border-warning">
  <h5 class="fw-bold">Identifiants affichés une seule fois</h5>
