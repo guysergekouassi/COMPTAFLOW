@@ -78,6 +78,9 @@
   <div><label class="form-label">Propriétaire / éditeur</label><input class="form-control" name="owner_name" {{ $type==='externe'?'required':'' }} placeholder="Organisation / éditeur"></div>
   <div><label class="form-label">E-mail propriétaire</label><input class="form-control" type="email" name="owner_email"></div>
   <div><label class="form-label">Description</label><input class="form-control" name="description" maxlength="2000"></div>
+  @if($type==='maison')
+  <div><label class="form-label">Validité du code de liaison</label><select class="form-select" name="validity_days" required><option value="90">3 mois</option><option value="180">6 mois</option><option value="365" selected>1 an</option><option value="730">2 ans</option></select></div>
+  @endif
  </div><button class="btn btn-primary mt-3">{{ $type==='maison'?'Enregistrer et générer le code de liaison':'Enregistrer et générer les identifiants API' }}</button>
  </form>
 </div>
