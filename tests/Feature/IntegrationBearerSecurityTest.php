@@ -147,6 +147,30 @@ class IntegrationBearerSecurityTest extends TestCase
         $this->assertSame(0, DB::table('integration_api_tokens')->where('token_hash', $plain)->count());
     }
 
+    public function test_un_code_maison_est_echange_une_seule_fois_contre_les_identifiants_applicatifs(): void
+    {
+        $code = 'cf_link_pairing-test-unique-123456789';
+        DB::table('integration_applications')->where('id', $this->applicationId)->update([
+            'pairing_code_hash' => hash('sha256', $code),
+            'pairing_code_expires_at' => now()->addDays(5),
+            'pairing_code_used_at' => null,
+        ]);
+
+        $response = $this->postJson('/api/integration/pairing/redeem', [
+            'pairing_code' => $code,
+            'application_code' => 'app-test',
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $clientId = $response->json('client_id');
+        $clientSecret = $response->json('client_secret');
+        $this->assertNotEmpty($clientId);
+        $this->assertNotEmpty($clientSecret);
+        $this->assertTrue(Hash::check($clientSecret, DB::table('integration_applications')->where('id', $this->applicationId)->value('client_secret_hash')));
+        $this->assertNotNull(DB::table('integration_applications')->where('id', $this->applicationId)->value('pairing_code_used_at'));
+
+        $this->postJson('/api/integration/pairing/redeem', ['pairing_code' => $code])->assertUnauthorized();
+    }
+
     private function appelSigne(array $body = [], string $uri = '/__integration/test')
     {
         return $this->withHeaders($this->headers(Str::random(24)))->postJson($uri, $body);
@@ -174,6 +198,8 @@ class IntegrationBearerSecurityTest extends TestCase
             $table->id(); $table->string('code'); $table->string('name');
             $table->string('type'); $table->string('status'); $table->string('auth_mode');
             $table->string('client_id')->nullable(); $table->string('client_secret_hash')->nullable();
+            $table->string('pairing_code_hash',64)->nullable(); $table->text('pairing_code_encrypted')->nullable();
+            $table->timestamp('pairing_code_expires_at')->nullable(); $table->timestamp('pairing_code_used_at')->nullable();
             $table->timestamp('client_secret_expires_at')->nullable();
             $table->timestamp('last_connected_at')->nullable(); $table->timestamp('last_deposit_at')->nullable();
             $table->timestamps();
@@ -201,6 +227,8 @@ class IntegrationBearerSecurityTest extends TestCase
             $table->string('route')->nullable(); $table->string('ip_address', 45)->nullable();
             $table->unsignedSmallInteger('http_status')->nullable(); $table->json('details')->nullable();
             $table->timestamp('created_at')->nullable();
+            $table->string('http_method',10)->nullable(); $table->unsignedInteger('duration_ms')->nullable();
+            $table->string('request_id',64)->nullable();
         });
     }
 }
