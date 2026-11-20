@@ -300,3 +300,15 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Workflow COMPTAFLOW `44600248946` : **completed / success** sur `49ed888f97d3b9962f0929fa0cfff6cdfb105e56`.
 - Composer, tests ciblés, compilation Blade et routes : réussis.
 - La migration a été vérifiée sur SQLite, y compris la reprise du schéma partiel ; un essai MySQL sur la base d'hébergement reste nécessaire.
+
+
+## 2026-11-20 — nouvelle spécification simplifiée des liaisons maison et externes
+
+- Demande utilisateur : simplifier la console COMPTA-APK et séparer connexion d'application, association des dossiers et déversement.
+- Applications maison : générer dans COMPTAFLOW un code de liaison à copier dans l'application partenaire ; prévoir renouvellement manuel et automatique ; après connexion, choisir un dossier COMPTAFLOW puis charger dans une fenêtre la liste des entreprises de l'application partenaire et associer les deux dossiers.
+- Déversement maison : action explicite via bouton Déverser, uniquement après validation de l'association et des permissions.
+- Applications externes : fournir URL API, code de liaison, identifiants et dossier dédié attribué par COMPTAFLOW ; réception d'une demande de création d'entreprise, validation des informations et des payloads, puis attribution du dossier généré. Aucun accès à la liste globale des entreprises et aucune sélection libre de company_id.
+- Traçabilité : enrichissement demandé autour de qui, quand, quoi, d'où, méthode HTTP/POST, route, payload, réponse, code HTTP, IP, durée, corrélation et idempotence ; secrets et mots de passe doivent être masqués.
+- Nouveau document créé : `docs/traitement recent/LOGIQUE_LIAISONS_MAISON_ET_EXTERNES.md`.
+- Les captures RH-FLOW fournies servent de référence visuelle pour l'écran de passerelle et l'historique. La nouvelle logique est une spécification ; elle n'est pas déclarée comme implémentée à ce stade.
+- Points métier à confirmer consignés dans le document : règles d'unicité des dossiers, durée/renouvellement du code, champs de création externe, approbation et format final des payloads.
