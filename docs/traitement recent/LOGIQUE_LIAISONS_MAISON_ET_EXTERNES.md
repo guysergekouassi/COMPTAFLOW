@@ -314,3 +314,35 @@ Les captures transmises le 20 novembre 2026 servent de référence pour :
 - Le tableau actuel d'historique des connexions et dépôts, avec Date, Application, Dossier, Événement, Route, HTTP et IP.
 
 Ces captures illustrent l'existant observé ; elles ne prouvent pas que le mécanisme de clé affiché est déjà compatible avec le nouveau flux de code de liaison/Bearer décrit dans ce document. La transition entre les deux doit être conçue et testée explicitement.
+
+
+## 10. Réalisation COMPTAFLOW publiée sur main — 20/11/2026
+
+### Éléments développés côté COMPTAFLOW
+- Ajout d'une URL d'application et d'un code de liaison aléatoire par application maison ; code stocké sous forme de hash pour la validation et chiffré pour l'appel sortant au catalogue partenaire.
+- Échange du code maison via `POST /api/integration/pairing/redeem`. Le code ne donne aucun accès à un dossier ; il sert à activer l'identité applicative et remettre des identifiants API une seule fois.
+- Bouton de génération/renouvellement du code pour les applications maison déjà référencées, y compris RH-FLOW initialement en statut prévu/en attente.
+- Écran en deux étapes : choix du dossier COMPTAFLOW, puis fenêtre de choix du dossier partenaire chargée par appel serveur.
+- Le serveur recontrôle le dossier partenaire dans le catalogue distant avant d'enregistrer l'association ; les identifiants source et nom du dossier partenaire sont conservés dans la liaison.
+- Le proxy du catalogue attend le contrat partenaire `GET /api/integration/companies`, en HTTPS, avec l'en-tête `X-Integration-Pairing-Code` et une réponse `{ "data": [{ "id": "...", "name": "..." }] }`.
+- Ajout d'une file de demandes de création d'entreprise pour les applications externes : `POST /api/integration/external/company-requests`, puis consultation de sa propre demande via `POST /api/integration/external/company-requests/{requestId}/status`.
+- Les demandes externes sont approuvées par un Super Admin ; COMPTAFLOW crée alors le dossier dédié, son exercice comptable et la liaison, puis envoie au gérant un lien d'activation temporaire pour qu'il choisisse son propre mot de passe. Aucun mot de passe par défaut commun n'est créé.
+- Traçabilité API enrichie côté middleware : méthode, durée, identifiant de requête, payload et réponse expurgés des champs sensibles.
+- Les anciennes routes SELFLOW et GESTION-DE-SITES sont conservées.
+
+### Contrat restant côté application maison partenaire
+Le dépôt COMPTAFLOW ne contient pas le code RH-FLOW. Pour que le sélecteur des entreprises RH-FLOW fonctionne en réel, RH-FLOW doit exposer :
+- `GET /api/integration/companies`
+- vérifier le code reçu dans `X-Integration-Pairing-Code` ;
+- renvoyer uniquement les entreprises accessibles à l'application, sous `data: [{id,name}]` ;
+- enregistrer le code collé par l'administrateur et utiliser le mécanisme d'échange décrit ci-dessus.
+
+Sans cet endpoint partenaire, COMPTAFLOW affichera une erreur de catalogue et ne permettra pas d'enregistrer une liaison distante fictive.
+
+### Déversement
+Le transfert d'écritures reste déclenché par l'application source via son bouton **Déverser**, qui appelle les endpoints COMPTAFLOW déjà documentés. COMPTAFLOW ne doit pas inventer ni envoyer des écritures de paie qu'il ne possède pas. Le bouton dans RH-FLOW nécessite donc le raccordement de son écran au endpoint de dépôt avec les identifiants et payloads validés.
+
+### Validation et limites
+- Tests unitaires ajoutés pour l'échange du code maison à usage unique et la demande externe idempotente.
+- Les tests CI doivent encore être confirmés après la dernière correction des fixtures.
+- Le parcours partenaire RH-FLOW et le bouton Déverser côté RH-FLOW ne sont pas déclarés opérationnels tant que le dépôt RH-FLOW et son endpoint ne sont pas intégrés et testés.
