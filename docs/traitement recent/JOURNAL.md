@@ -371,3 +371,13 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Création du cahier des charges RH-FLOW : endpoint catalogue, authentification, correspondance des entreprises, obtention du jeton, payload de paie, bouton Déverser manuel, sécurité, journalisation et tests de réception.
 - Le cahier des charges précise que les exemples de lignes d'écritures ne remplacent pas le payload métier déjà convenu : RH-FLOW doit respecter le schéma comptable existant.
 - Le développement RH-FLOW lui-même n'est pas effectué dans le dépôt COMPTAFLOW.
+
+
+## 2026-11-20 — cahiers des charges généraux et liaison bidirectionnelle
+- Mise à jour du cahier RH-FLOW : l'association des entreprises peut être initiée depuis COMPTAFLOW ou depuis RH-FLOW.
+- Ajout du contrat de catalogue COMPTAFLOW limité aux dossiers autorisés et du payload de demande de liaison inverse. Ces routes sont explicitement marquées comme à développer/valider côté COMPTAFLOW, et non comme déjà disponibles.
+- Ajout des payloads de référence pour le code de liaison, le jeton Bearer, le référentiel, les écritures de paie et les pièces PDF.
+- Création du cahier général des applications maison Suite FLOW.
+- Création du cahier général des applications tierces, avec demande de création dédiée, suivi de demande, authentification et payloads métier.
+- Les payloads d'écritures et de référentiel sont fondés sur les champs lus par les contrôleurs COMPTAFLOW examinés. Le lot paie reste à confirmer avec des données RH-FLOW réelles en test d'intégration.
+- Aucun code RH-FLOW ni endpoint inverse COMPTAFLOW n'a été modifié dans cette opération : il s'agit de spécifications à transmettre aux équipes.
