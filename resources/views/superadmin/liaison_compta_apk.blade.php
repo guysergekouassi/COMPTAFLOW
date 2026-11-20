@@ -143,10 +143,15 @@
 @endforelse
 
 <div class="apk-card mt-4">
- <h5 class="fw-bold">Historique des connexions et dépôts</h5>
- <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Date</th><th>Application</th><th>Dossier</th><th>Événement</th><th>Route</th><th>HTTP</th><th>IP</th></tr></thead><tbody>
- @forelse($events as $event)<tr><td>{{ $event->created_at }}</td><td>{{ $event->application_name ?: '—' }}</td><td>{{ $event->company_name ?: '—' }}</td><td>{{ $event->event }}</td><td class="small">{{ $event->route }}</td><td>{{ $event->http_status }}</td><td>{{ $event->ip_address }}</td></tr>
- @empty<tr><td colspan="7" class="text-muted text-center">Aucun événement enregistré.</td></tr>@endforelse
+ <h5 class="fw-bold">Historique détaillé des connexions et dépôts</h5><p class="apk-muted small">Date, application, dossier, origine, action, méthode HTTP, endpoint, réponse et adresse IP. Ouvrez « Voir » pour consulter le payload et la réponse expurgés.</p>
+ <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Date / heure</th><th>Application</th><th>Dossier</th><th>Qui</th><th>Quoi</th><th>Méthode</th><th>Route</th><th>HTTP</th><th>IP</th><th>Détails</th></tr></thead><tbody>
+ @forelse($events as $event)<tr>
+ <td>{{ $event->created_at }}</td><td>{{ $event->application_name ?: '—' }}</td><td>{{ $event->company_name ?: '—' }}</td>
+ <td>{{ data_get(json_decode($event->details ?? '{}',true),'actor_user_id','Application') }}</td>
+ <td>{{ $event->event }}</td><td>{{ $event->http_method ?: '—' }}</td><td class="small">{{ $event->route }}</td><td>{{ $event->http_status }}</td><td>{{ $event->ip_address }}</td>
+ <td><details><summary>Voir</summary><pre class="small text-wrap mt-2" style="max-width:420px;white-space:pre-wrap">{{ json_encode(json_decode($event->details ?? '{}',true), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE) }}</pre></details></td>
+</tr>
+ @empty<tr><td colspan="10" class="text-muted text-center">Aucun événement enregistré.</td></tr>@endforelse
  </tbody></table></div>
 </div>
 </div></div>
