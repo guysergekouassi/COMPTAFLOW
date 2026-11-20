@@ -321,3 +321,9 @@ La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne pe
 - Tests CI réussis sur `cc2a25f5045bee4cdf7f8d086e306a4686cd1c89` (workflow `44736719640`).
 - **Non livré côté partenaire** : le dépôt RH-FLOW n'est pas disponible dans les dépôts GitHub installés de cette session. Le endpoint `GET /api/integration/companies` et le bouton `Déverser` doivent encore être ajoutés/testés dans RH-FLOW.
 - **Non déployé en production** : le serveur doit récupérer main, sauvegarder la base puis exécuter les migrations. Aucun résultat MySQL de production n'est revendiqué.
+
+
+## Correction du 20/11/2026
+- La durée du code de liaison maison est désormais sélectionnable : 3 mois, 6 mois, 1 an ou 2 ans ; 1 an par défaut. Il n'y a plus d'expiration fixe à 30 jours.
+- Nouveau cahier des charges destiné à l'équipe RH-FLOW : `CAHIER_DES_CHARGES_RH_FLOW_LIAISON_COMPTAFLOW.md`.
+- Ce document détaille le endpoint catalogue, la sélection/correspondance des dossiers, l'authentification Bearer, le bouton Déverser manuel, le payload, les contrôles et les tests de réception.
