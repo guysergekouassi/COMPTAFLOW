@@ -312,3 +312,39 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Nouveau document créé : `docs/traitement recent/LOGIQUE_LIAISONS_MAISON_ET_EXTERNES.md`.
 - Les captures RH-FLOW fournies servent de référence visuelle pour l'écran de passerelle et l'historique. La nouvelle logique est une spécification ; elle n'est pas déclarée comme implémentée à ce stade.
 - Points métier à confirmer consignés dans le document : règles d'unicité des dossiers, durée/renouvellement du code, champs de création externe, approbation et format final des payloads.
+
+
+## 2026-11-20 — implémentation du parcours COMPTA-APK
+
+### Applications maison
+- Formulaire simplifié : nom + URL partenaire + informations de propriétaire.
+- Génération et renouvellement d'un code de liaison affiché une seule fois, avec expiration de 30 jours.
+- Endpoint d'échange : `POST /api/integration/pairing/redeem`, limité en débit et à usage unique ; remet les identifiants applicatifs au partenaire.
+- Association en deux temps : choix du dossier COMPTAFLOW, puis chargement du catalogue partenaire dans une fenêtre.
+- Ajout des champs de correspondance dossier distant dans la table des liaisons.
+- Contrôle serveur du catalogue distant avant de confirmer la liaison.
+- Contrat requis côté partenaire : `GET /api/integration/companies` avec `X-Integration-Pairing-Code` et réponse `data: [{id,name}]`.
+
+### Applications externes
+- Ajout d'une file de demandes via `POST /api/integration/external/company-requests`.
+- Contrôle de `client_id`, `client_secret`, statut, type externe et idempotence par `request_id`.
+- Endpoint POST de consultation d'une demande précise ; l'application ne peut pas parcourir les autres demandes.
+- Validation Super Admin : création du dossier dédié, exercice comptable et liaison unique.
+- Le titulaire reçoit un lien d'activation temporaire pour choisir son mot de passe ; aucun mot de passe par défaut partagé.
+- Le dossier COMPTAFLOW attribué est retourné à l'application dans la consultation de sa demande approuvée.
+
+### Audit
+- Ajout de la méthode HTTP, durée, identifiant de requête et détails de payload/réponse expurgés des secrets dans les événements middleware.
+- Tableau de l'historique enrichi avec détails consultables.
+- Les événements de provisioning externe et de liaison sont également tracés.
+
+### Fichiers techniques ajoutés/modifiés
+- Migrations `2026_11_20_000001_extend_integration_pairing_and_audit.php` et `2026_11_20_000002_create_integration_company_requests.php`.
+- Contrôleurs API `IntegrationPairingController` et `IntegrationCompanyRequestController`.
+- Contrôleur Super Admin `SuperAdminIntegrationController`, middleware d'audit, routes web/API, vue COMPTA-APK et tests Bearer.
+- Documentation fonctionnelle enrichie.
+
+### Limites explicites
+- Le code source RH-FLOW n'est pas présent dans les dépôts GitHub installés accessibles dans cette session. Son endpoint catalogue et le bouton Déverser doivent être réalisés côté RH-FLOW pour que le parcours soit opérationnel de bout en bout.
+- Les tests CI des derniers commits ont rencontré deux erreurs de fixture (colonne `secret_rotated_at` absente et dossier test déjà lié) ; fixtures corrigées dans `7023b1373dc2aaf176a45bea08b564e40dc5cfd4`. Résultat CI de ce commit et des commits suivants à confirmer.
+- Pas de migration exécutée sur le serveur de production depuis GitHub ; attendre la validation CI puis sauvegarder et exécuter `php artisan migrate --force`.
