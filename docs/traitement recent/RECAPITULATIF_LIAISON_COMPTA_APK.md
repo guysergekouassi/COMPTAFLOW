@@ -351,3 +351,12 @@ La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne pe
 - Une relecture des fichiers ajoutés a révélé des séparateurs de namespace PHP doublés dans le contrôleur documentaire et les routes.
 - Les séparateurs ont été corrigés dans les fichiers source.
 - La compilation PHP/Blade et le chargement réel des routes doivent encore être confirmés sur un environnement PHP ou le serveur après récupération du commit.
+ 
+
+## Mise à jour — interface Suite FLOW et erreur validityDays (20/11/2026)
+- L'écran maison est organisé en deux niveaux : liste d'applications sous forme de boutons, puis espace détaillé de l'application sélectionnée.
+- Les dossiers liés et l'historique sont filtrés par application ; les autres applications ne mélangent plus leurs dossiers sur le même écran.
+- Le formulaire d'ajout est replié dans une action dédiée.
+- La durée du code de liaison est choisie à la création et au renouvellement (90, 180, 365 ou 730 jours).
+- Correction du défaut `$validityDays` non défini dans `store()` ; expiration, message flash et date affichée utilisent désormais la même durée.
+- Contrôle effectué : fichiers et sections source relus sur GitHub. Tests PHP/Blade et vérification visuelle sur l'instance dev restent à exécuter après pull.
