@@ -311,3 +311,13 @@ La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne pe
 - Étapes réussies : installation Composer, tests ciblés migration et Bearer, compilation Blade, vérification des routes.
 - La vue IA est validée à la compilation. La migration est validée sur SQLite en mode création et reprise d'un schéma partiellement créé ; la CI ne simule pas un serveur MySQL réel.
 - La correction de MySQL 1059 est basée sur des noms de contraintes courts et la migration de reprise. Le résultat MySQL réel doit encore être confirmé par la commande sur l'hébergement après récupération du code.
+
+
+## État au 20/11/2026 — implémentation COMPTA-APK
+- Console maison : code de liaison, renouvellement manuel, sélection du dossier COMPTAFLOW puis appel au catalogue partenaire et mémorisation de la correspondance distante.
+- Applications externes : demande API de création, file d'approbation Super Admin, création du dossier dédié, exercice comptable et lien d'activation temporaire du gérant.
+- Audit : méthode HTTP, route, IP, statut, durée, identifiant de requête et détails payload/réponse avec masquage des secrets.
+- Migrations complémentaires : ajout des champs de liaison et table des demandes externes.
+- Tests CI réussis sur `cc2a25f5045bee4cdf7f8d086e306a4686cd1c89` (workflow `44736719640`).
+- **Non livré côté partenaire** : le dépôt RH-FLOW n'est pas disponible dans les dépôts GitHub installés de cette session. Le endpoint `GET /api/integration/companies` et le bouton `Déverser` doivent encore être ajoutés/testés dans RH-FLOW.
+- **Non déployé en production** : le serveur doit récupérer main, sauvegarder la base puis exécuter les migrations. Aucun résultat MySQL de production n'est revendiqué.
