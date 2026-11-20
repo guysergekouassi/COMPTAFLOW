@@ -260,7 +260,7 @@ class SuperAdminIntegrationController extends Controller
             return back()->with('error', 'Un dossier actif existe déjà pour cette application externe.');
         }
 
-        $validator = \\Illuminate\\Support\\Facades\\Validator::make([
+        $validator = \Illuminate\Support\Facades\Validator::make([
             'company_name' => $companyRequest->company_name,
             'email_adresse' => $companyRequest->manager_email,
         ], [
@@ -397,7 +397,7 @@ class SuperAdminIntegrationController extends Controller
                 ->map(fn ($row) => ['id' => (string) $row['id'], 'name' => (string) $row['name']])->values();
             $this->journal($id, null, 'partner.companies.listed', 200);
             return response()->json(['data' => $companies]);
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             $this->journal($id, null, 'partner.companies.error', 502);
             return response()->json(['message' => 'Impossible de joindre le catalogue de l’application partenaire. Vérifiez son URL et son connecteur API.'], 502);
         }
