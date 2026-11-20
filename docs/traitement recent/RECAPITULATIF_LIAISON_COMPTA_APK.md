@@ -327,3 +327,11 @@ La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne pe
 - La durée du code de liaison maison est désormais sélectionnable : 3 mois, 6 mois, 1 an ou 2 ans ; 1 an par défaut. Il n'y a plus d'expiration fixe à 30 jours.
 - Nouveau cahier des charges destiné à l'équipe RH-FLOW : `CAHIER_DES_CHARGES_RH_FLOW_LIAISON_COMPTAFLOW.md`.
 - Ce document détaille le endpoint catalogue, la sélection/correspondance des dossiers, l'authentification Bearer, le bouton Déverser manuel, le payload, les contrôles et les tests de réception.
+
+
+## Mise à jour — liaison bidirectionnelle et contrats de payload (20/11/2026)
+- Le cahier RH-FLOW comprend maintenant la liaison initiée depuis RH-FLOW aussi bien que depuis COMPTAFLOW.
+- Les payloads de pairing, token, référentiel, écritures et justificatifs ont été ajoutés à partir des contrôleurs COMPTAFLOW consultés.
+- Deux cahiers des charges généraux ont été créés : applications maison Suite FLOW et applications tierces.
+- Le catalogue COMPTAFLOW côté partenaire et l'endpoint de demande de liaison inverse sont identifiés comme endpoints à développer/valider. Le parcours bidirectionnel est donc spécifié, mais pas encore déclaré opérationnel de bout en bout.
+- Les tests de paie avec un vrai payload RH-FLOW et la validation de production restent à effectuer.
