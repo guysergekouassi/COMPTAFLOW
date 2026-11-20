@@ -910,6 +910,9 @@ Route::middleware(['auth', 'superadmin'])->group(function () {
     Route::get('/superadmin/liaison-compta-apk/applications/{id}/partner-companies', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'entreprisesPartenaire'])->name('superadmin.liaison_compta.partner.companies');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/liaisons', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'lier'])->name('superadmin.liaison_compta.link');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/entreprise', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'creerEntrepriseEtLier'])->name('superadmin.liaison_compta.company.create');
+    Route::post('/superadmin/liaison-compta-apk/company-requests/{requestId}/approve', [\\App\\Http\\Controllers\\Super\\SuperAdminIntegrationController::class, 'validerDemandeEntreprise'])->name('superadmin.liaison_compta.requests.approve');
+    Route::post('/superadmin/liaison-compta-apk/company-requests/{requestId}/reject', [\\App\\Http\\Controllers\\Super\\SuperAdminIntegrationController::class, 'rejeterDemandeEntreprise'])->name('superadmin.liaison_compta.requests.reject');
+
     Route::delete('/superadmin/liaison-compta-apk/applications/{id}/liaisons/{companyId}', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'delier'])->name('superadmin.liaison_compta.unlink');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/secret/rotate', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'renouvelerSecret'])->name('superadmin.liaison_compta.secret.rotate');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/revoke', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'revoquer'])->name('superadmin.liaison_compta.application.revoke');
