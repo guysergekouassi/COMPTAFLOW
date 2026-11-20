@@ -146,6 +146,11 @@ Route::prefix('v1')->group(function () {
 // `X-Company-Key` et vérifiée par `integration.auth`, qui refuse une clé
 // désignant un autre dossier que celui annoncé dans le corps.
 // ═══════════════════════════════════════════════════════════════════════════
+// Échange du code de liaison copié depuis le Super Admin (application maison).
+Route::post('/integration/pairing/redeem', [\App\Http\Controllers\Api\IntegrationPairingController::class, 'redeem'])
+    ->middleware('throttle:5,1')
+    ->name('api.integration.pairing.redeem');
+
 // Authentification centralisée des applications COMPTA-APK.
 Route::post('/integration/token', [\App\Http\Controllers\Api\IntegrationTokenController::class, 'issue'])
     ->middleware('throttle:10,1')
