@@ -10,6 +10,7 @@ use Tests\TestCase;
 class IntegrationRegistryMigrationTest extends TestCase
 {
     private array $tables = [
+        'integration_company_requests',
         'integration_api_events',
         'integration_request_nonces',
         'integration_api_tokens',
@@ -84,6 +85,35 @@ class IntegrationRegistryMigrationTest extends TestCase
         ));
 
         $migration->down();
+        Schema::dropIfExists('companies');
+    }
+
+    public function test_les_migrations_complementaires_ajoutent_pairing_audit_et_demandes_externes(): void
+    {
+        foreach ($this->tables as $table) Schema::dropIfExists($table);
+        Schema::dropIfExists('companies');
+        Schema::create('companies', function (Blueprint $table) { $table->id(); });
+
+        $base = require database_path('migrations/2026_11_19_000001_create_integration_registry_tables.php');
+        $base->up();
+        $pairing = require database_path('migrations/2026_11_20_000001_extend_integration_pairing_and_audit.php');
+        $pairing->up();
+        $pairing->up();
+        $requests = require database_path('migrations/2026_11_20_000002_create_integration_company_requests.php');
+        $requests->up();
+        $requests->up();
+
+        $this->assertTrue(Schema::hasColumn('integration_applications', 'app_url'));
+        $this->assertTrue(Schema::hasColumn('integration_applications', 'pairing_code_hash'));
+        $this->assertTrue(Schema::hasColumn('integration_application_companies', 'partner_company_id'));
+        $this->assertTrue(Schema::hasColumn('integration_api_events', 'duration_ms'));
+        $this->assertTrue(Schema::hasColumn('integration_api_events', 'request_id'));
+        $this->assertTrue(Schema::hasTable('integration_company_requests'));
+        $this->assertTrue(Schema::hasColumn('integration_company_requests', 'external_request_id'));
+
+        $requests->down();
+        $pairing->down();
+        $base->down();
         Schema::dropIfExists('companies');
     }
 
