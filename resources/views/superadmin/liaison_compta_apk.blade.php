@@ -6,6 +6,12 @@
 .apk-muted{color:#64748b}.apk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .apk-actions{display:flex;gap:8px;flex-wrap:wrap}.apk-code{font-family:monospace;overflow-wrap:anywhere}
 .apk-checks{display:flex;gap:18px;flex-wrap:wrap}.apk-checks label{font-size:13px}.apk-pair-code{font:600 14px ui-monospace,monospace;overflow-wrap:anywhere;background:#f1f5f9;border-radius:8px;padding:12px}
+.apk-app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px}
+.apk-app-button{display:flex;align-items:center;gap:10px;padding:15px;border:1px solid #dbe3ee;border-radius:13px;background:#fff;color:#1e293b;text-decoration:none;transition:.18s ease}
+.apk-app-button:hover,.apk-app-button.active{border-color:#4263eb;background:#f5f7ff;box-shadow:0 5px 16px rgba(37,99,235,.09);color:#1d4ed8}
+.apk-app-symbol{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:#eef2ff;color:#4338ca}
+.apk-app-name{font-weight:700;flex:1}.apk-app-arrow{color:#94a3b8}
+
 </style>
 <body>
 <div class="layout-wrapper layout-content-navbar"><div class="layout-container">
@@ -192,6 +198,7 @@
 @endif
 @endforelse
 
+@if($type==='externe' || $selectedApplicationId)
 <div class="apk-card mt-4">
  <h5 class="fw-bold">Historique détaillé des connexions et dépôts</h5><p class="apk-muted small">Date, application, dossier, origine, action, méthode HTTP, endpoint, réponse et adresse IP. Ouvrez « Voir » pour consulter le payload et la réponse expurgés.</p>
  <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Date / heure</th><th>Application</th><th>Dossier</th><th>Qui</th><th>Quoi</th><th>Méthode</th><th>Route</th><th>HTTP</th><th>IP</th><th>Détails</th></tr></thead><tbody>
@@ -204,6 +211,7 @@
  @empty<tr><td colspan="10" class="text-muted text-center">Aucun événement enregistré.</td></tr>@endforelse
  </tbody></table></div>
 </div>
+@endif
 </div></div>
 </div></div></div>
 
