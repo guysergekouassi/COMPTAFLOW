@@ -60,6 +60,30 @@
 <div class="alert alert-info">Les applications maison peuvent être liées à plusieurs dossiers, mais chaque jeton Bearer est limité à un seul dossier autorisé. SELFLOW reste affiché en mode historique pendant sa migration ; RH-FLOW est référencé comme prévu, sans connecteur déclaré opérationnel.</div>
 @endif
 
+@if($type==='externe')
+<div class="apk-card">
+ <h5 class="fw-bold mb-2">Demandes de création reçues</h5>
+ <p class="apk-muted small">Les applications externes demandent un nouveau dossier. COMPTAFLOW ne leur permet jamais de choisir une entreprise existante. Après vérification, renseignez l’exercice comptable puis acceptez la demande.</p>
+ @forelse($companyRequests as $companyRequest)
+ <div class="border rounded p-3 mb-3">
+  <div class="d-flex justify-content-between flex-wrap gap-2">
+   <div><strong>{{ $companyRequest->company_name }}</strong><div class="small text-muted">Application : {{ $companyRequest->application_name }} · Référence : {{ $companyRequest->external_request_id }}</div><div class="small">Gérant : {{ $companyRequest->manager_name }} · {{ $companyRequest->manager_email }}</div><div class="small">Activité : {{ $companyRequest->activity ?: 'À préciser' }} · Forme : {{ $companyRequest->legal_form ?: 'À préciser' }}</div></div>
+   <span class="badge bg-warning text-dark">EN ATTENTE</span>
+  </div>
+  <form method="POST" action="{{ route('superadmin.liaison_compta.requests.approve',$companyRequest->id) }}" class="apk-grid mt-3">@csrf
+   <div><label class="form-label">Début de l’exercice *</label><input class="form-control" type="date" name="exercice_debut" required></div>
+   <div><label class="form-label">Fin de l’exercice *</label><input class="form-control" type="date" name="exercice_fin" required></div>
+   <div><label class="form-label">Intitulé de l’exercice</label><input class="form-control" name="exercice_intitule" placeholder="Exercice 2026"></div>
+   <div class="d-flex align-items-end"><button class="btn btn-success w-100" onclick="return confirm('Créer le dossier COMPTAFLOW dédié et envoyer le lien d’activation au gérant ?')">Accepter et créer le dossier</button></div>
+  </form>
+  <form method="POST" action="{{ route('superadmin.liaison_compta.requests.reject',$companyRequest->id) }}" class="d-flex gap-2 mt-2">@csrf<input class="form-control" name="rejection_reason" required maxlength="1000" placeholder="Motif du rejet"><button class="btn btn-outline-danger">Rejeter</button></form>
+ </div>
+ @empty
+ <p class="text-muted mb-0">Aucune demande en attente.</p>
+ @endforelse
+</div>
+@endif
+
 <h5 class="fw-bold mb-3">Applications enregistrées</h5>
 @forelse($apps as $app)
 <div class="apk-card">
