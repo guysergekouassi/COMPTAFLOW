@@ -917,6 +917,11 @@ Route::middleware(['auth', 'superadmin'])->group(function () {
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/secret/rotate', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'renouvelerSecret'])->name('superadmin.liaison_compta.secret.rotate');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/revoke', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'revoquer'])->name('superadmin.liaison_compta.application.revoke');
 
+    // Bibliothèque documentaire des intégrations — accessible uniquement au Super Admin.
+    Route::get('/superadmin/documentation-integrations', [\\App\\Http\\Controllers\\Super\\SuperAdminIntegrationDocumentationController::class, 'index'])->name('superadmin.integration-docs.index');
+    Route::get('/superadmin/documentation-integrations/{slug}', [\\App\\Http\\Controllers\\Super\\SuperAdminIntegrationDocumentationController::class, 'show'])->name('superadmin.integration-docs.show');
+    Route::get('/superadmin/documentation-integrations/{slug}/telecharger', [\\App\\Http\\Controllers\\Super\\SuperAdminIntegrationDocumentationController::class, 'download'])->name('superadmin.integration-docs.download');
+
     // Honoraires & Abonnements
     Route::get('/superadmin/honoraires', [\App\Http\Controllers\Super\HonorairesController::class, 'index'])->name('superadmin.honoraires');
     Route::get('/superadmin/honoraires/{companyId}', [\App\Http\Controllers\Super\HonorairesController::class, 'show'])->name('superadmin.honoraires.show');
