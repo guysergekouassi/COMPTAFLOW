@@ -79,6 +79,35 @@ class IntegrationCompanyRequestController extends Controller
         ], 202);
     }
 
+    /** Consultation d'une demande précise : aucune énumération globale n'est possible. */
+    public function show(Request $request, string $requestId)
+    {
+        $data = $request->validate([
+            'client_id' => 'required|string|max:100',
+            'client_secret' => 'required|string|max:255',
+        ]);
+        $app = DB::table('integration_applications')->where('client_id', $data['client_id'])->first();
+        $valid = $app && $app->type === 'externe' && $app->status === 'active'
+            && $app->client_secret_hash
+            && (!$app->client_secret_expires_at || now()->lessThanOrEqualTo($app->client_secret_expires_at))
+            && Hash::check($data['client_secret'], $app->client_secret_hash);
+        if (!$valid) return response()->json(['message' => 'Identifiants applicatifs invalides.'], 401);
+
+        $row = DB::table('integration_company_requests')
+            ->where('integration_application_id', $app->id)
+            ->where('external_request_id', $requestId)->first();
+        if (!$row) return response()->json(['message' => 'Demande introuvable pour cette application.'], 404);
+
+        return response()->json([
+            'request_id' => $row->external_request_id,
+            'status' => $row->status,
+            'company' => $row->status === 'approved' && $row->company_id
+                ? ['id' => (int) $row->company_id]
+                : null,
+            'rejection_reason' => $row->status === 'rejected' ? $row->rejection_reason : null,
+        ]);
+    }
+
     private function journal(Request $request, ?int $appId, ?int $companyId, string $event, int $status, array $details): void
     {
         DB::table('integration_api_events')->insert([
