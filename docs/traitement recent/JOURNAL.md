@@ -363,3 +363,11 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 ## 2026-11-20 — unicité de l'association partenaire
 - Contrôle serveur ajouté : un dossier partenaire actif ne peut plus être associé à deux dossiers COMPTAFLOW différents pour la même application.
 - Contrôle effectué après relecture du catalogue distant, avant insertion de la liaison.
+
+
+## 2026-11-20 — durée de liaison et cahier des charges RH-FLOW
+- Retrait de la durée fixe de 30 jours : le Super Admin choisit maintenant 90, 180, 365 ou 730 jours lors de la génération/rotation du code.
+- Durée par défaut : 365 jours. La date d'expiration réelle est affichée avec le code présenté une seule fois.
+- Création du cahier des charges RH-FLOW : endpoint catalogue, authentification, correspondance des entreprises, obtention du jeton, payload de paie, bouton Déverser manuel, sécurité, journalisation et tests de réception.
+- Le cahier des charges précise que les exemples de lignes d'écritures ne remplacent pas le payload métier déjà convenu : RH-FLOW doit respecter le schéma comptable existant.
+- Le développement RH-FLOW lui-même n'est pas effectué dans le dépôt COMPTAFLOW.
