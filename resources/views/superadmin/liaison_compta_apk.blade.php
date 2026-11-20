@@ -119,27 +119,6 @@
   <small class="apk-muted d-block mt-2">La liste partenaire est chargée depuis son API après sélection du dossier COMPTAFLOW.</small>
  </div>
  @endif
- @if($type==='externe' && $app->status==='active' && !$app->links->where('status','active')->count())
- <details class="border-top pt-3 mt-3"><summary class="fw-semibold text-primary">Créer une entreprise COMPTAFLOW dédiée et la lier</summary>
- <form method="POST" action="{{ route('superadmin.liaison_compta.company.create', $app->id) }}" class="mt-3">@csrf
-  <div class="apk-grid">
-   <div><label class="form-label">Nom de l’entreprise *</label><input class="form-control" name="company_name" required></div>
-   <div><label class="form-label">Activité *</label><input class="form-control" name="activity" required></div>
-   <div><label class="form-label">Forme juridique *</label><input class="form-control" name="juridique_form" required placeholder="SARL, SA..."></div>
-   <div><label class="form-label">E-mail de contact *</label><input class="form-control" type="email" name="email_adresse" required></div>
-   <div><label class="form-label">Contact technique</label><input class="form-control" name="owner_contact"></div>
-   <div><label class="form-label">Téléphone</label><input class="form-control" name="phone_number"></div>
-   <div><label class="form-label">Adresse</label><input class="form-control" name="adresse"></div>
-   <div><label class="form-label">Ville</label><input class="form-control" name="city" value="Abidjan"></div>
-   <div><label class="form-label">Pays</label><input class="form-control" name="country" value="Côte d'Ivoire"></div>
-   <div><label class="form-label">Début de l’exercice comptable *</label><input class="form-control" type="date" name="exercice_debut" required></div>
-   <div><label class="form-label">Fin de l’exercice comptable *</label><input class="form-control" type="date" name="exercice_fin" required></div>
-   <div><label class="form-label">Intitulé de l’exercice</label><input class="form-control" name="exercice_intitule" placeholder="Exercice 2026"></div>
-  </div>
-  <div class="apk-checks my-3"><label><input type="checkbox" name="permissions[]" value="referentiel" checked> Référentiel</label><label><input type="checkbox" name="permissions[]" value="ecritures" checked> Écritures</label><label><input type="checkbox" name="permissions[]" value="pieces_justificatives" checked> Pièces justificatives</label></div>
-  <button class="btn btn-success">Créer le dossier et établir la liaison</button>
- </form></details>
- @endif
 
  @if($app->status!=='revoked')
  <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 border-top mt-3 pt-3">
