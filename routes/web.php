@@ -906,6 +906,8 @@ Route::middleware(['auth', 'superadmin'])->group(function () {
     Route::get('/superadmin/liaison-compta-apk/externe', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'externe'])->name('superadmin.liaison_compta.externe');
     Route::post('/superadmin/liaison-compta-apk/applications', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'store'])->name('superadmin.liaison_compta.applications.store');
     Route::put('/superadmin/liaison-compta-apk/applications/{id}', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'update'])->name('superadmin.liaison_compta.applications.update');
+    Route::post('/superadmin/liaison-compta-apk/applications/{id}/pairing-code', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'genererCodeLiaison'])->name('superadmin.liaison_compta.pairing.generate');
+    Route::get('/superadmin/liaison-compta-apk/applications/{id}/partner-companies', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'entreprisesPartenaire'])->name('superadmin.liaison_compta.partner.companies');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/liaisons', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'lier'])->name('superadmin.liaison_compta.link');
     Route::post('/superadmin/liaison-compta-apk/applications/{id}/entreprise', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'creerEntrepriseEtLier'])->name('superadmin.liaison_compta.company.create');
     Route::delete('/superadmin/liaison-compta-apk/applications/{id}/liaisons/{companyId}', [\App\Http\Controllers\Super\SuperAdminIntegrationController::class, 'delier'])->name('superadmin.liaison_compta.unlink');
