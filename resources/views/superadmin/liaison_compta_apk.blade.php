@@ -40,15 +40,17 @@
 @endif
 
 <div class="apk-card">
- <h5 class="fw-bold mb-3">Enregistrer une application {{ $type==='maison'?'maison':'externe' }}</h5>
+ <h5 class="fw-bold mb-2">{{ $type==='maison'?'Connecter une application de la Suite FLOW':'Enregistrer une application externe' }}</h5>
+ <p class="apk-muted mb-3">{{ $type==='maison'?'Indiquez son URL. COMPTAFLOW génère ensuite un code à copier dans l’application partenaire.':'Renseignez l’application partenaire ; COMPTAFLOW lui attribuera ses identifiants et son dossier dédié.' }}</p>
  <form method="POST" action="{{ route('superadmin.liaison_compta.applications.store') }}">@csrf
  <input type="hidden" name="type" value="{{ $type }}">
  <div class="apk-grid">
-  <div><label class="form-label">Nom de l’application *</label><input class="form-control" name="name" required maxlength="160" placeholder="{{ $type==='maison'?'Ex. STOCK-FLOW':'Ex. Partenaire API' }}"></div>
-  <div><label class="form-label">Propriétaire</label><input class="form-control" name="owner_name" {{ $type==='externe'?'required':'' }} placeholder="Organisation / éditeur"></div>
+  <div><label class="form-label">Nom de l’application *</label><input class="form-control" name="name" required maxlength="160" placeholder="{{ $type==='maison'?'Ex. RH-FLOW':'Ex. Partenaire API' }}"></div>
+  <div><label class="form-label">URL de l’application *</label><input class="form-control" type="url" name="app_url" required maxlength="500" placeholder="https://rhflow.dc-knowing.com"></div>
+  <div><label class="form-label">Propriétaire / éditeur</label><input class="form-control" name="owner_name" {{ $type==='externe'?'required':'' }} placeholder="Organisation / éditeur"></div>
   <div><label class="form-label">E-mail propriétaire</label><input class="form-control" type="email" name="owner_email"></div>
   <div><label class="form-label">Description</label><input class="form-control" name="description" maxlength="2000"></div>
- </div><button class="btn btn-primary mt-3">Enregistrer et générer les identifiants</button>
+ </div><button class="btn btn-primary mt-3">{{ $type==='maison'?'Enregistrer et générer le code de liaison':'Enregistrer et générer les identifiants API' }}</button>
  </form>
 </div>
 
