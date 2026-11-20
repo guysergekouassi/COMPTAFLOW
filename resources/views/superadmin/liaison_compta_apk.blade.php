@@ -83,18 +83,18 @@
  </div>
 
  @if($type==='maison' && $app->status==='active')
- <form method="POST" action="{{ route('superadmin.liaison_compta.link', $app->id) }}" class="border-top pt-3">@csrf
-  <div class="row g-2 align-items-end">
-   <div class="col-md-5"><label class="form-label">Lier à une entreprise existante</label><select name="company_id" class="form-select" required><option value="">Choisir un dossier COMPTAFLOW</option>@foreach($companies as $company)<option value="{{ $company->id }}">{{ $company->company_name }} (#{{ $company->id }})</option>@endforeach</select></div>
-   <div class="col-md-5"><label class="form-label">Permissions</label><div class="apk-checks">
-    <label><input type="checkbox" name="permissions[]" value="referentiel" checked> Référentiel</label>
-    <label><input type="checkbox" name="permissions[]" value="ecritures" checked> Écritures</label>
-    <label><input type="checkbox" name="permissions[]" value="pieces_justificatives" checked> Pièces</label>
-   </div></div><div class="col-md-2"><button class="btn btn-outline-primary w-100">Lier</button></div>
+ <div class="border-top pt-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+   <strong>Étape 2 — Associer les dossiers</strong>
+   <form method="POST" action="{{ route('superadmin.liaison_compta.pairing.generate',$app->id) }}" onsubmit="return confirm('Générer un nouveau code ? Le code précédent sera invalidé.')">@csrf<button class="btn btn-sm btn-outline-warning">Générer / renouveler le code</button></form>
   </div>
- </form>
+  <div class="row g-2 align-items-end">
+   <div class="col-md-7"><label class="form-label">1. Choisir le dossier COMPTAFLOW</label><select class="form-select apk-local-company" data-app="{{ $app->id }}"><option value="">Choisir un dossier COMPTAFLOW</option>@foreach($companies as $company)<option value="{{ $company->id }}">{{ $company->company_name }} (#{{ $company->id }})</option>@endforeach</select></div>
+   <div class="col-md-5"><button type="button" class="btn btn-primary w-100 apk-open-partner" data-app="{{ $app->id }}" data-url="{{ route('superadmin.liaison_compta.partner.companies',$app->id) }}">2. Choisir l’entreprise partenaire</button></div>
+  </div>
+  <small class="apk-muted d-block mt-2">La liste partenaire est chargée depuis son API après sélection du dossier COMPTAFLOW.</small>
+ </div>
  @endif
-
  @if($type==='externe' && $app->status==='active' && !$app->links->where('status','active')->count())
  <details class="border-top pt-3 mt-3"><summary class="fw-semibold text-primary">Créer une entreprise COMPTAFLOW dédiée et la lier</summary>
  <form method="POST" action="{{ route('superadmin.liaison_compta.company.create', $app->id) }}" class="mt-3">@csrf
