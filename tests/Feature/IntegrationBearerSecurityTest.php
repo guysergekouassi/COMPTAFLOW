@@ -174,6 +174,7 @@ class IntegrationBearerSecurityTest extends TestCase
     public function test_une_application_externe_peut_demander_un_dossier_dedie_sans_choisir_un_company_id(): void
     {
         DB::table('integration_applications')->where('id', $this->applicationId)->update(['type' => 'externe']);
+        DB::table('integration_application_companies')->where('integration_application_id', $this->applicationId)->delete();
         $payload = [
             'client_id' => 'cf_app_test', 'client_secret' => 'secret-test',
             'request_id' => 'rh-request-000001',
@@ -220,7 +221,7 @@ class IntegrationBearerSecurityTest extends TestCase
             $table->string('client_id')->nullable(); $table->string('client_secret_hash')->nullable();
             $table->string('pairing_code_hash',64)->nullable(); $table->text('pairing_code_encrypted')->nullable();
             $table->timestamp('pairing_code_expires_at')->nullable(); $table->timestamp('pairing_code_used_at')->nullable();
-            $table->timestamp('client_secret_expires_at')->nullable();
+            $table->timestamp('client_secret_expires_at')->nullable(); $table->timestamp('secret_rotated_at')->nullable();
             $table->timestamp('last_connected_at')->nullable(); $table->timestamp('last_deposit_at')->nullable();
             $table->timestamps();
         });
