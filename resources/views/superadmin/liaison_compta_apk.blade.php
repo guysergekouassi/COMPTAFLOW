@@ -73,6 +73,7 @@
 </div>
 @endif
 
+@if($type==='externe' || !$selectedApplicationId)
 <div class="apk-card">
  <h5 class="fw-bold mb-2">{{ $type==='maison'?'Connecter une application de la Suite FLOW':'Enregistrer une application externe' }}</h5>
  <p class="apk-muted mb-3">{{ $type==='maison'?'Indiquez son URL. COMPTAFLOW génère ensuite un code à copier dans l’application partenaire.':'Renseignez l’application partenaire ; COMPTAFLOW lui attribuera ses identifiants et son dossier dédié.' }}</p>
@@ -90,8 +91,10 @@
  </div><button class="btn btn-primary mt-3">{{ $type==='maison'?'Enregistrer et générer le code de liaison':'Enregistrer et générer les identifiants API' }}</button>
  </form>
 </div>
-@if($type==='maison')
+@endif
+@if($type==='maison' && !$selectedApplicationId)
  </div>
+</div>
 @endif
 
 @if($type==='externe')
