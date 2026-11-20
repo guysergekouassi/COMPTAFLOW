@@ -159,6 +159,15 @@ class SuperAdminIntegrationController extends Controller
         if (!$remote || !hash_equals((string) $remote['name'], (string) $data['partner_company_name'])) {
             return back()->with('error', 'L’entreprise partenaire sélectionnée n’existe plus dans le catalogue distant.');
         }
+        $remoteAlreadyLinked = DB::table('integration_application_companies')
+            ->where('integration_application_id', $id)
+            ->where('partner_company_id', $data['partner_company_id'])
+            ->where('status', 'active')
+            ->where('company_id', '<>', $data['company_id'])
+            ->exists();
+        if ($remoteAlreadyLinked) {
+            return back()->with('error', 'Cette entreprise partenaire est déjà associée à un autre dossier COMPTAFLOW.');
+        }
         $company = Company::query()->whereKey($data['company_id'])->where('is_active', true)->where('is_blocked', false)->firstOrFail();
         if ($app->code === 'selflow' && (
             !$company->selflow_company_id
