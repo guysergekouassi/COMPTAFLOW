@@ -7,10 +7,12 @@
 .apk-actions{display:flex;gap:8px;flex-wrap:wrap}.apk-code{font-family:monospace;overflow-wrap:anywhere}
 .apk-checks{display:flex;gap:18px;flex-wrap:wrap}.apk-checks label{font-size:13px}.apk-pair-code{font:600 14px ui-monospace,monospace;overflow-wrap:anywhere;background:#f1f5f9;border-radius:8px;padding:12px}
 .apk-app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px}
-.apk-app-button{display:flex;align-items:center;gap:10px;padding:15px;border:1px solid #dbe3ee;border-radius:13px;background:#fff;color:#1e293b;text-decoration:none;transition:.18s ease}
+.apk-app-tile{display:flex;align-items:stretch;gap:6px;min-width:0}
+.apk-app-button{display:flex;align-items:center;gap:10px;padding:15px;border:1px solid #dbe3ee;border-radius:13px;background:#fff;color:#1e293b;text-decoration:none;transition:.18s ease;flex:1;min-width:0}
 .apk-app-button:hover,.apk-app-button.active{border-color:#4263eb;background:#f5f7ff;box-shadow:0 5px 16px rgba(37,99,235,.09);color:#1d4ed8}
-.apk-app-symbol{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:#eef2ff;color:#4338ca}
-.apk-app-name{font-weight:700;flex:1}.apk-app-arrow{color:#94a3b8}
+.apk-app-symbol{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:#eef2ff;color:#4338ca;flex-shrink:0}
+.apk-app-name{font-weight:700;flex:1;min-width:0;overflow-wrap:anywhere}.apk-app-arrow{color:#94a3b8}
+.apk-app-delete{width:38px;min-width:38px;align-self:stretch;display:grid;place-items:center;padding:0;border-radius:10px}
 
 </style>
 <body>
@@ -37,12 +39,18 @@
  </div>
  <div class="apk-app-grid">
  @forelse($allApps as $houseApp)
-  <a class="apk-app-button {{ $selectedApplicationId===$houseApp->id?'active':'' }}" href="{{ route('superadmin.liaison_compta.maison',['application'=>$houseApp->id]) }}">
-   <span class="apk-app-symbol"><i class="fa-solid fa-cubes"></i></span>
-   <span class="apk-app-name">{{ $houseApp->name }}</span>
-   <span class="badge {{ $houseApp->status==='active'?'bg-success':($houseApp->status==='pending'?'bg-warning text-dark':'bg-secondary') }}">{{ strtoupper($houseApp->status) }}</span>
-   <span class="apk-app-arrow"><i class="fa-solid fa-chevron-right"></i></span>
-  </a>
+  <div class="apk-app-tile">
+   <a class="apk-app-button {{ $selectedApplicationId===$houseApp->id?'active':'' }}" href="{{ route('superadmin.liaison_compta.maison',['application'=>$houseApp->id]) }}">
+    <span class="apk-app-symbol"><i class="fa-solid fa-cubes"></i></span>
+    <span class="apk-app-name">{{ $houseApp->name }}</span>
+    <span class="badge {{ $houseApp->status==='active'?'bg-success':($houseApp->status==='pending'?'bg-warning text-dark':'bg-secondary') }}">{{ strtoupper($houseApp->status) }}</span>
+    <span class="apk-app-arrow"><i class="fa-solid fa-chevron-right"></i></span>
+   </a>
+   <form method="POST" action="{{ route('superadmin.liaison_compta.application.delete',$houseApp->id) }}" onsubmit="return confirm('Supprimer définitivement l’application {{ addslashes($houseApp->name) }} ? Toutes ses liaisons, ses jetons API et ses demandes en attente seront supprimés. Les événements d’audit seront conservés.')">
+    @csrf @method('DELETE')
+    <button type="submit" class="btn btn-outline-danger apk-app-delete" title="Supprimer cette application" aria-label="Supprimer l’application {{ $houseApp->name }}"><i class="fa-solid fa-trash-can"></i></button>
+   </form>
+  </div>
  @empty
   <p class="text-muted mb-0">Aucune application maison enregistrée.</p>
  @endforelse
