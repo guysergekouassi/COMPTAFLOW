@@ -348,3 +348,13 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Le code source RH-FLOW n'est pas présent dans les dépôts GitHub installés accessibles dans cette session. Son endpoint catalogue et le bouton Déverser doivent être réalisés côté RH-FLOW pour que le parcours soit opérationnel de bout en bout.
 - Les tests CI des derniers commits ont rencontré deux erreurs de fixture (colonne `secret_rotated_at` absente et dossier test déjà lié) ; fixtures corrigées dans `7023b1373dc2aaf176a45bea08b564e40dc5cfd4`. Résultat CI de ce commit et des commits suivants à confirmer.
 - Pas de migration exécutée sur le serveur de production depuis GitHub ; attendre la validation CI puis sauvegarder et exécuter `php artisan migrate --force`.
+
+
+## 2026-11-20 — validation de l'implémentation COMPTA-APK
+- Dernier commit applicatif testé : `cc2a25f5045bee4cdf7f8d086e306a4686cd1c89`.
+- Workflow GitHub Actions `44736719640` : **success**.
+- Tests registre/migrations, sécurité Bearer, échange du code maison à usage unique et demande externe idempotente : réussis.
+- Compilation Blade : réussie.
+- Contrôle des routes COMPTA-APK : réussi.
+- Les échecs précédents venaient de fixtures de test (schéma de test incomplet et table de demande incluse à tort dans le test de la migration initiale) et d'une séquence de retours à la ligne échappés dans le contrôleur API ; ils ont été corrigés avant le succès final.
+- Prochaine vérification requise : déploiement serveur après sauvegarde, migration de production, puis intégration du endpoint catalogue et du bouton Déverser dans RH-FLOW.
