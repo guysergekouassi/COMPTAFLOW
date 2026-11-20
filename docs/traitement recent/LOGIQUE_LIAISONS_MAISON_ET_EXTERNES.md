@@ -367,3 +367,15 @@ La durée choisie est enregistrée côté COMPTAFLOW et affichée avec la date d
 
 Le cahier des charges à transmettre à l'équipe RH-FLOW est désormais :
 `docs/traitement recent/CAHIER_DES_CHARGES_RH_FLOW_LIAISON_COMPTAFLOW.md`.
+
+
+## Complément — liaison bidirectionnelle des applications maison
+La liaison des dossiers doit pouvoir être initiée depuis les deux interfaces : COMPTAFLOW choisit un dossier local puis une entreprise partenaire ; l'application maison choisit son entreprise locale puis un dossier COMPTAFLOW autorisé. Les deux actions aboutissent à une seule relation centrale et au même statut des deux côtés.
+
+Pour le parcours initié depuis l'application maison, COMPTAFLOW doit exposer un catalogue limité aux dossiers explicitement autorisés pour cette application, puis une action de demande de liaison. Ces routes inverses sont documentées dans les cahiers des charges comme contrat à développer/valider ; elles ne sont pas déclarées existantes sur la seule base de l'audit des routes actuelles.
+
+Documents généraux créés :
+- `CAHIER_DES_CHARGES_APPLICATIONS_MAISON_SUITE_FLOW.md`
+- `CAHIER_DES_CHARGES_APPLICATIONS_TIERS_COMPTAFLOW.md`
+
+Le cahier RH-FLOW a également été mis à jour pour inclure les deux sens de liaison et les payloads des échanges de référentiel, écritures et PDF.
