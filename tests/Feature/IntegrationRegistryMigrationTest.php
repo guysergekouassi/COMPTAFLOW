@@ -10,7 +10,6 @@ use Tests\TestCase;
 class IntegrationRegistryMigrationTest extends TestCase
 {
     private array $tables = [
-        'integration_company_requests',
         'integration_api_events',
         'integration_request_nonces',
         'integration_api_tokens',
@@ -23,6 +22,7 @@ class IntegrationRegistryMigrationTest extends TestCase
         foreach ($this->tables as $table) {
             Schema::dropIfExists($table);
         }
+        Schema::dropIfExists('integration_company_requests');
         Schema::dropIfExists('companies');
 
         Schema::create('companies', function (Blueprint $table) {
@@ -122,6 +122,7 @@ class IntegrationRegistryMigrationTest extends TestCase
         foreach ($this->tables as $table) {
             Schema::dropIfExists($table);
         }
+        Schema::dropIfExists('integration_company_requests');
         Schema::dropIfExists('companies');
 
         parent::tearDown();
