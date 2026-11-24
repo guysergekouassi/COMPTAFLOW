@@ -30,6 +30,8 @@ class AffectationCabinetSelflowTest extends TestCase
         Schema::create('companies', function (Blueprint $t) {
             $t->id(); $t->string('company_name')->nullable(); $t->unsignedBigInteger('user_id')->nullable();
             $t->unsignedBigInteger('cabinet_id')->nullable(); $t->unsignedBigInteger('selflow_company_id')->nullable(); $t->timestamps();
+            // Company utilise SoftDeletes : ses requêtes filtrent `deleted_at`.
+            $t->softDeletes();
         });
         Schema::create('cabinets', function (Blueprint $t) {
             $t->id(); $t->string('nom'); $t->string('code')->nullable(); $t->unsignedBigInteger('user_id'); $t->boolean('is_active')->default(true); $t->timestamps();
