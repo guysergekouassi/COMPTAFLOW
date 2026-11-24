@@ -120,6 +120,11 @@ class ExternalCompanyController extends Controller
             'exercice.debut'              => 'required_with:exercice|date',
             'exercice.fin'                => 'required_with:exercice|date|after:exercice.debut',
             'exercice.libelle'            => 'nullable|string|max:150',
+            // Facultatif (24/11/2026) : le cabinet qui reçoit le dossier, et
+            // éventuellement le membre du cabinet à qui il est confié.
+            'affectation'                 => 'nullable|array',
+            'affectation.cabinet_id'      => 'nullable|integer|min:1',
+            'affectation.user_id'         => 'nullable|integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -217,6 +222,7 @@ class ExternalCompanyController extends Controller
 
             $this->synchroniserLiaisonApplicationSelflow(Company::find($resultat['company_id']));
 
+            $affectation = $this->affecter(Company::find($resultat['company_id']), $request);
             Log::info('Liaison Selflow : dossier Comptaflow existant rattaché', [
                 'company_id' => $resultat['company_id'],
                 'selflow_company_id' => $selflowId,
@@ -226,6 +232,7 @@ class ExternalCompanyController extends Controller
                 'success' => true,
                 'company_id' => $resultat['company_id'],
                 'sync_key' => $resultat['sync_key'],
+                'affectation' => $affectation ?? null,
             ]);
         }
 
@@ -262,6 +269,7 @@ class ExternalCompanyController extends Controller
 
             $this->synchroniserLiaisonApplicationSelflow($existante);
 
+            $affectation = $this->affecter($existante, $request);
             Log::info('Liaison Selflow : provision rejouée, même dossier et même clé', [
                 'company_id'         => $existante->id,
                 'selflow_company_id' => $existante->selflow_company_id,
@@ -271,6 +279,7 @@ class ExternalCompanyController extends Controller
                 'success'    => true,
                 'company_id' => $existante->id,
                 'sync_key'   => $cle,
+                'affectation' => $affectation ?? null,
             ]);
         }
 
@@ -283,12 +292,14 @@ class ExternalCompanyController extends Controller
                 $cle = $existante->poserUneCleDeLiaison();
                 DB::commit();
 
+                $affectation = $this->affecter($existante, $request);
                 $this->synchroniserLiaisonApplicationSelflow($existante);
 
                 return response()->json([
                     'success'    => true,
                     'company_id' => $existante->id,
                     'sync_key'   => $cle,
+                    'affectation' => $affectation ?? null,
                 ]);
             }
 
@@ -356,6 +367,7 @@ class ExternalCompanyController extends Controller
 
             $this->synchroniserLiaisonApplicationSelflow($company);
 
+            $affectation = $this->affecter($company, $request);
             Log::info('Liaison Selflow : dossier provisionné', [
                 'company_id'         => $company->id,
                 'selflow_company_id' => $company->selflow_company_id,
@@ -368,6 +380,7 @@ class ExternalCompanyController extends Controller
                 'success'    => true,
                 'company_id' => $company->id,
                 'sync_key'   => $cle,
+                'affectation' => $affectation ?? null,
             ]);
 
         } catch (\Throwable $e) {
@@ -380,6 +393,30 @@ class ExternalCompanyController extends Controller
                 'success' => false,
                 'message' => 'Erreur lors du provisionnement : ' . $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Affectation facultative au cabinet (24/11/2026). Son échec ne défait pas
+     * la liaison : il est rendu dans la réponse, Selflow l'affiche.
+     *
+     * @return array{success: bool, message: string}|null
+     */
+    private function affecter(?Company $company, Request $request): ?array
+    {
+        $cabinet = (int) $request->input('affectation.cabinet_id');
+        if (!$company || $cabinet <= 0) {
+            return null;
+        }
+
+        try {
+            return \App\Services\AffectationCabinetSelflow::appliquer(
+                $company, $cabinet, ((int) $request->input('affectation.user_id')) ?: null
+            );
+        } catch (\Throwable $e) {
+            Log::error('Liaison Selflow : affectation au cabinet impossible', ['company_id' => $company->id, 'error' => $e->getMessage()]);
+
+            return ['success' => false, 'message' => 'Affectation au cabinet impossible : ' . $e->getMessage()];
         }
     }
 

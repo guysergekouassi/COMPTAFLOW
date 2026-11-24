@@ -193,6 +193,14 @@ Route::prefix('external')->group(function () {
     Route::post('/companies/rotate-key', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'rotateKey'])
         ->middleware(['integration.auth', 'throttle:20,1'])
         ->name('api.external.companies.rotate-key');
+    // Cabinets (24/11/2026) : Selflow les liste à la liaison et y affecte
+    // le dossier, au cabinet ou à un membre précis.
+    Route::post('/cabinets', [\App\Http\Controllers\Api\ExternalCabinetController::class, 'lister'])
+        ->middleware('throttle:30,1')
+        ->name('api.external.cabinets');
+    Route::post('/companies/affecter', [\App\Http\Controllers\Api\ExternalCabinetController::class, 'affecter'])
+        ->middleware('throttle:30,1')
+        ->name('api.external.companies.affecter');
     Route::post('/companies/verify', [\App\Http\Controllers\Api\ExternalCompanyController::class, 'verify'])
         ->middleware(['integration.auth', 'throttle:60,1'])
         ->name('api.external.companies.verify');
