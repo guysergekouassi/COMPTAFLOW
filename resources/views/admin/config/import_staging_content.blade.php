@@ -20,6 +20,18 @@
                             </div>
                         @endif
 
+                        @if($import->type === 'courant')
+                            <div class="alert alert-info rounded-[16px] mb-3 border border-info-subtle">
+                                <strong>Exercice cible de cet import :</strong>
+                                @if(isset($exercice) && $exercice)
+                                    {{ $exercice->intitule }} — du {{ $exercice->date_debut->format('d/m/Y') }} au {{ $exercice->date_fin->format('d/m/Y') }}.
+                                    Les dates des écritures doivent être comprises dans cette période.
+                                @else
+                                    <span class="text-danger">Aucun exercice cible valide n'est associé à ce lot. Annulez-le et recommencez en choisissant un exercice.</span>
+                                @endif
+                            </div>
+                        @endif
+
                         @if(!empty($missingAccounts) || !empty($missingJournals) || !empty($missingTiers))
                             <div class="alert alert-warning rounded-[20px] mb-4 shadow-sm border border-warning-subtle">
                                 <div class="d-flex align-items-center mb-3">

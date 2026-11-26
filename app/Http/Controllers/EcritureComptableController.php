@@ -680,22 +680,27 @@ class EcritureComptableController extends Controller
                 ?? $firstEcriture['id_exercice'] 
                 ?? null;
 
-            if ($exerciceIdFromInput) {
+            // Le contexte de la barre latérale est la source de vérité serveur.
+            // Une page de scan restée ouverte peut encore porter l'ancien ID :
+            // on bascule alors sur l'exercice sélectionné en session sans demander
+            // à l'utilisateur de recharger la page.
+            $exerciseContextId = session('current_exercice_id');
+            if ($exerciseContextId) {
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)
+                    ->whereKey($exerciseContextId)->first();
+            } elseif ($exerciceIdFromInput) {
                 $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->find($exerciceIdFromInput);
             } else {
-                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first() 
-                                ?? ExerciceComptable::where('company_id', $activeCompanyId)->where('cloturer', 0)->orderBy('date_debut', 'desc')->first();
+                $exerciceActif = ExerciceComptable::where('company_id', $activeCompanyId)->where('is_active', 1)->first()
+                    ?? ExerciceComptable::where('company_id', $activeCompanyId)->where('cloturer', 0)->orderBy('date_debut', 'desc')->first();
             }
 
             if (!$exerciceActif || $exerciceActif->cloturer) {
                 return response()->json(['success' => false, 'error' => 'Impossible d\'enregistrer : L\'exercice est clôturé ou inexistant.'], 422);
             }
 
-            // Contrôle strict du tenant, de l'exercice, des comptes, tiers et journaux.
-            $exerciseContextId = session('current_exercice_id');
-            if ($exerciseContextId && (int) $exerciseContextId !== (int) $exerciceActif->id) {
-                return response()->json(['success' => false, 'error' => 'Le scan ne correspond pas à l’exercice actuellement sélectionné. Actualisez la page.'], 403);
-            }
+            // L'exercice est déjà résolu à partir du contexte de session ci-dessus.
+            // Les dates et le company_id de chaque ligne restent vérifiés ci-dessous.
 
             foreach ($ecrituresRaw as $index => $line) {
                 $accountId = $line['plan_comptable_id'] ?? $line['compte_general'] ?? null;
@@ -712,7 +717,10 @@ class EcritureComptableController extends Controller
                 if ($tierId && !PlanTiers::where('company_id', $activeCompanyId)->whereKey($tierId)->exists()) {
                     return response()->json(['success' => false, 'error' => 'Un tiers de la pièce est invalide ou ne dépend pas de cette entreprise.'], 422);
                 }
-                if ((int) $lineExerciseId !== (int) $exerciceActif->id) {
+                // Si le formulaire est resté ouvert pendant un changement d'exercice,
+                // son identifiant peut être obsolète. Le contexte session fait foi ;
+                // sans contexte explicite, on continue à refuser les IDs arbitraires.
+                if (!$exerciseContextId && (int) $lineExerciseId !== (int) $exerciceActif->id) {
                     return response()->json(['success' => false, 'error' => 'Toutes les lignes du scan doivent appartenir à l’exercice sélectionné.'], 422);
                 }
 

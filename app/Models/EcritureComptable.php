@@ -43,6 +43,7 @@ class EcritureComptable extends Model
         // d'ouverture du tableau des flux restait donc a zero, et les reports
         // comptaient comme de vrais encaissements de janvier.
         'is_ran',
+        'is_resultat_systeme', // Marqueur explicite des lignes générées par le mécanisme de résultat.
         // Cle d'idempotence du deversement Selflow : SELFLOW-{entreprise}-{ecriture}.
         // Elle distingue un renvoi d'une ecriture nouvelle ; sans elle, rejouer
         // une synchronisation dupliquait tout et la balance doublait.

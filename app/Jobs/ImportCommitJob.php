@@ -85,7 +85,10 @@ class ImportCommitJob implements ShouldQueue
         );
 
         $totalRows     = count($data);
-        $exercice      = ExerciceComptable::find($import->exercice_id);
+        $exercice      = ExerciceComptable::withoutGlobalScopes()->where('company_id', $targetCompanyId)->find($import->exercice_id);
+        if (!$exercice) {
+            throw new \RuntimeException('L’exercice cible de cet import est introuvable dans le dossier associé. Sélectionnez l’exercice voulu puis recommencez l’import.');
+        }
         $accountDigits = $targetCompany->account_digits ?? 8;
         $journalDigits = $targetCompany->journal_code_digits ?? 4;
         $tierDigits    = $targetCompany->tier_digits ?? 8;

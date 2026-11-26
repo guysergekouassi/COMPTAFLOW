@@ -492,9 +492,12 @@ class AccountingReportingService
      * Calcule les SIG (Soldes Intermédiaires de Gestion) selon SYSCOHADA.
      * Remplace getResultatData pour plus de précision.
      */
-    public function getSIGData($exerciceId, $companyId, $month = null, $detailed = false)
+    public function getSIGData($exerciceId, $companyId, $month = null, $detailed = false, $excludeSystemResult = false)
     {
         $ecritures = $this->getFilteredEcritures($exerciceId, $companyId, $month);
+        if ($excludeSystemResult) {
+            $ecritures = $ecritures->reject(fn ($ecriture) => (bool) $ecriture->is_resultat_systeme);
+        }
 
         // Initialisation de la structure SIG
         $sig = [

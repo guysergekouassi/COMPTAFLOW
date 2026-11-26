@@ -406,3 +406,56 @@ Le code et les tests sont sur `main`. La migration sur la base de production, le
 - Correction de l'erreur `Undefined variable $validityDays` : la durée est validée, initialisée, utilisée pour l'expiration en base et transmise à l'écran. La valeur de secours est un an si un client ancien n'envoie pas le champ.
 - Après création, l'utilisateur arrive directement dans l'espace de l'application et voit son code de liaison avec la durée choisie.
 - Vérification effectuée par relecture des fichiers source GitHub. Les commandes PHP, le rendu Blade et les parcours navigateur doivent encore être testés sur comptaflow-dev après déploiement.
+
+
+## 26/11/2026 — Corrections comptables : résultat, clôture, dates et accès dossier
+
+Branche de traitement : `correction-cloture-resultat-dates-exercice-ecritures-acces-comptable`
+
+- Correction de la stratégie d'ajout du compte résultat : valeur `auto` alignée sur l'ENUM MySQL.
+- Clôture conçue pour calculer et passer le résultat si absent, puis réaliser le report à nouveau dans une transaction ; une écriture 1301/1309 existante est reconnue pour éviter le doublon.
+- Message de clôture reformulé pour préciser les traitements et leur condition.
+- Suppression de la confirmation navigateur du bouton de passage indépendant du résultat.
+- Nommage des exercices avec les deux années lorsque la période traverse deux années civiles.
+- Saisie des dates d'ouverture en masque JJ/MM/AAAA, conversion ISO côté soumission.
+- Ajustement du scope : écritures et balances visibles aux utilisateurs autorisés du même dossier, isolation conservée par société ; exercices clôturés consultables.
+- Test Feature ajouté pour la clôture sans passage préalable du résultat.
+
+À vérifier sur environnement Laravel : tests PHPUnit, migration/base MySQL, flux réel d'import (date hors exercice), scan, et affichage balance/grand livre avec deux utilisateurs autorisés. Aucun test serveur ni déploiement n'a été exécuté depuis cette session.
+
+### Complément au traitement du 26/11/2026
+- L'import des écritures préselectionne désormais l'exercice choisi dans la barre latérale (sinon l'exercice actif, puis le plus récent) et affiche la période exacte cible. La résolution de l'exercice est bornée au dossier du lot ; un import sans exercice cible est bloqué au lieu d'ignorer le contrôle de période.
+- Le scan de saisie groupée résout l'exercice depuis le contexte de session avant l'ID encore présent dans une page ouverte. Un ancien formulaire peut donc suivre le changement de contexte sans rechargement ; la société, les comptes, journaux, tiers et dates restent validés.
+
+
+### Correctif de test SQLite — 26/11/2026
+- Le premier lancement de `ClotureReportANouveauTest` échouait avant toute assertion métier : la migration `2026_11_16_000001_make_ai_scan_settings_id_auto_increment.php` exécutait une syntaxe `ALTER TABLE ... MODIFY ... AUTO_INCREMENT` réservée à MySQL dans la base SQLite `:memory:` de PHPUnit.
+- La migration est désormais protégée par une vérification du pilote : elle ne s'exécute que sur MySQL. SQLite conserve l'auto-incrément défini par la migration initiale.
+- Les 8 tests étaient bloqués par cette même erreur de préparation et ne validaient ni n'invalidaient les scénarios de clôture. Relancer la suite après récupération du commit ; examiner ensuite les éventuelles assertions métier distinctes.
+
+
+### Correction complémentaire — pièce d'affectation du résultat déséquilibrée
+- Diagnostic sur capture : l'écriture `RES-336 – AFFECTATION DU RESULTAT EXERCICE 2023` ne montrait que le compte 130900 au débit de 880 000 FCFA. Les totaux de la liste étaient débit 2 910 000 FCFA, crédit 2 030 000 FCFA, soit exactement l'écart de 880 000 FCFA.
+- Cause confirmée dans `ExerciceComptableController::creerEcritureResultat()` : la méthode ne créait qu'une seule ligne 1301/1309. Elle ne soldait pas les comptes de gestion 6/7/8, laissant la balance de l'exercice source déséquilibrée.
+- Correction : l'affectation génère maintenant les contreparties de clôture des soldes individuels des comptes 6, 7 et 8 dans la même pièce RES, en plus de la ligne 1301 (bénéfice) ou 1309 (perte). Une pièce RES historique partielle est complétée sans recréer le compte de résultat ni dupliquer les lignes déjà passées.
+- Le traitement reste distinct du RAN : la pièce RES clôture les comptes de gestion dans l'exercice d'origine ; le report à nouveau continue à transférer uniquement les soldes des comptes de bilan dans l'exercice suivant.
+- Ajout d'un test Feature qui contrôle l'égalité des totaux débit/crédit après passage du résultat et la présence des contreparties.
+- Test PHPUnit non exécuté depuis cette session ; à lancer sur le serveur après récupération de la branche.
+
+
+## 26/11/2026 — Rectification définitive des règles Résultat / Clôture / RAN
+
+Branche : `correction-ran-detaille-idempotence`
+
+Cette section remplace les anciennes consignes ci-dessus qui demandaient à tort des contreparties de clôture sur les classes 6, 7 et 8 dans une pièce RES.
+
+- Le bouton **Résultat** calcule et affiche uniquement le résultat net issu du SIG. Il ne crée aucune écriture, ne modifie pas la balance et ne dépend pas de l'existence de l'exercice suivant.
+- La clôture vérifie d'abord, avant tout calcul SIG et toute écriture, qu'un exercice de la même société commence exactement le lendemain de la date de fin source. S'il manque, elle affiche les dates attendues et un lien vers la page de création ; aucune écriture ni aucun changement d'état n'est effectué.
+- Le résultat est repris dans le RAN du prochain exercice par une seule ligne : 1301 au crédit pour un bénéfice, 1309 au débit pour une perte. Aucune ligne RES n'est créée dans l'exercice source.
+- Le RAN reprend les comptes de bilan 1 à 5 avec leurs dimensions auxiliaires. Les classes 6, 7 et 8 (dont 89) sont exclues du RAN et ne reçoivent aucune contrepartie de clôture.
+- Les anciennes pièces RES système issues de la logique erronée sont exclues du calcul SIG puis supprimées transactionnellement lors de la clôture. Une pièce RES contenant une ligne non système bloque le traitement ; aucune écriture manuelle n'est supprimée.
+- Un RAN existant est contrôlé : sa ligne 1301/1309 est reconnue et n'est pas dupliquée ; si elle manque, une seule ligne est ajoutée. Les doublons, les classes 6/7/8 et les écarts débit/crédit bloquent la transaction. Aucun compte d'équilibrage artificiel n'est créé.
+- La réouverture supprime le RAN uniquement si l'exercice suivant ne contient aucun autre mouvement et n'est pas clôturé/validé. Les anciennes lignes RES ne sont supprimées que si elles sont toutes marquées système.
+- Les tests Feature ont été réécrits pour ces règles, y compris l'absence d'exercice suivant, l'absence totale d'écriture en cas de blocage, la création ultérieure de l'exercice suivant, le calcul sans mouvement source, le sens 1301/1309 et l'équilibre du RAN.
+
+**État de vérification :** fichiers relus sur GitHub et contrôles structurels des méthodes effectués. Les tests PHPUnit et `php -l` n'ont pas pu être exécutés dans cette session ; ils restent obligatoires avant déploiement sur comptaflow-dev.

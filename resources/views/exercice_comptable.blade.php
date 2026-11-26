@@ -26,8 +26,8 @@
         background-color: #f8fafc !important;
         border-radius: 12px !important;
         padding: 0.75rem 1rem !important;
-        font-size: 0.8rem !important;
-        font-weight: 600 !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
         color: #0f172a !important;
         width: 100%;
         box-sizing: border-box;
@@ -271,6 +271,11 @@
                                 <div class="flex items-center gap-3">
                                     <i class="fas fa-exclamation-circle text-xl"></i>
                                     <span class="font-medium">{{ session('error') }}</span>
+                                @if (session('creation_url'))
+                                    <a href="{{ session('creation_url') }}" class="ms-2 fw-bold text-decoration-underline">
+                                        Créer l’exercice suivant
+                                    </a>
+                                @endif
                                 </div>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
@@ -374,14 +379,14 @@
                                             <!-- Date de début -->
                                             <div class="space-y-1">
                                                 <label for="date_debut" class="input-label-premium">Date de début</label>
-                                                <input type="date" class="input-field-premium" id="date_debut" name="date_debut" required>
+                                                <input type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="JJ/MM/AAAA" title="Saisir au format JJ/MM/AAAA" class="input-field-premium date-exercice-input" id="date_debut" name="date_debut" required>
                                                 <span id="error_date_debut" class="text-danger small mt-1 d-block"></span>
                                             </div>
 
                                             <!-- Date de fin -->
                                             <div class="space-y-1">
                                                 <label for="date_fin" class="input-label-premium">Date de fin</label>
-                                                <input type="date" class="input-field-premium" id="date_fin" name="date_fin" required>
+                                                <input type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="JJ/MM/AAAA" title="Saisir au format JJ/MM/AAAA" class="input-field-premium date-exercice-input" id="date_fin" name="date_fin" required>
                                                 <span id="error_date_fin" class="text-danger small mt-1 d-block"></span>
                                             </div>
 
@@ -426,8 +431,8 @@
 
                                         <div class="text-center space-y-3 mb-8">
                                             <p class="text-slate-500 text-sm font-medium leading-relaxed">
-                                                Êtes-vous sûr de vouloir supprimer cet exercice ? Cette action est irréversible.
-                                            </p>
+                                                Cette action va <strong>clôturer l'exercice</strong> et effectuer le <strong>report à nouveau</strong> dans l'exercice suivant.<br>
+                                                Si l'écriture de résultat n'a pas encore été passée, COMPTAFLOW la calculera et la passera automatiquement. Si elle existe déjà, elle ne sera pas doublée. Une clôture anticipée ramène la date de fin à aujourd'hui.</p>
                                             <p class="text-slate-900 font-bold" id="projectToDelete"></p>
                                         </div>
 
@@ -464,15 +469,15 @@
 
                                         <div class="text-center space-y-3 mb-6">
                                             <p class="text-slate-500 text-sm font-medium leading-relaxed">
-                                                Êtes-vous sûr de vouloir <strong>clôturer</strong> cet exercice ?<br>
-                                                Le report à nouveau sera généré. L'écriture de résultat doit déjà avoir été passée séparément. Si la date de fin est future, elle sera ramenée à aujourd'hui.
+                                                Vous allez <strong>clôturer</strong> cet exercice.<br>
+                                                Le report à nouveau sera généré dans le nouvel exercice. Si l'écriture de résultat n'a pas encore été passée, elle sera également créée dans le journal OD. Aucune écriture de résultat ne sera doublée.
+                                                Si la date de fin est future, elle sera ramenée à aujourd'hui.
                                             </p>
                                             <p class="text-slate-900 font-bold" id="exerciceToCloture"></p>
                                         </div>
 
-                                        {{-- Passée à la main, l'écriture de résultat oblige à deux lignes et
-                                             son sens se trompe une fois sur deux. La clôture la porte donc
-                                             elle-même, dans le même mouvement que le report à nouveau. --}}
+                                        {{-- La clôture effectue le RAN dans le nouvel exercice et passe le résultat en OD
+                                             uniquement s'il n'a pas déjà été enregistré. Les deux écritures restent distinctes. --}}
                                         <div class="text-start mb-8 p-3"
                                             style="background:#fefce8;border:1px solid #fde68a;border-radius:12px">
                                             <p class="mb-2" style="font-size:0.78rem;font-weight:800;color:#854d0e">
@@ -481,11 +486,11 @@
                                             <ul class="mb-0 ps-3" style="font-size:0.75rem;color:#713f12;line-height:1.5">
                                                 <li>Le <strong>report à nouveau</strong> des comptes de bilan (classes 1 à 5)
                                                     dans l'exercice suivant.</li>
-                                                <li>L'<strong>écriture de résultat</strong>, dans le même mouvement :
-                                                    un <strong>bénéfice</strong> au <strong>crédit</strong> du compte
-                                                    <strong>1301</strong>, une <strong>perte</strong> au
-                                                    <strong>débit</strong> du compte <strong>1309</strong>.</li>
-                                                <li>Vous n'avez donc pas à la passer à la main.</li>
+                                                <li>L'<strong>écriture de résultat</strong> dans le journal
+                                                    <strong>OD</strong>, seulement si elle n'a pas déjà été passée :
+                                                    bénéfice au compte <strong>1301</strong>, perte au compte
+                                                    <strong>1309</strong>, selon le sens comptable du résultat.</li>
+                                                <li>Le résultat et le report à nouveau sont deux opérations distinctes ; aucune ne sera doublée.</li>
                                             </ul>
                                         </div>
 
@@ -523,7 +528,7 @@
                                         <div class="text-center space-y-3 mb-8">
                                             <p class="text-slate-500 text-sm font-medium leading-relaxed">
                                                 Êtes-vous sûr de vouloir <strong>réouvrir</strong> cet exercice ?<br>
-                                                Les reports à nouveau générés seront <strong>supprimés</strong>.
+                                                Le report à nouveau généré dans l’exercice suivant et la pièce système de résultat de cet exercice seront <strong>supprimés</strong>. La réouverture sera bloquée si l’exercice suivant contient d’autres mouvements.
                                             </p>
                                             <p class="text-slate-900 font-bold" id="exerciceToReouvrir"></p>
                                         </div>
@@ -554,9 +559,28 @@
         <form id="activateForm" method="POST" action="" style="display: none;">
             @csrf
         </form>
+        <div class="modal fade" id="resultatConfirmationModal" tabindex="-1" aria-labelledby="resultatModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content premium-modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="resultatModalLabel">Passer l’écriture de résultat ?</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body">
+                        <span id="resultatConfirmationText">L’écriture de résultat sera passée dans le journal <strong>OD</strong>.</span> Cette action ne clôture pas l’exercice et ne génère pas le report à nouveau.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" class="btn btn-success" id="confirmerResultatBtn">Oui, passer le résultat</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <form id="passerResultatForm" method="POST" action="" style="display:none;">
             @csrf
             @method('PATCH')
+            <input type="hidden" name="recalculer" id="recalculerResultatInput" value="0">
         </form>
 
         <script>
@@ -710,11 +734,10 @@
                                                         title="Supprimer">
                                                     <i class="bx bx-trash fs-5"></i>
                                                 </button>
-                                                ${!row.resultat_passe ? `
                                                 <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl border border-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition shadow-sm bg-white btn-action resultat-btn"
-                                                        data-id="${row.id}" data-label="${row.intitule}" data-bs-toggle="tooltip" title="Passer l’écriture de résultat">
+                                                        data-id="${row.id}" data-label="${row.intitule}" data-resultat-passe="${row.resultat_recalculable ? '1' : '0'}" data-bs-toggle="tooltip" title="${row.resultat_recalculable ? 'Recalculer l’écriture de résultat' : 'Passer l’écriture de résultat'}">
                                                     <i class="bx bx-calculator fs-5"></i>
-                                                </button>` : ''}
+                                                </button>
                                                 <button type="button"
                                                         class="w-10 h-10 flex items-center justify-center rounded-xl border border-yellow-100 text-yellow-600 hover:bg-yellow-600 hover:text-white transition shadow-sm bg-white btn-action btn-action-cloturer cloturer-btn"
                                                         data-id="${row.id}"
@@ -788,14 +811,34 @@
                 // sans jamais passer par new Date() : aucun décalage de fuseau possible.
                 function parseIsoDate(value) {
                     if (!value) return null;
-                    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
-                    if (!match) return null;
-
-                    const year = parseInt(match[1], 10);
-                    if (year < 1900) return null; // saisie année encore incomplète
-
-                    return { year: year, month: parseInt(match[2], 10), day: parseInt(match[3], 10) };
+                    const raw = String(value);
+                    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                    const fr = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                    const year = parseInt(iso ? iso[1] : (fr ? fr[3] : ''), 10);
+                    const month = parseInt(iso ? iso[2] : (fr ? fr[2] : ''), 10);
+                    const day = parseInt(iso ? iso[3] : (fr ? fr[1] : ''), 10);
+                    if (!year || year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+                    const check = new Date(year, month - 1, day);
+                    if (check.getFullYear() !== year || check.getMonth() !== month - 1 || check.getDate() !== day) return null;
+                    return { year, month, day };
                 }
+
+                function toIsoDateValue(value) {
+                    const parts = parseIsoDate(value);
+                    if (!parts) return '';
+                    return String(parts.year).padStart(4, '0') + '-' + String(parts.month).padStart(2, '0') + '-' + String(parts.day).padStart(2, '0');
+                }
+                document.querySelectorAll('.date-exercice-input').forEach(input => {
+                    input.addEventListener('input', function () {
+                        const digits = this.value.replace(/\D/g, '').slice(0, 8);
+                        let formatted = digits;
+                        if (digits.length > 4) formatted = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+                        else if (digits.length > 2) formatted = digits.slice(0, 2) + '/' + digits.slice(2);
+                        else if (digits.length === 2) formatted = digits + '/';
+                        this.value = formatted;
+                        this.setSelectionRange(formatted.length, formatted.length);
+                    });
+                });
 
                 // Objet Date local -> chaîne "AAAA-MM-JJ" attendue par <input type="date">
                 function toIsoDate(date) {
@@ -847,7 +890,9 @@
                     if (!dateDebutInput || !intituleInput) return;
 
                     const parts = parseIsoDate(dateDebutInput.value);
-                    intituleInput.value = parts ? `EXERCICE ${parts.year}` : '';
+                    const finParts = parseIsoDate(dateFinInput?.value);
+                    const annees = parts && finParts && parts.year !== finParts.year ? `${parts.year}-${finParts.year}` : (parts ? String(parts.year) : '');
+                    intituleInput.value = parts ? `EXERCICE ${annees}` : '';
                 }
 
                 // Proposer une date de fin cohérente (un an moins un jour) tant que
@@ -866,11 +911,7 @@
                     // Le calendrier francais garde un champ jumeau visible :
                     // le renseigner directement laisserait l'affichage en arriere.
                     const isoFin = toIsoDate(fin);
-                    if (dateFinInput._flatpickr) {
-                        dateFinInput._flatpickr.setDate(isoFin, false);
-                    } else {
-                        dateFinInput.value = isoFin;
-                    }
+                    dateFinInput.value = formatDate(isoFin);
                     dateFinInput.dataset.autoFilled = '1';
                 }
 
@@ -887,7 +928,10 @@
                             // ISO : fiable et indépendante du fuseau)
                             const debut = dateDebutInput ? dateDebutInput.value : '';
                             const fin = dateFinInput ? dateFinInput.value : '';
-                            if (debut && fin && fin <= debut) {
+                            const debutIso = debut ? toIsoDateValue(debut) : '';
+                            const finIso = fin ? toIsoDateValue(fin) : '';
+                            if ((debut && !debutIso) || (fin && !finIso)) { showAlert('danger', 'Saisissez des dates valides au format JJ/MM/AAAA.'); return; }
+                            if (debutIso && finIso && finIso <= debutIso) {
                                 showAlert('danger', 'La date de fin doit être postérieure à la date de début.');
                                 return;
                             }
@@ -898,6 +942,8 @@
 
                             // Créer un objet FormData pour le formulaire
                             const formData = new FormData(this);
+                            formData.set('date_debut', debutIso);
+                            formData.set('date_fin', finIso);
 
                             // Afficher les données du formulaire dans la console
                             console.log('Données du formulaire :');
@@ -1033,6 +1079,7 @@
                     const onDateDebutChange = function() {
                         genererIntitule();
                         suggererDateFin();
+                        genererIntitule();
                     };
                     dateDebutInput.addEventListener('change', onDateDebutChange);
                     dateDebutInput.addEventListener('input', onDateDebutChange);
@@ -1042,6 +1089,7 @@
                 if (dateFinInput) {
                     dateFinInput.addEventListener('input', function() {
                         this.dataset.autoFilled = '0';
+                        genererIntitule();
                     });
                 }
 
@@ -1074,16 +1122,69 @@
                         });
                     });
 
-                    // Passage du résultat indépendant de la clôture.
+                    // Le résultat est une opération distincte : confirmation explicite,
+                    // sans fenêtre native du navigateur, avant envoi du formulaire.
                     document.querySelectorAll('.resultat-btn').forEach(button => {
                         button.addEventListener('click', function() {
                             const id = this.getAttribute('data-id');
                             const label = this.getAttribute('data-label') || 'cet exercice';
-                            if (!id || !confirm(`Passer l'écriture de résultat pour ${label} ? Cette opération ne clôturera pas l'exercice et ne pourra pas être répétée. Passez le résultat après toutes les saisies.`)) return;
-                            const form = document.getElementById('passerResultatForm');
-                            if (form) { form.action = exercice_comptableResultatUrl.replace('__ID__', id); form.submit(); }
+                            const alreadyPassed = this.getAttribute('data-resultat-passe') === '1';
+                            if (!id) return;
+
+                            const actionTitle = alreadyPassed ? 'Recalculer l’écriture de résultat ?' : 'Passer l’écriture de résultat ?';
+                            const actionText = alreadyPassed
+                                ? 'La pièce système RES existante sera supprimée puis recalculée. Les écritures manuelles ne seront pas supprimées.'
+                                : 'Le résultat sera enregistré dans OD. L’exercice reste ouvert et aucun report à nouveau ne sera créé.';
+                            const confirmer = () => {
+                                const form = document.getElementById('passerResultatForm');
+                                const recalculer = document.getElementById('recalculerResultatInput');
+                                if (form) {
+                                    form.action = exercice_comptableResultatUrl.replace('__ID__', id);
+                                    if (recalculer) recalculer.value = alreadyPassed ? '1' : '0';
+                                    form.submit();
+                                }
+                            };
+
+                            if (window.Swal?.fire) {
+                                Swal.fire({
+                                    title: actionTitle,
+                                    html: '<strong>' + label + '</strong><br>' + actionText,
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonText: alreadyPassed ? 'Oui, recalculer' : 'Oui, passer le résultat',
+                                    cancelButtonText: 'Annuler',
+                                    reverseButtons: true
+                                }).then(result => { if (result.isConfirmed) confirmer(); });
+                            } else {
+                                const modal = document.getElementById('resultatConfirmationModal');
+                                const textEl = document.getElementById('resultatConfirmationText');
+                                if (modal && window.bootstrap?.Modal) {
+                                    if (textEl) textEl.textContent = label + ' — ' + actionText;
+                                    modal.dataset.exerciceId = id;
+                                    modal.dataset.recalculer = alreadyPassed ? '1' : '0';
+                                    const confirmBtn = document.getElementById('confirmerResultatBtn');
+                                    if (confirmBtn) confirmBtn.textContent = alreadyPassed ? 'Oui, recalculer' : 'Oui, passer le résultat';
+                                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                                }
+                            }
                         });
                     });
+
+                    const confirmerResultatBtn = document.getElementById('confirmerResultatBtn');
+                    if (confirmerResultatBtn) {
+                        confirmerResultatBtn.addEventListener('click', function() {
+                            const modal = document.getElementById('resultatConfirmationModal');
+                            const id = modal?.dataset.exerciceId;
+                            if (!id) return;
+                            const form = document.getElementById('passerResultatForm');
+                            if (form) {
+                                form.action = exercice_comptableResultatUrl.replace('__ID__', id);
+                                const recalculer = document.getElementById('recalculerResultatInput');
+                                if (recalculer) recalculer.value = modal.dataset.recalculer || '0';
+                                form.submit();
+                            }
+                        });
+                    }
 
                     // Gestionnaire pour le bouton de clôture (bouton généré par DataTable)
                     document.querySelectorAll('.cloturer-btn').forEach(button => {

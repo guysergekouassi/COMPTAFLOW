@@ -360,3 +360,18 @@ La capture confirme uniquement l'échec de l'ajout de la contrainte ; elle ne pe
 - La durée du code de liaison est choisie à la création et au renouvellement (90, 180, 365 ou 730 jours).
 - Correction du défaut `$validityDays` non défini dans `store()` ; expiration, message flash et date affichée utilisent désormais la même durée.
 - Contrôle effectué : fichiers et sections source relus sur GitHub. Tests PHP/Blade et vérification visuelle sur l'instance dev restent à exécuter après pull.
+
+
+## Traitement du 26/11/2026 — Correctifs de comptabilité
+
+Branche : `correction-cloture-resultat-dates-exercice-ecritures-acces-comptable`
+
+Cette série concerne le passage du résultat et la clôture idempotente, la stratégie `auto` du compte 1301/1309, le nom de période sur deux années, la saisie masquée JJ/MM/AAAA, le partage des écritures et balances au niveau du dossier et le test de clôture sans résultat préalablement passé.
+
+Les corrections de l'écran d'import et du message de scan restent à valider par analyse approfondie de leur contexte d'exercice. Les tests serveur n'ont pas été exécutés.
+
+
+### Complément — import et scan (26/11/2026)
+- Le formulaire d'import de journaux préselectionne l'exercice courant, affiche ses dates réelles et la validation du lot s'appuie sur l'exercice lié au dossier du lot, sans dépendre d'un contexte de société changé entre temps.
+- La clôture est testée par un nouveau test feature qui passe directement à la clôture et vérifie qu'un résultat 1301/1309 est créé une seule fois.
+- Le scan groupé reprend l'exercice de session côté serveur, même si l'onglet est resté ouvert avec un ancien identifiant ; les dates de facture restent contrôlées dans la période du nouvel exercice.

@@ -81,7 +81,7 @@ class ComptesDeResultat
             'intitule' => $resultat >= 0
                 ? "Resultat en instance d'affectation - Benefice"
                 : "Resultat en instance d'affectation - Perte",
-            'adding_strategy' => 'automatique',
+            'adding_strategy' => 'auto',
             'classe' => '1',
         ]);
     }

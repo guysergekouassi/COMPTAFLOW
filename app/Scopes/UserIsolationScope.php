@@ -22,21 +22,25 @@ class UserIsolationScope implements Scope
                 
                 // 1. Isolation par utilisateur pour les écritures et rapports (Grand Livre, Balance, etc.)
                 // On exclut les modèles de configuration qui doivent être partagés au sein de l'entreprise
-                $isSharedModel = ($model instanceof \App\Models\ExerciceComptable) || 
+                $isSharedModel = ($model instanceof \App\Models\ExerciceComptable) ||
                                  ($model instanceof \App\Models\JournalSaisi) ||
                                  ($model instanceof \App\Models\CodeJournal) ||
                                  ($model instanceof \App\Models\tresoreries\Tresoreries) ||
                                  ($model instanceof \App\Models\PlanComptable) ||
-                                 ($model instanceof \App\Models\PlanTiers);
+                                 ($model instanceof \App\Models\PlanTiers) ||
+                                 // Toutes les écritures et balances d'un dossier sont partagées
+                                 // entre ses utilisateurs autorisés. TenantScope garde l'isolation
+                                 // par company_id ; user_id ne doit pas masquer les pièces du dossier.
+                                 ($model instanceof \App\Models\EcritureComptable) ||
+                                 ($model instanceof \App\Models\Balance) ||
+                                 ($model instanceof \App\Models\BalanceTiers);
 
                 if (!$isSharedModel && $this->hasUserIdColumn($model)) {
                     $builder->where($model->getTable() . '.user_id', $user->id);
                 }
 
-                // 2. Filtre sur l'exercice en cours pour les exercices comptables
-                if ($model instanceof \App\Models\ExerciceComptable) {
-                    $builder->where($model->getTable() . '.cloturer', 0);
-                }
+                // Les exercices clôturés restent visibles aux utilisateurs autorisés
+                // du dossier (historique, consultation et éventuelle réouverture).
             }
         }
     }

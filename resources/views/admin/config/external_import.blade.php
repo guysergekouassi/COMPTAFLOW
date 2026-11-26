@@ -297,9 +297,16 @@
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label font-bold text-slate-600">Exercice cible</label>
-                                                        <select name="exercice" class="form-select border-slate-200 py-3 rounded-xl font-bold">
-                                                            @foreach(\App\Models\ExerciceComptable::where('company_id', session('current_company_id', auth()->user()->company_id))->where('cloturer', 0)->get() as $ex)
-                                                                <option value="{{ $ex->id }}">{{ $ex->intitule }} (En cours)</option>
+                                                        @php
+                                                            $exercicesImport = \App\\Models\\ExerciceComptable::where('company_id', session('current_company_id', auth()->user()->company_id))
+                                                                ->where('cloturer', 0)->orderBy('date_debut', 'desc')->get();
+                                                            $exerciceImportSelectionne = $exercicesImport->firstWhere('id', session('current_exercice_id'))
+                                                                ?? $exercicesImport->firstWhere('is_active', true)
+                                                                ?? $exercicesImport->first();
+                                                        @endphp
+                                                        <select name="exercice" class="form-select border-slate-200 py-3 rounded-xl font-bold" required>
+                                                            @foreach($exercicesImport as $ex)
+                                                                <option value="{{ $ex->id }}" {{ $exerciceImportSelectionne && (int)$ex->id === (int)$exerciceImportSelectionne->id ? 'selected' : '' }}>{{ $ex->intitule }} ({{ $ex->date_debut->format('d/m/Y') }} – {{ $ex->date_fin->format('d/m/Y') }})</option>
                                                             @endforeach
                                                         </select>
                                                     </div>

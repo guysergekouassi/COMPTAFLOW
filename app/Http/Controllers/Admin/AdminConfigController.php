@@ -2102,7 +2102,7 @@ class AdminConfigController extends Controller
             }
         }
 
-        $exercice = ExerciceComptable::find($import->exercice_id);
+        $exercice = ExerciceComptable::withoutGlobalScopes()->where('company_id', $targetCompanyId)->find($import->exercice_id);
 
         $computeStats = function($rowsWithStatus, $type, $errorCount) use ($accountDigits) {
             $viewStats = [
@@ -3890,7 +3890,7 @@ class AdminConfigController extends Controller
                 'currentPage', 'totalPages', 'totalRows', 'perPage',
                 'statusFilter', 'searchFilter', 'mapping',
                 'missingAccounts', 'missingJournals', 'missingTiers',
-                'viewStats'
+                'viewStats', 'exercice'
             ));
         }
 
@@ -3901,7 +3901,7 @@ class AdminConfigController extends Controller
             'currentPage', 'totalPages', 'totalRows', 'perPage',
             'statusFilter', 'searchFilter', 'mapping',
             'missingAccounts', 'missingJournals', 'missingTiers',
-            'viewStats'
+            'viewStats', 'exercice'
         ));
     }
 
