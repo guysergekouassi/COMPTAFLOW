@@ -26,15 +26,15 @@ class HubRapportsController extends Controller
     private function resolveContext(Request $request): array
     {
         $companyId = (int) ($request->query('company_id') ?: $request->header('X-Company-Id') ?: 1);
-        $company = Company::find($companyId);
+        $company = Company::withoutGlobalScopes()->find($companyId);
 
         $exerciceId = $request->query('exercice_id') ?: $request->header('X-Exercice-Id');
         $exercice = $exerciceId
-            ? ExerciceComptable::where('company_id', $companyId)->find($exerciceId)
-            : ExerciceComptable::where('company_id', $companyId)->where('is_active', 1)->first();
+            ? ExerciceComptable::withoutGlobalScopes()->where('company_id', $companyId)->find($exerciceId)
+            : ExerciceComptable::withoutGlobalScopes()->where('company_id', $companyId)->where('is_active', 1)->first();
 
         if (!$exercice) {
-            $exercice = ExerciceComptable::where('company_id', $companyId)->orderByDesc('date_debut')->first();
+            $exercice = ExerciceComptable::withoutGlobalScopes()->where('company_id', $companyId)->orderByDesc('date_debut')->first();
         }
 
         $month = $request->query('month');
@@ -167,24 +167,24 @@ class HubRapportsController extends Controller
 
         $typeTiers = $request->query('type_tiers');
 
-        $query = EcritureComptable::query()
-            ->join('plan_tiers', 'ecritures_comptables.plan_tiers_id', '=', 'plan_tiers.id')
-            ->where('ecritures_comptables.company_id', $ctx['companyId'])
-            ->where('ecritures_comptables.exercices_comptables_id', $ctx['exerciceId'])
-            ->whereNotNull('ecritures_comptables.plan_tiers_id');
+        $query = DB::table('ecriture_comptables')
+            ->join('plan_tiers', 'ecriture_comptables.plan_tiers_id', '=', 'plan_tiers.id')
+            ->where('ecriture_comptables.company_id', $ctx['companyId'])
+            ->where('ecriture_comptables.exercices_comptables_id', $ctx['exerciceId'])
+            ->whereNotNull('ecriture_comptables.plan_tiers_id');
 
         if ($ctx['month']) {
-            $query->whereMonth('ecritures_comptables.date', $ctx['month']);
+            $query->whereMonth('ecriture_comptables.date', $ctx['month']);
         }
         if ($typeTiers === 'clients') {
             $query->where(function ($q) {
                 $q->where('plan_tiers.numero_de_tiers', 'like', '41%')
-                  ->orWhere('plan_tiers.type', 'client');
+                  ->orWhere('plan_tiers.type_de_tiers', 'client');
             });
         } elseif ($typeTiers === 'fournisseurs') {
             $query->where(function ($q) {
                 $q->where('plan_tiers.numero_de_tiers', 'like', '40%')
-                  ->orWhere('plan_tiers.type', 'fournisseur');
+                  ->orWhere('plan_tiers.type_de_tiers', 'fournisseur');
             });
         }
 
@@ -192,8 +192,8 @@ class HubRapportsController extends Controller
                 'plan_tiers.id',
                 'plan_tiers.numero_de_tiers as numero',
                 'plan_tiers.intitule as intitule',
-                DB::raw('SUM(ecritures_comptables.debit) as debit'),
-                DB::raw('SUM(ecritures_comptables.credit) as credit')
+                DB::raw('SUM(ecriture_comptables.debit) as debit'),
+                DB::raw('SUM(ecriture_comptables.credit) as credit')
             )
             ->groupBy('plan_tiers.id', 'plan_tiers.numero_de_tiers', 'plan_tiers.intitule')
             ->orderBy('plan_tiers.numero_de_tiers')
@@ -276,7 +276,11 @@ class HubRapportsController extends Controller
         $perPage = 100;
         $page = max(1, (int) $request->query('page', 1));
 
-        $query = EcritureComptable::with(['planComptable:id,numero_de_compte,intitule', 'codeJournal:id,code_journal'])
+        $query = EcritureComptable::withoutGlobalScopes()
+            ->with([
+                'planComptable' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'numero_de_compte', 'intitule'),
+                'codeJournal'   => fn ($q) => $q->withoutGlobalScopes()->select('id', 'code_journal'),
+            ])
             ->where('company_id', $ctx['companyId'])
             ->where('exercices_comptables_id', $ctx['exerciceId']);
 
@@ -284,7 +288,7 @@ class HubRapportsController extends Controller
             $query->whereMonth('date', $ctx['month']);
         }
         if ($compte) {
-            $query->whereHas('planComptable', fn ($q) => $q->where('numero_de_compte', 'like', $compte . '%'));
+            $query->whereHas('planComptable', fn ($q) => $q->withoutGlobalScopes()->where('numero_de_compte', 'like', $compte . '%'));
         }
 
         $paginator = $query->orderBy('date')->orderBy('id')->paginate($perPage, ['*'], 'page', $page);
@@ -296,9 +300,9 @@ class HubRapportsController extends Controller
                 'valeurs' => [
                     'date'    => $ec->date,
                     'journal' => $ec->codeJournal->code_journal ?? '',
-                    'piece'   => $ec->numero_saisie ?? $ec->reference ?? '',
+                    'piece'   => $ec->reference_piece ?: ($ec->n_saisie ?? ''),
                     'compte'  => $ec->planComptable->numero_de_compte ?? '',
-                    'libelle' => $ec->libelle ?? $ec->description ?? ($ec->planComptable->intitule ?? ''),
+                    'libelle' => $ec->description_operation ?: ($ec->planComptable->intitule ?? ''),
                     'debit'   => (float) $ec->debit,
                     'credit'  => (float) $ec->credit,
                 ],
@@ -352,7 +356,11 @@ class HubRapportsController extends Controller
         $perPage = 100;
         $page = max(1, (int) $request->query('page', 1));
 
-        $query = EcritureComptable::with(['planTiers:id,numero_de_tiers,intitule,type', 'codeJournal:id,code_journal'])
+        $query = EcritureComptable::withoutGlobalScopes()
+            ->with([
+                'planTiers'   => fn ($q) => $q->withoutGlobalScopes()->select('id', 'numero_de_tiers', 'intitule', 'type_de_tiers'),
+                'codeJournal' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'code_journal'),
+            ])
             ->where('company_id', $ctx['companyId'])
             ->where('exercices_comptables_id', $ctx['exerciceId'])
             ->whereNotNull('plan_tiers_id');
@@ -361,12 +369,12 @@ class HubRapportsController extends Controller
             $query->whereMonth('date', $ctx['month']);
         }
         if ($typeTiers === 'clients') {
-            $query->whereHas('planTiers', fn ($q) => $q->where('numero_de_tiers', 'like', '41%')->orWhere('type', 'client'));
+            $query->whereHas('planTiers', fn ($q) => $q->withoutGlobalScopes()->where('numero_de_tiers', 'like', '41%')->orWhere('type_de_tiers', 'client'));
         } elseif ($typeTiers === 'fournisseurs') {
-            $query->whereHas('planTiers', fn ($q) => $q->where('numero_de_tiers', 'like', '40%')->orWhere('type', 'fournisseur'));
+            $query->whereHas('planTiers', fn ($q) => $q->withoutGlobalScopes()->where('numero_de_tiers', 'like', '40%')->orWhere('type_de_tiers', 'fournisseur'));
         }
         if ($tiers) {
-            $query->whereHas('planTiers', fn ($q) => $q->where('numero_de_tiers', 'like', $tiers . '%'));
+            $query->whereHas('planTiers', fn ($q) => $q->withoutGlobalScopes()->where('numero_de_tiers', 'like', $tiers . '%'));
         }
 
         $paginator = $query->orderBy('date')->orderBy('id')->paginate($perPage, ['*'], 'page', $page);
@@ -379,7 +387,7 @@ class HubRapportsController extends Controller
                     'date'    => $ec->date,
                     'journal' => $ec->codeJournal->code_journal ?? '',
                     'tiers'   => trim(($ec->planTiers->numero_de_tiers ?? '') . ' ' . ($ec->planTiers->intitule ?? '')),
-                    'libelle' => $ec->libelle ?? $ec->description ?? '',
+                    'libelle' => $ec->description_operation ?? '',
                     'debit'   => (float) $ec->debit,
                     'credit'  => (float) $ec->credit,
                 ],
