@@ -433,23 +433,22 @@ class ClotureReportANouveauTest extends TestCase
         $this->assertEqualsWithDelta($lignes->sum(fn ($l) => (float) $l->debit), $lignes->sum(fn ($l) => (float) $l->credit), 0.01);
     }
 
-    public function test_la_cloture_est_refusee_si_le_journal_od_n_est_pas_parametre(): void
+    public function test_le_journal_od_est_cree_par_le_systeme_s_il_est_absent(): void
     {
         $this->journalOd->delete();
         $this->piece('ECR-000001', [
             ['57100000', 5000000, 0],
             ['70100000', 0, 5000000],
         ]);
-        $avant = EcritureComptable::where('company_id', $this->company->id)->count();
-        $journauxAvant = CodeJournal::where('company_id', $this->company->id)->count();
 
-        $reponse = $this->patch(route('exercice_comptable.cloturer', $this->exercice->id));
-        $message = (string) $reponse->baseResponse->getSession()?->get('error');
+        $this->cloturer();
 
-        $this->assertStringContainsString('Journal des opérations diverses non paramétré', $message);
-        $this->assertFalse((bool) $this->exercice->fresh()->cloturer);
-        $this->assertSame($avant, EcritureComptable::where('company_id', $this->company->id)->count());
-        $this->assertSame($journauxAvant, CodeJournal::where('company_id', $this->company->id)->count());
+        $journal = CodeJournal::where('company_id', $this->company->id)->where('type', 'Opérations Diverses')->first();
+        $this->assertNotNull($journal, 'Le journal OD doit être créé par le système.');
+        $this->assertSame('OD01', $journal->code_journal, 'Le code suit la longueur configurée (4 caractères).');
+        $resultat = $this->lignesDuReport()
+            ->first(fn ($l) => ComptesDeResultat::estCompteDeResultat($l->planComptable->numero_de_compte));
+        $this->assertSame($journal->id, (int) $resultat->code_journal_id);
     }
 
     public function test_la_reouverture_supprime_le_report_et_la_ligne_de_resultat(): void
@@ -470,24 +469,21 @@ class ClotureReportANouveauTest extends TestCase
             'Le report à nouveau et la ligne de résultat doivent être supprimés.');
     }
 
-    public function test_la_cloture_est_refusee_si_le_journal_ran_n_est_pas_parametre(): void
+    public function test_le_journal_ran_est_cree_par_le_systeme_s_il_est_absent(): void
     {
         $this->journalRan->delete();
         $this->piece('ECR-000001', [
             ['57100000', 5000000, 0],
             ['70100000', 0, 5000000],
         ]);
-        $avant = EcritureComptable::where('company_id', $this->company->id)->count();
-        $journauxAvant = CodeJournal::where('company_id', $this->company->id)->count();
 
-        $reponse = $this->patch(route('exercice_comptable.cloturer', $this->exercice->id));
-        $message = (string) $reponse->baseResponse->getSession()?->get('error');
+        $this->cloturer();
 
-        $this->assertStringContainsString('Journal de report à nouveau non paramétré', $message);
-        $this->assertFalse((bool) $this->exercice->fresh()->cloturer);
-        $this->assertSame($avant, EcritureComptable::where('company_id', $this->company->id)->count());
-        $this->assertSame($journauxAvant, CodeJournal::where('company_id', $this->company->id)->count(),
-            'Le journal ne doit jamais être créé automatiquement.');
+        $journal = CodeJournal::where('company_id', $this->company->id)->where('type', 'REPORT A NOUVEAU')->first();
+        $this->assertNotNull($journal, 'Le journal RAN doit être créé par le système.');
+        $this->assertSame('RAN1', $journal->code_journal, 'Le code suit la longueur configurée (4 caractères).');
+        $report = $this->lignesDuReport()->filter(fn ($l) => (bool) $l->is_ran);
+        $this->assertSame([$journal->id], $report->pluck('code_journal_id')->unique()->values()->all());
     }
 
     public function test_le_report_utilise_le_journal_ran_parametre_quel_que_soit_son_code(): void

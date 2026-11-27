@@ -171,10 +171,7 @@ class AlignerResultatSurLogiqueFinale extends Command
             $this->lignes($companyId, $id)->where('reference_piece', $refRes)->delete();
         }
         if ($ligneAMarquer || $ligneAAjouter) {
-            $journalOd = \App\Models\CodeJournal::where('company_id', $companyId)
-                ->whereIn('type', ['Opérations Diverses', 'OPERATIONS DIVERSES', 'Operations Diverses'])
-                ->orderBy('id')->first();
-            if (!$journalOd) throw new RuntimeException('Journal des opérations diverses non paramétré dans les paramètres de l\'entreprise.');
+            $journalOd = \App\Services\JournauxSysteme::operationsDiverses($companyId, (int) $source->user_id);
             $annee = Carbon::parse($source->date_fin)->format('Y');
             $debutS = Carbon::parse($source->date_debut);
             $finS = Carbon::parse($source->date_fin);

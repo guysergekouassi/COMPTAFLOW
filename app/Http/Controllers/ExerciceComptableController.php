@@ -13,6 +13,7 @@ use App\Models\Company;
 use App\Models\EcritureComptable;
 use App\Services\AccountingReportingService;
 use App\Services\ComptesDeResultat;
+use App\Services\JournauxSysteme;
 use App\Services\ImmobilisationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -858,32 +859,20 @@ public function index()
     }
     /**
      * Journal de report à nouveau de l'entreprise, retrouvé par son type système.
-     * Son code dépend du paramétrage (RAN, RAN1…). Il n'est jamais créé ici.
+     * S'il n'existe pas, le système le crée selon la longueur de code configurée.
      */
     private function journalReportANouveau(int $companyId): CodeJournal
     {
-        $journal = CodeJournal::where('company_id', $companyId)
-            ->whereIn('type', ['REPORT A NOUVEAU', 'REPORT À NOUVEAU'])
-            ->orderBy('id')->first();
-        if (!$journal) {
-            throw new RuntimeException('Journal de report à nouveau non paramétré dans les paramètres de l\'entreprise.');
-        }
-        return $journal;
+        return JournauxSysteme::reportANouveau($companyId, Auth::id());
     }
 
     /**
-     * Journal des opérations diverses de l'entreprise, retrouvé par son type système.
-     * Il porte la ligne de résultat (1301/1309), distincte du journal de report à nouveau.
+     * Journal des opérations diverses de l'entreprise (porte la ligne de résultat 1301/1309),
+     * distinct du journal de report à nouveau. Créé par le système s'il n'existe pas.
      */
     private function journalOperationsDiverses(int $companyId): CodeJournal
     {
-        $journal = CodeJournal::where('company_id', $companyId)
-            ->whereIn('type', ['Opérations Diverses', 'OPERATIONS DIVERSES', 'Operations Diverses'])
-            ->orderBy('id')->first();
-        if (!$journal) {
-            throw new RuntimeException('Journal des opérations diverses non paramétré dans les paramètres de l\'entreprise.');
-        }
-        return $journal;
+        return JournauxSysteme::operationsDiverses($companyId, Auth::id());
     }
 
     /** Libellé de la ligne de résultat, calculé à partir des dates réelles de l'exercice clôturé. */
