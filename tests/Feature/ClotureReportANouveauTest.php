@@ -30,6 +30,7 @@ class ClotureReportANouveauTest extends TestCase
     private ExerciceComptable $exerciceSuivant;
     private CodeJournal $journal;
     private CodeJournal $journalRan;
+    private CodeJournal $journalOd;
 
     protected function setUp(): void
     {
@@ -86,6 +87,16 @@ class ClotureReportANouveauTest extends TestCase
             'traitement_analytique' => 0,
         ]);
 
+        // Journal des opérations diverses (OD), distinct du RAN : il porte la ligne de résultat.
+        $this->journalOd = CodeJournal::create([
+            'company_id' => $this->company->id,
+            'user_id' => $this->user->id,
+            'code_journal' => 'OD',
+            'intitule' => 'OPERATION DIVERSE',
+            'type' => 'Opérations Diverses',
+            'traitement_analytique' => 0,
+        ]);
+
         foreach ([
             '57100000' => 'CAISSE',
             '70100000' => 'VENTES',
@@ -133,14 +144,6 @@ class ClotureReportANouveauTest extends TestCase
         }
     }
 
-    private function passerResultat(): void
-    {
-        $reponse = $this->patch(route('exercice_comptable.resultat', $this->exercice->id));
-        $erreur = $reponse->baseResponse->getSession()?->get('error');
-        $this->assertNull($erreur, "Le passage du résultat a été refusé : " . (string) $erreur);
-        $this->assertFalse($this->exercice->fresh()->cloturer, "Passer le résultat ne doit pas clôturer l'exercice.");
-    }
-
     private function cloturer(): void
     {
         $reponse = $this->patch(route('exercice_comptable.cloturer', $this->exercice->id));
@@ -158,7 +161,10 @@ class ClotureReportANouveauTest extends TestCase
             ->where('date_debut', '>', $this->exercice->date_fin)->firstOrFail();
 
         return EcritureComptable::where('exercices_comptables_id', $suivant->id)
-            ->where('is_ran', true)->with('planComptable')->get();
+            ->where(function ($q) {
+                $q->where('is_ran', true)
+                    ->orWhere('reference_piece', 'RES-' . $this->exercice->id);
+            })->with('planComptable')->get();
     }
 
     public function test_la_cloture_passe_automatiquement_le_resultat_si_absent(): void
@@ -205,7 +211,6 @@ class ClotureReportANouveauTest extends TestCase
             ['70100000', 0, 5000000],
         ]);
 
-        $this->passerResultat();
         $this->cloturer();
 
         $resultat = $this->lignesDuReport()
@@ -225,7 +230,6 @@ class ClotureReportANouveauTest extends TestCase
             ['57100000', 0, 2000000],
         ]);
 
-        $this->passerResultat();
         $this->cloturer();
 
         $resultat = $this->lignesDuReport()
@@ -248,7 +252,6 @@ class ClotureReportANouveauTest extends TestCase
             ['57100000', 0, 1200000],
         ]);
 
-        $this->passerResultat();
         $this->cloturer();
 
         $lignes = $this->lignesDuReport();
@@ -260,29 +263,6 @@ class ClotureReportANouveauTest extends TestCase
             0.01,
             'Le report à nouveau doit être équilibré.'
         );
-    }
-
-    public function test_le_passage_du_resultat_ne_cloture_pas_et_est_unique(): void
-    {
-        $this->piece('ECR-000001', [
-            ['57100000', 5000000, 0],
-            ['70100000', 0, 5000000],
-        ]);
-
-        $this->passerResultat();
-
-        $this->assertFalse((bool) $this->exercice->fresh()->resultat_passe);
-        $this->assertFalse((bool) $this->exercice->fresh()->cloturer);
-
-        $second = $this->patch(route('exercice_comptable.resultat', $this->exercice->id));
-        $this->assertNull($second->baseResponse->getSession()?->get('error'));
-
-        $lignesResultat = EcritureComptable::where('exercices_comptables_id', $this->exercice->id)
-            ->whereHas('planComptable', fn ($q) => $q->where('numero_de_compte', 'like', '1301%')
-                ->orWhere('numero_de_compte', 'like', '1309%'))
-            ->count();
-
-        $this->assertSame(0, $lignesResultat, 'Le bouton Résultat calcule le SIG mais ne crée aucune écriture.');
     }
 
     public function test_la_cloture_est_refusee_si_la_date_de_fin_n_est_pas_atteinte(): void
@@ -303,29 +283,6 @@ class ClotureReportANouveauTest extends TestCase
         $this->assertFalse((bool) $this->exercice->fresh()->cloturer);
         $this->assertSame($dateFinFuture->toDateString(), $this->exercice->fresh()->date_fin->toDateString());
         $this->assertSame(2, EcritureComptable::where('exercices_comptables_id', $this->exercice->id)->count());
-    }
-
-    public function test_le_passage_du_resultat_equilibre_la_balance_de_lexercice_source(): void
-    {
-        $this->piece('ECR-000001', [
-            ['57100000', 5000000, 0],
-            ['70100000', 0, 5000000],
-        ]);
-
-        $this->passerResultat();
-
-        $lignes = EcritureComptable::where('company_id', $this->company->id)
-            ->where('exercices_comptables_id', $this->exercice->id)->with('planComptable')->get();
-        $this->assertEqualsWithDelta(
-            $lignes->sum(fn ($l) => (float) $l->debit),
-            $lignes->sum(fn ($l) => (float) $l->credit),
-            0.01,
-            'Le calcul du résultat ne doit pas modifier la balance source.'
-        );
-        $resultatSource = $lignes->filter(fn ($l) => ComptesDeResultat::estCompteDeResultat($l->planComptable->numero_de_compte));
-        $this->assertSame(0, $resultatSource->count(), 'Aucune ligne 1301/1309 ne doit être créée dans la source.');
-        $contreparties = $lignes->filter(fn ($l) => str_starts_with((string) $l->description_operation, 'CLÔTURE RESULTAT:'));
-        $this->assertSame(0, $contreparties->count(), 'Aucune contrepartie de gestion ne doit être générée.');
     }
 
     public function test_cloture_sans_exercice_suivant_ne_modifie_aucune_donnee(): void
@@ -415,43 +372,102 @@ class ClotureReportANouveauTest extends TestCase
         $this->assertEqualsWithDelta(5000000, (float) $resultat->credit, 0.01);
     }
 
-    public function test_une_ligne_resultat_deja_presente_dans_le_ran_n_est_pas_dupliquee(): void
+    public function test_une_ligne_resultat_deja_presente_n_est_pas_dupliquee(): void
     {
         $this->piece('ECR-000001', [
             ['57100000', 5000000, 0],
             ['70100000', 0, 5000000],
         ]);
-        $journalRan = $this->journalRan;
+        // Report déjà présent (caisse) et ligne de résultat déjà passée en OD.
         foreach ([
-            ['57100000', 5000000, 0],
-            ['13010000', 0, 5000000],
-        ] as [$numero, $debit, $credit]) {
+            ['57100000', 5000000, 0, $this->journalRan->id, 'RAN-', true, false],
+            ['13010000', 0, 5000000, $this->journalOd->id, 'RES-', false, true],
+        ] as [$numero, $debit, $credit, $journalId, $prefixe, $estRan, $estSysteme]) {
             EcritureComptable::create([
                 'company_id' => $this->company->id,
-                'code_journal_id' => $journalRan->id,
+                'code_journal_id' => $journalId,
                 'user_id' => $this->user->id,
                 'exercices_comptables_id' => $this->exerciceSuivant->id,
                 'date' => '2025-01-01',
-                'n_saisie' => 'RAN-2024',
-                'description_operation' => 'Report à nouveau exercice 2024',
-                'reference_piece' => 'RAN-' . $this->exercice->id,
+                'n_saisie' => $prefixe . '2024',
+                'description_operation' => 'Existant',
+                'reference_piece' => $prefixe . $this->exercice->id,
                 'plan_comptable_id' => $this->compte($numero)->id,
                 'debit' => $debit,
                 'credit' => $credit,
-                'is_ran' => true,
-                'is_resultat_systeme' => $numero === '13010000',
+                'is_ran' => $estRan,
+                'is_resultat_systeme' => $estSysteme,
                 'statut' => 'approved',
             ]);
         }
 
         $this->cloturer();
 
-        $resultLines = $this->lignesDuReport()->filter(
-            fn ($line) => str_starts_with($line->planComptable->numero_de_compte, '1301')
-                || str_starts_with($line->planComptable->numero_de_compte, '1309')
-        );
-        $this->assertSame(1, $resultLines->count());
-        $this->assertSame(2, $this->lignesDuReport()->count(), 'Aucune ligne du RAN existant ne doit être dupliquée.');
+        $this->assertSame(1, $this->lignesDuReport()->filter(
+            fn ($line) => ComptesDeResultat::estCompteDeResultat($line->planComptable->numero_de_compte)
+        )->count());
+        $this->assertSame(2, $this->lignesDuReport()->count(), 'Aucune ligne existante ne doit être dupliquée.');
+    }
+
+    public function test_le_resultat_est_dans_le_journal_od_et_le_report_dans_le_journal_ran(): void
+    {
+        $this->piece('ECR-000001', [
+            ['57100000', 5000000, 0],
+            ['70100000', 0, 5000000],
+        ]);
+
+        $this->cloturer();
+
+        $lignes = $this->lignesDuReport();
+        $resultat = $lignes->first(fn ($l) => ComptesDeResultat::estCompteDeResultat($l->planComptable->numero_de_compte));
+        $this->assertNotNull($resultat);
+        $this->assertSame($this->journalOd->id, (int) $resultat->code_journal_id, 'Le résultat va dans le journal OD.');
+        $this->assertFalse((bool) $resultat->is_ran);
+        $this->assertTrue((bool) $resultat->is_resultat_systeme);
+        $this->assertSame('2025-01-01', \Carbon\Carbon::parse($resultat->date)->toDateString());
+
+        $report = $lignes->filter(fn ($l) => (bool) $l->is_ran);
+        $this->assertTrue($report->isNotEmpty());
+        $this->assertSame([$this->journalRan->id], $report->pluck('code_journal_id')->unique()->values()->all(),
+            'Le report à nouveau va dans le journal RAN.');
+        $this->assertEqualsWithDelta($lignes->sum(fn ($l) => (float) $l->debit), $lignes->sum(fn ($l) => (float) $l->credit), 0.01);
+    }
+
+    public function test_la_cloture_est_refusee_si_le_journal_od_n_est_pas_parametre(): void
+    {
+        $this->journalOd->delete();
+        $this->piece('ECR-000001', [
+            ['57100000', 5000000, 0],
+            ['70100000', 0, 5000000],
+        ]);
+        $avant = EcritureComptable::where('company_id', $this->company->id)->count();
+        $journauxAvant = CodeJournal::where('company_id', $this->company->id)->count();
+
+        $reponse = $this->patch(route('exercice_comptable.cloturer', $this->exercice->id));
+        $message = (string) $reponse->baseResponse->getSession()?->get('error');
+
+        $this->assertStringContainsString('Journal des opérations diverses non paramétré', $message);
+        $this->assertFalse((bool) $this->exercice->fresh()->cloturer);
+        $this->assertSame($avant, EcritureComptable::where('company_id', $this->company->id)->count());
+        $this->assertSame($journauxAvant, CodeJournal::where('company_id', $this->company->id)->count());
+    }
+
+    public function test_la_reouverture_supprime_le_report_et_la_ligne_de_resultat(): void
+    {
+        $this->piece('ECR-000001', [
+            ['57100000', 5000000, 0],
+            ['70100000', 0, 5000000],
+        ]);
+        $this->cloturer();
+        $this->assertTrue($this->lignesDuReport()->isNotEmpty());
+
+        $reponse = $this->patch(route('exercice_comptable.reouvrir', $this->exercice->id));
+        $this->assertNull($reponse->baseResponse->getSession()?->get('error'),
+            'Réouverture refusée : ' . (string) $reponse->baseResponse->getSession()?->get('error'));
+
+        $this->assertFalse((bool) $this->exercice->fresh()->cloturer);
+        $this->assertSame(0, EcritureComptable::where('exercices_comptables_id', $this->exerciceSuivant->id)->count(),
+            'Le report à nouveau et la ligne de résultat doivent être supprimés.');
     }
 
     public function test_la_cloture_est_refusee_si_le_journal_ran_n_est_pas_parametre(): void
@@ -486,7 +502,8 @@ class ClotureReportANouveauTest extends TestCase
         $this->assertTrue($this->lignesDuReport()->isNotEmpty());
         $this->assertSame(
             [$this->journalRan->id],
-            $this->lignesDuReport()->pluck('code_journal_id')->unique()->values()->all()
+            $this->lignesDuReport()->filter(fn ($l) => (bool) $l->is_ran)
+                ->pluck('code_journal_id')->unique()->values()->all()
         );
         $this->assertSame('RAN1', $this->journalRan->fresh()->code_journal);
     }
@@ -528,7 +545,9 @@ class ClotureReportANouveauTest extends TestCase
         );
 
         $lignes = EcritureComptable::where('exercices_comptables_id', $exercice2026->id)
-            ->where('is_ran', true)->with('planComptable')->get();
+            ->where(function ($q) {
+                $q->where('is_ran', true)->orWhere('reference_piece', 'RES-' . $this->exerciceSuivant->id);
+            })->with('planComptable')->get();
         $parCompte = fn (string $prefixe) => $lignes->filter(
             fn ($l) => str_starts_with($l->planComptable->numero_de_compte, $prefixe)
         );

@@ -439,7 +439,6 @@ Route::get('/test-saisie-number', function() {
     Route::delete('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'destroy'])->name('exercice_comptable.destroy');
     Route::get('/exercice_comptable/{id}/switch', [ExerciceComptableController::class, 'switch'])->name('exercice_comptable.switch');
     Route::patch('/exercice_comptable/{exercice_comptable}', [ExerciceComptableController::class, 'cloturer'])->name('exercice_comptable.cloturer');
-    Route::patch('/exercice_comptable/{exercice_comptable}/resultat', [ExerciceComptableController::class, 'passerResultat'])->name('exercice_comptable.resultat');
     Route::patch('/exercice_comptable/{exercice_comptable}/reouvrir', [ExerciceComptableController::class, 'reouvrir'])->name('exercice_comptable.reouvrir');
     Route::post('/exercice_comptable/{exercice_comptable}/activate', [ExerciceComptableController::class, 'activate'])->name('exercice_comptable.activate');
 

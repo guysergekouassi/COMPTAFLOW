@@ -13,8 +13,9 @@ use RuntimeException;
 /**
  * Aligne des exercices DÉJÀ clôturés avec l'ancienne logique sur la logique finale :
  *  - aucune pièce de résultat (RES-n) dans l'exercice source : elle est supprimée ;
- *  - le report à nouveau (RAN-n) porte UNE seule ligne de résultat (1301 ou 1309),
- *    marquée système, et la pièce est équilibrée.
+ *  - dans l'exercice suivant, le report à nouveau (RAN-n, journal RAN) reprend les soldes
+ *    de bilan, et UNE seule ligne de résultat (1301 ou 1309) est portée dans le journal OD
+ *    (référence RES-n), marquée système. L'ensemble est équilibré.
  *
  * Mode par défaut : SIMULATION (rien n'est écrit).
  * Application : --apply --confirm=ALIGNER-<ids dans le même ordre que l'appel>
@@ -120,15 +121,18 @@ class AlignerResultatSurLogiqueFinale extends Command
                 throw new RuntimeException("{$refRan} contient un compte de classe 6, 7 ou 8.");
             }
         }
-        $debit = round((float) $ranRows->sum('debit'), 2);
-        $credit = round((float) $ranRows->sum('credit'), 2);
+        // Report à nouveau (journal RAN) + ligne de résultat (journal OD) forment un tout équilibré.
+        $resSuivant = $this->lignes($companyId, $next->id)->where('reference_piece', 'RES-' . $id)->with('planComptable')->get();
+        $ensemble = $ranRows->concat($resSuivant);
+        $debit = round((float) $ensemble->sum('debit'), 2);
+        $credit = round((float) $ensemble->sum('credit'), 2);
         $ecart = round($debit - $credit, 2);
 
         $this->line(sprintf('Société %d | exercice suivant %d | résultat réel : %s',
             $companyId, $next->id, number_format($resultat, 2, ',', ' ')));
         $this->line(sprintf('Pièce %s : %d ligne(s), débit %s / crédit %s', $refRes, $resRows->count(),
             number_format((float) $resRows->sum('debit'), 2, ',', ' '), number_format((float) $resRows->sum('credit'), 2, ',', ' ')));
-        $this->line(sprintf('Pièce %s : %d ligne(s), débit %s / crédit %s, écart %s', $refRan, $ranRows->count(),
+        $this->line(sprintf('Report %s + résultat RES-%d : %d ligne(s), débit %s / crédit %s, écart %s', $refRan, $id, $ensemble->count(),
             number_format($debit, 2, ',', ' '), number_format($credit, 2, ',', ' '), number_format($ecart, 2, ',', ' ')));
 
         // 4. Identifier la ligne de résultat unique du RAN.
@@ -140,7 +144,7 @@ class AlignerResultatSurLogiqueFinale extends Command
         } else {
             $prefixe = $resultat > 0 ? '1301' : '1309';
             $sens = ComptesDeResultat::sens($resultat);
-            $candidats = $ranRows->filter(fn ($l) => str_starts_with((string) $l->planComptable->numero_de_compte, $prefixe)
+            $candidats = $ensemble->filter(fn ($l) => str_starts_with((string) $l->planComptable->numero_de_compte, $prefixe)
                 && abs(round((float) $l->debit - $sens['debit'], 2)) < 0.01
                 && abs(round((float) $l->credit - $sens['credit'], 2)) < 0.01);
 
@@ -166,40 +170,55 @@ class AlignerResultatSurLogiqueFinale extends Command
         if ($resRows->isNotEmpty()) {
             $this->lignes($companyId, $id)->where('reference_piece', $refRes)->delete();
         }
-        if ($ligneAMarquer) {
-            $ligneAMarquer->update(['is_resultat_systeme' => true]);
-        } elseif ($ligneAAjouter) {
-            $modele = $ranRows->first();
-            EcritureComptable::withoutGlobalScopes()->create([
-                'date' => $modele->date,
-                'n_saisie' => $modele->n_saisie,
-                'n_saisie_user' => $modele->n_saisie_user,
-                'description_operation' => $modele->description_operation,
-                'reference_piece' => $refRan,
-                'plan_comptable_id' => $ligneAAjouter['compte']->id,
-                'code_journal_id' => $modele->code_journal_id,
-                'exercices_comptables_id' => $next->id,
-                'debit' => $ligneAAjouter['sens']['debit'],
-                'credit' => $ligneAAjouter['sens']['credit'],
-                'company_id' => $companyId,
-                'user_id' => $modele->user_id,
-                'is_ran' => true, 'is_resultat_systeme' => true,
-                'plan_analytique' => 0, 'statut' => 'approved',
-            ]);
+        if ($ligneAMarquer || $ligneAAjouter) {
+            $journalOd = \App\Models\CodeJournal::where('company_id', $companyId)
+                ->whereIn('type', ['Opérations Diverses', 'OPERATIONS DIVERSES', 'Operations Diverses'])
+                ->orderBy('id')->first();
+            if (!$journalOd) throw new RuntimeException('Journal des opérations diverses non paramétré dans les paramètres de l\'entreprise.');
+            $annee = Carbon::parse($source->date_fin)->format('Y');
+            $debutS = Carbon::parse($source->date_debut);
+            $finS = Carbon::parse($source->date_fin);
+            $libelle = 'Résultat de l\'exercice ' . ($debutS->year === $finS->year ? $debutS->year : $debutS->year . '-' . $finS->year);
+            $champs = [
+                'n_saisie' => 'RES-' . $annee, 'n_saisie_user' => 'RES-' . $annee,
+                'description_operation' => $libelle, 'reference_piece' => $refRes,
+                'code_journal_id' => $journalOd->id,
+                'is_ran' => false, 'is_resultat_systeme' => true,
+            ];
+            if ($ligneAMarquer) {
+                $ligneAMarquer->update($champs);
+            } else {
+                $modele = $ranRows->first();
+                EcritureComptable::withoutGlobalScopes()->create($champs + [
+                    'date' => $modele->date,
+                    'plan_comptable_id' => $ligneAAjouter['compte']->id,
+                    'exercices_comptables_id' => $next->id,
+                    'debit' => $ligneAAjouter['sens']['debit'],
+                    'credit' => $ligneAAjouter['sens']['credit'],
+                    'company_id' => $companyId, 'user_id' => $modele->user_id,
+                    'plan_analytique' => 0, 'statut' => 'approved',
+                ]);
+            }
         }
 
         // 6. Vérification finale : sinon la transaction est annulée.
-        $final = $this->lignes($companyId, $next->id)->where('reference_piece', $refRan)->get();
-        $d = round((float) $final->sum('debit'), 2);
-        $c = round((float) $final->sum('credit'), 2);
-        if (abs($d - $c) >= 0.01) throw new RuntimeException(sprintf('RAN non équilibré après correction (D %.2f / C %.2f) : annulé.', $d, $c));
-        $systeme = $final->filter(fn ($l) => (bool) $l->is_resultat_systeme)->count();
-        if ((abs($resultat) < 0.01 && $systeme !== 0) || (abs($resultat) >= 0.01 && $systeme !== 1)) {
-            throw new RuntimeException('Nombre de lignes de résultat système incorrect après correction : annulé.');
+        $report = $this->lignes($companyId, $next->id)->where('reference_piece', $refRan)->get();
+        $resultatFinal = $this->lignes($companyId, $next->id)->where('reference_piece', $refRes)->get();
+        $tout = $report->concat($resultatFinal);
+        $d = round((float) $tout->sum('debit'), 2);
+        $c = round((float) $tout->sum('credit'), 2);
+        if (abs($d - $c) >= 0.01) throw new RuntimeException(sprintf('Report + résultat non équilibrés après correction (D %.2f / C %.2f) : annulé.', $d, $c));
+        if ($report->contains(fn ($l) => (bool) $l->is_resultat_systeme)) {
+            throw new RuntimeException('Le report à nouveau contient encore une ligne de résultat : annulé.');
+        }
+        $attendu = abs($resultat) < 0.01 ? 0 : 1;
+        if ($resultatFinal->count() !== $attendu
+            || $resultatFinal->contains(fn ($l) => (bool) $l->is_ran || !(bool) $l->is_resultat_systeme)) {
+            throw new RuntimeException('Ligne de résultat incorrecte après correction : annulé.');
         }
         if ($this->lignes($companyId, $id)->where('reference_piece', $refRes)->exists()) {
-            throw new RuntimeException("La pièce {$refRes} existe encore : annulé.");
+            throw new RuntimeException("La pièce {$refRes} existe encore dans l'exercice source : annulé.");
         }
-        $this->info('Corrigé et vérifié : RAN équilibré, une seule ligne de résultat, pièce RES supprimée.');
+        $this->info('Corrigé et vérifié : report (RAN) équilibré avec la ligne de résultat unique (OD), source sans pièce RES.');
     }
 }

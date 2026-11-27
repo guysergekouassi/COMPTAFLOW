@@ -342,47 +342,6 @@ public function index()
     }
 
 
-    /**
-     * Passe ou recalcule le résultat système sans clôturer l'exercice.
-     * Le recalcul ne supprime que les lignes explicitement marquées système.
-     */
-    public function passerResultat(Request $request, $id)
-    {
-        if (!Auth::user()->hasPermission('exercice_comptable')) {
-            return back()->with('error', 'Action non autorisée : habilitation « Exercice comptable » requise.');
-        }
-
-        $user = Auth::user();
-        $companyId = session('current_company_id', $user->company_id);
-        $exercice = ExerciceComptable::where('company_id', $companyId)->findOrFail($id);
-
-        if ($exercice->cloturer) {
-            return back()->with('error', 'Impossible de calculer le résultat : cet exercice est clôturé.');
-        }
-        if ($this->hasResultatManuel($exercice)) {
-            return back()->with('error', 'Une écriture manuelle sur 1301/1309 existe dans l’exercice source. Vérifiez-la avant le calcul du résultat.');
-        }
-
-        try {
-            // Ce bouton calcule et affiche le SIG uniquement. Aucun mouvement comptable
-            // n'est créé ici : l'unique ligne 1301/1309 sera portée dans le RAN à la clôture.
-            $sig = $this->reportingService->getSIGData($exercice->id, $companyId, null, false, true);
-            $montant = round((float) ($sig['resultat_net'] ?? 0), 2);
-            $message = abs($montant) < 0.01
-                ? 'Résultat net nul selon le SIG. Aucun mouvement n’a été créé ; l’exercice reste ouvert.'
-                : ComptesDeResultat::annonce($montant)
-                    . ' Résultat calculé selon le SIG, sans écriture dans l’exercice source. Il sera porté une seule fois dans le RAN lors de la clôture.';
-            return back()->with('success', $message);
-        } catch (\Throwable $e) {
-            Log::warning('Calcul du résultat SIG refusé', [
-                'exercice_id' => $exercice->id,
-                'company_id' => $companyId,
-                'erreur' => $e->getMessage()
-            ]);
-            return back()->with('error', 'Calcul du résultat impossible : ' . $e->getMessage());
-        }
-    }
-
     public function cloturer($id)
     {
         if (!Auth::user()->hasPermission('exercice_comptable')) {
@@ -555,80 +514,91 @@ public function index()
                     }
                 }
 
-                // Deuxième passage : exactement une ligne de résultat dans le RAN.
+                // Deuxième passage : le résultat est le déséquilibre du report à nouveau.
+                // Une seule ligne 1301/1309, dans le journal OD, datée du 1er jour de l'exercice suivant.
+                $referenceRes = 'RES-' . $source->id;
                 $ranRows = EcritureComptable::where('company_id', $companyId)
                     ->where('exercices_comptables_id', $next->id)
                     ->where('reference_piece', $referenceRan)
                     ->with('planComptable')->get();
-                // Un résultat antérieur non affecté peut déjà être reporté sur 1301/1309 :
-                // c'est un solde ordinaire. Seule la ligne marquée système est celle
-                // du résultat de l'exercice clôturé.
-                $resultRows = $ranRows->filter(fn ($line) => (bool) $line->is_resultat_systeme);
-                if ($resultRows->count() > 1) {
-                    throw new RuntimeException('Le RAN contient plusieurs lignes de résultat système. Vérification manuelle requise ; aucun doublon ne sera ajouté.');
+                $resRows = EcritureComptable::where('company_id', $companyId)
+                    ->where('exercices_comptables_id', $next->id)
+                    ->where('reference_piece', $referenceRes)
+                    ->with('planComptable')->get();
+                if ($resRows->contains(fn ($line) => !(bool) $line->is_resultat_systeme)) {
+                    throw new RuntimeException('La référence ' . $referenceRes . ' contient des lignes non système. Vérification manuelle requise ; aucune ligne ne sera supprimée.');
                 }
-                if ($resultRows->isNotEmpty()) {
+                if ($resRows->count() > 1) {
+                    throw new RuntimeException('Plusieurs lignes de résultat système existent dans l\'exercice suivant. Vérification manuelle requise ; aucun doublon ne sera ajouté.');
+                }
+                if ($resRows->isNotEmpty()) {
                     if (abs($resultat) < 0.01) {
-                        throw new RuntimeException('Une ligne de résultat existe alors que le SIG est nul. Vérification manuelle requise.');
+                        throw new RuntimeException('Une ligne de résultat existe alors que le résultat est nul. Vérification manuelle requise.');
                     }
-                    $row = $resultRows->first();
+                    $row = $resRows->first();
                     $sens = ComptesDeResultat::sens($resultat);
                     $prefix = $resultat > 0 ? '1301' : '1309';
                     if (!str_starts_with((string) $row->planComptable->numero_de_compte, $prefix)
                         || abs(round((float) $row->debit - $sens['debit'], 2)) >= 0.01
                         || abs(round((float) $row->credit - $sens['credit'], 2)) >= 0.01) {
-                        throw new RuntimeException('La ligne de résultat déjà présente dans le RAN ne correspond pas au SIG actuel. Aucun remplacement automatique.');
+                        throw new RuntimeException('La ligne de résultat déjà présente ne correspond pas au résultat actuel. Aucun remplacement automatique.');
                     }
                 } elseif (abs($resultat) >= 0.01) {
+                    $journalOd = $this->journalOperationsDiverses($companyId);
                     $sens = ComptesDeResultat::sens($resultat);
                     EcritureComptable::create([
                         'date' => $dateDebutSuivant->toDateString(),
-                        'n_saisie' => 'RAN-' . Carbon::parse($source->date_fin)->format('Y'),
-                        'n_saisie_user' => 'RAN-' . Carbon::parse($source->date_fin)->format('Y'),
-                        'description_operation' => $this->libelleReportAN($source),
-                        'reference_piece' => $referenceRan,
+                        'n_saisie' => 'RES-' . Carbon::parse($source->date_fin)->format('Y'),
+                        'n_saisie_user' => 'RES-' . Carbon::parse($source->date_fin)->format('Y'),
+                        'description_operation' => $this->libelleResultat($source),
+                        'reference_piece' => $referenceRes,
                         'plan_comptable_id' => $compteResultat->id,
-                        'code_journal_id' => $journal->id,
+                        'code_journal_id' => $journalOd->id,
                         'exercices_comptables_id' => $next->id,
                         'debit' => $sens['debit'], 'credit' => $sens['credit'],
                         'company_id' => $companyId, 'user_id' => $user->id,
-                        'is_ran' => true, 'is_resultat_systeme' => true,
+                        'is_ran' => false, 'is_resultat_systeme' => true,
                         'plan_analytique' => 0, 'statut' => 'approved'
                     ]);
                 }
 
-                $finalRows = EcritureComptable::where('company_id', $companyId)
+                $ranFinal = EcritureComptable::where('company_id', $companyId)
                     ->where('exercices_comptables_id', $next->id)
                     ->where('reference_piece', $referenceRan)
                     ->with('planComptable')->get();
+                $resFinal = EcritureComptable::where('company_id', $companyId)
+                    ->where('exercices_comptables_id', $next->id)
+                    ->where('reference_piece', $referenceRes)
+                    ->with('planComptable')->get();
+                $finalRows = $ranFinal->concat($resFinal);
                 $debitTotal = round((float) $finalRows->sum('debit'), 2);
                 $creditTotal = round((float) $finalRows->sum('credit'), 2);
-                if (($finalRows->isEmpty() && abs($resultat) >= 0.01)
-                    || $finalRows->contains(fn ($line) => !(bool) $line->is_ran)
+                if (($ranFinal->isEmpty() && abs($resultat) >= 0.01)
+                    || $ranFinal->contains(fn ($line) => !(bool) $line->is_ran)
+                    || $resFinal->contains(fn ($line) => (bool) $line->is_ran)
                     || abs($debitTotal - $creditTotal) >= 0.01) {
                     throw new RuntimeException(sprintf(
-                        'Report à nouveau non équilibré (débit %.2f / crédit %.2f). Transaction annulée ; aucune ligne artificielle ne sera ajoutée.',
+                        'Report à nouveau et résultat non équilibrés (débit %.2f / crédit %.2f). Transaction annulée ; aucune ligne artificielle ne sera ajoutée.',
                         $debitTotal, $creditTotal
                     ));
                 }
                 foreach ($finalRows as $line) {
                     $classe = substr((string) ($line->planComptable?->numero_de_compte ?? ''), 0, 1);
                     if (in_array($classe, ['6', '7', '8'], true)) {
-                        throw new RuntimeException('Le RAN contient un compte de classe 6, 7 ou 8. Transaction annulée.');
+                        throw new RuntimeException('Le report à nouveau contient un compte de classe 6, 7 ou 8. Transaction annulée.');
                     }
                     if (Carbon::parse($line->date)->toDateString() !== $dateDebutSuivant->toDateString()) {
-                        throw new RuntimeException('Une ligne du RAN ne porte pas la date d’ouverture de l’exercice suivant. Transaction annulée.');
+                        throw new RuntimeException('Une ligne du report ne porte pas la date d’ouverture de l’exercice suivant. Transaction annulée.');
                     }
                 }
-                $resultLines = $finalRows->filter(fn ($line) => (bool) $line->is_resultat_systeme);
-                if (abs($resultat) < 0.01 ? $resultLines->isNotEmpty() : $resultLines->count() !== 1) {
-                    throw new RuntimeException('Le RAN doit contenir exactement une ligne de résultat système (1301 ou 1309), ou aucune si le résultat est nul.');
+                if (abs($resultat) < 0.01 ? $resFinal->isNotEmpty() : $resFinal->count() !== 1) {
+                    throw new RuntimeException('Il doit y avoir exactement une ligne de résultat (1301 ou 1309), ou aucune si le résultat est nul.');
                 }
 
                 $source->update(['cloturer' => true, 'resultat_passe' => true, 'resultat_passe_le' => now()]);
             }, 5);
 
-            return back()->with('success', 'Clôture terminée : résultat SIG porté une seule fois dans le RAN (1301 bénéfice / 1309 perte), sans écriture sur les classes 6, 7 ou 8. Le RAN a été contrôlé équilibré.');
+            return back()->with('success', 'Clôture terminée : le report à nouveau (journal RAN) et le résultat (journal OD, 1301 bénéfice / 1309 perte) ont été créés dans l’exercice suivant. L’ensemble a été contrôlé équilibré.');
         } catch (\Throwable $e) {
             Log::error('Erreur clôture exercice', ['exercice_id' => $id, 'company_id' => $companyId, 'message' => $e->getMessage()]);
             return back()->with('error', 'Clôture annulée : ' . $e->getMessage());
@@ -665,11 +635,16 @@ public function index()
                     if ($ranRows->contains(fn ($line) => !(bool) $line->is_ran)) {
                         throw new RuntimeException('Réouverture bloquée : la référence RAN contient des lignes non identifiées comme report à nouveau.');
                     }
+                    $referenceRes = 'RES-' . $source->id;
                     $otherMovements = EcritureComptable::where('company_id', $companyId)
                         ->where('exercices_comptables_id', $next->id)
                         ->where(function ($q) use ($referenceRan) {
                             $q->whereNull('is_ran')->orWhere('is_ran', false)
                                 ->orWhereNull('reference_piece')->orWhere('reference_piece', '!=', $referenceRan);
+                        })
+                        ->where(function ($q) use ($referenceRes) {
+                            $q->whereNull('is_resultat_systeme')->orWhere('is_resultat_systeme', false)
+                                ->orWhereNull('reference_piece')->orWhere('reference_piece', '!=', $referenceRes);
                         })->exists();
                     if ($otherMovements) {
                         throw new RuntimeException('Réouverture bloquée : l’exercice suivant contient des mouvements autres que le RAN de cette clôture. Aucun mouvement n’a été supprimé.');
@@ -681,6 +656,10 @@ public function index()
                         ->where('exercices_comptables_id', $next->id)
                         ->where('reference_piece', $referenceRan)
                         ->where('is_ran', true)->delete();
+                    EcritureComptable::where('company_id', $companyId)
+                        ->where('exercices_comptables_id', $next->id)
+                        ->where('reference_piece', $referenceRes)
+                        ->where('is_resultat_systeme', true)->delete();
                 } elseif (EcritureComptable::where('company_id', $companyId)
                     ->where('reference_piece', $referenceRan)->exists()) {
                     throw new RuntimeException('Réouverture bloquée : des lignes RAN existent mais l’exercice cible immédiat est introuvable. Aucune suppression n’a été effectuée.');
@@ -890,6 +869,30 @@ public function index()
             throw new RuntimeException('Journal de report à nouveau non paramétré dans les paramètres de l\'entreprise.');
         }
         return $journal;
+    }
+
+    /**
+     * Journal des opérations diverses de l'entreprise, retrouvé par son type système.
+     * Il porte la ligne de résultat (1301/1309), distincte du journal de report à nouveau.
+     */
+    private function journalOperationsDiverses(int $companyId): CodeJournal
+    {
+        $journal = CodeJournal::where('company_id', $companyId)
+            ->whereIn('type', ['Opérations Diverses', 'OPERATIONS DIVERSES', 'Operations Diverses'])
+            ->orderBy('id')->first();
+        if (!$journal) {
+            throw new RuntimeException('Journal des opérations diverses non paramétré dans les paramètres de l\'entreprise.');
+        }
+        return $journal;
+    }
+
+    /** Libellé de la ligne de résultat, calculé à partir des dates réelles de l'exercice clôturé. */
+    private function libelleResultat(ExerciceComptable $exercice): string
+    {
+        $debut = Carbon::parse($exercice->date_debut);
+        $fin = Carbon::parse($exercice->date_fin);
+        $periode = $debut->year === $fin->year ? (string) $debut->year : $debut->year.'-'.$fin->year;
+        return 'Résultat de l\'exercice '.$periode;
     }
 
     /** Libellé RAN calculé exclusivement à partir des dates réelles de l'exercice clôturé. */
